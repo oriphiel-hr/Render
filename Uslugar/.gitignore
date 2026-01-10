@@ -1,0 +1,150 @@
+# ============================================================================
+# .gitignore za Uslugar projekt na Render
+# ============================================================================
+
+# ── Backup direktorij (sadrži osjetljive podatke - NIKADA commitaj!)
+backup/
+*.sql
+*_backup_*.sql
+*_complete_backup_*.sql
+uslugar_import_script.sql
+
+# ── Environment files (NE commitaj secrets!)
+.env
+.env.*
+!.env.example
+*.env
+aws-secrets-*.env
+
+# ── Sensitive data - AWS secrets, credentials
+*.pem
+*.key
+*.crt
+*.p12
+secrets/
+.aws/
+
+# ── Node / npm
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json.*.backup
+
+# ── Build artefakti
+dist/
+build/
+.tmp/
+.temp/
+.cache/
+*.tsbuildinfo
+
+# ── Prisma (generirano)
+node_modules/.prisma/
+.prisma/
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# ── Test/coverage
+coverage/
+.nyc_output/
+junit.xml
+test-results.xml
+
+# ── OS smeće
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+Desktop.ini
+desktop.ini
+
+# ── Editor/IDE
+.vscode/
+.idea/
+*.code-workspace
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ── Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# ── Docker / lokalni exporti
+*.tar
+*.zip
+
+# ── Uploads (user generated content)
+backend/uploads/
+uploads/
+**/uploads/
+
+# ── Logs
+*.log
+logs/
+*.log.*
+
+# ── Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.backup
+*.old
+
+# ── Test files
+test-*.pdf
+test-*.sql
+
+# ── Deployment triggers (ne trebaju u Git)
+.deploy-trigger
+DEPLOY_TRIGGER.txt
+FORCE_REDEPLOY.txt
+WORKFLOW_TRIGGER.txt
+TRIGGER_*.txt
+
+# ── Deployment logs
+DEPLOY_LOG.txt
+deploy-*.log
+
+# ── Task definitions (sadrže ARN-ove i secrets)
+task-def*.json
+taskdef*.json
+*.task-definition.json
+
+# ── Container definitions (sadrže sensitive data)
+container*.json
+netcfg.json
+
+# ── Seed override files (mogu sadržavati test data)
+seed-override.json
+subcategories-override.json
+*-override.json
+
+# ── IAM policies (sadrže ARN-ove)
+iam-policy-*.json
+
+# ── SMTP secret JSON files
+smtp-secret*.json
+
+# ── Migration task overrides
+migration-task-overrides.json
+
+# ── Test invoices (PDF)
+test-invoice-*.pdf
+
+# ── Generated documentation seed files (mogu biti veliki)
+prisma/seeds/seed-documentation-generated.js
