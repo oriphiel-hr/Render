@@ -3146,28 +3146,7 @@ r.get('/migration-status', auth(true, ['ADMIN']), async (req, res, next) => {
   }
 });
 
-console.log('🔍 Admin router loaded, total routes:', r.stack?.length || 'unknown');
-// Debug: List all registered routes
-if (r.stack) {
-  console.log('🔍 Admin routes registered:');
-  r.stack.forEach((layer, idx) => {
-    if (layer.route) {
-      const methods = Object.keys(layer.route.methods).join(', ').toUpperCase();
-      console.log(`  ${idx + 1}. ${methods} ${layer.route.path}`);
-    } else if (layer.regexp) {
-      console.log(`  ${idx + 1}. [Middleware/Router] ${layer.regexp.toString().substring(0, 50)}`);
-    }
-  });
-  // Check specifically for api-reference
-  const apiRefRoute = r.stack.find(layer => 
-    layer.route && layer.route.path === '/api-reference'
-  );
-  if (apiRefRoute) {
-    console.log('✅ /api-reference route found in admin router');
-  } else {
-    console.log('❌ /api-reference route NOT found in admin router!');
-  }
-}
+// Note: Route registration check moved to end of file after all routes are registered
 /**
  * GET /api/admin/database/tables
  * Dohvati listu svih tablica u bazi
@@ -5513,6 +5492,32 @@ r.delete('/testing/cleanup', auth(true, ['ADMIN']), async (req, res, next) => {
   } catch (e) {
     console.error('[TESTING CLEANUP] Error:', e);
     next(e);
+  }
+});
+
+// Debug: Verify all routes are registered (including /api-reference)
+// This check runs AFTER all routes are registered
+// Use process.nextTick to ensure router stack is fully initialized
+process.nextTick(() => {
+  if (r.stack && r.stack.length > 0) {
+    console.log('🔍 Admin router loaded, total routes:', r.stack.length);
+    // Check specifically for api-reference
+    const apiRefRoute = r.stack.find(layer => 
+      layer.route && layer.route.path === '/api-reference'
+    );
+    if (apiRefRoute) {
+      console.log('✅ /api-reference route found in admin router');
+    } else {
+      console.log('❌ /api-reference route NOT found in admin router!');
+      // List all route paths for debugging
+      const routePaths = r.stack
+        .filter(layer => layer.route)
+        .map(layer => layer.route.path)
+        .filter(path => path.includes('api-reference') || path.includes('reference'));
+      if (routePaths.length > 0) {
+        console.log('   Found similar routes:', routePaths);
+      }
+    }
   }
 });
 
