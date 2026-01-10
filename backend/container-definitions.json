@@ -1,0 +1,40 @@
+[
+  {
+    "name": "nginx-proxy",
+    "image": "666203386231.dkr.ecr.eu-north-1.amazonaws.com/nginx-proxy-uslugar:stable-alpine",
+    "portMappings": [
+      {
+        "containerPort": 80,
+        "protocol": "tcp"
+      }
+    ],
+    "essential": true,
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "/ecs/uslugar",
+        "awslogs-region": "eu-north-1",
+        "awslogs-stream-prefix": "nginx"
+      }
+    }
+  },
+  {
+    "name": "uslugar",
+    "image": "666203386231.dkr.ecr.eu-north-1.amazonaws.com/uslugar-backend:latest",
+    "portMappings": [
+      {
+        "containerPort": 4000,
+        "protocol": "tcp"
+      }
+    ],
+    "essential": true,
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "/ecs/uslugar",
+        "awslogs-region": "eu-north-1",
+        "awslogs-stream-prefix": "backend"
+      }
+    }
+  }
+]

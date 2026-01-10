@@ -1,0 +1,258 @@
+### USLUGAR EXCLUSIVE - API Tests (REST Client / Postman)
+### Koristite ovaj file u VS Code sa REST Client extensionom ili u Postmanu
+
+@baseUrl = https://api.uslugar.oriph.io
+@localUrl = http://localhost:4000
+
+### Variables (postavite nakon login-a)
+@token = YOUR_TOKEN_HERE
+@jobId = YOUR_JOB_ID
+@purchaseId = YOUR_PURCHASE_ID
+
+# ============================================================
+# 1. AUTHENTICATION
+# ============================================================
+
+### Register Provider
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "test.provider@uslugar.hr",
+  "password": "Test123",
+  "fullName": "Test Provider",
+  "role": "PROVIDER",
+  "phone": "+385991234567",
+  "city": "Zagreb",
+  "legalStatusId": "cls2_sole_trader",
+  "taxId": "12345678901",
+  "companyName": "Test Obrt"
+}
+
+### Register Client (USER)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "test.client@uslugar.hr",
+  "password": "Test123",
+  "fullName": "Test Client",
+  "role": "USER",
+  "phone": "+385999876543",
+  "city": "Zagreb"
+}
+
+### Login Provider
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "test.provider@uslugar.hr",
+  "password": "Test123"
+}
+
+### Login Client
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "test.client@uslugar.hr",
+  "password": "Test123"
+}
+
+# ============================================================
+# 2. SUBSCRIPTION & CREDITS
+# ============================================================
+
+### Get Subscription Plans
+GET {{baseUrl}}/api/subscriptions/plans
+
+### Get My Subscription
+GET {{baseUrl}}/api/subscriptions/me
+Authorization: Bearer {{token}}
+
+### Get Credits Balance
+GET {{baseUrl}}/api/exclusive/leads/credits/balance
+Authorization: Bearer {{token}}
+
+### Get Credits History
+GET {{baseUrl}}/api/exclusive/leads/credits/history?limit=20
+Authorization: Bearer {{token}}
+
+### Purchase Credits (pay-per-credit)
+POST {{baseUrl}}/api/exclusive/leads/credits/purchase
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 10,
+  "paymentIntentId": "pi_test_123"
+}
+
+### Subscribe to Plan
+POST {{baseUrl}}/api/subscriptions/subscribe
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "plan": "BASIC",
+  "paymentIntentId": "pi_test_456"
+}
+
+# ============================================================
+# 3. JOBS / LEADS
+# ============================================================
+
+### Create Job (as CLIENT)
+POST {{baseUrl}}/api/jobs
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Popravak vodovodnih instalacija - HITNO",
+  "description": "Potreban vodoinstalater za hitnu popravak cijevi u stanu. Curenje u kupatilu. Potrebno odmah riješiti problem.",
+  "categoryId": "YOUR_CATEGORY_ID",
+  "budgetMin": 500,
+  "budgetMax": 1500,
+  "city": "Zagreb",
+  "urgency": "HIGH",
+  "jobSize": "MEDIUM",
+  "deadline": "2025-10-25T00:00:00Z",
+  "images": ["https://example.com/img1.jpg"]
+}
+
+### Get All Jobs
+GET {{baseUrl}}/api/jobs
+Authorization: Bearer {{token}}
+
+# ============================================================
+# 4. EXCLUSIVE LEADS
+# ============================================================
+
+### Get Available Exclusive Leads (as PROVIDER)
+GET {{baseUrl}}/api/exclusive/leads/available
+Authorization: Bearer {{token}}
+
+### Get Available Leads with Filters
+GET {{baseUrl}}/api/exclusive/leads/available?city=Zagreb&minBudget=500
+Authorization: Bearer {{token}}
+
+### Purchase Exclusive Lead
+POST {{baseUrl}}/api/exclusive/leads/{{jobId}}/purchase
+Authorization: Bearer {{token}}
+
+### Get My Purchased Leads
+GET {{baseUrl}}/api/exclusive/leads/my-leads
+Authorization: Bearer {{token}}
+
+### Get My Active Leads Only
+GET {{baseUrl}}/api/exclusive/leads/my-leads?status=ACTIVE
+Authorization: Bearer {{token}}
+
+### Mark Lead as Contacted
+POST {{baseUrl}}/api/exclusive/leads/purchases/{{purchaseId}}/contacted
+Authorization: Bearer {{token}}
+
+### Mark Lead as Converted
+POST {{baseUrl}}/api/exclusive/leads/purchases/{{purchaseId}}/converted
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "revenue": 1200
+}
+
+### Request Refund
+POST {{baseUrl}}/api/exclusive/leads/purchases/{{purchaseId}}/refund
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reason": "Client did not respond after 3 attempts"
+}
+
+# ============================================================
+# 5. ROI DASHBOARD
+# ============================================================
+
+### Get ROI Dashboard
+GET {{baseUrl}}/api/exclusive/roi/dashboard
+Authorization: Bearer {{token}}
+
+### Get Monthly Statistics
+GET {{baseUrl}}/api/exclusive/roi/monthly-stats?year=2025&month=10
+Authorization: Bearer {{token}}
+
+### Get Top Converted Leads
+GET {{baseUrl}}/api/exclusive/roi/top-leads?limit=10
+Authorization: Bearer {{token}}
+
+# ============================================================
+# 6. CLIENT VERIFICATION
+# ============================================================
+
+### Get Verification Status
+GET {{baseUrl}}/api/verification/status
+Authorization: Bearer {{token}}
+
+### Send Phone Verification Code
+POST {{baseUrl}}/api/verification/phone/send-code
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "phone": "+385991234567"
+}
+
+### Verify Phone Code
+POST {{baseUrl}}/api/verification/phone/verify-code
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "code": "123456"
+}
+
+### Upload ID for Verification
+POST {{baseUrl}}/api/verification/id/upload
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "idImageFront": "base64_encoded_image_data",
+  "idImageBack": "base64_encoded_image_data"
+}
+
+### Verify Company
+POST {{baseUrl}}/api/verification/company/verify
+Authorization: Bearer {{token}}
+
+# ============================================================
+# 7. LEGAL STATUSES
+# ============================================================
+
+### Get All Legal Statuses
+GET {{baseUrl}}/api/legal-statuses
+
+# ============================================================
+# 8. ADMIN (if ADMIN role)
+# ============================================================
+
+### Get Pending Verifications
+GET {{baseUrl}}/api/verification/admin/pending
+Authorization: Bearer {{token}}
+
+### Manually Verify Client
+POST {{baseUrl}}/api/verification/admin/verify/USER_ID
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "phoneVerified": true,
+  "emailVerified": true,
+  "idVerified": true,
+  "companyVerified": false,
+  "trustScore": 75,
+  "notes": "Verified by admin - looks legit"
+}
+

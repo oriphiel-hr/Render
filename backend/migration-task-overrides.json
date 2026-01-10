@@ -1,0 +1,11 @@
+{
+  "containerOverrides": [{
+    "name": "uslugar",
+    "command": [
+      "sh",
+      "-c",
+      "echo 'Starting migration...' && npx prisma generate --schema=prisma/schema.prisma && echo 'Applying migration...' && npx prisma migrate deploy --schema=prisma/schema.prisma && echo 'Seeding categories...' && node prisma/seeds/seed-categories.js && echo 'Migration complete!'"
+    ]
+  }]
+}
+

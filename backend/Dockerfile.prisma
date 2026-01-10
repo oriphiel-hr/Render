@@ -1,0 +1,77 @@
+FROM node:20-bookworm-slim AS prisma-tasks
+WORKDIR /app
+
+# System deps za Prisma CLI
+RUN apt-get update -y && apt-get install -y --no-install-recommends     openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+
+# Trebaju nam devDependencies jer Prisma CLI obično stoji u devDeps
+COPY package*.json ./
+# Ne koristimo --ignore-scripts jer Prisma treba postinstall skriptu za preuzimanje query engine-a
+RUN npm ci
+
+# Multi-file schema layout
+COPY prisma ./prisma
+
+# Opcionalno: Kopiraj lokalno generirani Prisma Client ako postoji
+# Dockerfile automatski detektira i koristi lokalno generirani Prisma Client
+# Workaround za Prisma CDN probleme: generiraj lokalno s "npx prisma generate" prije build-a
+RUN mkdir -p node_modules/.prisma node_modules/@prisma 2>/dev/null || true
+
+# Prisma environment varijable
+ENV PRISMA_OPENSSL_VERSION=3.0.x
+ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
+# Ne postavljamo PRISMA_GENERATE_SKIP_AUTOINSTALL jer trebamo query engine
+
+# Provjeri da li je query engine preuzet (npm ci bi trebao pokrenuti postinstall)
+# Ako nije, prisma generate će ga preuzeti automatski
+RUN echo "Checking Prisma installation..." && \
+    npx prisma --version && \
+    echo "✅ Prisma CLI ready"
+
+# Provjeri postoji li već lokalno generirani Prisma Client
+# Ako postoji, preskoči generiranje (koristi se za workaround kada Prisma CDN nije dostupan)
+RUN if [ -d "node_modules/.prisma" ] && [ -d "node_modules/@prisma/client" ] && [ "$(ls -A node_modules/.prisma 2>/dev/null)" ] && [ "$(ls -A node_modules/@prisma/client 2>/dev/null)" ]; then \
+        echo "✅ Using pre-generated Prisma Client from local cache" && \
+        echo "   Skipping prisma generate (CDN workaround)"; \
+    else \
+        echo "📦 Prisma Client not found in cache, generating from CDN..." && \
+        MAX_ATTEMPTS=5; \
+        SUCCESS=0; \
+        for i in $(seq 1 $MAX_ATTEMPTS); do \
+            echo "Attempt $i/$MAX_ATTEMPTS: Generating Prisma Client..." && \
+            if npx prisma generate --schema=./prisma/schema.prisma 2>&1; then \
+                if [ -d "node_modules/.prisma" ] && [ -d "node_modules/@prisma/client" ] && [ "$(ls -A node_modules/.prisma 2>/dev/null)" ] && [ "$(ls -A node_modules/@prisma/client 2>/dev/null)" ]; then \
+                    echo "✅ Prisma Client generated successfully!" && \
+                    echo "   Verifying Prisma Client files..." && \
+                    ls -la node_modules/@prisma/client/ | head -5 && \
+                    SUCCESS=1 && \
+                    break; \
+                else \
+                    echo "⚠️ Prisma generate completed but files not found"; \
+                fi; \
+            else \
+                echo "⚠️ Prisma generate failed"; \
+            fi; \
+            echo "⚠️ Attempt $i/$MAX_ATTEMPTS failed. Waiting before retry..." && \
+            sleep $((i * 5)); \
+        done; \
+        if [ $SUCCESS -eq 0 ]; then \
+            echo "❌ ERROR: All $MAX_ATTEMPTS attempts failed. Prisma CDN appears to be down." && \
+            echo "" && \
+            echo "📋 WORKAROUND: Generate Prisma Client locally before building:" && \
+            echo "   1. cd uslugar/backend" && \
+            echo "   2. npx prisma generate" && \
+            echo "   3. docker build -f Dockerfile.prisma ." && \
+            echo "" && \
+            echo "   The Dockerfile will automatically use the pre-generated client." && \
+            echo "" && \
+            echo "   Or check Prisma status: https://www.prisma.io/status" && \
+            exit 1; \
+        fi; \
+    fi && \
+    echo "🔍 Final verification of Prisma Client..." && \
+    ls -la node_modules/@prisma/client/ 2>/dev/null | head -10 || echo "⚠️ Prisma Client directory not found" && \
+    test -f node_modules/@prisma/client/index.js && echo "✅ Prisma Client index.js found" || echo "❌ Prisma Client index.js NOT found"
+
+# Default: pomoć; u CI/one-off zadatku override-at će se "command"
+CMD ["sh","-lc","npx prisma --help"]

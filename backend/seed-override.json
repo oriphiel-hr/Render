@@ -1,0 +1,8 @@
+{
+  "containerOverrides": [
+    {
+      "name": "prisma",
+      "command": ["sh", "-lc", "node prisma/seeds/seed-categories.cjs"]
+    }
+  ]
+}

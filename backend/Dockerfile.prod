@@ -1,0 +1,100 @@
+# ---------- PRISMA CLIENT BUILD (generira node_modules/.prisma + @prisma/*) ----------
+FROM node:20-bookworm-slim AS prisma-src
+WORKDIR /app
+
+# Install OpenSSL 3.0 for Prisma (potrebno za prisma generate)
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl libssl3 ca-certificates && rm -rf /var/lib/apt/lists/*
+
+# Prisma environment variables
+ENV PRISMA_GENERATE_SKIP_AUTOINSTALL=1
+ENV PRISMA_OPENSSL_VERSION=3.0.x
+ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
+
+# 1) deps (uklj. dev → trebamo Prisma CLI za generate)
+COPY package*.json ./
+RUN npm ci
+
+# 2) schema (i po potrebi migrations)
+COPY prisma ./prisma
+# Ako tvoj schema.ts referencira codegen iz src/, odkomentiraj sljedeću liniju:
+# COPY src ./src
+
+# Opcionalno: Kopiraj lokalno generirani Prisma Client ako postoji (workaround za CDN probleme)
+# Ako je Prisma Client generiran lokalno prije build-a, automatski će se koristiti
+# Koristi: npx prisma generate (lokalno) → docker build -f Dockerfile.prod .
+# Napomena: .dockerignore je konfiguriran da dozvoli kopiranje node_modules/.prisma i node_modules/@prisma
+# COPY će kopirati ove direktorije ako postoje u build contextu
+# Ako ne postoje, build će nastaviti i pokušati generirati s CDN-a
+# Napomena: COPY neće baciti grešku ako fajlovi ne postoje - jednostavno neće kopirati ništa
+RUN mkdir -p node_modules/.prisma node_modules/@prisma 2>/dev/null || true
+
+# 3) generate s retry logikom i fallback na lokalni cache
+# Provjeri postoji li već lokalno generirani Prisma Client
+# Ako postoji, preskoči generiranje (koristi se za workaround kada Prisma CDN nije dostupan)
+RUN if [ -d "node_modules/.prisma" ] && [ -d "node_modules/@prisma/client" ] && [ "$(ls -A node_modules/.prisma 2>/dev/null)" ] && [ "$(ls -A node_modules/@prisma/client 2>/dev/null)" ]; then \
+        echo "✅ Using pre-generated Prisma Client from local cache" && \
+        echo "   Skipping prisma generate (CDN workaround)"; \
+    else \
+        echo "📦 Prisma Client not found in cache, generating from CDN..." && \
+        MAX_ATTEMPTS=3; \
+        SUCCESS=0; \
+        for i in $(seq 1 $MAX_ATTEMPTS); do \
+            echo "Attempt $i/$MAX_ATTEMPTS: Generating Prisma Client..." && \
+            if npx prisma generate 2>&1; then \
+                if [ -d "node_modules/.prisma" ] && [ -d "node_modules/@prisma/client" ]; then \
+                    echo "✅ Prisma Client generated successfully!" && \
+                    SUCCESS=1 && \
+                    break; \
+                fi; \
+            fi; \
+            echo "⚠️ Attempt $i/$MAX_ATTEMPTS failed. Waiting before retry..." && \
+            sleep $((i * 5)); \
+        done; \
+        if [ $SUCCESS -eq 0 ]; then \
+            echo "❌ ERROR: All $MAX_ATTEMPTS attempts failed. Prisma CDN appears to be down." && \
+            echo "" && \
+            echo "📋 WORKAROUND: Generate Prisma Client locally before building:" && \
+            echo "   1. cd uslugar/backend" && \
+            echo "   2. npx prisma generate" && \
+            echo "   3. docker build -f Dockerfile.prod ." && \
+            echo "" && \
+            echo "   The Dockerfile will automatically use the pre-generated client." && \
+            echo "" && \
+            echo "   Or check Prisma status: https://www.prisma.io/status" && \
+            exit 1; \
+        fi; \
+    fi
+# --------------------------------------------------------------------------------------
+
+# ------------------------------- RUNTIME (production) --------------------------------
+FROM node:20-bookworm-slim AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+# Install OpenSSL 3.0 for Prisma
+RUN apt-get update -y && apt-get install -y openssl libssl3 && rm -rf /var/lib/apt/lists/*
+
+# prod deps
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+# app source
+COPY src ./src
+
+# Copy prisma directory for migrations
+COPY prisma ./prisma
+
+# kopiraj generirani Prisma client iz build stage-a
+COPY --from=prisma-src /app/node_modules/.prisma  ./node_modules/.prisma
+COPY --from=prisma-src /app/node_modules/@prisma ./node_modules/@prisma
+
+# Copy startup script
+COPY start.sh ./start.sh
+RUN chmod +x /app/start.sh
+
+# tvoj server sluša na 8080
+EXPOSE 4000
+CMD ["/app/start.sh"]
+# --------------------------------------------------------------------------------------

@@ -1,0 +1,11 @@
+{
+  "containerOverrides": [
+    {
+      "name": "uslugar",
+      "command": [
+        "node",
+        "prisma/seeds/seed-subcategories.cjs"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "family": "uslugar",
+  "networkMode": "awsvpc",
+  "cpu": "512",
+  "memory": "1024",
+  "requiresCompatibilities": ["FARGATE"],
+  "executionRoleArn": "arn:aws:iam::666203386231:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::666203386231:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "uslugar",
+      "image": "666203386231.dkr.ecr.eu-north-1.amazonaws.com/uslugar:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "hostPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "PORT",
+          "value": "8080"
+        },
+        {
+          "name": "NODE_ENV",
+          "value": "production"
+        },
+        {
+          "name": "AWS_S3_BUCKET_NAME",
+          "value": "uslugar-invoices"
+        },
+        {
+          "name": "AWS_REGION",
+          "value": "eu-north-1"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "DATABASE_URL",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:666203386231:secret:uslugar-db-secret-FBWhyv:DATABASE_URL::"
+        },
+        {
+          "name": "SMTP_HOST",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:666203386231:secret:uslugar-smtp-config-5xXBg5:SMTP_HOST::"
+        },
+        {
+          "name": "SMTP_PORT",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:666203386231:secret:uslugar-smtp-config-5xXBg5:SMTP_PORT::"
+        },
+        {
+          "name": "SMTP_USER",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:666203386231:secret:uslugar-smtp-config-5xXBg5:SMTP_USER::"
+        },
+        {
+          "name": "SMTP_PASS",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:666203386231:secret:uslugar-smtp-config-5xXBg5:SMTP_PASS::"
+        },
+        {
+          "name": "FRONTEND_URL",
+          "valueFrom": "arn:aws:secretsmanager:eu-north-1:666203386231:secret:uslugar-smtp-config-5xXBg5:FRONTEND_URL::"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/uslugar",
+          "awslogs-region": "eu-north-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}
+
