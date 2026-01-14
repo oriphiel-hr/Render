@@ -224,7 +224,7 @@ jobs:
           echo "   4. Firewall may block port 21"
           echo "   5. Try manual deployment: Uslugar/frontend/deploy-frontend-ftp-fixed.ps1"
 
-      - name: Deploy via FTP (first attempt - passive mode)
+      - name: Deploy via FTP (plain FTP - first attempt)
         id: deploy-ftp
         continue-on-error: true
         uses: SamKirkland/FTP-Deploy-Action@v4.3.6
@@ -239,7 +239,6 @@ jobs:
           dangerous-clean-slate: false
           timeout: 600000
           log-level: verbose
-          security: loose
           state-name: .ftp-deploy-sync-state.json
           dry-run: false
           exclude: |
@@ -248,7 +247,29 @@ jobs:
             **/node_modules/**
             **/.DS_Store
 
-      - name: Retry with FTPS (implicit)
+      - name: Retry with FTP (passive mode)
+        if: steps.deploy-ftp.outcome == 'failure'
+        continue-on-error: true
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+        with:
+          server: ${{ env.FTP_HOST }}
+          username: ${{ env.FTP_USER }}
+          password: ${{ env.FTP_PASS }}
+          protocol: 'ftp'
+          port: 21
+          local-dir: ${{ env.FRONTEND_DIR }}/${{ steps.detect.outputs.dir }}/
+          server-dir: ${{ env.SERVER_DIR }}
+          dangerous-clean-slate: false
+          timeout: 600000
+          log-level: verbose
+          state-name: .ftp-deploy-sync-state.json
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/.DS_Store
+
+      - name: Retry with FTPS (implicit - only if FTP fails)
         if: steps.deploy-ftp.outcome == 'failure'
         continue-on-error: true
         uses: SamKirkland/FTP-Deploy-Action@v4.3.6
@@ -271,7 +292,7 @@ jobs:
             **/node_modules/**
             **/.DS_Store
 
-      - name: Retry with FTPS (explicit)
+      - name: Final retry with FTPS (explicit - port 990)
         if: steps.deploy-ftp.outcome == 'failure'
         continue-on-error: true
         uses: SamKirkland/FTP-Deploy-Action@v4.3.6
@@ -287,28 +308,6 @@ jobs:
           timeout: 600000
           log-level: verbose
           security: explicit
-          state-name: .ftp-deploy-sync-state.json
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            **/.DS_Store
-
-      - name: Final retry with FTPS-legacy
-        if: steps.deploy-ftp.outcome == 'failure'
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
-        with:
-          server: ${{ env.FTP_HOST }}
-          username: ${{ env.FTP_USER }}
-          password: ${{ env.FTP_PASS }}
-          protocol: 'ftps-legacy'
-          port: 21
-          local-dir: ${{ env.FRONTEND_DIR }}/${{ steps.detect.outputs.dir }}/
-          server-dir: ${{ env.SERVER_DIR }}
-          dangerous-clean-slate: false
-          timeout: 600000
-          log-level: verbose
-          security: loose
           state-name: .ftp-deploy-sync-state.json
           exclude: |
             **/.git*
@@ -338,14 +337,14 @@ jobs:
           if [ -n "$HTACCESS_FILE" ]; then
             echo "📤 Uploading $HTACCESS_FILE to ${{ env.SERVER_DIR }}.htaccess"
             
-            # Use curl to upload via FTP (try FTPS first, then FTP)
+            # Use curl to upload via FTP (try plain FTP first, then FTPS)
             curl -T "$HTACCESS_FILE" \
-              --ftp-ssl \
               --user "${{ env.FTP_USER }}:${{ env.FTP_PASS }}" \
-              "ftps://${{ env.FTP_HOST }}/${{ env.SERVER_DIR }}.htaccess" \
+              "ftp://${{ env.FTP_HOST }}/${{ env.SERVER_DIR }}.htaccess" \
               || curl -T "$HTACCESS_FILE" \
+                --ftp-ssl \
                 --user "${{ env.FTP_USER }}:${{ env.FTP_PASS }}" \
-                "ftp://${{ env.FTP_HOST }}/${{ env.SERVER_DIR }}.htaccess"
+                "ftps://${{ env.FTP_HOST }}/${{ env.SERVER_DIR }}.htaccess"
             
             echo "✅ .htaccess uploaded successfully"
           else
