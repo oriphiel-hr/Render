@@ -315,6 +315,28 @@ jobs:
             **/node_modules/**
             **/.DS_Store
 
+      - name: Try SFTP (if FTP/FTPS failed)
+        if: steps.deploy-ftp.outcome == 'failure'
+        continue-on-error: true
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+        with:
+          server: ${{ env.FTP_HOST }}
+          username: ${{ env.FTP_USER }}
+          password: ${{ env.FTP_PASS }}
+          protocol: 'sftp'
+          port: 22
+          local-dir: ${{ env.FRONTEND_DIR }}/${{ steps.detect.outputs.dir }}/
+          server-dir: ${{ env.SERVER_DIR }}
+          dangerous-clean-slate: false
+          timeout: 600000
+          log-level: verbose
+          state-name: .ftp-deploy-sync-state.json
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/.DS_Store
+
       - name: Upload .htaccess file
         if: steps.deploy-ftp.outcome == 'success' || steps.deploy-ftp.outcome == 'failure'
         continue-on-error: true
@@ -355,46 +377,83 @@ jobs:
             echo "   Skipping .htaccess upload"
           fi
 
-      - name: Deployment failed - Troubleshooting info
-        if: steps.deploy-ftp.outcome == 'failure'
+      - name: Check deployment result
+        id: check-deploy
         run: |
-          echo "❌ FTP Deployment failed after all retry attempts"
+          if [ "${{ steps.deploy-ftp.outcome }}" == "success" ]; then
+            echo "✅ Deployment successful!"
+            echo "result=success" >> $GITHUB_OUTPUT
+          else
+            echo "❌ All deployment attempts failed"
+            echo "result=failure" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deployment failed - Detailed troubleshooting
+        if: steps.check-deploy.outputs.result == 'failure'
+        run: |
+          echo "❌ FTP/SFTP Deployment failed after all retry attempts"
           echo ""
           echo "📋 Configuration used:"
           echo "   Host: ${{ env.FTP_HOST_FOR_DEBUG }}"
           echo "   Username: ${{ env.FTP_USER }}"
           echo "   Server dir: ${{ env.SERVER_DIR }}"
           echo ""
+          echo "🔍 Attempted protocols:"
+          echo "   ❌ FTP (port 21) - plain"
+          echo "   ❌ FTP (port 21) - passive mode"
+          echo "   ❌ FTPS (port 21) - implicit"
+          echo "   ❌ FTPS (port 990) - explicit"
+          echo "   ❌ SFTP (port 22) - if attempted"
+          echo ""
           echo "🔍 Troubleshooting steps:"
           echo ""
-          echo "1. Verify GitHub Secrets (Settings > Secrets and variables > Actions):"
-          echo "   ✅ HOSTINGER_HOST or FTP_HOST = hostname only (no ftp://, no port)"
-          echo "      Example: ftp.uslugar.eu or 194.5.156.10"
-          echo "   ✅ HOSTINGER_USERNAME or FTP_USERNAME = your FTP username"
-          echo "   ✅ HOSTINGER_PASSWORD or FTP_PASSWORD = your FTP password"
+          echo "1. ✅ Verify GitHub Secrets (Settings > Secrets and variables > Actions):"
+          echo "   - HOSTINGER_HOST or FTP_HOST = hostname only (no ftp://, no port)"
+          echo "     Example: ftp.uslugar.eu or 194.5.156.10"
+          echo "   - HOSTINGER_USERNAME or FTP_USERNAME = your FTP username"
+          echo "   - HOSTINGER_PASSWORD or FTP_PASSWORD = your FTP password"
+          echo "   - HOSTINGER_SERVER_DIR = public_html/ (optional, defaults to public_html/)"
           echo ""
-          echo "2. Test connection manually:"
-          echo "   - Use FileZilla: Host=${{ env.FTP_HOST_FOR_DEBUG }}, Port=21"
-          echo "   - Or use PowerShell: Uslugar/frontend/deploy-frontend-ftp-fixed.ps1"
+          echo "2. 🔍 Test connection manually with FileZilla:"
+          echo "   - Host: ${{ env.FTP_HOST_FOR_DEBUG }}"
+          echo "   - Port: 21 (for FTP) or 22 (for SFTP)"
+          echo "   - Username: ${{ env.FTP_USER }}"
+          echo "   - Password: [check your secret]"
+          echo "   - Protocol: FTP or SFTP (try both)"
           echo ""
-          echo "3. Check server configuration:"
-          echo "   - Server may only support SFTP (port 22) not FTP (port 21)"
-          echo "   - Firewall may block port 21"
-          echo "   - Server may require passive mode"
+          echo "3. 🔍 Test connection with PowerShell (if available locally):"
+          echo "   cd Uslugar/frontend"
+          echo "   .\deploy-frontend-ftp-fixed.ps1"
           echo ""
-          echo "4. Common fixes:"
-          echo "   - Remove 'ftp://' prefix from host secret"
-          echo "   - Remove port number from host (use default 21)"
+          echo "4. ⚙️  Check Hostinger Control Panel:"
+          echo "   - Verify FTP account is enabled"
+          echo "   - Check if FTP credentials are correct"
+          echo "   - Verify server supports FTP (not just SFTP)"
+          echo "   - Check firewall settings"
+          echo ""
+          echo "5. 🔧 Common fixes:"
+          echo "   - Remove 'ftp://' or 'ftps://' prefix from host secret"
+          echo "   - Remove port number from host (use default 21 for FTP, 22 for SFTP)"
+          echo "   - Try using IP address instead of hostname"
           echo "   - Verify credentials in Hostinger control panel"
-          echo "   - Check if server supports FTP (not just SFTP)"
+          echo "   - Check if server requires passive mode (already tried)"
           echo ""
-          echo "5. Alternative deployment methods:"
-          echo "   📁 Manual: Run Uslugar/frontend/deploy-frontend-ftp-fixed.ps1 locally"
-          echo "   📁 FileZilla: Upload Uslugar/frontend/dist/* to public_html/"
-          echo "   📁 SSH: Use scp or rsync if SSH is available"
+          echo "6. 📁 Alternative deployment methods:"
+          echo "   📁 Manual FTP: Use FileZilla to upload Uslugar/frontend/dist/* to public_html/"
+          echo "   📁 Manual Script: Run Uslugar/frontend/deploy-frontend-ftp-fixed.ps1 locally"
+          echo "   📁 Hostinger File Manager: Upload files via web interface"
+          echo "   📁 SSH/SCP: If SSH is available, use scp or rsync"
           echo ""
-          echo "💡 If server only supports SFTP, consider:"
-          echo "   - Using SFTP action instead of FTP action"
-          echo "   - Or contact hosting provider to enable FTP/FTPS"
+          echo "7. 💡 If server only supports SFTP:"
+          echo "   - SFTP was attempted automatically (port 22)"
+          echo "   - If SFTP also failed, verify SFTP credentials"
+          echo "   - Contact Hostinger support to enable FTP/FTPS if needed"
+          echo ""
+          echo "8. 🔍 Check workflow logs above for specific error messages:"
+          echo "   - Look for connection timeout errors"
+          echo "   - Look for authentication errors"
+          echo "   - Look for protocol mismatch errors"
+          echo ""
+          echo "❌ Deployment failed. Please review the troubleshooting steps above."
           exit 1
 
