@@ -1,12 +1,13 @@
 name: Frontend - Build & Deploy (Hostinger)
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # Manual trigger - uvijek dostupan
   push:
     branches: ["main"]
     paths:
-      - "frontend/**"
-      - ".github/workflows/frontend-uslugar.yml"
+      - "frontend/**"  # Ako frontend folder postoji
+      - "Uslugar/frontend/**"  # Ako frontend je u Uslugar folderu
+      - ".github/workflows/frontend-uslugar.yml"  # Promjene u workflow fajlu
 
 permissions:
   id-token: write
@@ -322,22 +323,37 @@ jobs:
         run: |
           echo "📤 Uploading .htaccess file..."
           
-          # Check if .htaccess exists in frontend directory
-          if [ -f "frontend/.htaccess" ]; then
-            echo "✅ Found .htaccess file"
+          # Check multiple locations for .htaccess file (like AWS workflow)
+          HTACCESS_FILE=""
+          if [ -f "${{ env.FRONTEND_DIR }}/.htaccess" ]; then
+            HTACCESS_FILE="${{ env.FRONTEND_DIR }}/.htaccess"
+            echo "✅ Found .htaccess at ${{ env.FRONTEND_DIR }}/.htaccess"
+          elif [ -f "${{ env.FRONTEND_DIR }}/public/.htaccess" ]; then
+            HTACCESS_FILE="${{ env.FRONTEND_DIR }}/public/.htaccess"
+            echo "✅ Found .htaccess at ${{ env.FRONTEND_DIR }}/public/.htaccess"
+          elif [ -f "${{ env.FRONTEND_DIR }}/${{ steps.detect.outputs.dir }}/.htaccess" ]; then
+            HTACCESS_FILE="${{ env.FRONTEND_DIR }}/${{ steps.detect.outputs.dir }}/.htaccess"
+            echo "✅ Found .htaccess at ${{ env.FRONTEND_DIR }}/${{ steps.detect.outputs.dir }}/.htaccess"
+          fi
+          
+          if [ -n "$HTACCESS_FILE" ]; then
+            echo "📤 Uploading $HTACCESS_FILE to ${{ env.SERVER_DIR }}.htaccess"
             
-            # Use curl to upload via FTP
-            curl -T frontend/.htaccess \
+            # Use curl to upload via FTP (try FTPS first, then FTP)
+            curl -T "$HTACCESS_FILE" \
               --ftp-ssl \
               --user "${{ env.FTP_USER }}:${{ env.FTP_PASS }}" \
               "ftps://${{ env.FTP_HOST }}/${{ env.SERVER_DIR }}.htaccess" \
-              || curl -T frontend/.htaccess \
+              || curl -T "$HTACCESS_FILE" \
                 --user "${{ env.FTP_USER }}:${{ env.FTP_PASS }}" \
                 "ftp://${{ env.FTP_HOST }}/${{ env.SERVER_DIR }}.htaccess"
             
             echo "✅ .htaccess uploaded successfully"
           else
-            echo "⚠️  .htaccess file not found at frontend/.htaccess"
+            echo "⚠️  .htaccess file not found in any expected location:"
+            echo "   - ${{ env.FRONTEND_DIR }}/.htaccess"
+            echo "   - ${{ env.FRONTEND_DIR }}/public/.htaccess"
+            echo "   - ${{ env.FRONTEND_DIR }}/${{ steps.detect.outputs.dir }}/.htaccess"
             echo "   Skipping .htaccess upload"
           fi
 

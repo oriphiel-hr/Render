@@ -1,0 +1,23 @@
+# Frontend Environment Variables
+
+# API URL za backend
+# Development (lokalno):
+VITE_API_URL=http://localhost:4000
+
+# Production (Hostinger - ako je backend na istom serveru):
+VITE_API_URL=https://uslugar.oriph.io
+
+# Production (Hostinger - ako je backend na subdomeni):
+VITE_API_URL=https://api.uslugar.oriph.io
+
+# Production (AWS ECS - stari backend):
+# VITE_API_URL=https://uslugar.api.oriph.io
+
+# Production (Render.com - novi backend):
+VITE_API_URL=https://api.uslugar.oriph.io
+
+# Napomena:
+# - NE stavljaj trailing slash (/)
+# - NE stavljaj /api na kraj - automatski se dodaje u kodu
+# - Kopiraj ovaj fajl u .env za development
+

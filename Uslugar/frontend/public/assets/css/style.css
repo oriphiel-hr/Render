@@ -1,0 +1,11 @@
+.crud-toolbar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin:.5rem 0}
+.crud-table{width:100%;border-collapse:collapse}
+.crud-table th,.crud-table td{border:1px solid #ddd;padding:.5rem}
+.crud-table th{background:#f6f6f6;text-align:left}
+.crud-badge{font:12px/1.2 monospace;background:#eef;padding:.1rem .3rem;border-radius:.2rem}
+.dialog{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center}
+.dialog .card{background:#fff;max-width:680px;width:95%;padding:1rem;border-radius:.5rem;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+.dialog .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem}
+.dialog label{font-size:.85rem;color:#555}
+.dialog input,.dialog select,.dialog textarea{width:100%;padding:.5rem;border:1px solid #ccc;border-radius:.35rem}
+.dialog .actions{display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem}

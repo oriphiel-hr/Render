@@ -1,0 +1,7 @@
+open $FTPHost
+user $FTPUser $FTPPass
+cd /public_html
+put dist/index.html index.html
+put dist/assets/index-B7Ef_2E4.js assets/index-B7Ef_2E4.js
+put dist/assets/index-CLI2WBqX.css assets/index-CLI2WBqX.css
+quit
