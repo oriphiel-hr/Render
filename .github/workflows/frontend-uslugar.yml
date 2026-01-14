@@ -16,9 +16,10 @@ env:
   FRONTEND_DIR: Uslugar/frontend
   BUILD_CMD: npm ci && npm run build
   DIST_DIR: Uslugar/frontend/dist
-  # ➜ Root of domain (public_html/) with TRAILING SLASH
-  # Hostinger FTP root is usually at /files/ level, so we need to add public_html/
-  SERVER_DIR: ${{ secrets.HOSTINGER_SERVER_DIR && secrets.HOSTINGER_SERVER_DIR || 'public_html/' }}
+  # ➜ Server directory - Hostinger FTP root is usually already IN public_html/
+  # So use "/" to avoid duplicate public_html/public_html/
+  # If your FTP root is NOT in public_html/, set HOSTINGER_SERVER_DIR secret to "public_html/"
+  SERVER_DIR: ${{ secrets.HOSTINGER_SERVER_DIR && secrets.HOSTINGER_SERVER_DIR || '/' }}
 
 jobs:
   build-and-deploy:
@@ -435,7 +436,8 @@ jobs:
           echo "     Example: ftp.uslugar.eu or 194.5.156.10"
           echo "   - HOSTINGER_USERNAME or FTP_USERNAME = your FTP username"
           echo "   - HOSTINGER_PASSWORD or FTP_PASSWORD = your FTP password"
-          echo "   - HOSTINGER_SERVER_DIR = public_html/ (optional, defaults to public_html/)"
+          echo "   - HOSTINGER_SERVER_DIR = / (optional, defaults to / - FTP root is already in public_html/)"
+          echo "     If you see 'public_html/public_html/' in URL, remove this secret or set it to '/'"
           echo ""
           echo "2. 🔍 Test connection manually with FileZilla:"
           echo "   - Host: ${{ env.FTP_HOST_FOR_DEBUG }}"
