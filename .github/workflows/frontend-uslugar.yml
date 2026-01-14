@@ -237,6 +237,15 @@ jobs:
           if [ -z "$DETERMINED_DIR" ] || [ "$DETERMINED_DIR" = "/" ]; then
             DETERMINED_DIR="/"
             echo "📌 Using root directory '/'"
+            echo ""
+            echo "⚠️  WARNING: Using root directory '/'"
+            echo "   This will upload files to FTP root (wherever you are after login)"
+            echo "   Based on your URL pattern (.../files/), this suggests FTP root is at /files/"
+            echo "   If you see '.../files/' without public_html/, you need to add public_html/"
+            echo ""
+            echo "💡 SOLUTION:"
+            echo "   → Update HOSTINGER_SERVER_DIR secret to 'public_html/'"
+            echo "   → Or remove the secret to use default 'public_html/'"
           else
             # Ensure trailing slash for non-root directories
             if [[ "$DETERMINED_DIR" != */ ]]; then
@@ -252,12 +261,19 @@ jobs:
           echo ""
           echo "📋 Expected result:"
           if [ "$DETERMINED_DIR" = "/" ]; then
-            echo "   Files will be uploaded to FTP root (wherever you are after login)"
-            echo "   If you see '.../files/' without public_html/, your FTP root is above public_html/"
-            echo "   → Try setting HOSTINGER_SERVER_DIR secret to 'public_html/'"
+            echo "   ❌ Files will be uploaded to FTP root"
+            echo "   ❌ Expected URL: .../files/ (WITHOUT public_html/)"
+            echo ""
+            echo "   ⚠️  This is probably WRONG for Hostinger!"
+            echo "   → Your files should be in public_html/"
+            echo "   → Update HOSTINGER_SERVER_DIR secret to 'public_html/'"
           else
-            echo "   Files will be uploaded to: $DETERMINED_DIR"
-            echo "   Expected URL: .../files/$DETERMINED_DIR"
+            echo "   ✅ Files will be uploaded to: $DETERMINED_DIR"
+            echo "   ✅ Expected URL: .../files/$DETERMINED_DIR"
+            if [ "$DETERMINED_DIR" = "public_html/" ]; then
+              echo ""
+              echo "   ✅ This is CORRECT for Hostinger structure!"
+            fi
           fi
 
       - name: Test FTP connection
