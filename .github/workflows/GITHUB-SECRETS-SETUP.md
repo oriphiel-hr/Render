@@ -67,11 +67,17 @@ Folder:            public_html
 
 **Name:** `HOSTINGER_SERVER_DIR`
 
-**Value:** `public_html/`
+**Value:** `/` (ili `public_html/` ako FTP root nije u public_html/)
 
 ⚠️ **VAŽNO:**
-- ✅ Uključi trailing slash: `public_html/`
-- Ako ne postaviš, default je `public_html/`
+- ✅ **Default je `/`** (FTP root je već u `public_html/`)
+- ✅ Ako FTP root nije u `public_html/`, koristi `public_html/`
+- ✅ Uključi trailing slash ako koristiš `public_html/`
+
+**Kako provjeriti:**
+- Spoji se na FTP s FileZilla
+- Ako se odmah nađeš u `public_html/` → koristi `/`
+- Ako vidiš root direktorij s `public_html/` folderom → koristi `public_html/`
 
 ---
 
@@ -80,7 +86,7 @@ Folder:            public_html
 - [ ] `HOSTINGER_HOST` = `194.5.156.10` (bez `ftp://`)
 - [ ] `HOSTINGER_USERNAME` = `u208993221.uslugar.eu`
 - [ ] `HOSTINGER_PASSWORD` = [tvoj password] (točan, bez razmaka)
-- [ ] `HOSTINGER_SERVER_DIR` = `public_html/` (opcionalno)
+- [ ] `HOSTINGER_SERVER_DIR` = `/` (opcionalno, default je `/` - FTP root je već u public_html/)
 
 ---
 
@@ -173,7 +179,7 @@ Folder:            public_html
 HOSTINGER_HOST = 194.5.156.10
 HOSTINGER_USERNAME = u208993221.uslugar.eu
 HOSTINGER_PASSWORD = [tvoj password]
-HOSTINGER_SERVER_DIR = public_html/
+HOSTINGER_SERVER_DIR = /  # Default je / (FTP root je već u public_html/)
 ```
 
 ---
