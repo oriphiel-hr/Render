@@ -1,0 +1,401 @@
+name: Frontend - Build & Deploy (Hostinger)
+
+on:
+  workflow_dispatch:  # Manual trigger - uvijek dostupan
+  push:
+    branches: ["main"]
+    paths:
+      - "Uslugar/frontend/**"  # Frontend je u Uslugar folderu
+      - ".github/workflows/frontend-uslugar.yml"  # Promjene u workflow fajlu
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  FRONTEND_DIR: Uslugar/frontend
+  BUILD_CMD: npm ci && npm run build
+  DIST_DIR: Uslugar/frontend/dist
+  # ➜ Root of domain (public_html/) with TRAILING SLASH
+  SERVER_DIR: ${{ secrets.HOSTINGER_SERVER_DIR && secrets.HOSTINGER_SERVER_DIR || 'public_html/' }}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Samo ako postoji package.json – pripremi lockfile za cache
+      - name: Ensure package-lock.json (if Node project)
+        run: |
+          set -e
+          if [ -f "${{ env.FRONTEND_DIR }}/package.json" ]; then
+            cd "${{ env.FRONTEND_DIR }}"
+            test -f package-lock.json || npm i --package-lock-only
+          else
+            echo "No package.json -> static site"
+          fi
+
+      - name: Setup Node (if Node project)
+        if: ${{ hashFiles(format('{0}/package.json', env.FRONTEND_DIR)) != '' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: ${{ env.FRONTEND_DIR }}/package-lock.json
+
+      - name: Detect framework (static aware)
+        id: fw
+        working-directory: ${{ env.FRONTEND_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          FW=$(node -e '
+            let p=null; try { p=require("./package.json"); } catch(e) {}
+            if(!p){ process.stdout.write("static"); process.exit(0); }
+            const d={...(p.dependencies||{}), ...(p.devDependencies||{})};
+            if (d.next) process.stdout.write("next");
+            else if (d.vite) process.stdout.write("vite");
+            else if (d["react-scripts"]) process.stdout.write("cra");
+            else if (d["@angular/cli"]) process.stdout.write("angular");
+            else process.stdout.write("unknown");
+          ')
+          echo "framework=$FW" >> "$GITHUB_OUTPUT"
+          echo "Detected: $FW"
+
+      - name: Build (skip for static)
+        if: ${{ steps.fw.outputs.framework != 'static' }}
+        working-directory: ${{ env.FRONTEND_DIR }}
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://api.uslugar.eu' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "${{ steps.fw.outputs.framework }}" in
+            next)
+              if npm run -s | grep -qE '^ *export *'; then
+                npm ci && npm run build && npm run export
+              else
+                npm ci && npm run build && npx --yes next export || true
+              fi
+              ;;
+            cra)
+              npm ci && npm run build
+              ;;
+            angular|vite|unknown)
+              eval "${BUILD_CMD}"
+              ;;
+          esac
+
+      - name: List artifacts (debug)
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: |
+          echo "== top =="; ls -la
+          echo "== dist =="; ls -la dist || true
+          echo "== build =="; ls -la build || true
+          echo "== out =="; ls -la out || true
+          echo "== .next =="; ls -la .next || true
+
+      - name: Detect output dir
+        id: detect
+        working-directory: ${{ env.FRONTEND_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          fw="${{ steps.fw.outputs.framework }}"
+          candidates=()
+          if [ "$fw" = "next" ]; then candidates+=("out" ".next"); fi
+          candidates+=("${DIST_DIR}" "dist" "build" "out" "public" ".")  # <-- dodali "."
+          echo "Candidates: ${candidates[*]}"
+          found=""
+          for d in "${candidates[@]}"; do
+            if [ -d "$d" ]; then
+              if [ -f "$d/index.html" ]; then found="$d"; break; fi
+              if [ "$d" != ".next" ] && [ "$(find "$d" -type f | wc -l)" -gt 0 ]; then found="$d"; break; fi
+            fi
+          done
+          if [ -z "$found" ] && [ -d ".next" ]; then
+            echo "SSR build (.next) se ne može deployati preko FTP-a bez servera."; exit 1
+          fi
+          if [ -z "$found" ]; then
+            echo "Nije nađen build output (index.html)."; exit 1
+          fi
+          echo "dir=$found" >> "$GITHUB_OUTPUT"
+          echo "Using: $found"
+
+      - name: Validate FTP Secrets
+        run: |
+          echo "🔍 Validating FTP configuration..."
+          
+          # Check for HOSTINGER secrets first, then fallback to generic FTP secrets
+          if [ -n "${{ secrets.HOSTINGER_HOST }}" ]; then
+            FTP_HOST="${{ secrets.HOSTINGER_HOST }}"
+            FTP_USER="${{ secrets.HOSTINGER_USERNAME }}"
+            FTP_PASS="${{ secrets.HOSTINGER_PASSWORD }}"
+            echo "✅ Using HOSTINGER_* secrets"
+          elif [ -n "${{ secrets.FTP_HOST }}" ]; then
+            FTP_HOST="${{ secrets.FTP_HOST }}"
+            FTP_USER="${{ secrets.FTP_USERNAME }}"
+            FTP_PASS="${{ secrets.FTP_PASSWORD }}"
+            echo "✅ Using FTP_* secrets (fallback)"
+          else
+            echo "❌ ERROR: No FTP secrets found!"
+            echo "   Required secrets (one of):"
+            echo "   - HOSTINGER_HOST, HOSTINGER_USERNAME, HOSTINGER_PASSWORD"
+            echo "   - FTP_HOST, FTP_USERNAME, FTP_PASSWORD"
+            echo "   Please add them in: Settings > Secrets and variables > Actions"
+            exit 1
+          fi
+          
+          if [ -z "$FTP_HOST" ]; then
+            echo "❌ ERROR: FTP host is missing!"
+            echo "   Please add HOSTINGER_HOST or FTP_HOST secret"
+            exit 1
+          fi
+          if [ -z "$FTP_USER" ]; then
+            echo "❌ ERROR: FTP username is missing!"
+            echo "   Please add HOSTINGER_USERNAME or FTP_USERNAME secret"
+            exit 1
+          fi
+          if [ -z "$FTP_PASS" ]; then
+            echo "❌ ERROR: FTP password is missing!"
+            echo "   Please add HOSTINGER_PASSWORD or FTP_PASSWORD secret"
+            exit 1
+          fi
+          
+          # Clean host format (remove protocol prefix if present)
+          CLEANED_HOST="$FTP_HOST"
+          if [[ "$CLEANED_HOST" == ftp://* ]]; then
+            CLEANED_HOST="${CLEANED_HOST#ftp://}"
+            echo "⚠️  Removed ftp:// prefix from host"
+          fi
+          if [[ "$CLEANED_HOST" == ftps://* ]]; then
+            CLEANED_HOST="${CLEANED_HOST#ftps://}"
+            echo "⚠️  Removed ftps:// prefix from host"
+          fi
+          if [[ "$CLEANED_HOST" == sftp://* ]]; then
+            CLEANED_HOST="${CLEANED_HOST#sftp://}"
+            echo "⚠️  Removed sftp:// prefix from host"
+          fi
+          # Remove trailing slash
+          CLEANED_HOST="${CLEANED_HOST%/}"
+          # Remove port if included in host
+          CLEANED_HOST="${CLEANED_HOST%:*}"
+          
+          echo "✅ All required secrets are present"
+          echo "   Original host: ${FTP_HOST:0:30}..."
+          echo "   Cleaned host: $CLEANED_HOST"
+          echo "   Username: $FTP_USER"
+          echo "   Password: [hidden]"
+          echo "   Server dir: ${{ env.SERVER_DIR }}"
+          
+          # Validate host format
+          if [[ "$CLEANED_HOST" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || [[ "$CLEANED_HOST" =~ ^[a-zA-Z0-9.-]+$ ]]; then
+            echo "✅ Host format is valid: $CLEANED_HOST"
+          else
+            echo "⚠️  WARNING: Host format may be invalid: $CLEANED_HOST"
+          fi
+          
+          # Export cleaned values for use in deployment steps
+          echo "FTP_HOST=$CLEANED_HOST" >> $GITHUB_ENV
+          echo "FTP_USER=$FTP_USER" >> $GITHUB_ENV
+          echo "FTP_PASS=$FTP_PASS" >> $GITHUB_ENV
+          
+          # Save for troubleshooting
+          echo "FTP_HOST_FOR_DEBUG=$CLEANED_HOST" >> $GITHUB_ENV
+
+      - name: Test FTP connection
+        continue-on-error: true
+        run: |
+          echo "🔍 Testing FTP connection..."
+          echo "Host: ${{ env.FTP_HOST }}"
+          echo "Port 21 test:"
+          timeout 15 bash -c "echo > /dev/tcp/${{ env.FTP_HOST }}/21" 2>/dev/null && echo "✅ Port 21 is reachable" || echo "❌ Port 21 timeout - server may be unreachable or firewall blocked"
+          echo ""
+          echo "Port 22 test (SFTP):"
+          timeout 15 bash -c "echo > /dev/tcp/${{ env.FTP_HOST }}/22" 2>/dev/null && echo "✅ Port 22 (SFTP) is reachable - consider using SFTP instead" || echo "⚠️  Port 22 also not reachable"
+          echo ""
+          echo "ℹ️  Troubleshooting:"
+          echo "   1. Verify FTP host: ${{ env.FTP_HOST }}"
+          echo "   2. Check GitHub Secrets are set correctly"
+          echo "   3. Server may only support SFTP (port 22)"
+          echo "   4. Firewall may block port 21"
+          echo "   5. Try manual deployment: Uslugar/frontend/deploy-frontend-ftp-fixed.ps1"
+
+      - name: Deploy via FTP (first attempt - passive mode)
+        id: deploy-ftp
+        continue-on-error: true
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+        with:
+          server: ${{ env.FTP_HOST }}
+          username: ${{ env.FTP_USER }}
+          password: ${{ env.FTP_PASS }}
+          protocol: 'ftp'
+          port: 21
+          local-dir: ${{ env.FRONTEND_DIR }}/${{ steps.detect.outputs.dir }}/
+          server-dir: ${{ env.SERVER_DIR }}
+          dangerous-clean-slate: false
+          timeout: 600000
+          log-level: verbose
+          security: loose
+          state-name: .ftp-deploy-sync-state.json
+          dry-run: false
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/.DS_Store
+
+      - name: Retry with FTPS (implicit)
+        if: steps.deploy-ftp.outcome == 'failure'
+        continue-on-error: true
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+        with:
+          server: ${{ env.FTP_HOST }}
+          username: ${{ env.FTP_USER }}
+          password: ${{ env.FTP_PASS }}
+          protocol: 'ftps'
+          port: 21
+          local-dir: ${{ env.FRONTEND_DIR }}/${{ steps.detect.outputs.dir }}/
+          server-dir: ${{ env.SERVER_DIR }}
+          dangerous-clean-slate: false
+          timeout: 600000
+          log-level: verbose
+          security: loose
+          state-name: .ftp-deploy-sync-state.json
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/.DS_Store
+
+      - name: Retry with FTPS (explicit)
+        if: steps.deploy-ftp.outcome == 'failure'
+        continue-on-error: true
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+        with:
+          server: ${{ env.FTP_HOST }}
+          username: ${{ env.FTP_USER }}
+          password: ${{ env.FTP_PASS }}
+          protocol: 'ftps'
+          port: 990
+          local-dir: ${{ env.FRONTEND_DIR }}/${{ steps.detect.outputs.dir }}/
+          server-dir: ${{ env.SERVER_DIR }}
+          dangerous-clean-slate: false
+          timeout: 600000
+          log-level: verbose
+          security: explicit
+          state-name: .ftp-deploy-sync-state.json
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/.DS_Store
+
+      - name: Final retry with FTPS-legacy
+        if: steps.deploy-ftp.outcome == 'failure'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+        with:
+          server: ${{ env.FTP_HOST }}
+          username: ${{ env.FTP_USER }}
+          password: ${{ env.FTP_PASS }}
+          protocol: 'ftps-legacy'
+          port: 21
+          local-dir: ${{ env.FRONTEND_DIR }}/${{ steps.detect.outputs.dir }}/
+          server-dir: ${{ env.SERVER_DIR }}
+          dangerous-clean-slate: false
+          timeout: 600000
+          log-level: verbose
+          security: loose
+          state-name: .ftp-deploy-sync-state.json
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/.DS_Store
+
+      - name: Upload .htaccess file
+        if: steps.deploy-ftp.outcome == 'success' || steps.deploy-ftp.outcome == 'failure'
+        continue-on-error: true
+        run: |
+          echo "📤 Uploading .htaccess file..."
+          
+          # Check multiple locations for .htaccess file (like AWS workflow)
+          HTACCESS_FILE=""
+          if [ -f "${{ env.FRONTEND_DIR }}/.htaccess" ]; then
+            HTACCESS_FILE="${{ env.FRONTEND_DIR }}/.htaccess"
+            echo "✅ Found .htaccess at ${{ env.FRONTEND_DIR }}/.htaccess"
+          elif [ -f "${{ env.FRONTEND_DIR }}/public/.htaccess" ]; then
+            HTACCESS_FILE="${{ env.FRONTEND_DIR }}/public/.htaccess"
+            echo "✅ Found .htaccess at ${{ env.FRONTEND_DIR }}/public/.htaccess"
+          elif [ -f "${{ env.FRONTEND_DIR }}/${{ steps.detect.outputs.dir }}/.htaccess" ]; then
+            HTACCESS_FILE="${{ env.FRONTEND_DIR }}/${{ steps.detect.outputs.dir }}/.htaccess"
+            echo "✅ Found .htaccess at ${{ env.FRONTEND_DIR }}/${{ steps.detect.outputs.dir }}/.htaccess"
+          fi
+          
+          if [ -n "$HTACCESS_FILE" ]; then
+            echo "📤 Uploading $HTACCESS_FILE to ${{ env.SERVER_DIR }}.htaccess"
+            
+            # Use curl to upload via FTP (try FTPS first, then FTP)
+            curl -T "$HTACCESS_FILE" \
+              --ftp-ssl \
+              --user "${{ env.FTP_USER }}:${{ env.FTP_PASS }}" \
+              "ftps://${{ env.FTP_HOST }}/${{ env.SERVER_DIR }}.htaccess" \
+              || curl -T "$HTACCESS_FILE" \
+                --user "${{ env.FTP_USER }}:${{ env.FTP_PASS }}" \
+                "ftp://${{ env.FTP_HOST }}/${{ env.SERVER_DIR }}.htaccess"
+            
+            echo "✅ .htaccess uploaded successfully"
+          else
+            echo "⚠️  .htaccess file not found in any expected location:"
+            echo "   - ${{ env.FRONTEND_DIR }}/.htaccess"
+            echo "   - ${{ env.FRONTEND_DIR }}/public/.htaccess"
+            echo "   - ${{ env.FRONTEND_DIR }}/${{ steps.detect.outputs.dir }}/.htaccess"
+            echo "   Skipping .htaccess upload"
+          fi
+
+      - name: Deployment failed - Troubleshooting info
+        if: steps.deploy-ftp.outcome == 'failure'
+        run: |
+          echo "❌ FTP Deployment failed after all retry attempts"
+          echo ""
+          echo "📋 Configuration used:"
+          echo "   Host: ${{ env.FTP_HOST_FOR_DEBUG }}"
+          echo "   Username: ${{ env.FTP_USER }}"
+          echo "   Server dir: ${{ env.SERVER_DIR }}"
+          echo ""
+          echo "🔍 Troubleshooting steps:"
+          echo ""
+          echo "1. Verify GitHub Secrets (Settings > Secrets and variables > Actions):"
+          echo "   ✅ HOSTINGER_HOST or FTP_HOST = hostname only (no ftp://, no port)"
+          echo "      Example: ftp.uslugar.eu or 194.5.156.10"
+          echo "   ✅ HOSTINGER_USERNAME or FTP_USERNAME = your FTP username"
+          echo "   ✅ HOSTINGER_PASSWORD or FTP_PASSWORD = your FTP password"
+          echo ""
+          echo "2. Test connection manually:"
+          echo "   - Use FileZilla: Host=${{ env.FTP_HOST_FOR_DEBUG }}, Port=21"
+          echo "   - Or use PowerShell: Uslugar/frontend/deploy-frontend-ftp-fixed.ps1"
+          echo ""
+          echo "3. Check server configuration:"
+          echo "   - Server may only support SFTP (port 22) not FTP (port 21)"
+          echo "   - Firewall may block port 21"
+          echo "   - Server may require passive mode"
+          echo ""
+          echo "4. Common fixes:"
+          echo "   - Remove 'ftp://' prefix from host secret"
+          echo "   - Remove port number from host (use default 21)"
+          echo "   - Verify credentials in Hostinger control panel"
+          echo "   - Check if server supports FTP (not just SFTP)"
+          echo ""
+          echo "5. Alternative deployment methods:"
+          echo "   📁 Manual: Run Uslugar/frontend/deploy-frontend-ftp-fixed.ps1 locally"
+          echo "   📁 FileZilla: Upload Uslugar/frontend/dist/* to public_html/"
+          echo "   📁 SSH: Use scp or rsync if SSH is available"
+          echo ""
+          echo "💡 If server only supports SFTP, consider:"
+          echo "   - Using SFTP action instead of FTP action"
+          echo "   - Or contact hosting provider to enable FTP/FTPS"
+          exit 1
+
