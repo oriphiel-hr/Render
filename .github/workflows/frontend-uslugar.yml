@@ -16,10 +16,10 @@ env:
   FRONTEND_DIR: Uslugar/frontend
   BUILD_CMD: npm ci && npm run build
   DIST_DIR: Uslugar/frontend/dist
-  # ➜ Server directory - Hostinger FTP root is usually already IN public_html/
-  # So use "/" to avoid duplicate public_html/public_html/
-  # If your FTP root is NOT in public_html/, set HOSTINGER_SERVER_DIR secret to "public_html/"
-  SERVER_DIR: ${{ secrets.HOSTINGER_SERVER_DIR && secrets.HOSTINGER_SERVER_DIR || '/' }}
+  # ➜ Server directory - will be determined in "Determine SERVER_DIR" step
+  # Based on URL pattern (.../files/), default is "public_html/"
+  # If you see duplicate public_html/public_html/, set HOSTINGER_SERVER_DIR secret to "/"
+  SERVER_DIR: ${{ secrets.HOSTINGER_SERVER_DIR && secrets.HOSTINGER_SERVER_DIR || '' }}
 
 jobs:
   build-and-deploy:
@@ -208,6 +208,41 @@ jobs:
           # Save for troubleshooting
           echo "FTP_HOST_FOR_DEBUG=$CLEANED_HOST" >> $GITHUB_ENV
 
+      - name: Determine SERVER_DIR based on structure
+        id: determine-dir
+        run: |
+          echo "🔍 Determining correct SERVER_DIR..."
+          echo ""
+          # If secret is set, use it
+          if [ -n "${{ secrets.HOSTINGER_SERVER_DIR }}" ]; then
+            DETERMINED_DIR="${{ secrets.HOSTINGER_SERVER_DIR }}"
+            echo "✅ Using HOSTINGER_SERVER_DIR secret: $DETERMINED_DIR"
+          else
+            # Based on URL pattern: .../files/ suggests FTP root is at /files/
+            # So we need to add public_html/ to get to .../files/public_html/
+            DETERMINED_DIR="public_html/"
+            echo "⚠️  No HOSTINGER_SERVER_DIR secret found"
+            echo "📋 Based on your URL pattern (.../files/), using: $DETERMINED_DIR"
+            echo ""
+            echo "ℹ️  If you see 'public_html/public_html/' in URL:"
+            echo "   → Your FTP root is already in public_html/"
+            echo "   → Set HOSTINGER_SERVER_DIR secret to '/'"
+            echo ""
+            echo "ℹ️  If files are in root (without public_html/):"
+            echo "   → Your FTP root is above public_html/"
+            echo "   → Set HOSTINGER_SERVER_DIR secret to 'public_html/' (current default)"
+          fi
+          
+          # Ensure trailing slash
+          if [[ "$DETERMINED_DIR" != */ && -n "$DETERMINED_DIR" ]]; then
+            DETERMINED_DIR="${DETERMINED_DIR}/"
+          fi
+          
+          echo "SERVER_DIR=$DETERMINED_DIR" >> $GITHUB_ENV
+          echo "determined_dir=$DETERMINED_DIR" >> $GITHUB_OUTPUT
+          echo ""
+          echo "✅ Final SERVER_DIR: $DETERMINED_DIR"
+
       - name: Test FTP connection
         continue-on-error: true
         run: |
@@ -259,7 +294,7 @@ jobs:
           protocol: 'ftp'
           port: 21
           local-dir: ${{ env.FRONTEND_DIR }}/${{ steps.detect.outputs.dir }}/
-          server-dir: ${{ env.SERVER_DIR }}
+          server-dir: ${{ env.SERVER_DIR || steps.determine-dir.outputs.determined_dir }}
           dangerous-clean-slate: false
           timeout: 600000
           log-level: verbose
@@ -282,7 +317,7 @@ jobs:
           protocol: 'ftp'
           port: 21
           local-dir: ${{ env.FRONTEND_DIR }}/${{ steps.detect.outputs.dir }}/
-          server-dir: ${{ env.SERVER_DIR }}
+          server-dir: ${{ env.SERVER_DIR || steps.determine-dir.outputs.determined_dir }}
           dangerous-clean-slate: false
           timeout: 600000
           log-level: verbose
@@ -304,7 +339,7 @@ jobs:
           protocol: 'ftps'
           port: 21
           local-dir: ${{ env.FRONTEND_DIR }}/${{ steps.detect.outputs.dir }}/
-          server-dir: ${{ env.SERVER_DIR }}
+          server-dir: ${{ env.SERVER_DIR || steps.determine-dir.outputs.determined_dir }}
           dangerous-clean-slate: false
           timeout: 600000
           log-level: verbose
@@ -327,7 +362,7 @@ jobs:
           protocol: 'ftps'
           port: 990
           local-dir: ${{ env.FRONTEND_DIR }}/${{ steps.detect.outputs.dir }}/
-          server-dir: ${{ env.SERVER_DIR }}
+          server-dir: ${{ env.SERVER_DIR || steps.determine-dir.outputs.determined_dir }}
           dangerous-clean-slate: false
           timeout: 600000
           log-level: verbose
@@ -350,7 +385,7 @@ jobs:
           protocol: 'sftp'
           port: 22
           local-dir: ${{ env.FRONTEND_DIR }}/${{ steps.detect.outputs.dir }}/
-          server-dir: ${{ env.SERVER_DIR }}
+          server-dir: ${{ env.SERVER_DIR || steps.determine-dir.outputs.determined_dir }}
           dangerous-clean-slate: false
           timeout: 600000
           log-level: verbose
@@ -381,16 +416,17 @@ jobs:
           fi
           
           if [ -n "$HTACCESS_FILE" ]; then
-            echo "📤 Uploading $HTACCESS_FILE to ${{ env.SERVER_DIR }}.htaccess"
+            SERVER_DIR_VALUE="${{ env.SERVER_DIR || steps.determine-dir.outputs.determined_dir }}"
+            echo "📤 Uploading $HTACCESS_FILE to ${SERVER_DIR_VALUE}.htaccess"
             
             # Use curl to upload via FTP (try plain FTP first, then FTPS)
             curl -T "$HTACCESS_FILE" \
               --user "${{ env.FTP_USER }}:${{ env.FTP_PASS }}" \
-              "ftp://${{ env.FTP_HOST }}/${{ env.SERVER_DIR }}.htaccess" \
+              "ftp://${{ env.FTP_HOST }}/${SERVER_DIR_VALUE}.htaccess" \
               || curl -T "$HTACCESS_FILE" \
                 --ftp-ssl \
                 --user "${{ env.FTP_USER }}:${{ env.FTP_PASS }}" \
-                "ftps://${{ env.FTP_HOST }}/${{ env.SERVER_DIR }}.htaccess"
+                "ftps://${{ env.FTP_HOST }}/${SERVER_DIR_VALUE}.htaccess"
             
             echo "✅ .htaccess uploaded successfully"
           else
