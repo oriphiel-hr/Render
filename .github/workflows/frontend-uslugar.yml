@@ -216,13 +216,13 @@ jobs:
           # If secret is set, use it
           if [ -n "${{ secrets.HOSTINGER_SERVER_DIR }}" ]; then
             DETERMINED_DIR="${{ secrets.HOSTINGER_SERVER_DIR }}"
-            echo "✅ Using HOSTINGER_SERVER_DIR secret: $DETERMINED_DIR"
+            echo "✅ Using HOSTINGER_SERVER_DIR secret: '$DETERMINED_DIR'"
           else
             # Based on URL pattern: .../files/ suggests FTP root is at /files/
             # So we need to add public_html/ to get to .../files/public_html/
             DETERMINED_DIR="public_html/"
             echo "⚠️  No HOSTINGER_SERVER_DIR secret found"
-            echo "📋 Based on your URL pattern (.../files/), using: $DETERMINED_DIR"
+            echo "📋 Based on your URL pattern (.../files/), using: '$DETERMINED_DIR'"
             echo ""
             echo "ℹ️  If you see 'public_html/public_html/' in URL:"
             echo "   → Your FTP root is already in public_html/"
@@ -233,15 +233,32 @@ jobs:
             echo "   → Set HOSTINGER_SERVER_DIR secret to 'public_html/' (current default)"
           fi
           
-          # Ensure trailing slash
-          if [[ "$DETERMINED_DIR" != */ && -n "$DETERMINED_DIR" ]]; then
-            DETERMINED_DIR="${DETERMINED_DIR}/"
+          # Handle empty string (means use root)
+          if [ -z "$DETERMINED_DIR" ] || [ "$DETERMINED_DIR" = "/" ]; then
+            DETERMINED_DIR="/"
+            echo "📌 Using root directory '/'"
+          else
+            # Ensure trailing slash for non-root directories
+            if [[ "$DETERMINED_DIR" != */ ]]; then
+              DETERMINED_DIR="${DETERMINED_DIR}/"
+            fi
+            echo "📌 Using directory: '$DETERMINED_DIR'"
           fi
           
           echo "SERVER_DIR=$DETERMINED_DIR" >> $GITHUB_ENV
           echo "determined_dir=$DETERMINED_DIR" >> $GITHUB_OUTPUT
           echo ""
-          echo "✅ Final SERVER_DIR: $DETERMINED_DIR"
+          echo "✅ Final SERVER_DIR: '$DETERMINED_DIR'"
+          echo ""
+          echo "📋 Expected result:"
+          if [ "$DETERMINED_DIR" = "/" ]; then
+            echo "   Files will be uploaded to FTP root (wherever you are after login)"
+            echo "   If you see '.../files/' without public_html/, your FTP root is above public_html/"
+            echo "   → Try setting HOSTINGER_SERVER_DIR secret to 'public_html/'"
+          else
+            echo "   Files will be uploaded to: $DETERMINED_DIR"
+            echo "   Expected URL: .../files/$DETERMINED_DIR"
+          fi
 
       - name: Test FTP connection
         continue-on-error: true
