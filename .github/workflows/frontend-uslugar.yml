@@ -215,37 +215,40 @@ jobs:
           echo ""
           # If secret is set, use it
           if [ -n "${{ secrets.HOSTINGER_SERVER_DIR }}" ]; then
-            DETERMINED_DIR="${{ secrets.HOSTINGER_SERVER_DIR }}"
-            echo "✅ Using HOSTINGER_SERVER_DIR secret: '$DETERMINED_DIR'"
+            SECRET_VALUE="${{ secrets.HOSTINGER_SERVER_DIR }}"
+            echo "✅ HOSTINGER_SERVER_DIR secret is set"
+            echo "   Secret value: '$SECRET_VALUE'"
+            echo ""
+            
+            # If secret is "public_html/" but we get duplicate, FTP root is already in public_html/
+            # So we should use "/" instead
+            if [ "$SECRET_VALUE" = "public_html/" ] || [ "$SECRET_VALUE" = "public_html" ]; then
+              echo "⚠️  WARNING: Secret is set to 'public_html/'"
+              echo "   If you see 'public_html/public_html/' in URL, your FTP root is already in public_html/"
+              echo "   → Change secret to '/' to fix duplicate"
+              echo ""
+              echo "💡 Try this: Set HOSTINGER_SERVER_DIR secret to '/'"
+            fi
+            
+            DETERMINED_DIR="$SECRET_VALUE"
           else
-            # Based on URL pattern: .../files/ suggests FTP root is at /files/
-            # So we need to add public_html/ to get to .../files/public_html/
-            DETERMINED_DIR="public_html/"
+            # Default: try "/" first (most Hostinger accounts are already in public_html/)
+            DETERMINED_DIR="/"
             echo "⚠️  No HOSTINGER_SERVER_DIR secret found"
-            echo "📋 Based on your URL pattern (.../files/), using: '$DETERMINED_DIR'"
+            echo "📋 Using default: '/' (FTP root is usually already in public_html/)"
             echo ""
-            echo "ℹ️  If you see 'public_html/public_html/' in URL:"
-            echo "   → Your FTP root is already in public_html/"
-            echo "   → Set HOSTINGER_SERVER_DIR secret to '/'"
-            echo ""
-            echo "ℹ️  If files are in root (without public_html/):"
+            echo "ℹ️  If you see '.../files/' without public_html/:"
             echo "   → Your FTP root is above public_html/"
-            echo "   → Set HOSTINGER_SERVER_DIR secret to 'public_html/' (current default)"
+            echo "   → Set HOSTINGER_SERVER_DIR secret to 'public_html/'"
+            echo ""
+            echo "ℹ️  If you see '.../files/public_html/':"
+            echo "   → Perfect! Current configuration is correct"
           fi
           
           # Handle empty string (means use root)
           if [ -z "$DETERMINED_DIR" ] || [ "$DETERMINED_DIR" = "/" ]; then
             DETERMINED_DIR="/"
             echo "📌 Using root directory '/'"
-            echo ""
-            echo "⚠️  WARNING: Using root directory '/'"
-            echo "   This will upload files to FTP root (wherever you are after login)"
-            echo "   Based on your URL pattern (.../files/), this suggests FTP root is at /files/"
-            echo "   If you see '.../files/' without public_html/, you need to add public_html/"
-            echo ""
-            echo "💡 SOLUTION:"
-            echo "   → Update HOSTINGER_SERVER_DIR secret to 'public_html/'"
-            echo "   → Or remove the secret to use default 'public_html/'"
           else
             # Ensure trailing slash for non-root directories
             if [[ "$DETERMINED_DIR" != */ ]]; then
@@ -261,19 +264,12 @@ jobs:
           echo ""
           echo "📋 Expected result:"
           if [ "$DETERMINED_DIR" = "/" ]; then
-            echo "   ❌ Files will be uploaded to FTP root"
-            echo "   ❌ Expected URL: .../files/ (WITHOUT public_html/)"
-            echo ""
-            echo "   ⚠️  This is probably WRONG for Hostinger!"
-            echo "   → Your files should be in public_html/"
-            echo "   → Update HOSTINGER_SERVER_DIR secret to 'public_html/'"
+            echo "   ✅ Files will be uploaded to FTP root (wherever you are after login)"
+            echo "   ✅ Expected URL: .../files/public_html/ (if FTP root is in public_html/)"
+            echo "   ✅ Or: .../files/ (if FTP root is above public_html/)"
           else
             echo "   ✅ Files will be uploaded to: $DETERMINED_DIR"
             echo "   ✅ Expected URL: .../files/$DETERMINED_DIR"
-            if [ "$DETERMINED_DIR" = "public_html/" ]; then
-              echo ""
-              echo "   ✅ This is CORRECT for Hostinger structure!"
-            fi
           fi
 
       - name: Test FTP connection
@@ -449,17 +445,31 @@ jobs:
           fi
           
           if [ -n "$HTACCESS_FILE" ]; then
+            # Get SERVER_DIR value (handle both / and public_html/)
             SERVER_DIR_VALUE="${{ env.SERVER_DIR || steps.determine-dir.outputs.determined_dir }}"
-            echo "📤 Uploading $HTACCESS_FILE to ${SERVER_DIR_VALUE}.htaccess"
+            
+            # Handle root directory - use empty string for curl
+            if [ "$SERVER_DIR_VALUE" = "/" ]; then
+              SERVER_DIR_VALUE=""
+            fi
+            
+            # Build full path
+            if [ -z "$SERVER_DIR_VALUE" ]; then
+              HTACCESS_PATH=".htaccess"
+            else
+              HTACCESS_PATH="${SERVER_DIR_VALUE}.htaccess"
+            fi
+            
+            echo "📤 Uploading $HTACCESS_FILE to $HTACCESS_PATH"
             
             # Use curl to upload via FTP (try plain FTP first, then FTPS)
             curl -T "$HTACCESS_FILE" \
               --user "${{ env.FTP_USER }}:${{ env.FTP_PASS }}" \
-              "ftp://${{ env.FTP_HOST }}/${SERVER_DIR_VALUE}.htaccess" \
+              "ftp://${{ env.FTP_HOST }}/$HTACCESS_PATH" \
               || curl -T "$HTACCESS_FILE" \
-                --ftp-ssl \
+                --ftp-ssl-reqd \
                 --user "${{ env.FTP_USER }}:${{ env.FTP_PASS }}" \
-                "ftps://${{ env.FTP_HOST }}/${SERVER_DIR_VALUE}.htaccess"
+                "ftps://${{ env.FTP_HOST }}/$HTACCESS_PATH"
             
             echo "✅ .htaccess uploaded successfully"
           else
