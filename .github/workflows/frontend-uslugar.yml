@@ -17,6 +17,7 @@ env:
   BUILD_CMD: npm ci && npm run build
   DIST_DIR: Uslugar/frontend/dist
   # ➜ Root of domain (public_html/) with TRAILING SLASH
+  # If FTP root is already in public_html/, use "/" instead
   SERVER_DIR: ${{ secrets.HOSTINGER_SERVER_DIR && secrets.HOSTINGER_SERVER_DIR || 'public_html/' }}
 
 jobs:
@@ -211,18 +212,40 @@ jobs:
         run: |
           echo "🔍 Testing FTP connection..."
           echo "Host: ${{ env.FTP_HOST }}"
-          echo "Port 21 test:"
-          timeout 15 bash -c "echo > /dev/tcp/${{ env.FTP_HOST }}/21" 2>/dev/null && echo "✅ Port 21 is reachable" || echo "❌ Port 21 timeout - server may be unreachable or firewall blocked"
           echo ""
-          echo "Port 22 test (SFTP):"
-          timeout 15 bash -c "echo > /dev/tcp/${{ env.FTP_HOST }}/22" 2>/dev/null && echo "✅ Port 22 (SFTP) is reachable - consider using SFTP instead" || echo "⚠️  Port 22 also not reachable"
+          echo "Testing port 21 (FTP):"
+          if timeout 10 bash -c "echo > /dev/tcp/${{ env.FTP_HOST }}/21" 2>/dev/null; then
+            echo "✅ Port 21 is reachable"
+          else
+            echo "❌ Port 21 timeout - server may be unreachable or firewall blocked"
+            echo "   This could mean:"
+            echo "   - Firewall blocks port 21"
+            echo "   - Server doesn't support FTP on port 21"
+            echo "   - Network connectivity issue"
+            echo "   - Host/IP address is incorrect"
+          fi
+          echo ""
+          echo "Testing port 22 (SFTP):"
+          if timeout 10 bash -c "echo > /dev/tcp/${{ env.FTP_HOST }}/22" 2>/dev/null; then
+            echo "✅ Port 22 (SFTP) is reachable - will try SFTP as fallback"
+          else
+            echo "⚠️  Port 22 also not reachable"
+          fi
+          echo ""
+          echo "Testing port 990 (FTPS):"
+          if timeout 10 bash -c "echo > /dev/tcp/${{ env.FTP_HOST }}/990" 2>/dev/null; then
+            echo "✅ Port 990 (FTPS) is reachable"
+          else
+            echo "⚠️  Port 990 not reachable"
+          fi
           echo ""
           echo "ℹ️  Troubleshooting:"
           echo "   1. Verify FTP host: ${{ env.FTP_HOST }}"
           echo "   2. Check GitHub Secrets are set correctly"
-          echo "   3. Server may only support SFTP (port 22)"
-          echo "   4. Firewall may block port 21"
-          echo "   5. Try manual deployment: Uslugar/frontend/deploy-frontend-ftp-fixed.ps1"
+          echo "   3. Test connection manually with FileZilla"
+          echo "   4. Server may only support SFTP (port 22)"
+          echo "   5. Firewall may block port 21"
+          echo "   6. Try manual deployment: Uslugar/frontend/deploy-frontend-ftp-fixed.ps1"
 
       - name: Deploy via FTP (plain FTP - first attempt)
         id: deploy-ftp
