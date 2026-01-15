@@ -152,6 +152,17 @@ app.use((req, res, next) => {
 
 // Remove cors package middleware - our custom middleware handles everything
 
+// UTF-8 encoding middleware - ensure all JSON responses have charset=utf-8
+app.use((req, res, next) => {
+  // Override res.json to always set charset=utf-8
+  const originalJson = res.json.bind(res);
+  res.json = function(data) {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    return originalJson(data);
+  };
+  next();
+});
+
 // ostali middlewares
 app.use(express.json())
 app.use(morgan('dev'))
