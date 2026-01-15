@@ -145,20 +145,18 @@ jobs:
           echo "FTP_PASS=$FTP_PASS" >> $GITHUB_ENV
           echo "FTP_HOST_FOR_DEBUG=$CLEANED_HOST" >> $GITHUB_ENV
 
-      - name: Auto-detect FTP structure
-        id: detect-ftp
-        continue-on-error: true
-        env:
-          FTP_HOST: ${{ env.FTP_HOST }}
-          FTP_USER: ${{ env.FTP_USER }}
-          FTP_PASS: ${{ env.FTP_PASS }}
-          HOSTINGER_SERVER_DIR: ${{ secrets.HOSTINGER_SERVER_DIR }}
-        run: |
-          python3 .github/workflows/detect-ftp-structure.py
 
       - name: Determine SERVER_DIR based on structure
         id: determine-dir
         run: |
+          # Use secret if set, otherwise use default (auto-detection removed)
+          if [ -n "${{ secrets.HOSTINGER_SERVER_DIR }}" ]; then
+            DETERMINED_DIR="${{ secrets.HOSTINGER_SERVER_DIR }}"
+            echo "✅ Using HOSTINGER_SERVER_DIR secret: $DETERMINED_DIR"
+          else
+            DETERMINED_DIR="public_html/"
+            echo "⚠️  Using default: $DETERMINED_DIR"
+          fi
           # Priority: 1. Secret (if set), 2. Auto-detection, 3. Default
           if [ -n "${{ secrets.HOSTINGER_SERVER_DIR }}" ]; then
             DETERMINED_DIR="${{ secrets.HOSTINGER_SERVER_DIR }}"
