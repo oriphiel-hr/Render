@@ -92,7 +92,7 @@ if __name__ == "__main__":
     github_env = os.environ.get('GITHUB_ENV')
     if github_env:
         with open(github_env, 'a') as f:
-            f.write(f"SERVER_DIR={result}\n")
+            # Removed: SERVER_DIR should only be set in Determine SERVER_DIR step, not here
     
     # Save to output
     github_output = os.environ.get('GITHUB_OUTPUT')
