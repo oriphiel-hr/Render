@@ -15,7 +15,7 @@ def detect_ftp_structure():
     
     if not all([ftp_host, ftp_user, ftp_pass]):
         print("❌ Missing FTP credentials")
-        return "public_html/"  # Default fallback
+        return "/"  # Default fallback - avoid duplicate public_html/public_html/
     
     try:
         print(f"🔌 Connecting to {ftp_host}...")
@@ -51,7 +51,7 @@ def detect_ftp_structure():
             print(f"\n✅ DETECTION: FTP root is already IN public_html/")
             print(f"   → Will use '/' (upload to current directory = public_html/)")
         elif public_html_exists:
-            determined_dir = "public_html/"
+            determined_dir = "/"  # Default to "/" to avoid duplicate
             print(f"\n✅ DETECTION: public_html/ folder exists, FTP root is above it")
             print(f"   → Will use 'public_html/' (upload to public_html/)")
         else:
@@ -59,7 +59,7 @@ def detect_ftp_structure():
                 determined_dir = secret_value
                 print(f"\n⚠️  Could not detect structure, using secret: '{secret_value}'")
             else:
-                determined_dir = "public_html/"
+                determined_dir = "/"  # Default to "/" to avoid duplicate
                 print(f"\n⚠️  Could not detect structure, using default: 'public_html/'")
         
         if determined_dir != "/" and not determined_dir.endswith("/"):
@@ -77,7 +77,7 @@ def detect_ftp_structure():
         if secret_value:
             determined_dir = secret_value
         else:
-            determined_dir = "public_html/"
+            determined_dir = "/"  # Default to "/" to avoid duplicate
         
         if determined_dir != "/" and not determined_dir.endswith("/"):
             determined_dir += "/"

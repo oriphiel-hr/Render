@@ -165,7 +165,7 @@ jobs:
           elif [ -n "${{ secrets.HOSTINGER_SERVER_DIR }}" ]; then
             DETERMINED_DIR="${{ secrets.HOSTINGER_SERVER_DIR }}"
           else
-            DETERMINED_DIR="public_html/"
+            DETERMINED_DIR="/"  # Default to "/" to avoid duplicate public_html/public_html/ if FTP root is already at public_html/
           fi
           if [ "$DETERMINED_DIR" != "/" ] && [[ "$DETERMINED_DIR" != */ ]]; then
             DETERMINED_DIR="${DETERMINED_DIR}/"
