@@ -150,15 +150,14 @@ jobs:
         id: determine-dir
         run: |
           # Use secret if set, otherwise use default (auto-detection removed to prevent duplication)
+          # Default is '/' because FTP root is already in public_html/ for Hostinger
           if [ -n "${{ secrets.HOSTINGER_SERVER_DIR }}" ]; then
             DETERMINED_DIR="${{ secrets.HOSTINGER_SERVER_DIR }}"
             echo "✅ Using HOSTINGER_SERVER_DIR secret: [$DETERMINED_DIR]"
-            echo "⚠️  If you get public_html/public_html/, your FTP root is already in public_html/"
-            echo "⚠️  Set secret to '/' instead of 'public_html/'"
           else
-            DETERMINED_DIR="public_html/"
-            echo "⚠️  Using default: [$DETERMINED_DIR]"
-            echo "ℹ️  If you get public_html/public_html/, set HOSTINGER_SERVER_DIR secret to '/'"
+            DETERMINED_DIR="/"
+            echo "⚠️  Using default: [$DETERMINED_DIR] (FTP root is already in public_html/)"
+            echo "ℹ️  To use different directory, set HOSTINGER_SERVER_DIR secret"
           fi
           # Ensure trailing slash (except for "/")
           if [ "$DETERMINED_DIR" != "/" ] && [[ "$DETERMINED_DIR" != */ ]]; then
