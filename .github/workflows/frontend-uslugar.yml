@@ -152,7 +152,7 @@ jobs:
           FTP_HOST: ${{ env.FTP_HOST }}
           FTP_USER: ${{ env.FTP_USER }}
           FTP_PASS: ${{ env.FTP_PASS }}
-          HOSTINGER_# SERVER_DIR removed - determined dynamically in 'Determine SERVER_DIR' step
+          HOSTINGER_SERVER_DIR: ${{ secrets.HOSTINGER_SERVER_DIR }}
         run: |
           python3 .github/workflows/detect-ftp-structure.py
 
