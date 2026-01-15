@@ -213,36 +213,42 @@ jobs:
         run: |
           echo "🔍 Determining correct SERVER_DIR..."
           echo ""
+          echo "📋 Based on your URL pattern: .../files/"
+          echo "   This suggests FTP root is at /files/ level"
+          echo "   Files should be in: .../files/public_html/"
+          echo ""
+          
           # If secret is set, use it
           if [ -n "${{ secrets.HOSTINGER_SERVER_DIR }}" ]; then
             SECRET_VALUE="${{ secrets.HOSTINGER_SERVER_DIR }}"
-            echo "✅ HOSTINGER_SERVER_DIR secret is set"
-            echo "   Secret value: '$SECRET_VALUE'"
+            echo "✅ HOSTINGER_SERVER_DIR secret is set: '$SECRET_VALUE'"
             echo ""
             
-            # If secret is "public_html/" but we get duplicate, FTP root is already in public_html/
-            # So we should use "/" instead
-            if [ "$SECRET_VALUE" = "public_html/" ] || [ "$SECRET_VALUE" = "public_html" ]; then
-              echo "⚠️  WARNING: Secret is set to 'public_html/'"
-              echo "   If you see 'public_html/public_html/' in URL, your FTP root is already in public_html/"
+            # Analyze secret value
+            if [ "$SECRET_VALUE" = "/" ] || [ -z "$SECRET_VALUE" ]; then
+              echo "⚠️  Secret is set to '/' (root)"
+              echo "   If you see '.../files/' without public_html/, you need to add public_html/"
+              echo "   → Change secret to 'public_html/'"
+            elif [ "$SECRET_VALUE" = "public_html/" ] || [ "$SECRET_VALUE" = "public_html" ]; then
+              echo "✅ Secret is set to 'public_html/'"
+              echo "   If you see 'public_html/public_html/' in URL, FTP root is already in public_html/"
               echo "   → Change secret to '/' to fix duplicate"
-              echo ""
-              echo "💡 Try this: Set HOSTINGER_SERVER_DIR secret to '/'"
             fi
             
             DETERMINED_DIR="$SECRET_VALUE"
           else
-            # Default: try "/" first (most Hostinger accounts are already in public_html/)
-            DETERMINED_DIR="/"
+            # Default: use "public_html/" because URL shows .../files/ (needs public_html/)
+            DETERMINED_DIR="public_html/"
             echo "⚠️  No HOSTINGER_SERVER_DIR secret found"
-            echo "📋 Using default: '/' (FTP root is usually already in public_html/)"
+            echo "📋 Using default: 'public_html/' (to get .../files/public_html/)"
+            echo ""
+            echo "ℹ️  If you see 'public_html/public_html/' in URL:"
+            echo "   → Your FTP root is already in public_html/"
+            echo "   → Set HOSTINGER_SERVER_DIR secret to '/'"
             echo ""
             echo "ℹ️  If you see '.../files/' without public_html/:"
             echo "   → Your FTP root is above public_html/"
-            echo "   → Set HOSTINGER_SERVER_DIR secret to 'public_html/'"
-            echo ""
-            echo "ℹ️  If you see '.../files/public_html/':"
-            echo "   → Perfect! Current configuration is correct"
+            echo "   → Keep default 'public_html/' or set secret to 'public_html/'"
           fi
           
           # Handle empty string (means use root)
@@ -264,12 +270,19 @@ jobs:
           echo ""
           echo "📋 Expected result:"
           if [ "$DETERMINED_DIR" = "/" ]; then
-            echo "   ✅ Files will be uploaded to FTP root (wherever you are after login)"
-            echo "   ✅ Expected URL: .../files/public_html/ (if FTP root is in public_html/)"
-            echo "   ✅ Or: .../files/ (if FTP root is above public_html/)"
+            echo "   Files will be uploaded to FTP root"
+            echo "   Expected URL: .../files/ (if FTP root is at /files/)"
+            echo "   OR: .../files/public_html/ (if FTP root is already in public_html/)"
+            echo ""
+            echo "   ⚠️  If you see '.../files/' without public_html/, change secret to 'public_html/'"
           else
-            echo "   ✅ Files will be uploaded to: $DETERMINED_DIR"
-            echo "   ✅ Expected URL: .../files/$DETERMINED_DIR"
+            echo "   Files will be uploaded to: $DETERMINED_DIR"
+            echo "   Expected URL: .../files/$DETERMINED_DIR"
+            echo ""
+            if [ "$DETERMINED_DIR" = "public_html/" ]; then
+              echo "   ✅ This should give: .../files/public_html/"
+              echo "   ⚠️  If you see '.../files/public_html/public_html/', change secret to '/'"
+            fi
           fi
 
       - name: Test FTP connection
