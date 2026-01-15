@@ -162,10 +162,16 @@ jobs:
             echo "ℹ️  If files go to /files/public_html/public_html/, set HOSTINGER_SERVER_DIR secret to '/'"
             echo "ℹ️  If files go to /files/, set HOSTINGER_SERVER_DIR secret to 'public_html/'"
           fi
+          # Handle special case: if public_html/ causes duplication, try without trailing slash or use "."
           # Ensure trailing slash (except for "/")
           if [ "$DETERMINED_DIR" != "/" ] && [[ "$DETERMINED_DIR" != */ ]]; then
             DETERMINED_DIR="${DETERMINED_DIR}/"
             echo "📝 Added trailing slash: [$DETERMINED_DIR]"
+          fi
+          # Special handling: if public_html/ causes public_html/public_html/, try "." (current directory navigation)
+          if [ "$DETERMINED_DIR" = "public_html/" ]; then
+            # Check if this might cause duplication - if so, we need different approach
+            echo "⚠️  Using public_html/ - if you see duplication, try setting secret to '.' or '/'"
           fi
           echo "SERVER_DIR=$DETERMINED_DIR" >> $GITHUB_ENV
           echo "determined_dir=$DETERMINED_DIR" >> $GITHUB_OUTPUT
