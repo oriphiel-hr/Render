@@ -33,75 +33,106 @@ r.post('/seed', auth(true, ['ADMIN']), async (req, res, next) => {
     const { fileURLToPath } = await import('url');
     const { dirname, join, resolve } = await import('path');
     
-    // Koristi process.cwd() za root direktorij projekta
-    const projectRoot = process.cwd();
+    // Koristi __dirname za lokaciju trenutnog fajla (backend/src/routes)
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
     
-    // Provjeri više mogućih lokacija
-    const possiblePaths = [
-      join(projectRoot, 'TEST-PLAN-FRONTEND.md'),
-      join(projectRoot, 'TEST-PLAN-ADMIN.md'),
-      // Fallback na relativne putanje
-      join(projectRoot, 'backend', 'TEST-PLAN-FRONTEND.md'),
-      join(projectRoot, 'backend', 'TEST-PLAN-ADMIN.md'),
+    // Pronađi root projekta - idemo gore od backend/src/routes do root
+    // backend/src/routes -> backend/src -> backend -> root
+    const routesDir = __dirname; // backend/src/routes
+    const srcDir = dirname(routesDir); // backend/src
+    const backendDir = dirname(srcDir); // backend
+    const projectRoot = dirname(backendDir); // root projekta
+    
+    // Provjeri više mogućih lokacija (prioritetni redoslijed)
+    const possibleFrontendPaths = [
+      join(projectRoot, 'TEST-PLAN-FRONTEND.md'),           // root/TEST-PLAN-FRONTEND.md
+      join(backendDir, 'TEST-PLAN-FRONTEND.md'),            // backend/TEST-PLAN-FRONTEND.md
+      join(process.cwd(), 'TEST-PLAN-FRONTEND.md'),         // process.cwd()/TEST-PLAN-FRONTEND.md
+      resolve(process.cwd(), '..', 'TEST-PLAN-FRONTEND.md'), // ../TEST-PLAN-FRONTEND.md (za Render)
+      join(projectRoot, 'backend', 'TEST-PLAN-FRONTEND.md'), // root/backend/TEST-PLAN-FRONTEND.md
+    ];
+    
+    const possibleAdminPaths = [
+      join(projectRoot, 'TEST-PLAN-ADMIN.md'),              // root/TEST-PLAN-ADMIN.md
+      join(backendDir, 'TEST-PLAN-ADMIN.md'),              // backend/TEST-PLAN-ADMIN.md
+      join(process.cwd(), 'TEST-PLAN-ADMIN.md'),            // process.cwd()/TEST-PLAN-ADMIN.md
+      resolve(process.cwd(), '..', 'TEST-PLAN-ADMIN.md'),   // ../TEST-PLAN-ADMIN.md (za Render)
+      join(projectRoot, 'backend', 'TEST-PLAN-ADMIN.md'),   // root/backend/TEST-PLAN-ADMIN.md
     ];
     
     // Pronađi frontend datoteku
     let frontendPath = null;
-    let adminPath = null;
-    
-    for (const path of possiblePaths) {
-      if (existsSync(path) && path.includes('FRONTEND')) {
+    for (const path of possibleFrontendPaths) {
+      if (existsSync(path)) {
         frontendPath = path;
         break;
       }
     }
     
-    // Ako nije pronađen, koristi default putanju
-    if (!frontendPath) {
-      frontendPath = join(projectRoot, 'TEST-PLAN-FRONTEND.md');
-    }
-    
     // Pronađi admin datoteku
-    for (const path of possiblePaths) {
-      if (existsSync(path) && path.includes('ADMIN')) {
+    let adminPath = null;
+    for (const path of possibleAdminPaths) {
+      if (existsSync(path)) {
         adminPath = path;
         break;
       }
     }
     
-    // Ako nije pronađen, koristi default putanju
-    if (!adminPath) {
-      adminPath = join(projectRoot, 'TEST-PLAN-ADMIN.md');
-    }
-    
     console.log('[TESTING SEED] Reading markdown files...');
-    console.log('[TESTING SEED] Project root:', projectRoot);
+    console.log('[TESTING SEED] __dirname:', __dirname);
+    console.log('[TESTING SEED] backendDir:', backendDir);
+    console.log('[TESTING SEED] projectRoot:', projectRoot);
+    console.log('[TESTING SEED] process.cwd():', process.cwd());
     console.log('[TESTING SEED] Frontend path:', frontendPath);
     console.log('[TESTING SEED] Admin path:', adminPath);
-    console.log('[TESTING SEED] Frontend exists:', existsSync(frontendPath));
-    console.log('[TESTING SEED] Admin exists:', existsSync(adminPath));
+    console.log('[TESTING SEED] Frontend exists:', frontendPath ? existsSync(frontendPath) : false);
+    console.log('[TESTING SEED] Admin exists:', adminPath ? existsSync(adminPath) : false);
+    
+    // Debug: ispiši sve provjerene putanje
+    console.log('[TESTING SEED] Checked frontend paths:');
+    possibleFrontendPaths.forEach((p, i) => {
+      console.log(`  ${i + 1}. ${p} - ${existsSync(p) ? 'EXISTS' : 'NOT FOUND'}`);
+    });
+    console.log('[TESTING SEED] Checked admin paths:');
+    possibleAdminPaths.forEach((p, i) => {
+      console.log(`  ${i + 1}. ${p} - ${existsSync(p) ? 'EXISTS' : 'NOT FOUND'}`);
+    });
     
     let frontendContent, adminContent;
     try {
-      if (!existsSync(frontendPath)) {
-        throw new Error(`Frontend test plan file not found: ${frontendPath}`);
+      if (!frontendPath || !existsSync(frontendPath)) {
+        throw new Error(`Frontend test plan file not found. Checked paths: ${possibleFrontendPaths.join(', ')}`);
       }
-      if (!existsSync(adminPath)) {
-        throw new Error(`Admin test plan file not found: ${adminPath}`);
+      if (!adminPath || !existsSync(adminPath)) {
+        throw new Error(`Admin test plan file not found. Checked paths: ${possibleAdminPaths.join(', ')}`);
       }
       
       frontendContent = readFileSync(frontendPath, 'utf-8');
       adminContent = readFileSync(adminPath, 'utf-8');
+      
+      console.log('[TESTING SEED] Files read successfully');
+      console.log('[TESTING SEED] Frontend content length:', frontendContent.length);
+      console.log('[TESTING SEED] Admin content length:', adminContent.length);
     } catch (fileError) {
       console.error('[TESTING SEED] Error reading files:', fileError);
       return res.status(404).json({ 
         error: 'Test plan markdown files not found',
         details: fileError.message,
-        projectRoot,
-        frontendPath,
-        adminPath,
-        frontendExists: existsSync(frontendPath),
-        adminExists: existsSync(adminPath)
+        debug: {
+          __dirname,
+          backendDir,
+          projectRoot,
+          processCwd: process.cwd(),
+          frontendPath,
+          adminPath,
+          frontendExists: frontendPath ? existsSync(frontendPath) : false,
+          adminExists: adminPath ? existsSync(adminPath) : false,
+          checkedPaths: {
+            frontend: possibleFrontendPaths,
+            admin: possibleAdminPaths
+          }
+        }
       });
     }
     
