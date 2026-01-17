@@ -47,7 +47,9 @@ COPY start.sh ./start.sh
 RUN chmod +x /app/start.sh
 
 # Copy test plan markdown files for testing seed endpoint
-COPY TEST-PLAN-*.md ./
+# Try both root and backend directory locations
+COPY TEST-PLAN-*.md ./ 2>/dev/null || true
+COPY ../TEST-PLAN-*.md ./ 2>/dev/null || true
 
 # tvoj server sluša na 8080
 EXPOSE 4000
