@@ -303,7 +303,7 @@ app.use('/api/testing', (req, res, next) => {
   next();
 });
 
-app.use('/api/testing', testingRouter)
+app.use('/api/testing', testingRouter);
 // USLUGAR EXCLUSIVE API routes
 app.use('/api/exclusive/leads', exclusiveLeadsRouter)
 app.use('/api/exclusive/roi', providerROIRouter)

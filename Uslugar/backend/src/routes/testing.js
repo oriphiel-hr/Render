@@ -10,6 +10,11 @@ r.use((req, res, next) => {
   next();
 });
 
+// Debug endpoint - test if router is working
+r.get('/test', (req, res) => {
+  res.json({ message: 'Testing router is working!', path: req.path, method: req.method });
+});
+
 // ===== Test Plans =====
 r.get('/plans', auth(true, ['ADMIN']), async (req, res, next) => {
   try {
