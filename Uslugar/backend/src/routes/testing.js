@@ -55,32 +55,38 @@ r.post('/seed', auth(true, ['ADMIN']), async (req, res, next) => {
     const { fileURLToPath } = await import('url');
     const { dirname, join, resolve } = await import('path');
     
-    // Koristi __dirname za lokaciju trenutnog fajla (backend/src/routes)
+    // Koristi __dirname za lokaciju trenutnog fajla (backend/src/routes ili /app/src/routes na Render)
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
     
     // Pronađi root projekta - idemo gore od backend/src/routes do root
     // backend/src/routes -> backend/src -> backend -> root
-    const routesDir = __dirname; // backend/src/routes
-    const srcDir = dirname(routesDir); // backend/src
-    const backendDir = dirname(srcDir); // backend
-    const projectRoot = dirname(backendDir); // root projekta
+    const routesDir = __dirname; // backend/src/routes ili /app/src/routes
+    const srcDir = dirname(routesDir); // backend/src ili /app/src
+    const backendDir = dirname(srcDir); // backend ili /app (na Render)
+    
+    // Na Render serveru, process.cwd() je /app, ne root projekta
+    // Koristi process.cwd() kao fallback za working directory
+    const workingDir = process.cwd(); // /app na Render, ili backend/ lokalno
     
     // Provjeri više mogućih lokacija (prioritetni redoslijed)
+    // Prvo provjeri u working directory (/app na Render), zatim backend dir, zatim root
     const possibleFrontendPaths = [
-      join(projectRoot, 'TEST-PLAN-FRONTEND.md'),           // root/TEST-PLAN-FRONTEND.md
-      join(backendDir, 'TEST-PLAN-FRONTEND.md'),            // backend/TEST-PLAN-FRONTEND.md
-      join(process.cwd(), 'TEST-PLAN-FRONTEND.md'),         // process.cwd()/TEST-PLAN-FRONTEND.md
-      resolve(process.cwd(), '..', 'TEST-PLAN-FRONTEND.md'), // ../TEST-PLAN-FRONTEND.md (za Render)
-      join(projectRoot, 'backend', 'TEST-PLAN-FRONTEND.md'), // root/backend/TEST-PLAN-FRONTEND.md
+      join(workingDir, 'TEST-PLAN-FRONTEND.md'),            // /app/TEST-PLAN-FRONTEND.md (Render) ili backend/TEST-PLAN-FRONTEND.md (lokalno)
+      join(backendDir, 'TEST-PLAN-FRONTEND.md'),            // /app/TEST-PLAN-FRONTEND.md ili backend/TEST-PLAN-FRONTEND.md
+      join(workingDir, '..', 'TEST-PLAN-FRONTEND.md'),      // ../TEST-PLAN-FRONTEND.md (root projekta)
+      join(backendDir, '..', 'TEST-PLAN-FRONTEND.md'),       // /TEST-PLAN-FRONTEND.md (ako backendDir je /app, ovo će biti /)
+      resolve(__dirname, '..', '..', '..', 'TEST-PLAN-FRONTEND.md'), // 3 nivoa gore od routes
+      resolve(__dirname, '..', '..', 'TEST-PLAN-FRONTEND.md'),       // 2 nivoa gore od routes (backend dir)
     ];
     
     const possibleAdminPaths = [
-      join(projectRoot, 'TEST-PLAN-ADMIN.md'),              // root/TEST-PLAN-ADMIN.md
-      join(backendDir, 'TEST-PLAN-ADMIN.md'),              // backend/TEST-PLAN-ADMIN.md
-      join(process.cwd(), 'TEST-PLAN-ADMIN.md'),            // process.cwd()/TEST-PLAN-ADMIN.md
-      resolve(process.cwd(), '..', 'TEST-PLAN-ADMIN.md'),   // ../TEST-PLAN-ADMIN.md (za Render)
-      join(projectRoot, 'backend', 'TEST-PLAN-ADMIN.md'),   // root/backend/TEST-PLAN-ADMIN.md
+      join(workingDir, 'TEST-PLAN-ADMIN.md'),               // /app/TEST-PLAN-ADMIN.md (Render) ili backend/TEST-PLAN-ADMIN.md (lokalno)
+      join(backendDir, 'TEST-PLAN-ADMIN.md'),              // /app/TEST-PLAN-ADMIN.md ili backend/TEST-PLAN-ADMIN.md
+      join(workingDir, '..', 'TEST-PLAN-ADMIN.md'),         // ../TEST-PLAN-ADMIN.md (root projekta)
+      join(backendDir, '..', 'TEST-PLAN-ADMIN.md'),        // /TEST-PLAN-ADMIN.md (ako backendDir je /app)
+      resolve(__dirname, '..', '..', '..', 'TEST-PLAN-ADMIN.md'),   // 3 nivoa gore od routes
+      resolve(__dirname, '..', '..', 'TEST-PLAN-ADMIN.md'),         // 2 nivoa gore od routes (backend dir)
     ];
     
     // Pronađi frontend datoteku
@@ -104,8 +110,7 @@ r.post('/seed', auth(true, ['ADMIN']), async (req, res, next) => {
     console.log('[TESTING SEED] Reading markdown files...');
     console.log('[TESTING SEED] __dirname:', __dirname);
     console.log('[TESTING SEED] backendDir:', backendDir);
-    console.log('[TESTING SEED] projectRoot:', projectRoot);
-    console.log('[TESTING SEED] process.cwd():', process.cwd());
+    console.log('[TESTING SEED] workingDir (process.cwd()):', workingDir);
     console.log('[TESTING SEED] Frontend path:', frontendPath);
     console.log('[TESTING SEED] Admin path:', adminPath);
     console.log('[TESTING SEED] Frontend exists:', frontendPath ? existsSync(frontendPath) : false);
