@@ -203,7 +203,22 @@ function PresetPlanEditor({ preset, onSaved }){
   const [items, setItems] = useState(() => mapPresetToDefaults(preset))
   const [name, setName] = useState(() => {
     if (preset==='ALL') return 'Sve domene - E2E'
-    const labels = { AUTH:'Auth', ONBOARDING:'Onboarding', KYC:'KYC', JOBS:'Jobs', LEADS:'Leads i Ponude', CHAT:'Chat i Notifikacije', SUBS:'Pretplate i Plaćanja', ADMIN:'Admin' }
+    const labels = { 
+      AUTH:'Auth', 
+      ONBOARDING:'Onboarding', 
+      KYC:'KYC', 
+      JOBS:'Jobs', 
+      LEADS:'Leads i Ponude', 
+      CHAT:'Chat i Notifikacije', 
+      SUBS:'Pretplate i Plaćanja', 
+      ADMIN:'Admin',
+      REVIEWS:'Recenzije i Ocjene',
+      PROFILES:'Profili Providera',
+      QUEUE:'Queue Sustav',
+      REFUND:'Refund i Povrat',
+      LICENSES:'Licence',
+      REPUTATION:'Reputacija'
+    }
     return `Plan: ${labels[preset] || preset}`
   })
   const [description, setDescription] = useState('Automatski generiran plan prema odabranoj domeni')
