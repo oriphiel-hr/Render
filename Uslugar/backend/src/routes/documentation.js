@@ -3,89 +3,63 @@ import { prisma } from '../lib/prisma.js';
 
 const r = Router();
 
-/**
- * Popravi encoding problema - pretvori pogrešno dekodirane UTF-8 znakove
- * Primjer: "┼ż" -> "ž" (C5 BE u UTF-8 je pogrešno interpretiran kao Windows-1252)
- * 
- * Problem nastaje kada se UTF-8 podaci čitaju kao Windows-1252 (latin1) encoding.
- * Ova funkcija pokušava vratiti podatke u ispravan UTF-8 oblik.
- */
-function fixEncoding(text) {
-  if (!text || typeof text !== 'string') return text;
-  
+// GET /api/documentation/check-encoding - Provjeri encoding baze i konekcije (diagnostic)
+r.get('/check-encoding', async (req, res, next) => {
   try {
-    // Provjeri da li postoje poznati encoding problemi (mojibake)
-    if (!text.includes('┼') && !text.includes('Â') && !text.includes('Ã')) {
-      // Tekst već izgleda ispravno, vrati ga
-      return text;
-    }
-    
-    // Pokušaj konvertirati iz Windows-1252 natrag u UTF-8
-    // Ovo radi tako što uzme string kao da je Windows-1252 i konvertira ga u UTF-8
-    try {
-      // Kreiramo Buffer iz stringa tretiranog kao Windows-1252 (latin1)
-      // Zatim ga dekodiramo kao UTF-8
-      const buffer = Buffer.from(text, 'latin1');
-      const utf8Text = buffer.toString('utf8');
-      
-      // Provjeri da li je rezultat bolji (nema više ┼ znakova)
-      if (!utf8Text.includes('┼')) {
-        return utf8Text;
-      }
-    } catch (e) {
-      // Ako konverzija ne uspije, nastavi s replace metodom
-    }
-    
-    // Fallback: Zamijeni poznate encoding probleme
-    // "┼ż" = Windows-1252 za UTF-8 "ž" (0xC5 0xBE)
-    // "┼í" = Windows-1252 za UTF-8 "ć" (0xC4 0x87)
-    // "┼ì" = Windows-1252 za UTF-8 "č" (0xC4 0x8D)
-    // "┼í" = Windows-1252 za UTF-8 "đ" (0xC4 0x91)
-    // "┼í" = Windows-1252 za UTF-8 "š" (0xC5 0xA1)
-    return text
-      .replace(/┼ż/g, 'ž')
-      .replace(/┼í/g, 'ć')
-      .replace(/┼ì/g, 'č')
-      .replace(/┼░/g, 'đ')
-      .replace(/┼í/g, 'š')
-      .replace(/┼ü/g, 'Ž')
-      .replace(/┼î/g, 'Ć')
-      .replace(/┼î/g, 'Č')
-      .replace(/┼î/g, 'Đ')
-      .replace(/┼Ü/g, 'Š')
-      // Također popravi druge česte probleme
-      .replace(/Â/g, '')
-      .replace(/Ã/g, '');
-  } catch (error) {
-    console.error('[Encoding Fix] Error fixing encoding:', error);
-    return text; // Ako nešto pođe po zlu, vrati original
-  }
-}
+    // Provjeri encoding baze
+    const dbEncoding = await prisma.$queryRaw`
+      SELECT pg_encoding_to_char(encoding) as encoding, datname
+      FROM pg_database 
+      WHERE datname = current_database()
+    `;
 
-/**
- * Rekurzivno popravi encoding u objektu ili nizu
- */
-function fixEncodingRecursive(obj) {
-  if (obj === null || obj === undefined) return obj;
-  
-  if (typeof obj === 'string') {
-    return fixEncoding(obj);
+    // Provjeri client encoding (konekcija)
+    const clientEncoding = await prisma.$queryRaw`SHOW client_encoding`;
+
+    // Provjeri primjer podataka s problematičnim znakom
+    const testData = await prisma.$queryRaw`
+      SELECT 
+        id,
+        name,
+        encode(name::bytea, 'hex') as name_hex,
+        LENGTH(name) as name_length,
+        OCTET_LENGTH(name) as name_bytes
+      FROM "DocumentationFeature"
+      WHERE name LIKE '%ž%' OR name LIKE '%<%' OR name LIKE '%┼%'
+      LIMIT 3
+    `;
+
+    res.json({
+      success: true,
+      database: {
+        name: dbEncoding[0]?.datname || 'unknown',
+        encoding: dbEncoding[0]?.encoding || 'unknown',
+        isUTF8: dbEncoding[0]?.encoding === 'UTF8'
+      },
+      client: {
+        encoding: clientEncoding[0]?.client_encoding || 'unknown',
+        isUTF8: clientEncoding[0]?.client_encoding === 'UTF8'
+      },
+      testData: testData.map(item => ({
+        id: item.id,
+        name: item.name,
+        nameHex: item.name_hex,
+        nameLength: item.name_length,
+        nameBytes: item.name_bytes
+      })),
+      recommendation: {
+        databaseEncoding: dbEncoding[0]?.encoding !== 'UTF8' 
+          ? '⚠️ Baza nije u UTF-8 encoding-u. Kreiraj novu bazu s UTF-8 encoding-om.'
+          : '✅ Baza je u UTF-8 encoding-u',
+        clientEncoding: clientEncoding[0]?.client_encoding !== 'UTF8'
+          ? '⚠️ Client encoding nije UTF-8. Dodaj ?client_encoding=utf8 u DATABASE_URL.'
+          : '✅ Client encoding je UTF-8'
+      }
+    });
+  } catch (e) {
+    next(e);
   }
-  
-  if (Array.isArray(obj)) {
-    return obj.map(item => fixEncodingRecursive(item));
-  }
-  
-  if (typeof obj === 'object') {
-    const fixed = {};
-    for (const [key, value] of Object.entries(obj)) {
-      fixed[key] = fixEncodingRecursive(value);
-    }
-    return fixed;
-  }
-  
-  return obj;
-}
+});
 
 // GET /api/documentation - Dohvati sve kategorije i feature opise
 r.get('/', async (req, res, next) => {
@@ -132,9 +106,9 @@ r.get('/', async (req, res, next) => {
 
     // Transformiraj podatke u format koji komponenta očekuje
     const features = publicCategories.map(cat => ({
-      category: fixEncoding(cat.name),
+      category: cat.name,
       items: cat.features.map(f => ({
-        name: fixEncoding(f.name),
+        name: f.name,
         implemented: f.implemented,
         deprecated: f.deprecated
       }))
@@ -145,10 +119,10 @@ r.get('/', async (req, res, next) => {
     publicCategories.forEach(cat => {
       cat.features.forEach(f => {
         if (f.summary || f.details) {
-          featureDescriptions[fixEncoding(f.name)] = {
+          featureDescriptions[f.name] = {
             implemented: f.implemented,
-            summary: fixEncoding(f.summary || ''),
-            details: fixEncoding(f.details || '')
+            summary: f.summary || '',
+            details: f.details || ''
           };
         }
       });
@@ -347,9 +321,9 @@ r.get('/admin', async (req, res, next) => {
 
     // Transformiraj admin features
     const adminFeatures = adminCategories.map(cat => ({
-      category: fixEncoding(cat.name),
+      category: cat.name,
       items: cat.features.map(f => ({
-        name: fixEncoding(f.name),
+        name: f.name,
         implemented: f.implemented,
         deprecated: f.deprecated
       }))
@@ -357,9 +331,9 @@ r.get('/admin', async (req, res, next) => {
 
     // Transformiraj javne features
     const publicFeatures = publicCategories.map(cat => ({
-      category: fixEncoding(cat.name),
+      category: cat.name,
       items: cat.features.map(f => ({
-        name: fixEncoding(f.name),
+        name: f.name,
         implemented: f.implemented,
         deprecated: f.deprecated
       }))
@@ -372,11 +346,11 @@ r.get('/admin', async (req, res, next) => {
     adminCategories.forEach(cat => {
       cat.features.forEach(f => {
         if (f.summary || f.details || f.technicalDetails) {
-          featureDescriptions[fixEncoding(f.name)] = {
+          featureDescriptions[f.name] = {
             implemented: f.implemented,
-            summary: fixEncoding(f.summary || ''),
-            details: fixEncoding(f.details || ''),
-            technicalDetails: fixEncoding(f.technicalDetails || '') // Tehnički opis (frontend, backend, baza, API)
+            summary: f.summary || '',
+            details: f.details || '',
+            technicalDetails: f.technicalDetails || '' // Tehnički opis (frontend, backend, baza, API)
           };
         }
       });
@@ -386,11 +360,11 @@ r.get('/admin', async (req, res, next) => {
     publicCategories.forEach(cat => {
       cat.features.forEach(f => {
         if (f.summary || f.details || f.technicalDetails) {
-          featureDescriptions[fixEncoding(f.name)] = {
+          featureDescriptions[f.name] = {
             implemented: f.implemented,
-            summary: fixEncoding(f.summary || ''),
-            details: fixEncoding(f.details || ''),
-            technicalDetails: fixEncoding(f.technicalDetails || '') // Tehnički opis za admin prikaz
+            summary: f.summary || '',
+            details: f.details || '',
+            technicalDetails: f.technicalDetails || '' // Tehnički opis za admin prikaz
           };
         }
       });
@@ -438,15 +412,15 @@ r.get('/guides', async (req, res, next) => {
     // Transformiraj u format za frontend
     const guides = guidesCategory.features.map(f => ({
       id: f.id,
-      title: fixEncoding(f.name),
-      summary: fixEncoding(f.summary || ''),
-      content: fixEncoding(f.details || ''),
+      title: f.name,
+      summary: f.summary || '',
+      content: f.details || '',
       order: f.order
     }));
 
     res.json({
       guides,
-      category: fixEncoding(guidesCategory.name)
+      category: guidesCategory.name
     });
   } catch (e) {
     next(e);
@@ -483,11 +457,11 @@ r.get('/guides/:id', async (req, res, next) => {
 
     res.json({
       id: guide.id,
-      title: fixEncoding(guide.name),
-      summary: fixEncoding(guide.summary || ''),
-      content: fixEncoding(guide.details || ''),
-      technicalDetails: fixEncoding(guide.technicalDetails || null), // Može biti null za javne vodiče
-      category: fixEncoding(guide.category.name),
+      title: guide.name,
+      summary: guide.summary || '',
+      content: guide.details || '',
+      technicalDetails: guide.technicalDetails || null, // Može biti null za javne vodiče
+      category: guide.category.name,
       order: guide.order
     });
   } catch (e) {

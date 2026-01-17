@@ -14514,6 +14514,17 @@ SMS verifikacija osigurava da vaš telefonski broj pripada vama i povećava povj
 async function seedDocumentation() {
   console.log(`🌱 Počinje seed dokumentacije... Ukupno kategorija: ${features.length}`);
 
+  // Osiguraj UTF-8 encoding za PostgreSQL konekciju
+  // Ovo je KLJUČNO da se podaci pravilno zapisuju u UTF-8
+  try {
+    await prisma.$executeRaw`SET client_encoding TO 'UTF8'`;
+    const encoding = await prisma.$queryRaw`SHOW client_encoding`;
+    console.log(`✅ Database encoding: ${encoding[0]?.client_encoding || 'UTF8'}`);
+  } catch (error) {
+    console.warn('⚠️  Could not set client_encoding:', error.message);
+    console.warn('💡 Provjeri DATABASE_URL - trebao bi imati ?client_encoding=utf8');
+  }
+
   // Provjeri da li tablice postoje
   try {
     await prisma.$queryRaw`SELECT 1 FROM "DocumentationCategory" LIMIT 1`;

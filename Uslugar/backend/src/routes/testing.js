@@ -29,23 +29,67 @@ r.get('/plans', auth(true, ['ADMIN']), async (req, res, next) => {
 r.post('/seed', auth(true, ['ADMIN']), async (req, res, next) => {
   console.log('[TESTING SEED] Endpoint called');
   try {
-    const { readFileSync } = await import('fs');
+    const { readFileSync, existsSync } = await import('fs');
     const { fileURLToPath } = await import('url');
-    const { dirname, join } = await import('path');
+    const { dirname, join, resolve } = await import('path');
     
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = dirname(__filename);
+    // Koristi process.cwd() za root direktorij projekta
+    const projectRoot = process.cwd();
     
-    // Učitaj markdown fajlove - fajlovi su u uslugar/ direktoriju
-    const frontendPath = join(__dirname, '../../../TEST-PLAN-FRONTEND.md');
-    const adminPath = join(__dirname, '../../../TEST-PLAN-ADMIN.md');
+    // Provjeri više mogućih lokacija
+    const possiblePaths = [
+      join(projectRoot, 'TEST-PLAN-FRONTEND.md'),
+      join(projectRoot, 'TEST-PLAN-ADMIN.md'),
+      // Fallback na relativne putanje
+      join(projectRoot, 'backend', 'TEST-PLAN-FRONTEND.md'),
+      join(projectRoot, 'backend', 'TEST-PLAN-ADMIN.md'),
+    ];
+    
+    // Pronađi frontend datoteku
+    let frontendPath = null;
+    let adminPath = null;
+    
+    for (const path of possiblePaths) {
+      if (existsSync(path) && path.includes('FRONTEND')) {
+        frontendPath = path;
+        break;
+      }
+    }
+    
+    // Ako nije pronađen, koristi default putanju
+    if (!frontendPath) {
+      frontendPath = join(projectRoot, 'TEST-PLAN-FRONTEND.md');
+    }
+    
+    // Pronađi admin datoteku
+    for (const path of possiblePaths) {
+      if (existsSync(path) && path.includes('ADMIN')) {
+        adminPath = path;
+        break;
+      }
+    }
+    
+    // Ako nije pronađen, koristi default putanju
+    if (!adminPath) {
+      adminPath = join(projectRoot, 'TEST-PLAN-ADMIN.md');
+    }
     
     console.log('[TESTING SEED] Reading markdown files...');
+    console.log('[TESTING SEED] Project root:', projectRoot);
     console.log('[TESTING SEED] Frontend path:', frontendPath);
     console.log('[TESTING SEED] Admin path:', adminPath);
+    console.log('[TESTING SEED] Frontend exists:', existsSync(frontendPath));
+    console.log('[TESTING SEED] Admin exists:', existsSync(adminPath));
     
     let frontendContent, adminContent;
     try {
+      if (!existsSync(frontendPath)) {
+        throw new Error(`Frontend test plan file not found: ${frontendPath}`);
+      }
+      if (!existsSync(adminPath)) {
+        throw new Error(`Admin test plan file not found: ${adminPath}`);
+      }
+      
       frontendContent = readFileSync(frontendPath, 'utf-8');
       adminContent = readFileSync(adminPath, 'utf-8');
     } catch (fileError) {
@@ -53,8 +97,11 @@ r.post('/seed', auth(true, ['ADMIN']), async (req, res, next) => {
       return res.status(404).json({ 
         error: 'Test plan markdown files not found',
         details: fileError.message,
+        projectRoot,
         frontendPath,
-        adminPath
+        adminPath,
+        frontendExists: existsSync(frontendPath),
+        adminExists: existsSync(adminPath)
       });
     }
     
