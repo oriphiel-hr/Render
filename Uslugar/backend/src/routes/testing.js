@@ -12,7 +12,24 @@ r.use((req, res, next) => {
 
 // Debug endpoint - test if router is working
 r.get('/test', (req, res) => {
-  res.json({ message: 'Testing router is working!', path: req.path, method: req.method });
+  res.json({ 
+    message: 'Testing router is working!', 
+    path: req.path, 
+    method: req.method,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// List all routes for debugging
+r.get('/routes', (req, res) => {
+  const routes = r.stack
+    .map(layer => layer.route)
+    .filter(Boolean)
+    .map(route => ({
+      path: route.path,
+      methods: Object.keys(route.methods)
+    }));
+  res.json({ routes, total: routes.length });
 });
 
 // ===== Test Plans =====

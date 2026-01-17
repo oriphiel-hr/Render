@@ -303,7 +303,9 @@ app.use('/api/testing', (req, res, next) => {
   next();
 });
 
+// Register testing router
 app.use('/api/testing', testingRouter);
+console.log('[SERVER] Testing router registered at /api/testing');
 // USLUGAR EXCLUSIVE API routes
 app.use('/api/exclusive/leads', exclusiveLeadsRouter)
 app.use('/api/exclusive/roi', providerROIRouter)
