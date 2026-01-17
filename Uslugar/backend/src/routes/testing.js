@@ -183,9 +183,9 @@ r.post('/seed', auth(true, ['ADMIN']), async (req, res, next) => {
           continue;
         }
         
-        // Detektiraj kategoriju (## 1️⃣, ## 2️⃣, itd. ili ## 🔟) ili (### Kategorija X: ili ### Kategorija:)
+        // Detektiraj kategoriju (## 1️⃣, ## 2️⃣, itd. ili ## 🔟) ili (## Kategorija X: ili ## Kategorija:)
         if (line.match(/^## \d+[️⃣🔟]/) || line.match(/^## [1-9]0?[️⃣🔟]/) || 
-            line.match(/^### Kategorija\s+\d+:/) || line.match(/^### Kategorija:/)) {
+            line.match(/^## Kategorija\s+\d+:/) || line.match(/^## Kategorija:/)) {
           // Spremi prethodni test ako postoji
           if (currentTest && currentCategory) {
             if (!plans.find(p => p.category === currentCategory)) {
@@ -209,8 +209,8 @@ r.post('/seed', auth(true, ['ADMIN']), async (req, res, next) => {
           currentCategory = line
             .replace(/^## \d+[️⃣🔟]\s*/, '')
             .replace(/^## [1-9]0?[️⃣🔟]\s*/, '')
-            .replace(/^### Kategorija\s+\d+:\s*/, '')
-            .replace(/^### Kategorija:\s*/, '')
+            .replace(/^## Kategorija\s+\d+:\s*/, '')
+            .replace(/^## Kategorija:\s*/, '')
             .trim();
           currentTest = null;
           currentSteps = [];
