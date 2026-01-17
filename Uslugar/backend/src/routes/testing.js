@@ -183,8 +183,9 @@ r.post('/seed', auth(true, ['ADMIN']), async (req, res, next) => {
           continue;
         }
         
-        // Detektiraj kategoriju (## 1️⃣, ## 2️⃣, itd. ili ## 🔟)
-        if (line.match(/^## \d+[️⃣🔟]/) || line.match(/^## [1-9]0?[️⃣🔟]/)) {
+        // Detektiraj kategoriju (## 1️⃣, ## 2️⃣, itd. ili ## 🔟) ili (### Kategorija X: ili ### Kategorija:)
+        if (line.match(/^## \d+[️⃣🔟]/) || line.match(/^## [1-9]0?[️⃣🔟]/) || 
+            line.match(/^### Kategorija\s+\d+:/) || line.match(/^### Kategorija:/)) {
           // Spremi prethodni test ako postoji
           if (currentTest && currentCategory) {
             if (!plans.find(p => p.category === currentCategory)) {
@@ -204,16 +205,21 @@ r.post('/seed', auth(true, ['ADMIN']), async (req, res, next) => {
             });
           }
           
-          // Nova kategorija - ukloni emoji i brojeve
-          currentCategory = line.replace(/^## \d+[️⃣🔟]\s*/, '').replace(/^## [1-9]0?[️⃣🔟]\s*/, '').trim();
+          // Nova kategorija - ukloni emoji, brojeve i "Kategorija X:" ili "Kategorija:"
+          currentCategory = line
+            .replace(/^## \d+[️⃣🔟]\s*/, '')
+            .replace(/^## [1-9]0?[️⃣🔟]\s*/, '')
+            .replace(/^### Kategorija\s+\d+:\s*/, '')
+            .replace(/^### Kategorija:\s*/, '')
+            .trim();
           currentTest = null;
           currentSteps = [];
           currentExpectedResult = [];
           inSteps = false;
           inExpectedResult = false;
         }
-        // Detektiraj test slučaj (### Test X.Y:)
-        else if (line.match(/^### Test \d+\.\d+:/)) {
+        // Detektiraj test slučaj (### Test X.Y: ili #### Test X: ili #### Test:)
+        else if (line.match(/^### Test \d+\.\d+:/) || line.match(/^#### Test\s+\d+:/) || line.match(/^#### Test:/)) {
           // Spremi prethodni test ako postoji
           if (currentTest && currentCategory) {
             if (!plans.find(p => p.category === currentCategory)) {
@@ -233,8 +239,12 @@ r.post('/seed', auth(true, ['ADMIN']), async (req, res, next) => {
             });
           }
           
-          // Novi test - ukloni "Test X.Y:"
-          currentTest = line.replace(/^### Test \d+\.\d+:\s*/, '').trim();
+          // Novi test - ukloni "Test X.Y:" ili "Test X:" ili "Test:"
+          currentTest = line
+            .replace(/^### Test \d+\.\d+:\s*/, '')
+            .replace(/^#### Test\s+\d+:\s*/, '')
+            .replace(/^#### Test:\s*/, '')
+            .trim();
           currentSteps = [];
           currentExpectedResult = [];
           inSteps = false;
@@ -296,8 +306,20 @@ r.post('/seed', auth(true, ['ADMIN']), async (req, res, next) => {
     };
     
     console.log('[TESTING SEED] Parsing markdown files...');
+    console.log('[TESTING SEED] Frontend content length:', frontendContent.length, 'chars');
+    console.log('[TESTING SEED] Admin content length:', adminContent.length, 'chars');
+    
     const frontendPlans = parseTestPlanMarkdown(frontendContent);
     const adminPlans = parseTestPlanMarkdown(adminContent);
+    
+    console.log('[TESTING SEED] Frontend plans found:', frontendPlans.length);
+    frontendPlans.forEach((p, i) => {
+      console.log(`  ${i + 1}. ${p.category} - ${p.items?.length || 0} items`);
+    });
+    console.log('[TESTING SEED] Admin plans found:', adminPlans.length);
+    adminPlans.forEach((p, i) => {
+      console.log(`  ${i + 1}. ${p.category} - ${p.items?.length || 0} items`);
+    });
     
     // Dodaj prefix za kategorije
     frontendPlans.forEach(plan => {
