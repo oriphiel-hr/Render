@@ -393,11 +393,19 @@ r.post('/seed', auth(true, ['ADMIN']), async (req, res, next) => {
       orderBy: { createdAt: 'desc' }
     });
     
+    const totalItemsCount = plans.reduce((sum, p) => sum + (p.items?.length || 0), 0);
+    
+    console.log(`[TESTING SEED] ✅ Seeding complete! ${plans.length} plans, ${totalItemsCount} items`);
+    console.log(`[TESTING SEED] Plans created:`);
+    plans.forEach((p, idx) => {
+      console.log(`  ${idx + 1}. ${p.name} (${p.items?.length || 0} items)`);
+    });
+    
     res.json({ 
       success: true, 
-      message: 'Test plans seeded successfully',
+      message: `Test plans seeded successfully! Kreirano ${plans.length} planova, ${totalItemsCount} test itema`,
       plansCount: plans.length,
-      totalItems: plans.reduce((sum, p) => sum + (p.items?.length || 0), 0),
+      totalItems: totalItemsCount,
       plans: plans.map(p => ({
         id: p.id,
         name: p.name,
