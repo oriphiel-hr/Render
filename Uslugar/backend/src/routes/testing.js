@@ -250,6 +250,12 @@ r.post('/seed', auth(true, ['ADMIN']), async (req, res, next) => {
           inSteps = false;
           inExpectedResult = false;
         }
+        // Detektiraj "Opis:" sekciju (ignoriraj, ali resetiraj korake i rezultate)
+        else if (line.startsWith('**Opis:**') || line.startsWith('**Opis**')) {
+          // Opis se ne koristi u test planu, ali resetiraj stanje
+          inSteps = false;
+          inExpectedResult = false;
+        }
         // Detektiraj "Koraci:" sekciju
         else if (line.startsWith('**Koraci:**') || line.startsWith('**Koraci**')) {
           inSteps = true;
