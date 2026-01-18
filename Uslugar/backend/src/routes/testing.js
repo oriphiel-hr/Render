@@ -977,16 +977,19 @@ async function validateTestData() {
     }
   }
   
-  // Provjeri email konfiguraciju (opcionalno, ali preporučeno)
-  if (!testData.email) {
-    errors.push('Email konfiguracija nije postavljena (opcionalno, ali preporučeno za verifikaciju i reset lozinke)');
-  } else {
+  // Provjeri email konfiguraciju (opcionalno - samo warning, ne blokira testove)
+  // Email konfiguracija je potrebna samo za testove koji zahtijevaju email pristup (verifikacija, reset lozinke)
+  // Ako nije postavljena, ti testovi će koristiti fallback (mock token)
+  // Stoga ne dodajemo grešku, već samo upozorenje u logovima
+  if (testData.email) {
     const hasTestService = testData.email.testService && testData.email.testService.apiKey;
     const hasIMAP = testData.email.imap && testData.email.imap.user && testData.email.imap.password;
     
     if (!hasTestService && !hasIMAP) {
-      errors.push('Email konfiguracija nije potpuna - postavite Mailtrap API Key ili IMAP pristup');
+      console.warn('[TEST DATA VALIDATION] Email konfiguracija postavljena ali nije potpuna - testovi koji zahtijevaju email koristit će fallback');
     }
+  } else {
+    console.warn('[TEST DATA VALIDATION] Email konfiguracija nije postavljena - testovi koji zahtijevaju email koristit će fallback');
   }
   
   // Provjeri API konfiguraciju
