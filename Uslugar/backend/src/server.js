@@ -364,7 +364,13 @@ const httpServer = createServer(app)
 const io = initSocket(httpServer)
 
 // Initialize database (seed legal statuses if missing)
-await ensureLegalStatuses()
+// Wrap u try-catch da server startuje čak i ako inicijalizacija padne
+try {
+  await ensureLegalStatuses()
+} catch (error) {
+  console.error('⚠️  Failed to ensure legal statuses:', error.message)
+  // Ne baci grešku - server treba startovati čak i ako inicijalizacija padne
+}
 
 // Auto-fix: Add missing columns and enums if needed
 async function ensureProjectTypeColumn() {
@@ -432,8 +438,17 @@ async function ensureDirectorFields() {
   }
 }
 
-await ensureProjectTypeColumn()
-await ensureDirectorFields()
+try {
+  await ensureProjectTypeColumn()
+} catch (error) {
+  console.error('⚠️  Failed to ensure project type column:', error.message)
+}
+
+try {
+  await ensureDirectorFields()
+} catch (error) {
+  console.error('⚠️  Failed to ensure director fields:', error.message)
+}
 
 // Auto-fix: Ensure lifetimeLeadsConverted exists in Subscription
 async function ensureLifetimeLeadsConverted() {
@@ -452,7 +467,11 @@ async function ensureLifetimeLeadsConverted() {
     }
   }
 }
-await ensureLifetimeLeadsConverted()
+try {
+  await ensureLifetimeLeadsConverted()
+} catch (error) {
+  console.error('⚠️  Failed to ensure lifetime leads converted:', error.message)
+}
 
 // Auto-fix: Ensure SupportTicket table exists
 async function ensureSupportTicket() {
@@ -491,7 +510,11 @@ async function ensureSupportTicket() {
     }
   }
 }
-await ensureSupportTicket()
+try {
+  await ensureSupportTicket()
+} catch (error) {
+  console.error('⚠️  Failed to ensure SupportTicket:', error.message)
+}
 
 // Auto-fix: Ensure WhiteLabel table exists
 async function ensureWhiteLabel() {
@@ -532,7 +555,11 @@ async function ensureWhiteLabel() {
     }
   }
 }
-await ensureWhiteLabel()
+try {
+  await ensureWhiteLabel()
+} catch (error) {
+  console.error('⚠️  Failed to ensure WhiteLabel:', error.message)
+}
 
 // Auto-fix: Ensure Review fields exist (isPublished, moderationStatus, etc.)
 async function ensureReviewFields() {
@@ -601,7 +628,11 @@ async function ensureReviewFields() {
     }
   }
 }
-await ensureReviewFields()
+try {
+  await ensureReviewFields()
+} catch (error) {
+  console.error('⚠️  Failed to ensure Review fields:', error.message)
+}
 
 // Auto-fix: Ensure ChatRoom fields exist (isLocked, lockedAt, etc.)
 async function ensureChatRoomFields() {
@@ -660,10 +691,19 @@ async function ensureChatRoomFields() {
     }
   }
 }
-await ensureChatRoomFields()
+try {
+  await ensureChatRoomFields()
+} catch (error) {
+  console.error('⚠️  Failed to ensure ChatRoom fields:', error.message)
+}
 
 // Start Queue Scheduler (checks expired offers every hour)
-startQueueScheduler()
+try {
+  startQueueScheduler()
+  console.log('[OK] Queue Scheduler started')
+} catch (error) {
+  console.error('⚠️  Failed to start queue scheduler:', error.message)
+}
 
 // Start Subscription Reminder Scheduler (checks expiring subscriptions daily at 9am)
 import cron from 'node-cron'
