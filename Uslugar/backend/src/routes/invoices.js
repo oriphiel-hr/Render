@@ -331,8 +331,11 @@ r.post('/bulk/upload-all-missing-to-s3', auth(true, ['ADMIN']), async (req, res,
  * DEPRECATED: S3 storage uklonjen - PDF-ovi se generiraju na zahtjev
  */
 r.post('/bulk/delete-all-from-s3', auth(true, ['ADMIN']), async (req, res, next) => {
-
-    const { deleteInvoicePDF } = await import('../lib/s3-storage.js');
+  return res.status(410).json({ 
+    error: 'S3 storage uklonjen', 
+    message: 'PDF-ovi se sada generiraju na zahtjev umjesto spremanja u S3.' 
+  });
+});
     let deleted = 0;
     let errors = [];
 
