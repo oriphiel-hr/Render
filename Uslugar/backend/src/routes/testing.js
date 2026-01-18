@@ -921,10 +921,95 @@ r.post('/test-data/upload-document', auth(true, ['ADMIN']), async (req, res, nex
   }
 });
 
+// Validacija test podataka
+async function validateTestData() {
+  const { readFileSync } = await import('fs');
+  const { fileURLToPath } = await import('url');
+  const { dirname, join } = await import('path');
+  
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  const routesDir = __dirname;
+  const srcDir = dirname(routesDir);
+  const backendDir = dirname(srcDir);
+  const projectRoot = dirname(backendDir);
+  const testDataPath = join(projectRoot, 'tests', 'test-data.json');
+  
+  let testData;
+  try {
+    const data = readFileSync(testDataPath, 'utf-8');
+    testData = JSON.parse(data);
+  } catch (e) {
+    return { valid: false, error: 'Test podaci nisu pronađeni. Molimo konfigurirajte test podatke u admin panelu.' };
+  }
+  
+  const errors = [];
+  
+  // Provjeri korisnike
+  if (!testData.users || Object.keys(testData.users).length === 0) {
+    errors.push('Nema konfiguriranih test korisnika');
+  } else {
+    const requiredUsers = ['client', 'provider'];
+    for (const userKey of requiredUsers) {
+      const user = testData.users[userKey];
+      if (!user) {
+        errors.push(`Nedostaje korisnik: ${userKey}`);
+      } else {
+        if (!user.email || !user.email.includes('@')) {
+          errors.push(`${userKey}: Email nije ispravan`);
+        }
+        if (!user.password || user.password.length < 6) {
+          errors.push(`${userKey}: Lozinka mora imati najmanje 6 znakova`);
+        }
+        if (userKey !== 'admin' && !user.fullName) {
+          errors.push(`${userKey}: Ime je obavezno`);
+        }
+        if (userKey !== 'admin' && !user.phone) {
+          errors.push(`${userKey}: Telefon je obavezan`);
+        }
+        if ((userKey === 'provider' || userKey === 'providerCompany') && !user.legalStatus) {
+          errors.push(`${userKey}: Pravni status je obavezan`);
+        }
+        if ((userKey === 'provider' || userKey === 'providerCompany') && !user.oib) {
+          errors.push(`${userKey}: OIB je obavezan`);
+        }
+      }
+    }
+  }
+  
+  // Provjeri API konfiguraciju
+  if (!testData.api || !testData.api.baseUrl || !testData.api.frontendUrl) {
+    errors.push('API konfiguracija nije potpuna (baseUrl i frontendUrl su obavezni)');
+  } else {
+    try {
+      const baseUrl = new URL(testData.api.baseUrl);
+      const frontendUrl = new URL(testData.api.frontendUrl);
+    } catch (e) {
+      errors.push('API URL-ovi nisu ispravni');
+    }
+  }
+  
+  if (errors.length > 0) {
+    return { valid: false, errors };
+  }
+  
+  return { valid: true, testData };
+}
+
 // POST /api/testing/run-automated - Pokreni automatske E2E testove
 r.post('/run-automated', auth(true, ['ADMIN']), async (req, res, next) => {
   try {
-    const { planId, testType = 'all' } = req.body;
+    const { planId, testType = 'all', testName = null } = req.body;
+    
+    // Validiraj test podatke
+    const validation = await validateTestData();
+    if (!validation.valid) {
+      return res.status(400).json({
+        error: 'Test podaci nisu ispravni',
+        errors: validation.errors || [validation.error],
+        message: 'Molimo konfigurirajte test podatke u admin panelu (tab "Test Podaci")'
+      });
+    }
     
     // Provjeri da li postoji Playwright
     const { exec } = await import('child_process');
@@ -944,7 +1029,16 @@ r.post('/run-automated', auth(true, ['ADMIN']), async (req, res, next) => {
     // Pokreni testove
     let command = 'cd tests && npx playwright test';
     
-    if (planId) {
+    if (testName) {
+      // Pokreni specifičan test po imenu
+      // Format: "test-name" ili "file.spec.js:test-name"
+      if (testName.includes(':')) {
+        command = `cd tests && npx playwright test ${testName}`;
+      } else {
+        // Pronađi test u svim spec fajlovima
+        command = `cd tests && npx playwright test --grep "${testName}"`;
+      }
+    } else if (planId) {
       // Pokreni testove za specifičan plan
       const plan = await prisma.testPlan.findUnique({
         where: { id: planId },
@@ -956,7 +1050,6 @@ r.post('/run-automated', auth(true, ['ADMIN']), async (req, res, next) => {
       }
       
       // Mapiraj plan na test spec file
-      // Na osnovu kategorije odredi koji test spec pokrenuti
       if (plan.category === 'ALL' || plan.name.includes('E2E')) {
         command = 'cd tests && npx playwright test e2e/all-domains.spec.js';
       } else if (plan.category?.includes('Auth') || plan.category?.includes('AUTH')) {
@@ -969,6 +1062,9 @@ r.post('/run-automated', auth(true, ['ADMIN']), async (req, res, next) => {
     } else if (testType === 'all') {
       command = 'cd tests && npx playwright test';
     }
+    
+    // Dodaj opcije za screenshotove
+    command += ' --reporter=html,json --output=test-results';
     
     // Pokreni testove asinkrono (da ne blokira request)
     execAsync(command)
@@ -986,7 +1082,7 @@ r.post('/run-automated', auth(true, ['ADMIN']), async (req, res, next) => {
       success: true, 
       message: 'Automatski testovi pokrenuti u pozadini',
       command: command,
-      note: 'Provjeri server logs za rezultate testova'
+      note: 'Provjeri server logs za rezultate testova. Screenshotovi će biti automatski snimljeni.'
     });
   } catch (e) {
     console.error('[AUTOMATED TESTS] Error:', e);

@@ -833,6 +833,16 @@ export default function AdminTesting(){
                 {automatedTestResult.success ? 'Automatski testovi pokrenuti' : 'Greška pri pokretanju testova'}
               </h4>
               <p className="text-sm">{automatedTestResult.message || automatedTestResult.error}</p>
+              {automatedTestResult.errors && automatedTestResult.errors.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-xs font-semibold mb-1">Detalji grešaka:</p>
+                  <ul className="text-xs list-disc list-inside space-y-1">
+                    {automatedTestResult.errors.map((err, idx) => (
+                      <li key={idx}>{err}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {automatedTestResult.command && (
                 <p className="text-xs mt-2 font-mono bg-white/50 p-2 rounded">
                   {automatedTestResult.command}
@@ -913,20 +923,60 @@ export default function AdminTesting(){
         >
           Novi plan
         </button>
-        <button 
-          onClick={() => handleRunAutomated(null, 'all')} 
-          disabled={runningAutomated} 
-          className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-150 ${
-            runningAutomated
-              ? 'bg-gray-400 text-white cursor-not-allowed' 
-              : 'bg-green-600 text-white hover:bg-green-700'
-          }`}
-          title="Pokreće automatske E2E testove (Playwright)"
-        >
-          {runningAutomated && <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
-          <span>🤖</span>
-          <span>{runningAutomated ? 'Pokretanje...' : 'Pokreni automatske testove'}</span>
-        </button>
+        <div className="relative">
+          <button 
+            onClick={() => handleRunAutomated(null, 'all')} 
+            disabled={runningAutomated} 
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-150 ${
+              runningAutomated
+                ? 'bg-gray-400 text-white cursor-not-allowed' 
+                : 'bg-green-600 text-white hover:bg-green-700'
+            }`}
+            title="Pokreće automatske E2E testove (Playwright)"
+          >
+            {runningAutomated && <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
+            <span>🤖</span>
+            <span>{runningAutomated ? 'Pokretanje...' : 'Pokreni automatske testove'}</span>
+          </button>
+          {/* Dropdown za pojedinačne testove */}
+          <div className="absolute right-0 mt-1 w-64 bg-white border rounded-lg shadow-lg z-50 hidden group-hover:block">
+            <div className="p-2">
+              <div className="text-xs font-semibold text-gray-700 mb-2 px-2">Pojedinačni testovi:</div>
+              <div className="space-y-1">
+                <button
+                  onClick={() => handleRunAutomated(null, 'all', 'Registracija korisnika usluge')}
+                  className="w-full text-left px-2 py-1 text-xs hover:bg-gray-100 rounded"
+                >
+                  📝 Registracija korisnika
+                </button>
+                <button
+                  onClick={() => handleRunAutomated(null, 'all', 'Prijava i odjava')}
+                  className="w-full text-left px-2 py-1 text-xs hover:bg-gray-100 rounded"
+                >
+                  🔐 Prijava i odjava
+                </button>
+                <button
+                  onClick={() => handleRunAutomated(null, 'all', 'KYC: Upload dokumenta')}
+                  className="w-full text-left px-2 py-1 text-xs hover:bg-gray-100 rounded"
+                >
+                  📄 KYC Upload
+                </button>
+                <button
+                  onClick={() => handleRunAutomated(null, 'all', 'Objava posla')}
+                  className="w-full text-left px-2 py-1 text-xs hover:bg-gray-100 rounded"
+                >
+                  💼 Objava posla
+                </button>
+                <button
+                  onClick={() => handleRunAutomated(null, 'all', 'Kompletni E2E flow')}
+                  className="w-full text-left px-2 py-1 text-xs hover:bg-gray-100 rounded"
+                >
+                  🎯 Kompletni E2E flow
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
         <button 
           onClick={handleSeed} 
           disabled={seeding} 

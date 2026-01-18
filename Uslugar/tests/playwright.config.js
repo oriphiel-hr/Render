@@ -30,8 +30,8 @@ export default defineConfig({
   use: {
     /* Base URL za testove */
     baseURL: process.env.FRONTEND_URL || 'https://www.uslugar.eu',
-    /* Screenshot na failure */
-    screenshot: 'only-on-failure',
+    /* Screenshot nakon svakog testa (ne samo na failure) */
+    screenshot: 'on',
     /* Video snimanje */
     video: 'retain-on-failure',
     /* Trace za debugging */

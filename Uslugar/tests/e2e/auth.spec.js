@@ -13,8 +13,13 @@ test.describe('Auth - Autentifikacija i Registracija', () => {
   test('Registracija korisnika usluge (osoba)', async ({ page }) => {
     const user = testData.users.client;
     
+    if (!user || !user.email || !user.password) {
+      throw new Error('Test podaci nisu konfigurirani. Molimo konfigurirajte test podatke u admin panelu.');
+    }
+    
     // 1. Navigiraj na registraciju
     await page.click('text=Registracija');
+    await page.screenshot({ path: 'test-results/screenshots/01-registracija-start.png', fullPage: true });
     
     // 2. Unesi podatke
     await page.fill('input[name="email"]', user.email);
@@ -23,6 +28,7 @@ test.describe('Auth - Autentifikacija i Registracija', () => {
     await page.fill('input[name="phone"]', user.phone);
     await page.selectOption('select[name="city"]', user.city);
     await page.click('input[value="USER"]'); // Odaberi ulogu korisnika
+    await page.screenshot({ path: 'test-results/screenshots/02-registracija-forma-popunjena.png', fullPage: true });
     
     // 3. Pošalji formu
     await page.click('button[type="submit"]');
@@ -30,6 +36,7 @@ test.describe('Auth - Autentifikacija i Registracija', () => {
     // 4. Provjeri uspjeh
     await expect(page.locator('text=Registracija uspješna')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('text=Verifikacijski email poslan')).toBeVisible();
+    await page.screenshot({ path: 'test-results/screenshots/03-registracija-uspjeh.png', fullPage: true });
   });
 
   test('Registracija korisnika usluge (tvrtka/obrt)', async ({ page }) => {
