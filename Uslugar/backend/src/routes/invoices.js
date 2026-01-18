@@ -344,9 +344,7 @@ r.post('/bulk/delete-all-from-s3', auth(true, ['ADMIN']), async (req, res, next)
 r.post('/:invoiceId/upload-to-s3', auth(true, ['ADMIN']), async (req, res, next) => {
   return res.status(410).json({
     error: 'S3 storage uklonjen',
-    message: 'PDF-ovi se sada generiraju na zahtjev. Koristi GET /api/invoices/:invoiceId/pdf za generiranje PDF-a.' 
-    error: 'S3 storage uklonjen', 
-    message: 'PDF-ovi se sada generiraju na zahtjev. Koristi GET /api/invoices/:invoiceId/pdf za generiranje PDF-a.' 
+    message: 'PDF-ovi se sada generiraju na zahtjev. Koristi GET /api/invoices/:invoiceId/pdf za generiranje PDF-a.'
   });
 });
 
