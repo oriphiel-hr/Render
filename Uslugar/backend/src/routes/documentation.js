@@ -139,8 +139,66 @@ r.get('/check-encoding', async (req, res, next) => {
 });
 
 // GET /api/documentation - Dohvati sve kategorije i feature opise
+// Query param: ?status=check - vrati status umjesto dokumentacije (fallback ako /status nije dostupan)
 r.get('/', async (req, res, next) => {
   try {
+    // Ako se traži status kroz query param (fallback ako /status nije dostupan)
+    if (req.query.status === 'check' || req.query._status === 'true') {
+      // Vrati status direktno (umjesto redirect-a)
+      const status = {
+        tablesExist: false,
+        hasCategories: false,
+        hasFeatures: false,
+        categoriesCount: 0,
+        featuresCount: 0,
+        publicFeaturesCount: 0,
+        errors: []
+      };
+
+      try {
+        await prisma.$queryRaw`SELECT 1 FROM "DocumentationCategory" LIMIT 1`;
+        status.tablesExist = true;
+        await prisma.$queryRaw`SELECT 1 FROM "DocumentationFeature" LIMIT 1`;
+        
+        const categoriesCount = await prisma.documentationCategory.count({
+          where: { isActive: true }
+        });
+        status.categoriesCount = categoriesCount;
+        status.hasCategories = categoriesCount > 0;
+
+        const featuresCount = await prisma.documentationFeature.count({
+          where: { deprecated: false }
+        });
+        status.featuresCount = featuresCount;
+        status.hasFeatures = featuresCount > 0;
+
+        const publicFeaturesCount = await prisma.documentationFeature.count({
+          where: {
+            deprecated: false,
+            isAdminOnly: false
+          }
+        });
+        status.publicFeaturesCount = publicFeaturesCount;
+      } catch (error) {
+        status.errors.push({
+          type: 'TABLE_NOT_EXISTS',
+          message: error.message,
+          hint: 'Run migrations first: npx prisma migrate deploy'
+        });
+      }
+
+      return res.json({
+        success: status.tablesExist && status.hasCategories && status.hasFeatures,
+        status,
+        recommendations: [
+          !status.tablesExist && 'Run database migrations: npx prisma migrate deploy',
+          status.tablesExist && !status.hasCategories && 'Seed documentation: npm run seed:documentation',
+          status.hasCategories && status.publicFeaturesCount === 0 && 'All features are admin-only. Check isAdminOnly flags.'
+        ].filter(Boolean),
+        _note: 'Status check via query param. Use /api/documentation/status for direct endpoint.'
+      });
+    }
+    
     // Provjeri da li tablice postoje - ako ne, vrati prazan array
     let categories;
     try {
