@@ -1518,88 +1518,84 @@ export default function AdminTesting(){
                             </div>
                           </div>
                         )}
-                        {/* Email Konfiguracija za korisnika (opcionalno) */}
-                        <div className="col-span-2 mt-3 pt-3 border-t">
-                          <details className="cursor-pointer">
-                            <summary className="text-sm font-medium text-gray-700 mb-2">
-                              Email Pristup za {userKey.replace(/([A-Z])/g, ' $1').trim()} (Opcionalno)
-                            </summary>
-                            <div className="mt-2 space-y-2 bg-blue-50 p-3 rounded text-xs text-blue-800 mb-3">
-                              <strong>💡 Objašnjenje:</strong>
-                              <ul className="list-disc list-inside mt-1 space-y-1">
-                                <li>Ako ne postaviš, koristi se globalna email konfiguracija (gore)</li>
-                                <li>Za Mailtrap: možeš koristiti različite inbox ID-eve za različite korisnike</li>
-                                <li>Za IMAP: možeš koristiti različite email pristupe za svakog korisnika</li>
-                              </ul>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                              <div>
-                                <label className="block text-xs font-medium mb-1">Mailtrap Inbox ID (za ovog korisnika)</label>
-                                <input
-                                  type="text"
-                                  className="w-full border rounded px-2 py-1.5 text-xs"
-                                  placeholder="Ostavi prazno za globalni inbox"
-                                  value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].emailConfig && testData.users[userKey].emailConfig.inboxId) || ''}
-                                  onChange={e => {
-                                    if (!testData) return
-                                    const updated = { ...testData }
-                                    if (!updated.users) updated.users = {}
-                                    if (!updated.users[userKey]) updated.users[userKey] = {}
-                                    if (!updated.users[userKey].emailConfig) updated.users[userKey].emailConfig = {}
-                                    setTestData({
-                                      ...updated,
-                                      users: {
-                                        ...updated.users,
-                                        [userKey]: {
-                                          ...updated.users[userKey],
-                                          emailConfig: {
-                                            ...updated.users[userKey].emailConfig,
-                                            inboxId: e.target.value
-                                          }
-                                        }
-                                      }
-                                    })
-                                  }}
-                                />
-                                <p className="text-xs text-gray-500 mt-0.5">Različiti inbox ID za svakog korisnika (Mailtrap)</p>
-                              </div>
-                              <div>
-                                <label className="block text-xs font-medium mb-1">IMAP Email User (za ovog korisnika)</label>
-                                <input
-                                  type="email"
-                                  className="w-full border rounded px-2 py-1.5 text-xs"
-                                  placeholder="Ostavi prazno za globalni pristup"
-                                  value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].emailConfig && testData.users[userKey].emailConfig.imap && testData.users[userKey].emailConfig.imap.user) || ''}
-                                  onChange={e => {
-                                    if (!testData) return
-                                    const updated = { ...testData }
-                                    if (!updated.users) updated.users = {}
-                                    if (!updated.users[userKey]) updated.users[userKey] = {}
-                                    if (!updated.users[userKey].emailConfig) updated.users[userKey].emailConfig = {}
-                                    if (!updated.users[userKey].emailConfig.imap) updated.users[userKey].emailConfig.imap = {}
-                                    setTestData({
-                                      ...updated,
-                                      users: {
-                                        ...updated.users,
-                                        [userKey]: {
-                                          ...updated.users[userKey],
-                                          emailConfig: {
-                                            ...updated.users[userKey].emailConfig,
-                                            imap: {
-                                              ...updated.users[userKey].emailConfig.imap,
-                                              user: e.target.value
+                            {/* Email Konfiguracija za korisnika (opcionalno) */}
+                            <div className="col-span-2 mt-3 pt-3 border-t">
+                              <details className="cursor-pointer">
+                                <summary className="text-sm font-medium text-gray-700 mb-2">
+                                  📧 Email Pristup za {userKey.replace(/([A-Z])/g, ' $1').trim()} (Mailtrap Konfiguracija)
+                                </summary>
+                                <div className="mt-2 space-y-2 bg-blue-50 p-3 rounded text-xs text-blue-800 mb-3">
+                                  <strong>💡 Objašnjenje:</strong>
+                                  <ul className="list-disc list-inside mt-1 space-y-1">
+                                    <li><strong>Email adresa:</strong> Email adresa ovog korisnika koja će primati test emailove (npr. test.client@mailtrap.io)</li>
+                                    <li><strong>Mailtrap Inbox ID:</strong> ID inbox-a u Mailtrap-u za ovu grupu korisnika (npr. 12345 za clients, 12346 za providers)</li>
+                                    <li>Ako ne postaviš inbox ID, koristi se globalni inbox iz Email Konfiguracije (gore)</li>
+                                    <li>Svi korisnici iste grupe (npr. client, client1, client2) mogu koristiti isti inbox ID</li>
+                                  </ul>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                  <div>
+                                    <label className="block text-xs font-medium mb-1">Mailtrap Email Adresa (za ovog korisnika)</label>
+                                    <input
+                                      type="email"
+                                      className="w-full border rounded px-2 py-1.5 text-xs"
+                                      placeholder="test.client@mailtrap.io"
+                                      value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].mailtrapEmail) || ''}
+                                      onChange={e => {
+                                        if (!testData) return
+                                        const updated = { ...testData }
+                                        if (!updated.users) updated.users = {}
+                                        if (!updated.users[userKey]) updated.users[userKey] = {}
+                                        setTestData({
+                                          ...updated,
+                                          users: {
+                                            ...updated.users,
+                                            [userKey]: {
+                                              ...updated.users[userKey],
+                                              mailtrapEmail: e.target.value
                                             }
                                           }
-                                        }
-                                      }
-                                    })
-                                  }}
-                                />
-                                <p className="text-xs text-gray-500 mt-0.5">Različiti email pristup za svakog korisnika (IMAP)</p>
-                              </div>
+                                        })
+                                      }}
+                                    />
+                                    <p className="text-xs text-gray-500 mt-0.5">Email adresa koja će primati test emailove (Mailtrap)</p>
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-medium mb-1">Mailtrap Inbox ID (za ovog korisnika)</label>
+                                    <input
+                                      type="text"
+                                      className="w-full border rounded px-2 py-1.5 text-xs"
+                                      placeholder="npr. 12345 (ili ostavi prazno za globalni)"
+                                      value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].emailConfig && testData.users[userKey].emailConfig.inboxId) || ''}
+                                      onChange={e => {
+                                        if (!testData) return
+                                        const updated = { ...testData }
+                                        if (!updated.users) updated.users = {}
+                                        if (!updated.users[userKey]) updated.users[userKey] = {}
+                                        if (!updated.users[userKey].emailConfig) updated.users[userKey].emailConfig = {}
+                                        setTestData({
+                                          ...updated,
+                                          users: {
+                                            ...updated.users,
+                                            [userKey]: {
+                                              ...updated.users[userKey],
+                                              emailConfig: {
+                                                ...updated.users[userKey].emailConfig,
+                                                inboxId: e.target.value
+                                              }
+                                            }
+                                          }
+                                        })
+                                      }}
+                                    />
+                                    <p className="text-xs text-gray-500 mt-0.5">ID inbox-a u Mailtrap-u (vidi MAILTRAP-SETUP.md za detalje)</p>
+                                  </div>
+                                </div>
+                                <div className="mt-2 text-xs text-gray-600 bg-yellow-50 p-2 rounded border border-yellow-200">
+                                  <strong>📝 Napomena:</strong> Email adresa ovog korisnika ({testData?.users?.[userKey]?.email || 'nepostavljeno'}) treba biti konfigurirana u aplikaciji da šalje emailove na Mailtrap email adresu ({testData?.users?.[userKey]?.mailtrapEmail || 'nepostavljeno'}) ili koristi Mailtrap inbox direktno.
+                                </div>
+                              </details>
                             </div>
-                          </details>
-                        </div>
                       </div>
                     </div>
                   ))}

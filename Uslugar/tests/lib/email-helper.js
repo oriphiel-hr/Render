@@ -60,8 +60,15 @@ export async function getEmails(options = {}) {
 async function getEmailsFromTestService(options = {}) {
   const { from, subject, to, inboxId } = options;
   const apiKey = EMAIL_CONFIG.testService.apiKey;
+  
+  if (!apiKey) {
+    throw new Error('Mailtrap API Key nije postavljen. Postavi ga u Admin Panel → Test Podaci → Email Konfiguracija.');
+  }
+  
   // Koristi inboxId iz opcija ako je postavljen (za korisnika), inače koristi globalni
   const targetInboxId = inboxId || EMAIL_CONFIG.testService.inboxId || '0';
+  
+  console.log(`[EMAIL HELPER] Fetching emails from Mailtrap inbox ${targetInboxId}${to ? ` for ${to}` : ''}`);
   
   const url = `https://mailtrap.io/api/v1/inboxes/${targetInboxId}/messages`;
   const response = await fetch(url, {
@@ -72,28 +79,50 @@ async function getEmailsFromTestService(options = {}) {
   });
   
   if (!response.ok) {
-    throw new Error(`Mailtrap API error: ${response.statusText}`);
+    const errorText = await response.text();
+    console.error(`[EMAIL HELPER] Mailtrap API error: ${response.status} ${response.statusText}`, errorText);
+    throw new Error(`Mailtrap API error: ${response.status} ${response.statusText}. Provjeri API Key i Inbox ID.`);
   }
   
   const data = await response.json();
-  let messages = data || [];
+  let messages = Array.isArray(data) ? data : (data?.messages || []);
+  
+  console.log(`[EMAIL HELPER] Found ${messages.length} messages in inbox ${targetInboxId}`);
   
   // Filtriraj poruke
   if (from) {
+    const originalCount = messages.length;
     messages = messages.filter(msg => 
-      msg.from_email?.includes(from) || msg.from_name?.includes(from)
+      msg.from_email?.toLowerCase().includes(from.toLowerCase()) || 
+      msg.from_name?.toLowerCase().includes(from.toLowerCase())
     );
+    console.log(`[EMAIL HELPER] Filtered by 'from' (${from}): ${originalCount} → ${messages.length}`);
   }
   if (subject) {
+    const originalCount = messages.length;
+    const subjectPattern = new RegExp(subject, 'i');
     messages = messages.filter(msg => 
-      msg.subject?.includes(subject)
+      subjectPattern.test(msg.subject || '')
     );
+    console.log(`[EMAIL HELPER] Filtered by 'subject' (${subject}): ${originalCount} → ${messages.length}`);
   }
   if (to) {
-    messages = messages.filter(msg => 
-      msg.to_email?.includes(to)
-    );
+    const originalCount = messages.length;
+    messages = messages.filter(msg => {
+      const toEmail = msg.to_email?.toLowerCase() || '';
+      const toName = msg.to_name?.toLowerCase() || '';
+      const searchTo = to.toLowerCase();
+      return toEmail.includes(searchTo) || toName.includes(searchTo);
+    });
+    console.log(`[EMAIL HELPER] Filtered by 'to' (${to}): ${originalCount} → ${messages.length}`);
   }
+  
+  // Sortiraj po datumu (najnovije prvo)
+  messages.sort((a, b) => {
+    const dateA = new Date(a.created_at || a.sent_at || 0);
+    const dateB = new Date(b.created_at || b.sent_at || 0);
+    return dateB - dateA;
+  });
   
   return messages;
 }
