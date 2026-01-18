@@ -754,5 +754,78 @@ r.patch('/runs/:runId/items/:itemId', auth(true, ['ADMIN']), async (req, res, ne
   } catch (e) { next(e); }
 });
 
+// POST /api/testing/run-automated - Pokreni automatske E2E testove
+r.post('/run-automated', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const { planId, testType = 'all' } = req.body;
+    
+    // Provjeri da li postoji Playwright
+    const { exec } = await import('child_process');
+    const { promisify } = await import('util');
+    const execAsync = promisify(exec);
+    
+    try {
+      // Provjeri da li je Playwright instaliran
+      await execAsync('npx playwright --version');
+    } catch (error) {
+      return res.status(400).json({ 
+        error: 'Playwright nije instaliran',
+        message: 'Instaliraj Playwright: cd tests && npm install && npx playwright install'
+      });
+    }
+    
+    // Pokreni testove
+    let command = 'cd tests && npx playwright test';
+    
+    if (planId) {
+      // Pokreni testove za specifičan plan
+      const plan = await prisma.testPlan.findUnique({
+        where: { id: planId },
+        include: { items: true }
+      });
+      
+      if (!plan) {
+        return res.status(404).json({ error: 'Plan nije pronađen' });
+      }
+      
+      // Mapiraj plan na test spec file
+      // Na osnovu kategorije odredi koji test spec pokrenuti
+      if (plan.category === 'ALL' || plan.name.includes('E2E')) {
+        command = 'cd tests && npx playwright test e2e/all-domains.spec.js';
+      } else if (plan.category?.includes('Auth') || plan.category?.includes('AUTH')) {
+        command = 'cd tests && npx playwright test e2e/auth.spec.js';
+      } else if (plan.category?.includes('KYC')) {
+        command = 'cd tests && npx playwright test e2e/kyc.spec.js';
+      } else if (plan.category?.includes('Jobs') || plan.category?.includes('JOBS')) {
+        command = 'cd tests && npx playwright test e2e/jobs.spec.js';
+      }
+    } else if (testType === 'all') {
+      command = 'cd tests && npx playwright test';
+    }
+    
+    // Pokreni testove asinkrono (da ne blokira request)
+    execAsync(command)
+      .then(({ stdout, stderr }) => {
+        console.log('[AUTOMATED TESTS] Test execution completed');
+        console.log('[AUTOMATED TESTS] stdout:', stdout);
+        if (stderr) console.error('[AUTOMATED TESTS] stderr:', stderr);
+      })
+      .catch((error) => {
+        console.error('[AUTOMATED TESTS] Error:', error);
+      });
+    
+    // Vrati odgovor odmah (testovi se izvršavaju u pozadini)
+    res.json({ 
+      success: true, 
+      message: 'Automatski testovi pokrenuti u pozadini',
+      command: command,
+      note: 'Provjeri server logs za rezultate testova'
+    });
+  } catch (e) {
+    console.error('[AUTOMATED TESTS] Error:', e);
+    next(e);
+  }
+});
+
 export default r;
 

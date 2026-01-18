@@ -1,0 +1,106 @@
+{
+  "users": {
+    "client": {
+      "email": "test.client@uslugar.hr",
+      "password": "Test123456!",
+      "fullName": "Test Klijent",
+      "phone": "+385991111111",
+      "city": "Zagreb",
+      "emailAccess": true,
+      "description": "Korisnik usluge koji objavljuje poslove"
+    },
+    "provider": {
+      "email": "test.provider@uslugar.hr",
+      "password": "Test123456!",
+      "fullName": "Test Pružatelj",
+      "phone": "+385992222222",
+      "city": "Zagreb",
+      "legalStatus": "FREELANCER",
+      "oib": "12345678901",
+      "companyName": null,
+      "emailAccess": true,
+      "description": "Pružatelj usluga koji kupuje leadove"
+    },
+    "providerCompany": {
+      "email": "test.company@uslugar.hr",
+      "password": "Test123456!",
+      "fullName": "Test Tvrtka",
+      "phone": "+385993333333",
+      "city": "Zagreb",
+      "legalStatus": "DOO",
+      "oib": "98765432109",
+      "companyName": "Test DOO",
+      "emailAccess": true,
+      "description": "Pružatelj usluga kao tvrtka"
+    },
+    "admin": {
+      "email": "admin@uslugar.hr",
+      "password": "Admin123456!",
+      "description": "Admin korisnik za upravljanje"
+    }
+  },
+  "documents": {
+    "license": {
+      "path": "tests/fixtures/sample-license.pdf",
+      "type": "application/pdf",
+      "description": "Primjer licence za upload"
+    },
+    "kycDocument": {
+      "path": "tests/fixtures/sample-id.pdf",
+      "type": "application/pdf",
+      "description": "Primjer dokumenta za KYC verifikaciju"
+    },
+    "portfolioImage1": {
+      "path": "tests/fixtures/sample-portfolio-1.jpg",
+      "type": "image/jpeg",
+      "description": "Primjer portfolio slike 1"
+    },
+    "portfolioImage2": {
+      "path": "tests/fixtures/sample-portfolio-2.jpg",
+      "type": "image/jpeg",
+      "description": "Primjer portfolio slike 2"
+    }
+  },
+  "testData": {
+    "job": {
+      "title": "Automatski test posao",
+      "description": "Ovo je automatski kreirani posao za testiranje",
+      "category": "Električar",
+      "budgetMin": 500,
+      "budgetMax": 1000,
+      "city": "Zagreb",
+      "urgency": "NORMALNA",
+      "size": "SREDNJA",
+      "images": ["tests/fixtures/sample-portfolio-1.jpg"]
+    },
+    "offer": {
+      "amount": 750,
+      "message": "Mogu izvršiti posao u roku od 7 dana",
+      "estimatedDays": 7,
+      "negotiable": false
+    },
+    "review": {
+      "rating": 5,
+      "comment": "Odličan pružatelj, vrlo profesionalan!"
+    },
+    "subscription": {
+      "plan": "BASIC",
+      "description": "Basic pretplata za testiranje"
+    }
+  },
+  "api": {
+    "baseUrl": "https://api.uslugar.eu",
+    "frontendUrl": "https://www.uslugar.eu",
+    "timeout": 30000,
+    "waitForNavigation": 3000
+  },
+  "assertions": {
+    "registrationSuccess": "Registracija uspješna",
+    "loginSuccess": "Prijava uspješna",
+    "emailVerificationSent": "Verifikacijski email poslan",
+    "jobCreated": "Posao uspješno kreiran",
+    "offerSent": "Ponuda uspješno poslana",
+    "leadPurchased": "Lead uspješno kupljen"
+  }
+}
+

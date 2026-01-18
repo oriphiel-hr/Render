@@ -1,0 +1,20 @@
+{
+  "name": "uslugar-e2e-tests",
+  "version": "1.0.0",
+  "description": "Automatski E2E testovi za Uslugar platformu",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "test:auth": "playwright test e2e/auth.spec.js",
+    "test:kyc": "playwright test e2e/kyc.spec.js",
+    "test:jobs": "playwright test e2e/jobs.spec.js",
+    "test:all-domains": "playwright test e2e/all-domains.spec.js",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  }
+}
+
