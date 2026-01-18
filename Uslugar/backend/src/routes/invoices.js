@@ -315,30 +315,6 @@ r.post('/bulk/upload-all-missing-to-s3', auth(true, ['ADMIN']), async (req, res,
     error: 'S3 storage uklonjen', 
     message: 'PDF-ovi se sada generiraju na zahtjev umjesto spremanja u S3. Koristi GET /api/invoices/:invoiceId/pdf za generiranje PDF-a.' 
   });
-        const pdfBuffer = await generateInvoicePDF(invoice);
-        
-        // Upload na S3
-        const s3Url = await saveInvoicePDF(invoice, pdfBuffer);
-        
-        if (s3Url) {
-          uploaded++;
-        } else {
-          errors.push({ invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber, error: 'Upload neuspješan' });
-        }
-      } catch (error) {
-        errors.push({ invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber, error: error.message });
-      }
-    }
-
-    res.json({
-      success: true,
-      uploaded,
-      total: invoices.length,
-      errors: errors.length > 0 ? errors : undefined
-    });
-  } catch (e) {
-    next(e);
-  }
 });
 
 /**
