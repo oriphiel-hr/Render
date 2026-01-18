@@ -728,7 +728,23 @@ export default function AdminTesting(){
   }
 
   const updateTestDataField = (path, value) => {
-    if (!testData) return
+    if (!testData) {
+      // Ako testData ne postoji, kreiraj osnovnu strukturu
+      const defaultData = {
+        users: {},
+        documents: {},
+        testData: {},
+        api: {
+          baseUrl: process.env.API_URL || 'https://api.uslugar.eu',
+          frontendUrl: process.env.FRONTEND_URL || 'https://www.uslugar.eu',
+          timeout: 30000,
+          waitForNavigation: 3000
+        },
+        assertions: {}
+      }
+      setTestData(defaultData)
+      return
+    }
     
     const keys = path.split('.')
     const updated = { ...testData }
@@ -1165,15 +1181,16 @@ export default function AdminTesting(){
                           <input
                             type="email"
                             className="w-full border rounded px-3 py-2 text-sm"
-                            value={testData.users?.[userKey]?.email || ''}
+                            value={(testData?.users?.[userKey]?.email) || ''}
                             onChange={e => {
-                              if (!testData.users) testData.users = {}
-                              if (!testData.users[userKey]) testData.users[userKey] = {}
+                              const updated = { ...testData }
+                              if (!updated.users) updated.users = {}
+                              if (!updated.users[userKey]) updated.users[userKey] = {}
                               setTestData({
-                                ...testData,
+                                ...updated,
                                 users: {
-                                  ...testData.users,
-                                  [userKey]: { ...testData.users[userKey], email: e.target.value }
+                                  ...updated.users,
+                                  [userKey]: { ...updated.users[userKey], email: e.target.value }
                                 }
                               })
                             }}
@@ -1184,15 +1201,16 @@ export default function AdminTesting(){
                           <input
                             type="password"
                             className="w-full border rounded px-3 py-2 text-sm"
-                            value={testData.users?.[userKey]?.password || ''}
+                            value={(testData?.users?.[userKey]?.password) || ''}
                             onChange={e => {
-                              if (!testData.users) testData.users = {}
-                              if (!testData.users[userKey]) testData.users[userKey] = {}
+                              const updated = { ...testData }
+                              if (!updated.users) updated.users = {}
+                              if (!updated.users[userKey]) updated.users[userKey] = {}
                               setTestData({
-                                ...testData,
+                                ...updated,
                                 users: {
-                                  ...testData.users,
-                                  [userKey]: { ...testData.users[userKey], password: e.target.value }
+                                  ...updated.users,
+                                  [userKey]: { ...updated.users[userKey], password: e.target.value }
                                 }
                               })
                             }}
@@ -1205,15 +1223,16 @@ export default function AdminTesting(){
                               <input
                                 type="text"
                                 className="w-full border rounded px-3 py-2 text-sm"
-                                value={testData.users?.[userKey]?.fullName || ''}
+                                value={(testData?.users?.[userKey]?.fullName) || ''}
                                 onChange={e => {
-                                  if (!testData.users) testData.users = {}
-                                  if (!testData.users[userKey]) testData.users[userKey] = {}
+                                  const updated = { ...testData }
+                                  if (!updated.users) updated.users = {}
+                                  if (!updated.users[userKey]) updated.users[userKey] = {}
                                   setTestData({
-                                    ...testData,
+                                    ...updated,
                                     users: {
-                                      ...testData.users,
-                                      [userKey]: { ...testData.users[userKey], fullName: e.target.value }
+                                      ...updated.users,
+                                      [userKey]: { ...updated.users[userKey], fullName: e.target.value }
                                     }
                                   })
                                 }}
@@ -1224,15 +1243,16 @@ export default function AdminTesting(){
                               <input
                                 type="text"
                                 className="w-full border rounded px-3 py-2 text-sm"
-                                value={testData.users?.[userKey]?.phone || ''}
+                                value={(testData?.users?.[userKey]?.phone) || ''}
                                 onChange={e => {
-                                  if (!testData.users) testData.users = {}
-                                  if (!testData.users[userKey]) testData.users[userKey] = {}
+                                  const updated = { ...testData }
+                                  if (!updated.users) updated.users = {}
+                                  if (!updated.users[userKey]) updated.users[userKey] = {}
                                   setTestData({
-                                    ...testData,
+                                    ...updated,
                                     users: {
-                                      ...testData.users,
-                                      [userKey]: { ...testData.users[userKey], phone: e.target.value }
+                                      ...updated.users,
+                                      [userKey]: { ...updated.users[userKey], phone: e.target.value }
                                     }
                                   })
                                 }}
@@ -1244,15 +1264,16 @@ export default function AdminTesting(){
                                   <label className="block text-sm font-medium mb-1">Pravni Status</label>
                                   <select
                                     className="w-full border rounded px-3 py-2 text-sm"
-                                    value={testData.users?.[userKey]?.legalStatus || ''}
+                                    value={(testData?.users?.[userKey]?.legalStatus) || ''}
                                     onChange={e => {
-                                      if (!testData.users) testData.users = {}
-                                      if (!testData.users[userKey]) testData.users[userKey] = {}
+                                      const updated = { ...testData }
+                                      if (!updated.users) updated.users = {}
+                                      if (!updated.users[userKey]) updated.users[userKey] = {}
                                       setTestData({
-                                        ...testData,
+                                        ...updated,
                                         users: {
-                                          ...testData.users,
-                                          [userKey]: { ...testData.users[userKey], legalStatus: e.target.value }
+                                          ...updated.users,
+                                          [userKey]: { ...updated.users[userKey], legalStatus: e.target.value }
                                         }
                                       })
                                     }}
@@ -1269,15 +1290,16 @@ export default function AdminTesting(){
                                   <input
                                     type="text"
                                     className="w-full border rounded px-3 py-2 text-sm"
-                                    value={testData.users?.[userKey]?.oib || ''}
+                                    value={(testData?.users?.[userKey]?.oib) || ''}
                                     onChange={e => {
-                                      if (!testData.users) testData.users = {}
-                                      if (!testData.users[userKey]) testData.users[userKey] = {}
+                                      const updated = { ...testData }
+                                      if (!updated.users) updated.users = {}
+                                      if (!updated.users[userKey]) updated.users[userKey] = {}
                                       setTestData({
-                                        ...testData,
+                                        ...updated,
                                         users: {
-                                          ...testData.users,
-                                          [userKey]: { ...testData.users[userKey], oib: e.target.value }
+                                          ...updated.users,
+                                          [userKey]: { ...updated.users[userKey], oib: e.target.value }
                                         }
                                       })
                                     }}
@@ -1298,7 +1320,7 @@ export default function AdminTesting(){
                 <h3 className="text-lg font-semibold mb-4">Test Dokumenti</h3>
                 <div className="space-y-4">
                   {['license', 'kycDocument', 'portfolioImage1', 'portfolioImage2'].map(docKey => {
-                    const doc = testData.documents?.[docKey]
+                    const doc = testData?.documents?.[docKey]
                     return (
                       <div key={docKey} className="border rounded p-4 bg-gray-50">
                         <h4 className="font-medium mb-3 capitalize">{docKey.replace(/([A-Z])/g, ' $1').trim()}</h4>
@@ -1326,6 +1348,7 @@ export default function AdminTesting(){
                           {doc?.url && (
                             <button
                               onClick={() => {
+                                if (!testData) return
                                 const updated = { ...testData }
                                 if (updated.documents) {
                                   delete updated.documents[docKey]
@@ -1356,7 +1379,7 @@ export default function AdminTesting(){
                     <input
                       type="text"
                       className="w-full border rounded px-3 py-2 text-sm"
-                      value={testData.api?.baseUrl || ''}
+                      value={(testData?.api?.baseUrl) || ''}
                       onChange={e => updateTestDataField('api.baseUrl', e.target.value)}
                     />
                   </div>
@@ -1365,7 +1388,7 @@ export default function AdminTesting(){
                     <input
                       type="text"
                       className="w-full border rounded px-3 py-2 text-sm"
-                      value={testData.api?.frontendUrl || ''}
+                      value={(testData?.api?.frontendUrl) || ''}
                       onChange={e => updateTestDataField('api.frontendUrl', e.target.value)}
                     />
                   </div>
