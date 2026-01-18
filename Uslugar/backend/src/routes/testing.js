@@ -754,6 +754,173 @@ r.patch('/runs/:runId/items/:itemId', auth(true, ['ADMIN']), async (req, res, ne
   } catch (e) { next(e); }
 });
 
+// GET /api/testing/test-data - Dohvati test podatke
+r.get('/test-data', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const { readFileSync } = await import('fs');
+    const { fileURLToPath } = await import('url');
+    const { dirname, join } = await import('path');
+    
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    
+    // Pronađi putanju do test-data.json
+    const routesDir = __dirname; // backend/src/routes
+    const srcDir = dirname(routesDir); // backend/src
+    const backendDir = dirname(srcDir); // backend
+    const projectRoot = dirname(backendDir); // root projekta
+    
+    const testDataPath = join(projectRoot, 'tests', 'test-data.json');
+    
+    try {
+      const data = readFileSync(testDataPath, 'utf-8');
+      const testData = JSON.parse(data);
+      res.json(testData);
+    } catch (fileError) {
+      // Ako fajl ne postoji, vrati default strukturu
+      res.json({
+        users: {},
+        documents: {},
+        testData: {},
+        api: {
+          baseUrl: process.env.API_URL || 'https://api.uslugar.eu',
+          frontendUrl: process.env.FRONTEND_URL || 'https://www.uslugar.eu',
+          timeout: 30000,
+          waitForNavigation: 3000
+        },
+        assertions: {}
+      });
+    }
+  } catch (e) {
+    next(e);
+  }
+});
+
+// POST /api/testing/test-data - Spremi test podatke
+r.post('/test-data', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const { writeFileSync, mkdirSync } = await import('fs');
+    const { fileURLToPath } = await import('url');
+    const { dirname, join } = await import('path');
+    
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    
+    const routesDir = __dirname;
+    const srcDir = dirname(routesDir);
+    const backendDir = dirname(srcDir);
+    const projectRoot = dirname(backendDir);
+    
+    const testsDir = join(projectRoot, 'tests');
+    const testDataPath = join(testsDir, 'test-data.json');
+    
+    // Kreiraj tests direktorij ako ne postoji
+    try {
+      mkdirSync(testsDir, { recursive: true });
+    } catch (e) {
+      // Direktorij već postoji ili nema prava
+    }
+    
+    // Spremi test podatke
+    writeFileSync(testDataPath, JSON.stringify(req.body, null, 2), 'utf-8');
+    
+    res.json({ success: true, message: 'Test podaci spremljeni' });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// POST /api/testing/test-data/upload-document - Upload test dokumenta
+r.post('/test-data/upload-document', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const { uploadDocument, getImageUrl } = await import('../lib/upload.js');
+    
+    // Middleware za upload
+    uploadDocument.single('document')(req, res, async (err) => {
+      if (err) {
+        return next(err);
+      }
+      
+      if (!req.file) {
+        return res.status(400).json({ error: 'No document uploaded' });
+      }
+      
+      const documentUrl = getImageUrl(req, req.file.filename);
+      
+      // Spremi informacije o dokumentu u test-data.json
+      try {
+        const { readFileSync, writeFileSync, mkdirSync } = await import('fs');
+        const { fileURLToPath } = await import('url');
+        const { dirname, join } = await import('path');
+        
+        const __filename = fileURLToPath(import.meta.url);
+        const __dirname = dirname(__filename);
+        const routesDir = __dirname;
+        const srcDir = dirname(routesDir);
+        const backendDir = dirname(srcDir);
+        const projectRoot = dirname(backendDir);
+        const testsDir = join(projectRoot, 'tests');
+        const testDataPath = join(testsDir, 'test-data.json');
+        
+        let testData = {};
+        try {
+          const data = readFileSync(testDataPath, 'utf-8');
+          testData = JSON.parse(data);
+        } catch (e) {
+          // Fajl ne postoji, kreiraj default strukturu
+        }
+        
+        if (!testData.documents) {
+          testData.documents = {};
+        }
+        
+        const documentKey = req.body.key || req.file.originalname.replace(/[^a-zA-Z0-9]/g, '_');
+        
+        testData.documents[documentKey] = {
+          path: documentUrl,
+          url: documentUrl,
+          filename: req.file.filename,
+          originalName: req.file.originalname,
+          type: req.file.mimetype,
+          size: req.file.size,
+          description: req.body.description || `Uploaded test document: ${req.file.originalname}`,
+          uploadedAt: new Date().toISOString()
+        };
+        
+        try {
+          mkdirSync(testsDir, { recursive: true });
+        } catch (e) {
+          // Direktorij već postoji
+        }
+        
+        writeFileSync(testDataPath, JSON.stringify(testData, null, 2), 'utf-8');
+        
+        res.json({
+          success: true,
+          document: testData.documents[documentKey],
+          message: 'Dokument uploadan i spremljen u test podatke'
+        });
+      } catch (fileError) {
+        // Dokument je uploadan ali nije spremljen u test-data.json
+        res.json({
+          success: true,
+          document: {
+            url: documentUrl,
+            filename: req.file.filename,
+            originalName: req.file.originalname,
+            type: req.file.mimetype,
+            size: req.file.size
+          },
+          warning: 'Dokument uploadan ali nije spremljen u test-data.json',
+          error: fileError.message
+        });
+      }
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // POST /api/testing/run-automated - Pokreni automatske E2E testove
 r.post('/run-automated', auth(true, ['ADMIN']), async (req, res, next) => {
   try {

@@ -666,6 +666,87 @@ export default function AdminTesting(){
   }
   useEffect(() => { load() }, [])
 
+  const loadTestData = async () => {
+    try {
+      const res = await api.get('/testing/test-data')
+      setTestData(res.data)
+    } catch (e) {
+      console.error('[TEST DATA] Error loading:', e)
+      alert(`Greška pri učitavanju test podataka: ${e?.response?.data?.error || e?.message || String(e)}`)
+    }
+  }
+
+  useEffect(() => {
+    if (tab === 'test-data') {
+      loadTestData()
+    }
+  }, [tab])
+
+  const saveTestData = async () => {
+    if (!testData) return
+    setSavingTestData(true)
+    try {
+      await api.post('/testing/test-data', testData)
+      alert('✅ Test podaci uspješno spremljeni')
+    } catch (e) {
+      alert(`❌ Greška pri spremanju: ${e?.response?.data?.error || e?.message || String(e)}`)
+    } finally {
+      setSavingTestData(false)
+    }
+  }
+
+  const uploadTestDocument = async (file, key, description) => {
+    setUploadingDocument(true)
+    try {
+      const formData = new FormData()
+      formData.append('document', file)
+      formData.append('key', key)
+      formData.append('description', description || '')
+      
+      const res = await api.post('/testing/test-data/upload-document', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      
+      // Ažuriraj testData s novim dokumentom
+      if (res.data.document && testData) {
+        const updatedTestData = { ...testData }
+        if (!updatedTestData.documents) {
+          updatedTestData.documents = {}
+        }
+        updatedTestData.documents[key] = res.data.document
+        setTestData(updatedTestData)
+      }
+      
+      alert('✅ Dokument uspješno uploadan')
+      return res.data
+    } catch (e) {
+      alert(`❌ Greška pri uploadu: ${e?.response?.data?.error || e?.message || String(e)}`)
+      throw e
+    } finally {
+      setUploadingDocument(false)
+    }
+  }
+
+  const updateTestDataField = (path, value) => {
+    if (!testData) return
+    
+    const keys = path.split('.')
+    const updated = { ...testData }
+    let current = updated
+    
+    for (let i = 0; i < keys.length - 1; i++) {
+      if (!current[keys[i]]) {
+        current[keys[i]] = {}
+      } else {
+        current[keys[i]] = { ...current[keys[i]] }
+      }
+      current = current[keys[i]]
+    }
+    
+    current[keys[keys.length - 1]] = value
+    setTestData(updated)
+  }
+
   const handleSeed = async () => {
     if (!confirm('Ovo će obrisati sve postojeće test planove i kreirati nove iz TEST-PLAN-FRONTEND.md i TEST-PLAN-ADMIN.md. Nastaviti?')) {
       return
@@ -811,6 +892,16 @@ export default function AdminTesting(){
               {activeRunsCount} aktivno
             </span>
           )}
+        </button>
+        <button 
+          onClick={() => setTab('test-data')} 
+          className={`px-4 py-2 rounded-t-lg font-medium transition-all duration-150 ${
+            tab==='test-data'
+              ? 'bg-indigo-600 text-white shadow-sm border-b-2 border-indigo-600' 
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          Test Podaci
         </button>
         <button 
           onClick={() => setTab('new')} 
@@ -998,6 +1089,253 @@ export default function AdminTesting(){
               <p>Nema runova.</p>
               <p className="text-sm mt-1">Kreiraj run iz taba "Planovi"</p>
             </div>
+          )}
+        </div>
+      )}
+
+      {tab === 'test-data' && (
+        <div className="space-y-6">
+          {!testData ? (
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+              <p className="mt-2 text-gray-500">Učitavanje test podataka...</p>
+            </div>
+          ) : (
+            <>
+              {/* Test Korisnici */}
+              <div className="border rounded-lg p-6 bg-white">
+                <h3 className="text-lg font-semibold mb-4">Test Korisnici</h3>
+                <div className="space-y-4">
+                  {['client', 'provider', 'providerCompany', 'admin'].map(userKey => (
+                    <div key={userKey} className="border rounded p-4 bg-gray-50">
+                      <h4 className="font-medium mb-3 capitalize">{userKey.replace(/([A-Z])/g, ' $1').trim()}</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Email</label>
+                          <input
+                            type="email"
+                            className="w-full border rounded px-3 py-2 text-sm"
+                            value={testData.users?.[userKey]?.email || ''}
+                            onChange={e => {
+                              if (!testData.users) testData.users = {}
+                              if (!testData.users[userKey]) testData.users[userKey] = {}
+                              setTestData({
+                                ...testData,
+                                users: {
+                                  ...testData.users,
+                                  [userKey]: { ...testData.users[userKey], email: e.target.value }
+                                }
+                              })
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Lozinka</label>
+                          <input
+                            type="password"
+                            className="w-full border rounded px-3 py-2 text-sm"
+                            value={testData.users?.[userKey]?.password || ''}
+                            onChange={e => {
+                              if (!testData.users) testData.users = {}
+                              if (!testData.users[userKey]) testData.users[userKey] = {}
+                              setTestData({
+                                ...testData,
+                                users: {
+                                  ...testData.users,
+                                  [userKey]: { ...testData.users[userKey], password: e.target.value }
+                                }
+                              })
+                            }}
+                          />
+                        </div>
+                        {userKey !== 'admin' && (
+                          <>
+                            <div>
+                              <label className="block text-sm font-medium mb-1">Ime</label>
+                              <input
+                                type="text"
+                                className="w-full border rounded px-3 py-2 text-sm"
+                                value={testData.users?.[userKey]?.fullName || ''}
+                                onChange={e => {
+                                  if (!testData.users) testData.users = {}
+                                  if (!testData.users[userKey]) testData.users[userKey] = {}
+                                  setTestData({
+                                    ...testData,
+                                    users: {
+                                      ...testData.users,
+                                      [userKey]: { ...testData.users[userKey], fullName: e.target.value }
+                                    }
+                                  })
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-1">Telefon</label>
+                              <input
+                                type="text"
+                                className="w-full border rounded px-3 py-2 text-sm"
+                                value={testData.users?.[userKey]?.phone || ''}
+                                onChange={e => {
+                                  if (!testData.users) testData.users = {}
+                                  if (!testData.users[userKey]) testData.users[userKey] = {}
+                                  setTestData({
+                                    ...testData,
+                                    users: {
+                                      ...testData.users,
+                                      [userKey]: { ...testData.users[userKey], phone: e.target.value }
+                                    }
+                                  })
+                                }}
+                              />
+                            </div>
+                            {(userKey === 'provider' || userKey === 'providerCompany') && (
+                              <>
+                                <div>
+                                  <label className="block text-sm font-medium mb-1">Pravni Status</label>
+                                  <select
+                                    className="w-full border rounded px-3 py-2 text-sm"
+                                    value={testData.users?.[userKey]?.legalStatus || ''}
+                                    onChange={e => {
+                                      if (!testData.users) testData.users = {}
+                                      if (!testData.users[userKey]) testData.users[userKey] = {}
+                                      setTestData({
+                                        ...testData,
+                                        users: {
+                                          ...testData.users,
+                                          [userKey]: { ...testData.users[userKey], legalStatus: e.target.value }
+                                        }
+                                      })
+                                    }}
+                                  >
+                                    <option value="">Odaberi...</option>
+                                    <option value="FREELANCER">FREELANCER</option>
+                                    <option value="SOLE_TRADER">SOLE_TRADER</option>
+                                    <option value="DOO">DOO</option>
+                                    <option value="D.O.O.">D.O.O.</option>
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium mb-1">OIB</label>
+                                  <input
+                                    type="text"
+                                    className="w-full border rounded px-3 py-2 text-sm"
+                                    value={testData.users?.[userKey]?.oib || ''}
+                                    onChange={e => {
+                                      if (!testData.users) testData.users = {}
+                                      if (!testData.users[userKey]) testData.users[userKey] = {}
+                                      setTestData({
+                                        ...testData,
+                                        users: {
+                                          ...testData.users,
+                                          [userKey]: { ...testData.users[userKey], oib: e.target.value }
+                                        }
+                                      })
+                                    }}
+                                  />
+                                </div>
+                              </>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Test Dokumenti */}
+              <div className="border rounded-lg p-6 bg-white">
+                <h3 className="text-lg font-semibold mb-4">Test Dokumenti</h3>
+                <div className="space-y-4">
+                  {['license', 'kycDocument', 'portfolioImage1', 'portfolioImage2'].map(docKey => {
+                    const doc = testData.documents?.[docKey]
+                    return (
+                      <div key={docKey} className="border rounded p-4 bg-gray-50">
+                        <h4 className="font-medium mb-3 capitalize">{docKey.replace(/([A-Z])/g, ' $1').trim()}</h4>
+                        {doc?.url && (
+                          <div className="mb-3">
+                            <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
+                              📄 {doc.originalName || docKey} ({doc.type})
+                            </a>
+                          </div>
+                        )}
+                        <div className="flex gap-3">
+                          <input
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            className="flex-1 text-sm"
+                            onChange={async (e) => {
+                              const file = e.target.files[0]
+                              if (file) {
+                                await uploadTestDocument(file, docKey, `Test dokument: ${docKey}`)
+                                e.target.value = ''
+                              }
+                            }}
+                            disabled={uploadingDocument}
+                          />
+                          {doc?.url && (
+                            <button
+                              onClick={() => {
+                                const updated = { ...testData }
+                                if (updated.documents) {
+                                  delete updated.documents[docKey]
+                                  setTestData(updated)
+                                }
+                              }}
+                              className="px-3 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+                            >
+                              Obriši
+                            </button>
+                          )}
+                        </div>
+                        {uploadingDocument && (
+                          <div className="mt-2 text-sm text-gray-500">Učitavanje...</div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* API Konfiguracija */}
+              <div className="border rounded-lg p-6 bg-white">
+                <h3 className="text-lg font-semibold mb-4">API Konfiguracija</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Base URL</label>
+                    <input
+                      type="text"
+                      className="w-full border rounded px-3 py-2 text-sm"
+                      value={testData.api?.baseUrl || ''}
+                      onChange={e => updateTestDataField('api.baseUrl', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Frontend URL</label>
+                    <input
+                      type="text"
+                      className="w-full border rounded px-3 py-2 text-sm"
+                      value={testData.api?.frontendUrl || ''}
+                      onChange={e => updateTestDataField('api.frontendUrl', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Spremi gumb */}
+              <div className="flex justify-end">
+                <button
+                  onClick={saveTestData}
+                  disabled={savingTestData}
+                  className={`px-6 py-3 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors flex items-center gap-2 ${
+                    savingTestData ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  {savingTestData && <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
+                  <span>{savingTestData ? 'Spremanje...' : '💾 Spremi test podatke'}</span>
+                </button>
+              </div>
+            </>
           )}
         </div>
       )}
