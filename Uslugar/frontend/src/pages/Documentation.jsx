@@ -21,7 +21,13 @@ const Documentation = () => {
         setError(null);
       } catch (err) {
         console.error('Error loading documentation:', err);
-        setError('Greška pri učitavanju dokumentacije. Molimo pokušajte ponovo.');
+        const errorData = err.response?.data?.error;
+        if (errorData) {
+          // Ako backend vraća detaljnu grešku
+          setError(`${errorData.message || 'Greška pri učitavanju dokumentacije'}\n\n${errorData.hint ? `💡 ${errorData.hint}` : ''}`);
+        } else {
+          setError('Greška pri učitavanju dokumentacije. Molimo pokušajte ponovo.');
+        }
         // Fallback na prazne podatke
         setFeatures([]);
         setFeatureDescriptions({});
@@ -82,9 +88,16 @@ const Documentation = () => {
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
           <h2 className="text-xl font-semibold text-red-800 dark:text-red-400 mb-2">Greška pri učitavanju dokumentacije</h2>
           <p className="text-red-600 dark:text-red-300 mb-4">{error}</p>
-          <p className="text-sm text-red-500 dark:text-red-400">
-            Dokumentacija se učitava iz baze podataka. Provjeri da li je backend pokrenut i da li su podaci seedani.
-          </p>
+          <div className="text-sm text-red-500 dark:text-red-400 space-y-2">
+            <p>Dokumentacija se učitava iz baze podataka.</p>
+            <p><strong>Mogući uzroci:</strong></p>
+            <ul className="list-disc list-inside space-y-1 ml-4">
+              <li>Backend nije pokrenut - provjeri da li API odgovara</li>
+              <li>Migracije nisu primijenjene - pokreni: <code className="bg-red-100 dark:bg-red-900 px-2 py-1 rounded">npx prisma migrate deploy</code></li>
+              <li>Podaci nisu seedani - pokreni: <code className="bg-red-100 dark:bg-red-900 px-2 py-1 rounded">npm run seed:documentation</code></li>
+              <li>Baza podataka nije dostupna - provjeri DATABASE_URL</li>
+            </ul>
+          </div>
         </div>
       </div>
     );

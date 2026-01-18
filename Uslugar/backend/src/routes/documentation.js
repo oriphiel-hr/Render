@@ -3,6 +3,83 @@ import { prisma } from '../lib/prisma.js';
 
 const r = Router();
 
+// GET /api/documentation/status - Provjeri status dokumentacije (diagnostic)
+r.get('/status', async (req, res, next) => {
+  try {
+    const status = {
+      tablesExist: false,
+      hasCategories: false,
+      hasFeatures: false,
+      categoriesCount: 0,
+      featuresCount: 0,
+      publicFeaturesCount: 0,
+      errors: []
+    };
+
+    // Provjeri postoji li tablica DocumentationCategory
+    try {
+      await prisma.$queryRaw`SELECT 1 FROM "DocumentationCategory" LIMIT 1`;
+      status.tablesExist = true;
+      
+      // Provjeri postoji li DocumentationFeature tablica
+      await prisma.$queryRaw`SELECT 1 FROM "DocumentationFeature" LIMIT 1`;
+      
+      // Provjeri ima li kategorija
+      const categoriesCount = await prisma.documentationCategory.count({
+        where: { isActive: true }
+      });
+      status.categoriesCount = categoriesCount;
+      status.hasCategories = categoriesCount > 0;
+
+      // Provjeri ima li features
+      const featuresCount = await prisma.documentationFeature.count({
+        where: { deprecated: false }
+      });
+      status.featuresCount = featuresCount;
+      status.hasFeatures = featuresCount > 0;
+
+      // Provjeri ima li javnih features
+      const publicFeaturesCount = await prisma.documentationFeature.count({
+        where: {
+          deprecated: false,
+          isAdminOnly: false
+        }
+      });
+      status.publicFeaturesCount = publicFeaturesCount;
+
+    } catch (error) {
+      status.errors.push({
+        type: 'TABLE_NOT_EXISTS',
+        message: error.message,
+        hint: 'Run migrations first: npx prisma migrate deploy'
+      });
+    }
+
+    // Provjeri konekciju s bazom
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+    } catch (error) {
+      status.errors.push({
+        type: 'DATABASE_CONNECTION',
+        message: error.message,
+        hint: 'Check DATABASE_URL and database connectivity'
+      });
+    }
+
+    res.json({
+      success: status.tablesExist && status.hasCategories && status.hasFeatures,
+      status,
+      recommendations: [
+        !status.tablesExist && 'Run database migrations: npx prisma migrate deploy',
+        status.tablesExist && !status.hasCategories && 'Seed documentation: npm run seed:documentation',
+        status.hasCategories && status.publicFeaturesCount === 0 && 'All features are admin-only. Check isAdminOnly flags.'
+      ].filter(Boolean)
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // GET /api/documentation/check-encoding - Provjeri encoding baze i konekcije (diagnostic)
 r.get('/check-encoding', async (req, res, next) => {
   try {
@@ -87,15 +164,40 @@ r.get('/', async (req, res, next) => {
         }
       });
     } catch (error) {
-      // Ako tablice ne postoje (npr. migracije nisu primijenjene), vrati prazan odgovor
-      if (error.message.includes('does not exist') || error.message.includes('Unknown table')) {
-        console.warn('⚠️  DocumentationCategory table does not exist - migrations may not be applied');
-        return res.json({
+      // Ako tablice ne postoje (npr. migracije nisu primijenjene), vrati prazan odgovor s detaljnom porukom
+      if (error.message.includes('does not exist') || 
+          error.message.includes('Unknown table') ||
+          error.message.includes('relation') ||
+          error.code === 'P2021' || // Prisma error: Table does not exist
+          error.code === '42P01') { // PostgreSQL error: relation does not exist
+        console.error('❌ DocumentationCategory table does not exist:', error.message);
+        console.warn('⚠️  Migrations may not be applied. Run: npx prisma migrate deploy');
+        return res.status(200).json({
           features: [],
-          featureDescriptions: {}
+          featureDescriptions: {},
+          error: {
+            message: 'DocumentationCategory table does not exist. Migrations may not be applied.',
+            hint: 'Run database migrations first: npx prisma migrate deploy',
+            details: error.message
+          }
         });
       }
-      throw error; // Re-throw other errors
+      // Ako je problem s konekcijom ili pristupom bazi
+      if (error.code === 'P1001' || error.code === 'P1017') {
+        console.error('❌ Database connection error:', error.message);
+        return res.status(503).json({
+          features: [],
+          featureDescriptions: {},
+          error: {
+            message: 'Database connection failed. Please check if backend is running and database is accessible.',
+            hint: 'Verify DATABASE_URL environment variable and database connectivity',
+            details: error.message
+          }
+        });
+      }
+      // Re-throw other errors
+      console.error('❌ Unexpected error loading documentation:', error);
+      throw error;
     }
 
     // Filtriraj kategorije koje imaju javne features (ne samo admin-only)
