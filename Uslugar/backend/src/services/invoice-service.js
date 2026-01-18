@@ -6,7 +6,7 @@ import PDFDocument from 'pdfkit';
 import { prisma } from '../lib/prisma.js';
 import { sendInvoiceEmail } from '../lib/email.js';
 import { fiscalizeInvoice, requiresFiscalization, generateQRCodeURL } from './fiscalization-service.js';
-import { uploadInvoicePDF, downloadInvoicePDF, isS3Configured } from '../lib/s3-storage.js';
+// S3 storage uklonjen - PDF-ovi se generiraju na zahtjev
 
 /**
  * Generira jedinstveni broj fakture
@@ -459,41 +459,16 @@ function getInvoiceDescription(invoice) {
 }
 
 /**
- * Sačuvaj PDF u S3 i ažuriraj fakturu s URL-om
+ * Sačuvaj PDF - DEPRECATED: S3 storage uklonjen, PDF-ovi se generiraju na zahtjev
  * @param {Object} invoice - Invoice objekt
  * @param {Buffer} pdfBuffer - PDF buffer
- * @returns {Promise<String|null>} - S3 URL ili null ako S3 nije konfiguriran
+ * @returns {Promise<String|null>} - Vraća null jer se PDF-ovi generiraju na zahtjev
+ * @deprecated PDF-ovi se sada generiraju na zahtjev umjesto spremanja u S3
  */
 export async function saveInvoicePDF(invoice, pdfBuffer) {
-  try {
-    // Upload u S3 ako je konfiguriran
-    if (isS3Configured()) {
-      const s3Url = await uploadInvoicePDF(pdfBuffer, invoice.invoiceNumber);
-      
-      if (s3Url) {
-        // Ažuriraj fakturu s S3 URL-om
-        await prisma.invoice.update({
-          where: { id: invoice.id },
-          data: {
-            pdfUrl: s3Url
-          }
-        });
-        
-        console.log(`[INVOICE] PDF saved to S3: ${s3Url}`);
-        return s3Url;
-      }
-    } else {
-      console.log('[INVOICE] S3 not configured, PDF stored in memory only');
-    }
-    
-    // Ako S3 nije konfiguriran ili upload ne uspije, vraćamo null
-    // PDF se i dalje može generirati na zahtjev
-    return null;
-  } catch (error) {
-    console.error('[INVOICE] Error saving PDF to S3:', error);
-    // Ne baci grešku - faktura može biti generirana i bez S3 storage
-    return null;
-  }
+  // S3 storage uklonjen - PDF-ovi se generiraju na zahtjev kada je potrebno
+  console.log(`[INVOICE] PDF storage removed - PDFs are generated on-demand for invoice ${invoice.invoiceNumber}`);
+  return null;
 }
 
 /**
@@ -603,10 +578,8 @@ export async function generateAndSendInvoice(invoiceId) {
       });
       pdfBuffer = await generateInvoicePDF(updatedInvoice);
       
-      // Re-upload u S3 s ažuriranim PDF-om (s ZKI/JIR)
-      if (isS3Configured()) {
-        await saveInvoicePDF(updatedInvoice, pdfBuffer);
-      }
+      // S3 storage uklonjen - PDF-ovi se generiraju na zahtjev s ažuriranim fiscal podacima
+      // Ako je potrebno regenerirati PDF s ažuriranim fiscal podacima, koristi GET /api/invoices/:invoiceId/pdf
     } catch (pdfError) {
       console.error('[INVOICE] Error regenerating PDF with fiscal data:', pdfError);
       // Koristi originalni PDF ako regeneriranje ne uspije
