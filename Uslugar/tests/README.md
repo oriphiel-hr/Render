@@ -18,6 +18,41 @@ Test podaci se nalaze u `test-data.json` i uključuju:
 - **Test podatke**: poslovi, ponude, recenzije
 - **API konfiguraciju**: base URL-ovi i timeoutovi
 
+### Odabir Korisnika
+
+Testovi automatski odabiru korisnike iz `test-data.json` koristeći `user-helper.js`:
+
+**Strategije odabira:**
+- `'first'` (default) - Koristi prvog dostupnog korisnika određenog tipa
+- `'specific'` - Koristi korisnika na određenom indexu (0 = glavni, 1 = client1, 2 = client2, itd.)
+- `'random'` - Koristi nasumičnog korisnika određenog tipa
+
+**Primjer korištenja:**
+```javascript
+import { getUser } from '../lib/user-helper.js';
+
+// Koristi prvog dostupnog client korisnika (client, client1, client2, ...)
+const user = getUser(testData, 'client', { strategy: 'first' });
+
+// Koristi drugog client korisnika (client1)
+const user2 = getUser(testData, 'client', { strategy: 'specific', index: 1 });
+
+// Koristi nasumičnog provider korisnika
+const randomProvider = getUser(testData, 'provider', { strategy: 'random' });
+```
+
+**Podržani tipovi korisnika:**
+- `'client'` - Klijenti (client, client1, client2, ...)
+- `'provider'` - Pružatelji (provider, provider1, provider2, ...)
+- `'admin'` - Administratori (admin, admin1, admin2, ...)
+- `'providerCompany'` - Pružatelji kao tvrtke (providerCompany)
+
+**Kako test zna kojeg korisnika koristiti:**
+- Default strategija je `'first'` - test automatski koristi prvog dostupnog korisnika određenog tipa
+- Ako postoji `client`, koristi se `client`
+- Ako postoji `client1`, a `client` ne postoji, koristi se `client1`
+- Ako želite specifičnog korisnika, koristite `strategy: 'specific', index: X`
+
 ## Pokretanje Testova
 
 ### Svi testovi
