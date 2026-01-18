@@ -818,13 +818,17 @@ export default function AdminTesting(){
         setAutomatedTestResult(null)
       }, 10000)
     } catch (e) {
+      const errorData = e?.response?.data || {}
       setAutomatedTestResult({
         success: false,
-        error: e?.response?.data?.error || e?.message || String(e)
+        error: errorData.error || e?.message || String(e),
+        message: errorData.message || 'Greška pri pokretanju automatskih testova',
+        errors: errorData.errors || [],
+        details: errorData.details || null
       })
       setTimeout(() => {
         setAutomatedTestResult(null)
-      }, 10000)
+      }, 15000) // Duže prikazivanje za greške
     } finally {
       setRunningAutomated(false)
     }
@@ -880,6 +884,12 @@ export default function AdminTesting(){
                       <li key={idx}>{err}</li>
                     ))}
                   </ul>
+                </div>
+              )}
+              {automatedTestResult.details && (
+                <div className="mt-2 p-2 bg-white/50 rounded text-xs">
+                  <p className="font-semibold mb-1">💡 Upute:</p>
+                  <p>{automatedTestResult.details}</p>
                 </div>
               )}
               {automatedTestResult.command && (
