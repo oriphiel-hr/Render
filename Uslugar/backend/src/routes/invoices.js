@@ -3,6 +3,7 @@
  */
 
 import { Router } from 'express';
+import archiver from 'archiver';
 import { auth } from '../lib/auth.js';
 import { prisma } from '../lib/prisma.js';
 import {
@@ -287,11 +288,19 @@ r.post('/:invoiceId/fiscalize', auth(true, ['ADMIN', 'PROVIDER', 'USER']), async
 /**
  * POST /api/invoices/bulk/upload-to-s3
  * DEPRECATED: S3 storage uklonjen - PDF-ovi se generiraju na zahtjev
+ * 
+ * ALTERNATIVA: POST /api/invoices/bulk/generate-pdfs (besplatno - generira PDF-ove i vraća ZIP)
+ * ALTERNATIVA: POST /api/invoices/bulk/send-pdfs-by-email (besplatno - generira i šalje PDF-ove emailom)
  */
 r.post('/bulk/upload-to-s3', auth(true, ['ADMIN']), async (req, res, next) => {
   return res.status(410).json({ 
     error: 'S3 storage uklonjen', 
-    message: 'PDF-ovi se sada generiraju na zahtjev umjesto spremanja u S3. Koristi GET /api/invoices/:invoiceId/pdf za generiranje PDF-a.' 
+    message: 'PDF-ovi se sada generiraju na zahtjev umjesto spremanja u S3.',
+    alternatives: {
+      generateZIP: 'POST /api/invoices/bulk/generate-pdfs - Generira PDF-ove i vraća ZIP file (besplatno)',
+      sendEmails: 'POST /api/invoices/bulk/send-pdfs-by-email - Generira i šalje PDF-ove emailom (besplatno)',
+      singlePDF: 'GET /api/invoices/:invoiceId/pdf - Generira jedan PDF na zahtjev (besplatno)'
+    }
   });
 });
 
