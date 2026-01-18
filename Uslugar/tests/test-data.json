@@ -34,6 +34,17 @@
       "city": "Zagreb",
       "emailAccess": true,
       "emailPassword": "",
+      "emailConfig": {
+        "description": "Email konfiguracija za client korisnika (opcionalno)",
+        "inboxId": "",
+        "imap": {
+          "user": "",
+          "password": "",
+          "host": "",
+          "port": 993
+        },
+        "note": "Ako nije postavljeno, koristi se globalna email konfiguracija. Za Mailtrap, možeš koristiti različite inbox ID-eve za različite korisnike."
+      },
       "description": "Korisnik usluge koji objavljuje poslove"
     },
     "provider": {
@@ -46,6 +57,17 @@
       "oib": "12345678901",
       "companyName": null,
       "emailAccess": true,
+      "emailConfig": {
+        "description": "Email konfiguracija za provider korisnika (opcionalno)",
+        "inboxId": "",
+        "imap": {
+          "user": "",
+          "password": "",
+          "host": "",
+          "port": 993
+        },
+        "note": "Ako nije postavljeno, koristi se globalna email konfiguracija. Za Mailtrap, možeš koristiti različite inbox ID-eve za različite korisnike."
+      },
       "description": "Pružatelj usluga koji kupuje leadove"
     },
     "providerCompany": {

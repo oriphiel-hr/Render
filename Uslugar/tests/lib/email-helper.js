@@ -58,11 +58,12 @@ export async function getEmails(options = {}) {
  * Dohvati email poruke iz Mailtrap test servisa
  */
 async function getEmailsFromTestService(options = {}) {
-  const { from, subject, to } = options;
+  const { from, subject, to, inboxId } = options;
   const apiKey = EMAIL_CONFIG.testService.apiKey;
-  const inboxId = EMAIL_CONFIG.testService.inboxId || '0';
+  // Koristi inboxId iz opcija ako je postavljen (za korisnika), inače koristi globalni
+  const targetInboxId = inboxId || EMAIL_CONFIG.testService.inboxId || '0';
   
-  const url = `https://mailtrap.io/api/v1/inboxes/${inboxId}/messages`;
+  const url = `https://mailtrap.io/api/v1/inboxes/${targetInboxId}/messages`;
   const response = await fetch(url, {
     headers: {
       'Api-Token': apiKey,
@@ -112,13 +113,22 @@ async function getEmailsFromIMAP(options = {}) {
  * Pronađi email s verifikacijskim linkom
  * @param {string} emailAddress - Email adresa korisnika
  * @param {string} subjectPattern - Pattern za subject (npr. "Verifikacija" ili "Verify")
+ * @param {Object} userConfig - Konfiguracija korisnika (može sadržavati emailAccess, emailPassword, inboxId, itd.)
  * @returns {Promise<Object|null>} Email poruka s linkom ili null
  */
-export async function findVerificationEmail(emailAddress, subjectPattern = 'verifikacija|verify|confirmation') {
-  const emails = await getEmails({
+export async function findVerificationEmail(emailAddress, subjectPattern = 'verifikacija|verify|confirmation', userConfig = null) {
+  // Ako korisnik ima svoju email konfiguraciju, koristi je
+  let options = {
     to: emailAddress,
     subject: subjectPattern
-  });
+  };
+  
+  // Ako korisnik ima svoj inboxId (npr. za Mailtrap)
+  if (userConfig && userConfig.inboxId) {
+    options.inboxId = userConfig.inboxId;
+  }
+  
+  const emails = await getEmails(options);
   
   if (emails.length === 0) {
     return null;
@@ -216,10 +226,11 @@ export async function screenshotEmail(page, email, screenshotPath = null) {
 /**
  * Pronađi email s reset linkom za lozinku
  * @param {string} emailAddress - Email adresa korisnika
+ * @param {Object} userConfig - Konfiguracija korisnika (može sadržavati emailAccess, emailPassword, inboxId, itd.)
  * @returns {Promise<Object|null>} Email poruka s reset linkom ili null
  */
-export async function findPasswordResetEmail(emailAddress) {
-  return await findVerificationEmail(emailAddress, 'reset|password|lozinka');
+export async function findPasswordResetEmail(emailAddress, userConfig = null) {
+  return await findVerificationEmail(emailAddress, 'reset|password|lozinka', userConfig);
 }
 
 /**

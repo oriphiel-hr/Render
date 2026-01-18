@@ -105,9 +105,11 @@ test.describe('Auth - Autentifikacija i Registracija', () => {
     
     try {
       // Pričekaj da email stigne (max 30 sekundi)
+      // Koristi korisnikovu email konfiguraciju ako postoji (npr. inboxId za Mailtrap)
+      const userEmailConfig = user.emailConfig || null;
       let verificationEmail = null;
       for (let i = 0; i < 30; i++) {
-        verificationEmail = await findVerificationEmail(user.email, 'verifikacija|verify|confirmation');
+        verificationEmail = await findVerificationEmail(user.email, 'verifikacija|verify|confirmation', userEmailConfig);
         if (verificationEmail) break;
         await page.waitForTimeout(1000); // Čekaj 1 sekund
       }
@@ -167,9 +169,11 @@ test.describe('Auth - Autentifikacija i Registracija', () => {
     
     try {
       // Pričekaj da email stigne (max 30 sekundi)
+      // Koristi korisnikovu email konfiguraciju ako postoji (npr. inboxId za Mailtrap)
+      const userEmailConfig = user.emailConfig || null;
       let resetEmail = null;
       for (let i = 0; i < 30; i++) {
-        resetEmail = await findPasswordResetEmail(user.email);
+        resetEmail = await findPasswordResetEmail(user.email, userEmailConfig);
         if (resetEmail) break;
         await page.waitForTimeout(1000); // Čekaj 1 sekund
       }
