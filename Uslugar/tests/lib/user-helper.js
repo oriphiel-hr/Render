@@ -53,6 +53,12 @@ export function getUser(testData, userType, options = {}) {
     if (testData.users['providerNoKYC']) {
       edgeCaseUsers.push({ key: 'providerNoKYC', user: testData.users['providerNoKYC'], index: 2 });
     }
+    if (testData.users['providerDirector']) {
+      edgeCaseUsers.push({ key: 'providerDirector', user: testData.users['providerDirector'], index: 3 });
+    }
+    if (testData.users['providerTeamMember']) {
+      edgeCaseUsers.push({ key: 'providerTeamMember', user: testData.users['providerTeamMember'], index: 4 });
+    }
   }
   
   // Pronađi numerirane korisnike (client1, client2, provider1, provider2, itd.)

@@ -1274,9 +1274,10 @@ export default function AdminTesting(){
                       if (group.key === 'client') {
                         // client, clientInvalid, client1, client2, ...
                         return key === 'client' || key === 'clientInvalid' || (key.startsWith('client') && /client\d+/.test(key));
-                      } else if (group.key === 'provider') {
-                        // provider, providerNoLicense, providerNoKYC, provider1, provider2, ... (ali ne providerCompany)
+                      } else                       if (group.key === 'provider') {
+                        // provider, providerNoLicense, providerNoKYC, providerDirector, providerTeamMember, provider1, provider2, ... (ali ne providerCompany)
                         return (key === 'provider' || key === 'providerNoLicense' || key === 'providerNoKYC' || 
+                                key === 'providerDirector' || key === 'providerTeamMember' ||
                                 (key.startsWith('provider') && /provider\d+/.test(key))) && key !== 'providerCompany';
                       } else if (group.key === 'admin') {
                         return key === 'admin' || key.startsWith('admin') && /admin\d+/.test(key);
@@ -1292,7 +1293,9 @@ export default function AdminTesting(){
                       const edgeCaseOrder = {
                         'clientInvalid': 1,
                         'providerNoLicense': 1,
-                        'providerNoKYC': 2
+                        'providerNoKYC': 2,
+                        'providerDirector': 3,
+                        'providerTeamMember': 4
                       };
                       const edgeA = edgeCaseOrder[a] || 999;
                       const edgeB = edgeCaseOrder[b] || 999;
@@ -1378,8 +1381,14 @@ export default function AdminTesting(){
                                 {userKey === 'providerNoKYC' && (
                                   <span className="ml-2 px-2 py-0.5 bg-orange-100 text-orange-800 text-xs rounded">Bez KYC</span>
                                 )}
+                                {userKey === 'providerDirector' && (
+                                  <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded">Direktor</span>
+                                )}
+                                {userKey === 'providerTeamMember' && (
+                                  <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded">Izvođač</span>
+                                )}
                               </h5>
-                              {(userKey !== group.key && userKey !== 'clientInvalid' && userKey !== 'providerNoLicense' && userKey !== 'providerNoKYC') && (
+                              {(userKey !== group.key && userKey !== 'clientInvalid' && userKey !== 'providerNoLicense' && userKey !== 'providerNoKYC' && userKey !== 'providerDirector' && userKey !== 'providerTeamMember') && (
                                 <button
                                   onClick={() => {
                                     if (!testData || !confirm(`Jeste li sigurni da želite obrisati korisnika "${userKey}"?`)) return

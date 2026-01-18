@@ -544,3 +544,133 @@ export async function createTestUserWithCleanup(page, testData, options = {}) {
   return { user, cleanup };
 }
 
+/**
+ * Helper funkcije za specijalne test scenarije
+ */
+
+/**
+ * Kreiraj direktora s timom izvođača
+ * @param {Object} page - Playwright page objekt
+ * @param {Object} testData - test-data.json objekt
+ * @param {Object} options - Opcije
+ * @param {number} options.teamSize - Broj izvođača u timu (default: 2)
+ * @param {string} options.city - Grad (default: 'Zagreb')
+ * @returns {Promise<{director: Object, team: Array, cleanup: Function}>}
+ */
+export async function createDirectorWithTeam(page, testData, options = {}) {
+  const { teamSize = 2, city = 'Zagreb' } = options;
+  
+  console.log(`[TEST USER HELPER] Creating director with ${teamSize} team members`);
+  
+  // 1. Kreiraj direktora
+  const director = await createTestUser(page, {
+    userType: 'provider',
+    legalStatus: 'DOO',
+    companyName: `Test Director Company ${Date.now()}`,
+    isDirector: true,
+    city: city
+  });
+  
+  // 2. Setup direktora (email verification, login, profile, KYC, license)
+  await setupTestUser(page, director, testData);
+  
+  // 3. Dohvati company ID direktora (ovo će vjerojatno trebati API poziv nakon što je direktor kreiran)
+  // Za sada, koristimo email direktora kao identifikator
+  const directorCompanyId = director.email; // Ovo će se možda morati ažurirati nakon API integracije
+  
+  // 4. Kreiraj izvođače (team members)
+  const team = [];
+  const cleanupFunctions = [];
+  
+  for (let i = 0; i < teamSize; i++) {
+    const teamMember = await createTestUser(page, {
+      userType: 'provider',
+      legalStatus: 'FREELANCER',
+      isDirector: false,
+      companyId: directorCompanyId, // Poveži s direktorom
+      city: city
+    });
+    
+    // Setup team member-a
+    await setupTestUser(page, teamMember, testData);
+    
+    team.push(teamMember);
+    
+    // Dodaj cleanup funkciju za team member-a
+    cleanupFunctions.push(async () => {
+      await cleanupTestUser(page, teamMember, testData);
+    });
+  }
+  
+  console.log(`[TEST USER HELPER] ✅ Director created: ${director.email}`);
+  console.log(`[TEST USER HELPER] ✅ Team members created: ${team.length}`);
+  
+  // Vrati cleanup funkciju koja briše direktora i sve izvođače
+  const cleanup = async () => {
+    console.log(`[TEST USER HELPER] Cleaning up director and team...`);
+    // Prvo obriši izvođače
+    for (const cleanupFn of cleanupFunctions) {
+      try {
+        await cleanupFn();
+      } catch (e) {
+        console.warn(`[TEST USER HELPER] Error cleaning up team member:`, e);
+      }
+    }
+    // Zatim obriši direktora
+    try {
+      await cleanupTestUser(page, director, testData);
+    } catch (e) {
+      console.warn(`[TEST USER HELPER] Error cleaning up director:`, e);
+    }
+    console.log(`[TEST USER HELPER] ✅ Director and team cleanup completed`);
+  };
+  
+  return { director, team, cleanup };
+}
+
+/**
+ * Kreiraj test korisnika s invalid podacima
+ */
+export async function createInvalidTestUser(page, testData, options = {}) {
+  const { user, cleanup } = await createTestUserWithCleanup(page, testData, {
+    ...options,
+    invalidData: true
+  });
+  return { user, cleanup };
+}
+
+/**
+ * Kreiraj test korisnika s nedostajućim podacima
+ */
+export async function createIncompleteTestUser(page, testData, options = {}) {
+  const { user, cleanup } = await createTestUserWithCleanup(page, testData, {
+    ...options,
+    missingData: true
+  });
+  return { user, cleanup };
+}
+
+/**
+ * Kreiraj provider-a bez licence
+ */
+export async function createProviderWithoutLicense(page, testData, options = {}) {
+  const { user, cleanup } = await createTestUserWithCleanup(page, testData, {
+    userType: 'provider',
+    ...options,
+    skipLicense: true
+  });
+  return { user, cleanup };
+}
+
+/**
+ * Kreiraj provider-a bez KYC dokumenta
+ */
+export async function createProviderWithoutKYC(page, testData, options = {}) {
+  const { user, cleanup } = await createTestUserWithCleanup(page, testData, {
+    userType: 'provider',
+    ...options,
+    skipKYC: true
+  });
+  return { user, cleanup };
+}
+

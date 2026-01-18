@@ -151,6 +151,55 @@
       },
       "description": "Klijent s neispravnim podacima - za testiranje validacije"
     },
+    "providerDirector": {
+      "email": "test.director@uslugar.hr",
+      "password": "Test123456!",
+      "fullName": "Test Direktor",
+      "phone": "+385992222225",
+      "city": "Zagreb",
+      "legalStatus": "DOO",
+      "oib": "12345678904",
+      "companyName": "Test DOO Direktor",
+      "isDirector": true,
+      "emailAccess": true,
+      "emailConfig": {
+        "description": "Email konfiguracija za direktora (opcionalno)",
+        "inboxId": "",
+        "imap": {
+          "user": "",
+          "password": "",
+          "host": "",
+          "port": 993
+        },
+        "note": "Direktor tvrtke - vlasnik koji ima izvođače"
+      },
+      "description": "Direktor/predstavnik tvrtke - za testiranje strukture direktora i izvođača"
+    },
+    "providerTeamMember": {
+      "email": "test.team@uslugar.hr",
+      "password": "Test123456!",
+      "fullName": "Test Izvođač",
+      "phone": "+385992222226",
+      "city": "Zagreb",
+      "legalStatus": "FREELANCER",
+      "oib": "12345678905",
+      "companyName": null,
+      "isDirector": false,
+      "companyId": "providerDirector", 
+      "emailAccess": true,
+      "emailConfig": {
+        "description": "Email konfiguracija za izvođača (opcionalno)",
+        "inboxId": "",
+        "imap": {
+          "user": "",
+          "password": "",
+          "host": "",
+          "port": 993
+        },
+        "note": "Izvođač koji radi za direktora (team member)"
+      },
+      "description": "Izvođač koji radi za direktora - za testiranje strukture direktora i izvođača"
+    },
     "admin": {
       "email": "admin@uslugar.hr",
       "password": "Admin123456!",
