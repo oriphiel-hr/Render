@@ -120,6 +120,49 @@ const { director, team, cleanup } = await createDirectorWithTeam(page, testData,
 - Izvođači (`isDirector: false`, `companyId: directorId`) - zaposlenici direktora
 - Može biti više izvođača po direktoru
 
+### Automatsko dovođenje korisnika u potrebno stanje
+
+**Svaki korisnik se automatski dovede u potrebno stanje nakon kreiranja!**
+
+Kada koristite `createTestUserWithCleanup()`, korisnik se automatski:
+1. ✅ **Verificira email** - automatski klikne na verifikacijski link iz emaila
+2. ✅ **Prijavljuje** - automatski se prijavi nakon verifikacije
+3. ✅ **Popunjava profil** - za providere, odabere kategorije (Električar, Vodoinstalater)
+4. ✅ **Upload-a KYC dokument** - za providere, upload-a KYC dokument ako je dostupan u `test-data.json`
+5. ✅ **Upload-a licencu** - za providere, upload-a licencu ako je dostupna u `test-data.json`
+
+**Primjer:**
+```javascript
+const { user, cleanup } = await createTestUserWithCleanup(page, testData, {
+  userType: 'provider',
+  city: 'Zagreb'
+  // autoSetup: true (default) - automatski dovedi korisnika u potrebno stanje
+});
+
+// Korisnik je sada:
+// ✅ Kreiran
+// ✅ Email verificiran
+// ✅ Prijavljen
+// ✅ Profil popunjen (kategorije)
+// ✅ KYC dokument uploadan (ako postoji u test-data.json)
+// ✅ Licenca uploadana (ako postoji u test-data.json)
+
+// Test može odmah koristiti korisnika u potpunom stanju!
+```
+
+**Opcije za setup:**
+```javascript
+const { user, cleanup } = await createTestUserWithCleanup(page, testData, {
+  userType: 'provider',
+  autoSetup: true, // default: true - automatski setup
+  setupOptions: {
+    skipEmailVerification: false, // Preskoči email verifikaciju
+    skipLogin: false, // Preskoči prijavu
+    skipProfileSetup: false // Preskoči popunjavanje profila
+  }
+});
+```
+
 ## Pokretanje Testova
 
 ### Svi testovi
