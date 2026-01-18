@@ -2338,9 +2338,17 @@ export default function AdminTesting(){
                 )}
               </div>
 
-              {/* Test Dokumenti */}
+              {/* Test Dokumenti (Globalni - Default) */}
               <div className="border rounded-lg p-6 bg-white">
-                <h3 className="text-lg font-semibold mb-4">Test Dokumenti</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold">Test Dokumenti</h3>
+                  <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                    🌐 Globalni (default za sve korisnike)
+                  </span>
+                </div>
+                <div className="mb-4 text-sm text-gray-600 bg-blue-50 p-3 rounded border border-blue-200">
+                  <strong>💡 Objašnjenje:</strong> Ovi dokumenti se koriste kao default za sve korisnike. Ako korisnik ima svoje per-korisnik dokumente (vidi unutar svakog korisnika u sekciji "📄 Per-korisnik dokumenti"), oni se koriste umjesto globalnih.
+                </div>
                 <div className="space-y-4">
                   {['license', 'kycDocument', 'portfolioImage1', 'portfolioImage2'].map(docKey => {
                     const doc = testData && testData.documents && testData.documents[docKey] ? testData.documents[docKey] : null

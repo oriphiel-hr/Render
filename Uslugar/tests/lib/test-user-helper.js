@@ -521,6 +521,16 @@ export async function createTestUserWithCleanup(page, testData, options = {}) {
   // Kreiraj korisnika
   const user = await createTestUser(page, userOptions);
   
+  // Pronađi korisnika u testData.users ako postoji (za per-korisnik dokumente)
+  // Koristi email ili userType da pronađeš pravi korisnik
+  const userKey = user.email ? Object.keys(testData.users || {}).find(key => 
+    testData.users[key]?.email === user.email
+  ) : null;
+  if (userKey && testData.users[userKey]) {
+    // Dodaj per-korisnik podatke (uključujući dokumente) u user objekt
+    user._testDataUser = testData.users[userKey];
+  }
+  
   // Ako je autoSetup omogućen, dovedi korisnika u potrebno stanje
   if (autoSetup) {
     await setupTestUser(page, user, testData, setupOptions);
