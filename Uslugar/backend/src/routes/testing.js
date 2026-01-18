@@ -945,6 +945,8 @@ async function validateTestData() {
   
   const errors = [];
   
+  console.log('[VALIDATE TEST DATA] Validating users:', testData.users ? Object.keys(testData.users) : 'none');
+  
   // Provjeri korisnike
   if (!testData.users || Object.keys(testData.users).length === 0) {
     errors.push('Nema konfiguriranih test korisnika');
@@ -1017,15 +1019,20 @@ r.post('/run-automated', auth(true, ['ADMIN']), async (req, res, next) => {
     const { planId, testType = 'all', testName = null } = req.body;
     
     // Validiraj test podatke
+    console.log('[AUTOMATED TESTS] Starting validation...');
     const validation = await validateTestData();
+    console.log('[AUTOMATED TESTS] Validation result:', { valid: validation.valid, errors: validation.errors, error: validation.error });
+    
     if (!validation.valid) {
       console.error('[AUTOMATED TESTS] Validation failed:', validation.errors || validation.error);
-      return res.status(400).json({
+      const errorResponse = {
         error: 'Test podaci nisu ispravni',
-        errors: validation.errors || [validation.error],
+        errors: Array.isArray(validation.errors) ? validation.errors : (validation.error ? [validation.error] : ['Nepoznata greška u validaciji']),
         message: 'Molimo konfigurirajte test podatke u admin panelu (tab "Test Podaci")',
         details: 'Provjerite da su svi korisnici (client, provider) konfigurirani s email-om, lozinkom, imenom i telefonom. Provider mora imati i OIB i pravni status.'
-      });
+      };
+      console.error('[AUTOMATED TESTS] Sending error response:', errorResponse);
+      return res.status(400).json(errorResponse);
     }
     
     console.log('[AUTOMATED TESTS] Test data validation passed');

@@ -818,17 +818,25 @@ export default function AdminTesting(){
         setAutomatedTestResult(null)
       }, 10000)
     } catch (e) {
+      console.error('[AUTOMATED TESTS] Error:', e)
+      console.error('[AUTOMATED TESTS] Response data:', e?.response?.data)
       const errorData = e?.response?.data || {}
       setAutomatedTestResult({
         success: false,
         error: errorData.error || e?.message || String(e),
         message: errorData.message || 'Greška pri pokretanju automatskih testova',
-        errors: errorData.errors || [],
+        errors: Array.isArray(errorData.errors) ? errorData.errors : (errorData.error ? [errorData.error] : []),
         details: errorData.details || null
       })
+      // Prikaži alert za testiranje
+      if (errorData.errors && errorData.errors.length > 0) {
+        alert(`Greške u test podacima:\n\n${errorData.errors.join('\n')}\n\n${errorData.details || ''}`)
+      } else {
+        alert(`Greška: ${errorData.error || e?.message || String(e)}`)
+      }
       setTimeout(() => {
         setAutomatedTestResult(null)
-      }, 15000) // Duže prikazivanje za greške
+      }, 20000) // Još duže prikazivanje za greške
     } finally {
       setRunningAutomated(false)
     }
