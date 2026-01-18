@@ -1599,7 +1599,277 @@ export default function AdminTesting(){
                       </div>
                     </div>
                   ))}
-                </div>
+                      </div>
+                    </div>
+                  )
+                })}
+                
+                {/* Provider Company (posebna grupa) */}
+                {testData && testData.users && testData.users.providerCompany && (
+                  <div className="mb-6 border rounded-lg p-4 bg-gray-50">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold text-base">Pružatelj kao Tvrtka (Provider Company)</h4>
+                    </div>
+                    <div className="border rounded p-4 bg-white">
+                      {(() => {
+                        const userKey = 'providerCompany'
+                        return (
+                          <>
+                            <div className="flex items-center justify-between mb-3">
+                              <h5 className="font-medium text-sm">Provider Company</h5>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-sm font-medium mb-1">Email</label>
+                                <input
+                                  type="email"
+                                  className="w-full border rounded px-3 py-2 text-sm"
+                                  value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].email) || ''}
+                                  onChange={e => {
+                                    if (!testData) return
+                                    const updated = { ...testData }
+                                    if (!updated.users) updated.users = {}
+                                    if (!updated.users[userKey]) updated.users[userKey] = {}
+                                    setTestData({
+                                      ...updated,
+                                      users: {
+                                        ...updated.users,
+                                        [userKey]: { ...updated.users[userKey], email: e.target.value }
+                                      }
+                                    })
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-1">Lozinka</label>
+                                <input
+                                  type="password"
+                                  className="w-full border rounded px-3 py-2 text-sm"
+                                  value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].password) || ''}
+                                  onChange={e => {
+                                    if (!testData) return
+                                    const updated = { ...testData }
+                                    if (!updated.users) updated.users = {}
+                                    if (!updated.users[userKey]) updated.users[userKey] = {}
+                                    setTestData({
+                                      ...updated,
+                                      users: {
+                                        ...updated.users,
+                                        [userKey]: { ...updated.users[userKey], password: e.target.value }
+                                      }
+                                    })
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-1">Puno Ime</label>
+                                <input
+                                  type="text"
+                                  className="w-full border rounded px-3 py-2 text-sm"
+                                  placeholder="Ime Prezime"
+                                  value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].fullName) || ''}
+                                  onChange={e => {
+                                    if (!testData) return
+                                    const updated = { ...testData }
+                                    if (!updated.users) updated.users = {}
+                                    if (!updated.users[userKey]) updated.users[userKey] = {}
+                                    setTestData({
+                                      ...updated,
+                                      users: {
+                                        ...updated.users,
+                                        [userKey]: { ...updated.users[userKey], fullName: e.target.value }
+                                      }
+                                    })
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-1">Telefon</label>
+                                <input
+                                  type="text"
+                                  className="w-full border rounded px-3 py-2 text-sm"
+                                  placeholder="+385991234567"
+                                  value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].phone) || ''}
+                                  onChange={e => {
+                                    if (!testData) return
+                                    const updated = { ...testData }
+                                    if (!updated.users) updated.users = {}
+                                    if (!updated.users[userKey]) updated.users[userKey] = {}
+                                    setTestData({
+                                      ...updated,
+                                      users: {
+                                        ...updated.users,
+                                        [userKey]: { ...updated.users[userKey], phone: e.target.value }
+                                      }
+                                    })
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-1">Grad</label>
+                                <input
+                                  type="text"
+                                  className="w-full border rounded px-3 py-2 text-sm"
+                                  placeholder="Zagreb"
+                                  value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].city) || ''}
+                                  onChange={e => {
+                                    if (!testData) return
+                                    const updated = { ...testData }
+                                    if (!updated.users) updated.users = {}
+                                    if (!updated.users[userKey]) updated.users[userKey] = {}
+                                    setTestData({
+                                      ...updated,
+                                      users: {
+                                        ...updated.users,
+                                        [userKey]: { ...updated.users[userKey], city: e.target.value }
+                                      }
+                                    })
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-1">Pravni Status *</label>
+                                <select
+                                  className="w-full border rounded px-3 py-2 text-sm"
+                                  value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].legalStatus) || ''}
+                                  onChange={e => {
+                                    if (!testData) return
+                                    const updated = { ...testData }
+                                    if (!updated.users) updated.users = {}
+                                    if (!updated.users[userKey]) updated.users[userKey] = {}
+                                    setTestData({
+                                      ...updated,
+                                      users: {
+                                        ...updated.users,
+                                        [userKey]: { ...updated.users[userKey], legalStatus: e.target.value }
+                                      }
+                                    })
+                                  }}
+                                >
+                                  <option value="">Odaberi pravni status...</option>
+                                  <option value="DOO">DOO - Društvo s ograničenom odgovornošću</option>
+                                  <option value="D.O.O.">D.O.O. - Društvo s ograničenom odgovornošću</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-1">OIB / Porezni Broj *</label>
+                                <input
+                                  type="text"
+                                  className="w-full border rounded px-3 py-2 text-sm"
+                                  placeholder="12345678901"
+                                  value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].oib) || ''}
+                                  onChange={e => {
+                                    if (!testData) return
+                                    const updated = { ...testData }
+                                    if (!updated.users) updated.users = {}
+                                    if (!updated.users[userKey]) updated.users[userKey] = {}
+                                    setTestData({
+                                      ...updated,
+                                      users: {
+                                        ...updated.users,
+                                        [userKey]: { ...updated.users[userKey], oib: e.target.value }
+                                      }
+                                    })
+                                  }}
+                                />
+                              </div>
+                              <div className="col-span-2">
+                                <label className="block text-sm font-medium mb-1">Naziv Tvrtke *</label>
+                                <input
+                                  type="text"
+                                  className="w-full border rounded px-3 py-2 text-sm"
+                                  placeholder="Primjer: Test DOO"
+                                  value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].companyName) || ''}
+                                  onChange={e => {
+                                    if (!testData) return
+                                    const updated = { ...testData }
+                                    if (!updated.users) updated.users = {}
+                                    if (!updated.users[userKey]) updated.users[userKey] = {}
+                                    setTestData({
+                                      ...updated,
+                                      users: {
+                                        ...updated.users,
+                                        [userKey]: { ...updated.users[userKey], companyName: e.target.value }
+                                      }
+                                    })
+                                  }}
+                                />
+                              </div>
+                              {/* Email Konfiguracija za providerCompany */}
+                              <div className="col-span-2 mt-3 pt-3 border-t">
+                                <details className="cursor-pointer">
+                                  <summary className="text-sm font-medium text-gray-700 mb-2">
+                                    📧 Email Pristup za Provider Company (Mailtrap Konfiguracija)
+                                  </summary>
+                                  <div className="mt-2 space-y-2 bg-blue-50 p-3 rounded text-xs text-blue-800 mb-3">
+                                    <strong>💡 Objašnjenje:</strong>
+                                    <ul className="list-disc list-inside mt-1 space-y-1">
+                                      <li><strong>Email adresa:</strong> Email adresa ovog korisnika koja će primati test emailove (npr. test.company@mailtrap.io)</li>
+                                      <li><strong>Mailtrap Inbox ID:</strong> ID inbox-a u Mailtrap-u za provider companies (npr. 12347)</li>
+                                    </ul>
+                                  </div>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <div>
+                                      <label className="block text-xs font-medium mb-1">Mailtrap Email Adresa</label>
+                                      <input
+                                        type="email"
+                                        className="w-full border rounded px-2 py-1.5 text-xs"
+                                        placeholder="test.company@mailtrap.io"
+                                        value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].mailtrapEmail) || ''}
+                                        onChange={e => {
+                                          if (!testData) return
+                                          const updated = { ...testData }
+                                          if (!updated.users) updated.users = {}
+                                          if (!updated.users[userKey]) updated.users[userKey] = {}
+                                          setTestData({
+                                            ...updated,
+                                            users: {
+                                              ...updated.users,
+                                              [userKey]: { ...updated.users[userKey], mailtrapEmail: e.target.value }
+                                            }
+                                          })
+                                        }}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-xs font-medium mb-1">Mailtrap Inbox ID</label>
+                                      <input
+                                        type="text"
+                                        className="w-full border rounded px-2 py-1.5 text-xs"
+                                        placeholder="npr. 12347"
+                                        value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].emailConfig && testData.users[userKey].emailConfig.inboxId) || ''}
+                                        onChange={e => {
+                                          if (!testData) return
+                                          const updated = { ...testData }
+                                          if (!updated.users) updated.users = {}
+                                          if (!updated.users[userKey]) updated.users[userKey] = {}
+                                          if (!updated.users[userKey].emailConfig) updated.users[userKey].emailConfig = {}
+                                          setTestData({
+                                            ...updated,
+                                            users: {
+                                              ...updated.users,
+                                              [userKey]: {
+                                                ...updated.users[userKey],
+                                                emailConfig: {
+                                                  ...updated.users[userKey].emailConfig,
+                                                  inboxId: e.target.value
+                                                }
+                                              }
+                                            }
+                                          })
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+                                </details>
+                              </div>
+                            </div>
+                          </>
+                        )
+                      })()}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Test Dokumenti */}
