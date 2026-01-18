@@ -1596,6 +1596,7 @@ export default function AdminTesting(){
                                 </div>
                               </details>
                             </div>
+                            </div>
                           </div>
                         </div>
                       ))}
