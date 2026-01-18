@@ -170,11 +170,32 @@ app.use(morgan('dev'))
 // API Request Logger - logira sve API zahtjeve (prije ruta)
 app.use('/api', apiRequestLogger)
 
-// Health check endpoints
-app.get('/health', (_req, res) => res.status(200).send('ok'))
-app.get('/api/health', (_req, res) =>
-  res.status(200).json({ ok: true, ts: new Date().toISOString() })
-)
+// Health check endpoints - OVO MORA BITI NAJBLIŽE POČETKU DA BI RADILO PRIJE INICIJALIZACIJE
+app.get('/health', (_req, res) => {
+  res.status(200).send('ok')
+})
+app.get('/api/health', async (_req, res) => {
+  try {
+    // Provjeri da li je baza dostupna
+    await prisma.$queryRaw`SELECT 1`
+    res.status(200).json({ 
+      ok: true, 
+      status: 'healthy',
+      database: 'connected',
+      ts: new Date().toISOString() 
+    })
+  } catch (error) {
+    // Ako baza nije dostupna, vrati unhealthy status
+    console.error('[HEALTH CHECK] Database check failed:', error.message)
+    res.status(503).json({ 
+      ok: false, 
+      status: 'unhealthy',
+      database: 'disconnected',
+      error: error.message,
+      ts: new Date().toISOString() 
+    })
+  }
+})
 
 // Serve uploads directory
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
