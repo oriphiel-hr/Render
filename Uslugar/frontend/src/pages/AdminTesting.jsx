@@ -638,6 +638,8 @@ export default function AdminTesting(){
   const [activePlan, setActivePlan] = useState(null)
   const [preset, setPreset] = useState('ALL')
   const [seeding, setSeeding] = useState(false)
+  const [runningAutomated, setRunningAutomated] = useState(false)
+  const [automatedTestResult, setAutomatedTestResult] = useState(null)
 
   const load = async () => {
     try {
@@ -680,6 +682,34 @@ export default function AdminTesting(){
     }
   }
 
+  const handleRunAutomated = async (planId = null, testType = 'all') => {
+    setRunningAutomated(true)
+    setAutomatedTestResult(null)
+    try {
+      const res = await api.post('/testing/run-automated', { planId, testType })
+      setAutomatedTestResult({
+        success: true,
+        message: res.data.message,
+        command: res.data.command,
+        note: res.data.note
+      })
+      // Pokaži toast ili poruku
+      setTimeout(() => {
+        setAutomatedTestResult(null)
+      }, 10000)
+    } catch (e) {
+      setAutomatedTestResult({
+        success: false,
+        error: e?.response?.data?.error || e?.message || String(e)
+      })
+      setTimeout(() => {
+        setAutomatedTestResult(null)
+      }, 10000)
+    } finally {
+      setRunningAutomated(false)
+    }
+  }
+
   // Izračunaj statistike za badge-ove
   const plansCount = plans.length
   const runsCount = runs.length
@@ -707,6 +737,39 @@ export default function AdminTesting(){
           <span>Osvježi</span>
         </button>
       </div>
+
+      {/* Automated Test Result Banner */}
+      {automatedTestResult && (
+        <div className={`p-4 rounded-lg border ${
+          automatedTestResult.success 
+            ? 'bg-green-50 border-green-200 text-green-800' 
+            : 'bg-red-50 border-red-200 text-red-800'
+        }`}>
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">{automatedTestResult.success ? '✅' : '❌'}</span>
+            <div className="flex-1">
+              <h4 className="font-semibold mb-1">
+                {automatedTestResult.success ? 'Automatski testovi pokrenuti' : 'Greška pri pokretanju testova'}
+              </h4>
+              <p className="text-sm">{automatedTestResult.message || automatedTestResult.error}</p>
+              {automatedTestResult.command && (
+                <p className="text-xs mt-2 font-mono bg-white/50 p-2 rounded">
+                  {automatedTestResult.command}
+                </p>
+              )}
+              {automatedTestResult.note && (
+                <p className="text-xs mt-1 text-gray-600 italic">{automatedTestResult.note}</p>
+              )}
+            </div>
+            <button 
+              onClick={() => setAutomatedTestResult(null)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Tabs with badges */}
       <div className="flex items-center gap-2 border-b">
@@ -760,9 +823,23 @@ export default function AdminTesting(){
           Novi plan
         </button>
         <button 
+          onClick={() => handleRunAutomated(null, 'all')} 
+          disabled={runningAutomated} 
+          className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-150 ${
+            runningAutomated
+              ? 'bg-gray-400 text-white cursor-not-allowed' 
+              : 'bg-green-600 text-white hover:bg-green-700'
+          }`}
+          title="Pokreće automatske E2E testove (Playwright)"
+        >
+          {runningAutomated && <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
+          <span>🤖</span>
+          <span>{runningAutomated ? 'Pokretanje...' : 'Pokreni automatske testove'}</span>
+        </button>
+        <button 
           onClick={handleSeed} 
           disabled={seeding} 
-          className={`px-4 py-2 rounded-lg flex items-center gap-2 ml-auto transition-all duration-150 ${
+          className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-150 ${
             seeding
               ? 'bg-gray-400 text-white cursor-not-allowed' 
               : 'bg-purple-600 text-white hover:bg-purple-700'
@@ -807,12 +884,25 @@ export default function AdminTesting(){
                     </div>
                   )}
                 </div>
-                <div className="flex gap-2 ml-4">
+                <div className="flex flex-col gap-2 ml-4">
                   <button 
                     onClick={() => setActivePlan(pl)} 
-                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors duration-150"
+                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors duration-150 text-sm"
                   >
                     ▶️ Pokreni run
+                  </button>
+                  <button 
+                    onClick={() => handleRunAutomated(pl.id, 'all')} 
+                    disabled={runningAutomated}
+                    className={`px-4 py-2 rounded hover:transition-colors duration-150 text-sm flex items-center gap-2 justify-center ${
+                      runningAutomated
+                        ? 'bg-gray-400 text-white cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                    title="Pokreće automatske testove za ovaj plan"
+                  >
+                    {runningAutomated && <div className="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>}
+                    <span>🤖 Auto test</span>
                   </button>
                 </div>
               </div>
