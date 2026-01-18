@@ -127,17 +127,36 @@ export default function AdminSmsLogs() {
         }
       }
       
-      // Ako je greška zbog neaktivnog Twilio računa (403)
+      // Ako je greška zbog ograničenog računa (403 - restricted)
       if (err.response?.status === 403) {
         const actionRequired = err.response?.data?.actionRequired;
-        displayMessage = `${errorMessage}\n\n`;
-        if (actionRequired) {
-          displayMessage += `\nKoraci za rješavanje:\n`;
-          displayMessage += `1. ${actionRequired.step1}\n`;
-          displayMessage += `2. ${actionRequired.step2}\n`;
-          displayMessage += `3. ${actionRequired.step3}\n`;
+        const errorCode = err.response?.data?.code;
+        
+        // Ako je račun ograničen zbog sumnjive aktivnosti
+        if (errorCode === 'ACCOUNT_RESTRICTED' || actionRequired?.urgent) {
+          displayMessage = `⚠️ URGENTNO: ${errorMessage}\n\n`;
+          displayMessage += `Razlog: ${actionRequired?.reason || 'Account restricted due to suspicious activity'}\n\n`;
+          if (actionRequired) {
+            displayMessage += `Koraci za oporavak računa:\n`;
+            displayMessage += `1. ${actionRequired.step1}\n`;
+            displayMessage += `2. ${actionRequired.step2}\n`;
+            displayMessage += `3. ${actionRequired.step3}\n`;
+            if (actionRequired.step4) {
+              displayMessage += `4. ${actionRequired.step4}\n`;
+            }
+          }
+          displayMessage += `\n🔒 Važno: Račun je ograničen zbog sigurnosnih razloga. Obavezno prođite kroz Account Recovery proces i provjerite account aktivnost.`;
+        } else {
+          // Inače je vjerojatno inactive user
+          displayMessage = `${errorMessage}\n\n`;
+          if (actionRequired) {
+            displayMessage += `\nKoraci za rješavanje:\n`;
+            displayMessage += `1. ${actionRequired.step1}\n`;
+            displayMessage += `2. ${actionRequired.step2}\n`;
+            displayMessage += `3. ${actionRequired.step3}\n`;
+          }
+          displayMessage += `\nTwilio račun je deaktiviran ili nije aktivan. Kontaktirajte Twilio Support za aktivaciju.`;
         }
-        displayMessage += `\nTwilio račun je deaktiviran ili nije aktivan. Kontaktirajte Twilio Support za aktivaciju.`;
       }
       
       // Ako je greška zbog neispravnih credentials (401)

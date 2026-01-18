@@ -2110,6 +2110,34 @@ r.post('/sms-logs/sync-from-twilio', auth(true, ['ADMIN']), async (req, res, nex
       const errorMessage = twilioError.message || '';
       const errorMessageLower = errorMessage.toLowerCase();
       
+      // Provjeri da li je greška zbog ograničenog računa (suspicious activity)
+      if (errorMessageLower.includes('restricted') ||
+          errorMessageLower.includes('suspicious activity') ||
+          errorMessageLower.includes('suspended') ||
+          errorMessageLower.includes('limited your twilio account') ||
+          errorMessageLower.includes('account recovery')) {
+        return res.status(403).json({
+          success: false,
+          error: 'Twilio account restricted',
+          message: 'Your Twilio account has been restricted due to suspicious activity. Please complete the account recovery process.',
+          code: twilioError.code || 'ACCOUNT_RESTRICTED',
+          details: {
+            hasAccountSid: !!accountSid,
+            hasAuthToken: !!authToken,
+            accountSidPrefix: accountSid ? accountSid.substring(0, 5) + '...' : null,
+            recoveryUrl: 'https://www.twilio.com/help/account-recovery'
+          },
+          actionRequired: {
+            step1: 'Start Account Recovery Flow',
+            step2: 'Visit: https://www.twilio.com/help/account-recovery',
+            step3: 'Review and secure your account',
+            step4: 'Change passwords and regenerate API keys after recovery',
+            urgent: true,
+            reason: 'Account restricted due to suspicious/unauthorized activity'
+          }
+        });
+      }
+      
       // Provjeri da li je greška zbog neaktivnog korisnika
       if (errorMessageLower.includes('inactive user') || 
           errorMessageLower.includes('unable to log in') ||
