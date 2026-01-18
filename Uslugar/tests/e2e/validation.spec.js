@@ -5,7 +5,8 @@ import {
   createIncompleteTestUser, 
   createProviderWithoutLicense,
   createProviderWithoutKYC,
-  createDirectorWithTeam
+  createDirectorWithTeam,
+  generateTestUserOIB
 } from '../lib/test-user-helper.js';
 
 /**
