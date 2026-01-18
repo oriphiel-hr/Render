@@ -328,21 +328,9 @@ r.post('/bulk/upload-all-missing-to-s3', auth(true, ['ADMIN']), async (req, res,
 
 /**
  * POST /api/invoices/bulk/delete-all-from-s3
- * Obriši sve fakture s S3 (samo admin)
+ * DEPRECATED: S3 storage uklonjen - PDF-ovi se generiraju na zahtjev
  */
 r.post('/bulk/delete-all-from-s3', auth(true, ['ADMIN']), async (req, res, next) => {
-  try {
-    // Pronađi sve fakture koje imaju pdfUrl
-    const invoices = await prisma.invoice.findMany({
-      where: {
-        pdfUrl: { not: null }
-      },
-      select: {
-        id: true,
-        invoiceNumber: true,
-        pdfUrl: true
-      }
-    });
 
     const { deleteInvoicePDF } = await import('../lib/s3-storage.js');
     let deleted = 0;
