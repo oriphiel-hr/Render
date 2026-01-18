@@ -508,9 +508,7 @@ export async function generateAndSendInvoice(invoiceId) {
   // Generiraj PDF
   let pdfBuffer = await generateInvoicePDF(invoice);
 
-  // Sačuvaj PDF u S3 (ako je konfiguriran)
-  const s3Url = await saveInvoicePDF(invoice, pdfBuffer);
-
+  // S3 storage uklonjen - PDF-ovi se generiraju na zahtjev
   // Ažuriraj status fakture
   let updated = await prisma.invoice.update({
     where: { id: invoiceId },
@@ -518,8 +516,7 @@ export async function generateAndSendInvoice(invoiceId) {
       status: 'SENT',
       pdfGeneratedAt: new Date(),
       emailSentAt: new Date(),
-      emailSentTo: invoice.user.email,
-      ...(s3Url && { pdfUrl: s3Url }) // Ažuriraj pdfUrl ako je S3 upload uspio
+      emailSentTo: invoice.user.email
     }
   });
 

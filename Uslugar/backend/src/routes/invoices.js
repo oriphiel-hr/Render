@@ -286,91 +286,13 @@ r.post('/:invoiceId/fiscalize', auth(true, ['ADMIN', 'PROVIDER', 'USER']), async
 
 /**
  * POST /api/invoices/bulk/upload-to-s3
- * Masovno uploadaj PDF fakture na S3 (samo admin)
+ * DEPRECATED: S3 storage uklonjen - PDF-ovi se generiraju na zahtjev
  */
 r.post('/bulk/upload-to-s3', auth(true, ['ADMIN']), async (req, res, next) => {
-  try {
-    const { invoiceIds } = req.body;
-    
-    if (!Array.isArray(invoiceIds) || invoiceIds.length === 0) {
-      return res.status(400).json({ error: 'invoiceIds mora biti array s barem jednim ID-om' });
-    }
-
-    const { isS3Configured } = await import('../lib/s3-storage.js');
-    if (!isS3Configured()) {
-      return res.status(503).json({ error: 'S3 nije konfiguriran' });
-    }
-
-    const { generateInvoicePDF, saveInvoicePDF } = await import('../services/invoice-service.js');
-    let uploaded = 0;
-    let errors = [];
-
-    for (const invoiceId of invoiceIds) {
-      try {
-        const invoice = await prisma.invoice.findUnique({
-          where: { id: invoiceId },
-          include: {
-            user: {
-              select: {
-                id: true,
-                fullName: true,
-                email: true,
-                companyName: true,
-                taxId: true,
-                city: true
-              }
-            },
-            subscription: {
-              select: {
-                plan: true
-              }
-            },
-            leadPurchase: {
-              include: {
-                job: {
-                  select: {
-                    title: true
-                  }
-                }
-              }
-            }
-          }
-        });
-
-        if (!invoice) {
-          errors.push({ invoiceId, error: 'Faktura nije pronađena' });
-          continue;
-        }
-
-        if (invoice.pdfUrl) {
-          continue; // Već je na S3
-        }
-
-        // Generiraj PDF
-        const pdfBuffer = await generateInvoicePDF(invoice);
-        
-        // Upload na S3
-        const s3Url = await saveInvoicePDF(invoice, pdfBuffer);
-        
-        if (s3Url) {
-          uploaded++;
-        } else {
-          errors.push({ invoiceId, error: 'Upload neuspješan' });
-        }
-      } catch (error) {
-        errors.push({ invoiceId, error: error.message });
-      }
-    }
-
-    res.json({
-      success: true,
-      uploaded,
-      total: invoiceIds.length,
-      errors: errors.length > 0 ? errors : undefined
-    });
-  } catch (e) {
-    next(e);
-  }
+  return res.status(410).json({ 
+    error: 'S3 storage uklonjen', 
+    message: 'PDF-ovi se sada generiraju na zahtjev umjesto spremanja u S3. Koristi GET /api/invoices/:invoiceId/pdf za generiranje PDF-a.' 
+  });
 });
 
 /**
@@ -530,49 +452,10 @@ r.post('/:invoiceId/upload-to-s3', auth(true, ['ADMIN']), async (req, res, next)
  * DEPRECATED: S3 storage uklonjen - PDF-ovi se generiraju na zahtjev
  */
 r.delete('/:invoiceId/pdf-s3', auth(true, ['ADMIN']), async (req, res, next) => {
-  try {
-    const { invoiceId } = req.params;
-
-    const invoice = await prisma.invoice.findUnique({
-      where: { id: invoiceId },
-      select: {
-        id: true,
-        invoiceNumber: true,
-        pdfUrl: true
-      }
-    });
-
-    if (!invoice) {
-      return res.status(404).json({ error: 'Faktura nije pronađena' });
-    }
-
-    if (!invoice.pdfUrl) {
-      return res.status(400).json({ error: 'Faktura nema PDF na S3' });
-    }
-
-    // Obriši PDF s S3
-    const { deleteInvoicePDF } = await import('../lib/s3-storage.js');
-    const deleted = await deleteInvoicePDF(invoice.invoiceNumber);
-
-    if (deleted) {
-      // Ažuriraj fakturu - ukloni pdfUrl
-      await prisma.invoice.update({
-        where: { id: invoiceId },
-        data: {
-          pdfUrl: null
-        }
-      });
-
-      res.json({
-        success: true,
-        message: 'PDF je uspješno obrisan s S3'
-      });
-    } else {
-      res.status(500).json({ error: 'Greška pri brisanju PDF-a s S3' });
-    }
-  } catch (e) {
-    next(e);
-  }
+  return res.status(410).json({ 
+    error: 'S3 storage uklonjen', 
+    message: 'PDF-ovi se sada generiraju na zahtjev umjesto spremanja u S3. Koristi GET /api/invoices/:invoiceId/pdf za generiranje PDF-a.' 
+  });
 });
 
 /**
