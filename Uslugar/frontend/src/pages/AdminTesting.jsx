@@ -640,6 +640,9 @@ export default function AdminTesting(){
   const [seeding, setSeeding] = useState(false)
   const [runningAutomated, setRunningAutomated] = useState(false)
   const [automatedTestResult, setAutomatedTestResult] = useState(null)
+  const [testData, setTestData] = useState(null)
+  const [savingTestData, setSavingTestData] = useState(false)
+  const [uploadingDocument, setUploadingDocument] = useState(false)
 
   const load = async () => {
     try {
@@ -1371,7 +1374,7 @@ export default function AdminTesting(){
                             }}
                             disabled={uploadingDocument}
                           />
-                          {doc?.url && (
+                          {doc && doc.url && (
                             <button
                               onClick={() => {
                                 if (!testData) return
