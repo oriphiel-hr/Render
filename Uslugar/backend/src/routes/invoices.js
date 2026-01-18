@@ -343,7 +343,7 @@ r.post('/bulk/delete-all-from-s3', auth(true, ['ADMIN']), async (req, res, next)
  */
 r.post('/:invoiceId/upload-to-s3', auth(true, ['ADMIN']), async (req, res, next) => {
   return res.status(410).json({
-            data: { pdfUrl: null }
+    error: 'S3 storage uklonjen', pdfUrl: null }
           });
           deleted++;
         } else {
