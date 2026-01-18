@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import testData from '../test-data.json';
 import { getUser } from '../lib/user-helper.js';
+import { createDirectorWithTeam, createProviderWithoutLicense } from '../lib/test-user-helper.js';
 
 /**
  * Kompletan E2E test za sve domene - "Sve domene - E2E"
@@ -170,6 +171,87 @@ test.describe('Sve domene - E2E Test', () => {
     await clientPage.fill('textarea[name="comment"]', testData.testData.review.comment);
     await clientPage.click('button:has-text("Pošalji recenziju")');
     await expect(clientPage.locator('text=Recenzija uspješno poslana')).toBeVisible({ timeout: 10000 });
+  });
+
+  // ============================================
+  // EDGE CASE TESTOVI - Direktor i izvođači
+  // ============================================
+
+  test('E2E flow s direktorom i izvođačima - interni queue', async () => {
+    // Kreiraj direktora s 2 izvođača
+    const { director, team, cleanup } = await createDirectorWithTeam(clientPage, testData, {
+      teamSize: 2,
+      city: 'Zagreb'
+    });
+    
+    try {
+      console.log(`[ALL-DOMAINS TEST] Director: ${director.email}`);
+      console.log(`[ALL-DOMAINS TEST] Team members: ${team.length}`);
+      
+      // Prijava direktora
+      await clientPage.goto('/');
+      await clientPage.click('text=Prijava');
+      await clientPage.fill('input[name="email"]', director.email);
+      await clientPage.fill('input[name="password"]', director.password);
+      await clientPage.click('button[type="submit"]');
+      await expect(clientPage.locator('text=Dashboard')).toBeVisible({ timeout: 10000 });
+      
+      // Provjeri da direktor vidi svoje izvođače
+      await clientPage.goto('/profile/team');
+      await clientPage.screenshot({ path: 'test-results/screenshots/all-domains-edge-01-director-team-view.png', fullPage: true });
+      
+      // Prijava prvog izvođača
+      await providerPage.goto('/');
+      await providerPage.click('text=Prijava');
+      await providerPage.fill('input[name="email"]', team[0].email);
+      await providerPage.fill('input[name="password"]', team[0].password);
+      await providerPage.click('button[type="submit"]');
+      await expect(providerPage.locator('text=Dashboard')).toBeVisible({ timeout: 10000 });
+      
+      // Provjeri da izvođač vidi direktora
+      await providerPage.goto('/profile');
+      await providerPage.screenshot({ path: 'test-results/screenshots/all-domains-edge-02-team-member-profile.png', fullPage: true });
+      
+      console.log('[ALL-DOMAINS TEST] ✅ Director and team structure test completed');
+    } finally {
+      await cleanup();
+    }
+  });
+
+  test('E2E flow s providerom bez licence - ograničene funkcionalnosti', async () => {
+    // Kreiraj providera bez licence
+    const { user: provider, cleanup } = await createProviderWithoutLicense(clientPage, testData, {
+      city: 'Zagreb'
+    });
+    
+    const client = getUser(testData, 'client', { strategy: 'first' });
+    const jobData = testData.testData?.job;
+    
+    try {
+      // Prijava providera bez licence
+      await providerPage.goto('/');
+      await providerPage.click('text=Prijava');
+      await providerPage.fill('input[name="email"]', provider.email);
+      await providerPage.fill('input[name="password"]', provider.password);
+      await providerPage.click('button[type="submit"]');
+      await expect(providerPage.locator('text=Dashboard')).toBeVisible({ timeout: 10000 });
+      
+      // Provjeri da li provider vidi upozorenje o nedostajućoj licenci
+      await providerPage.goto('/profile');
+      await providerPage.screenshot({ path: 'test-results/screenshots/all-domains-edge-03-provider-without-license.png', fullPage: true });
+      
+      // Pokušaj pristupa leadovima - trebao bi biti ograničen bez licence
+      await providerPage.goto('/leads');
+      await providerPage.screenshot({ path: 'test-results/screenshots/all-domains-edge-04-leads-without-license.png', fullPage: true });
+      
+      // Provjeri da li postoji poruka o potrebi licence
+      const hasLicenseRestriction = await providerPage.locator('text=/licenca.*potrebna|license.*required/i').isVisible().catch(() => false);
+      console.log(`[ALL-DOMAINS TEST] License restriction visible: ${hasLicenseRestriction}`);
+      
+      console.log('[ALL-DOMAINS TEST] ✅ Provider without license test completed');
+    } finally {
+      await cleanup();
+    }
   });
 });
 

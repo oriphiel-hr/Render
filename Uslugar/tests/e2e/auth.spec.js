@@ -1,7 +1,11 @@
 import { test, expect } from '@playwright/test';
 import testData from '../test-data.json';
 import { getUser } from '../lib/user-helper.js';
-import { createTestUserWithCleanup } from '../lib/test-user-helper.js';
+import { 
+  createTestUserWithCleanup,
+  createInvalidTestUser,
+  createIncompleteTestUser
+} from '../lib/test-user-helper.js';
 
 /**
  * Automatski testovi za autentifikaciju i registraciju
@@ -249,6 +253,103 @@ test.describe('Auth - Autentifikacija i Registracija', () => {
       await page.click('button[type="submit"]');
       await expect(page.locator('text=Lozinka uspješno promijenjena')).toBeVisible({ timeout: 10000 });
     }
+  });
+
+  // ============================================
+  // EDGE CASE TESTOVI - Invalid podaci
+  // ============================================
+  
+  test('Registracija s invalid email formatom - treba prikazati grešku', async ({ page }) => {
+    await page.goto('/');
+    await page.click('text=Registracija');
+    await page.click('input[value="USER"]');
+    
+    // Invalid email format
+    await page.fill('input[name="email"]', 'invalid-email-format');
+    await page.fill('input[name="password"]', 'Test123456!');
+    await page.fill('input[name="fullName"]', 'Test User');
+    await page.fill('input[name="phone"]', '+385991234567');
+    await page.selectOption('select[name="city"]', 'Zagreb');
+    await page.click('button[type="submit"]');
+    
+    // Treba prikazati grešku za invalid email
+    await expect(page.locator('text=/email.*invalid|nevažeći.*email|invalid.*format/i')).toBeVisible({ timeout: 5000 });
+    await page.screenshot({ path: 'test-results/screenshots/auth-edge-01-invalid-email.png', fullPage: true });
+  });
+
+  test('Registracija providera s prekratkim OIB-om - treba prikazati grešku', async ({ page }) => {
+    await page.goto('/');
+    await page.click('text=Registracija');
+    await page.click('input[value="PROVIDER"]');
+    
+    const timestamp = Date.now();
+    await page.fill('input[name="email"]', `test.provider.${timestamp}@uslugar.test`);
+    await page.fill('input[name="password"]', 'Test123456!');
+    await page.fill('input[name="fullName"]', 'Test Provider');
+    await page.fill('input[name="phone"]', '+385991234567');
+    await page.selectOption('select[name="city"]', 'Zagreb');
+    await page.selectOption('select[name="legalStatus"]', 'FREELANCER');
+    await page.fill('input[name="oib"]', '123'); // Prekratak OIB (treba 11 znamenki)
+    
+    await page.click('button[type="submit"]');
+    
+    // Treba prikazati grešku za invalid OIB
+    await expect(page.locator('text=/OIB.*11.*znamenki|nevažeći.*OIB|OIB.*invalid/i')).toBeVisible({ timeout: 5000 });
+    await page.screenshot({ path: 'test-results/screenshots/auth-edge-02-invalid-oib.png', fullPage: true });
+  });
+
+  test('Registracija tvrtke bez naziva tvrtke - treba prikazati grešku', async ({ page }) => {
+    await page.goto('/');
+    await page.click('text=Registracija');
+    await page.click('input[value="PROVIDER"]');
+    
+    const timestamp = Date.now();
+    await page.fill('input[name="email"]', `test.company.${timestamp}@uslugar.test`);
+    await page.fill('input[name="password"]', 'Test123456!');
+    await page.fill('input[name="fullName"]', 'Test Company');
+    await page.fill('input[name="phone"]', '+385991234567');
+    await page.selectOption('select[name="city"]', 'Zagreb');
+    await page.selectOption('select[name="legalStatus"]', 'DOO');
+    await page.fill('input[name="oib"]', '12345678901');
+    // Ne unesi naziv tvrtke (required za DOO)
+    
+    await page.click('button[type="submit"]');
+    
+    // Treba prikazati grešku da je naziv tvrtke obavezan
+    await expect(page.locator('text=/naziv.*tvrtke.*obavezan|company.*name.*required/i')).toBeVisible({ timeout: 5000 });
+    await page.screenshot({ path: 'test-results/screenshots/auth-edge-03-missing-company-name.png', fullPage: true });
+  });
+
+  test('Registracija s prekratkom lozinkom - treba prikazati grešku', async ({ page }) => {
+    await page.goto('/');
+    await page.click('text=Registracija');
+    await page.click('input[value="USER"]');
+    
+    const timestamp = Date.now();
+    await page.fill('input[name="email"]', `test.user.${timestamp}@uslugar.test`);
+    await page.fill('input[name="password"]', '123'); // Prekratka lozinka
+    await page.fill('input[name="fullName"]', 'Test User');
+    await page.fill('input[name="phone"]', '+385991234567');
+    await page.selectOption('select[name="city"]', 'Zagreb');
+    await page.click('button[type="submit"]');
+    
+    // Treba prikazati grešku za prekratku lozinku
+    await expect(page.locator('text=/lozinka.*kratka|password.*short|minimum.*characters/i')).toBeVisible({ timeout: 5000 });
+    await page.screenshot({ path: 'test-results/screenshots/auth-edge-04-short-password.png', fullPage: true });
+  });
+
+  test('Prijava s nevažećim credentials - treba prikazati grešku', async ({ page }) => {
+    await page.goto('/');
+    await page.click('text=Prijava');
+    
+    // Koristi nevažeće credentials
+    await page.fill('input[name="email"]', 'nonexistent@uslugar.test');
+    await page.fill('input[name="password"]', 'WrongPassword123!');
+    await page.click('button[type="submit"]');
+    
+    // Treba prikazati grešku za nevažeće credentials
+    await expect(page.locator('text=/nevažeći.*credentials|pogrešna.*lozinka|invalid.*login/i')).toBeVisible({ timeout: 5000 });
+    await page.screenshot({ path: 'test-results/screenshots/auth-edge-05-invalid-credentials.png', fullPage: true });
   });
 });
 
