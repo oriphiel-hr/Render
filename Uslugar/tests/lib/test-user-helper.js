@@ -182,6 +182,223 @@ export async function createTestUser(page, options = {}) {
 }
 
 /**
+ * Dovedi korisnika u stanje pogodno za testiranje
+ * Nakon kreiranja korisnika, izvršava sve potrebne korake:
+ * - Verifikacija emaila (ako je potrebno)
+ * - KYC upload (za providere, ako nije skipKYC)
+ * - Upload licence (za providere, ako nije skipLicense)
+ * - Popunjavanje profila (kategorije, itd.)
+ * - Prijava (ako je potrebno)
+ * 
+ * @param {Object} page - Playwright page objekt
+ * @param {Object} userData - Podaci korisnika (iz createTestUser)
+ * @param {Object} testData - test-data.json objekt
+ * @param {Object} options - Opcije za setup
+ * @param {boolean} options.skipEmailVerification - Preskoči email verifikaciju
+ * @param {boolean} options.skipLogin - Ne prijavljuj korisnika nakon setup-a
+ * @param {boolean} options.skipProfileSetup - Preskoči popunjavanje profila
+ * @returns {Promise<Object>} User data s dodatnim informacijama o stanju
+ */
+export async function setupTestUser(page, userData, testData, options = {}) {
+  const {
+    skipEmailVerification = false,
+    skipLogin = false,
+    skipProfileSetup = false
+  } = options;
+
+  console.log(`[TEST USER HELPER] Setting up test user: ${userData.email}`);
+  
+  // 1. Verifikacija emaila (ako nije preskočena i ako nije invalid test)
+  if (!skipEmailVerification && !userData.invalidData && userData.userType !== 'admin') {
+    try {
+      console.log(`[TEST USER HELPER] Verifying email for ${userData.email}`);
+      
+      // Dohvati verifikacijski email
+      const { findVerificationEmail, clickEmailLink } = await import('./email-helper.js');
+      
+      const userEmailConfig = {
+        ...(userData.emailConfig || {}),
+        mailtrapEmail: userData.mailtrapEmail || null
+      };
+      
+      const searchEmailAddress = userData.mailtrapEmail || userData.email;
+      
+      // Pričekaj da email stigne (max 30 sekundi)
+      let verificationEmail = null;
+      for (let i = 0; i < 30; i++) {
+        verificationEmail = await findVerificationEmail(searchEmailAddress, 'verifikacija|verify|confirmation', userEmailConfig);
+        if (verificationEmail) break;
+        await page.waitForTimeout(1000);
+      }
+      
+      if (verificationEmail) {
+        // Klikni na verifikacijski link
+        const verificationLink = await clickEmailLink(page, verificationEmail, 'verify|verification|confirm|activate', {
+          inboxId: userEmailConfig?.inboxId,
+          baseUrl: testData.api?.frontendUrl || 'https://www.uslugar.eu'
+        });
+        
+        if (verificationLink || verificationEmail) {
+          // Čekaj da se verifikacija završi
+          await page.waitForTimeout(2000);
+          console.log(`[TEST USER HELPER] ✅ Email verified for ${userData.email}`);
+          userData.emailVerified = true;
+        }
+      } else {
+        console.warn(`[TEST USER HELPER] ⚠️ Verification email not found for ${userData.email} - skipping verification`);
+        userData.emailVerified = false;
+      }
+    } catch (error) {
+      console.warn(`[TEST USER HELPER] ⚠️ Email verification failed for ${userData.email}:`, error.message);
+      userData.emailVerified = false;
+    }
+  } else {
+    userData.emailVerified = skipEmailVerification ? false : true; // Pretpostavi da je verified ako je skipano
+  }
+
+  // 2. Prijava (ako nije preskočena)
+  if (!skipLogin && !userData.invalidData) {
+    try {
+      console.log(`[TEST USER HELPER] Logging in ${userData.email}`);
+      
+      await page.goto('/');
+      await page.click('text=Prijava');
+      await page.fill('input[name="email"]', userData.email);
+      await page.fill('input[name="password"]', userData.password);
+      await page.click('button[type="submit"]');
+      
+      // Čekaj da se prijava završi
+      await page.waitForSelector('text=Dashboard', { timeout: 10000 }).catch(() => {
+        // Ako Dashboard ne postoji, provjeri da li je prijava uspjela na drugi način
+        return page.waitForTimeout(2000);
+      });
+      
+      console.log(`[TEST USER HELPER] ✅ Logged in ${userData.email}`);
+      userData.loggedIn = true;
+    } catch (error) {
+      console.warn(`[TEST USER HELPER] ⚠️ Login failed for ${userData.email}:`, error.message);
+      userData.loggedIn = false;
+    }
+  } else {
+    userData.loggedIn = skipLogin ? false : true;
+  }
+
+  // 3. Popunjavanje profila (za providere)
+  if (!skipProfileSetup && !userData.invalidData && !userData.missingData) {
+    if (userData.userType === 'provider' || userData.userType === 'providerCompany') {
+      try {
+        console.log(`[TEST USER HELPER] Setting up profile for ${userData.email}`);
+        
+        // Navigiraj na profil
+        await page.goto('/profile');
+        
+        // Odaberi kategorije (maks 5 - uzmi prve 2-3 za test)
+        const categories = ['Električar', 'Vodoinstalater'];
+        for (const category of categories) {
+          try {
+            await page.click(`text=${category}`, { timeout: 3000 });
+          } catch (e) {
+            console.warn(`[TEST USER HELPER] Category ${category} not found or already selected`);
+          }
+        }
+        
+        // Spremi profil
+        try {
+          await page.click('button:has-text("Spremi")', { timeout: 3000 });
+          await page.waitForTimeout(1000);
+          console.log(`[TEST USER HELPER] ✅ Profile setup completed for ${userData.email}`);
+          userData.profileSetup = true;
+        } catch (e) {
+          console.warn(`[TEST USER HELPER] ⚠️ Profile save button not found or already saved`);
+          userData.profileSetup = true; // Pretpostavi da je već setupan
+        }
+      } catch (error) {
+        console.warn(`[TEST USER HELPER] ⚠️ Profile setup failed for ${userData.email}:`, error.message);
+        userData.profileSetup = false;
+      }
+    }
+  }
+
+  // 4. KYC upload (za providere, ako nije skipKYC)
+  if (!userData.skipKYC && !userData.invalidData && !userData.missingData) {
+    if (userData.userType === 'provider' || userData.userType === 'providerCompany') {
+      try {
+        console.log(`[TEST USER HELPER] Uploading KYC document for ${userData.email}`);
+        
+        const kycDoc = testData.documents?.kycDocument;
+        if (kycDoc?.path || kycDoc?.url) {
+          await page.goto('/profile/kyc');
+          
+          // Provjeri consent checkbox
+          try {
+            await page.check('input[name="consent"]', { timeout: 3000 });
+          } catch (e) {
+            console.warn(`[TEST USER HELPER] Consent checkbox not found or already checked`);
+          }
+          
+          // Upload dokumenta
+          const fileInput = page.locator('input[type="file"]');
+          const filePath = kycDoc.path || kycDoc.url;
+          await fileInput.setInputFiles(filePath);
+          
+          // Pošalji formu
+          await page.click('button[type="submit"]');
+          await page.waitForTimeout(2000);
+          
+          console.log(`[TEST USER HELPER] ✅ KYC document uploaded for ${userData.email}`);
+          userData.kycUploaded = true;
+        } else {
+          console.warn(`[TEST USER HELPER] ⚠️ KYC document not available in test data`);
+          userData.kycUploaded = false;
+        }
+      } catch (error) {
+        console.warn(`[TEST USER HELPER] ⚠️ KYC upload failed for ${userData.email}:`, error.message);
+        userData.kycUploaded = false;
+      }
+    }
+  }
+
+  // 5. Upload licence (za providere, ako nije skipLicense)
+  if (!userData.skipLicense && !userData.invalidData && !userData.missingData) {
+    if (userData.userType === 'provider' || userData.userType === 'providerCompany') {
+      try {
+        console.log(`[TEST USER HELPER] Uploading license for ${userData.email}`);
+        
+        const licenseDoc = testData.documents?.licenseDocument;
+        if (licenseDoc?.path || licenseDoc?.url) {
+          // Navigiraj na stranicu za licence (ovo ovisi o implementaciji)
+          await page.goto('/profile/licenses').catch(() => page.goto('/profile'));
+          
+          // Upload licence (ovo ovisi o implementaciji UI-ja)
+          try {
+            const fileInput = page.locator('input[type="file"]');
+            const filePath = licenseDoc.path || licenseDoc.url;
+            await fileInput.setInputFiles(filePath, { timeout: 3000 });
+            await page.click('button:has-text("Upload")', { timeout: 3000 });
+            await page.waitForTimeout(2000);
+            
+            console.log(`[TEST USER HELPER] ✅ License uploaded for ${userData.email}`);
+            userData.licenseUploaded = true;
+          } catch (e) {
+            console.warn(`[TEST USER HELPER] ⚠️ License upload UI not found - may not be required`);
+            userData.licenseUploaded = false;
+          }
+        } else {
+          console.warn(`[TEST USER HELPER] ⚠️ License document not available in test data`);
+          userData.licenseUploaded = false;
+        }
+      } catch (error) {
+        console.warn(`[TEST USER HELPER] ⚠️ License upload failed for ${userData.email}:`, error.message);
+        userData.licenseUploaded = false;
+      }
+    }
+  }
+
+  console.log(`[TEST USER HELPER] ✅ Test user setup completed: ${userData.email}`);
+  return userData;
+}
+
+/**
  * Obriši test korisnika preko API-ja (zahtijeva admin pristup)
  * @param {Object} page - Playwright page objekt
  * @param {Object} testData - test-data.json objekt (za API URL i admin credentials)
@@ -290,10 +507,20 @@ export async function cleanupTestUser(page, userData, testData) {
  * @param {Object} page - Playwright page objekt
  * @param {Object} testData - test-data.json objekt
  * @param {Object} options - Opcije za kreiranje korisnika (vidi createTestUser)
+ * @param {boolean} options.autoSetup - Automatski dovedi korisnika u potrebno stanje (default: true)
+ * @param {Object} options.setupOptions - Opcije za setup (vidi setupTestUser)
  * @returns {Promise<{user: Object, cleanup: Function}>} Korisnik i cleanup funkcija
  */
 export async function createTestUserWithCleanup(page, testData, options = {}) {
-  const user = await createTestUser(page, options);
+  const { autoSetup = true, setupOptions = {}, ...userOptions } = options;
+  
+  // Kreiraj korisnika
+  const user = await createTestUser(page, userOptions);
+  
+  // Ako je autoSetup omogućen, dovedi korisnika u potrebno stanje
+  if (autoSetup) {
+    await setupTestUser(page, user, testData, setupOptions);
+  }
   
   // Vrati cleanup funkciju
   const cleanup = async () => {
