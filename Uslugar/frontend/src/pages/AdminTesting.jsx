@@ -1262,10 +1262,11 @@ export default function AdminTesting(){
                         {userKey !== 'admin' && (
                           <>
                             <div>
-                              <label className="block text-sm font-medium mb-1">Ime</label>
+                              <label className="block text-sm font-medium mb-1">Puno Ime</label>
                               <input
                                 type="text"
                                 className="w-full border rounded px-3 py-2 text-sm"
+                                placeholder="Ime Prezime"
                                 value={testData && testData.users && testData.users[userKey] && testData.users[userKey].fullName ? testData.users[userKey].fullName : ''}
                                 onChange={e => {
                                   if (!testData) return
@@ -1287,6 +1288,7 @@ export default function AdminTesting(){
                               <input
                                 type="text"
                                 className="w-full border rounded px-3 py-2 text-sm"
+                                placeholder="+385991234567"
                                 value={testData && testData.users && testData.users[userKey] && testData.users[userKey].phone ? testData.users[userKey].phone : ''}
                                 onChange={e => {
                                   if (!testData) return
@@ -1303,10 +1305,32 @@ export default function AdminTesting(){
                                 }}
                               />
                             </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-1">Grad</label>
+                              <input
+                                type="text"
+                                className="w-full border rounded px-3 py-2 text-sm"
+                                placeholder="Zagreb"
+                                value={testData && testData.users && testData.users[userKey] && testData.users[userKey].city ? testData.users[userKey].city : ''}
+                                onChange={e => {
+                                  if (!testData) return
+                                  const updated = { ...testData }
+                                  if (!updated.users) updated.users = {}
+                                  if (!updated.users[userKey]) updated.users[userKey] = {}
+                                  setTestData({
+                                    ...updated,
+                                    users: {
+                                      ...updated.users,
+                                      [userKey]: { ...updated.users[userKey], city: e.target.value }
+                                    }
+                                  })
+                                }}
+                              />
+                            </div>
                             {(userKey === 'provider' || userKey === 'providerCompany') && (
                               <>
                                 <div>
-                                  <label className="block text-sm font-medium mb-1">Pravni Status</label>
+                                  <label className="block text-sm font-medium mb-1">Pravni Status *</label>
                                   <select
                                     className="w-full border rounded px-3 py-2 text-sm"
                                     value={testData && testData.users && testData.users[userKey] && testData.users[userKey].legalStatus ? testData.users[userKey].legalStatus : ''}
@@ -1324,18 +1348,20 @@ export default function AdminTesting(){
                                       })
                                     }}
                                   >
-                                    <option value="">Odaberi...</option>
-                                    <option value="FREELANCER">FREELANCER</option>
-                                    <option value="SOLE_TRADER">SOLE_TRADER</option>
-                                    <option value="DOO">DOO</option>
-                                    <option value="D.O.O.">D.O.O.</option>
+                                    <option value="">Odaberi pravni status...</option>
+                                    <option value="FREELANCER">FREELANCER - Samostalni djelatnik</option>
+                                    <option value="SOLE_TRADER">SOLE_TRADER - Obrt</option>
+                                    <option value="DOO">DOO - Društvo s ograničenom odgovornošću</option>
+                                    <option value="D.O.O.">D.O.O. - Društvo s ograničenom odgovornošću</option>
                                   </select>
+                                  <p className="text-xs text-gray-500 mt-0.5">* Obavezno za providere</p>
                                 </div>
                                 <div>
-                                  <label className="block text-sm font-medium mb-1">OIB</label>
+                                  <label className="block text-sm font-medium mb-1">OIB / Porezni Broj *</label>
                                   <input
                                     type="text"
                                     className="w-full border rounded px-3 py-2 text-sm"
+                                    placeholder="12345678901"
                                     value={testData && testData.users && testData.users[userKey] && testData.users[userKey].oib ? testData.users[userKey].oib : ''}
                                     onChange={e => {
                                       if (!testData) return
@@ -1351,10 +1377,43 @@ export default function AdminTesting(){
                                       })
                                     }}
                                   />
+                                  <p className="text-xs text-gray-500 mt-0.5">* Obavezno za providere (11 znamenki)</p>
                                 </div>
+                                {userKey === 'providerCompany' && (
+                                  <div className="col-span-2">
+                                    <label className="block text-sm font-medium mb-1">Naziv Tvrtke</label>
+                                    <input
+                                      type="text"
+                                      className="w-full border rounded px-3 py-2 text-sm"
+                                      placeholder="Primjer: Test DOO"
+                                      value={testData && testData.users && testData.users[userKey] && testData.users[userKey].companyName ? testData.users[userKey].companyName : ''}
+                                      onChange={e => {
+                                        if (!testData) return
+                                        const updated = { ...testData }
+                                        if (!updated.users) updated.users = {}
+                                        if (!updated.users[userKey]) updated.users[userKey] = {}
+                                        setTestData({
+                                          ...updated,
+                                          users: {
+                                            ...updated.users,
+                                            [userKey]: { ...updated.users[userKey], companyName: e.target.value }
+                                          }
+                                        })
+                                      }}
+                                    />
+                                    <p className="text-xs text-gray-500 mt-0.5">Obavezno za tvrtke (DOO, OBRT), opcionalno za samostalne djelatnike</p>
+                                  </div>
+                                )}
                               </>
                             )}
                           </>
+                        )}
+                        {userKey === 'admin' && (
+                          <div className="col-span-2">
+                            <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">
+                              <strong>💡 Napomena:</strong> Admin korisnik koristi samo email i lozinku za prijavu.
+                            </div>
+                          </div>
                         )}
                         {/* Email Konfiguracija za korisnika (opcionalno) */}
                         <div className="col-span-2 mt-3 pt-3 border-t">
