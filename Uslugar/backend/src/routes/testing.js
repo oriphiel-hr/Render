@@ -343,7 +343,26 @@ r.post('/seed', auth(true, ['ADMIN']), async (req, res, next) => {
     const allPlans = [...frontendPlans, ...adminPlans];
     console.log(`[TESTING SEED] Parsed ${allPlans.length} test plans`);
     
-    // Dodaj plan "Sve domene - E2E" sa svim preset test itemima (48 itema)
+    // Generiraj plan "Sve domene - E2E" kombiniranjem SVIH test itema iz svih planova
+    // Umjesto hardcodiranog preset-a, koristimo stvarne test iteme iz dokumentacije
+    const allTestItems = [];
+    allPlans.forEach(plan => {
+      if (plan.items && plan.items.length > 0) {
+        // Dodaj prefix kategorije svakom itemu da se zna iz koje domene dolazi
+        plan.items.forEach(item => {
+          allTestItems.push({
+            ...item,
+            title: item.title, // Title već sadrži dovoljno informacija
+            // Opcionalno: dodaj prefix kategorije ako želiš
+            // title: `[${plan.category}] ${item.title}`
+          });
+        });
+      }
+    });
+    
+    console.log(`[TESTING SEED] Combined ${allTestItems.length} test items from all plans for "Sve domene - E2E"`);
+    
+    // Također dodaj hardcodiran preset plan za brzi E2E test (48 sažetih itema)
     const presetTestItems = [
       // AUTH
       { title: 'Registracija korisnika usluge (osoba)', description: 'Registracija bez pravnog statusa', expectedResult: 'Uspješna registracija bez polja za tvrtku', dataVariations: { examples: ['ispravan email', 'neispravan email', 'slaba lozinka', 'duplikat email'] } },
@@ -409,15 +428,26 @@ r.post('/seed', auth(true, ['ADMIN']), async (req, res, next) => {
       { title: 'Admin: KYC metrike', description: 'Provjera brojeva/vremena', expectedResult: 'Metrike vraćaju vrijednosti', dataVariations: { examples: ['bez verifikacija', 'više verificiranih'] } },
     ];
     
+    // Dodaj DVA plana:
+    // 1. "Sve domene - E2E (Detaljno)" - svi test itemi iz dokumentacije
     allPlans.push({
       category: 'ALL',
-      name: 'Sve domene - E2E',
-      description: 'Automatski generiran plan prema odabranoj domeni - sve domene uključene',
+      name: 'Sve domene - E2E (Detaljno)',
+      description: 'Svi testovi iz dokumentacije - kompletno pokrivanje svih funkcionalnosti',
+      items: allTestItems
+    });
+    
+    // 2. "Sve domene - E2E (Sažetak)" - sažeti preset plan (48 itema)
+    allPlans.push({
+      category: 'ALL',
+      name: 'Sve domene - E2E (Sažetak)',
+      description: 'Sažeti E2E test plan - najvažniji testovi svake domene',
       items: presetTestItems
     });
     
-    console.log(`[TESTING SEED] Added "Sve domene - E2E" plan with ${presetTestItems.length} items`);
-    console.log(`[TESTING SEED] Total plans: ${allPlans.length} (${allPlans.length - 1} from markdown + 1 preset plan)`);
+    console.log(`[TESTING SEED] Added "Sve domene - E2E (Detaljno)" plan with ${allTestItems.length} items`);
+    console.log(`[TESTING SEED] Added "Sve domene - E2E (Sažetak)" plan with ${presetTestItems.length} items`);
+    console.log(`[TESTING SEED] Total plans: ${allPlans.length} (${allPlans.length - 2} from markdown + 2 E2E plans)`);
     
     // 1. Obriši postojeće test planove
     console.log('[TESTING SEED] Deleting existing test plans...');
