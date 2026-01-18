@@ -195,22 +195,45 @@ export function extractVerificationLink(email) {
   // Ako je Mailtrap format
   if (email.html_path || email.html_body) {
     const html = email.html_body || '';
-    // Pronađi link koji sadrži "verify", "verification", "token", itd.
-    const linkMatch = html.match(/href=["']([^"']*(?:verify|verification|token|confirm)[^"']*)["']/i);
-    if (linkMatch) {
-      return linkMatch[1];
+    // Pronađi link koji sadrži "verify", "verification", "token", "confirm", "activate", itd.
+    const linkPatterns = [
+      /href=["']([^"']*(?:verify|verification|token|confirm|activate)[^"']*)["']/i,
+      /href=["']([^"']*\/api\/[^"']*(?:verify|verification|token|confirm)[^"']*)["']/i,
+      /href=["']([^"']*\/verify[^"']*)["']/i,
+      /href=["']([^"']*\/confirm[^"']*)["']/i
+    ];
+    
+    for (const pattern of linkPatterns) {
+      const linkMatch = html.match(pattern);
+      if (linkMatch && linkMatch[1]) {
+        const link = linkMatch[1];
+        console.log(`[EMAIL HELPER] Found verification link in HTML: ${link}`);
+        return link;
+      }
     }
   }
   
   // Ako je text format
   if (email.text_body) {
     const text = email.text_body;
-    const linkMatch = text.match(/(https?:\/\/[^\s]*(?:verify|verification|token|confirm)[^\s]*)/i);
-    if (linkMatch) {
-      return linkMatch[1];
+    const linkPatterns = [
+      /(https?:\/\/[^\s]*(?:verify|verification|token|confirm|activate)[^\s]*)/i,
+      /(https?:\/\/[^\s]*\/api\/[^\s]*(?:verify|verification|token|confirm)[^\s]*)/i,
+      /(https?:\/\/[^\s]*\/verify[^\s]*)/i,
+      /(https?:\/\/[^\s]*\/confirm[^\s]*)/i
+    ];
+    
+    for (const pattern of linkPatterns) {
+      const linkMatch = text.match(pattern);
+      if (linkMatch && linkMatch[1]) {
+        const link = linkMatch[1];
+        console.log(`[EMAIL HELPER] Found verification link in text: ${link}`);
+        return link;
+      }
     }
   }
   
+  console.warn('[EMAIL HELPER] No verification link found in email');
   return null;
 }
 
@@ -219,18 +242,20 @@ export function extractVerificationLink(email) {
  * @param {Object} page - Playwright page objekt
  * @param {Object} email - Email poruka
  * @param {string} screenshotPath - Putanja za screenshot
+ * @param {Object} options - Dodatne opcije (inboxId za Mailtrap)
  * @returns {Promise<string>} Putanja do screenshot-a
  */
-export async function screenshotEmail(page, email, screenshotPath = null) {
+export async function screenshotEmail(page, email, screenshotPath = null, options = {}) {
   if (!email) {
     throw new Error('Email objekt je potreban za screenshot');
   }
   
   // Ako je Mailtrap, otvori email preko web interfejsa
   if (EMAIL_CONFIG.testService.apiKey && email.id) {
-    const inboxId = EMAIL_CONFIG.testService.inboxId || '0';
+    const inboxId = options.inboxId || EMAIL_CONFIG.testService.inboxId || '0';
     const emailUrl = `https://mailtrap.io/inboxes/${inboxId}/messages/${email.id}`;
     
+    console.log(`[EMAIL HELPER] Opening Mailtrap email in browser: ${emailUrl}`);
     await page.goto(emailUrl);
     await page.waitForLoadState('networkidle');
     
@@ -241,6 +266,7 @@ export async function screenshotEmail(page, email, screenshotPath = null) {
       fullPage: true 
     });
     
+    console.log(`[EMAIL HELPER] Screenshot saved: ${path}`);
     return path;
   }
   
@@ -259,10 +285,78 @@ export async function screenshotEmail(page, email, screenshotPath = null) {
       fullPage: true 
     });
     
+    console.log(`[EMAIL HELPER] Screenshot saved: ${path}`);
     return path;
   }
   
   throw new Error('Email format nije podržan za screenshot');
+}
+
+/**
+ * Otvori email link i automatski klikni na verifikacijski/reset link
+ * @param {Object} page - Playwright page objekt
+ * @param {Object} email - Email poruka
+ * @param {string} linkPattern - Pattern za link (npr. 'verify', 'reset', 'confirm')
+ * @param {Object} options - Dodatne opcije (inboxId za Mailtrap)
+ * @returns {Promise<string|null>} URL na koji je kliknuto ili null
+ */
+export async function clickEmailLink(page, email, linkPattern = 'verify|verification|token|confirm|reset|activate', options = {}) {
+  if (!email) {
+    throw new Error('Email objekt je potreban za klik na link');
+  }
+  
+  console.log(`[EMAIL HELPER] Clicking email link with pattern: ${linkPattern}`);
+  
+  // Prvo ekstraktiraj link
+  let link = null;
+  
+  if (linkPattern.includes('verify') || linkPattern.includes('verification') || linkPattern.includes('confirm') || linkPattern.includes('activate')) {
+    link = extractVerificationLink(email);
+  } else if (linkPattern.includes('reset')) {
+    link = extractResetToken(email);
+    // Ako je token, treba kreirati puni URL
+    if (link && !link.startsWith('http')) {
+      // Pretpostavljamo da je reset endpoint na aplikaciji
+      const baseUrl = options.baseUrl || 'https://www.uslugar.eu';
+      link = `${baseUrl}/reset-password?token=${link}`;
+    }
+  }
+  
+  // Ako nismo pronašli specifičan link, traži bilo koji link koji odgovara patternu
+  if (!link) {
+    const html = email.html_body || '';
+    const text = email.text_body || '';
+    const combinedContent = html + ' ' + text;
+    
+    const linkPatternRegex = new RegExp(`(https?://[^\\s]*${linkPattern}[^\\s]*)`, 'i');
+    const linkMatch = combinedContent.match(linkPatternRegex);
+    if (linkMatch) {
+      link = linkMatch[1];
+      console.log(`[EMAIL HELPER] Found link matching pattern: ${link}`);
+    }
+  }
+  
+  if (!link) {
+    console.error('[EMAIL HELPER] No link found matching pattern:', linkPattern);
+    return null;
+  }
+  
+  console.log(`[EMAIL HELPER] Opening link: ${link}`);
+  
+  // Otvori link u browseru
+  await page.goto(link);
+  await page.waitForLoadState('networkidle');
+  
+  // Screenshot nakon klika
+  const screenshotPath = `test-results/screenshots/email-link-clicked-${Date.now()}.png`;
+  await page.screenshot({ 
+    path: screenshotPath, 
+    fullPage: true 
+  });
+  
+  console.log(`[EMAIL HELPER] Link clicked, screenshot saved: ${screenshotPath}`);
+  
+  return link;
 }
 
 /**

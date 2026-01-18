@@ -127,20 +127,30 @@ test.describe('Auth - Autentifikacija i Registracija', () => {
       }
       
       // 3. Screenshot email poruke
-      await screenshotEmail(page, verificationEmail, 'test-results/screenshots/auth-05-verification-email.png');
+      await screenshotEmail(page, verificationEmail, 'test-results/screenshots/auth-05-verification-email.png', { inboxId: userEmailConfig?.inboxId });
       
-      // 4. Ekstraktiraj verifikacijski link
-      const verificationLink = extractVerificationLink(verificationEmail);
+      // 4. Automatski klikni na verifikacijski link u emailu
+      const { clickEmailLink } = await import('../lib/email-helper.js');
+      const verificationLink = await clickEmailLink(page, verificationEmail, 'verify|verification|confirm|activate', { 
+        inboxId: userEmailConfig?.inboxId,
+        baseUrl: testData.api?.frontendUrl || 'https://www.uslugar.eu'
+      });
       
       if (!verificationLink) {
-        throw new Error('Verifikacijski link nije pronađen u email poruci.');
+        // Fallback: ekstraktiraj link ručno ako automatsko klikanje ne radi
+        const extractedLink = extractVerificationLink(verificationEmail);
+        if (extractedLink) {
+          console.log('[AUTH TEST] Fallback: Using extracted link');
+          await page.goto(extractedLink);
+          await page.waitForLoadState('networkidle');
+        } else {
+          throw new Error('Verifikacijski link nije pronađen u email poruci.');
+        }
       }
       
-      // 5. Otvori verifikacijski link
-      await page.goto(verificationLink);
       await page.screenshot({ path: 'test-results/screenshots/auth-06-verification-link-opened.png', fullPage: true });
       
-      // 6. Provjeri uspješnu verifikaciju
+      // 5. Provjeri uspješnu verifikaciju
       await expect(page.locator('text=Email verificiran')).toBeVisible({ timeout: 10000 });
       await page.screenshot({ path: 'test-results/screenshots/auth-07-verification-success.png', fullPage: true });
     } catch (emailError) {
@@ -199,22 +209,32 @@ test.describe('Auth - Autentifikacija i Registracija', () => {
       }
       
       // Screenshot reset email poruke
-      await screenshotEmail(page, resetEmail, 'test-results/screenshots/auth-10-reset-email.png');
+      await screenshotEmail(page, resetEmail, 'test-results/screenshots/auth-10-reset-email.png', { inboxId: userEmailConfig?.inboxId });
       
-      // Ekstraktiraj reset token
-      const resetToken = extractResetToken(resetEmail);
-      const resetLink = extractVerificationLink(resetEmail);
+      // 5. Automatski klikni na reset link u emailu
+      const { clickEmailLink } = await import('../lib/email-helper.js');
+      const resetLink = await clickEmailLink(page, resetEmail, 'reset|password|token', { 
+        inboxId: userEmailConfig?.inboxId,
+        baseUrl: testData.api?.frontendUrl || 'https://www.uslugar.eu'
+      });
       
-      if (!resetToken && !resetLink) {
-        throw new Error('Reset token ili link nije pronađen u email poruci.');
+      if (!resetLink) {
+        // Fallback: ekstraktiraj link ručno ako automatsko klikanje ne radi
+        const extractedResetLink = extractVerificationLink(resetEmail);
+        const resetToken = extractResetToken(resetEmail);
+        
+        if (extractedResetLink) {
+          console.log('[AUTH TEST] Fallback: Using extracted reset link');
+          await page.goto(extractedResetLink);
+        } else if (resetToken) {
+          console.log('[AUTH TEST] Fallback: Using extracted reset token');
+          await page.goto(`${testData.api?.frontendUrl || 'https://www.uslugar.eu'}/reset-password?token=${resetToken}`);
+        } else {
+          throw new Error('Reset token ili link nije pronađen u email poruci.');
+        }
       }
       
-      // 5. Otvori reset link
-      if (resetLink) {
-        await page.goto(resetLink);
-      } else {
-        await page.goto(`/reset-password?token=${resetToken}`);
-      }
+      await page.waitForLoadState('networkidle');
       await page.screenshot({ path: 'test-results/screenshots/auth-11-reset-link-opened.png', fullPage: true });
       
       // 6. Unesi novu lozinku

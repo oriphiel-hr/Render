@@ -1222,7 +1222,7 @@ export default function AdminTesting(){
                 {[
                   { key: 'client', label: 'Klijenti (Clients)', role: 'USER', canAddMultiple: true },
                   { key: 'provider', label: 'Pružatelji (Providers)', role: 'PROVIDER', canAddMultiple: true },
-                  { key: 'admin', label: 'Administratori', role: 'ADMIN', canAddMultiple: false }
+                  { key: 'admin', label: 'Administratori', role: 'ADMIN', canAddMultiple: true }
                 ].map(group => {
                   // Pronađi sve korisnike koji pripadaju ovoj grupi
                   const groupUsers = testData && testData.users ? Object.keys(testData.users)

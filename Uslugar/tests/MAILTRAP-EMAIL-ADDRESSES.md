@@ -51,7 +51,13 @@ Kreiraj Mailtrap inbox za provider companies (npr. Inbox ID: `12347`), i koristi
 
 ### Administratori (Admin)
 
-**Za ADMIN-a ne treba Mailtrap račun** - admin korisnik ne primaju test emailove (verifikaciju, reset lozinke, itd.).
+Admin korisnici mogu primati admin notifikacije i alertove. Kreiraj Mailtrap inbox za admin korisnike (npr. Inbox ID: `12348`):
+
+| Test Korisnik | Email Adresa (za aplikaciju) | Mailtrap Email Adresa | Inbox ID |
+|--------------|------------------------------|----------------------|----------|
+| admin | `admin@uslugar.hr` | `admin@mailtrap.io` | `12348` |
+
+**Napomena:** Admin korisnici mogu primati notifikacije o novim korisnicima, provider odobrenjima, KYC zahtjevima, itd.
 
 ## Kako Postaviti
 

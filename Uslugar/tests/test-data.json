@@ -85,7 +85,20 @@
     "admin": {
       "email": "admin@uslugar.hr",
       "password": "Admin123456!",
-      "description": "Admin korisnik za upravljanje"
+      "emailAccess": true,
+      "mailtrapEmail": "admin@mailtrap.io",
+      "emailConfig": {
+        "description": "Email konfiguracija za admin korisnika (opcionalno)",
+        "inboxId": "",
+        "imap": {
+          "user": "",
+          "password": "",
+          "host": "",
+          "port": 993
+        },
+        "note": "Ako nije postavljeno, koristi se globalna email konfiguracija. Admin može primati notifikacije i alertove."
+      },
+      "description": "Admin korisnik za upravljanje - može primati admin notifikacije i alertove"
     }
   },
   "documents": {
