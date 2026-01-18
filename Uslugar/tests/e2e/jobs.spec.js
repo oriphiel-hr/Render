@@ -19,10 +19,18 @@ test.describe('Jobs - Upravljanje Poslovima', () => {
   });
 
   test('Objava posla', async ({ page }) => {
-    const jobData = testData.testData.job;
+    if (!testData.users || !testData.users.client) {
+      throw new Error('Test podaci nisu konfigurirani. Molimo konfigurirajte test podatke u admin panelu.');
+    }
+    
+    const jobData = testData.testData?.job;
+    if (!jobData) {
+      throw new Error('Test podaci za posao nisu konfigurirani.');
+    }
     
     // 1. Navigiraj na kreiranje posla
     await page.click('text=Objavi posao');
+    await page.screenshot({ path: 'test-results/screenshots/job-01-form-start.png', fullPage: true });
     
     // 2. Popuni formu
     await page.fill('input[name="title"]', jobData.title);
@@ -33,11 +41,13 @@ test.describe('Jobs - Upravljanje Poslovima', () => {
     await page.selectOption('select[name="city"]', jobData.city);
     await page.selectOption('select[name="urgency"]', jobData.urgency);
     await page.selectOption('select[name="size"]', jobData.size);
+    await page.screenshot({ path: 'test-results/screenshots/job-02-form-filled.png', fullPage: true });
     
     // 3. Upload slika (ako postoje)
     if (jobData.images && jobData.images.length > 0) {
       const fileInput = page.locator('input[type="file"]');
       await fileInput.setInputFiles(jobData.images);
+      await page.screenshot({ path: 'test-results/screenshots/job-03-images-uploaded.png', fullPage: true });
     }
     
     // 4. Pošalji formu
@@ -46,6 +56,7 @@ test.describe('Jobs - Upravljanje Poslovima', () => {
     // 5. Provjeri da je posao kreiran
     await expect(page.locator('text=Posao uspješno kreiran')).toBeVisible({ timeout: 10000 });
     await expect(page.locator(`text=${jobData.title}`)).toBeVisible();
+    await page.screenshot({ path: 'test-results/screenshots/job-04-creation-success.png', fullPage: true });
   });
 
   test('Filtri i pretraga posla', async ({ page }) => {

@@ -19,19 +19,26 @@ test.describe('KYC - Verifikacija Identiteta', () => {
   });
 
   test('KYC: Upload dokumenta', async ({ page }) => {
-    const kycDoc = testData.documents.kycDocument;
+    if (!testData.users || !testData.users.provider) {
+      throw new Error('Test podaci nisu konfigurirani. Molimo konfigurirajte test podatke u admin panelu.');
+    }
+    
+    const kycDoc = testData.documents?.kycDocument;
     
     // 1. Navigiraj na KYC stranicu
     await page.goto('/profile/kyc');
+    await page.screenshot({ path: 'test-results/screenshots/kyc-01-start.png', fullPage: true });
     
     // 2. Provjeri consent checkbox
     await page.check('input[name="consent"]');
+    await page.screenshot({ path: 'test-results/screenshots/kyc-02-consent-checked.png', fullPage: true });
     
     // 3. Upload dokumenta (ako dokument postoji)
-    // Napomena: dokument treba biti u fixtures folderu
-    if (kycDoc.path) {
+    if (kycDoc?.path || kycDoc?.url) {
       const fileInput = page.locator('input[type="file"]');
-      await fileInput.setInputFiles(kycDoc.path);
+      const filePath = kycDoc.path || kycDoc.url;
+      await fileInput.setInputFiles(filePath);
+      await page.screenshot({ path: 'test-results/screenshots/kyc-03-document-selected.png', fullPage: true });
     }
     
     // 4. Pošalji formu
@@ -40,6 +47,7 @@ test.describe('KYC - Verifikacija Identiteta', () => {
     // 5. Provjeri da je dokument uploadan
     await expect(page.locator('text=Dokument uploadan')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('text=Status: Pending')).toBeVisible();
+    await page.screenshot({ path: 'test-results/screenshots/kyc-04-upload-success.png', fullPage: true });
   });
 
   test('KYC: Ekstrakcija OIB-a - match', async ({ page }) => {
