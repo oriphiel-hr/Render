@@ -2107,8 +2107,34 @@ r.post('/sms-logs/sync-from-twilio', auth(true, ['ADMIN']), async (req, res, nex
         moreInfo: twilioError.moreInfo
       });
       
+      const errorMessage = twilioError.message || '';
+      const errorMessageLower = errorMessage.toLowerCase();
+      
+      // Provjeri da li je greška zbog neaktivnog korisnika
+      if (errorMessageLower.includes('inactive user') || 
+          errorMessageLower.includes('unable to log in') ||
+          errorMessageLower.includes('user is inactive')) {
+        return res.status(403).json({
+          success: false,
+          error: 'Twilio account is inactive',
+          message: 'Your Twilio account is inactive. Please contact Twilio support to activate your account.',
+          code: twilioError.code || 'INACTIVE_USER',
+          details: {
+            hasAccountSid: !!accountSid,
+            hasAuthToken: !!authToken,
+            accountSidPrefix: accountSid ? accountSid.substring(0, 5) + '...' : null,
+            supportUrl: 'https://support.twilio.com/'
+          },
+          actionRequired: {
+            step1: 'Contact Twilio Support to activate your account',
+            step2: 'Visit: https://support.twilio.com/',
+            step3: 'Or email: help@twilio.com'
+          }
+        });
+      }
+      
       // Provjeri da li je greška zbog autentifikacije
-      if (twilioError.code === 20003 || twilioError.message?.toLowerCase().includes('authenticate')) {
+      if (twilioError.code === 20003 || errorMessageLower.includes('authenticate')) {
         return res.status(401).json({
           success: false,
           error: 'Twilio authentication failed',
@@ -2126,7 +2152,7 @@ r.post('/sms-logs/sync-from-twilio', auth(true, ['ADMIN']), async (req, res, nex
       return res.status(500).json({
         success: false,
         error: 'Failed to fetch messages from Twilio',
-        message: twilioError.message || 'Unknown Twilio API error',
+        message: errorMessage || 'Unknown Twilio API error',
         code: twilioError.code || 'UNKNOWN',
         moreInfo: twilioError.moreInfo
       });

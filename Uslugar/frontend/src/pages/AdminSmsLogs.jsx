@@ -127,6 +127,19 @@ export default function AdminSmsLogs() {
         }
       }
       
+      // Ako je greška zbog neaktivnog Twilio računa (403)
+      if (err.response?.status === 403) {
+        const actionRequired = err.response?.data?.actionRequired;
+        displayMessage = `${errorMessage}\n\n`;
+        if (actionRequired) {
+          displayMessage += `\nKoraci za rješavanje:\n`;
+          displayMessage += `1. ${actionRequired.step1}\n`;
+          displayMessage += `2. ${actionRequired.step2}\n`;
+          displayMessage += `3. ${actionRequired.step3}\n`;
+        }
+        displayMessage += `\nTwilio račun je deaktiviran ili nije aktivan. Kontaktirajte Twilio Support za aktivaciju.`;
+      }
+      
       // Ako je greška zbog neispravnih credentials (401)
       if (err.response?.status === 401) {
         const details = err.response?.data?.details;
