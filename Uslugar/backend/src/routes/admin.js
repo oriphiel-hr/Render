@@ -2100,11 +2100,35 @@ r.post('/sms-logs/sync-from-twilio', auth(true, ['ADMIN']), async (req, res, nex
       
     } catch (twilioError) {
       console.error('❌ Twilio API error:', twilioError);
+      console.error('❌ Twilio error details:', {
+        message: twilioError.message,
+        code: twilioError.code,
+        status: twilioError.status,
+        moreInfo: twilioError.moreInfo
+      });
+      
+      // Provjeri da li je greška zbog autentifikacije
+      if (twilioError.code === 20003 || twilioError.message?.toLowerCase().includes('authenticate')) {
+        return res.status(401).json({
+          success: false,
+          error: 'Twilio authentication failed',
+          message: 'Twilio credentials are invalid or expired. Please check TEST_TWILIO_ACCOUNT_SID and TEST_TWILIO_AUTH_TOKEN environment variables.',
+          code: twilioError.code,
+          details: {
+            hasAccountSid: !!accountSid,
+            hasAuthToken: !!authToken,
+            accountSidPrefix: accountSid ? accountSid.substring(0, 5) + '...' : null
+          }
+        });
+      }
+      
+      // Općenita Twilio greška
       return res.status(500).json({
         success: false,
         error: 'Failed to fetch messages from Twilio',
-        message: twilioError.message,
-        code: twilioError.code
+        message: twilioError.message || 'Unknown Twilio API error',
+        code: twilioError.code || 'UNKNOWN',
+        moreInfo: twilioError.moreInfo
       });
     }
     

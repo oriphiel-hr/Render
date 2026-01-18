@@ -114,17 +114,29 @@ export default function AdminSmsLogs() {
                            err.response?.data?.error || 
                            err.message || 
                            'Greška pri sinkronizaciji';
-      setError(errorMessage);
       console.error('Error syncing from Twilio:', err);
       console.error('Error response:', err.response?.data);
       
-      // Ako je greška zbog nedostajućih credentials, prikaži detaljniju poruku
+      let displayMessage = errorMessage;
+      
+      // Ako je greška zbog nedostajućih credentials (400)
       if (err.response?.status === 400) {
         const details = err.response?.data?.details;
         if (details) {
-          setError(`${errorMessage} (Account SID: ${details.hasAccountSid ? '✅' : '❌'}, Auth Token: ${details.hasAuthToken ? '✅' : '❌'})`);
+          displayMessage = `${errorMessage}\n\nAccount SID: ${details.hasAccountSid ? '✅ Postavljen' : '❌ Nedostaje'}\nAuth Token: ${details.hasAuthToken ? '✅ Postavljen' : '❌ Nedostaje'}\n\nMolimo provjerite environment variables na Render.com: TEST_TWILIO_ACCOUNT_SID i TEST_TWILIO_AUTH_TOKEN`;
         }
       }
+      
+      // Ako je greška zbog neispravnih credentials (401)
+      if (err.response?.status === 401) {
+        const details = err.response?.data?.details;
+        displayMessage = `${errorMessage}\n\n${details ? `Account SID: ${details.hasAccountSid ? '✅' : '❌'}, Auth Token: ${details.hasAuthToken ? '✅' : '❌'}` : ''}\n\nMolimo provjerite da su Twilio credentials ispravni u Render.com environment variables.`;
+        if (err.response?.data?.code === 20003) {
+          displayMessage += '\n\nTwilio error code 20003: Credentials su neispravni ili su istekli. Provjerite Twilio Console za ispravne credentials.';
+        }
+      }
+      
+      setError(displayMessage);
     } finally {
       setSyncing(false);
     }
