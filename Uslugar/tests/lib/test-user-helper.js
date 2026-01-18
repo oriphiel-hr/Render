@@ -131,13 +131,14 @@ export async function createTestUser(page, options = {}) {
 
 /**
  * Obriši test korisnika preko API-ja (zahtijeva admin pristup)
- * @param {Object} testData - test-data.json objekt (za API URL)
+ * @param {Object} page - Playwright page objekt
+ * @param {Object} testData - test-data.json objekt (za API URL i admin credentials)
  * @param {string} userEmail - Email korisnika koji treba obrisati
  * @returns {Promise<boolean>} True ako je korisnik obrisan, false ako nije
  */
-export async function deleteTestUser(testData, userEmail) {
+export async function deleteTestUser(page, testData, userEmail) {
   try {
-    const api = testData?.api?.baseUrl || 'https://api.uslugar.eu';
+    const apiBaseUrl = testData?.api?.baseUrl || 'https://api.uslugar.eu';
     const adminUser = testData?.users?.admin;
     
     if (!adminUser || !adminUser.email || !adminUser.password) {
@@ -147,12 +148,47 @@ export async function deleteTestUser(testData, userEmail) {
 
     console.log(`[TEST USER HELPER] Deleting test user: ${userEmail}`);
 
-    // Prijava kao admin (preko API-ja ili Playwright)
-    // Ovo zahtijeva admin endpoint za brisanje korisnika
-    // Za sada, vraćamo warning jer brisanje korisnika možda nije implementirano
-    
-    console.warn(`[TEST USER HELPER] User deletion not yet implemented. Please delete manually: ${userEmail}`);
-    return false;
+    // Prijava kao admin preko API-ja
+    const loginResponse = await page.request.post(`${apiBaseUrl}/api/auth/login`, {
+      data: {
+        email: adminUser.email,
+        password: adminUser.password
+      }
+    });
+
+    if (!loginResponse.ok()) {
+      console.error(`[TEST USER HELPER] Admin login failed: ${loginResponse.status()}`);
+      return false;
+    }
+
+    const loginData = await loginResponse.json();
+    const token = loginData.token;
+
+    if (!token) {
+      console.error(`[TEST USER HELPER] No token received from admin login`);
+      return false;
+    }
+
+    // Obriši korisnika preko API-ja
+    const deleteResponse = await page.request.delete(
+      `${apiBaseUrl}/api/testing/test-user/${encodeURIComponent(userEmail)}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    if (deleteResponse.ok()) {
+      const deleteData = await deleteResponse.json();
+      console.log(`[TEST USER HELPER] Successfully deleted test user: ${userEmail}`, deleteData);
+      return true;
+    } else {
+      const errorData = await deleteResponse.json().catch(() => ({ error: 'Unknown error' }));
+      console.warn(`[TEST USER HELPER] Failed to delete user ${userEmail}:`, deleteResponse.status(), errorData);
+      return false;
+    }
   } catch (error) {
     console.error(`[TEST USER HELPER] Error deleting user ${userEmail}:`, error);
     return false;
@@ -174,33 +210,25 @@ export async function cleanupTestUser(page, userData, testData) {
   try {
     console.log(`[TEST USER HELPER] Cleaning up test user: ${userData.email}`);
     
-    // Prijava kao admin
-    const adminUser = testData?.users?.admin;
-    if (!adminUser || !adminUser.email || !adminUser.password) {
-      console.warn(`[TEST USER HELPER] Cannot cleanup: Admin credentials not available`);
-      return;
+    // Obriši korisnika preko API-ja
+    const deleted = await deleteTestUser(page, testData, userData.email);
+    
+    if (deleted) {
+      console.log(`[TEST USER HELPER] ✅ Test user ${userData.email} successfully deleted`);
+    } else {
+      console.warn(`[TEST USER HELPER] ⚠️ Failed to delete test user ${userData.email}. Manual cleanup may be required.`);
     }
-
-    await page.goto('/admin/login');
-    await page.fill('input[name="email"]', adminUser.email);
-    await page.fill('input[name="password"]', adminUser.password);
-    await page.click('button[type="submit"]');
     
-    // Navigiraj na admin panel za korisnike
-    await page.goto('/admin/users');
-    
-    // Pronađi i obriši korisnika
-    // Ovo ovisi o UI implementaciji - možda treba dodati search i delete gumb
-    // Za sada, samo logujemo
-    console.warn(`[TEST USER HELPER] Manual cleanup required: ${userData.email}`);
-    
-    // Screenshot prije brisanja
-    await page.screenshot({ 
-      path: `test-results/screenshots/user-cleanup-${userData.userType}-${userData.timestamp}.png`, 
-      fullPage: true 
-    });
+    // Screenshot nakon cleanup-a (ako je potrebno za debug)
+    if (testData?.api?.debugScreenshots) {
+      await page.screenshot({ 
+        path: `test-results/screenshots/user-cleanup-${userData.userType}-${userData.timestamp}.png`, 
+        fullPage: true 
+      });
+    }
   } catch (error) {
     console.error(`[TEST USER HELPER] Error during cleanup:`, error);
+    // Ne baci grešku - cleanup ne bi trebao prekinuti test
   }
 }
 

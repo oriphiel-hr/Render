@@ -12,6 +12,14 @@ npx playwright install
 
 ## Test Data
 
+**Svaki test automatski kreira svojeg korisnika i briše ga nakon završetka!**
+
+Ovo osigurava:
+- ✅ **Predvidljiv broj korisnika** - svaki test ima svojeg korisnika
+- ✅ **Izolirani testovi** - testovi se ne utječu jedan na drugog
+- ✅ **Čisto okruženje** - nema zaostalih korisnika nakon testova
+- ✅ **Paralelno izvršavanje** - testovi mogu raditi paralelno bez konflikata
+
 Test podaci se nalaze u `test-data.json` i uključuju:
 - **Korisnike**: email, lozinka, podaci za registraciju
 - **Dokumente**: licence, KYC dokumente, portfolio slike

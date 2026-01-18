@@ -754,6 +754,45 @@ r.patch('/runs/:runId/items/:itemId', auth(true, ['ADMIN']), async (req, res, ne
   } catch (e) { next(e); }
 });
 
+// DELETE /api/testing/test-user/:email - Obriši test korisnika po emailu (za cleanup nakon testa)
+r.delete('/test-user/:email', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const { email } = req.params;
+    const { deleteUserWithRelations } = await import('../lib/delete-helpers.js');
+    
+    console.log(`[TESTING] Deleting test user by email: ${email}`);
+    
+    // Pronađi korisnika po emailu
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, role: true, email: true }
+    });
+    
+    if (!user) {
+      console.warn(`[TESTING] User with email ${email} not found`);
+      return res.status(404).json({ error: 'Korisnik nije pronađen', email });
+    }
+    
+    // Zaštita - ne dozvoljavaj brisanje ADMIN korisnika
+    if (user.role === 'ADMIN') {
+      return res.status(400).json({ error: 'ADMIN korisnika nije moguće obrisati' });
+    }
+    
+    // Obriši korisnika s svim relacijama
+    await deleteUserWithRelations(user.id);
+    
+    console.log(`[TESTING] Successfully deleted test user: ${email}`);
+    res.json({ 
+      success: true, 
+      message: `Test korisnik ${email} je uspješno obrisan`,
+      email: email
+    });
+  } catch (e) {
+    console.error(`[TESTING] Error deleting test user:`, e);
+    next(e);
+  }
+});
+
 // GET /api/testing/test-data - Dohvati test podatke
 r.get('/test-data', auth(true, ['ADMIN']), async (req, res, next) => {
   try {
