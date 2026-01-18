@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import testData from '../test-data.json';
 import { getUser } from '../lib/user-helper.js';
+import { createTestUserWithCleanup } from '../lib/test-user-helper.js';
 
 /**
  * Automatski testovi za autentifikaciju i registraciju
