@@ -671,11 +671,47 @@ export default function AdminTesting(){
 
   const loadTestData = async () => {
     try {
+      console.log('[TEST DATA] Loading test data...')
       const res = await api.get('/testing/test-data')
-      setTestData(res.data)
+      console.log('[TEST DATA] Loaded successfully:', res.data)
+      setTestData(res.data || {
+        users: {},
+        documents: {},
+        email: {
+          testService: {
+            apiKey: '',
+            inboxId: '0'
+          }
+        },
+        api: {
+          baseUrl: 'https://api.uslugar.eu',
+          frontendUrl: 'https://www.uslugar.eu'
+        }
+      })
     } catch (e) {
       console.error('[TEST DATA] Error loading:', e)
-      alert(`Greška pri učitavanju test podataka: ${e?.response?.data?.error || e?.message || String(e)}`)
+      console.error('[TEST DATA] Error details:', {
+        message: e?.message,
+        response: e?.response?.data,
+        status: e?.response?.status
+      })
+      // Umjesto alert-a, postavi default strukturu
+      setTestData({
+        users: {},
+        documents: {},
+        email: {
+          testService: {
+            apiKey: '',
+            inboxId: '0'
+          }
+        },
+        api: {
+          baseUrl: 'https://api.uslugar.eu',
+          frontendUrl: 'https://www.uslugar.eu'
+        }
+      })
+      // Prikaži grešku samo u konzoli, ne blokiraj UI
+      console.warn('[TEST DATA] Using default test data structure due to load error')
     }
   }
 

@@ -757,41 +757,90 @@ r.patch('/runs/:runId/items/:itemId', auth(true, ['ADMIN']), async (req, res, ne
 // GET /api/testing/test-data - Dohvati test podatke
 r.get('/test-data', auth(true, ['ADMIN']), async (req, res, next) => {
   try {
-    const { readFileSync } = await import('fs');
+    console.log('[TEST DATA] GET /test-data endpoint called');
+    const { readFileSync, existsSync } = await import('fs');
     const { fileURLToPath } = await import('url');
     const { dirname, join } = await import('path');
     
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
     
-    // Pronađi putanju do test-data.json
+    // Pronađi putanju do test-data.json - provjeri više mogućih lokacija
     const routesDir = __dirname; // backend/src/routes
     const srcDir = dirname(routesDir); // backend/src
     const backendDir = dirname(srcDir); // backend
     const projectRoot = dirname(backendDir); // root projekta
     
-    const testDataPath = join(projectRoot, 'tests', 'test-data.json');
+    const possiblePaths = [
+      join(projectRoot, 'tests', 'test-data.json'),
+      join(backendDir, '..', 'tests', 'test-data.json'),
+      join(projectRoot, 'test-data.json')
+    ];
     
-    try {
-      const data = readFileSync(testDataPath, 'utf-8');
-      const testData = JSON.parse(data);
-      res.json(testData);
-    } catch (fileError) {
-      // Ako fajl ne postoji, vrati default strukturu
-      res.json({
-        users: {},
-        documents: {},
-        testData: {},
-        api: {
-          baseUrl: process.env.API_URL || 'https://api.uslugar.eu',
-          frontendUrl: process.env.FRONTEND_URL || 'https://www.uslugar.eu',
-          timeout: 30000,
-          waitForNavigation: 3000
-        },
-        assertions: {}
-      });
+    console.log('[TEST DATA] Searching for test-data.json in:', possiblePaths);
+    
+    let testDataPath = null;
+    for (const path of possiblePaths) {
+      if (existsSync(path)) {
+        testDataPath = path;
+        console.log('[TEST DATA] Found test-data.json at:', path);
+        break;
+      }
     }
+    
+    if (testDataPath) {
+      try {
+        const data = readFileSync(testDataPath, 'utf-8');
+        const testData = JSON.parse(data);
+        console.log('[TEST DATA] Successfully loaded test data');
+        return res.json(testData);
+      } catch (fileError) {
+        console.error('[TEST DATA] Error reading file:', fileError);
+        // Nastavi s default strukturom
+      }
+    } else {
+      console.warn('[TEST DATA] test-data.json not found, using default structure');
+    }
+    
+    // Ako fajl ne postoji ili ima grešku, vrati default strukturu
+    const defaultData = {
+      users: {},
+      documents: {},
+      email: {
+        imap: {
+          host: 'imap.gmail.com',
+          port: 993,
+          secure: true,
+          user: '',
+          password: ''
+        },
+        smtp: {
+          host: 'smtp.gmail.com',
+          port: 587,
+          secure: false,
+          user: '',
+          password: ''
+        },
+        testService: {
+          type: 'mailtrap',
+          apiKey: '',
+          inboxId: '0',
+          baseUrl: 'https://mailtrap.io'
+        }
+      },
+      api: {
+        baseUrl: process.env.API_URL || 'https://api.uslugar.eu',
+        frontendUrl: process.env.FRONTEND_URL || 'https://www.uslugar.eu',
+        timeout: 30000,
+        waitForNavigation: 3000
+      },
+      assertions: {}
+    };
+    
+    console.log('[TEST DATA] Returning default structure');
+    return res.json(defaultData);
   } catch (e) {
+    console.error('[TEST DATA] Error in GET /test-data:', e);
     next(e);
   }
 });
