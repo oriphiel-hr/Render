@@ -1572,9 +1572,15 @@ export default function AdminTesting(){
                                   />
                                   <p className="text-xs text-gray-500 mt-0.5">* Obavezno za providere (11 znamenki)</p>
                                 </div>
-                                {(userKey === 'providerCompany' || (group.key === 'provider' && (testData?.users?.[userKey]?.legalStatus === 'DOO' || testData?.users?.[userKey]?.legalStatus === 'D.O.O.'))) && (
+                                {/* Naziv Tvrtke - za sve providere (obavezno za DOO i direktore) */}
+                                {(group.key === 'provider' || userKey.startsWith('provider')) && userKey !== 'admin' && (
                                   <div className="col-span-2">
-                                    <label className="block text-sm font-medium mb-1">Naziv Tvrtke</label>
+                                    <label className="block text-sm font-medium mb-1">
+                                      Naziv Tvrtke
+                                      {(testData?.users?.[userKey]?.legalStatus === 'DOO' || testData?.users?.[userKey]?.legalStatus === 'D.O.O.' || testData?.users?.[userKey]?.isDirector) && (
+                                        <span className="text-red-500"> *</span>
+                                      )}
+                                    </label>
                                     <input
                                       type="text"
                                       className="w-full border rounded px-3 py-2 text-sm"
@@ -1594,8 +1600,76 @@ export default function AdminTesting(){
                                         })
                                       }}
                                     />
-                                    <p className="text-xs text-gray-500 mt-0.5">Obavezno za tvrtke (DOO, OBRT), opcionalno za samostalne djelatnike</p>
+                                    <p className="text-xs text-gray-500 mt-0.5">
+                                      {testData?.users?.[userKey]?.legalStatus === 'DOO' || testData?.users?.[userKey]?.legalStatus === 'D.O.O.' || testData?.users?.[userKey]?.isDirector
+                                        ? '* Obavezno za tvrtke (DOO, OBRT) i direktore'
+                                        : 'Opcionalno za samostalne djelatnike (FREELANCER)'}
+                                    </p>
                                   </div>
+                                )}
+                                
+                                {/* Direktor i Company ID - za providere */}
+                                {(group.key === 'provider' || userKey.startsWith('provider')) && userKey !== 'admin' && (
+                                  <>
+                                    <div className="col-span-2">
+                                      <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                          type="checkbox"
+                                          checked={!!testData?.users?.[userKey]?.isDirector}
+                                          onChange={e => {
+                                            if (!testData) return
+                                            const updated = { ...testData }
+                                            if (!updated.users) updated.users = {}
+                                            if (!updated.users[userKey]) updated.users[userKey] = {}
+                                            if (e.target.checked) {
+                                              updated.users[userKey].isDirector = true
+                                              // Ako je direktor, obriši companyId
+                                              delete updated.users[userKey].companyId
+                                              // Ako je direktor, naziv tvrtke je obavezan
+                                              if (!updated.users[userKey].companyName) {
+                                                updated.users[userKey].companyName = `Test DOO ${Date.now()}`
+                                              }
+                                              // Ako je direktor, postavi legalStatus na DOO ako nije već postavljen
+                                              if (!updated.users[userKey].legalStatus || updated.users[userKey].legalStatus === 'FREELANCER') {
+                                                updated.users[userKey].legalStatus = 'DOO'
+                                              }
+                                            } else {
+                                              delete updated.users[userKey].isDirector
+                                            }
+                                            setTestData(updated)
+                                          }}
+                                          className="text-indigo-600"
+                                        />
+                                        <span className="text-sm font-medium">Direktor (vlasnik tvrtke)</span>
+                                      </label>
+                                      <p className="text-xs text-gray-500 mt-0.5 ml-6">Direktor ima naziv tvrtke i može imati izvođače (team members)</p>
+                                    </div>
+                                    {!testData?.users?.[userKey]?.isDirector && (
+                                      <div className="col-span-2">
+                                        <label className="block text-sm font-medium mb-1">Company ID (ID direktora)</label>
+                                        <input
+                                          type="text"
+                                          className="w-full border rounded px-3 py-2 text-sm"
+                                          placeholder="Email direktora ili ID tvrtke (npr. test.director@uslugar.hr)"
+                                          value={testData && testData.users && testData.users[userKey] && testData.users[userKey].companyId ? testData.users[userKey].companyId : ''}
+                                          onChange={e => {
+                                            if (!testData) return
+                                            const updated = { ...testData }
+                                            if (!updated.users) updated.users = {}
+                                            if (!updated.users[userKey]) updated.users[userKey] = {}
+                                            setTestData({
+                                              ...updated,
+                                              users: {
+                                                ...updated.users,
+                                                [userKey]: { ...updated.users[userKey], companyId: e.target.value }
+                                              }
+                                            })
+                                          }}
+                                        />
+                                        <p className="text-xs text-gray-500 mt-0.5">Za izvođače koji rade za direktora (npr. email direktora ili ID tvrtke)</p>
+                                      </div>
+                                    )}
+                                  </>
                                 )}
                               </>
                             )}
