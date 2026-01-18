@@ -342,7 +342,7 @@ r.post('/bulk/delete-all-from-s3', auth(true, ['ADMIN']), async (req, res, next)
  * DEPRECATED: S3 storage uklonjen - PDF-ovi se generiraju na zahtjev
  */
 r.post('/:invoiceId/upload-to-s3', auth(true, ['ADMIN']), async (req, res, next) => {
-            where: { id: invoice.id },
+  return res.status(410).json({
             data: { pdfUrl: null }
           });
           deleted++;
