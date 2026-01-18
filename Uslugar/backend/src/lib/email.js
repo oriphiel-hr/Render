@@ -1,7 +1,7 @@
 import nodemailer from 'nodemailer';
 
 // Kreiraj transporter (koristimo Hostinger SMTP)
-// U produkciji koristite profesionalni SMTP servis (SendGrid, AWS SES, itd.)
+// U produkciji koristite profesionalni SMTP servis (SendGrid, itd.)
 const createTransporter = () => {
   if (!process.env.SMTP_USER) {
     console.warn('SMTP not configured - email notifications disabled');

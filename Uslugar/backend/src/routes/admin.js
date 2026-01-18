@@ -2060,7 +2060,7 @@ r.post('/sms-logs/sync-from-twilio', auth(true, ['ADMIN']), async (req, res, nex
       return res.status(400).json({
         success: false,
         error: 'Twilio credentials not configured',
-        message: 'TEST_TWILIO_ACCOUNT_SID and TEST_TWILIO_AUTH_TOKEN must be set in environment variables or AWS Secrets Manager',
+        message: 'TEST_TWILIO_ACCOUNT_SID and TEST_TWILIO_AUTH_TOKEN must be set in environment variables',
         details: {
           hasAccountSid: !!accountSid,
           hasAuthToken: !!authToken

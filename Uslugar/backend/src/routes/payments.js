@@ -1113,7 +1113,7 @@ r.get('/admin/sessions', auth(true, ['ADMIN']), async (req, res, next) => {
         success: true,
         sessions: [],
         hasMore: false,
-        message: 'Stripe is not configured. Payment sessions are not available. Please configure TEST_STRIPE_SECRET_KEY in AWS Secrets Manager.'
+        message: 'Stripe is not configured. Payment sessions are not available. Please configure TEST_STRIPE_SECRET_KEY in environment variables.'
       });
     }
 
