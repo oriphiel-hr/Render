@@ -1,0 +1,186 @@
+name: Prisma - Migrate Database
+
+on:
+  workflow_dispatch:  # Manual trigger - always available
+  push:
+    branches: ["main"]
+    paths:
+      - "backend/prisma/schema.prisma"
+      - "backend/prisma/migrations/**"
+      - ".github/workflows/prisma-migrate.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "backend/prisma/schema.prisma"
+      - "backend/prisma/migrations/**"
+
+permissions:
+  contents: read
+
+env:
+  BACKEND_DIR: backend
+  NODE_VERSION: 20
+
+jobs:
+  validate-schema:
+    name: Validate Prisma Schema
+    runs-on: ubuntu-latest
+    continue-on-error: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ${{ env.BACKEND_DIR }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ env.BACKEND_DIR }}
+        run: npm ci
+
+      - name: Validate Prisma schema
+        working-directory: ${{ env.BACKEND_DIR }}
+        run: |
+          echo "🔍 Validating Prisma schema..."
+          npx prisma validate --schema=prisma/schema.prisma
+          echo "✅ Prisma schema is valid"
+
+      - name: Format Prisma schema
+        working-directory: ${{ env.BACKEND_DIR }}
+        run: |
+          echo "📝 Formatting Prisma schema..."
+          npx prisma format --schema=prisma/schema.prisma
+          echo "✅ Prisma schema formatted"
+        continue-on-error: true
+
+  generate-client:
+    name: Generate Prisma Client
+    runs-on: ubuntu-latest
+    needs: validate-schema
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ${{ env.BACKEND_DIR }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ env.BACKEND_DIR }}
+        run: npm ci
+
+      - name: Generate Prisma Client
+        working-directory: ${{ env.BACKEND_DIR }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://dummy:dummy@localhost:5432/dummy' }}
+        run: |
+          echo "🔧 Generating Prisma Client..."
+          npm run prisma:generate
+          echo "✅ Prisma Client generated successfully"
+
+      - name: Verify Prisma Client
+        working-directory: ${{ env.BACKEND_DIR }}
+        run: |
+          if [ -d "node_modules/.prisma" ] && [ -d "node_modules/@prisma/client" ]; then
+            echo "✅ Prisma Client directories exist"
+            echo "   - node_modules/.prisma"
+            echo "   - node_modules/@prisma/client"
+          else
+            echo "❌ ERROR: Prisma Client directories not found!"
+            exit 1
+          fi
+
+  migrate-database:
+    name: Apply Database Migrations
+    needs: [validate-schema, generate-client]
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ${{ env.BACKEND_DIR }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ env.BACKEND_DIR }}
+        run: npm ci
+
+      - name: Validate DATABASE_URL
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "⚠️  WARNING: DATABASE_URL secret is not set"
+            echo "   Migrations will be skipped"
+            echo ""
+            echo "   To enable migrations, add DATABASE_URL secret in:"
+            echo "   Settings > Secrets and variables > Actions > New repository secret"
+            exit 0  # Don't fail, just skip migrations
+          else
+            echo "✅ DATABASE_URL is set (masked for security)"
+            # Mask password in URL for logging
+            MASKED_URL=$(echo "$DATABASE_URL" | sed 's/:[^:@]*@/:***@/')
+            echo "   Database: $MASKED_URL"
+          fi
+
+      - name: Generate Prisma Client
+        working-directory: ${{ env.BACKEND_DIR }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "🔧 Generating Prisma Client..."
+          npm run prisma:generate
+          echo "✅ Prisma Client generated"
+
+      - name: Apply migrations
+        working-directory: ${{ env.BACKEND_DIR }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "⏭️  Skipping migrations - DATABASE_URL not set"
+            exit 0
+          fi
+          
+          echo "🔄 Applying database migrations..."
+          echo ""
+          echo "📋 Migration status:"
+          npx prisma migrate status --schema=prisma/schema.prisma
+          echo ""
+          
+          echo "🚀 Deploying migrations..."
+          npm run migrate:deploy
+          echo ""
+          echo "✅ Migrations applied successfully"
+
+      - name: Migration summary
+        if: env.DATABASE_URL != ''
+        run: |
+          echo "══════════════════════════════════════════════════════════"
+          echo "✅ PRISMA MIGRATIONS COMPLETED"
+          echo "══════════════════════════════════════════════════════════"
+          echo ""
+          echo "📋 Summary:"
+          echo "   ✅ Prisma schema validated"
+          echo "   ✅ Prisma Client generated"
+          echo "   ✅ Database migrations applied"
+          echo ""
+          echo "🎯 Next steps:"
+          echo "   - Backend deployment will use the updated schema"
+          echo "   - Verify database changes in production"
+          echo ""
+
