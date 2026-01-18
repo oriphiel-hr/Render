@@ -715,13 +715,17 @@ cron.schedule('0 9 * * *', async () => {
 console.log('[OK] Subscription reminder scheduler active (daily at 9am)')
 
 // graceful shutdown (Prisma + Socket.io) + start
-const server = httpServer.listen(PORT, () => {
-  console.log(`[OK] API listening on :${PORT}`)
+// Server MORA startovati čak i ako neke inicijalizacije padnu
+// START SERVER ON 0.0.0.0 for Render health checks
+const server = httpServer.listen(PORT, '0.0.0.0', () => {
+  console.log(`[OK] API listening on 0.0.0.0:${PORT}`)
+  console.log(`[OK] Health check available at: http://0.0.0.0:${PORT}/api/health`)
   console.log(`[OK] Socket.io ready for real-time chat`)
   console.log(`[OK] USLUGAR EXCLUSIVE features: Exclusive Leads, Credits, ROI Dashboard, AI Scoring, Queue Model`)
   console.log(`[OK] Queue Scheduler: Active (checks expired leads every hour)`)
   console.log(`[OK] Subscription plans: TRIAL (5 free), BASIC (39€), PREMIUM (89€), PRO (149€)`)
   console.log(`[OK] All routes registered successfully`)
+  console.log(`[OK] Server ready to accept requests`)
 })
 const shutdown = async () => {
   try { 
