@@ -340,7 +340,8 @@ r.post('/bulk/delete-all-from-s3', auth(true, ['ADMIN']), async (req, res, next)
 /**
  * POST /api/invoices/:invoiceId/upload-to-s3
  * DEPRECATED: S3 storage uklonjen - PDF-ovi se generiraju na zahtjev
-          await prisma.invoice.update({
+ */
+r.post('/:invoiceId/upload-to-s3', auth(true, ['ADMIN']), async (req, res, next) => {
             where: { id: invoice.id },
             data: { pdfUrl: null }
           });
