@@ -798,6 +798,9 @@ r.delete('/test-user/:email', auth(true, ['ADMIN']), async (req, res, next) => {
 r.get('/test-data', auth(true, ['ADMIN']), async (req, res, next) => {
   try {
     console.log('[TEST DATA] GET /test-data endpoint called');
+    console.log('[TEST DATA] Request user:', req.user?.email || 'none');
+    console.log('[TEST DATA] Request auth:', req.user ? 'authenticated' : 'not authenticated');
+    
     const { readFileSync, existsSync } = await import('fs');
     const { fileURLToPath } = await import('url');
     const { dirname, join } = await import('path');
@@ -806,18 +809,22 @@ r.get('/test-data', auth(true, ['ADMIN']), async (req, res, next) => {
     const __dirname = dirname(__filename);
     
     // Pronađi putanju do test-data.json - provjeri više mogućih lokacija
-    const routesDir = __dirname; // backend/src/routes
-    const srcDir = dirname(routesDir); // backend/src
-    const backendDir = dirname(srcDir); // backend
-    const projectRoot = dirname(backendDir); // root projekta
+    const routesDir = __dirname; // backend/src/routes ili /app/src/routes na Render
+    const srcDir = dirname(routesDir); // backend/src ili /app/src
+    const backendDir = dirname(srcDir); // backend ili /app
+    const projectRoot = dirname(backendDir); // root projekta ili / (na Render)
     
     const possiblePaths = [
-      join(projectRoot, 'tests', 'test-data.json'),
-      join(backendDir, '..', 'tests', 'test-data.json'),
-      join(projectRoot, 'test-data.json')
+      join(projectRoot, 'tests', 'test-data.json'), // Uslugar/tests/test-data.json ili /tests/test-data.json
+      join(backendDir, '..', 'tests', 'test-data.json'), // ../tests/test-data.json
+      join(projectRoot, 'test-data.json'), // test-data.json u root-u
+      join(backendDir, 'tests', 'test-data.json'), // backend/tests/test-data.json
+      join(__dirname, '..', '..', 'tests', 'test-data.json') // 2 nivoa gore od routes
     ];
     
     console.log('[TEST DATA] Searching for test-data.json in:', possiblePaths);
+    console.log('[TEST DATA] Current working directory:', process.cwd());
+    console.log('[TEST DATA] __dirname:', __dirname);
     
     let testDataPath = null;
     for (const path of possiblePaths) {
@@ -833,13 +840,20 @@ r.get('/test-data', auth(true, ['ADMIN']), async (req, res, next) => {
         const data = readFileSync(testDataPath, 'utf-8');
         const testData = JSON.parse(data);
         console.log('[TEST DATA] Successfully loaded test data');
+        console.log('[TEST DATA] Users found:', testData.users ? Object.keys(testData.users).length : 0);
         return res.json(testData);
       } catch (fileError) {
         console.error('[TEST DATA] Error reading file:', fileError);
+        console.error('[TEST DATA] File error details:', {
+          message: fileError.message,
+          code: fileError.code,
+          path: testDataPath
+        });
         // Nastavi s default strukturom
       }
     } else {
-      console.warn('[TEST DATA] test-data.json not found, using default structure');
+      console.warn('[TEST DATA] test-data.json not found in any of the searched paths');
+      console.warn('[TEST DATA] Using default structure');
     }
     
     // Ako fajl ne postoji ili ima grešku, vrati default strukturu
