@@ -343,34 +343,8 @@ r.post('/bulk/delete-all-from-s3', auth(true, ['ADMIN']), async (req, res, next)
  */
 r.post('/:invoiceId/upload-to-s3', auth(true, ['ADMIN']), async (req, res, next) => {
   return res.status(410).json({
-    error: 'S3 storage uklonjen', pdfUrl: null }
-          });
-          deleted++;
-        } else {
-          errors.push({ invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber, error: 'Brisanje neuspješno' });
-        }
-      } catch (error) {
-        errors.push({ invoiceId: invoice.id, invoiceNumber: invoice.invoiceNumber, error: error.message });
-      }
-    }
-
-    res.json({
-      success: true,
-      deleted,
-      total: invoices.length,
-      errors: errors.length > 0 ? errors : undefined
-    });
-  } catch (e) {
-    next(e);
-  }
-});
-
-/**
- * POST /api/invoices/:invoiceId/upload-to-s3
- * DEPRECATED: S3 storage uklonjen - PDF-ovi se generiraju na zahtjev
- */
-r.post('/:invoiceId/upload-to-s3', auth(true, ['ADMIN']), async (req, res, next) => {
-  return res.status(410).json({ 
+    error: 'S3 storage uklonjen',
+    message: 'PDF-ovi se sada generiraju na zahtjev. Koristi GET /api/invoices/:invoiceId/pdf za generiranje PDF-a.' 
     error: 'S3 storage uklonjen', 
     message: 'PDF-ovi se sada generiraju na zahtjev. Koristi GET /api/invoices/:invoiceId/pdf za generiranje PDF-a.' 
   });
