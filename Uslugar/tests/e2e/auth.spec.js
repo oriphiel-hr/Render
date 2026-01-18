@@ -12,32 +12,21 @@ test.describe('Auth - Autentifikacija i Registracija', () => {
   });
 
   test('Registracija korisnika usluge (osoba)', async ({ page }) => {
-    const user = getUser(testData, 'client', { strategy: 'first' });
+    // Kreiraj test korisnika (automatski će se obrisati nakon testa)
+    const { user, cleanup } = await createTestUserWithCleanup(page, testData, {
+      userType: 'client',
+      city: 'Zagreb'
+    });
     
-    if (!user || !user.email || !user.password) {
-      throw new Error('Test podaci nisu konfigurirani. Molimo konfigurirajte test podatke u admin panelu.');
+    try {
+      // Provjeri uspjeh registracije
+      await expect(page.locator('text=Registracija uspješna')).toBeVisible({ timeout: 10000 });
+      await expect(page.locator('text=Verifikacijski email poslan')).toBeVisible();
+      await page.screenshot({ path: 'test-results/screenshots/03-registracija-uspjeh.png', fullPage: true });
+    } finally {
+      // Obriši test korisnika
+      await cleanup();
     }
-    
-    // 1. Navigiraj na registraciju
-    await page.click('text=Registracija');
-    await page.screenshot({ path: 'test-results/screenshots/01-registracija-start.png', fullPage: true });
-    
-    // 2. Unesi podatke
-    await page.fill('input[name="email"]', user.email);
-    await page.fill('input[name="password"]', user.password);
-    await page.fill('input[name="fullName"]', user.fullName);
-    await page.fill('input[name="phone"]', user.phone);
-    await page.selectOption('select[name="city"]', user.city);
-    await page.click('input[value="USER"]'); // Odaberi ulogu korisnika
-    await page.screenshot({ path: 'test-results/screenshots/02-registracija-forma-popunjena.png', fullPage: true });
-    
-    // 3. Pošalji formu
-    await page.click('button[type="submit"]');
-    
-    // 4. Provjeri uspjeh
-    await expect(page.locator('text=Registracija uspješna')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('text=Verifikacijski email poslan')).toBeVisible();
-    await page.screenshot({ path: 'test-results/screenshots/03-registracija-uspjeh.png', fullPage: true });
   });
 
   test('Registracija korisnika usluge (tvrtka/obrt)', async ({ page }) => {
