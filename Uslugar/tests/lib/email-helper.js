@@ -140,28 +140,41 @@ async function getEmailsFromIMAP(options = {}) {
 
 /**
  * Pronađi email s verifikacijskim linkom
- * @param {string} emailAddress - Email adresa korisnika
+ * @param {string} emailAddress - Email adresa korisnika iz aplikacije
  * @param {string} subjectPattern - Pattern za subject (npr. "Verifikacija" ili "Verify")
- * @param {Object} userConfig - Konfiguracija korisnika (može sadržavati emailAccess, emailPassword, inboxId, itd.)
+ * @param {Object} userConfig - Konfiguracija korisnika (može sadržavati emailAccess, emailPassword, inboxId, mailtrapEmail, itd.)
  * @returns {Promise<Object|null>} Email poruka s linkom ili null
  */
 export async function findVerificationEmail(emailAddress, subjectPattern = 'verifikacija|verify|confirmation', userConfig = null) {
   // Ako korisnik ima svoju email konfiguraciju, koristi je
   let options = {
-    to: emailAddress,
+    to: emailAddress, // Početna vrijednost - email adresa iz aplikacije
     subject: subjectPattern
   };
+  
+  // Ako korisnik ima Mailtrap email adresu, koristi je umjesto aplikacijske
+  // Aplikacija bi trebala slati emailove na Mailtrap adresu
+  if (userConfig && userConfig.mailtrapEmail) {
+    options.to = userConfig.mailtrapEmail;
+    console.log(`[EMAIL HELPER] Using Mailtrap email for ${emailAddress}: ${userConfig.mailtrapEmail}`);
+  }
   
   // Ako korisnik ima svoj inboxId (npr. za Mailtrap)
   if (userConfig && userConfig.inboxId) {
     options.inboxId = userConfig.inboxId;
+    console.log(`[EMAIL HELPER] Using custom inbox ID: ${userConfig.inboxId}`);
   }
+  
+  console.log(`[EMAIL HELPER] Searching for verification email to: ${options.to}, subject: ${subjectPattern}`);
   
   const emails = await getEmails(options);
   
   if (emails.length === 0) {
+    console.log(`[EMAIL HELPER] No emails found for ${options.to}`);
     return null;
   }
+  
+  console.log(`[EMAIL HELPER] Found ${emails.length} emails for ${options.to}`);
   
   // Vrati najnoviju poruku
   const latestEmail = emails.sort((a, b) => 

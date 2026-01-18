@@ -105,11 +105,19 @@ test.describe('Auth - Autentifikacija i Registracija', () => {
     
     try {
       // Pričekaj da email stigne (max 30 sekundi)
-      // Koristi korisnikovu email konfiguraciju ako postoji (npr. inboxId za Mailtrap)
-      const userEmailConfig = user.emailConfig || null;
+      // Koristi korisnikovu email konfiguraciju ako postoji (npr. inboxId, mailtrapEmail za Mailtrap)
+      const userEmailConfig = {
+        ...(user.emailConfig || {}),
+        mailtrapEmail: user.mailtrapEmail || null // Dodaj Mailtrap email adresu ako postoji
+      };
+      
+      // Email adresa za pretraživanje - koristi Mailtrap email ako postoji, inače korisnikov email
+      const searchEmailAddress = user.mailtrapEmail || user.email;
+      console.log(`[AUTH TEST] Searching for verification email to: ${searchEmailAddress} (Mailtrap: ${user.mailtrapEmail || 'not set'})`);
+      
       let verificationEmail = null;
       for (let i = 0; i < 30; i++) {
-        verificationEmail = await findVerificationEmail(user.email, 'verifikacija|verify|confirmation', userEmailConfig);
+        verificationEmail = await findVerificationEmail(searchEmailAddress, 'verifikacija|verify|confirmation', userEmailConfig);
         if (verificationEmail) break;
         await page.waitForTimeout(1000); // Čekaj 1 sekund
       }
@@ -169,11 +177,19 @@ test.describe('Auth - Autentifikacija i Registracija', () => {
     
     try {
       // Pričekaj da email stigne (max 30 sekundi)
-      // Koristi korisnikovu email konfiguraciju ako postoji (npr. inboxId za Mailtrap)
-      const userEmailConfig = user.emailConfig || null;
+      // Koristi korisnikovu email konfiguraciju ako postoji (npr. inboxId, mailtrapEmail za Mailtrap)
+      const userEmailConfig = {
+        ...(user.emailConfig || {}),
+        mailtrapEmail: user.mailtrapEmail || null // Dodaj Mailtrap email adresu ako postoji
+      };
+      
+      // Email adresa za pretraživanje - koristi Mailtrap email ako postoji, inače korisnikov email
+      const searchEmailAddress = user.mailtrapEmail || user.email;
+      console.log(`[AUTH TEST] Searching for reset email to: ${searchEmailAddress} (Mailtrap: ${user.mailtrapEmail || 'not set'})`);
+      
       let resetEmail = null;
       for (let i = 0; i < 30; i++) {
-        resetEmail = await findPasswordResetEmail(user.email, userEmailConfig);
+        resetEmail = await findPasswordResetEmail(searchEmailAddress, userEmailConfig);
         if (resetEmail) break;
         await page.waitForTimeout(1000); // Čekaj 1 sekund
       }
