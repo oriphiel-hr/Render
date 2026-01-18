@@ -61,6 +61,65 @@ const randomProvider = getUser(testData, 'provider', { strategy: 'random' });
 - Ako postoji `client1`, a `client` ne postoji, koristi se `client1`
 - Ako želite specifičnog korisnika, koristite `strategy: 'specific', index: X`
 
+### Testiranje Invalid Podataka i Edge Case-ova
+
+**Svaki test automatski kreira svojeg korisnika i briše ga nakon završetka!**
+
+Helper funkcije za testiranje edge case-ova:
+
+```javascript
+import { 
+  createInvalidTestUser, 
+  createIncompleteTestUser, 
+  createProviderWithoutLicense,
+  createProviderWithoutKYC,
+  createDirectorWithTeam
+} from '../lib/test-user-helper.js';
+
+// Invalid podaci (testiranje validacije)
+const { user, cleanup } = await createInvalidTestUser(page, testData, {
+  userType: 'provider',
+  // Koristi invalid email, prekratak OIB, itd.
+});
+
+// Nedostajući podaci (testiranje validacije)
+const { user, cleanup } = await createIncompleteTestUser(page, testData, {
+  userType: 'provider',
+  // Ne unosi neke obavezne podatke
+});
+
+// Provider bez licence
+const { user, cleanup } = await createProviderWithoutLicense(page, testData);
+
+// Provider bez KYC dokumenta
+const { user, cleanup } = await createProviderWithoutKYC(page, testData);
+
+// Direktor s timom izvođača
+const { director, team, cleanup } = await createDirectorWithTeam(page, testData, {
+  teamSize: 3, // Kreira direktora i 3 izvođača
+  city: 'Zagreb'
+});
+```
+
+**Podržani invalid podaci:**
+- Invalid email format
+- Prekratak telefon
+- Prekratak OIB (manje od 11 znamenki)
+- Invalid pravni status
+- Prazan naziv tvrtke (za DOO)
+
+**Podržani nedostajući podaci:**
+- Prazno ime
+- Prazan OIB
+- Prazan naziv tvrtke (za DOO)
+- Nedostajuća licenca
+- Nedostajući KYC dokument
+
+**Direktori i izvođači:**
+- Direktor (`isDirector: true`) - vlasnik tvrtke
+- Izvođači (`isDirector: false`, `companyId: directorId`) - zaposlenici direktora
+- Može biti više izvođača po direktoru
+
 ## Pokretanje Testova
 
 ### Svi testovi
@@ -116,6 +175,8 @@ Kreiraj placeholder dokumente ili koristi stvarne dokumente za testiranje.
 - ✅ **CHAT**: Slanje poruka
 - ✅ **REVIEWS**: Ocjenjivanje i recenzije
 - ✅ **ALL-DOMAINS**: Kompletan E2E flow
+- ✅ **VALIDATION**: Validacija podataka, invalid podaci, nedostajući podaci
+- ✅ **EDGE-CASES**: Korisnici bez licence, bez KYC, direktori i izvođači
 
 ## CI/CD Integracija
 

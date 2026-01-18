@@ -40,6 +40,12 @@ export function generateTestUserOIB(timestamp = Date.now()) {
  * @param {string} options.legalStatus - Pravni status (za providere)
  * @param {string} options.oib - OIB (za providere, generira se automatski)
  * @param {string} options.companyName - Naziv tvrtke (za providerCompany)
+ * @param {boolean} options.isDirector - Da li je direktor (za tvrtke)
+ * @param {string} options.companyId - ID tvrtke (direktora) - za izvođače koji rade za direktora
+ * @param {boolean} options.invalidData - Da li koristiti invalid podatke (testiranje validacije)
+ * @param {boolean} options.missingData - Da li ostaviti nedostajuće podatke (testiranje validacije)
+ * @param {boolean} options.skipLicense - Da li preskočiti upload licence (testiranje bez licence)
+ * @param {boolean} options.skipKYC - Da li preskočiti KYC upload (testiranje bez KYC)
  * @returns {Promise<Object>} Kreirani korisnik objekt
  */
 export async function createTestUser(page, options = {}) {
@@ -52,17 +58,57 @@ export async function createTestUser(page, options = {}) {
     city = 'Zagreb',
     legalStatus = 'FREELANCER',
     oib = null,
-    companyName = null
+    companyName = null,
+    isDirector = false,
+    companyId = null,
+    invalidData = false,
+    missingData = false,
+    skipLicense = false,
+    skipKYC = false
   } = options;
 
   const timestamp = Date.now();
   const random = Math.floor(Math.random() * 10000);
   
   // Generiraj jedinstvene podatke ako nisu određeni
-  const userEmail = email || generateTestUserEmail(userType, timestamp);
-  const userFullName = fullName || `Test ${userType.charAt(0).toUpperCase() + userType.slice(1)} ${timestamp}`;
-  const userPhone = phone || `+38599${String(1000000 + random).slice(-7)}`;
-  const userOIB = oib || (userType === 'provider' || userType === 'providerCompany' ? generateTestUserOIB(timestamp) : null);
+  // Za invalid podatke, koristi poznato invalid vrijednosti
+  let userEmail = email || generateTestUserEmail(userType, timestamp);
+  let userFullName = fullName || `Test ${userType.charAt(0).toUpperCase() + userType.slice(1)} ${timestamp}`;
+  let userPhone = phone || `+38599${String(1000000 + random).slice(-7)}`;
+  let userOIB = oib || (userType === 'provider' || userType === 'providerCompany' ? generateTestUserOIB(timestamp) : null);
+  let finalLegalStatus = legalStatus;
+  let finalCompanyName = companyName;
+  
+  // Ako je invalidData, koristi invalid podatke
+  if (invalidData) {
+    if (!email) {
+      userEmail = 'invalid-email'; // Invalid email format
+    }
+    if (!phone) {
+      userPhone = '123'; // Prekratak telefon
+    }
+    if (userType === 'provider' || userType === 'providerCompany') {
+      if (!oib) {
+        userOIB = '123'; // Prekratak OIB (treba 11 znamenki)
+      }
+      finalLegalStatus = 'INVALID_STATUS'; // Invalid legal status
+    }
+  }
+  
+  // Ako je missingData, ostavi neke podatke prazne
+  if (missingData) {
+    if (!fullName) {
+      userFullName = ''; // Prazno ime
+    }
+    if (userType === 'provider' || userType === 'providerCompany') {
+      if (!oib) {
+        userOIB = ''; // Prazan OIB
+      }
+      if (!companyName && (legalStatus === 'DOO' || legalStatus === 'D.O.O.')) {
+        finalCompanyName = ''; // Prazan naziv tvrtke za DOO
+      }
+    }
+  }
 
   console.log(`[TEST USER HELPER] Creating test user: ${userType} - ${userEmail}`);
 
@@ -121,8 +167,14 @@ export async function createTestUser(page, options = {}) {
     userType: userType,
     timestamp: timestamp,
     oib: userOIB,
-    companyName: companyName || (userType === 'providerCompany' ? `Test Company ${timestamp}` : null),
-    legalStatus: userType === 'provider' || userType === 'providerCompany' ? legalStatus : null
+    companyName: finalCompanyName || (userType === 'providerCompany' ? `Test Company ${timestamp}` : null),
+    legalStatus: userType === 'provider' || userType === 'providerCompany' ? finalLegalStatus : null,
+    isDirector: isDirector || false,
+    companyId: companyId || null,
+    invalidData: invalidData || false,
+    missingData: missingData || false,
+    skipLicense: skipLicense || false,
+    skipKYC: skipKYC || false
   };
 
   console.log(`[TEST USER HELPER] Test user created: ${userEmail}`);
