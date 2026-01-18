@@ -336,13 +336,6 @@ r.post('/bulk/delete-all-from-s3', auth(true, ['ADMIN']), async (req, res, next)
     message: 'PDF-ovi se sada generiraju na zahtjev umjesto spremanja u S3.' 
   });
 });
-    let deleted = 0;
-    let errors = [];
-
-    for (const invoice of invoices) {
-      try {
-        // Obriši PDF s S3
-        const success = await deleteInvoicePDF(invoice.invoiceNumber);
         
         if (success) {
           // Ažuriraj fakturu - ukloni pdfUrl
