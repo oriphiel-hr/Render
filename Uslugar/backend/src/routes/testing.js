@@ -1019,12 +1019,16 @@ r.post('/run-automated', auth(true, ['ADMIN']), async (req, res, next) => {
     // Validiraj test podatke
     const validation = await validateTestData();
     if (!validation.valid) {
+      console.error('[AUTOMATED TESTS] Validation failed:', validation.errors || validation.error);
       return res.status(400).json({
         error: 'Test podaci nisu ispravni',
         errors: validation.errors || [validation.error],
-        message: 'Molimo konfigurirajte test podatke u admin panelu (tab "Test Podaci")'
+        message: 'Molimo konfigurirajte test podatke u admin panelu (tab "Test Podaci")',
+        details: 'Provjerite da su svi korisnici (client, provider) konfigurirani s email-om, lozinkom, imenom i telefonom. Provider mora imati i OIB i pravni status.'
       });
     }
+    
+    console.log('[AUTOMATED TESTS] Test data validation passed');
     
     // Provjeri da li postoji Playwright
     const { exec } = await import('child_process');
