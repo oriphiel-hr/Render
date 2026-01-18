@@ -336,8 +336,8 @@ r.post('/bulk/delete-all-from-s3', auth(true, ['ADMIN']), async (req, res, next)
     message: 'PDF-ovi se sada generiraju na zahtjev umjesto spremanja u S3.' 
   });
 });
-        
-        if (success) {
+
+/**
           // Ažuriraj fakturu - ukloni pdfUrl
           await prisma.invoice.update({
             where: { id: invoice.id },
