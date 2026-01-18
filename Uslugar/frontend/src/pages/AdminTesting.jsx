@@ -735,14 +735,34 @@ export default function AdminTesting(){
         documents: {},
         testData: {},
         api: {
-          baseUrl: process.env.API_URL || 'https://api.uslugar.eu',
-          frontendUrl: process.env.FRONTEND_URL || 'https://www.uslugar.eu',
+          baseUrl: (typeof window !== 'undefined' && window.location?.origin?.includes('localhost')) 
+            ? 'http://localhost:4000' 
+            : 'https://api.uslugar.eu',
+          frontendUrl: (typeof window !== 'undefined' && window.location?.origin) || 'https://www.uslugar.eu',
           timeout: 30000,
           waitForNavigation: 3000
         },
         assertions: {}
       }
       setTestData(defaultData)
+      // Nakon kreiranja default strukture, ažuriraj vrijednost
+      setTimeout(() => {
+        const keys = path.split('.')
+        const updated = { ...defaultData }
+        let current = updated
+        
+        for (let i = 0; i < keys.length - 1; i++) {
+          if (!current[keys[i]]) {
+            current[keys[i]] = {}
+          } else {
+            current[keys[i]] = { ...current[keys[i]] }
+          }
+          current = current[keys[i]]
+        }
+        
+        current[keys[keys.length - 1]] = value
+        setTestData(updated)
+      }, 0)
       return
     }
     
@@ -1181,8 +1201,9 @@ export default function AdminTesting(){
                           <input
                             type="email"
                             className="w-full border rounded px-3 py-2 text-sm"
-                            value={(testData?.users?.[userKey]?.email) || ''}
+                            value={testData && testData.users && testData.users[userKey] && testData.users[userKey].email ? testData.users[userKey].email : ''}
                             onChange={e => {
+                              if (!testData) return
                               const updated = { ...testData }
                               if (!updated.users) updated.users = {}
                               if (!updated.users[userKey]) updated.users[userKey] = {}
@@ -1201,8 +1222,9 @@ export default function AdminTesting(){
                           <input
                             type="password"
                             className="w-full border rounded px-3 py-2 text-sm"
-                            value={(testData?.users?.[userKey]?.password) || ''}
+                            value={testData && testData.users && testData.users[userKey] && testData.users[userKey].password ? testData.users[userKey].password : ''}
                             onChange={e => {
+                              if (!testData) return
                               const updated = { ...testData }
                               if (!updated.users) updated.users = {}
                               if (!updated.users[userKey]) updated.users[userKey] = {}
@@ -1223,8 +1245,9 @@ export default function AdminTesting(){
                               <input
                                 type="text"
                                 className="w-full border rounded px-3 py-2 text-sm"
-                                value={(testData?.users?.[userKey]?.fullName) || ''}
+                                value={testData && testData.users && testData.users[userKey] && testData.users[userKey].fullName ? testData.users[userKey].fullName : ''}
                                 onChange={e => {
+                                  if (!testData) return
                                   const updated = { ...testData }
                                   if (!updated.users) updated.users = {}
                                   if (!updated.users[userKey]) updated.users[userKey] = {}
@@ -1243,8 +1266,9 @@ export default function AdminTesting(){
                               <input
                                 type="text"
                                 className="w-full border rounded px-3 py-2 text-sm"
-                                value={(testData?.users?.[userKey]?.phone) || ''}
+                                value={testData && testData.users && testData.users[userKey] && testData.users[userKey].phone ? testData.users[userKey].phone : ''}
                                 onChange={e => {
+                                  if (!testData) return
                                   const updated = { ...testData }
                                   if (!updated.users) updated.users = {}
                                   if (!updated.users[userKey]) updated.users[userKey] = {}
@@ -1264,8 +1288,9 @@ export default function AdminTesting(){
                                   <label className="block text-sm font-medium mb-1">Pravni Status</label>
                                   <select
                                     className="w-full border rounded px-3 py-2 text-sm"
-                                    value={(testData?.users?.[userKey]?.legalStatus) || ''}
+                                    value={testData && testData.users && testData.users[userKey] && testData.users[userKey].legalStatus ? testData.users[userKey].legalStatus : ''}
                                     onChange={e => {
+                                      if (!testData) return
                                       const updated = { ...testData }
                                       if (!updated.users) updated.users = {}
                                       if (!updated.users[userKey]) updated.users[userKey] = {}
@@ -1290,8 +1315,9 @@ export default function AdminTesting(){
                                   <input
                                     type="text"
                                     className="w-full border rounded px-3 py-2 text-sm"
-                                    value={(testData?.users?.[userKey]?.oib) || ''}
+                                    value={testData && testData.users && testData.users[userKey] && testData.users[userKey].oib ? testData.users[userKey].oib : ''}
                                     onChange={e => {
+                                      if (!testData) return
                                       const updated = { ...testData }
                                       if (!updated.users) updated.users = {}
                                       if (!updated.users[userKey]) updated.users[userKey] = {}
@@ -1320,11 +1346,11 @@ export default function AdminTesting(){
                 <h3 className="text-lg font-semibold mb-4">Test Dokumenti</h3>
                 <div className="space-y-4">
                   {['license', 'kycDocument', 'portfolioImage1', 'portfolioImage2'].map(docKey => {
-                    const doc = testData?.documents?.[docKey]
+                    const doc = testData && testData.documents && testData.documents[docKey] ? testData.documents[docKey] : null
                     return (
                       <div key={docKey} className="border rounded p-4 bg-gray-50">
                         <h4 className="font-medium mb-3 capitalize">{docKey.replace(/([A-Z])/g, ' $1').trim()}</h4>
-                        {doc?.url && (
+                        {doc && doc.url && (
                           <div className="mb-3">
                             <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
                               📄 {doc.originalName || docKey} ({doc.type})
