@@ -1211,12 +1211,115 @@ export default function AdminTesting(){
             <>
               {/* Test Korisnici */}
               <div className="border rounded-lg p-6 bg-white">
-                <h3 className="text-lg font-semibold mb-4">Test Korisnici</h3>
-                <div className="space-y-4">
-                  {['client', 'provider', 'providerCompany', 'admin'].map(userKey => (
-                    <div key={userKey} className="border rounded p-4 bg-gray-50">
-                      <h4 className="font-medium mb-3 capitalize">{userKey.replace(/([A-Z])/g, ' $1').trim()}</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Test Korisnici</h3>
+                  <div className="text-sm text-gray-600">
+                    💡 Dodaj više korisnika po ulogama za kompleksnije testove
+                  </div>
+                </div>
+                
+                {/* Grupe korisnika po ulogama */}
+                {[
+                  { key: 'client', label: 'Klijenti (Clients)', role: 'USER', canAddMultiple: true },
+                  { key: 'provider', label: 'Pružatelji (Providers)', role: 'PROVIDER', canAddMultiple: true },
+                  { key: 'admin', label: 'Administratori', role: 'ADMIN', canAddMultiple: false }
+                ].map(group => {
+                  // Pronađi sve korisnike koji pripadaju ovoj grupi
+                  const groupUsers = testData && testData.users ? Object.keys(testData.users)
+                    .filter(key => {
+                      if (group.key === 'client') {
+                        return key === 'client' || key.startsWith('client') && /client\d+/.test(key);
+                      } else if (group.key === 'provider') {
+                        return (key === 'provider' || key.startsWith('provider') && /provider\d+/.test(key)) && key !== 'providerCompany';
+                      } else if (group.key === 'admin') {
+                        return key === 'admin' || key.startsWith('admin') && /admin\d+/.test(key);
+                      }
+                      return false;
+                    })
+                    .sort((a, b) => {
+                      // Prvo osnovni (client, provider, admin), zatim numerirani (client1, client2, ...)
+                      if (a === group.key) return -1;
+                      if (b === group.key) return 1;
+                      const numA = parseInt(a.match(/\d+/)?.[0] || '999');
+                      const numB = parseInt(b.match(/\d+/)?.[0] || '999');
+                      return numA - numB;
+                    }) : [];
+                  
+                  // Ako nema korisnika u grupi, dodaj osnovnog
+                  if (groupUsers.length === 0 && testData && testData.users) {
+                    groupUsers.push(group.key);
+                  }
+                  
+                  return (
+                    <div key={group.key} className="mb-6 border rounded-lg p-4 bg-gray-50">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold text-base">{group.label}</h4>
+                        {group.canAddMultiple && (
+                          <button
+                            onClick={() => {
+                              if (!testData) return
+                              const updated = { ...testData }
+                              if (!updated.users) updated.users = {}
+                              
+                              // Pronađi sljedeći broj
+                              const nextNum = groupUsers.length > 0 
+                                ? Math.max(...groupUsers.map(k => parseInt(k.match(/\d+/)?.[0] || '0'))) + 1
+                                : 1
+                              const newKey = `${group.key}${nextNum}`
+                              
+                              // Kreiraj novog korisnika s default vrijednostima
+                              updated.users[newKey] = {
+                                email: `test.${newKey}@uslugar.hr`,
+                                password: 'Test123456!',
+                                fullName: `Test ${group.key.charAt(0).toUpperCase() + group.key.slice(1)} ${nextNum}`,
+                                phone: `+38599${String(1000 + nextNum).slice(-7)}`,
+                                city: 'Zagreb',
+                                ...(group.role === 'PROVIDER' && {
+                                  legalStatus: 'FREELANCER',
+                                  oib: `${12345678900 + nextNum}`,
+                                  companyName: null
+                                }),
+                                emailAccess: true,
+                                emailConfig: {}
+                              }
+                              
+                              setTestData(updated)
+                            }}
+                            className="px-3 py-1.5 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors flex items-center gap-1"
+                          >
+                            <span>+</span>
+                            <span>Dodaj {group.key === 'client' ? 'klijenta' : group.key === 'provider' ? 'pružatelja' : 'admina'}</span>
+                          </button>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-4">
+                        {groupUsers.map(userKey => (
+                          <div key={userKey} className="border rounded p-4 bg-white">
+                            <div className="flex items-center justify-between mb-3">
+                              <h5 className="font-medium text-sm capitalize">
+                                {userKey === group.key 
+                                  ? `${group.key === 'client' ? 'Glavni klijent' : group.key === 'provider' ? 'Glavni pružatelj' : 'Glavni admin'} (${userKey})`
+                                  : `${userKey.replace(/([A-Z])/g, ' $1').trim()}`
+                                }
+                              </h5>
+                              {userKey !== group.key && (
+                                <button
+                                  onClick={() => {
+                                    if (!testData || !confirm(`Jeste li sigurni da želite obrisati korisnika "${userKey}"?`)) return
+                                    const updated = { ...testData }
+                                    if (updated.users) {
+                                      delete updated.users[userKey]
+                                      setTestData(updated)
+                                    }
+                                  }}
+                                  className="px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition-colors"
+                                >
+                                  🗑️ Obriši
+                                </button>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                           <label className="block text-sm font-medium mb-1">Email</label>
                           <input
@@ -1327,7 +1430,7 @@ export default function AdminTesting(){
                                 }}
                               />
                             </div>
-                            {(userKey === 'provider' || userKey === 'providerCompany') && (
+                            {(group.key === 'provider' || userKey.startsWith('provider')) && (
                               <>
                                 <div>
                                   <label className="block text-sm font-medium mb-1">Pravni Status *</label>
@@ -1379,7 +1482,7 @@ export default function AdminTesting(){
                                   />
                                   <p className="text-xs text-gray-500 mt-0.5">* Obavezno za providere (11 znamenki)</p>
                                 </div>
-                                {userKey === 'providerCompany' && (
+                                {(userKey === 'providerCompany' || (group.key === 'provider' && (testData?.users?.[userKey]?.legalStatus === 'DOO' || testData?.users?.[userKey]?.legalStatus === 'D.O.O.'))) && (
                                   <div className="col-span-2">
                                     <label className="block text-sm font-medium mb-1">Naziv Tvrtke</label>
                                     <input
