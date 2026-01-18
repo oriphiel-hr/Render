@@ -1353,8 +1353,23 @@ export default function AdminTesting(){
                               <h5 className="font-medium text-sm capitalize">
                                 {userKey === group.key 
                                   ? `${group.key === 'client' ? 'Glavni klijent' : group.key === 'provider' ? 'Glavni pružatelj' : 'Glavni admin'} (${userKey})`
+                                  : userKey === 'clientInvalid'
+                                  ? 'Klijent s neispravnim podacima (clientInvalid)'
+                                  : userKey === 'providerNoLicense'
+                                  ? 'Pružatelj bez licence (providerNoLicense)'
+                                  : userKey === 'providerNoKYC'
+                                  ? 'Pružatelj bez KYC (providerNoKYC)'
                                   : `${userKey.replace(/([A-Z])/g, ' $1').trim()}`
                                 }
+                                {userKey === 'clientInvalid' && (
+                                  <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-800 text-xs rounded">Neispravni podaci</span>
+                                )}
+                                {userKey === 'providerNoLicense' && (
+                                  <span className="ml-2 px-2 py-0.5 bg-orange-100 text-orange-800 text-xs rounded">Bez licence</span>
+                                )}
+                                {userKey === 'providerNoKYC' && (
+                                  <span className="ml-2 px-2 py-0.5 bg-orange-100 text-orange-800 text-xs rounded">Bez KYC</span>
+                                )}
                               </h5>
                               {(userKey !== group.key && userKey !== 'clientInvalid' && userKey !== 'providerNoLicense' && userKey !== 'providerNoKYC') && (
                                 <button
