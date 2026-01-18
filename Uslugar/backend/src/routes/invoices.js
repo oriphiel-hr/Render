@@ -308,55 +308,13 @@ r.post('/bulk/delete-from-s3', auth(true, ['ADMIN']), async (req, res, next) => 
 
 /**
  * POST /api/invoices/bulk/upload-all-missing-to-s3
- * Uploadaj sve fakture koje nisu na S3 (samo admin)
+ * DEPRECATED: S3 storage uklonjen - PDF-ovi se generiraju na zahtjev
  */
 r.post('/bulk/upload-all-missing-to-s3', auth(true, ['ADMIN']), async (req, res, next) => {
-  try {
-    const { isS3Configured } = await import('../lib/s3-storage.js');
-    if (!isS3Configured()) {
-      return res.status(503).json({ error: 'S3 nije konfiguriran' });
-    }
-
-    // Pronađi sve fakture koje nemaju pdfUrl
-    const invoices = await prisma.invoice.findMany({
-      where: {
-        pdfUrl: null
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            companyName: true,
-            taxId: true,
-            city: true
-          }
-        },
-        subscription: {
-          select: {
-            plan: true
-          }
-        },
-        leadPurchase: {
-          include: {
-            job: {
-              select: {
-                title: true
-              }
-            }
-          }
-        }
-      }
-    });
-
-    const { generateInvoicePDF, saveInvoicePDF } = await import('../services/invoice-service.js');
-    let uploaded = 0;
-    let errors = [];
-
-    for (const invoice of invoices) {
-      try {
-        // Generiraj PDF
+  return res.status(410).json({ 
+    error: 'S3 storage uklonjen', 
+    message: 'PDF-ovi se sada generiraju na zahtjev umjesto spremanja u S3. Koristi GET /api/invoices/:invoiceId/pdf za generiranje PDF-a.' 
+  });
         const pdfBuffer = await generateInvoicePDF(invoice);
         
         // Upload na S3
