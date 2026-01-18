@@ -1554,6 +1554,78 @@ export default function AdminTesting(){
                             </div>
                           </div>
                         )}
+                            {/* Tip korisnika za testiranje (valid/invalid/missing) */}
+                            <div className="col-span-2 mt-3 pt-3 border-t">
+                              <label className="block text-xs font-medium mb-2 text-gray-700">
+                                🎯 Tip Test Korisnika
+                              </label>
+                              <div className="flex flex-wrap gap-3 mb-3">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name={`userType_${userKey}`}
+                                    checked={!(testData?.users?.[userKey]?.invalidData || testData?.users?.[userKey]?.missingData)}
+                                    onChange={() => {
+                                      if (!testData) return
+                                      const updated = { ...testData }
+                                      if (!updated.users) updated.users = {}
+                                      if (!updated.users[userKey]) updated.users[userKey] = {}
+                                      delete updated.users[userKey].invalidData
+                                      delete updated.users[userKey].missingData
+                                      setTestData(updated)
+                                    }}
+                                    className="text-indigo-600"
+                                  />
+                                  <span className="text-xs">✅ Ispravni podaci (standardni test)</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name={`userType_${userKey}`}
+                                    checked={!!testData?.users?.[userKey]?.invalidData}
+                                    onChange={() => {
+                                      if (!testData) return
+                                      const updated = { ...testData }
+                                      if (!updated.users) updated.users = {}
+                                      if (!updated.users[userKey]) updated.users[userKey] = {}
+                                      updated.users[userKey].invalidData = true
+                                      delete updated.users[userKey].missingData
+                                      setTestData(updated)
+                                    }}
+                                    className="text-red-600"
+                                  />
+                                  <span className="text-xs">❌ Neispravni podaci (test validacije)</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name={`userType_${userKey}`}
+                                    checked={!!testData?.users?.[userKey]?.missingData}
+                                    onChange={() => {
+                                      if (!testData) return
+                                      const updated = { ...testData }
+                                      if (!updated.users) updated.users = {}
+                                      if (!updated.users[userKey]) updated.users[userKey] = {}
+                                      updated.users[userKey].missingData = true
+                                      delete updated.users[userKey].invalidData
+                                      setTestData(updated)
+                                    }}
+                                    className="text-orange-600"
+                                  />
+                                  <span className="text-xs">⚠️ Nedostajući podaci (test validacije)</span>
+                                </label>
+                              </div>
+                              <div className="text-xs text-gray-600 bg-blue-50 p-2 rounded border border-blue-200 mb-3">
+                                <strong>💡 Objašnjenje:</strong>
+                                <ul className="list-disc list-inside mt-1 space-y-1">
+                                  <li><strong>Ispravni podaci:</strong> Standardni korisnik s ispravnim emailom, OIB-om, itd.</li>
+                                  <li><strong>Neispravni podaci:</strong> Korisnik s neispravnim emailom (npr. invalid-email), prekratkim OIB-om, itd.</li>
+                                  <li><strong>Nedostajući podaci:</strong> Korisnik s nedostajućim obaveznim poljima (npr. bez imena, bez grada)</li>
+                                  <li>Svaki tip korisnika koristi različite Mailtrap email adrese (vidi Email Pristup ispod)</li>
+                                </ul>
+                              </div>
+                            </div>
+
                             {/* Email Konfiguracija za korisnika (opcionalno) */}
                             <div className="col-span-2 mt-3 pt-3 border-t">
                               <details className="cursor-pointer">
@@ -1563,69 +1635,201 @@ export default function AdminTesting(){
                                 <div className="mt-2 space-y-2 bg-blue-50 p-3 rounded text-xs text-blue-800 mb-3">
                                   <strong>💡 Objašnjenje:</strong>
                                   <ul className="list-disc list-inside mt-1 space-y-1">
-                                    <li><strong>Email adresa:</strong> Email adresa ovog korisnika koja će primati test emailove (npr. test.client@mailtrap.io)</li>
-                                    <li><strong>Mailtrap Inbox ID:</strong> ID inbox-a u Mailtrap-u za ovu grupu korisnika (npr. 12345 za clients, 12346 za providers)</li>
+                                    <li><strong>Email za ispravne podatke:</strong> Email adresa za standardne testove (npr. test.client@mailtrap.io)</li>
+                                    <li><strong>Email za neispravne podatke:</strong> Email adresa za testove s neispravnim podacima (npr. test.client.invalid@mailtrap.io)</li>
+                                    <li><strong>Email za nedostajuće podatke:</strong> Email adresa za testove s nedostajućim podacima (npr. test.client.missing@mailtrap.io)</li>
+                                    <li><strong>Mailtrap Inbox ID:</strong> ID inbox-a u Mailtrap-u za ovu grupu korisnika</li>
                                     <li>Ako ne postaviš inbox ID, koristi se globalni inbox iz Email Konfiguracije (gore)</li>
-                                    <li>Svi korisnici iste grupe (npr. client, client1, client2) mogu koristiti isti inbox ID</li>
                                   </ul>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                  <div>
-                                    <label className="block text-xs font-medium mb-1">Mailtrap Email Adresa (za ovog korisnika)</label>
-                                    <input
-                                      type="email"
-                                      className="w-full border rounded px-2 py-1.5 text-xs"
-                                      placeholder="test.client@mailtrap.io"
-                                      value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].mailtrapEmail) || ''}
-                                      onChange={e => {
-                                        if (!testData) return
-                                        const updated = { ...testData }
-                                        if (!updated.users) updated.users = {}
-                                        if (!updated.users[userKey]) updated.users[userKey] = {}
-                                        setTestData({
-                                          ...updated,
-                                          users: {
-                                            ...updated.users,
-                                            [userKey]: {
-                                              ...updated.users[userKey],
-                                              mailtrapEmail: e.target.value
-                                            }
-                                          }
-                                        })
-                                      }}
-                                    />
-                                    <p className="text-xs text-gray-500 mt-0.5">Email adresa koja će primati test emailove (Mailtrap)</p>
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs font-medium mb-1">Mailtrap Inbox ID (za ovog korisnika)</label>
-                                    <input
-                                      type="text"
-                                      className="w-full border rounded px-2 py-1.5 text-xs"
-                                      placeholder="npr. 12345 (ili ostavi prazno za globalni)"
-                                      value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].emailConfig && testData.users[userKey].emailConfig.inboxId) || ''}
-                                      onChange={e => {
-                                        if (!testData) return
-                                        const updated = { ...testData }
-                                        if (!updated.users) updated.users = {}
-                                        if (!updated.users[userKey]) updated.users[userKey] = {}
-                                        if (!updated.users[userKey].emailConfig) updated.users[userKey].emailConfig = {}
-                                        setTestData({
-                                          ...updated,
-                                          users: {
-                                            ...updated.users,
-                                            [userKey]: {
-                                              ...updated.users[userKey],
-                                              emailConfig: {
-                                                ...updated.users[userKey].emailConfig,
-                                                inboxId: e.target.value
+                                <div className="space-y-3">
+                                  {/* Email za ispravne podatke */}
+                                  {(!testData?.users?.[userKey]?.invalidData && !testData?.users?.[userKey]?.missingData) && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                      <div>
+                                        <label className="block text-xs font-medium mb-1">
+                                          ✅ Mailtrap Email (za ispravne podatke)
+                                        </label>
+                                        <input
+                                          type="email"
+                                          className="w-full border rounded px-2 py-1.5 text-xs"
+                                          placeholder="test.client@mailtrap.io"
+                                          value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].mailtrapEmail) || ''}
+                                          onChange={e => {
+                                            if (!testData) return
+                                            const updated = { ...testData }
+                                            if (!updated.users) updated.users = {}
+                                            if (!updated.users[userKey]) updated.users[userKey] = {}
+                                            setTestData({
+                                              ...updated,
+                                              users: {
+                                                ...updated.users,
+                                                [userKey]: {
+                                                  ...updated.users[userKey],
+                                                  mailtrapEmail: e.target.value
+                                                }
                                               }
-                                            }
-                                          }
-                                        })
-                                      }}
-                                    />
-                                    <p className="text-xs text-gray-500 mt-0.5">ID inbox-a u Mailtrap-u (vidi MAILTRAP-SETUP.md za detalje)</p>
-                                  </div>
+                                            })
+                                          }}
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-medium mb-1">Mailtrap Inbox ID</label>
+                                        <input
+                                          type="text"
+                                          className="w-full border rounded px-2 py-1.5 text-xs"
+                                          placeholder="npr. 12345 (ili ostavi prazno za globalni)"
+                                          value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].emailConfig && testData.users[userKey].emailConfig.inboxId) || ''}
+                                          onChange={e => {
+                                            if (!testData) return
+                                            const updated = { ...testData }
+                                            if (!updated.users) updated.users = {}
+                                            if (!updated.users[userKey]) updated.users[userKey] = {}
+                                            if (!updated.users[userKey].emailConfig) updated.users[userKey].emailConfig = {}
+                                            setTestData({
+                                              ...updated,
+                                              users: {
+                                                ...updated.users,
+                                                [userKey]: {
+                                                  ...updated.users[userKey],
+                                                  emailConfig: {
+                                                    ...updated.users[userKey].emailConfig,
+                                                    inboxId: e.target.value
+                                                  }
+                                                }
+                                              }
+                                            })
+                                          }}
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Email za neispravne podatke */}
+                                  {testData?.users?.[userKey]?.invalidData && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                      <div>
+                                        <label className="block text-xs font-medium mb-1">
+                                          ❌ Mailtrap Email (za neispravne podatke)
+                                        </label>
+                                        <input
+                                          type="email"
+                                          className="w-full border rounded px-2 py-1.5 text-xs border-red-300"
+                                          placeholder="test.client.invalid@mailtrap.io"
+                                          value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].mailtrapEmail) || ''}
+                                          onChange={e => {
+                                            if (!testData) return
+                                            const updated = { ...testData }
+                                            if (!updated.users) updated.users = {}
+                                            if (!updated.users[userKey]) updated.users[userKey] = {}
+                                            setTestData({
+                                              ...updated,
+                                              users: {
+                                                ...updated.users,
+                                                [userKey]: {
+                                                  ...updated.users[userKey],
+                                                  mailtrapEmail: e.target.value
+                                                }
+                                              }
+                                            })
+                                          }}
+                                        />
+                                        <p className="text-xs text-gray-500 mt-0.5">Koristi se za testove s neispravnim podacima</p>
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-medium mb-1">Mailtrap Inbox ID (Invalid)</label>
+                                        <input
+                                          type="text"
+                                          className="w-full border rounded px-2 py-1.5 text-xs border-red-300"
+                                          placeholder="npr. 12346 (ili ostavi prazno za globalni)"
+                                          value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].emailConfig && testData.users[userKey].emailConfig.inboxId) || ''}
+                                          onChange={e => {
+                                            if (!testData) return
+                                            const updated = { ...testData }
+                                            if (!updated.users) updated.users = {}
+                                            if (!updated.users[userKey]) updated.users[userKey] = {}
+                                            if (!updated.users[userKey].emailConfig) updated.users[userKey].emailConfig = {}
+                                            setTestData({
+                                              ...updated,
+                                              users: {
+                                                ...updated.users,
+                                                [userKey]: {
+                                                  ...updated.users[userKey],
+                                                  emailConfig: {
+                                                    ...updated.users[userKey].emailConfig,
+                                                    inboxId: e.target.value
+                                                  }
+                                                }
+                                              }
+                                            })
+                                          }}
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Email za nedostajuće podatke */}
+                                  {testData?.users?.[userKey]?.missingData && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                      <div>
+                                        <label className="block text-xs font-medium mb-1">
+                                          ⚠️ Mailtrap Email (za nedostajuće podatke)
+                                        </label>
+                                        <input
+                                          type="email"
+                                          className="w-full border rounded px-2 py-1.5 text-xs border-orange-300"
+                                          placeholder="test.client.missing@mailtrap.io"
+                                          value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].mailtrapEmail) || ''}
+                                          onChange={e => {
+                                            if (!testData) return
+                                            const updated = { ...testData }
+                                            if (!updated.users) updated.users = {}
+                                            if (!updated.users[userKey]) updated.users[userKey] = {}
+                                            setTestData({
+                                              ...updated,
+                                              users: {
+                                                ...updated.users,
+                                                [userKey]: {
+                                                  ...updated.users[userKey],
+                                                  mailtrapEmail: e.target.value
+                                                }
+                                              }
+                                            })
+                                          }}
+                                        />
+                                        <p className="text-xs text-gray-500 mt-0.5">Koristi se za testove s nedostajućim podacima</p>
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-medium mb-1">Mailtrap Inbox ID (Missing)</label>
+                                        <input
+                                          type="text"
+                                          className="w-full border rounded px-2 py-1.5 text-xs border-orange-300"
+                                          placeholder="npr. 12347 (ili ostavi prazno za globalni)"
+                                          value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].emailConfig && testData.users[userKey].emailConfig.inboxId) || ''}
+                                          onChange={e => {
+                                            if (!testData) return
+                                            const updated = { ...testData }
+                                            if (!updated.users) updated.users = {}
+                                            if (!updated.users[userKey]) updated.users[userKey] = {}
+                                            if (!updated.users[userKey].emailConfig) updated.users[userKey].emailConfig = {}
+                                            setTestData({
+                                              ...updated,
+                                              users: {
+                                                ...updated.users,
+                                                [userKey]: {
+                                                  ...updated.users[userKey],
+                                                  emailConfig: {
+                                                    ...updated.users[userKey].emailConfig,
+                                                    inboxId: e.target.value
+                                                  }
+                                                }
+                                              }
+                                            })
+                                          }}
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                                 <div className="mt-2 text-xs text-gray-600 bg-yellow-50 p-2 rounded border border-yellow-200">
                                   <strong>📝 Napomena:</strong> Email adresa ovog korisnika ({testData?.users?.[userKey]?.email || 'nepostavljeno'}) treba biti konfigurirana u aplikaciji da šalje emailove na Mailtrap email adresu ({testData?.users?.[userKey]?.mailtrapEmail || 'nepostavljeno'}) ili koristi Mailtrap inbox direktno.
