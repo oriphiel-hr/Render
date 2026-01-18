@@ -1399,6 +1399,158 @@ export default function AdminTesting(){
                 </div>
               </div>
 
+              {/* Email Konfiguracija */}
+              <div className="border rounded-lg p-6 bg-white">
+                <h3 className="text-lg font-semibold mb-4">Email Konfiguracija</h3>
+                <div className="space-y-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="text-sm text-blue-800">
+                      <strong>Preporučeno:</strong> Koristite test email servis (Mailtrap) za automatske testove.
+                      <br />
+                      <a href="https://mailtrap.io" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                        Registriraj se na Mailtrap.io (besplatno)
+                      </a>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Test Email Servis (Mailtrap API Key)</label>
+                    <input
+                      type="password"
+                      className="w-full border rounded px-3 py-2 text-sm"
+                      placeholder="Mailtrap API Key"
+                      value={(testData && testData.email && testData.email.testService && testData.email.testService.apiKey) || ''}
+                      onChange={e => {
+                        if (!testData) return
+                        const updated = { ...testData }
+                        if (!updated.email) updated.email = {}
+                        if (!updated.email.testService) updated.email.testService = {}
+                        setTestData({
+                          ...updated,
+                          email: {
+                            ...updated.email,
+                            testService: {
+                              ...updated.email.testService,
+                              apiKey: e.target.value
+                            }
+                          }
+                        })
+                      }}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">API Key iz Mailtrap.io Settings → API Tokens</p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Mailtrap Inbox ID</label>
+                    <input
+                      type="text"
+                      className="w-full border rounded px-3 py-2 text-sm"
+                      placeholder="0 (default inbox)"
+                      value={(testData && testData.email && testData.email.testService && testData.email.testService.inboxId) || '0'}
+                      onChange={e => {
+                        if (!testData) return
+                        const updated = { ...testData }
+                        if (!updated.email) updated.email = {}
+                        if (!updated.email.testService) updated.email.testService = {}
+                        setTestData({
+                          ...updated,
+                          email: {
+                            ...updated.email,
+                            testService: {
+                              ...updated.email.testService,
+                              inboxId: e.target.value || '0'
+                            }
+                          }
+                        })
+                      }}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Inbox ID iz Mailtrap.io (obično "0" za default inbox)</p>
+                  </div>
+                  
+                  <div className="border-t pt-4">
+                    <h4 className="text-sm font-semibold mb-2">Alternativa: IMAP Pristup (Gmail, itd.)</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium mb-1">IMAP Host</label>
+                        <input
+                          type="text"
+                          className="w-full border rounded px-3 py-2 text-sm"
+                          placeholder="imap.gmail.com"
+                          value={(testData && testData.email && testData.email.imap && testData.email.imap.host) || ''}
+                          onChange={e => {
+                            if (!testData) return
+                            const updated = { ...testData }
+                            if (!updated.email) updated.email = {}
+                            if (!updated.email.imap) updated.email.imap = {}
+                            setTestData({
+                              ...updated,
+                              email: {
+                                ...updated.email,
+                                imap: {
+                                  ...updated.email.imap,
+                                  host: e.target.value
+                                }
+                              }
+                            })
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium mb-1">IMAP User (Email)</label>
+                        <input
+                          type="email"
+                          className="w-full border rounded px-3 py-2 text-sm"
+                          placeholder="test@example.com"
+                          value={(testData && testData.email && testData.email.imap && testData.email.imap.user) || ''}
+                          onChange={e => {
+                            if (!testData) return
+                            const updated = { ...testData }
+                            if (!updated.email) updated.email = {}
+                            if (!updated.email.imap) updated.email.imap = {}
+                            setTestData({
+                              ...updated,
+                              email: {
+                                ...updated.email,
+                                imap: {
+                                  ...updated.email.imap,
+                                  user: e.target.value
+                                }
+                              }
+                            })
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium mb-1">IMAP Password (App Password)</label>
+                        <input
+                          type="password"
+                          className="w-full border rounded px-3 py-2 text-sm"
+                          placeholder="App Password za Gmail"
+                          value={(testData && testData.email && testData.email.imap && testData.email.imap.password) || ''}
+                          onChange={e => {
+                            if (!testData) return
+                            const updated = { ...testData }
+                            if (!updated.email) updated.email = {}
+                            if (!updated.email.imap) updated.email.imap = {}
+                            setTestData({
+                              ...updated,
+                              email: {
+                                ...updated.email,
+                                imap: {
+                                  ...updated.email.imap,
+                                  password: e.target.value
+                                }
+                              }
+                            })
+                          }}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Za Gmail: Settings → Security → App Passwords</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* API Konfiguracija */}
               <div className="border rounded-lg p-6 bg-white">
                 <h3 className="text-lg font-semibold mb-4">API Konfiguracija</h3>
@@ -1408,8 +1560,11 @@ export default function AdminTesting(){
                     <input
                       type="text"
                       className="w-full border rounded px-3 py-2 text-sm"
-                      value={(testData?.api?.baseUrl) || ''}
-                      onChange={e => updateTestDataField('api.baseUrl', e.target.value)}
+                      value={(testData && testData.api && testData.api.baseUrl) || ''}
+                      onChange={e => {
+                        if (!testData) return
+                        updateTestDataField('api.baseUrl', e.target.value)
+                      }}
                     />
                   </div>
                   <div>
@@ -1417,8 +1572,11 @@ export default function AdminTesting(){
                     <input
                       type="text"
                       className="w-full border rounded px-3 py-2 text-sm"
-                      value={(testData?.api?.frontendUrl) || ''}
-                      onChange={e => updateTestDataField('api.frontendUrl', e.target.value)}
+                      value={(testData && testData.api && testData.api.frontendUrl) || ''}
+                      onChange={e => {
+                        if (!testData) return
+                        updateTestDataField('api.frontendUrl', e.target.value)
+                      }}
                     />
                   </div>
                 </div>

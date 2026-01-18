@@ -3,7 +3,8 @@
  * Omogućava pristup email inboxu i screenshot email poruka
  */
 
-import { chromium } from '@playwright/test';
+// Email Helper za Playwright testove
+// Ne koristi chromium direktno, već Playwright page objekt
 
 /**
  * Konfiguracija email pristupa
