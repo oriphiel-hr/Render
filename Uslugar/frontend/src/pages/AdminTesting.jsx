@@ -1605,7 +1605,7 @@ export default function AdminTesting(){
                 })}
                 
                 {/* Provider Company (posebna grupa) */}
-                {testData && testData.users && testData.users.providerCompany && (
+                {testData?.users?.providerCompany && (
                   <div className="mb-6 border rounded-lg p-4 bg-gray-50">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="font-semibold text-base">Pružatelj kao Tvrtka (Provider Company)</h4>
