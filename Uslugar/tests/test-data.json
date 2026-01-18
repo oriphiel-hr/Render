@@ -82,6 +82,75 @@
       "emailAccess": true,
       "description": "Pružatelj usluga kao tvrtka"
     },
+    "providerNoLicense": {
+      "email": "test.provider.nolicense@uslugar.hr",
+      "password": "Test123456!",
+      "fullName": "Test Pružatelj bez Licence",
+      "phone": "+385992222223",
+      "city": "Zagreb",
+      "legalStatus": "FREELANCER",
+      "oib": "12345678902",
+      "companyName": null,
+      "skipLicense": true,
+      "emailAccess": true,
+      "emailConfig": {
+        "description": "Email konfiguracija za provider bez licence (opcionalno)",
+        "inboxId": "",
+        "imap": {
+          "user": "",
+          "password": "",
+          "host": "",
+          "port": 993
+        },
+        "note": "Korisnik bez licence - za testiranje funkcionalnosti bez licence"
+      },
+      "description": "Pružatelj usluga bez licence - za testiranje edge case-ova"
+    },
+    "providerNoKYC": {
+      "email": "test.provider.nokyc@uslugar.hr",
+      "password": "Test123456!",
+      "fullName": "Test Pružatelj bez KYC",
+      "phone": "+385992222224",
+      "city": "Zagreb",
+      "legalStatus": "FREELANCER",
+      "oib": "12345678903",
+      "companyName": null,
+      "skipKYC": true,
+      "emailAccess": true,
+      "emailConfig": {
+        "description": "Email konfiguracija za provider bez KYC (opcionalno)",
+        "inboxId": "",
+        "imap": {
+          "user": "",
+          "password": "",
+          "host": "",
+          "port": 993
+        },
+        "note": "Korisnik bez KYC dokumenta - za testiranje funkcionalnosti bez KYC"
+      },
+      "description": "Pružatelj usluga bez KYC dokumenta - za testiranje edge case-ova"
+    },
+    "clientInvalid": {
+      "email": "invalid-email",
+      "password": "Test123456!",
+      "fullName": "Test Klijent Neispravni",
+      "phone": "123",
+      "city": "Zagreb",
+      "invalidData": true,
+      "emailAccess": true,
+      "emailConfig": {
+        "description": "Email konfiguracija za klijenta s neispravnim podacima (opcionalno)",
+        "inboxId": "",
+        "imap": {
+          "user": "",
+          "password": "",
+          "host": "",
+          "port": 993
+        },
+        "note": "Korisnik s neispravnim podacima - za testiranje validacije"
+      },
+      "description": "Klijent s neispravnim podacima - za testiranje validacije"
+    },
     "admin": {
       "email": "admin@uslugar.hr",
       "password": "Admin123456!",

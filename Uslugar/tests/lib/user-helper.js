@@ -40,13 +40,30 @@ export function getUser(testData, userType, options = {}) {
   if (preferMain && testData.users[userType]) {
     matchingUsers.push({ key: userType, user: testData.users[userType], index: 0 });
   }
-
+  
+  // Dodaj edge case korisnike odmah nakon osnovnog
+  const edgeCaseUsers = [];
+  if (userType === 'client' && testData.users['clientInvalid']) {
+    edgeCaseUsers.push({ key: 'clientInvalid', user: testData.users['clientInvalid'], index: 1 });
+  }
+  if (userType === 'provider') {
+    if (testData.users['providerNoLicense']) {
+      edgeCaseUsers.push({ key: 'providerNoLicense', user: testData.users['providerNoLicense'], index: 1 });
+    }
+    if (testData.users['providerNoKYC']) {
+      edgeCaseUsers.push({ key: 'providerNoKYC', user: testData.users['providerNoKYC'], index: 2 });
+    }
+  }
+  
   // Pronađi numerirane korisnike (client1, client2, provider1, provider2, itd.)
   const userKeys = Object.keys(testData.users);
   const numberedUsers = userKeys
     .filter(key => {
       if (key === userType) return false; // Već dodan
       if (key === 'providerCompany' && userType === 'provider') return false; // providerCompany je poseban tip
+      if (key === 'clientInvalid' && userType === 'client') return false; // Već dodan kao edge case
+      if (key === 'providerNoLicense' && userType === 'provider') return false; // Već dodan kao edge case
+      if (key === 'providerNoKYC' && userType === 'provider') return false; // Već dodan kao edge case
       
       // Provjeri da li key počinje s userType i ima broj (npr. client1, client2)
       const pattern = new RegExp(`^${userType}\\d+$`);
@@ -61,9 +78,11 @@ export function getUser(testData, userType, options = {}) {
     .map((key, idx) => ({
       key,
       user: testData.users[key],
-      index: preferMain ? idx + 1 : idx // Index 0 je rezerviran za glavnog korisnika
+      index: preferMain ? idx + 1 + edgeCaseUsers.length : idx + edgeCaseUsers.length // Index 0 je rezerviran za glavnog korisnika, zatim edge case korisnici
     }));
 
+  // Dodaj edge case korisnike prije numeriranih
+  matchingUsers.push(...edgeCaseUsers);
   matchingUsers.push(...numberedUsers);
 
   if (matchingUsers.length === 0) {

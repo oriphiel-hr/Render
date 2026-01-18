@@ -1264,18 +1264,35 @@ export default function AdminTesting(){
                   const groupUsers = testData && testData.users ? Object.keys(testData.users)
                     .filter(key => {
                       if (group.key === 'client') {
-                        return key === 'client' || key.startsWith('client') && /client\d+/.test(key);
+                        // client, clientInvalid, client1, client2, ...
+                        return key === 'client' || key === 'clientInvalid' || (key.startsWith('client') && /client\d+/.test(key));
                       } else if (group.key === 'provider') {
-                        return (key === 'provider' || key.startsWith('provider') && /provider\d+/.test(key)) && key !== 'providerCompany';
+                        // provider, providerNoLicense, providerNoKYC, provider1, provider2, ... (ali ne providerCompany)
+                        return (key === 'provider' || key === 'providerNoLicense' || key === 'providerNoKYC' || 
+                                (key.startsWith('provider') && /provider\d+/.test(key))) && key !== 'providerCompany';
                       } else if (group.key === 'admin') {
                         return key === 'admin' || key.startsWith('admin') && /admin\d+/.test(key);
                       }
                       return false;
                     })
                     .sort((a, b) => {
-                      // Prvo osnovni (client, provider, admin), zatim numerirani (client1, client2, ...)
+                      // Prvo osnovni (client, provider, admin), zatim edge case (clientInvalid, providerNoLicense, providerNoKYC), zatim numerirani (client1, client2, ...)
                       if (a === group.key) return -1;
                       if (b === group.key) return 1;
+                      
+                      // Edge case korisnici idu odmah nakon osnovnog
+                      const edgeCaseOrder = {
+                        'clientInvalid': 1,
+                        'providerNoLicense': 1,
+                        'providerNoKYC': 2
+                      };
+                      const edgeA = edgeCaseOrder[a] || 999;
+                      const edgeB = edgeCaseOrder[b] || 999;
+                      if (edgeA !== 999 || edgeB !== 999) {
+                        return edgeA - edgeB;
+                      }
+                      
+                      // Zatim numerirani
                       const numA = parseInt(a.match(/\d+/)?.[0] || '999');
                       const numB = parseInt(b.match(/\d+/)?.[0] || '999');
                       return numA - numB;
@@ -1339,7 +1356,7 @@ export default function AdminTesting(){
                                   : `${userKey.replace(/([A-Z])/g, ' $1').trim()}`
                                 }
                               </h5>
-                              {userKey !== group.key && (
+                              {(userKey !== group.key && userKey !== 'clientInvalid' && userKey !== 'providerNoLicense' && userKey !== 'providerNoKYC') && (
                                 <button
                                   onClick={() => {
                                     if (!testData || !confirm(`Jeste li sigurni da želite obrisati korisnika "${userKey}"?`)) return
@@ -1353,6 +1370,11 @@ export default function AdminTesting(){
                                 >
                                   🗑️ Obriši
                                 </button>
+                              )}
+                              {(userKey === 'clientInvalid' || userKey === 'providerNoLicense' || userKey === 'providerNoKYC') && (
+                                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                                  📌 Predefinirani edge case
+                                </span>
                               )}
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
