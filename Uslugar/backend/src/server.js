@@ -110,10 +110,35 @@ console.log('  SMTP_PORT:', process.env.SMTP_PORT || 'NOT SET');
 console.log('  FRONTEND_URL:', process.env.FRONTEND_URL || 'NOT SET');
 
 // === CORS KONFIGURACIJA – PRIJE SVIH DRUGIH MIDDLEWARE-A ===================
-const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS || 'https://uslugar.oriph.io')
+const ALLOWED_ORIGINS_RAW = (process.env.CORS_ORIGINS || 'https://uslugar.oriph.io')
   .split(',').map(s => s.trim()).filter(Boolean)
 
-console.log('[CORS] Allowed origins:', ALLOWED_ORIGINS);
+// Normaliziraj origins - dodaj www i non-www varijante automatski
+const ALLOWED_ORIGINS = new Set(ALLOWED_ORIGINS_RAW);
+ALLOWED_ORIGINS_RAW.forEach(origin => {
+  try {
+    const url = new URL(origin);
+    if (url.hostname) {
+      // Dodaj www varijantu ako nema www
+      if (!url.hostname.startsWith('www.')) {
+        const wwwUrl = new URL(origin);
+        wwwUrl.hostname = 'www.' + url.hostname;
+        ALLOWED_ORIGINS.add(wwwUrl.toString().replace(/\/$/, ''));
+      }
+      // Dodaj non-www varijantu ako ima www
+      if (url.hostname.startsWith('www.')) {
+        const nonWwwUrl = new URL(origin);
+        nonWwwUrl.hostname = url.hostname.replace(/^www\./, '');
+        ALLOWED_ORIGINS.add(nonWwwUrl.toString().replace(/\/$/, ''));
+      }
+    }
+  } catch (e) {
+    // Ignoriraj neispravne URL-ove
+  }
+});
+
+const ALLOWED_ORIGINS_ARRAY = Array.from(ALLOWED_ORIGINS);
+console.log('[CORS] Allowed origins:', ALLOWED_ORIGINS_ARRAY);
 
 // Custom CORS middleware - handles ALL requests including OPTIONS
 app.use((req, res, next) => {
@@ -121,7 +146,7 @@ app.use((req, res, next) => {
   
   // Handle preflight OPTIONS requests immediately
   if (req.method === 'OPTIONS') {
-    if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    if (origin && ALLOWED_ORIGINS.has(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin)
       res.setHeader('Access-Control-Allow-Credentials', 'true')
     }
@@ -133,13 +158,13 @@ app.use((req, res, next) => {
   }
   
   // For actual requests, set CORS headers if origin is allowed
-  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+  if (origin && ALLOWED_ORIGINS.has(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin)
     res.setHeader('Access-Control-Allow-Credentials', 'true')
   } else if (origin) {
     // Log blocked origins for debugging
     console.warn('[CORS] Blocked origin:', origin);
-    console.warn('[CORS] Allowed origins:', ALLOWED_ORIGINS);
+    console.warn('[CORS] Allowed origins:', ALLOWED_ORIGINS_ARRAY);
     // Note: We still continue, but without CORS headers (browser will block)
   }
   
