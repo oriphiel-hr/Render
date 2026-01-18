@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import testData from '../test-data.json';
+import { getUser } from '../lib/user-helper.js';
 
 /**
  * Automatski testovi za upravljanje poslovima
@@ -8,7 +9,7 @@ test.describe('Jobs - Upravljanje Poslovima', () => {
   test.beforeEach(async ({ page }) => {
     // Prijava kao klijent
     await page.goto('/');
-    const user = testData.users.client;
+    const user = getUser(testData, 'client', { strategy: 'first' });
     
     await page.click('text=Prijava');
     await page.fill('input[name="email"]', user.email);
@@ -19,7 +20,8 @@ test.describe('Jobs - Upravljanje Poslovima', () => {
   });
 
   test('Objava posla', async ({ page }) => {
-    if (!testData.users || !testData.users.client) {
+    const user = getUser(testData, 'client', { strategy: 'first' });
+    if (!user) {
       throw new Error('Test podaci nisu konfigurirani. Molimo konfigurirajte test podatke u admin panelu.');
     }
     

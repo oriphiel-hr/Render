@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import testData from '../test-data.json';
+import { getUser } from '../lib/user-helper.js';
 
 /**
  * Kompletan E2E test za sve domene - "Sve domene - E2E"
@@ -25,8 +26,8 @@ test.describe('Sve domene - E2E Test', () => {
   });
 
   test('Kompletni E2E flow - od registracije do završetka posla', async () => {
-    const client = testData.users.client;
-    const provider = testData.users.provider;
+    const client = getUser(testData, 'client', { strategy: 'first' });
+    const provider = getUser(testData, 'provider', { strategy: 'first' });
     const jobData = testData.testData.job;
     const offerData = testData.testData.offer;
 

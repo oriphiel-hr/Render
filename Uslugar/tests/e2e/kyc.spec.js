@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import testData from '../test-data.json';
+import { getUser } from '../lib/user-helper.js';
 
 /**
  * Automatski testovi za KYC verifikaciju
@@ -8,7 +9,7 @@ test.describe('KYC - Verifikacija Identiteta', () => {
   test.beforeEach(async ({ page }) => {
     // Prijava kao provider
     await page.goto('/');
-    const user = testData.users.provider;
+    const user = getUser(testData, 'provider', { strategy: 'first' });
     
     await page.click('text=Prijava');
     await page.fill('input[name="email"]', user.email);
@@ -19,7 +20,8 @@ test.describe('KYC - Verifikacija Identiteta', () => {
   });
 
   test('KYC: Upload dokumenta', async ({ page }) => {
-    if (!testData.users || !testData.users.provider) {
+    const user = getUser(testData, 'provider', { strategy: 'first' });
+    if (!user) {
       throw new Error('Test podaci nisu konfigurirani. Molimo konfigurirajte test podatke u admin panelu.');
     }
     
@@ -52,7 +54,7 @@ test.describe('KYC - Verifikacija Identiteta', () => {
 
   test('KYC: Ekstrakcija OIB-a - match', async ({ page }) => {
     // Ovo zahtijeva da dokument sadrži OIB koji odgovara profilu
-    const user = testData.users.provider;
+    const user = getUser(testData, 'provider', { strategy: 'first' });
     const kycDoc = testData.documents.kycDocument;
     
     await page.goto('/profile/kyc');

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import testData from '../test-data.json';
+import { getUser } from '../lib/user-helper.js';
 
 /**
  * Automatski testovi za autentifikaciju i registraciju
@@ -11,7 +12,7 @@ test.describe('Auth - Autentifikacija i Registracija', () => {
   });
 
   test('Registracija korisnika usluge (osoba)', async ({ page }) => {
-    const user = testData.users.client;
+    const user = getUser(testData, 'client', { strategy: 'first' });
     
     if (!user || !user.email || !user.password) {
       throw new Error('Test podaci nisu konfigurirani. Molimo konfigurirajte test podatke u admin panelu.');
@@ -40,7 +41,7 @@ test.describe('Auth - Autentifikacija i Registracija', () => {
   });
 
   test('Registracija korisnika usluge (tvrtka/obrt)', async ({ page }) => {
-    const user = testData.users.providerCompany;
+    const user = getUser(testData, 'providerCompany', { strategy: 'first' });
     
     await page.click('text=Registracija');
     await page.click('input[value="PROVIDER"]');
@@ -64,7 +65,7 @@ test.describe('Auth - Autentifikacija i Registracija', () => {
   });
 
   test('Prijava i odjava', async ({ page }) => {
-    const user = testData.users.client;
+    const user = getUser(testData, 'client', { strategy: 'first' });
     
     // Prijava
     await page.click('text=Prijava');
@@ -81,7 +82,7 @@ test.describe('Auth - Autentifikacija i Registracija', () => {
   });
 
   test('Verifikacija emaila', async ({ page, context }) => {
-    const user = testData.users.client;
+    const user = getUser(testData, 'client', { strategy: 'first' });
     
     if (!user || !user.email) {
       throw new Error('Test podaci nisu konfigurirani. Molimo konfigurirajte test podatke u admin panelu.');
@@ -164,7 +165,7 @@ test.describe('Auth - Autentifikacija i Registracija', () => {
   });
 
   test('Zaboravljena lozinka i reset', async ({ page }) => {
-    const user = testData.users.client;
+    const user = getUser(testData, 'client', { strategy: 'first' });
     
     if (!user || !user.email) {
       throw new Error('Test podaci nisu konfigurirani. Molimo konfigurirajte test podatke u admin panelu.');
