@@ -52,20 +52,24 @@
 - ❓ `SUDREG_CLIENT_ID` - Nije pronađeno u kodu (možda nije implementirano)
 - ❓ `SUDREG_CLIENT_SECRET` - Nije pronađeno u kodu (možda nije implementirano)
 
-### **2. AWS S3** (Provjeri da li se koristi)
-- ❓ `AWS_S3_BUCKET_NAME` - Nije pronađeno u kodu (možda nije implementirano)
-- ❓ `AWS_REGION` - Nije pronađeno u kodu (možda nije implementirano)
-- ❓ `AWS_ACCESS_KEY_ID` - Nije pronađeno u kodu (možda nije implementirano)
-- ❓ `AWS_SECRET_ACCESS_KEY` - Nije pronađeno u kodu (možda nije implementirano)
+### **10. AWS S3** (Opcionalno - ako koristiš S3 za invoice PDF-ove)
+- ✅ `AWS_S3_BUCKET_NAME` - S3 bucket za invoice PDF-ove (`backend/src/lib/s3-storage.js`)
+- ✅ `AWS_REGION` - AWS region (default: eu-north-1) (`backend/src/lib/s3-storage.js`)
+- ✅ `AWS_ACCESS_KEY_ID` - AWS access key (`backend/src/lib/s3-storage.js`)
+- ✅ `AWS_SECRET_ACCESS_KEY` - AWS secret key (`backend/src/lib/s3-storage.js`)
 
-### **3. Fiscalization (eRačun)** (Provjeri da li se koristi)
-- ❓ `FISCALIZATION_ENABLED` - Nije pronađeno u kodu (možda nije implementirano)
-- ❓ `ERACUN_API_URL` - Nije pronađeno u kodu (možda nije implementirano)
-- ❓ `ERACUN_API_KEY` - Nije pronađeno u kodu (možda nije implementirano)
-- ❓ `COMPANY_OIB` - Nije pronađeno u kodu (možda nije implementirano)
-- ❓ `COMPANY_NAME` - Nije pronađeno u kodu (možda nije implementirano)
-- ❓ `COMPANY_ADDRESS` - Nije pronađeno u kodu (možda nije implementirano)
-- ❓ `COMPANY_DIRECTOR` - Nije pronađeno u kodu (možda nije implementirano)
+### **11. SUDREG API** (Opcionalno - za automatsku verifikaciju tvrtki)
+- ✅ `SUDREG_CLIENT_ID` - SUDREG API client ID (`backend/src/routes/kyc.js`)
+- ✅ `SUDREG_CLIENT_SECRET` - SUDREG API client secret (`backend/src/routes/kyc.js`)
+
+### **12. Fiscalization (eRačun)** (Opcionalno - ako koristiš eRačun)
+- ✅ `FISCALIZATION_ENABLED` - Omogućava/isključuje fiskalizaciju (provjeri u `backend/src/services/fiscalization-service.js`)
+- ✅ `ERACUN_API_URL` - eRačun API URL (provjeri u `backend/src/services/fiscalization-service.js`)
+- ✅ `ERACUN_API_KEY` - eRačun API key (provjeri u `backend/src/services/fiscalization-service.js`)
+- ✅ `COMPANY_OIB` - OIB tvrtke za fiskalizaciju (provjeri u `backend/src/services/fiscalization-service.js`)
+- ✅ `COMPANY_NAME` - Naziv tvrtke za fiskalizaciju (provjeri u `backend/src/services/fiscalization-service.js`)
+- ✅ `COMPANY_ADDRESS` - Adresa tvrtke za fiskalizaciju (provjeri u `backend/src/services/fiscalization-service.js`)
+- ✅ `COMPANY_DIRECTOR` - Direktor tvrtke za fiskalizaciju (provjeri u `backend/src/services/fiscalization-service.js`)
 
 ---
 
