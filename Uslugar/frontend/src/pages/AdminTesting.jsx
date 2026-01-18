@@ -1554,6 +1554,87 @@ export default function AdminTesting(){
                             </div>
                           </div>
                         )}
+                        
+                        {/* Dokumenti i Portfolio (za providere) */}
+                        {((group.key === 'provider' || userKey.startsWith('provider')) && userKey !== 'admin') && (
+                          <div className="col-span-2 mt-3 pt-3 border-t">
+                            <label className="block text-xs font-medium mb-2 text-gray-700">
+                              📄 Dokumenti i Portfolio
+                            </label>
+                            <div className="space-y-2 mb-3">
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={!!testData?.users?.[userKey]?.skipLicense}
+                                  onChange={e => {
+                                    if (!testData) return
+                                    const updated = { ...testData }
+                                    if (!updated.users) updated.users = {}
+                                    if (!updated.users[userKey]) updated.users[userKey] = {}
+                                    if (e.target.checked) {
+                                      updated.users[userKey].skipLicense = true
+                                    } else {
+                                      delete updated.users[userKey].skipLicense
+                                    }
+                                    setTestData(updated)
+                                  }}
+                                  className="text-indigo-600"
+                                />
+                                <span className="text-xs">⚠️ Preskoči upload licence (korisnik bez licence)</span>
+                              </label>
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={!!testData?.users?.[userKey]?.skipKYC}
+                                  onChange={e => {
+                                    if (!testData) return
+                                    const updated = { ...testData }
+                                    if (!updated.users) updated.users = {}
+                                    if (!updated.users[userKey]) updated.users[userKey] = {}
+                                    if (e.target.checked) {
+                                      updated.users[userKey].skipKYC = true
+                                    } else {
+                                      delete updated.users[userKey].skipKYC
+                                    }
+                                    setTestData(updated)
+                                  }}
+                                  className="text-indigo-600"
+                                />
+                                <span className="text-xs">⚠️ Preskoči upload KYC dokumenta (korisnik bez KYC)</span>
+                              </label>
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={!!testData?.users?.[userKey]?.skipPortfolio}
+                                  onChange={e => {
+                                    if (!testData) return
+                                    const updated = { ...testData }
+                                    if (!updated.users) updated.users = {}
+                                    if (!updated.users[userKey]) updated.users[userKey] = {}
+                                    if (e.target.checked) {
+                                      updated.users[userKey].skipPortfolio = true
+                                    } else {
+                                      delete updated.users[userKey].skipPortfolio
+                                    }
+                                    setTestData(updated)
+                                  }}
+                                  className="text-indigo-600"
+                                />
+                                <span className="text-xs">⚠️ Preskoči upload portfolio slika (korisnik bez portfolija)</span>
+                              </label>
+                            </div>
+                            <div className="text-xs text-gray-600 bg-blue-50 p-2 rounded border border-blue-200 mb-3">
+                              <strong>💡 Objašnjenje:</strong>
+                              <ul className="list-disc list-inside mt-1 space-y-1">
+                                <li><strong>Preskoči upload licence:</strong> Korisnik će biti kreiran bez licence (testiranje funkcionalnosti bez licence)</li>
+                                <li><strong>Preskoči upload KYC dokumenta:</strong> Korisnik će biti kreiran bez KYC dokumenta (testiranje funkcionalnosti bez KYC)</li>
+                                <li><strong>Preskoči upload portfolio slika:</strong> Korisnik će biti kreiran bez portfolio slika (testiranje funkcionalnosti bez portfolija)</li>
+                                <li>Ako checkbox nije označen, dokumenti će biti uploadani automatski (ako su dostupni u test-data.json)</li>
+                              </ul>
+                            </div>
+                          </div>
+                        )}
+
                             {/* Tip korisnika za testiranje (valid/invalid/missing) */}
                             <div className="col-span-2 mt-3 pt-3 border-t">
                               <label className="block text-xs font-medium mb-2 text-gray-700">
