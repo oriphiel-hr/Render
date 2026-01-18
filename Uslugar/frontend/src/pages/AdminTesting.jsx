@@ -672,7 +672,14 @@ export default function AdminTesting(){
   const loadTestData = async () => {
     try {
       console.log('[TEST DATA] Loading test data...')
-      const res = await api.get('/testing/test-data')
+      // Dodaj timeout za request (10 sekundi)
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout - test data loading took too long')), 10000)
+      )
+      
+      const apiPromise = api.get('/testing/test-data')
+      
+      const res = await Promise.race([apiPromise, timeoutPromise])
       console.log('[TEST DATA] Loaded successfully:', res.data)
       setTestData(res.data || {
         users: {},
@@ -693,7 +700,8 @@ export default function AdminTesting(){
       console.error('[TEST DATA] Error details:', {
         message: e?.message,
         response: e?.response?.data,
-        status: e?.response?.status
+        status: e?.response?.status,
+        code: e?.code
       })
       // Umjesto alert-a, postavi default strukturu
       setTestData({
