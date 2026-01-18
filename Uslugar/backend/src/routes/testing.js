@@ -977,6 +977,18 @@ async function validateTestData() {
     }
   }
   
+  // Provjeri email konfiguraciju (opcionalno, ali preporučeno)
+  if (!testData.email) {
+    errors.push('Email konfiguracija nije postavljena (opcionalno, ali preporučeno za verifikaciju i reset lozinke)');
+  } else {
+    const hasTestService = testData.email.testService && testData.email.testService.apiKey;
+    const hasIMAP = testData.email.imap && testData.email.imap.user && testData.email.imap.password;
+    
+    if (!hasTestService && !hasIMAP) {
+      errors.push('Email konfiguracija nije potpuna - postavite Mailtrap API Key ili IMAP pristup');
+    }
+  }
+  
   // Provjeri API konfiguraciju
   if (!testData.api || !testData.api.baseUrl || !testData.api.frontendUrl) {
     errors.push('API konfiguracija nije potpuna (baseUrl i frontendUrl su obavezni)');

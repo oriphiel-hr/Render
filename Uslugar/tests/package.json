@@ -15,6 +15,9 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0"
+  },
+  "dependencies": {
+    "imap-simple": "^5.0.0"
   }
 }
 

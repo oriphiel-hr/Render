@@ -1,4 +1,30 @@
 {
+  "email": {
+    "imap": {
+      "host": "imap.gmail.com",
+      "port": 993,
+      "secure": true,
+      "user": "",
+      "password": "",
+      "description": "IMAP pristup za čitanje emaila (Gmail koristi App Password)"
+    },
+    "smtp": {
+      "host": "smtp.gmail.com",
+      "port": 587,
+      "secure": false,
+      "user": "",
+      "password": "",
+      "description": "SMTP pristup za slanje emaila"
+    },
+    "testService": {
+      "type": "mailtrap",
+      "apiKey": "",
+      "inboxId": "0",
+      "baseUrl": "https://mailtrap.io",
+      "description": "Test email servis (Mailtrap, Mailosaur, itd.) - preporučeno za testiranje"
+    },
+    "description": "Email konfiguracija za automatske testove - potrebno za verifikaciju i reset lozinke"
+  },
   "users": {
     "client": {
       "email": "test.client@uslugar.hr",
@@ -7,6 +33,7 @@
       "phone": "+385991111111",
       "city": "Zagreb",
       "emailAccess": true,
+      "emailPassword": "",
       "description": "Korisnik usluge koji objavljuje poslove"
     },
     "provider": {
