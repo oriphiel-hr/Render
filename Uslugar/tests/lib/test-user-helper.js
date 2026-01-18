@@ -325,7 +325,9 @@ export async function setupTestUser(page, userData, testData, options = {}) {
       try {
         console.log(`[TEST USER HELPER] Uploading KYC document for ${userData.email}`);
         
-        const kycDoc = testData.documents?.kycDocument;
+        // Hibridni pristup: koristi per-korisnik dokument ako postoji, inače globalni
+        const userFromTestData = userData._testDataUser || (userData.email ? Object.values(testData.users || {}).find(u => u?.email === userData.email) : null);
+        const kycDoc = userFromTestData?.documents?.kycDocument || testData.documents?.kycDocument;
         if (kycDoc?.path || kycDoc?.url) {
           await page.goto('/profile/kyc');
           
@@ -364,7 +366,9 @@ export async function setupTestUser(page, userData, testData, options = {}) {
       try {
         console.log(`[TEST USER HELPER] Uploading license for ${userData.email}`);
         
-        const licenseDoc = testData.documents?.licenseDocument;
+        // Hibridni pristup: koristi per-korisnik dokument ako postoji, inače globalni
+        const userFromTestData = userData._testDataUser || (userData.email ? Object.values(testData.users || {}).find(u => u?.email === userData.email) : null);
+        const licenseDoc = userFromTestData?.documents?.license || userFromTestData?.documents?.licenseDocument || testData.documents?.license || testData.documents?.licenseDocument;
         if (licenseDoc?.path || licenseDoc?.url) {
           // Navigiraj na stranicu za licence (ovo ovisi o implementaciji)
           await page.goto('/profile/licenses').catch(() => page.goto('/profile'));

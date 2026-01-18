@@ -1674,9 +1674,109 @@ export default function AdminTesting(){
                                 <li><strong>Preskoči upload licence:</strong> Korisnik će biti kreiran bez licence (testiranje funkcionalnosti bez licence)</li>
                                 <li><strong>Preskoči upload KYC dokumenta:</strong> Korisnik će biti kreiran bez KYC dokumenta (testiranje funkcionalnosti bez KYC)</li>
                                 <li><strong>Preskoči upload portfolio slika:</strong> Korisnik će biti kreiran bez portfolio slika (testiranje funkcionalnosti bez portfolija)</li>
-                                <li>Ako checkbox nije označen, dokumenti će biti uploadani automatski (ako su dostupni u test-data.json)</li>
+                                <li>Ako checkbox nije označen, dokumenti će biti uploadani automatski (koristi se per-korisnik dokument ako postoji, inače globalni)</li>
                               </ul>
                             </div>
+                            
+                            {/* Per-korisnik dokumenti (opcionalno override globalnih) */}
+                            <details className="mt-3 pt-3 border-t cursor-pointer">
+                              <summary className="text-xs font-medium text-gray-700 mb-2">
+                                📄 Per-korisnik dokumenti (opcionalno - override globalnih)
+                              </summary>
+                              <div className="mt-2 space-y-2 bg-green-50 p-3 rounded text-xs text-green-800 mb-3">
+                                <strong>💡 Objašnjenje:</strong>
+                                <ul className="list-disc list-inside mt-1 space-y-1">
+                                  <li>Ovo su dokumenti specifični za ovog korisnika</li>
+                                  <li>Ako postaveš dokument ovdje, koristi se umjesto globalnog dokumenta</li>
+                                  <li>Ako nema dokumenta ovdje, koristi se globalni dokument iz sekcije "Test Dokumenti"</li>
+                                  <li>Korisno za edge case testove (npr. različita licenca za različite testove)</li>
+                                </ul>
+                              </div>
+                              <div className="space-y-3">
+                                {['license', 'kycDocument', 'portfolioImage1', 'portfolioImage2'].map(docKey => {
+                                  const userDoc = testData?.users?.[userKey]?.documents?.[docKey];
+                                  const globalDoc = testData?.documents?.[docKey];
+                                  return (
+                                    <div key={docKey} className="border rounded p-3 bg-gray-50">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <label className="text-xs font-medium capitalize">{docKey.replace(/([A-Z])/g, ' $1').trim()}</label>
+                                        {globalDoc && !userDoc && (
+                                          <span className="text-xs text-gray-500">(koristi globalni)</span>
+                                        )}
+                                        {userDoc && (
+                                          <span className="text-xs text-green-600 font-medium">(per-korisnik)</span>
+                                        )}
+                                      </div>
+                                      {userDoc && userDoc.url && (
+                                        <div className="mb-2">
+                                          <a href={userDoc.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">
+                                            📄 {userDoc.originalName || docKey} ({userDoc.type})
+                                          </a>
+                                        </div>
+                                      )}
+                                      <input
+                                        type="file"
+                                        accept={docKey.includes('Image') ? '.jpg,.jpeg,.png' : '.pdf,.jpg,.jpeg,.png'}
+                                        className="w-full text-xs"
+                                        onChange={async (e) => {
+                                          const file = e.target.files[0];
+                                          if (file) {
+                                            if (!testData) return;
+                                            const formData = new FormData();
+                                            formData.append('document', file);
+                                            formData.append('key', docKey);
+                                            formData.append('description', `${docKey} for ${userKey}`);
+                                            
+                                            try {
+                                              const res = await api.post('/testing/test-data/upload-document', formData, {
+                                                headers: { 'Content-Type': 'multipart/form-data' }
+                                              });
+                                              
+                                              // Dodaj dokument u per-korisnik dokumente
+                                              const updated = { ...testData };
+                                              if (!updated.users) updated.users = {};
+                                              if (!updated.users[userKey]) updated.users[userKey] = {};
+                                              if (!updated.users[userKey].documents) updated.users[userKey].documents = {};
+                                              
+                                              updated.users[userKey].documents[docKey] = res.data.document || {
+                                                url: res.data.document.url,
+                                                filename: res.data.document.filename,
+                                                originalName: res.data.document.originalName,
+                                                type: res.data.document.type
+                                              };
+                                              
+                                              setTestData(updated);
+                                              alert(`✅ Dokument uploadan za korisnika ${userKey}`);
+                                            } catch (error) {
+                                              alert(`❌ Greška pri upload-u: ${error?.response?.data?.error || error?.message}`);
+                                            }
+                                            e.target.value = '';
+                                          }
+                                        }}
+                                      />
+                                      {userDoc && (
+                                        <button
+                                          onClick={() => {
+                                            if (!testData || !confirm(`Obrisati per-korisnik dokument ${docKey}?`)) return;
+                                            const updated = { ...testData };
+                                            if (updated.users?.[userKey]?.documents) {
+                                              delete updated.users[userKey].documents[docKey];
+                                              if (Object.keys(updated.users[userKey].documents).length === 0) {
+                                                delete updated.users[userKey].documents;
+                                              }
+                                            }
+                                            setTestData(updated);
+                                          }}
+                                          className="mt-1 px-2 py-1 bg-red-100 text-red-800 rounded text-xs hover:bg-red-200"
+                                        >
+                                          Obriši
+                                        </button>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </details>
                           </div>
                         )}
 
