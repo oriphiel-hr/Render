@@ -2310,6 +2310,8 @@ r.get('/invoices', auth(true, ['ADMIN']), async (req, res, next) => {
       where.userId = userId;
     }
     
+    // hasS3 filter - DEPRECATED: S3 storage uklonjen, ali ostavljamo filter za kompatibilnost sa starim fakture koje možda još imaju pdfUrl
+    // Možeš obrisati ove linije u budućnosti kada očistiš stare pdfUrl iz baze
     if (hasS3 === 'true') {
       where.pdfUrl = { not: null };
     } else if (hasS3 === 'false') {
