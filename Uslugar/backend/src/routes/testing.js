@@ -5,6 +5,7 @@ import { auth } from '../lib/auth.js';
 const r = Router();
 
 // Debug middleware - log all requests to testing router
+// Updated: Test users now support auto-setup via setupTestUser function
 r.use((req, res, next) => {
   console.log(`[TESTING ROUTER] ${req.method} ${req.path}`);
   next();
