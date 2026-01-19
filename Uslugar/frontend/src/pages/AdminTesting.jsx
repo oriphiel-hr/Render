@@ -1943,6 +1943,9 @@ export default function AdminTesting(){
                                   <li><strong>Nedostajući podaci:</strong> Korisnik s nedostajućim obaveznim poljima (npr. bez imena, bez grada)</li>
                                   <li>Svaki tip korisnika koristi različite Mailtrap email adrese (vidi Email Pristup ispod)</li>
                                 </ul>
+                                <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                                  <strong>⚠️ Važno:</strong> Nakon promjene tipa korisnika, klikni <strong>"💾 Spremi test podatke"</strong> (na dnu stranice) da se promjena sačuva!
+                                </div>
                               </div>
                             </div>
 
