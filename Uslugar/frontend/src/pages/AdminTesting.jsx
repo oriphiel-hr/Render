@@ -733,8 +733,12 @@ export default function AdminTesting(){
     if (!testData) return
     setSavingTestData(true)
     try {
-      await api.post('/testing/test-data', testData)
+      // Deep clone testData to ensure all nested changes are included
+      const dataToSave = JSON.parse(JSON.stringify(testData))
+      await api.post('/testing/test-data', dataToSave)
       alert('✅ Test podaci uspješno spremljeni')
+      // Reload test data to ensure UI is in sync
+      await loadTestData()
     } catch (e) {
       alert(`❌ Greška pri spremanju: ${e?.response?.data?.error || e?.message || String(e)}`)
     } finally {
@@ -1432,10 +1436,14 @@ export default function AdminTesting(){
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-1">Lozinka</label>
+                          <label className="block text-sm font-medium mb-1">
+                            Lozinka
+                            <span className="text-xs text-gray-500 ml-2">(za prijavu u aplikaciju, ne za Mailtrap)</span>
+                          </label>
                           <input
                             type="password"
                             className="w-full border rounded px-3 py-2 text-sm"
+                            placeholder="Test123456!"
                             value={testData && testData.users && testData.users[userKey] && testData.users[userKey].password ? testData.users[userKey].password : ''}
                             onChange={e => {
                               if (!testData) return
@@ -1451,6 +1459,9 @@ export default function AdminTesting(){
                               })
                             }}
                           />
+                          <p className="text-xs text-gray-500 mt-1">
+                            💡 Ovo je lozinka za prijavu test korisnika u aplikaciju. <strong>Mailtrap ne koristi lozinku</strong> - koristi se samo API Key i Inbox ID.
+                          </p>
                         </div>
                         {userKey !== 'admin' && (
                           <>
