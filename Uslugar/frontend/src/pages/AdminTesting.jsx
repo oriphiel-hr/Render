@@ -748,11 +748,13 @@ export default function AdminTesting(){
     try {
       // Deep clone testData to ensure all nested changes are included
       const dataToSave = JSON.parse(JSON.stringify(testData))
+      console.log('[TEST DATA] Saving:', JSON.stringify(dataToSave, null, 2))
       await api.post('/testing/test-data', dataToSave)
       alert('✅ Test podaci uspješno spremljeni')
       // Reload test data to ensure UI is in sync
       await loadTestData()
     } catch (e) {
+      console.error('[TEST DATA] Save error:', e)
       alert(`❌ Greška pri spremanju: ${e?.response?.data?.error || e?.message || String(e)}`)
     } finally {
       setSavingTestData(false)
@@ -1897,10 +1899,10 @@ export default function AdminTesting(){
                                   <input
                                     type="radio"
                                     name={`userType_${userKey}`}
-                                    checked={!(testData?.users?.[userKey]?.invalidData || testData?.users?.[userKey]?.missingData)}
+                                    checked={testData?.users?.[userKey] ? !(testData.users[userKey].invalidData || testData.users[userKey].missingData) : true}
                                     onChange={() => {
                                       if (!testData) return
-                                      const updated = { ...testData }
+                                      const updated = JSON.parse(JSON.stringify(testData))
                                       if (!updated.users) updated.users = {}
                                       if (!updated.users[userKey]) updated.users[userKey] = {}
                                       delete updated.users[userKey].invalidData
@@ -1915,10 +1917,10 @@ export default function AdminTesting(){
                                   <input
                                     type="radio"
                                     name={`userType_${userKey}`}
-                                    checked={!!testData?.users?.[userKey]?.invalidData}
+                                    checked={testData?.users?.[userKey]?.invalidData === true || testData?.users?.[userKey]?.invalidData === 'true'}
                                     onChange={() => {
                                       if (!testData) return
-                                      const updated = { ...testData }
+                                      const updated = JSON.parse(JSON.stringify(testData))
                                       if (!updated.users) updated.users = {}
                                       if (!updated.users[userKey]) updated.users[userKey] = {}
                                       updated.users[userKey].invalidData = true
@@ -1933,10 +1935,10 @@ export default function AdminTesting(){
                                   <input
                                     type="radio"
                                     name={`userType_${userKey}`}
-                                    checked={!!testData?.users?.[userKey]?.missingData}
+                                    checked={testData?.users?.[userKey]?.missingData === true || testData?.users?.[userKey]?.missingData === 'true'}
                                     onChange={() => {
                                       if (!testData) return
-                                      const updated = { ...testData }
+                                      const updated = JSON.parse(JSON.stringify(testData))
                                       if (!updated.users) updated.users = {}
                                       if (!updated.users[userKey]) updated.users[userKey] = {}
                                       updated.users[userKey].missingData = true
