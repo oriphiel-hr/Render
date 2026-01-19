@@ -681,6 +681,19 @@ export default function AdminTesting(){
       
       const res = await Promise.race([apiPromise, timeoutPromise])
       console.log('[TEST DATA] Loaded successfully:', res.data)
+      // Debug: log user data to see invalidData/missingData
+      if (res.data?.users) {
+        Object.keys(res.data.users).forEach(key => {
+          const user = res.data.users[key]
+          console.log(`[TEST DATA] User ${key}:`, {
+            invalidData: user.invalidData,
+            missingData: user.missingData,
+            mailtrapEmail: user.mailtrapEmail,
+            mailtrapEmailInvalid: user.mailtrapEmailInvalid,
+            mailtrapEmailMissing: user.mailtrapEmailMissing
+          })
+        })
+      }
       setTestData(res.data || {
         users: {},
         documents: {},
@@ -2039,7 +2052,7 @@ export default function AdminTesting(){
                                           type="email"
                                           className="w-full border rounded px-2 py-1.5 text-xs border-red-300"
                                           placeholder="test.client.invalid@mailtrap.io"
-                                          value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].mailtrapEmail) || ''}
+                                          value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].mailtrapEmailInvalid) || ''}
                                           onChange={e => {
                                             if (!testData) return
                                             const updated = { ...testData }
@@ -2051,7 +2064,7 @@ export default function AdminTesting(){
                                                 ...updated.users,
                                                 [userKey]: {
                                                   ...updated.users[userKey],
-                                                  mailtrapEmail: e.target.value
+                                                  mailtrapEmailInvalid: e.target.value
                                                 }
                                               }
                                             })
@@ -2065,21 +2078,21 @@ export default function AdminTesting(){
                                           type="text"
                                           className="w-full border rounded px-2 py-1.5 text-xs border-red-300"
                                           placeholder="npr. 12346 (ili ostavi prazno za globalni)"
-                                          value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].emailConfig && testData.users[userKey].emailConfig.inboxId) || ''}
+                                          value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].emailConfigInvalid && testData.users[userKey].emailConfigInvalid.inboxId) || ''}
                                           onChange={e => {
                                             if (!testData) return
                                             const updated = { ...testData }
                                             if (!updated.users) updated.users = {}
                                             if (!updated.users[userKey]) updated.users[userKey] = {}
-                                            if (!updated.users[userKey].emailConfig) updated.users[userKey].emailConfig = {}
+                                            if (!updated.users[userKey].emailConfigInvalid) updated.users[userKey].emailConfigInvalid = {}
                                             setTestData({
                                               ...updated,
                                               users: {
                                                 ...updated.users,
                                                 [userKey]: {
                                                   ...updated.users[userKey],
-                                                  emailConfig: {
-                                                    ...updated.users[userKey].emailConfig,
+                                                  emailConfigInvalid: {
+                                                    ...updated.users[userKey].emailConfigInvalid,
                                                     inboxId: e.target.value
                                                   }
                                                 }
@@ -2102,7 +2115,7 @@ export default function AdminTesting(){
                                           type="email"
                                           className="w-full border rounded px-2 py-1.5 text-xs border-orange-300"
                                           placeholder="test.client.missing@mailtrap.io"
-                                          value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].mailtrapEmail) || ''}
+                                          value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].mailtrapEmailMissing) || ''}
                                           onChange={e => {
                                             if (!testData) return
                                             const updated = { ...testData }
@@ -2114,7 +2127,7 @@ export default function AdminTesting(){
                                                 ...updated.users,
                                                 [userKey]: {
                                                   ...updated.users[userKey],
-                                                  mailtrapEmail: e.target.value
+                                                  mailtrapEmailMissing: e.target.value
                                                 }
                                               }
                                             })
@@ -2128,21 +2141,21 @@ export default function AdminTesting(){
                                           type="text"
                                           className="w-full border rounded px-2 py-1.5 text-xs border-orange-300"
                                           placeholder="npr. 12347 (ili ostavi prazno za globalni)"
-                                          value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].emailConfig && testData.users[userKey].emailConfig.inboxId) || ''}
+                                          value={(testData && testData.users && testData.users[userKey] && testData.users[userKey].emailConfigMissing && testData.users[userKey].emailConfigMissing.inboxId) || ''}
                                           onChange={e => {
                                             if (!testData) return
                                             const updated = { ...testData }
                                             if (!updated.users) updated.users = {}
                                             if (!updated.users[userKey]) updated.users[userKey] = {}
-                                            if (!updated.users[userKey].emailConfig) updated.users[userKey].emailConfig = {}
+                                            if (!updated.users[userKey].emailConfigMissing) updated.users[userKey].emailConfigMissing = {}
                                             setTestData({
                                               ...updated,
                                               users: {
                                                 ...updated.users,
                                                 [userKey]: {
                                                   ...updated.users[userKey],
-                                                  emailConfig: {
-                                                    ...updated.users[userKey].emailConfig,
+                                                  emailConfigMissing: {
+                                                    ...updated.users[userKey].emailConfigMissing,
                                                     inboxId: e.target.value
                                                   }
                                                 }
