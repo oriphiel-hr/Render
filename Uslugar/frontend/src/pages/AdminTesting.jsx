@@ -1966,9 +1966,60 @@ export default function AdminTesting(){
 
                             {/* Email Konfiguracija za korisnika (opcionalno) */}
                             <div className="col-span-2 mt-3 pt-3 border-t">
-                              <details className="cursor-pointer">
+                              {/* Pregled email adresa - uvijek vidljiv */}
+                              <div className="mb-3 p-3 bg-gray-50 rounded border border-gray-200">
+                                <div className="text-sm font-semibold text-gray-700 mb-2">
+                                  📧 Mailtrap Email Adrese za {userKey.replace(/([A-Z])/g, ' $1').trim()}:
+                                </div>
+                                <div className="space-y-1 text-xs">
+                                  {testData?.users?.[userKey]?.invalidData ? (
+                                    <>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-red-600 font-medium">❌ Neispravni podaci:</span>
+                                        <span className="font-mono bg-white px-2 py-1 rounded border border-red-200">
+                                          {testData.users[userKey].mailtrapEmailInvalid || '(nije postavljeno)'}
+                                        </span>
+                                      </div>
+                                      {testData.users[userKey].emailConfigInvalid?.inboxId && (
+                                        <div className="text-gray-600 ml-4">
+                                          📥 Inbox ID: <span className="font-mono">{testData.users[userKey].emailConfigInvalid.inboxId}</span>
+                                        </div>
+                                      )}
+                                    </>
+                                  ) : testData?.users?.[userKey]?.missingData ? (
+                                    <>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-orange-600 font-medium">⚠️ Nedostajući podaci:</span>
+                                        <span className="font-mono bg-white px-2 py-1 rounded border border-orange-200">
+                                          {testData.users[userKey].mailtrapEmailMissing || '(nije postavljeno)'}
+                                        </span>
+                                      </div>
+                                      {testData.users[userKey].emailConfigMissing?.inboxId && (
+                                        <div className="text-gray-600 ml-4">
+                                          📥 Inbox ID: <span className="font-mono">{testData.users[userKey].emailConfigMissing.inboxId}</span>
+                                        </div>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-green-600 font-medium">✅ Ispravni podaci:</span>
+                                        <span className="font-mono bg-white px-2 py-1 rounded border border-green-200">
+                                          {testData.users[userKey].mailtrapEmail || '(nije postavljeno)'}
+                                        </span>
+                                      </div>
+                                      {testData.users[userKey].emailConfig?.inboxId && (
+                                        <div className="text-gray-600 ml-4">
+                                          📥 Inbox ID: <span className="font-mono">{testData.users[userKey].emailConfig.inboxId}</span>
+                                        </div>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                              <details className="cursor-pointer" open>
                                 <summary className="text-sm font-medium text-gray-700 mb-2">
-                                  📧 Email Pristup za {userKey.replace(/([A-Z])/g, ' $1').trim()} (Mailtrap Konfiguracija)
+                                  ⚙️ Uredi Email Konfiguraciju za {userKey.replace(/([A-Z])/g, ' $1').trim()}
                                 </summary>
                                 <div className="mt-2 space-y-2 bg-blue-50 p-3 rounded text-xs text-blue-800 mb-3">
                                   <strong>💡 Objašnjenje:</strong>
