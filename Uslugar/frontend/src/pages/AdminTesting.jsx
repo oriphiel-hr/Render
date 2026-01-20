@@ -664,22 +664,29 @@ export default function AdminTesting(){
   // Slušaj promjene hash-a u URL-u
   useEffect(() => {
     const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '')
-      const hashToTab = {
-        'admin': 'test-data',
-        'test-data': 'test-data',
-        'plans': 'plans',
-        'runs': 'runs',
-        'new': 'new'
-      }
-      const newTab = hashToTab[hash]
-      if (newTab && newTab !== tab) {
-        setTab(newTab)
+      try {
+        const hash = window.location.hash.replace('#', '')
+        const hashToTab = {
+          'admin': 'test-data',
+          'test-data': 'test-data',
+          'plans': 'plans',
+          'runs': 'runs',
+          'new': 'new'
+        }
+        const newTab = hashToTab[hash]
+        if (newTab && newTab !== tab) {
+          console.log('[TESTING] Hash change detected:', hash, '-> tab:', newTab)
+          setTab(newTab)
+        }
+      } catch (e) {
+        console.error('[TESTING] Error handling hash change:', e)
       }
     }
     
-    // Provjeri hash pri učitavanju
-    handleHashChange()
+    // Provjeri hash pri učitavanju (nakon kratkog delay-a da se komponenta učita)
+    setTimeout(() => {
+      handleHashChange()
+    }, 100)
     
     // Slušaj promjene hash-a
     window.addEventListener('hashchange', handleHashChange)
