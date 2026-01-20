@@ -841,6 +841,22 @@ r.get('/test-data', auth(true, ['ADMIN']), async (req, res, next) => {
         const testData = JSON.parse(data);
         console.log('[TEST DATA] Successfully loaded test data');
         console.log('[TEST DATA] Users found:', testData.users ? Object.keys(testData.users).length : 0);
+        
+        // Debug: log user data structure
+        if (testData.users) {
+          Object.keys(testData.users).forEach(userKey => {
+            const user = testData.users[userKey];
+            console.log(`[TEST DATA] User ${userKey}:`, {
+              hasMailtrapEmail: !!user.mailtrapEmail,
+              hasMailtrapEmailInvalid: !!user.mailtrapEmailInvalid,
+              hasMailtrapEmailMissing: !!user.mailtrapEmailMissing,
+              mailtrapEmail: user.mailtrapEmail || 'not set',
+              emailConfig: user.emailConfig ? 'exists' : 'missing',
+              emailConfigInboxId: user.emailConfig?.inboxId || 'not set'
+            });
+          });
+        }
+        
         return res.json(testData);
       } catch (fileError) {
         console.error('[TEST DATA] Error reading file:', fileError);
