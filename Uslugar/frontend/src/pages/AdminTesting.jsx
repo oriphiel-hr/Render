@@ -2068,6 +2068,17 @@ export default function AdminTesting(){
                                     </>
                                   )}
                                 </div>
+                                {(!testData?.users?.[userKey]?.mailtrapEmail && !testData?.users?.[userKey]?.mailtrapEmailInvalid && !testData?.users?.[userKey]?.mailtrapEmailMissing) && (
+                                  <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                                    <strong>💡 Kako postaviti:</strong>
+                                    <ol className="list-decimal list-inside mt-1 space-y-1 ml-2">
+                                      <li>Klikni na <strong>"⚙️ Uredi Email Konfiguraciju"</strong> ispod</li>
+                                      <li>Unesi Mailtrap email adresu (npr. <code className="bg-white px-1 rounded">test.client@mailtrap.io</code>)</li>
+                                      <li>Unesi Mailtrap Inbox ID (npr. <code className="bg-white px-1 rounded">12345</code>)</li>
+                                      <li>Klikni <strong>"💾 Spremi test podatke"</strong> na dnu stranice</li>
+                                    </ol>
+                                  </div>
+                                )}
                               </div>
                               <details className="cursor-pointer" open>
                                 <summary className="text-sm font-medium text-gray-700 mb-2">
