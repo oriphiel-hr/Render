@@ -632,7 +632,24 @@ function RunExecutor({ plan, onClose }){
 }
 
 export default function AdminTesting(){
-  const [tab, setTab] = useState('plans') // 'plans' | 'runs' | 'new'
+  // Čitaj hash iz URL-a pri inicijalizaciji
+  const getInitialTab = () => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.replace('#', '')
+      // Mapiranje hash-a na tab-ove
+      const hashToTab = {
+        'admin': 'test-data', // #admin -> test-data tab
+        'test-data': 'test-data',
+        'plans': 'plans',
+        'runs': 'runs',
+        'new': 'new'
+      }
+      return hashToTab[hash] || 'plans'
+    }
+    return 'plans'
+  }
+  
+  const [tab, setTab] = useState(getInitialTab) // 'plans' | 'runs' | 'new' | 'test-data'
   const [plans, setPlans] = useState([])
   const [runs, setRuns] = useState([])
   const [activePlan, setActivePlan] = useState(null)
@@ -643,6 +660,34 @@ export default function AdminTesting(){
   const [testData, setTestData] = useState(null)
   const [savingTestData, setSavingTestData] = useState(false)
   const [uploadingDocument, setUploadingDocument] = useState(false)
+  
+  // Slušaj promjene hash-a u URL-u
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '')
+      const hashToTab = {
+        'admin': 'test-data',
+        'test-data': 'test-data',
+        'plans': 'plans',
+        'runs': 'runs',
+        'new': 'new'
+      }
+      const newTab = hashToTab[hash]
+      if (newTab && newTab !== tab) {
+        setTab(newTab)
+      }
+    }
+    
+    // Provjeri hash pri učitavanju
+    handleHashChange()
+    
+    // Slušaj promjene hash-a
+    window.addEventListener('hashchange', handleHashChange)
+    
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange)
+    }
+  }, [tab])
 
   const load = async () => {
     try {
