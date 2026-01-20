@@ -2426,9 +2426,28 @@ export default function AdminTesting(){
                               </div>
                               {/* Email Konfiguracija za providerCompany */}
                               <div className="col-span-2 mt-3 pt-3 border-t">
-                                <details className="cursor-pointer">
+                                {/* Pregled email adresa - uvijek vidljiv */}
+                                <div className="mb-3 p-3 bg-gray-50 rounded border border-gray-200">
+                                  <div className="text-sm font-semibold text-gray-700 mb-2">
+                                    📧 Mailtrap Email Adresa za Provider Company:
+                                  </div>
+                                  <div className="text-xs">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-green-600 font-medium">✅ Email:</span>
+                                      <span className="font-mono bg-white px-2 py-1 rounded border border-green-200">
+                                        {testData?.users?.providerCompany?.mailtrapEmail || '(nije postavljeno)'}
+                                      </span>
+                                    </div>
+                                    {testData?.users?.providerCompany?.emailConfig?.inboxId && (
+                                      <div className="text-gray-600 mt-1 ml-4">
+                                        📥 Inbox ID: <span className="font-mono">{testData.users.providerCompany.emailConfig.inboxId}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                <details className="cursor-pointer" open>
                                   <summary className="text-sm font-medium text-gray-700 mb-2">
-                                    📧 Email Pristup za Provider Company (Mailtrap Konfiguracija)
+                                    ⚙️ Uredi Email Konfiguraciju za Provider Company
                                   </summary>
                                   <div className="mt-2 space-y-2 bg-blue-50 p-3 rounded text-xs text-blue-800 mb-3">
                                     <strong>💡 Objašnjenje:</strong>
