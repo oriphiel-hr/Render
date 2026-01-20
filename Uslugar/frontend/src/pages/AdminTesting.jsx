@@ -2029,10 +2029,10 @@ export default function AdminTesting(){
                                       <div className="flex items-center gap-2">
                                         <span className="text-red-600 font-medium">❌ Neispravni podaci:</span>
                                         <span className="font-mono bg-white px-2 py-1 rounded border border-red-200">
-                                          {testData.users[userKey].mailtrapEmailInvalid || '(nije postavljeno)'}
+                                          {testData?.users?.[userKey]?.mailtrapEmailInvalid || '(nije postavljeno)'}
                                         </span>
                                       </div>
-                                      {testData.users[userKey].emailConfigInvalid?.inboxId && (
+                                      {testData?.users?.[userKey]?.emailConfigInvalid?.inboxId && (
                                         <div className="text-gray-600 ml-4">
                                           📥 Inbox ID: <span className="font-mono">{testData.users[userKey].emailConfigInvalid.inboxId}</span>
                                         </div>
@@ -2043,10 +2043,10 @@ export default function AdminTesting(){
                                       <div className="flex items-center gap-2">
                                         <span className="text-orange-600 font-medium">⚠️ Nedostajući podaci:</span>
                                         <span className="font-mono bg-white px-2 py-1 rounded border border-orange-200">
-                                          {testData.users[userKey].mailtrapEmailMissing || '(nije postavljeno)'}
+                                          {testData?.users?.[userKey]?.mailtrapEmailMissing || '(nije postavljeno)'}
                                         </span>
                                       </div>
-                                      {testData.users[userKey].emailConfigMissing?.inboxId && (
+                                      {testData?.users?.[userKey]?.emailConfigMissing?.inboxId && (
                                         <div className="text-gray-600 ml-4">
                                           📥 Inbox ID: <span className="font-mono">{testData.users[userKey].emailConfigMissing.inboxId}</span>
                                         </div>
@@ -2057,10 +2057,10 @@ export default function AdminTesting(){
                                       <div className="flex items-center gap-2">
                                         <span className="text-green-600 font-medium">✅ Ispravni podaci:</span>
                                         <span className="font-mono bg-white px-2 py-1 rounded border border-green-200">
-                                          {testData.users[userKey].mailtrapEmail || '(nije postavljeno)'}
+                                          {testData?.users?.[userKey]?.mailtrapEmail || '(nije postavljeno)'}
                                         </span>
                                       </div>
-                                      {testData.users[userKey].emailConfig?.inboxId && (
+                                      {testData?.users?.[userKey]?.emailConfig?.inboxId && (
                                         <div className="text-gray-600 ml-4">
                                           📥 Inbox ID: <span className="font-mono">{testData.users[userKey].emailConfig.inboxId}</span>
                                         </div>
