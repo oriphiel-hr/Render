@@ -1,0 +1,315 @@
+{
+  "email": {
+    "imap": {
+      "host": "imap.gmail.com",
+      "port": 993,
+      "secure": true,
+      "user": "",
+      "password": "",
+      "description": "IMAP pristup za čitanje emaila (Gmail koristi App Password)"
+    },
+    "smtp": {
+      "host": "smtp.gmail.com",
+      "port": 587,
+      "secure": false,
+      "user": "",
+      "password": "",
+      "description": "SMTP pristup za slanje emaila"
+    },
+    "testService": {
+      "type": "mailtrap",
+      "apiKey": "",
+      "inboxId": "0",
+      "baseUrl": "https://mailtrap.io",
+      "description": "Test email servis (Mailtrap, Mailosaur, itd.) - preporučeno za testiranje"
+    },
+    "description": "Email konfiguracija za automatske testove - potrebno za verifikaciju i reset lozinke"
+  },
+  "users": {
+    "client": {
+      "email": "test.client@uslugar.hr",
+      "password": "Test123456!",
+      "fullName": "Test Klijent",
+      "phone": "+385991111111",
+      "city": "Zagreb",
+      "emailAccess": true,
+      "emailPassword": "",
+      "mailtrapEmail": "test.client@mailtrap.io",
+      "emailConfig": {
+        "description": "Email konfiguracija za client korisnika (opcionalno)",
+        "inboxId": "12345",
+        "imap": {
+          "user": "",
+          "password": "",
+          "host": "",
+          "port": 993
+        },
+        "note": "Ako nije postavljeno, koristi se globalna email konfiguracija. Za Mailtrap, možeš koristiti različite inbox ID-eve za različite korisnike."
+      },
+      "description": "Korisnik usluge koji objavljuje poslove"
+    },
+    "provider": {
+      "email": "test.provider@uslugar.hr",
+      "password": "Test123456!",
+      "fullName": "Test Pružatelj",
+      "phone": "+385992222222",
+      "city": "Zagreb",
+      "legalStatus": "FREELANCER",
+      "oib": "12345678901",
+      "companyName": null,
+      "emailAccess": true,
+      "mailtrapEmail": "test.provider@mailtrap.io",
+      "emailConfig": {
+        "description": "Email konfiguracija za provider korisnika (opcionalno)",
+        "inboxId": "12346",
+        "imap": {
+          "user": "",
+          "password": "",
+          "host": "",
+          "port": 993
+        },
+        "note": "Ako nije postavljeno, koristi se globalna email konfiguracija. Za Mailtrap, možeš koristiti različite inbox ID-eve za različite korisnike."
+      },
+      "description": "Pružatelj usluga koji kupuje leadove"
+    },
+    "providerCompany": {
+      "email": "test.company@uslugar.hr",
+      "password": "Test123456!",
+      "fullName": "Test Tvrtka",
+      "phone": "+385993333333",
+      "city": "Zagreb",
+      "legalStatus": "DOO",
+      "oib": "98765432109",
+      "companyName": "Test DOO",
+      "emailAccess": true,
+      "mailtrapEmail": "test.company@mailtrap.io",
+      "emailConfig": {
+        "description": "Email konfiguracija za provider company (opcionalno)",
+        "inboxId": "12347",
+        "imap": {
+          "user": "",
+          "password": "",
+          "host": "",
+          "port": 993
+        },
+        "note": "Email konfiguracija za provider companies"
+      },
+      "description": "Pružatelj usluga kao tvrtka"
+    },
+    "providerNoLicense": {
+      "email": "test.provider.nolicense@uslugar.hr",
+      "password": "Test123456!",
+      "fullName": "Test Pružatelj bez Licence",
+      "phone": "+385992222223",
+      "city": "Zagreb",
+      "legalStatus": "FREELANCER",
+      "oib": "12345678902",
+      "companyName": null,
+      "skipLicense": true,
+      "emailAccess": true,
+      "mailtrapEmail": "test.provider.nolicense@mailtrap.io",
+      "emailConfig": {
+        "description": "Email konfiguracija za provider bez licence (opcionalno)",
+        "inboxId": "12346",
+        "imap": {
+          "user": "",
+          "password": "",
+          "host": "",
+          "port": 993
+        },
+        "note": "Korisnik bez licence - za testiranje funkcionalnosti bez licence"
+      },
+      "description": "Pružatelj usluga bez licence - za testiranje edge case-ova"
+    },
+    "providerNoKYC": {
+      "email": "test.provider.nokyc@uslugar.hr",
+      "password": "Test123456!",
+      "fullName": "Test Pružatelj bez KYC",
+      "phone": "+385992222224",
+      "city": "Zagreb",
+      "legalStatus": "FREELANCER",
+      "oib": "12345678903",
+      "companyName": null,
+      "skipKYC": true,
+      "emailAccess": true,
+      "mailtrapEmail": "test.provider.nokyc@mailtrap.io",
+      "emailConfig": {
+        "description": "Email konfiguracija za provider bez KYC (opcionalno)",
+        "inboxId": "12346",
+        "imap": {
+          "user": "",
+          "password": "",
+          "host": "",
+          "port": 993
+        },
+        "note": "Korisnik bez KYC dokumenta - za testiranje funkcionalnosti bez KYC"
+      },
+      "description": "Pružatelj usluga bez KYC dokumenta - za testiranje edge case-ova"
+    },
+    "clientInvalid": {
+      "email": "invalid-email",
+      "password": "Test123456!",
+      "fullName": "Test Klijent Neispravni",
+      "phone": "123",
+      "city": "Zagreb",
+      "invalidData": true,
+      "emailAccess": true,
+      "mailtrapEmailInvalid": "test.client.invalid@mailtrap.io",
+      "emailConfigInvalid": {
+        "description": "Email konfiguracija za klijenta s neispravnim podacima (opcionalno)",
+        "inboxId": "12345",
+        "imap": {
+          "user": "",
+          "password": "",
+          "host": "",
+          "port": 993
+        },
+        "note": "Korisnik s neispravnim podacima - za testiranje validacije"
+      },
+      "description": "Klijent s neispravnim podacima - za testiranje validacije"
+    },
+    "providerDirector": {
+      "email": "test.director@uslugar.hr",
+      "password": "Test123456!",
+      "fullName": "Test Direktor",
+      "phone": "+385992222225",
+      "city": "Zagreb",
+      "legalStatus": "DOO",
+      "oib": "12345678904",
+      "companyName": "Test DOO Direktor",
+      "isDirector": true,
+      "emailAccess": true,
+      "mailtrapEmail": "test.director@mailtrap.io",
+      "emailConfig": {
+        "description": "Email konfiguracija za direktora (opcionalno)",
+        "inboxId": "12346",
+        "imap": {
+          "user": "",
+          "password": "",
+          "host": "",
+          "port": 993
+        },
+        "note": "Direktor tvrtke - vlasnik koji ima izvođače"
+      },
+      "description": "Direktor/predstavnik tvrtke - za testiranje strukture direktora i izvođača"
+    },
+    "providerTeamMember": {
+      "email": "test.team@uslugar.hr",
+      "password": "Test123456!",
+      "fullName": "Test Izvođač",
+      "phone": "+385992222226",
+      "city": "Zagreb",
+      "legalStatus": "FREELANCER",
+      "oib": "12345678905",
+      "companyName": null,
+      "isDirector": false,
+      "companyId": "providerDirector",
+      "emailAccess": true,
+      "mailtrapEmail": "test.team@mailtrap.io",
+      "emailConfig": {
+        "description": "Email konfiguracija za izvođača (opcionalno)",
+        "inboxId": "12346",
+        "imap": {
+          "user": "",
+          "password": "",
+          "host": "",
+          "port": 993
+        },
+        "note": "Izvođač koji radi za direktora (team member)"
+      },
+      "description": "Izvođač koji radi za direktora - za testiranje strukture direktora i izvođača"
+    },
+    "admin": {
+      "email": "admin@uslugar.hr",
+      "password": "Admin123456!",
+      "emailAccess": true,
+      "mailtrapEmail": "admin@mailtrap.io",
+      "emailConfig": {
+        "description": "Email konfiguracija za admin korisnika (opcionalno)",
+        "inboxId": "",
+        "imap": {
+          "user": "",
+          "password": "",
+          "host": "",
+          "port": 993
+        },
+        "note": "Ako nije postavljeno, koristi se globalna email konfiguracija. Admin može primati notifikacije i alertove."
+      },
+      "description": "Admin korisnik za upravljanje - može primati admin notifikacije i alertove"
+    }
+  },
+  "documents": {
+    "license": {
+      "path": "tests/fixtures/sample-license-valid.pdf",
+      "type": "application/pdf",
+      "description": "Primjer VALIDNE licence za upload - ispravan format, svi potrebni podaci"
+    },
+    "licenseInvalid": {
+      "path": "tests/fixtures/sample-license-invalid.pdf",
+      "type": "application/pdf",
+      "description": "Primjer NEVALIDNE licence - istekla, neispravan format, nedostaju podaci"
+    },
+    "kycDocument": {
+      "path": "tests/fixtures/sample-id.pdf",
+      "type": "application/pdf",
+      "description": "Primjer dokumenta za KYC verifikaciju (osobna iskaznica)"
+    },
+    "portfolioImage1": {
+      "path": "tests/fixtures/sample-portfolio-1.jpg",
+      "type": "image/jpeg",
+      "description": "Primjer portfolio slike 1 - primjer rada"
+    },
+    "portfolioImage2": {
+      "path": "tests/fixtures/sample-portfolio-2.jpg",
+      "type": "image/jpeg",
+      "description": "Primjer portfolio slike 2 - primjer rada"
+    },
+    "portfolioImage3": {
+      "path": "tests/fixtures/sample-portfolio-3.jpg",
+      "type": "image/jpeg",
+      "description": "Primjer portfolio slike 3 - primjer rada"
+    }
+  },
+  "testData": {
+    "job": {
+      "title": "Automatski test posao",
+      "description": "Ovo je automatski kreirani posao za testiranje",
+      "category": "Električar",
+      "budgetMin": 500,
+      "budgetMax": 1000,
+      "city": "Zagreb",
+      "urgency": "NORMALNA",
+      "size": "SREDNJA",
+      "images": ["tests/fixtures/sample-portfolio-1.jpg"]
+    },
+    "offer": {
+      "amount": 750,
+      "message": "Mogu izvršiti posao u roku od 7 dana",
+      "estimatedDays": 7,
+      "negotiable": false
+    },
+    "review": {
+      "rating": 5,
+      "comment": "Odličan pružatelj, vrlo profesionalan!"
+    },
+    "subscription": {
+      "plan": "BASIC",
+      "description": "Basic pretplata za testiranje"
+    }
+  },
+  "api": {
+    "baseUrl": "https://api.uslugar.eu",
+    "frontendUrl": "https://www.uslugar.eu",
+    "timeout": 30000,
+    "waitForNavigation": 3000
+  },
+  "assertions": {
+    "registrationSuccess": "Registracija uspješna",
+    "loginSuccess": "Prijava uspješna",
+    "emailVerificationSent": "Verifikacijski email poslan",
+    "jobCreated": "Posao uspješno kreiran",
+    "offerSent": "Ponuda uspješno poslana",
+    "leadPurchased": "Lead uspješno kupljen"
+  }
+}
+
