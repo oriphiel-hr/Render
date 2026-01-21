@@ -34,9 +34,10 @@
       "city": "Zagreb",
       "emailAccess": true,
       "emailPassword": "",
+      "mailtrapEmail": "test.client@mailtrap.io",
       "emailConfig": {
         "description": "Email konfiguracija za client korisnika (opcionalno)",
-        "inboxId": "",
+        "inboxId": "12345",
         "imap": {
           "user": "",
           "password": "",
@@ -57,9 +58,10 @@
       "oib": "12345678901",
       "companyName": null,
       "emailAccess": true,
+      "mailtrapEmail": "test.provider@mailtrap.io",
       "emailConfig": {
         "description": "Email konfiguracija za provider korisnika (opcionalno)",
-        "inboxId": "",
+        "inboxId": "12346",
         "imap": {
           "user": "",
           "password": "",
@@ -80,6 +82,18 @@
       "oib": "98765432109",
       "companyName": "Test DOO",
       "emailAccess": true,
+      "mailtrapEmail": "test.company@mailtrap.io",
+      "emailConfig": {
+        "description": "Email konfiguracija za provider company (opcionalno)",
+        "inboxId": "12347",
+        "imap": {
+          "user": "",
+          "password": "",
+          "host": "",
+          "port": 993
+        },
+        "note": "Email konfiguracija za provider companies"
+      },
       "description": "Pružatelj usluga kao tvrtka"
     },
     "providerNoLicense": {
@@ -93,9 +107,10 @@
       "companyName": null,
       "skipLicense": true,
       "emailAccess": true,
+      "mailtrapEmail": "test.provider.nolicense@mailtrap.io",
       "emailConfig": {
         "description": "Email konfiguracija za provider bez licence (opcionalno)",
-        "inboxId": "",
+        "inboxId": "12346",
         "imap": {
           "user": "",
           "password": "",
@@ -117,9 +132,10 @@
       "companyName": null,
       "skipKYC": true,
       "emailAccess": true,
+      "mailtrapEmail": "test.provider.nokyc@mailtrap.io",
       "emailConfig": {
         "description": "Email konfiguracija za provider bez KYC (opcionalno)",
-        "inboxId": "",
+        "inboxId": "12346",
         "imap": {
           "user": "",
           "password": "",
@@ -138,9 +154,10 @@
       "city": "Zagreb",
       "invalidData": true,
       "emailAccess": true,
-      "emailConfig": {
+      "mailtrapEmailInvalid": "test.client.invalid@mailtrap.io",
+      "emailConfigInvalid": {
         "description": "Email konfiguracija za klijenta s neispravnim podacima (opcionalno)",
-        "inboxId": "",
+        "inboxId": "12345",
         "imap": {
           "user": "",
           "password": "",
@@ -162,9 +179,10 @@
       "companyName": "Test DOO Direktor",
       "isDirector": true,
       "emailAccess": true,
+      "mailtrapEmail": "test.director@mailtrap.io",
       "emailConfig": {
         "description": "Email konfiguracija za direktora (opcionalno)",
-        "inboxId": "",
+        "inboxId": "12346",
         "imap": {
           "user": "",
           "password": "",
@@ -187,9 +205,10 @@
       "isDirector": false,
       "companyId": "providerDirector", 
       "emailAccess": true,
+      "mailtrapEmail": "test.team@mailtrap.io",
       "emailConfig": {
         "description": "Email konfiguracija za izvođača (opcionalno)",
-        "inboxId": "",
+        "inboxId": "12346",
         "imap": {
           "user": "",
           "password": "",
