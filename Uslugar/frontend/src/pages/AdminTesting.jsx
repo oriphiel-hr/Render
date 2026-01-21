@@ -674,9 +674,12 @@ export default function AdminTesting(){
           'new': 'new'
         }
         const newTab = hashToTab[hash]
-        if (newTab && newTab !== tab) {
+        if (newTab) {
           console.log('[TESTING] Hash change detected:', hash, '-> tab:', newTab)
-          setTab(newTab)
+          // Koristi setTimeout da izbjegnemo beskonačnu petlju
+          setTimeout(() => {
+            setTab(newTab)
+          }, 0)
         }
       } catch (e) {
         console.error('[TESTING] Error handling hash change:', e)
@@ -694,7 +697,7 @@ export default function AdminTesting(){
     return () => {
       window.removeEventListener('hashchange', handleHashChange)
     }
-  }, [tab])
+  }, []) // Uklonjen dependency na 'tab' da izbjegnemo beskonačnu petlju
 
   const load = async () => {
     try {
@@ -1037,7 +1040,10 @@ export default function AdminTesting(){
       {/* Tabs with badges */}
       <div className="flex items-center gap-2 border-b">
         <button 
-          onClick={() => setTab('plans')} 
+          onClick={() => {
+            setTab('plans')
+            window.location.hash = 'plans'
+          }} 
           className={`px-4 py-2 rounded-t-lg font-medium transition-all duration-150 flex items-center gap-2 ${
             tab==='plans'
               ? 'bg-indigo-600 text-white shadow-sm border-b-2 border-indigo-600' 
@@ -1054,7 +1060,10 @@ export default function AdminTesting(){
           )}
         </button>
         <button 
-          onClick={() => setTab('runs')} 
+          onClick={() => {
+            setTab('runs')
+            window.location.hash = 'runs'
+          }} 
           className={`px-4 py-2 rounded-t-lg font-medium transition-all duration-150 flex items-center gap-2 ${
             tab==='runs'
               ? 'bg-indigo-600 text-white shadow-sm border-b-2 border-indigo-600' 
@@ -1076,7 +1085,10 @@ export default function AdminTesting(){
           )}
         </button>
         <button 
-          onClick={() => setTab('test-data')} 
+          onClick={() => {
+            setTab('test-data')
+            window.location.hash = 'test-data'
+          }} 
           className={`px-4 py-2 rounded-t-lg font-medium transition-all duration-150 ${
             tab==='test-data'
               ? 'bg-indigo-600 text-white shadow-sm border-b-2 border-indigo-600' 
@@ -1086,7 +1098,10 @@ export default function AdminTesting(){
           Test Podaci
         </button>
         <button 
-          onClick={() => setTab('new')} 
+          onClick={() => {
+            setTab('new')
+            window.location.hash = 'new'
+          }} 
           className={`px-4 py-2 rounded-t-lg font-medium transition-all duration-150 ${
             tab==='new'
               ? 'bg-indigo-600 text-white shadow-sm border-b-2 border-indigo-600' 
