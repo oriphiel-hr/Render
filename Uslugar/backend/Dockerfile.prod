@@ -100,13 +100,9 @@ RUN chmod +x /app/start.sh
 COPY TEST-PLAN-*.md ./
 
 # Copy tests directory (contains test-data.json for Admin Testing panel)
-# tests/ folder is in root project (Uslugar/tests/), not in backend/
-# Build context is Uslugar/backend/ on Render, but tests/ is at Uslugar/tests/
-# We need to copy from parent directory - but Docker COPY can't go outside build context
-# Solution: Copy tests/ to backend/tests/ during build or use symlink
-# For now, we'll copy it if it exists in the parent directory
-# Note: Render's build context might need to be adjusted to include tests/
-COPY ../tests ./tests
+# test-data.json should be in backend/tests/ folder (copied from root tests/ folder)
+# Build context is Uslugar/backend/, so tests/ should be in Uslugar/backend/tests/
+COPY tests ./tests
 
 # tvoj server sluša na 8080
 EXPOSE 4000
