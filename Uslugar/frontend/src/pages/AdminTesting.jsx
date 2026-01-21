@@ -663,8 +663,13 @@ export default function AdminTesting(){
   
   // Slušaj promjene hash-a u URL-u
   useEffect(() => {
+    let isHandlingHash = false // Flag da izbjegnemo beskonačnu petlju
+    
     const handleHashChange = () => {
+      if (isHandlingHash) return // Ako već obrađujemo hash change, ignoriraj
+      
       try {
+        isHandlingHash = true
         const hash = window.location.hash.replace('#', '')
         const hashToTab = {
           'admin': 'test-data',
@@ -674,15 +679,17 @@ export default function AdminTesting(){
           'new': 'new'
         }
         const newTab = hashToTab[hash]
-        if (newTab) {
+        if (newTab && newTab !== tab) {
           console.log('[TESTING] Hash change detected:', hash, '-> tab:', newTab)
-          // Koristi setTimeout da izbjegnemo beskonačnu petlju
-          setTimeout(() => {
-            setTab(newTab)
-          }, 0)
+          setTab(newTab)
         }
       } catch (e) {
         console.error('[TESTING] Error handling hash change:', e)
+      } finally {
+        // Reset flag nakon kratkog delay-a
+        setTimeout(() => {
+          isHandlingHash = false
+        }, 100)
       }
     }
     
@@ -697,7 +704,7 @@ export default function AdminTesting(){
     return () => {
       window.removeEventListener('hashchange', handleHashChange)
     }
-  }, []) // Uklonjen dependency na 'tab' da izbjegnemo beskonačnu petlju
+  }, [tab]) // Vratimo dependency na tab, ali koristimo flag da izbjegnemo petlju
 
   const load = async () => {
     try {
@@ -1041,8 +1048,11 @@ export default function AdminTesting(){
       <div className="flex items-center gap-2 border-b">
         <button 
           onClick={() => {
+            const newHash = 'plans'
+            if (window.location.hash !== `#${newHash}`) {
+              window.location.hash = newHash
+            }
             setTab('plans')
-            window.location.hash = 'plans'
           }} 
           className={`px-4 py-2 rounded-t-lg font-medium transition-all duration-150 flex items-center gap-2 ${
             tab==='plans'
@@ -1061,8 +1071,11 @@ export default function AdminTesting(){
         </button>
         <button 
           onClick={() => {
+            const newHash = 'runs'
+            if (window.location.hash !== `#${newHash}`) {
+              window.location.hash = newHash
+            }
             setTab('runs')
-            window.location.hash = 'runs'
           }} 
           className={`px-4 py-2 rounded-t-lg font-medium transition-all duration-150 flex items-center gap-2 ${
             tab==='runs'
@@ -1086,8 +1099,11 @@ export default function AdminTesting(){
         </button>
         <button 
           onClick={() => {
+            const newHash = 'test-data'
+            if (window.location.hash !== `#${newHash}`) {
+              window.location.hash = newHash
+            }
             setTab('test-data')
-            window.location.hash = 'test-data'
           }} 
           className={`px-4 py-2 rounded-t-lg font-medium transition-all duration-150 ${
             tab==='test-data'
@@ -1099,8 +1115,11 @@ export default function AdminTesting(){
         </button>
         <button 
           onClick={() => {
+            const newHash = 'new'
+            if (window.location.hash !== `#${newHash}`) {
+              window.location.hash = newHash
+            }
             setTab('new')
-            window.location.hash = 'new'
           }} 
           className={`px-4 py-2 rounded-t-lg font-medium transition-all duration-150 ${
             tab==='new'
