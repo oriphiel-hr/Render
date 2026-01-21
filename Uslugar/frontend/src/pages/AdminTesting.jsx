@@ -1393,14 +1393,32 @@ export default function AdminTesting(){
                           <button
                             onClick={() => {
                               if (!testData) return
-                              const updated = { ...testData }
+                              const updated = JSON.parse(JSON.stringify(testData))
                               if (!updated.users) updated.users = {}
                               
+                              // Pronađi sve numerirane korisnike iz ove grupe
+                              const numberedUsers = groupUsers
+                                .filter(k => k !== group.key && !['clientInvalid', 'providerNoLicense', 'providerNoKYC', 'providerDirector', 'providerTeamMember'].includes(k))
+                                .map(k => {
+                                  const match = k.match(/\d+/)
+                                  return match ? parseInt(match[0]) : 0
+                                })
+                                .filter(n => n > 0)
+                              
                               // Pronađi sljedeći broj
-                              const nextNum = groupUsers.length > 0 
-                                ? Math.max(...groupUsers.map(k => parseInt(k.match(/\d+/)?.[0] || '0'))) + 1
+                              const nextNum = numberedUsers.length > 0 
+                                ? Math.max(...numberedUsers) + 1
                                 : 1
+                              
                               const newKey = `${group.key}${nextNum}`
+                              
+                              console.log('[TEST DATA] Adding new user:', {
+                                group: group.key,
+                                groupUsers,
+                                numberedUsers,
+                                nextNum,
+                                newKey
+                              })
                               
                               // Kreiraj novog korisnika s default vrijednostima
                               updated.users[newKey] = {
