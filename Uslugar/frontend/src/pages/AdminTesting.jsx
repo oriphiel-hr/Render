@@ -745,16 +745,20 @@ export default function AdminTesting(){
       console.log('[TEST DATA] Loaded successfully:', res.data)
       // Debug: log user data to see invalidData/missingData
       if (res.data?.users) {
+        console.log(`[TEST DATA] Total users found: ${Object.keys(res.data.users).length}`)
         Object.keys(res.data.users).forEach(key => {
           const user = res.data.users[key]
           console.log(`[TEST DATA] User ${key}:`, {
             invalidData: user.invalidData,
             missingData: user.missingData,
-            mailtrapEmail: user.mailtrapEmail,
-            mailtrapEmailInvalid: user.mailtrapEmailInvalid,
-            mailtrapEmailMissing: user.mailtrapEmailMissing
+            mailtrapEmail: user.mailtrapEmail || 'MISSING',
+            mailtrapEmailInvalid: user.mailtrapEmailInvalid || 'MISSING',
+            mailtrapEmailMissing: user.mailtrapEmailMissing || 'MISSING',
+            emailConfig: user.emailConfig?.inboxId || 'MISSING'
           })
         })
+      } else {
+        console.warn('[TEST DATA] No users found in response!')
       }
       setTestData(res.data || {
         users: {},
