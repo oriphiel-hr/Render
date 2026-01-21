@@ -50,6 +50,10 @@ RUN chmod +x /app/start.sh
 # Files should be in backend/ directory (same as Dockerfile)
 COPY TEST-PLAN-*.md ./
 
+# Copy tests directory (contains test-data.json for Admin Testing panel)
+# Note: This assumes tests/ is in the same directory as backend/
+# For Render, use Dockerfile.prod which handles the correct path
+
 # tvoj server sluša na 8080
 EXPOSE 4000
 CMD ["/app/start.sh"]
