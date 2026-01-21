@@ -1053,8 +1053,10 @@ export default function AdminTesting(){
         <button 
           onClick={() => {
             const newHash = 'plans'
+            // Ažuriraj hash bez redirecta - koristi history API da zadržiš /admin/testing
             if (window.location.hash !== `#${newHash}`) {
-              window.location.hash = newHash
+              window.history.pushState(null, '', `/admin/testing#${newHash}`)
+              window.dispatchEvent(new HashChangeEvent('hashchange'))
             }
             setTab('plans')
           }} 
@@ -1076,8 +1078,10 @@ export default function AdminTesting(){
         <button 
           onClick={() => {
             const newHash = 'runs'
+            // Ažuriraj hash bez redirecta - koristi history API da zadržiš /admin/testing
             if (window.location.hash !== `#${newHash}`) {
-              window.location.hash = newHash
+              window.history.pushState(null, '', `/admin/testing#${newHash}`)
+              window.dispatchEvent(new HashChangeEvent('hashchange'))
             }
             setTab('runs')
           }} 
@@ -1104,8 +1108,10 @@ export default function AdminTesting(){
         <button 
           onClick={() => {
             const newHash = 'test-data'
+            // Ažuriraj hash bez redirecta - koristi history API da zadržiš /admin/testing
             if (window.location.hash !== `#${newHash}`) {
-              window.location.hash = newHash
+              window.history.pushState(null, '', `/admin/testing#${newHash}`)
+              window.dispatchEvent(new HashChangeEvent('hashchange'))
             }
             setTab('test-data')
           }} 
@@ -1120,8 +1126,10 @@ export default function AdminTesting(){
         <button 
           onClick={() => {
             const newHash = 'new'
+            // Ažuriraj hash bez redirecta - koristi history API da zadržiš /admin/testing
             if (window.location.hash !== `#${newHash}`) {
-              window.location.hash = newHash
+              window.history.pushState(null, '', `/admin/testing#${newHash}`)
+              window.dispatchEvent(new HashChangeEvent('hashchange'))
             }
             setTab('new')
           }} 
