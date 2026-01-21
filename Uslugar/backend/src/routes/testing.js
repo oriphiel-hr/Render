@@ -1042,23 +1042,49 @@ r.post('/test-data/upload-document', auth(true, ['ADMIN']), async (req, res, nex
 
 // Validacija test podataka
 async function validateTestData() {
-  const { readFileSync } = await import('fs');
+  const { readFileSync, existsSync } = await import('fs');
   const { fileURLToPath } = await import('url');
   const { dirname, join } = await import('path');
   
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);
-  const routesDir = __dirname;
-  const srcDir = dirname(routesDir);
-  const backendDir = dirname(srcDir);
-  const projectRoot = dirname(backendDir);
-  const testDataPath = join(projectRoot, 'tests', 'test-data.json');
+  const routesDir = __dirname; // backend/src/routes ili /app/src/routes na Render
+  const srcDir = dirname(routesDir); // backend/src ili /app/src
+  const backendDir = dirname(srcDir); // backend ili /app
+  const projectRoot = dirname(backendDir); // root projekta ili / (na Render)
+  
+  // Koristi istu logiku putanja kao GET /test-data endpoint
+  const possiblePaths = [
+    join(backendDir, 'tests', 'test-data.json'), // backend/tests/test-data.json (prioritet - za Render)
+    join(projectRoot, 'tests', 'test-data.json'), // Uslugar/tests/test-data.json ili /tests/test-data.json
+    join(backendDir, '..', 'tests', 'test-data.json'), // ../tests/test-data.json
+    join(projectRoot, 'test-data.json'), // test-data.json u root-u
+    join(__dirname, '..', '..', 'tests', 'test-data.json') // 2 nivoa gore od routes
+  ];
+  
+  console.log('[VALIDATE TEST DATA] Searching for test-data.json in:', possiblePaths);
+  
+  let testDataPath = null;
+  for (const path of possiblePaths) {
+    if (existsSync(path)) {
+      testDataPath = path;
+      console.log('[VALIDATE TEST DATA] Found test-data.json at:', path);
+      break;
+    }
+  }
   
   let testData;
+  if (!testDataPath) {
+    console.error('[VALIDATE TEST DATA] test-data.json not found in any of the searched paths');
+    return { valid: false, error: 'Test podaci nisu pronađeni. Molimo konfigurirajte test podatke u admin panelu.' };
+  }
+  
   try {
     const data = readFileSync(testDataPath, 'utf-8');
     testData = JSON.parse(data);
+    console.log('[VALIDATE TEST DATA] Successfully loaded test data from:', testDataPath);
   } catch (e) {
+    console.error('[VALIDATE TEST DATA] Error reading test-data.json:', e);
     return { valid: false, error: 'Test podaci nisu pronađeni. Molimo konfigurirajte test podatke u admin panelu.' };
   }
   
