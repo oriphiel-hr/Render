@@ -240,24 +240,34 @@
   },
   "documents": {
     "license": {
-      "path": "tests/fixtures/sample-license.pdf",
+      "path": "tests/fixtures/sample-license-valid.pdf",
       "type": "application/pdf",
-      "description": "Primjer licence za upload"
+      "description": "Primjer VALIDNE licence za upload - ispravan format, svi potrebni podaci"
+    },
+    "licenseInvalid": {
+      "path": "tests/fixtures/sample-license-invalid.pdf",
+      "type": "application/pdf",
+      "description": "Primjer NEVALIDNE licence - istekla, neispravan format, nedostaju podaci"
     },
     "kycDocument": {
       "path": "tests/fixtures/sample-id.pdf",
       "type": "application/pdf",
-      "description": "Primjer dokumenta za KYC verifikaciju"
+      "description": "Primjer dokumenta za KYC verifikaciju (osobna iskaznica)"
     },
     "portfolioImage1": {
       "path": "tests/fixtures/sample-portfolio-1.jpg",
       "type": "image/jpeg",
-      "description": "Primjer portfolio slike 1"
+      "description": "Primjer portfolio slike 1 - primjer rada"
     },
     "portfolioImage2": {
       "path": "tests/fixtures/sample-portfolio-2.jpg",
       "type": "image/jpeg",
-      "description": "Primjer portfolio slike 2"
+      "description": "Primjer portfolio slike 2 - primjer rada"
+    },
+    "portfolioImage3": {
+      "path": "tests/fixtures/sample-portfolio-3.jpg",
+      "type": "image/jpeg",
+      "description": "Primjer portfolio slike 3 - primjer rada"
     }
   },
   "testData": {
