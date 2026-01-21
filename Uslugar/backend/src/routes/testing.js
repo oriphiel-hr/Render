@@ -815,10 +815,10 @@ r.get('/test-data', auth(true, ['ADMIN']), async (req, res, next) => {
     const projectRoot = dirname(backendDir); // root projekta ili / (na Render)
     
     const possiblePaths = [
+      join(backendDir, 'tests', 'test-data.json'), // backend/tests/test-data.json (prioritet - za Render)
       join(projectRoot, 'tests', 'test-data.json'), // Uslugar/tests/test-data.json ili /tests/test-data.json
       join(backendDir, '..', 'tests', 'test-data.json'), // ../tests/test-data.json
       join(projectRoot, 'test-data.json'), // test-data.json u root-u
-      join(backendDir, 'tests', 'test-data.json'), // backend/tests/test-data.json
       join(__dirname, '..', '..', 'tests', 'test-data.json') // 2 nivoa gore od routes
     ];
     
