@@ -657,6 +657,8 @@ export default function AdminTesting(){
   const [seeding, setSeeding] = useState(false)
   const [runningAutomated, setRunningAutomated] = useState(false)
   const [automatedTestResult, setAutomatedTestResult] = useState(null)
+  const [testResults, setTestResults] = useState(null)
+  const [loadingTestResults, setLoadingTestResults] = useState(false)
   const [testData, setTestData] = useState(null)
   const [savingTestData, setSavingTestData] = useState(false)
   const [uploadingDocument, setUploadingDocument] = useState(false)
@@ -1037,6 +1039,16 @@ export default function AdminTesting(){
               {automatedTestResult.note && (
                 <p className="text-xs mt-1 text-gray-600 italic">{automatedTestResult.note}</p>
               )}
+              {/* Gumb za učitavanje rezultata */}
+              <div className="mt-3 flex gap-2">
+                <button
+                  onClick={loadTestResults}
+                  disabled={loadingTestResults}
+                  className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {loadingTestResults ? '⏳' : '🔄'} {loadingTestResults ? 'Učitavanje...' : 'Osvježi rezultate'}
+                </button>
+              </div>
             </div>
             <button 
               onClick={() => setAutomatedTestResult(null)}
@@ -1045,6 +1057,122 @@ export default function AdminTesting(){
               ✕
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Test Results Display */}
+      {testResults && (
+        <div className="p-4 rounded-lg border bg-white shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">📊 Rezultati automatskih testova</h3>
+            <button
+              onClick={loadTestResults}
+              disabled={loadingTestResults}
+              className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200 disabled:opacity-50 flex items-center gap-2"
+            >
+              {loadingTestResults ? '⏳' : '🔄'} Osvježi
+            </button>
+          </div>
+
+          {!testResults.exists && (
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded text-yellow-800">
+              <p className="text-sm">{testResults.message || 'Rezultati testova još nisu dostupni. Testovi se možda još izvršavaju.'}</p>
+            </div>
+          )}
+
+          {testResults.exists && (
+            <div className="space-y-4">
+              {/* Statistike */}
+              {testResults.stats && (
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                  <div className="p-3 bg-blue-50 rounded border border-blue-200">
+                    <div className="text-2xl font-bold text-blue-700">{testResults.stats.total}</div>
+                    <div className="text-xs text-blue-600 mt-1">Ukupno testova</div>
+                  </div>
+                  <div className="p-3 bg-green-50 rounded border border-green-200">
+                    <div className="text-2xl font-bold text-green-700">{testResults.stats.passed}</div>
+                    <div className="text-xs text-green-600 mt-1">Uspješno</div>
+                  </div>
+                  <div className="p-3 bg-red-50 rounded border border-red-200">
+                    <div className="text-2xl font-bold text-red-700">{testResults.stats.failed}</div>
+                    <div className="text-xs text-red-600 mt-1">Neuspješno</div>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded border border-gray-200">
+                    <div className="text-2xl font-bold text-gray-700">{testResults.stats.skipped}</div>
+                    <div className="text-xs text-gray-600 mt-1">Preskočeno</div>
+                  </div>
+                  <div className="p-3 bg-purple-50 rounded border border-purple-200">
+                    <div className="text-2xl font-bold text-purple-700">
+                      {testResults.stats.duration ? `${Math.round(testResults.stats.duration / 1000)}s` : '-'}
+                    </div>
+                    <div className="text-xs text-purple-600 mt-1">Trajanje</div>
+                  </div>
+                </div>
+              )}
+
+              {/* JSON Report Info */}
+              {testResults.hasJsonReport && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded text-sm">
+                  <span className="font-semibold text-green-800">✅ JSON Report:</span>
+                  <span className="text-green-700 ml-2">Dostupan</span>
+                  {testResults.jsonReport && (
+                    <div className="mt-2 text-xs text-green-600">
+                      {testResults.jsonReport.suites} test suite-ova
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* HTML Report Info */}
+              {testResults.hasHtmlReport && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm">
+                  <span className="font-semibold text-blue-800">📄 HTML Report:</span>
+                  <span className="text-blue-700 ml-2">Dostupan</span>
+                  <p className="text-xs text-blue-600 mt-1">
+                    HTML report je generiran u <code className="bg-white px-1 rounded">playwright-report/</code> folderu.
+                    Provjeri server logs za pristup reportu.
+                  </p>
+                </div>
+              )}
+
+              {/* Screenshotovi */}
+              {testResults.screenshotsCount > 0 && (
+                <div className="p-3 bg-gray-50 border border-gray-200 rounded">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-semibold text-sm">📸 Screenshotovi ({testResults.screenshotsCount})</span>
+                  </div>
+                  {testResults.screenshots && testResults.screenshots.length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3">
+                      {testResults.screenshots.slice(0, 8).map((screenshot, idx) => (
+                        <div key={idx} className="relative group">
+                          <img
+                            src={`/api/testing/test-results/screenshot/${screenshot.path}`}
+                            alt={`Screenshot ${idx + 1}`}
+                            className="w-full h-32 object-cover rounded border cursor-pointer hover:opacity-80"
+                            onClick={() => window.open(`/api/testing/test-results/screenshot/${screenshot.path}`, '_blank')}
+                          />
+                          <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 truncate">
+                            {screenshot.path.split('/').pop()}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {testResults.screenshotsCount > 8 && (
+                    <p className="text-xs text-gray-600 mt-2">
+                      Prikazano prvih 8 od {testResults.screenshotsCount} screenshotova. Provjeri server logs za sve screenshotove.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {!testResults.hasJsonReport && !testResults.hasHtmlReport && testResults.screenshotsCount === 0 && (
+                <div className="p-3 bg-gray-50 border border-gray-200 rounded text-sm text-gray-600">
+                  Rezultati testova su pronađeni, ali još nisu potpuno generirani. Pričekaj nekoliko sekundi i osvježi rezultate.
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

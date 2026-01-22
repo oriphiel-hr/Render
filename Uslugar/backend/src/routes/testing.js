@@ -1261,5 +1261,191 @@ r.post('/run-automated', auth(true, ['ADMIN']), async (req, res, next) => {
   }
 });
 
+// GET /api/testing/test-results - Dohvati rezultate automatskih testova
+r.get('/test-results', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const { readFileSync, existsSync, readdirSync, statSync } = await import('fs');
+    const { fileURLToPath } = await import('url');
+    const { dirname, join } = await import('path');
+    
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const routesDir = __dirname;
+    const srcDir = dirname(routesDir);
+    const backendDir = dirname(srcDir);
+    const projectRoot = dirname(backendDir);
+    
+    // Pronađi test-results folder
+    const possiblePaths = [
+      join(projectRoot, 'tests', 'test-results'), // Uslugar/tests/test-results
+      join(backendDir, '..', 'tests', 'test-results'), // ../tests/test-results
+      join(projectRoot, 'test-results'), // test-results u root-u
+      join(__dirname, '..', '..', 'tests', 'test-results') // 2 nivoa gore od routes
+    ];
+    
+    let testResultsPath = null;
+    for (const path of possiblePaths) {
+      if (existsSync(path)) {
+        testResultsPath = path;
+        break;
+      }
+    }
+    
+    if (!testResultsPath) {
+      return res.json({
+        exists: false,
+        message: 'Rezultati testova još nisu dostupni. Testovi se možda još izvršavaju ili nisu pokrenuti.'
+      });
+    }
+    
+    // Pročitaj JSON report ako postoji
+    const jsonReportPath = join(testResultsPath, 'results.json');
+    let jsonReport = null;
+    if (existsSync(jsonReportPath)) {
+      try {
+        const data = readFileSync(jsonReportPath, 'utf-8');
+        jsonReport = JSON.parse(data);
+      } catch (e) {
+        console.error('[TEST RESULTS] Error reading JSON report:', e);
+      }
+    }
+    
+    // Pronađi HTML report (playwright-report)
+    const possibleHtmlPaths = [
+      join(projectRoot, 'tests', 'playwright-report'),
+      join(backendDir, '..', 'tests', 'playwright-report'),
+      join(projectRoot, 'playwright-report')
+    ];
+    
+    let htmlReportPath = null;
+    for (const path of possibleHtmlPaths) {
+      if (existsSync(path)) {
+        htmlReportPath = path;
+        break;
+      }
+    }
+    
+    // Pronađi screenshotove
+    const screenshots = [];
+    try {
+      const screenshotDirs = ['test-results', 'playwright-report'];
+      for (const dir of screenshotDirs) {
+        const fullPath = join(testResultsPath.replace('test-results', ''), dir);
+        if (existsSync(fullPath)) {
+          const walkDir = (dirPath, basePath = '') => {
+            try {
+              const entries = readdirSync(dirPath, { withFileTypes: true });
+              for (const entry of entries) {
+                const fullEntryPath = join(dirPath, entry.name);
+                const relativePath = join(basePath, entry.name);
+                
+                if (entry.isDirectory()) {
+                  walkDir(fullEntryPath, relativePath);
+                } else if (entry.isFile() && (entry.name.endsWith('.png') || entry.name.endsWith('.jpg') || entry.name.endsWith('.jpeg'))) {
+                  const stats = statSync(fullEntryPath);
+                  screenshots.push({
+                    path: relativePath,
+                    fullPath: fullEntryPath,
+                    size: stats.size,
+                    modified: stats.mtime
+                  });
+                }
+              }
+            } catch (e) {
+              // Ignoriraj greške pristupa folderima
+            }
+          };
+          walkDir(fullPath);
+        }
+      }
+    } catch (e) {
+      console.error('[TEST RESULTS] Error finding screenshots:', e);
+    }
+    
+    // Izračunaj statistike iz JSON reporta
+    let stats = null;
+    if (jsonReport && jsonReport.stats) {
+      stats = {
+        total: jsonReport.stats.total || 0,
+        passed: jsonReport.stats.expected || 0,
+        failed: jsonReport.stats.unexpected || 0,
+        skipped: jsonReport.stats.skipped || 0,
+        duration: jsonReport.stats.duration || 0
+      };
+    }
+    
+    res.json({
+      exists: true,
+      testResultsPath: testResultsPath,
+      htmlReportPath: htmlReportPath,
+      hasJsonReport: !!jsonReport,
+      hasHtmlReport: !!htmlReportPath,
+      screenshotsCount: screenshots.length,
+      screenshots: screenshots.slice(0, 50), // Limit na 50 screenshotova
+      stats: stats,
+      jsonReport: jsonReport ? {
+        stats: jsonReport.stats,
+        suites: jsonReport.suites ? jsonReport.suites.length : 0
+      } : null
+    });
+  } catch (e) {
+    console.error('[TEST RESULTS] Error:', e);
+    next(e);
+  }
+});
+
+// GET /api/testing/test-results/screenshot/:path - Dohvati screenshot
+r.get('/test-results/screenshot/*', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const { readFileSync, existsSync } = await import('fs');
+    const { fileURLToPath } = await import('url');
+    const { dirname, join } = await import('path');
+    
+    const screenshotPath = req.params[0]; // Sve nakon /screenshot/
+    
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const routesDir = __dirname;
+    const srcDir = dirname(routesDir);
+    const backendDir = dirname(srcDir);
+    const projectRoot = dirname(backendDir);
+    
+    // Pronađi screenshot u test-results folderu
+    const possiblePaths = [
+      join(projectRoot, 'tests', 'test-results', screenshotPath),
+      join(projectRoot, 'tests', 'playwright-report', screenshotPath),
+      join(backendDir, '..', 'tests', 'test-results', screenshotPath),
+      join(backendDir, '..', 'tests', 'playwright-report', screenshotPath)
+    ];
+    
+    let filePath = null;
+    for (const path of possiblePaths) {
+      if (existsSync(path)) {
+        filePath = path;
+        break;
+      }
+    }
+    
+    if (!filePath) {
+      return res.status(404).json({ error: 'Screenshot nije pronađen' });
+    }
+    
+    // Provjeri da je stvarno screenshot (sigurnost)
+    if (!filePath.endsWith('.png') && !filePath.endsWith('.jpg') && !filePath.endsWith('.jpeg')) {
+      return res.status(400).json({ error: 'Neispravan tip fajla' });
+    }
+    
+    const image = readFileSync(filePath);
+    const ext = filePath.split('.').pop().toLowerCase();
+    const contentType = ext === 'png' ? 'image/png' : 'image/jpeg';
+    
+    res.setHeader('Content-Type', contentType);
+    res.send(image);
+  } catch (e) {
+    console.error('[TEST RESULTS] Error serving screenshot:', e);
+    next(e);
+  }
+});
+
 export default r;
 
