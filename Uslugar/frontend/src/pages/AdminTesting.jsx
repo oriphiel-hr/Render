@@ -996,6 +996,7 @@ export default function AdminTesting(){
       }, 5000)
       return () => clearTimeout(timer)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [automatedTestResult?.success])
 
   // Izračunaj statistike za badge-ove
