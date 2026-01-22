@@ -1252,10 +1252,10 @@ r.post('/run-automated', auth(true, ['ADMIN']), async (req, res, next) => {
       // Pokreni specifičan test po imenu
       // Format: "test-name" ili "file.spec.js:test-name"
       if (testName.includes(':')) {
-        command = `cd tests && npx playwright test ${testName}`;
+        command = `cd "${testsPath}" && npx playwright test ${testName}`;
       } else {
         // Pronađi test u svim spec fajlovima
-        command = `cd tests && npx playwright test --grep "${testName}"`;
+        command = `cd "${testsPath}" && npx playwright test --grep "${testName}"`;
       }
     } else if (planId) {
       // Pokreni testove za specifičan plan
@@ -1270,16 +1270,16 @@ r.post('/run-automated', auth(true, ['ADMIN']), async (req, res, next) => {
       
       // Mapiraj plan na test spec file
       if (plan.category === 'ALL' || plan.name.includes('E2E')) {
-        command = 'cd tests && npx playwright test e2e/all-domains.spec.js';
+        command = `cd "${testsPath}" && npx playwright test e2e/all-domains.spec.js`;
       } else if (plan.category?.includes('Auth') || plan.category?.includes('AUTH')) {
-        command = 'cd tests && npx playwright test e2e/auth.spec.js';
+        command = `cd "${testsPath}" && npx playwright test e2e/auth.spec.js`;
       } else if (plan.category?.includes('KYC')) {
-        command = 'cd tests && npx playwright test e2e/kyc.spec.js';
+        command = `cd "${testsPath}" && npx playwright test e2e/kyc.spec.js`;
       } else if (plan.category?.includes('Jobs') || plan.category?.includes('JOBS')) {
-        command = 'cd tests && npx playwright test e2e/jobs.spec.js';
+        command = `cd "${testsPath}" && npx playwright test e2e/jobs.spec.js`;
       }
     } else if (testType === 'all') {
-      command = 'cd tests && npx playwright test';
+      command = `cd "${testsPath}" && npx playwright test`;
     }
     
     // Dodaj opcije za screenshotove
