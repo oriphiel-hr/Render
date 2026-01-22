@@ -973,6 +973,31 @@ export default function AdminTesting(){
     }
   }
 
+  // Učitaj rezultate testova
+  const loadTestResults = async () => {
+    setLoadingTestResults(true)
+    try {
+      const res = await api.get('/testing/test-results')
+      setTestResults(res.data)
+    } catch (e) {
+      console.error('[TEST RESULTS] Error loading test results:', e)
+      setTestResults({ exists: false, error: e?.response?.data?.error || e?.message })
+    } finally {
+      setLoadingTestResults(false)
+    }
+  }
+
+  // Automatski učitaj rezultate nakon što su testovi pokrenuti
+  useEffect(() => {
+    if (automatedTestResult?.success) {
+      // Pričekaj 5 sekundi prije prvog učitavanja (testovi trebaju vremena da se pokrenu)
+      const timer = setTimeout(() => {
+        loadTestResults()
+      }, 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [automatedTestResult?.success])
+
   // Izračunaj statistike za badge-ove
   const plansCount = plans.length
   const runsCount = runs.length
