@@ -1198,7 +1198,55 @@ r.post('/run-automated', auth(true, ['ADMIN']), async (req, res, next) => {
     }
     
     // Pokreni testove
-    let command = 'cd tests && npx playwright test';
+    // Na Render.com, backend se izvršava iz /app (backend root), tako da trebamo ići u ../tests
+    // Lokalno, backend je u Uslugar/backend, tako da trebamo ići u ../tests
+    // Provjeri da li tests folder postoji u backend/ ili u parent direktoriju
+    const { existsSync: fsExistsSync } = await import('fs');
+    const { join: pathJoin, dirname: pathDirname } = await import('path');
+    const { fileURLToPath: urlFileURLToPath } = await import('url');
+    const { cwd: processCwd } = await import('process');
+    
+    const testExecFilename = urlFileURLToPath(import.meta.url);
+    const testExecDirname = pathDirname(testExecFilename);
+    const testExecRoutesDir = testExecDirname;
+    const testExecSrcDir = pathDirname(testExecRoutesDir);
+    const testExecBackendDir = pathDirname(testExecSrcDir);
+    const testExecProjectRoot = pathDirname(testExecBackendDir);
+    const testExecCurrentWorkingDir = processCwd();
+    
+    // Provjeri gdje se nalazi tests folder
+    const possibleTestsPaths = [
+      pathJoin(testExecCurrentWorkingDir, 'tests'),
+      pathJoin(testExecProjectRoot, 'tests'),
+      pathJoin(testExecBackendDir, '..', 'tests'),
+      pathJoin(testExecBackendDir, 'tests')
+    ];
+    
+    let testsPath = null;
+    for (const path of possibleTestsPaths) {
+      if (fsExistsSync(path)) {
+        testsPath = path;
+        console.log('[AUTOMATED TESTS] Found tests directory at:', path);
+        break;
+      }
+    }
+    
+    if (!testsPath) {
+      console.error('[AUTOMATED TESTS] Tests folder not found. Searched paths:', possibleTestsPaths);
+      return res.status(400).json({
+        error: 'Tests folder nije pronađen',
+        message: 'Provjeri da tests folder postoji u projektu',
+        debug: {
+          currentWorkingDir: testExecCurrentWorkingDir,
+          backendDir: testExecBackendDir,
+          projectRoot: testExecProjectRoot,
+          searchedPaths: possibleTestsPaths
+        }
+      });
+    }
+    
+    // Koristi apsolutnu putanju za sigurnost
+    let command = `cd "${testsPath}" && npx playwright test`;
     
     if (testName) {
       // Pokreni specifičan test po imenu
