@@ -1266,35 +1266,63 @@ r.get('/test-results', auth(true, ['ADMIN']), async (req, res, next) => {
   try {
     const { readFileSync, existsSync, readdirSync, statSync } = await import('fs');
     const { fileURLToPath } = await import('url');
-    const { dirname, join } = await import('path');
+    const { dirname, join, resolve } = await import('path');
+    const { cwd } = await import('process');
     
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const routesDir = __dirname;
-    const srcDir = dirname(routesDir);
-    const backendDir = dirname(srcDir);
-    const projectRoot = dirname(backendDir);
+    const routesDir = __dirname; // backend/src/routes ili /app/src/routes na Render
+    const srcDir = dirname(routesDir); // backend/src ili /app/src
+    const backendDir = dirname(srcDir); // backend ili /app
+    const projectRoot = dirname(backendDir); // Uslugar ili / (na Render)
     
-    // Pronađi test-results folder
+    const currentWorkingDir = cwd();
+    
+    console.log('[TEST RESULTS] Current working directory:', currentWorkingDir);
+    console.log('[TEST RESULTS] __dirname:', __dirname);
+    console.log('[TEST RESULTS] backendDir:', backendDir);
+    console.log('[TEST RESULTS] projectRoot:', projectRoot);
+    
+    // Pronađi test-results folder - provjeri više mogućih putanja
     const possiblePaths = [
+      join(currentWorkingDir, 'tests', 'test-results'), // tests/test-results iz working dir-a
+      join(currentWorkingDir, 'test-results'), // test-results iz working dir-a
       join(projectRoot, 'tests', 'test-results'), // Uslugar/tests/test-results
-      join(backendDir, '..', 'tests', 'test-results'), // ../tests/test-results
+      join(backendDir, '..', 'tests', 'test-results'), // ../tests/test-results (iz backend/)
+      join(backendDir, 'tests', 'test-results'), // backend/tests/test-results
       join(projectRoot, 'test-results'), // test-results u root-u
-      join(__dirname, '..', '..', 'tests', 'test-results') // 2 nivoa gore od routes
+      join(__dirname, '..', '..', '..', 'tests', 'test-results'), // 3 nivoa gore od routes (backend/src/routes -> backend -> Uslugar -> tests)
+      join(__dirname, '..', '..', 'tests', 'test-results'), // 2 nivoa gore od routes
+      resolve('/app/tests/test-results'), // Apsolutna putanja na Render (/app je backend root)
+      resolve('/tests/test-results') // Apsolutna putanja na Render (root projekta)
     ];
+    
+    console.log('[TEST RESULTS] Searching for test-results in paths:');
+    possiblePaths.forEach((path, idx) => {
+      const exists = existsSync(path);
+      console.log(`[TEST RESULTS] ${idx + 1}. ${path} - ${exists ? '✅ EXISTS' : '❌ NOT FOUND'}`);
+    });
     
     let testResultsPath = null;
     for (const path of possiblePaths) {
       if (existsSync(path)) {
         testResultsPath = path;
+        console.log('[TEST RESULTS] ✅ Found test-results at:', path);
         break;
       }
     }
     
     if (!testResultsPath) {
+      console.warn('[TEST RESULTS] ❌ test-results folder not found in any of the searched paths');
       return res.json({
         exists: false,
-        message: 'Rezultati testova još nisu dostupni. Testovi se možda još izvršavaju ili nisu pokrenuti.'
+        message: 'Rezultati testova još nisu dostupni. Testovi se možda još izvršavaju ili nisu pokrenuti.',
+        debug: {
+          currentWorkingDir,
+          backendDir,
+          projectRoot,
+          searchedPaths: possiblePaths
+        }
       });
     }
     
@@ -1312,15 +1340,27 @@ r.get('/test-results', auth(true, ['ADMIN']), async (req, res, next) => {
     
     // Pronađi HTML report (playwright-report)
     const possibleHtmlPaths = [
+      join(currentWorkingDir, 'tests', 'playwright-report'),
+      join(currentWorkingDir, 'playwright-report'),
       join(projectRoot, 'tests', 'playwright-report'),
       join(backendDir, '..', 'tests', 'playwright-report'),
-      join(projectRoot, 'playwright-report')
+      join(backendDir, 'tests', 'playwright-report'),
+      join(projectRoot, 'playwright-report'),
+      resolve('/app/tests/playwright-report'),
+      resolve('/tests/playwright-report')
     ];
+    
+    console.log('[TEST RESULTS] Searching for playwright-report in paths:');
+    possibleHtmlPaths.forEach((path, idx) => {
+      const exists = existsSync(path);
+      console.log(`[TEST RESULTS] ${idx + 1}. ${path} - ${exists ? '✅ EXISTS' : '❌ NOT FOUND'}`);
+    });
     
     let htmlReportPath = null;
     for (const path of possibleHtmlPaths) {
       if (existsSync(path)) {
         htmlReportPath = path;
+        console.log('[TEST RESULTS] ✅ Found playwright-report at:', path);
         break;
       }
     }
