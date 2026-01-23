@@ -1,4 +1,5 @@
 // Team Locations Management - GEO-DYNAMIC
+// MapPicker and AddressAutocomplete components for interactive location selection
 import React, { useState, useEffect } from 'react';
 import { getTeamLocations, createTeamLocation, updateTeamLocation, deleteTeamLocation, toggleTeamLocationActive } from '../api/exclusive';
 import api from '../api';
