@@ -12,8 +12,8 @@ export default defineConfig({
     /* Maksimalno vrijeme za assertion */
     timeout: 5000
   },
-  /* Paralelno izvršavanje testova */
-  fullyParallel: true,
+  /* Paralelno izvršavanje testova - DISABLED za reorganizirane testove (sequential) */
+  fullyParallel: false,
   /* Fail build na CI ako neki test padne */
   forbidOnly: !!process.env.CI,
   /* Retry failed tests */
