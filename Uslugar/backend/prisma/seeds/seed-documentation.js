@@ -3039,82 +3039,107 @@ const featureDescriptions = {
     },
     "Lokacija posla (grad)": {
       implemented: true,
-      summary: "Navedite grad ili područje gdje se posao obavlja kako bi pružatelji znali lokaciju.",
+      summary: "Interaktivna karta i autocomplete adresa za precizno određivanje lokacije posla.",
       details: `**Kako funkcionira**
-- Poslovi zahtijevaju unos grada/općine i opcionalno adrese (auto-complete + geokodiranje).
+- **Map Picker**: Interaktivna karta (Leaflet + OpenStreetMap) omogućava klik na kartu ili povlačenje markera za preciznu lokaciju.
+- **Address Autocomplete**: Automatsko dovršavanje adresa koristeći OpenStreetMap Nominatim API (besplatno, bez API key-a).
+- Automatsko geokodiranje: Adresa se automatski pretvara u GPS koordinate (latitude/longitude).
 - Lokacija se koristi za filtriranje, prikaz na karti i izračun udaljenosti.
 - Pružatelji vide lokaciju prije slanja ponude.
 
 **Prednosti**
-- Brže spajanje s lokalnim pružateljima i preciznija logistika.
-- Manje nepotrebnih ponuda iz udaljenih regija.
+- ✅ **Precizna lokacija**: Klik na kartu ili povlačenje markera za točnu poziciju.
+- ✅ **Brže unos**: Autocomplete adresa umjesto ručnog unosa.
+- ✅ **Vizualni prikaz**: Karta prikazuje odabranu lokaciju u realnom vremenu.
+- ✅ **Besplatno**: Koristi OpenStreetMap (nema potrebe za Google Maps API key).
+- ✅ **Brže spajanje s lokalnim pružateljima i preciznija logistika**.
+- ✅ **Manje nepotrebnih ponuda iz udaljenih regija**.
 
 **Kada koristiti**
 - Uvijek pri objavi posla; ažuriranje kad se promijeni lokacija radova.
 - Pružatelji koriste filter lokacije za planiranje ruta.
+- Kada trebate preciznu lokaciju (npr. specifična adresa umjesto samo grada).
 `,
       technicalDetails: `**Frontend**
-- \`LocationAutocomplete\` koristi Mapbox/Geocoding API; prikazuje sugestije.
-- Karta u detaljima posla prikazuje pin i omogućuje pregled okoline.
-- Filteri po gradu/županiji u job listi.
+- \`MapPicker\` komponenta (Leaflet + react-leaflet): Interaktivna karta s klikom i povlačivim markerom.
+- \`AddressAutocomplete\` komponenta: Autocomplete s Nominatim API, debounced pretraga (300ms).
+- Integrirano u \`JobForm.jsx\`, \`ProviderRegister.jsx\`, \`TeamLocations.jsx\`.
+- Automatski geocoding: Grad/adresa → GPS koordinate.
+- Vizualni prikaz: Info box s koordinatama, plavi krug za radijus pokrivanja.
 
 **Backend**
-- \`locationService.geocode\` pretvara adresu u koordinatu.
-- \`jobController.create\` sprema grad, regiju i normaliziranu adresu.
-- Ratelimit na geocoding upite.
+- \`POST /api/jobs\` prima \`latitude\` i \`longitude\` uz \`city\`.
+- \`POST /api/auth/register\` prima \`latitude\` i \`longitude\` za providere.
+- Koordinate se spremaju u \`Job\` i \`User\` tablice.
 
 **Baza**
-- \`Job\` polja \`city\`, \`region\`, \`postalCode\`, \`latitude\`, \`longitude\`.
-- Tablica \`Region\` za standardizirane nazive.
+- \`Job\` polja: \`city\`, \`latitude\`, \`longitude\`.
+- \`User\` polja: \`city\`, \`latitude\`, \`longitude\`.
+- \`ProviderTeamLocation\` polja: \`city\`, \`latitude\`, \`longitude\`, \`radiusKm\`.
 
 **Integracije**
-- Geokodiranje (Mapbox/Google), karte u UI-u, SLA kalkulacije po zonama.
-- Analytics segmentira poslove po regiji.
+- OpenStreetMap Nominatim API (besplatno) za geocoding.
+- Leaflet + OpenStreetMap tiles (besplatno) za karte.
+- Nema potrebe za Google Maps ili Mapbox API key.
 
 **API**
 - \`GET /api/jobs?city=\` – filtriranje po gradu.
-- \`POST /api/jobs\` – prima lokacijske podatke.
-- \`GET /api/geo/cities\` – autocomplete gradova.
+- \`POST /api/jobs\` – prima \`city\`, \`latitude\`, \`longitude\`.
+- \`POST /api/auth/register\` – prima \`city\`, \`latitude\`, \`longitude\` (za providere).
 `
     },
     "Geolokacija (latitude/longitude)": {
       implemented: true,
-      summary: "Precizna geolokacija posla omogućava točno određivanje pozicije i proračun udaljenosti.",
+      summary: "Precizna geolokacija s interaktivnom kartom omogućava točno određivanje pozicije i proračun udaljenosti.",
       details: `**Kako funkcionira**
+- **Map Picker**: Interaktivna karta (Leaflet) omogućava klik na kartu ili povlačenje markera za preciznu lokaciju.
+- **Automatski geocoding**: Adresa/grad se automatski pretvara u GPS koordinate (latitude/longitude) koristeći OpenStreetMap Nominatim API.
 - Platforma sprema latitude/longitude prilikom geokodiranja adrese ili ručnog odabira na karti.
 - Koordinate se koriste za prikaz posla na karti, rutu i izračun udaljenosti između klijenta i pružatelja.
 - ML modeli i matchmaking uzimaju u obzir udaljenost.
 
 **Prednosti**
-- Precizno filtriranje i sortiranje (najbliži poslovi).
-- Bolje planiranje troškova prijevoza i SLA-a.
+- ✅ **Interaktivna karta**: Klik na kartu ili povlačenje markera za preciznu lokaciju (kao Thumbtack, TaskRabbit).
+- ✅ **Address Autocomplete**: Automatsko dovršavanje adresa umjesto ručnog unosa.
+- ✅ **Precizno filtriranje i sortiranje** (najbliži poslovi).
+- ✅ **Točan izračun udaljenosti** za logistiku i cijene.
+- ✅ **Vizualni prikaz**: Karta prikazuje lokaciju i radijus pokrivanja u realnom vremenu.
+- ✅ **Besplatno**: Koristi OpenStreetMap (nema potrebe za Google Maps API key).
 
 **Kada koristiti**
-- Pri objavi posla kad je adresa poznata; moguće je i ručno prilagoditi pin.
+- Pri objavi posla za preciznu lokaciju.
+- Pri registraciji providere za određivanje osnovne lokacije.
+- Pri dodavanju tim lokacija za definiranje radijusa pokrivanja.
 - Pružatelji koriste podatke za navigaciju (export u Maps/Waze).
 `,
       technicalDetails: `**Frontend**
-- Map komponenta (Mapbox GL) omogućuje postavljanje i pregled pina.
-- \`JobMapPreview\` prikazuje više poslova s clusteringom.
-- Export gumb generira link za navigaciju u vanjske aplikacije.
+- \`MapPicker\` komponenta (Leaflet + react-leaflet): Interaktivna karta s klikom i povlačivim markerom.
+- \`AddressAutocomplete\` komponenta: Autocomplete s Nominatim API, debounced pretraga (300ms).
+- Integrirano u \`JobForm.jsx\`, \`ProviderRegister.jsx\`, \`TeamLocations.jsx\`.
+- Automatski geocoding: Grad/adresa → GPS koordinate.
+- Vizualni prikaz: Info box s koordinatama, plavi krug za radijus pokrivanja.
 
 **Backend**
-- \`geolocationService.persist\` sprema koordinate i validira raspon.
-- Distance utility (Haversine) koristi se u filtriranju i SLA metrikama.
-- Event \`job.location.updated\` obavještava marketplace/cache.
+- \`POST /api/jobs\` prima \`latitude\` i \`longitude\` uz \`city\`.
+- \`POST /api/auth/register\` prima \`latitude\` i \`longitude\` za providere.
+- \`geo-utils.js\`: Haversine formula za izračun udaljenosti.
+- Distance utility koristi se u filtriranju i matchmaking algoritmima.
 
 **Baza**
-- \`Job\` čuva koordinatu (decimal(9,6)).
-- Spatial indeks/extension (PostGIS) za geoupite.
+- \`Job\` polja: \`latitude\` (Float?), \`longitude\` (Float?).
+- \`User\` polja: \`latitude\` (Float?), \`longitude\` (Float?).
+- \`ProviderTeamLocation\` polja: \`latitude\` (Float?), \`longitude\` (Float?), \`radiusKm\` (Int).
 
 **Integracije**
-- Geokodiranje provider, routing API za procjenu vremena puta.
-- Matchmaking i analytics koriste udaljenost kao feature.
+- OpenStreetMap Nominatim API (besplatno) za geocoding.
+- Leaflet + OpenStreetMap tiles (besplatno) za karte.
+- Nema potrebe za Google Maps ili Mapbox API key.
 
 **API**
-- \`GET /api/provider/jobs/map\` – vraća poslove s koordinatama.
-- \`POST /api/jobs/:id/location\` – ažurira poziciju.
-- \`GET /api/geo/distance\` – helper endpoint za udaljenost.
+- \`GET /api/jobs?latitude=&longitude=&distance=\` – filtriranje po udaljenosti.
+- \`POST /api/jobs\` – prima \`latitude\`, \`longitude\`.
+- \`POST /api/auth/register\` – prima \`latitude\`, \`longitude\` (za providere).
+- \`GET /api/geo/distance\` – helper endpoint za udaljenost (ako postoji).
 `
     },
     "Slike posla": {
@@ -8073,15 +8098,21 @@ Tijela koja izdaju licence omogućavaju vam dokaz valjanosti vaše licence i pri
     },
     "Team Locations - geo-dinamičke lokacije": {
       implemented: true,
-      summary: "Timovi definiraju dinamičke lokacije rada koje se osvježavaju u realnom vremenu radi preciznog matchinga.",
+      summary: "Timovi definiraju dinamičke lokacije rada s interaktivnom kartom i vizualnim prikazom radijusa pokrivanja.",
       details: `**Kako funkcionira**
+- **Map Picker**: Interaktivna karta (Leaflet) omogućava klik na kartu ili povlačenje markera za preciznu lokaciju tima.
+- **Address Autocomplete**: Automatsko dovršavanje adresa koristeći OpenStreetMap Nominatim API.
+- **Vizualni radijus**: Plavi krug na karti prikazuje radijus pokrivanja u realnom vremenu.
 - Pružatelj dodaje više lokacija (uredi, vozila, zone) i definira radijus pokrivenosti.
 - Lokacije se ažuriraju ručno, putem mobilne aplikacije ili telemetrijskih integracija.
 - Matcher koristi najbližu aktivnu lokaciju za dodjelu poslova i prikaz korisnicima.
 
 **Prednosti**
-- Odražava stvarnu dostupnost mobilnih timova.
-- Poboljšava točnost preporuka i smanjuje vrijeme putovanja.
+- ✅ **Interaktivna karta**: Klik na kartu ili povlačenje markera za preciznu lokaciju.
+- ✅ **Vizualni prikaz radijusa**: Plavi krug prikazuje područje pokrivanja na karti.
+- ✅ **Address Autocomplete**: Brži unos adresa umjesto ručnog unosa GPS koordinata.
+- ✅ **Odražava stvarnu dostupnost mobilnih timova**.
+- ✅ **Poboljšava točnost preporuka i smanjuje vrijeme putovanja**.
 
 **Kada koristiti**
 - Kod službi koje imaju terenske ekipe ili više poslovnica.
