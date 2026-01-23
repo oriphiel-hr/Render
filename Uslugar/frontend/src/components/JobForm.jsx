@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import MapPicker from './MapPicker';
+import AddressAutocomplete from './AddressAutocomplete';
 import { buildCategoryTree } from '../utils/category-tree.js';
 
 // Konfiguracija vrsta projekata po kategorijama
@@ -203,6 +205,24 @@ const JobForm = ({ onSubmit, categories = [], initialData = null }) => {
   const [uploading, setUploading] = useState(false);
   const [customFields, setCustomFields] = useState({}); // State za custom polja
   const [isAnonymous, setIsAnonymous] = useState(false); // State za anonimne korisnike
+  const [location, setLocation] = useState({
+    city: initialData?.city || '',
+    latitude: initialData?.latitude || null,
+    longitude: initialData?.longitude || null,
+    address: ''
+  });
+
+  // Inicijaliziraj location state kada se promijeni initialData
+  useEffect(() => {
+    if (initialData) {
+      setLocation({
+        city: initialData.city || '',
+        latitude: initialData.latitude || null,
+        longitude: initialData.longitude || null,
+        address: initialData.city || ''
+      });
+    }
+  }, [initialData]);
   
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm({
     defaultValues: initialData || {
@@ -214,6 +234,8 @@ const JobForm = ({ onSubmit, categories = [], initialData = null }) => {
       budgetMin: '',
       budgetMax: '',
       city: '',
+      latitude: null,
+      longitude: null,
       urgency: 'NORMAL',
       jobSize: '',
       deadline: '',
@@ -313,6 +335,8 @@ const JobForm = ({ onSubmit, categories = [], initialData = null }) => {
       budgetMin: data.budgetMin ? parseInt(data.budgetMin) : null,
       budgetMax: data.budgetMax ? parseInt(data.budgetMax) : null,
       deadline: data.deadline ? new Date(data.deadline).toISOString() : null,
+      latitude: location.latitude || data.latitude || null,
+      longitude: location.longitude || data.longitude || null,
       // Add anonymous user fields if not authenticated
       anonymous: isAnonymous,
       contactName: isAnonymous ? data.contactName : undefined,
@@ -498,13 +522,55 @@ const JobForm = ({ onSubmit, categories = [], initialData = null }) => {
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Grad
+          Lokacija posla *
         </label>
-        <input
-          {...register('city')}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="Zagreb"
-        />
+        <div className="space-y-3">
+          <AddressAutocomplete
+            value={location.address || location.city}
+            onChange={(value) => {
+              setLocation(prev => ({ ...prev, address: value, city: value }));
+              setValue('city', value);
+            }}
+            onSelect={(data) => {
+              setLocation({
+                city: data.city || data.address,
+                latitude: data.latitude,
+                longitude: data.longitude,
+                address: data.address
+              });
+              setValue('city', data.city || data.address);
+              setValue('latitude', data.latitude);
+              setValue('longitude', data.longitude);
+            }}
+            placeholder="Unesite adresu ili grad..."
+            className="mb-2"
+          />
+          
+          <MapPicker
+            initialLatitude={location.latitude}
+            initialLongitude={location.longitude}
+            initialCity={location.city}
+            onLocationSelect={(lat, lng, address) => {
+              setLocation(prev => ({
+                ...prev,
+                latitude: lat,
+                longitude: lng,
+                address: address || prev.address
+              }));
+              setValue('latitude', lat);
+              setValue('longitude', lng);
+              if (address) {
+                setValue('city', address);
+              }
+            }}
+            height="300px"
+            className="rounded-lg border border-gray-300 overflow-hidden"
+          />
+          
+          <div className="text-xs text-gray-500">
+            💡 Kliknite na kartu ili povucite marker za preciznu lokaciju. Možete i unijeti adresu iznad.
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

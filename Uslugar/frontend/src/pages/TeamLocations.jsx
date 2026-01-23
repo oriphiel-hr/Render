@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { getTeamLocations, createTeamLocation, updateTeamLocation, deleteTeamLocation, toggleTeamLocationActive } from '../api/exclusive';
 import api from '../api';
+import MapPicker from '../components/MapPicker';
+import AddressAutocomplete from '../components/AddressAutocomplete';
 
 export default function TeamLocations() {
   const [locations, setLocations] = useState([]);

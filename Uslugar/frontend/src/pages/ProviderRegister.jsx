@@ -3,6 +3,8 @@ import api from '../api';
 import { useLegalStatuses } from '../hooks/useLegalStatuses';
 import { validateOIB, validateEmail } from '../utils/validators';
 import { buildCategoryTree } from '../utils/category-tree.js';
+import MapPicker from '../components/MapPicker';
+import AddressAutocomplete from '../components/AddressAutocomplete';
 
 export default function ProviderRegister({ onSuccess }) {
   const { legalStatuses, loading: loadingStatuses } = useLegalStatuses();
@@ -12,6 +14,8 @@ export default function ProviderRegister({ onSuccess }) {
     fullName: '',
     phone: '',
     city: '',
+    latitude: null,
+    longitude: null,
     // Provider specifično
     bio: '',
     specialties: '',
@@ -23,6 +27,7 @@ export default function ProviderRegister({ onSuccess }) {
     // Kategorije
     categoryIds: []
   });
+  const [locationAddress, setLocationAddress] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -264,6 +269,8 @@ export default function ProviderRegister({ onSuccess }) {
         role: 'PROVIDER',
         phone: formData.phone,
         city: formData.city,
+        latitude: formData.latitude || undefined,
+        longitude: formData.longitude || undefined,
         legalStatusId: formData.legalStatusId,
         taxId: formData.taxId,
         companyName: formData.companyName || undefined
@@ -442,17 +449,51 @@ export default function ProviderRegister({ onSuccess }) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Grad <span className="text-red-500">*</span>
+                Lokacija <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Zagreb"
-              />
+              <div className="space-y-3">
+                <AddressAutocomplete
+                  value={locationAddress || formData.city}
+                  onChange={(value) => {
+                    setLocationAddress(value);
+                    setFormData(prev => ({ ...prev, city: value }));
+                  }}
+                  onSelect={(data) => {
+                    setLocationAddress(data.address);
+                    setFormData(prev => ({
+                      ...prev,
+                      city: data.city || data.address,
+                      latitude: data.latitude,
+                      longitude: data.longitude
+                    }));
+                  }}
+                  placeholder="Unesite adresu ili grad..."
+                  className="mb-2"
+                />
+                
+                <MapPicker
+                  initialLatitude={formData.latitude}
+                  initialLongitude={formData.longitude}
+                  initialCity={formData.city}
+                  onLocationSelect={(lat, lng, address) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      latitude: lat,
+                      longitude: lng,
+                      city: address || prev.city
+                    }));
+                    if (address) {
+                      setLocationAddress(address);
+                    }
+                  }}
+                  height="300px"
+                  className="rounded-lg border border-gray-300 overflow-hidden"
+                />
+                
+                <div className="text-xs text-gray-500">
+                  💡 Kliknite na kartu ili povucite marker za preciznu lokaciju. Možete i unijeti adresu iznad.
+                </div>
+              </div>
             </div>
           </div>
         </div>
