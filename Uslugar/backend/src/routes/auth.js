@@ -91,6 +91,14 @@ r.post('/register', async (req, res, next) => {
       tokenExpiresAt
     };
     
+    // Dodaj latitude i longitude ako su dostupni
+    if (req.body.latitude !== undefined && req.body.latitude !== null && req.body.latitude !== '') {
+      userData.latitude = parseFloat(req.body.latitude);
+    }
+    if (req.body.longitude !== undefined && req.body.longitude !== null && req.body.longitude !== '') {
+      userData.longitude = parseFloat(req.body.longitude);
+    }
+    
     // Dodaj legalStatusId, taxId, companyName samo ako nisu prazni
     // Za USER-e koji nisu pravne osobe, ove vrijednosti ne smiju biti postavljene
     if (legalStatusId && legalStatusId !== '' && legalStatusId !== null) {
