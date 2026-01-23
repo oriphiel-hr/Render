@@ -173,41 +173,52 @@ export default function TeamLocations() {
                   className="w-full border rounded px-3 py-2"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Grad *</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.city}
-                  onChange={e => {
-                    setFormData({ ...formData, city: e.target.value });
-                    if (!formData.latitude) geocodeCity(e.target.value);
-                  }}
-                  placeholder="Zagreb"
-                  className="w-full border rounded px-3 py-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Latitude (GPS)</label>
-                <input
-                  type="number"
-                  step="0.000001"
-                  value={formData.latitude}
-                  onChange={e => setFormData({ ...formData, latitude: e.target.value })}
-                  placeholder="45.815399"
-                  className="w-full border rounded px-3 py-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Longitude (GPS)</label>
-                <input
-                  type="number"
-                  step="0.000001"
-                  value={formData.longitude}
-                  onChange={e => setFormData({ ...formData, longitude: e.target.value })}
-                  placeholder="15.966568"
-                  className="w-full border rounded px-3 py-2"
-                />
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium mb-1">Lokacija *</label>
+                <div className="space-y-3">
+                  <AddressAutocomplete
+                    value={locationAddress || formData.city}
+                    onChange={(value) => {
+                      setLocationAddress(value);
+                      setFormData(prev => ({ ...prev, address: value, city: value }));
+                      if (!formData.latitude) geocodeCity(value);
+                    }}
+                    onSelect={(data) => {
+                      setLocationAddress(data.address);
+                      setFormData(prev => ({
+                        ...prev,
+                        city: data.city || data.address,
+                        latitude: data.latitude,
+                        longitude: data.longitude,
+                        address: data.address
+                      }));
+                    }}
+                    placeholder="Unesite adresu ili grad..."
+                    className="mb-2"
+                  />
+                  
+                  <MapPicker
+                    initialLatitude={formData.latitude ? parseFloat(formData.latitude) : null}
+                    initialLongitude={formData.longitude ? parseFloat(formData.longitude) : null}
+                    initialCity={formData.city}
+                    onLocationSelect={(lat, lng, address) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        latitude: lat,
+                        longitude: lng,
+                        address: address || prev.address
+                      }));
+                    }}
+                    showRadius={true}
+                    radiusKm={formData.radiusKm || 50}
+                    height="350px"
+                    className="rounded-lg border border-gray-300 overflow-hidden"
+                  />
+                  
+                  <div className="text-xs text-gray-500">
+                    💡 Kliknite na kartu ili povucite marker za preciznu lokaciju. Plavi krug prikazuje radijus pokrivanja.
+                  </div>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Adresa (opcionalno)</label>
