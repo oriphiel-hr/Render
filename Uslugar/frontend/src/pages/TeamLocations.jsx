@@ -4,6 +4,8 @@ import { getTeamLocations, createTeamLocation, updateTeamLocation, deleteTeamLoc
 import api from '../api';
 import MapPicker from '../components/MapPicker';
 import AddressAutocomplete from '../components/AddressAutocomplete';
+import MapPicker from '../components/MapPicker';
+import AddressAutocomplete from '../components/AddressAutocomplete';
 
 export default function TeamLocations() {
   const [locations, setLocations] = useState([]);
@@ -22,6 +24,7 @@ export default function TeamLocations() {
     isPrimary: false,
     notes: ''
   });
+  const [locationAddress, setLocationAddress] = useState('');
 
   useEffect(() => {
     loadLocations();
@@ -75,6 +78,7 @@ export default function TeamLocations() {
   const resetForm = () => {
     setEditing(null);
     setShowForm(false);
+    setLocationAddress('');
     setFormData({
       name: '',
       city: '',
@@ -91,6 +95,7 @@ export default function TeamLocations() {
 
   const startEdit = (loc) => {
     setEditing(loc);
+    setLocationAddress(loc.address || loc.city || '');
     setFormData({
       name: loc.name || '',
       city: loc.city || '',
