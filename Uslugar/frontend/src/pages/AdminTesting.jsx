@@ -2699,77 +2699,151 @@ export default function AdminTesting(){
           {/* Svi Korisnici */}
           <div className="border rounded-lg p-6 bg-white">
             <h3 className="text-lg font-semibold mb-4">👥 Test Korisnici</h3>
+            
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 text-sm">
+              <strong>📝 Upute:</strong>
+              <ul className="list-disc list-inside text-xs text-amber-800 mt-2 space-y-1">
+                <li><strong>Minimalni podaci:</strong> Unesi samo Mailtrap Email i Inbox ID (ostatalo je već popunjeno)</li>
+                <li><strong>Dinamički podaci:</strong> Email, Lozinka, Puno Ime se koriste kao-je iz JSON-a</li>
+                <li><strong>OIB i Pravni Status:</strong> Za provajdere se automatski koriste iz JSON-a</li>
+              </ul>
+            </div>
+
             <div className="space-y-4">
               {Object.entries(testData?.users || {}).map(([userKey, userData]) => (
                 <div key={userKey} className="border rounded p-4 bg-gray-50">
-                  <h4 className="font-semibold mb-3 capitalize text-indigo-600">{userKey}</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Email (Uslugar)</label>
-                      <input
-                        type="email"
-                        className="w-full border rounded px-3 py-2 text-sm"
-                        value={userData?.email || ''}
-                        readOnly
-                        title="Email koji se koristi za registraciju"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Mailtrap Email</label>
-                      <input
-                        type="email"
-                        className="w-full border rounded px-3 py-2 text-sm"
-                        placeholder="npr. test.client@mailtrap.io"
-                        value={userData?.mailtrap?.email || ''}
-                        onChange={e => {
-                          if (!testData) return
-                          setTestData({
-                            ...testData,
-                            users: {
-                              ...testData.users,
-                              [userKey]: {
-                                ...userData,
-                                mailtrap: {
-                                  ...userData.mailtrap,
-                                  email: e.target.value
+                  <div className="mb-4">
+                    <h4 className="font-semibold mb-2 capitalize text-indigo-600 flex items-center gap-2">
+                      <span>{userKey}</span>
+                      {userData?.role && (
+                        <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">
+                          {userData.role}
+                        </span>
+                      )}
+                      {userData?.legalStatus && (
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                          {userData.legalStatus}
+                        </span>
+                      )}
+                    </h4>
+                    {userData?.description && (
+                      <p className="text-xs text-gray-600 italic">📝 {userData.description}</p>
+                    )}
+                  </div>
+
+                  {/* MINIMALNI PODACI - OVO TREBA UNIJETI */}
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="font-semibold text-xs text-red-700 mb-2">✋ TREBAM UNIJETI (Minimalni podaci):</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-red-700 mb-1">Mailtrap Email *</label>
+                        <input
+                          type="email"
+                          className="w-full border border-red-300 rounded px-3 py-2 text-sm"
+                          placeholder="npr. test.client@mailtrap.io"
+                          value={userData?.mailtrap?.email || ''}
+                          onChange={e => {
+                            if (!testData) return
+                            setTestData({
+                              ...testData,
+                              users: {
+                                ...testData.users,
+                                [userKey]: {
+                                  ...userData,
+                                  mailtrap: {
+                                    ...userData.mailtrap,
+                                    email: e.target.value
+                                  }
                                 }
                               }
-                            }
-                          })
-                        }}
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Kreiraj na Mailtrap.io → Inboxes</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Mailtrap Inbox ID</label>
-                      <input
-                        type="text"
-                        className="w-full border rounded px-3 py-2 text-sm font-mono"
-                        placeholder="npr. 1111111"
-                        value={userData?.mailtrap?.inboxId || ''}
-                        onChange={e => {
-                          if (!testData) return
-                          setTestData({
-                            ...testData,
-                            users: {
-                              ...testData.users,
-                              [userKey]: {
-                                ...userData,
-                                mailtrap: {
-                                  ...userData.mailtrap,
-                                  inboxId: e.target.value
+                            })
+                          }}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Kreiraj inbox na https://mailtrap.io/inboxes</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-red-700 mb-1">Mailtrap Inbox ID *</label>
+                        <input
+                          type="text"
+                          className="w-full border border-red-300 rounded px-3 py-2 text-sm font-mono"
+                          placeholder="npr. 1111111"
+                          value={userData?.mailtrap?.inboxId || ''}
+                          onChange={e => {
+                            if (!testData) return
+                            setTestData({
+                              ...testData,
+                              users: {
+                                ...testData.users,
+                                [userKey]: {
+                                  ...userData,
+                                  mailtrap: {
+                                    ...userData.mailtrap,
+                                    inboxId: e.target.value
+                                  }
                                 }
                               }
-                            }
-                          })
-                        }}
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Preuzmite sa Inboxes → Integrations → API</p>
+                            })
+                          }}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Preuzmite iz Inboxes → Integrations → API</p>
+                      </div>
                     </div>
                   </div>
-                  {userData?.description && (
-                    <p className="text-xs text-gray-600 mt-2 italic">📝 {userData.description}</p>
-                  )}
+
+                  {/* DINAMIČKI PODACI - KORISTE SE AUTOMATSKI */}
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="font-semibold text-xs text-green-700 mb-2">✅ KORISTE SE DINAMIČKI (Već popunjeno):</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-600">📧 Email:</span>
+                        <code className="bg-gray-100 px-2 py-1 rounded font-mono text-xs break-all">
+                          {userData?.email || 'N/A'}
+                        </code>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-600">🔑 Lozinka:</span>
+                        <code className="bg-gray-100 px-2 py-1 rounded font-mono text-xs">
+                          {userData?.password || 'N/A'}
+                        </code>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-600">👤 Puno Ime:</span>
+                        <code className="bg-gray-100 px-2 py-1 rounded font-mono text-xs">
+                          {userData?.fullName || 'N/A'}
+                        </code>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-600">📱 Telefon:</span>
+                        <code className="bg-gray-100 px-2 py-1 rounded font-mono text-xs">
+                          {userData?.phone || 'N/A'}
+                        </code>
+                      </div>
+                      {userData?.legalStatus && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-600">⚖️ Pravni Status:</span>
+                          <code className="bg-gray-100 px-2 py-1 rounded font-mono text-xs">
+                            {userData.legalStatus}
+                          </code>
+                        </div>
+                      )}
+                      {userData?.oib && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-600">🆔 OIB:</span>
+                          <code className="bg-gray-100 px-2 py-1 rounded font-mono text-xs">
+                            {userData.oib}
+                          </code>
+                        </div>
+                      )}
+                      {userData?.companyName && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-600">🏢 Tvrtka:</span>
+                          <code className="bg-gray-100 px-2 py-1 rounded font-mono text-xs">
+                            {userData.companyName}
+                          </code>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
