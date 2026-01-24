@@ -169,7 +169,8 @@ r.get('/test-data', async (req, res, next) => {
       }
     };
     
-    res.json({ testData });
+    // Vrati direktno strukturu bez zaglavnog "testData" ključa
+    res.json(testData);
   } catch (e) {
     next(e);
   }
