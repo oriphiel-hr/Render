@@ -2468,17 +2468,130 @@ export default function AdminTesting(){
 
                           {/* Rezultat testa */}
                           {testResults[test.id] && (
-                            <div className={`mt-3 p-2 rounded text-sm ${
+                            <div className={`mt-3 p-3 rounded border ${
                               testResults[test.id].status === 'PASS' 
-                                ? 'bg-green-50 border border-green-200 text-green-800' 
-                                : 'bg-red-50 border border-red-200 text-red-800'
+                                ? 'bg-green-50 border-green-200' 
+                                : 'bg-red-50 border-red-200'
                             }`}>
-                              <strong>
+                              <div className={`font-semibold text-sm mb-2 ${
+                                testResults[test.id].status === 'PASS' 
+                                  ? 'text-green-800' 
+                                  : 'text-red-800'
+                              }`}>
                                 {testResults[test.id].status === 'PASS' ? '✅ PROŠAO' : '❌ NIJE PROŠAO'}
-                              </strong>
-                              {testResults[test.id].manual && ' (Ručni test)'}
-                              {testResults[test.id].auto && ' (Automatski)'}
-                              {testResults[test.id].message && ` - ${testResults[test.id].message}`}
+                                {testResults[test.id].manual && ' (Ručni test)'}
+                                {testResults[test.id].auto && ' (Automatski)'}
+                              </div>
+
+                              {/* Trajanje testa */}
+                              {testResults[test.id].duration && (
+                                <div className="text-xs text-gray-600 mb-2">
+                                  ⏱️ Trajanje: {(testResults[test.id].duration / 1000).toFixed(2)}s
+                                </div>
+                              )}
+
+                              {/* Test logovi */}
+                              {testResults[test.id].logs && testResults[test.id].logs.length > 0 && (
+                                <div className="mb-2 p-2 bg-white rounded text-xs font-mono text-gray-700">
+                                  {testResults[test.id].logs.map((log, idx) => (
+                                    <div key={idx}>{log}</div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Playwright Screenshotovi */}
+                              {testResults[test.id].screenshots && testResults[test.id].screenshots.length > 0 && (
+                                <div className="mb-3">
+                                  <div className="font-semibold text-xs text-gray-700 mb-2">📸 Playwright Screenshotovi ({testResults[test.id].screenshots.length}):</div>
+                                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                                    {testResults[test.id].screenshots.map((screenshot, idx) => (
+                                      <a
+                                        key={idx}
+                                        href={screenshot.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="relative group"
+                                        title={screenshot.step}
+                                      >
+                                        <div className="aspect-video bg-gray-200 rounded overflow-hidden border border-gray-300 hover:border-blue-500 transition-colors">
+                                          <img 
+                                            src={screenshot.url} 
+                                            alt={`Step: ${screenshot.step}`}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                              e.target.style.display = 'none'
+                                            }}
+                                          />
+                                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
+                                            <span className="text-white text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+                                              {screenshot.step}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </a>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Mailtrap Screenshots */}
+                              {testResults[test.id].emailScreenshots && testResults[test.id].emailScreenshots.length > 0 && (
+                                <div className="mb-3 p-2 bg-blue-50 rounded border border-blue-200">
+                                  <div className="font-semibold text-xs text-blue-800 mb-2">📧 Mailtrap Emaili:</div>
+                                  {testResults[test.id].emailScreenshots.map((emailData, idx) => (
+                                    <div key={idx} className="mb-2 p-2 bg-white rounded border border-blue-100">
+                                      <div className="text-xs text-gray-700 mb-1">
+                                        <strong>From:</strong> {emailData.from}
+                                      </div>
+                                      <div className="text-xs text-gray-700 mb-2">
+                                        <strong>Subject:</strong> {emailData.subject}
+                                      </div>
+
+                                      {/* Email Screenshot */}
+                                      {emailData.screenshotUrl && (
+                                        <div className="mb-2">
+                                          <a
+                                            href={emailData.screenshotUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs text-blue-600 hover:text-blue-800 underline"
+                                          >
+                                            📸 Prikaži email screenshot
+                                          </a>
+                                        </div>
+                                      )}
+
+                                      {/* Link Click Result */}
+                                      {emailData.linkClickScreenshot && (
+                                        <div className="mb-2 p-1 bg-green-50 rounded border border-green-100">
+                                          <div className="text-xs text-green-700 mb-1">
+                                            ✓ Link kliknut: <code className="font-mono text-xs">{emailData.clickedLink?.substring(0, 50)}...</code>
+                                          </div>
+                                          <a
+                                            href={emailData.linkClickScreenshot}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs text-green-600 hover:text-green-800 underline"
+                                          >
+                                            📸 Prikaži rezultat nakon klika
+                                          </a>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Poruka */}
+                              {testResults[test.id].message && (
+                                <div className={`text-xs font-mono mt-2 p-1 rounded ${
+                                  testResults[test.id].status === 'PASS'
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {testResults[test.id].message}
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
