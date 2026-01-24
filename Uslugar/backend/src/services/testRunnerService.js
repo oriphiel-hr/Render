@@ -73,11 +73,34 @@ class TestRunnerService {
         throw new Error(`Navigation failed: ${e.message}`);
       }
       
+      // Provjeri URL nakon učitavanja
+      const currentUrl = page.url();
+      logs.push(`📍 Trenutni URL: ${currentUrl}`);
+      
       // Čekaj da se React učita
       logs.push('Čekanje da se React učita...');
       await page.waitForLoadState('domcontentloaded');
-      await page.waitForTimeout(2000); // Dodatno čekanje za React hydration
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(5000); // Duže čekanje za React hydration
       logs.push('✓ React učitan');
+      
+      // Provjeri je li #root element prisutan
+      const rootExists = await page.evaluate(() => {
+        return document.getElementById('root') !== null;
+      });
+      logs.push(`📦 #root element: ${rootExists ? '✓ Postoji' : '❌ Ne postoji'}`);
+      
+      // Provjeri je li React učitan - čekaj da se pojavi neki React element
+      try {
+        await page.waitForSelector('#root', { timeout: 10000 });
+        logs.push('✓ #root element pronađen');
+      } catch (e) {
+        logs.push(`⚠ #root element nije pronađen: ${e.message}`);
+      }
+      
+      // Čekaj dodatno da se forma renderira
+      await page.waitForTimeout(3000);
+      logs.push('✓ Dodatno čekanje za render form-e');
       
       let screenshotPath = this._getScreenshotPath(testId, '01_loaded');
       await page.screenshot({ path: screenshotPath, fullPage: true });
@@ -92,6 +115,20 @@ class TestRunnerService {
       logs.push('Unošenje podataka...');
       
       let emailFound = false;
+      
+      // Debug: Provjeri HTML strukturu
+      const pageInfo = await page.evaluate(() => {
+        return {
+          title: document.title,
+          bodyText: document.body?.textContent?.substring(0, 200) || 'N/A',
+          rootContent: document.getElementById('root')?.innerHTML?.substring(0, 500) || 'N/A',
+          allElements: document.querySelectorAll('*').length,
+          hasReact: window.React !== undefined || window.__REACT_DEVTOOLS_GLOBAL_HOOK__ !== undefined
+        };
+      });
+      logs.push(`📄 Page Info: title=${pageInfo.title}, elements=${pageInfo.allElements}, hasReact=${pageInfo.hasReact}`);
+      logs.push(`📄 Body text (prvih 200): ${pageInfo.bodyText}`);
+      logs.push(`📄 Root content (prvih 500): ${pageInfo.rootContent.substring(0, 200)}...`);
       
       // Debug: Pronađi sve input polja na stranici
       const allInputs = await page.evaluate(() => {
