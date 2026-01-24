@@ -749,9 +749,9 @@ export default function AdminTesting(){
   const loadTestData = async () => {
     try {
       console.log('[TEST DATA] Loading test data...')
-      // Dodaj timeout za request (10 sekundi)
+      // Dodaj timeout za request (30 sekundi - prvi odziv može biti spor)
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout - test data loading took too long')), 10000)
+        setTimeout(() => reject(new Error('Request timeout - test data loading took too long')), 30000)
       )
       
       const apiPromise = api.get('/testing/test-data')
