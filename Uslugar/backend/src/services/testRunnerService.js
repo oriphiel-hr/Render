@@ -223,9 +223,68 @@ class TestRunnerService {
                 await page.waitForSelector(`#${hash}`, { timeout: 5000 });
                 logs.push(`✓ Sekcija #${hash} pronađena`);
                 
+                // Provjeri što je u sekciji
+                const sectionContent = await page.evaluate((sectionId) => {
+                  const section = document.getElementById(sectionId);
+                  if (!section) return null;
+                  return {
+                    html: section.innerHTML.substring(0, 500),
+                    buttons: Array.from(section.querySelectorAll('button')).map(b => ({
+                      text: b.textContent?.trim(),
+                      className: b.className
+                    })),
+                    links: Array.from(section.querySelectorAll('a')).map(a => ({
+                      text: a.textContent?.trim(),
+                      href: a.href
+                    })),
+                    inputs: section.querySelectorAll('input, textarea').length
+                  };
+                }, hash);
+                
+                if (sectionContent) {
+                  logs.push(`📦 Sekcija sadržaj: ${sectionContent.html.substring(0, 200)}...`);
+                  logs.push(`🔘 Gumbovi u sekciji: ${sectionContent.buttons.length}`);
+                  sectionContent.buttons.forEach((btn, idx) => {
+                    logs.push(`  ${idx}: "${btn.text}"`);
+                  });
+                  logs.push(`📋 Input polja u sekciji: ${sectionContent.inputs}`);
+                  
+                  // Ako nema inputa, pokušaj kliknuti na gumb u sekciji
+                  if (sectionContent.inputs === 0 && sectionContent.buttons.length > 0) {
+                    logs.push('⚠ Nema input polja - pokušavam kliknuti na gumb u sekciji...');
+                    
+                    // Pokušaj kliknuti na prvi gumb koji ima "registr" ili "majstor" u tekstu
+                    const buttonToClick = sectionContent.buttons.find(btn => 
+                      btn.text && (btn.text.toLowerCase().includes('registr') || 
+                                   btn.text.toLowerCase().includes('majstor') ||
+                                   btn.text.toLowerCase().includes('postani'))
+                    );
+                    
+                    if (buttonToClick) {
+                      try {
+                        const button = page.locator(`#${hash} button:has-text("${buttonToClick.text}")`).first();
+                        await button.waitFor({ state: 'visible', timeout: 5000 });
+                        await button.click();
+                        logs.push(`✓ Kliknuo na gumb: "${buttonToClick.text}"`);
+                        
+                        // Čekaj da se forma otvori
+                        await page.waitForTimeout(5000);
+                        await page.waitForLoadState('networkidle');
+                        logs.push('✓ Čekam da se forma otvori nakon klika na gumb...');
+                      } catch (e) {
+                        logs.push(`⚠ Gumb nije kliknut: ${e.message.substring(0, 50)}`);
+                      }
+                    }
+                  }
+                }
+                
                 // Čekaj da se inputi pojave u toj sekciji
-                await page.waitForSelector(`#${hash} input`, { timeout: 10000 });
-                logs.push(`✓ Input polja u sekciji #${hash} pronađena`);
+                try {
+                  await page.waitForSelector(`#${hash} input`, { timeout: 10000 });
+                  logs.push(`✓ Input polja u sekciji #${hash} pronađena`);
+                } catch (e) {
+                  logs.push(`⚠ Inputi u sekciji #${hash} nisu pronađeni: ${e.message}`);
+                }
               } catch (e) {
                 logs.push(`⚠ Sekcija #${hash} ili inputi nisu pronađeni: ${e.message}`);
               }
@@ -239,14 +298,26 @@ class TestRunnerService {
         }
         
         if (linkClicked) {
-          // Ponovno provjeri inpute
-          const inputsAfterClick = await page.evaluate(() => {
-            return document.querySelectorAll('input, textarea').length;
+          // Ponovno provjeri inpute nakon svih akcija
+          allInputs = await page.evaluate(() => {
+            const inputs = document.querySelectorAll('input, textarea');
+            return Array.from(inputs).map(inp => ({
+              tag: inp.tagName.toLowerCase(),
+              type: inp.type,
+              name: inp.name,
+              id: inp.id,
+              placeholder: inp.placeholder,
+              value: inp.value,
+              visible: inp.offsetParent !== null,
+              display: window.getComputedStyle(inp).display,
+              className: inp.className,
+              outerHTML: inp.outerHTML.substring(0, 200)
+            }));
           });
-          logs.push(`📋 Input polja nakon klika: ${inputsAfterClick}`);
+          logs.push(`📋 Input polja nakon klika: ${allInputs.length}`);
           
           // Ako još nema inputa, čekaj dodatno
-          if (inputsAfterClick === 0) {
+          if (allInputs.length === 0) {
             logs.push('⚠ Još nema input polja - čekam dodatno...');
             await page.waitForTimeout(5000);
             
@@ -260,6 +331,24 @@ class TestRunnerService {
             });
             await page.waitForTimeout(2000);
             logs.push('✓ Scrollao kroz stranicu da triggeriram render');
+            
+            // Ponovno provjeri inpute nakon scrolla
+            allInputs = await page.evaluate(() => {
+              const inputs = document.querySelectorAll('input, textarea');
+              return Array.from(inputs).map(inp => ({
+                tag: inp.tagName.toLowerCase(),
+                type: inp.type,
+                name: inp.name,
+                id: inp.id,
+                placeholder: inp.placeholder,
+                value: inp.value,
+                visible: inp.offsetParent !== null,
+                display: window.getComputedStyle(inp).display,
+                className: inp.className,
+                outerHTML: inp.outerHTML.substring(0, 200)
+              }));
+            });
+            logs.push(`📋 Input polja nakon scrolla: ${allInputs.length}`);
           }
         }
         
@@ -280,9 +369,10 @@ class TestRunnerService {
               outerHTML: inp.outerHTML.substring(0, 200)
             }));
           });
-          logs.push(`📋 Pronađeni input-i/textarea nakon klika: ${allInputs.length}`);
         }
       }
+      
+      // Loguj sve inpute
       allInputs.forEach((inp, idx) => {
         logs.push(`  ${idx}: ${inp.tag} type=${inp.type}, name=${inp.name || 'N/A'}, id=${inp.id || 'N/A'}, placeholder=${inp.placeholder || 'N/A'}, visible=${inp.visible}, display=${inp.display}`);
         if (!inp.visible) {
