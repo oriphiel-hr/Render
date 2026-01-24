@@ -717,18 +717,18 @@ class TestRunnerService {
       // Provjeri da li je registracija stvarno uspjela
       await page.waitForTimeout(2000); // Čekaj da se stranica učita
       
-      const currentUrl = page.url();
+      const finalUrl = page.url();
       const pageContent = await page.textContent('body');
       const hasSuccessMessage = pageContent && (
         pageContent.includes('uspješna') ||
         pageContent.includes('success') ||
         pageContent.includes('Registracija') ||
-        currentUrl.includes('/login') ||
-        currentUrl.includes('/dashboard') ||
-        currentUrl.includes('/profile')
+        finalUrl.includes('/login') ||
+        finalUrl.includes('/dashboard') ||
+        finalUrl.includes('/profile')
       );
       
-      if (!hasSuccessMessage && !currentUrl.includes('/login') && !currentUrl.includes('/dashboard')) {
+      if (!hasSuccessMessage && !finalUrl.includes('/login') && !finalUrl.includes('/dashboard')) {
         // Provjeri ima li greške na stranici
         const errorElements = await page.locator('.error, .text-red, [role="alert"]').all();
         if (errorElements.length > 0) {
@@ -737,10 +737,10 @@ class TestRunnerService {
           throw new Error(`Registration failed: ${errorTexts.join(', ')}`);
         }
         
-        logs.push(`⚠ Nema jasne poruke uspjeha - provjeravam URL: ${currentUrl}`);
+        logs.push(`⚠ Nema jasne poruke uspjeha - provjeravam URL: ${finalUrl}`);
         // Ne baci grešku, ali logiraj upozorenje
       } else {
-        logs.push(`✓ Registracija uspješna - URL: ${currentUrl}`);
+        logs.push(`✓ Registracija uspješna - URL: ${finalUrl}`);
       }
       
       screenshotPath = this._getScreenshotPath(testId, '03_registered');
