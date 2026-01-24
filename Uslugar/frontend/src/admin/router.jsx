@@ -88,8 +88,8 @@ export default function AdminRouter(){
       const isAdminHash = adminHashRoutes.includes(hashLower) || hashLower.startsWith('admin/');
       const isAdminPath = adminPathRoutes.some(route => hashLower === route);
       const isAdminModel = adminModelRoutes.some(model => hashLower === model);
-      // Admin Testing panel hash-ovi (plans, runs, new, test-data, admin)
-      const adminTestingHashes = ['plans', 'runs', 'new', 'test-data', 'admin'];
+      // Admin Testing panel hash-ovi (plans, runs, new, test-data, detailed-tests, admin)
+      const adminTestingHashes = ['plans', 'runs', 'new', 'test-data', 'detailed-tests', 'admin'];
       const isAdminTestingHash = adminTestingHashes.includes(hashLower);
       return isAdminHash || isAdminPath || isAdminModel || isAdminTestingHash;
     };
