@@ -103,12 +103,42 @@ class TestRunnerService {
           value: inp.value,
           visible: inp.offsetParent !== null,
           display: window.getComputedStyle(inp).display,
-          className: inp.className
+          className: inp.className,
+          outerHTML: inp.outerHTML.substring(0, 200) // Prvih 200 karaktera HTML-a
         }));
       });
       logs.push(`📋 Pronađeni input-i/textarea: ${allInputs.length}`);
       allInputs.forEach((inp, idx) => {
-        logs.push(`  ${idx}: ${inp.tag} type=${inp.type}, name=${inp.name}, id=${inp.id}, placeholder=${inp.placeholder}, visible=${inp.visible}, display=${inp.display}`);
+        logs.push(`  ${idx}: ${inp.tag} type=${inp.type}, name=${inp.name || 'N/A'}, id=${inp.id || 'N/A'}, placeholder=${inp.placeholder || 'N/A'}, visible=${inp.visible}, display=${inp.display}`);
+        if (!inp.visible) {
+          logs.push(`    ⚠️ Input ${idx} nije vidljiv!`);
+        }
+      });
+      
+      // Debug: Pronađi sve elemente koji sadrže "email" u bilo kojem atributu
+      const emailRelated = await page.evaluate(() => {
+        const all = document.querySelectorAll('input, label, div, span');
+        return Array.from(all)
+          .filter(el => {
+            const text = (el.textContent || '').toLowerCase();
+            const html = (el.outerHTML || '').toLowerCase();
+            return text.includes('email') || text.includes('mail') || 
+                   html.includes('email') || html.includes('mail') ||
+                   (el.id && el.id.toLowerCase().includes('email')) ||
+                   (el.className && el.className.toLowerCase().includes('email'));
+          })
+          .slice(0, 10) // Prvih 10
+          .map(el => ({
+            tag: el.tagName.toLowerCase(),
+            id: el.id,
+            className: el.className,
+            text: (el.textContent || '').substring(0, 50),
+            html: el.outerHTML.substring(0, 200)
+          }));
+      });
+      logs.push(`📧 Elementi povezani s email-om: ${emailRelated.length}`);
+      emailRelated.forEach((el, idx) => {
+        logs.push(`  ${idx}: ${el.tag} id=${el.id || 'N/A'}, class=${el.className || 'N/A'}, text=${el.text}`);
       });
       
       // Debug: Pronađi sve forme
@@ -126,17 +156,35 @@ class TestRunnerService {
         logs.push(`  Form ${idx}: id=${f.id}, action=${f.action}, inputs=${f.inputs}`);
       });
 
-      // Pokušaj s različitim selektorima - koristi locator API
-      const emailSelectors = [
-        'input[name="email"]',
-        'input[type="email"]',
-        'input[placeholder*="email" i]',
-        'input[placeholder*="mail" i]',
-        'input#email',
-        'input[data-testid="email"]',
-        'input[aria-label*="email" i]',
-        'input[aria-label*="mail" i]'
-      ];
+      // Pokušaj s getByLabelText pristupom (najbolji za React Hook Form)
+      try {
+        const emailByLabel = page.getByLabel(/email/i).first();
+        await emailByLabel.waitFor({ state: 'visible', timeout: 5000 });
+        await emailByLabel.fill(userData.email);
+        logs.push(`✓ Email unesen preko getByLabel(/email/i)`);
+        emailFound = true;
+      } catch (e) {
+        logs.push(`  ⚠ getByLabel(/email/i) nije pronađen: ${e.message.substring(0, 50)}`);
+      }
+      
+      // Ako getByLabel nije uspio, pokušaj s selektorima
+      if (!emailFound) {
+        const emailSelectors = [
+          'input[name="email"]',
+          'input[type="email"]',
+          'input[placeholder*="email" i]',
+          'input[placeholder*="mail" i]',
+          'input#email',
+          'input[data-testid="email"]',
+          'input[aria-label*="email" i]',
+          'input[aria-label*="mail" i]',
+          // Pokušaj pronaći preko label teksta
+          'label:has-text("email") + input',
+          'label:has-text("mail") + input',
+          // Pokušaj pronaći input unutar label-a
+          'label:has-text("email") input',
+          'label:has-text("mail") input'
+        ];
 
       let emailFound = false;
       for (const selector of emailSelectors) {
@@ -162,17 +210,31 @@ class TestRunnerService {
       }
 
       // Password field
-      const passwordSelectors = [
-        'input[name="password"]',
-        'input[type="password"]',
-        'input#password',
-        'input[data-testid="password"]',
-        'input[aria-label*="password" i]',
-        'input[aria-label*="lozinka" i]'
-      ];
-
       let passwordFound = false;
-      for (const selector of passwordSelectors) {
+      
+      // Pokušaj s getByLabelText pristupom
+      try {
+        const passwordByLabel = page.getByLabel(/password|lozinka/i).first();
+        await passwordByLabel.waitFor({ state: 'visible', timeout: 5000 });
+        await passwordByLabel.fill(userData.password);
+        logs.push(`✓ Lozinka unesen preko getByLabel(/password|lozinka/i)`);
+        passwordFound = true;
+      } catch (e) {
+        logs.push(`  ⚠ getByLabel(/password|lozinka/i) nije pronađen: ${e.message.substring(0, 50)}`);
+      }
+      
+      // Ako getByLabel nije uspio, pokušaj s selektorima
+      if (!passwordFound) {
+        const passwordSelectors = [
+          'input[name="password"]',
+          'input[type="password"]',
+          'input#password',
+          'input[data-testid="password"]',
+          'input[aria-label*="password" i]',
+          'input[aria-label*="lozinka" i]'
+        ];
+        
+        for (const selector of passwordSelectors) {
         try {
           const locator = page.locator(selector).first();
           await locator.waitFor({ state: 'visible', timeout: 3000 });
@@ -182,6 +244,7 @@ class TestRunnerService {
           break;
         } catch (e) {
           // Continue to next selector
+        }
         }
       }
 
