@@ -727,8 +727,8 @@ export default function AdminTesting(){
         api.get('/testing/plans'),
         api.get('/testing/runs')
       ])
-      setPlans(p.data)
-      setRuns(r.data)
+      setPlans(p.data.plans || [])
+      setRuns(r.data.runs || [])
       
       // Debug: provjeri ima li planovi iteme
       if (p.data && p.data.length > 0) {
