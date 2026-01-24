@@ -1489,38 +1489,181 @@ export default function AdminTesting(){
                               
                               {/* Upute */}
                               <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
-                                <strong>📖 Upute:</strong>
+                                <strong>📖 Detaljne upute:</strong>
                                 <ul className="mt-2 space-y-1">
                                   {test.id === '1.1' && (
                                     <>
-                                      <li>1. Otvori registration formu kao korisnik usluge (USER)</li>
-                                      <li>2. Unesi email, lozinku, ime i grad</li>
-                                      <li>3. Nema polja za tvrtku/OIB za korisnike</li>
-                                      <li>4. Očekivani rezultat: uspješna registracija</li>
+                                      <li>1. Otvori <strong>/register</strong> i odaberi <strong>USER (korisnik usluge)</strong></li>
+                                      <li>2. Unesi: Email (npr. korisnik@test.com), Lozinka (min 8 znakova), Puno Ime, Telefon (+385...)</li>
+                                      <li>3. Odaberi grad iz dropdown-a (npr. Zagreb)</li>
+                                      <li>4. ✅ TREBALO BI: Forma prihvati bez polja za tvrtku/OIB</li>
+                                      <li>5. ✅ Provjeri: Email za verifikaciju stigao je</li>
+                                    </>
+                                  )}
+                                  {test.id === '1.2' && (
+                                    <>
+                                      <li>1. Otvori <strong>/register</strong> i odaberi <strong>PROVIDER (pružatelj usluga)</strong></li>
+                                      <li>2. Unesi: Email, Lozinka, Puno Ime, Telefon</li>
+                                      <li>3. Odaberi Pravni Status: <strong>DOO</strong> (Društvo s ograničenom odgovornošću)</li>
+                                      <li>4. Unesi OIB: <strong>12345678901</strong> (11 znamenki)</li>
+                                      <li>5. Unesi Naziv tvrtke: <strong>Test Company DOO</strong> (obavezno za DOO)</li>
+                                      <li>6. ✅ TREBALO BI: Forma prihvati sve podatke</li>
+                                      <li>7. ✅ Provjeri: Email za verifikaciju stigao je</li>
+                                    </>
+                                  )}
+                                  {test.id === '1.3' && (
+                                    <>
+                                      <li>1. Otvori <strong>/login</strong></li>
+                                      <li>2. <strong>Ispravna prijava:</strong> Unesi email i lozinku iz prijašnje registracije → ✅ Trebao bi redirect na Dashboard</li>
+                                      <li>3. <strong>Neispravna prijava:</strong> Unesi pogrešnu lozinku → ✅ Trebala bi poruka greške</li>
+                                      <li>4. Provjeri: Nakon uspješne prijave, token je u localStorage</li>
+                                    </>
+                                  )}
+                                  {test.id === '1.4' && (
+                                    <>
+                                      <li>1. Nakon registracije, otvori email (Mailtrap inbox ili Gmail)</li>
+                                      <li>2. Pronađi link za verifikaciju s tekstom "Provjeri email" ili "Verify"</li>
+                                      <li>3. Klikni na link - trebao bi redirect na stranicu s porukom "Email verificiran"</li>
+                                      <li>4. Provjeri: Korisnik je sada označen kao verified u bazi</li>
+                                      <li>5. Pokušaj ponovno poslati link za verifikaciju - trebala bi poruka "Email je već verificiran"</li>
+                                    </>
+                                  )}
+                                  {test.id === '1.5' && (
+                                    <>
+                                      <li>1. Otvori <strong>/forgot-password</strong></li>
+                                      <li>2. Unesi email korisnika → trebala bi poruka "Email za reset poslan"</li>
+                                      <li>3. Provjeri email (Mailtrap/Gmail) za link s tekstom "Reset lozinke"</li>
+                                      <li>4. Klikni na link - trebao bi redirect na formu "Nova lozinka"</li>
+                                      <li>5. Unesi novu lozinku (min 8 znakova) → ✅ Poruka "Lozinka promijenjena"</li>
+                                      <li>6. Testiraj: Prijava s novom lozinkom trebala bi raditi</li>
+                                    </>
+                                  )}
+                                  {test.id === '1.6' && (
+                                    <>
+                                      <li>1. Prijavi se uspješno - trebalo bi da je token pohranjen u <strong>localStorage</strong></li>
+                                      <li>2. Provjeri: Otvori DevTools (F12) → Application → localStorage → trebaš vidjeti `token`</li>
+                                      <li>3. Navigiraj na <strong>/profile</strong> (zaštićena ruta)</li>
+                                      <li>4. ✅ Trebala bi biti dostupna bez novog login-a (token se automatski šalje u zaglavlju)</li>
+                                      <li>5. Odjavi se i provjeri: token je obrisan iz localStorage</li>
+                                    </>
+                                  )}
+                                  {test.id === '2.1' && (
+                                    <>
+                                      <li>1. Prijavi se kao klijent</li>
+                                      <li>2. Otvori <strong>/jobs/create</strong></li>
+                                      <li>3. Klikni na dropdown kategorije → trebalo bi da se učita lista 51 kategorije</li>
+                                      <li>4. ✅ Trebalo BI: Sve kategorije su dostupne (Električar, Vodoinstalater, itd.)</li>
+                                      <li>5. Provjeri: Nema greške u konzoli</li>
+                                    </>
+                                  )}
+                                  {test.id === '2.3' && (
+                                    <>
+                                      <li>1. Otvori <strong>/jobs</strong> (stranicu sa svim poslovima)</li>
+                                      <li>2. Pronađi filter "Kategorija" (obično na lijevoj strani)</li>
+                                      <li>3. Odaberi kategoriju: npr. <strong>Električar</strong></li>
+                                      <li>4. ✅ TREBALO BI: Lista poslova se filtrira samo na Električare</li>
+                                      <li>5. Provjeri URL: trebao bi imati query param `?category=elektricar` ili sličan</li>
                                     </>
                                   )}
                                   {test.id === '3.1' && (
                                     <>
                                       <li>1. Prijavi se kao klijent</li>
-                                      <li>2. Kreiraj novi posao s naslovom, opisom, kategorijom, budžetom</li>
-                                      <li>3. Odaberi lokaciju s MapPicker-om</li>
-                                      <li>4. Objavi posao i provjeri da je vidljiv na listi</li>
+                                      <li>2. Otvori <strong>/jobs/create</strong> ili klikni "Objavi posao"</li>
+                                      <li>3. Unesi: Naslov (npr. "Popravka kuca"), Opis, Odaberi Kategoriju (Električar)</li>
+                                      <li>4. Unesi budžet: Min: <strong>500</strong> kn, Max: <strong>2000</strong> kn</li>
+                                      <li>5. Odaberi lokaciju s MapPicker-om (klikni na mapu ili unesi grad)</li>
+                                      <li>6. (Opcionalno) Upload slike posla</li>
+                                      <li>7. Klikni "Objavi posao" → ✅ Trebala bi poruka "Posao uspješno kreiran"</li>
+                                      <li>8. Provjeri: Posao se pojavljuje na /jobs ili /jobs/my-jobs</li>
+                                    </>
+                                  )}
+                                  {test.id === '3.4' && (
+                                    <>
+                                      <li>1. Prijavi se kao klijent ili provider</li>
+                                      <li>2. Otvori <strong>/jobs/create</strong> (ili Team Locations za provider)</li>
+                                      <li>3. Trebala bi biti vidljiva <strong>AddressAutocomplete</strong> komponenta (tekstualno polje za adresu)</li>
+                                      <li>4. Trebala bi biti vidljiva <strong>MapPicker</strong> komponenta (interaktivna mapa)</li>
+                                      <li>5. Testiraj: Unesi grad (npr. "Zagreb") u AddressAutocomplete → trebalo bi da se prikaže na mapi</li>
+                                      <li>6. Testiraj: Klikni na mapu → trebalo bi postaviti marker na kliknutoj lokaciji</li>
+                                    </>
+                                  )}
+                                  {test.id === '3.5' && (
+                                    <>
+                                      <li>1. Prijavi se kao klijent i kreiraj posao (vidi test 3.1)</li>
+                                      <li>2. Otvori svoj posao iz <strong>/jobs/my-jobs</strong></li>
+                                      <li>3. Pronađi dropdown za status (trebao bi biti "OTVOREN" po zadanom)</li>
+                                      <li>4. Promijeni status na: <strong>U TIJEKU</strong> → klikni "Spremi" → ✅ Trebala bi poruka "Status ažuriran"</li>
+                                      <li>5. Ponovi za: <strong>ZAVRŠEN</strong>, <strong>OTKAZAN</strong></li>
+                                      <li>6. Provjeri: Status se odražava na stranici i na listi poslova</li>
+                                    </>
+                                  )}
+                                  {test.id === '4.1' && (
+                                    <>
+                                      <li>1. Kao klijent: Kreiraj posao (vidi test 3.1)</li>
+                                      <li>2. Kao provider: Prijavi se i otvori <strong>/leads</strong> (tržište leadova)</li>
+                                      <li>3. Pronađi svoj posao (trebao bi biti vidljiv kao lead)</li>
+                                      <li>4. Klikni "Kupi lead" → trebala bi provjeravati kredite providera</li>
+                                      <li>5. ✅ TREBALO BI: Krediti su oduzeti, lead je prebačen u "Moji leadovi"</li>
+                                      <li>6. Otvori lead i pošalji ponudu: Unesi iznos (npr. 1500), poruku, procijenjene dane</li>
+                                      <li>7. ✅ Trebala bi poruka "Ponuda uspješno poslana"</li>
+                                    </>
+                                  )}
+                                  {test.id === '4.3' && (
+                                    <>
+                                      <li>1. Kao klijent: Otvori svoj posao gdje si primio ponudu</li>
+                                      <li>2. Trebao bi vidjeti "Ponude" sekciju s ponudama od providera</li>
+                                      <li>3. Klikni "Prihvati ponudu" na jednoj od ponuda → ✅ Trebala bi poruka "Ponuda prihvaćena"</li>
+                                      <li>4. Provjeri: Status ponude se promijenio na "PRIHVAĆENA"</li>
+                                      <li>5. Testiraj: Pokušaj prihvatiti drugu ponudu → trebala bi poruka greške (samo jedna ponuda po poslu)</li>
+                                    </>
+                                  )}
+                                  {test.id === '6.1' && (
+                                    <>
+                                      <li>1. Kao provider: Prijavi se i otvori <strong>/profile</strong></li>
+                                      <li>2. Trebao bi vidjeti: Ime, Email, Telefon, Grad, Pravni status, OIB</li>
+                                      <li>3. Trebao bi vidjeti: Biografiju, Specijalizacije, Jahre iskustva, Website</li>
+                                      <li>4. Trebao bi vidjeti: Portfolio slike, Licence, Recenzije (ako postoje)</li>
+                                      <li>5. Trebao bi vidjeti: Status dostupnosti (Available/Unavailable)</li>
                                     </>
                                   )}
                                   {test.id === '6.4' && (
                                     <>
-                                      <li>1. Prijavi se kao direktor</li>
-                                      <li>2. Idi na Team Locations</li>
-                                      <li>3. Dodaj novu lokaciju s MapPicker-om</li>
-                                      <li>4. Postavi radijus pokrivanja (npr. 50km)</li>
+                                      <li>1. Kao direktor (provider): Otvori <strong>/team-locations</strong></li>
+                                      <li>2. Trebao bi vidjeti: MapPicker komponenta s interaktivnom mapom Hrvatske</li>
+                                      <li>3. Trebao bi vidjeti: AddressAutocomplete za unos adrese</li>
+                                      <li>4. Testiraj: Unesi grad (npr. Split) → trebalo bi biti vidljivo na mapi</li>
+                                      <li>5. Testiraj: Klikni na mapu ili povuci marker → trebalo bi ažurirati GPS koordinate</li>
+                                      <li>6. Testiraj: Postavi radijus pokrivanja (npr. 50km) → trebalo bi vidjeti krug na mapi</li>
+                                      <li>7. Klikni "Spremi" → ✅ Trebala bi poruka "Lokacija sprema"</li>
                                     </>
                                   )}
-                                  {!['1.1', '3.1', '6.4'].includes(test.id) && (
+                                  {test.id === '12.1' && (
                                     <>
-                                      <li>1. Prijavi se s odgovarajućom ulogom</li>
-                                      <li>2. Navigiraj na relevantnu stranicu</li>
-                                      <li>3. Izvrši test akcije prema opisu</li>
-                                      <li>4. Provjeri da su rezultati očekivani</li>
+                                      <li>1. Kao provider: Prijavi se i otvori <strong>/subscription</strong></li>
+                                      <li>2. Trebao bi vidjeti: Trenutni aktivni plan (npr. TRIAL, BASIC, PREMIUM, PRO)</li>
+                                      <li>3. Trebao bi vidjeti: Broj dostupnih kredita</li>
+                                      <li>4. Trebao bi vidjeti: Datum isteka pretplate</li>
+                                      <li>5. Trebao bi vidjeti: Status (ACTIVE, EXPIRED, itd.)</li>
+                                    </>
+                                  )}
+                                  {test.id === '12.2' && (
+                                    <>
+                                      <li>1. Kao provider: Otvori <strong>/subscription</strong></li>
+                                      <li>2. Trebao bi vidjeti: 3 dostupna plana</li>
+                                      <li>3. Trebao bi vidjeti: <strong>BASIC</strong> - 10 kredita, 500 kn/mj</li>
+                                      <li>4. Trebao bi vidjeti: <strong>PREMIUM</strong> - 30 kredita, 1500 kn/mj</li>
+                                      <li>5. Trebao bi vidjeti: <strong>PRO</strong> - 100 kredita, 5000 kn/mj</li>
+                                      <li>6. Trebao bi vidjeti: Napomenu o trenutnom planu</li>
+                                      <li>7. Testiraj: Odaberi novi plan → trebalo bi za Stripe checkout</li>
+                                    </>
+                                  )}
+                                  {!['1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '2.1', '2.3', '3.1', '3.4', '3.5', '4.1', '4.3', '6.1', '6.4', '12.1', '12.2'].includes(test.id) && (
+                                    <>
+                                      <li>1. Prijavi se s odgovarajućom ulogom za ovaj test</li>
+                                      <li>2. Navigiraj na relevantnu stranicu (vidi naziv testa)</li>
+                                      <li>3. Izvrši akcije prema opisu testa</li>
+                                      <li>4. ✅ Provjeri: Rezultati su kao što se očekuje (vidi opis testa)</li>
+                                      <li>5. Ako je greška: Provjeri console za error poruke (F12 → Console)</li>
                                     </>
                                   )}
                                 </ul>
