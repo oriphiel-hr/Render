@@ -31,6 +31,9 @@ class TestRunnerService {
   }
 
   _getScreenshotUrl(filename) {
+    // Koristi backend API URL za screenshotove
+    // Ako je relativni path, frontend će ga prependati s API base URL-om
+    // Za sada koristimo relativni path jer se servira kao static file
     return `/test-screenshots/${filename}`;
   }
 

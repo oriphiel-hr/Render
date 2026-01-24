@@ -1,6 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import api from '../api'
 
+// Helper funkcija za screenshot URL - prependira API URL ako je relativan
+const getScreenshotUrl = (url) => {
+  if (!url) return url
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url // Već je full URL
+  }
+  // Relativni path - prependiraj s API base URL-om
+  const apiBaseUrl = api.defaults.baseURL || 'https://api.uslugar.eu'
+  return `${apiBaseUrl}${url.startsWith('/') ? url : '/' + url}`
+}
+
 const STATUS_BADGES = {
   PENDING: 'bg-gray-100 text-gray-700',
   PASS: 'bg-green-100 text-green-800',
@@ -2543,7 +2554,7 @@ export default function AdminTesting(){
                                     {testResults[test.id].screenshots.map((screenshot, idx) => (
                                       <a
                                         key={idx}
-                                        href={screenshot.url}
+                                        href={getScreenshotUrl(screenshot.url)}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="relative group"
@@ -2551,7 +2562,7 @@ export default function AdminTesting(){
                                       >
                                         <div className="aspect-video bg-gray-200 rounded overflow-hidden border border-gray-300 hover:border-blue-500 transition-colors">
                                           <img 
-                                            src={screenshot.url} 
+                                            src={getScreenshotUrl(screenshot.url)} 
                                             alt={`Step: ${screenshot.step}`}
                                             className="w-full h-full object-cover"
                                             onError={(e) => {
@@ -2587,7 +2598,7 @@ export default function AdminTesting(){
                                       {emailData.screenshotUrl && (
                                         <div className="mb-2">
                                           <a
-                                            href={emailData.screenshotUrl}
+                                            href={getScreenshotUrl(emailData.screenshotUrl)}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="text-xs text-blue-600 hover:text-blue-800 underline"
@@ -2604,7 +2615,7 @@ export default function AdminTesting(){
                                             ✓ Link kliknut: <code className="font-mono text-xs">{emailData.clickedLink?.substring(0, 50)}...</code>
                                           </div>
                                           <a
-                                            href={emailData.linkClickScreenshot}
+                                            href={getScreenshotUrl(emailData.linkClickScreenshot)}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="text-xs text-green-600 hover:text-green-800 underline"

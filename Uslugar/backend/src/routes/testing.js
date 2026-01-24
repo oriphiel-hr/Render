@@ -352,11 +352,19 @@ r.post('/run-single', async (req, res, next) => {
       testResult = await testRunnerService.runGenericTest(testType, testData);
       
       results.screenshots = testResult.screenshots || [];
+      
+      // Dodaj sve logove iz testRunnerService
+      if (testResult.logs && testResult.logs.length > 0) {
+        results.logs.push(...testResult.logs);
+      }
+      
       results.logs.push(`✓ Playwright test završen - ${results.screenshots.length} screenshotova`);
       
       if (!testResult.success) {
         results.status = 'FAIL';
         results.logs.push(`✗ Test failed: ${testResult.message}`);
+        results.error = testResult.error;
+        results.errorStack = testResult.errorStack;
       }
     } catch (error) {
       console.error('[TEST] Playwright error:', error);
