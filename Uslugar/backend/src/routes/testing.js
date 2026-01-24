@@ -5,7 +5,7 @@
 
 import { Router } from 'express';
 import { testCheckpointService } from '../services/testCheckpointService.js';
-import prisma from '../db.js';
+import { prisma } from '../lib/prisma.js';
 
 const r = Router();
 
