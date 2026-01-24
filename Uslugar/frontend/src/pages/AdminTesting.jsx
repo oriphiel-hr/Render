@@ -2553,10 +2553,6 @@ export default function AdminTesting(){
       )}
 
       {/* Test-data tab uklonjen - koristiš optimizirani test-data-optimized.json sa samo 5 globalnih korisnika */}
-              <div className="border rounded-lg p-6 bg-white">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Test Korisnici</h3>
-                  <div className="text-sm text-gray-600">
                     💡 Dodaj više korisnika po ulogama za kompleksnije testove
                   </div>
                 </div>
