@@ -2907,6 +2907,116 @@ export default function AdminTesting(){
             </div>
           </div>
 
+          {/* DOKUMENTI ZA TESTIRANJE */}
+          <div className="border rounded-lg p-6 bg-white">
+            <h3 className="text-lg font-semibold mb-4">📄 Dokumenti za Testiranje</h3>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 text-sm">
+              <strong>ℹ️ Kako funkcionira:</strong>
+              <ul className="list-disc list-inside text-xs text-blue-800 mt-2 space-y-1">
+                <li><strong>Pravi dokumenti:</strong> Učitaj svoje RPO, izvode iz registra, itd.</li>
+                <li><strong>Automatski generirani:</strong> Klikni "🤖 Generiraj" za test PDF/slike (ne trebaju biti pravi)</li>
+                <li><strong>Za neispravne testove:</strong> Koristi generirane - oni će biti odbijeni pri validaciji</li>
+              </ul>
+            </div>
+
+            <div className="space-y-4">
+              {[
+                { key: 'kycDocument', name: '📋 KYC Dokument', description: 'RPO ili izvod iz registra' },
+                { key: 'license', name: '🏆 Licenca', description: 'Certifikat/licenca' },
+                { key: 'portfolioImage', name: '🖼️ Portfolio Slika', description: 'Slika radova' }
+              ].map(doc => (
+                <div key={doc.key} className="border rounded-lg p-4 bg-gray-50">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h4 className="font-semibold text-sm">{doc.name}</h4>
+                      <p className="text-xs text-gray-600">{doc.description}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    {/* File Picker - Učitaj pravi dokument */}
+                    <label className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors cursor-pointer flex items-center justify-center gap-2">
+                      <span>📁 Učitaj dokument</span>
+                      <input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0]
+                          if (!file) return
+                          
+                          try {
+                            const formData = new FormData()
+                            formData.append('file', file)
+                            formData.append('key', doc.key)
+                            
+                            const res = await api.post('/testing/test-data/upload-document', formData, {
+                              headers: { 'Content-Type': 'multipart/form-data' }
+                            })
+                            
+                            alert(`✅ ${doc.name} učitан`)
+                            // Osvježi test podatke
+                            await loadTestData()
+                          } catch (err) {
+                            alert(`❌ Greška: ${err?.response?.data?.error || err.message}`)
+                          }
+                        }}
+                      />
+                    </label>
+                    
+                    {/* Generiraj Mock Dokument */}
+                    <button
+                      onClick={async () => {
+                        try {
+                          // Generiraj jednostavan test PDF/sliku
+                          const canvas = document.createElement('canvas')
+                          canvas.width = 400
+                          canvas.height = 600
+                          const ctx = canvas.getContext('2d')
+                          
+                          // Boja pozadine
+                          ctx.fillStyle = '#f0f0f0'
+                          ctx.fillRect(0, 0, canvas.width, canvas.height)
+                          
+                          // Tekst
+                          ctx.fillStyle = '#333'
+                          ctx.font = 'bold 24px Arial'
+                          ctx.fillText(`Test ${doc.name}`, 20, 50)
+                          
+                          ctx.font = '14px Arial'
+                          ctx.fillText(`Generirano za testiranje`, 20, 100)
+                          ctx.fillText(`Data: ${new Date().toLocaleDateString()}`, 20, 130)
+                          ctx.fillText(`OIB: 12345678901`, 20, 160)
+                          ctx.fillText(`Naziv: Test Company`, 20, 190)
+                          
+                          // Konvertiraj u PNG
+                          canvas.toBlob((blob) => {
+                            const url = URL.createObjectURL(blob)
+                            const link = document.createElement('a')
+                            link.href = url
+                            link.download = `test-${doc.key}.png`
+                            link.click()
+                          })
+                          
+                          alert(`✅ Test dokument generiран. Sada ga možeš učitati s "Učitaj dokument" gumbom.`)
+                        } catch (err) {
+                          alert(`❌ Greška pri generiranju: ${err.message}`)
+                        }
+                      }}
+                      className="flex-1 px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <span>🤖 Generiraj test</span>
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-2">
+                    💡 Za ispravne testove: učitaj prav dokument. Za neispravne testove: koristi generirani (neće proći validaciju).
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Spremi gumb */}
           <div className="flex justify-end">
             <button
