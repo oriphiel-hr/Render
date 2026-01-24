@@ -70,8 +70,14 @@ class TestRunnerService {
         throw new Error(`Navigation failed: ${e.message}`);
       }
       
+      // Čekaj da se React učita
+      logs.push('Čekanje da se React učita...');
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForTimeout(2000); // Dodatno čekanje za React hydration
+      logs.push('✓ React učitan');
+      
       let screenshotPath = this._getScreenshotPath(testId, '01_loaded');
-      await page.screenshot({ path: screenshotPath });
+      await page.screenshot({ path: screenshotPath, fullPage: true });
       screenshots.push({
         step: 'Stranica učitana',
         url: this._getScreenshotUrl(path.basename(screenshotPath))
@@ -84,45 +90,62 @@ class TestRunnerService {
       
       // Debug: Pronađi sve input polja na stranici
       const allInputs = await page.evaluate(() => {
-        const inputs = document.querySelectorAll('input');
+        const inputs = document.querySelectorAll('input, textarea');
         return Array.from(inputs).map(inp => ({
+          tag: inp.tagName.toLowerCase(),
           type: inp.type,
           name: inp.name,
           id: inp.id,
           placeholder: inp.placeholder,
           value: inp.value,
-          visible: inp.offsetParent !== null
+          visible: inp.offsetParent !== null,
+          display: window.getComputedStyle(inp).display,
+          className: inp.className
         }));
       });
-      logs.push(`📋 Pronađeni input-i: ${allInputs.length}`);
+      logs.push(`📋 Pronađeni input-i/textarea: ${allInputs.length}`);
       allInputs.forEach((inp, idx) => {
-        if (inp.visible) {
-          logs.push(`  ${idx}: type=${inp.type}, name=${inp.name}, id=${inp.id}, placeholder=${inp.placeholder}`);
-        }
+        logs.push(`  ${idx}: ${inp.tag} type=${inp.type}, name=${inp.name}, id=${inp.id}, placeholder=${inp.placeholder}, visible=${inp.visible}, display=${inp.display}`);
+      });
+      
+      // Debug: Pronađi sve forme
+      const forms = await page.evaluate(() => {
+        const forms = document.querySelectorAll('form');
+        return Array.from(forms).map(f => ({
+          id: f.id,
+          action: f.action,
+          method: f.method,
+          inputs: f.querySelectorAll('input, textarea').length
+        }));
+      });
+      logs.push(`📋 Pronađene forme: ${forms.length}`);
+      forms.forEach((f, idx) => {
+        logs.push(`  Form ${idx}: id=${f.id}, action=${f.action}, inputs=${f.inputs}`);
       });
 
-      // Pokušaj s različitim selektorima
+      // Pokušaj s različitim selektorima - koristi locator API
       const emailSelectors = [
         'input[name="email"]',
         'input[type="email"]',
         'input[placeholder*="email" i]',
         'input[placeholder*="mail" i]',
         'input#email',
-        'input[data-testid="email"]'
+        'input[data-testid="email"]',
+        'input[aria-label*="email" i]',
+        'input[aria-label*="mail" i]'
       ];
 
       let emailFound = false;
       for (const selector of emailSelectors) {
         try {
-          const element = await page.$(selector);
-          if (element) {
-            await element.waitForElementState('visible', { timeout: 3000 });
-            await page.fill(selector, userData.email);
-            logs.push(`✓ Email unesen s selektorom: ${selector}`);
-            emailFound = true;
-            break;
-          }
+          const locator = page.locator(selector).first();
+          await locator.waitFor({ state: 'visible', timeout: 3000 });
+          await locator.fill(userData.email);
+          logs.push(`✓ Email unesen s selektorom: ${selector}`);
+          emailFound = true;
+          break;
         } catch (e) {
+          logs.push(`  ⚠ Selektor ${selector} nije pronađen: ${e.message.substring(0, 50)}`);
           // Continue to next selector
         }
       }
@@ -130,7 +153,7 @@ class TestRunnerService {
       if (!emailFound) {
         logs.push(`❌ Email input nije pronađen. Dostupni inputi:`);
         allInputs.forEach(inp => {
-          logs.push(`  - type=${inp.type}, name=${inp.name}, placeholder=${inp.placeholder}`);
+          logs.push(`  - ${inp.tag} type=${inp.type}, name=${inp.name}, id=${inp.id}, placeholder=${inp.placeholder}`);
         });
         throw new Error(`Email field not found with any selector`);
       }
@@ -140,20 +163,20 @@ class TestRunnerService {
         'input[name="password"]',
         'input[type="password"]',
         'input#password',
-        'input[data-testid="password"]'
+        'input[data-testid="password"]',
+        'input[aria-label*="password" i]',
+        'input[aria-label*="lozinka" i]'
       ];
 
       let passwordFound = false;
       for (const selector of passwordSelectors) {
         try {
-          const element = await page.$(selector);
-          if (element) {
-            await element.waitForElementState('visible', { timeout: 3000 });
-            await page.fill(selector, userData.password);
-            logs.push(`✓ Lozinka unesen s selektorom: ${selector}`);
-            passwordFound = true;
-            break;
-          }
+          const locator = page.locator(selector).first();
+          await locator.waitFor({ state: 'visible', timeout: 3000 });
+          await locator.fill(userData.password);
+          logs.push(`✓ Lozinka unesen s selektorom: ${selector}`);
+          passwordFound = true;
+          break;
         } catch (e) {
           // Continue to next selector
         }
@@ -172,20 +195,20 @@ class TestRunnerService {
         'input[placeholder*="ime" i]',
         'input[placeholder*="name" i]',
         'input#fullName',
-        'input[data-testid="fullName"]'
+        'input[data-testid="fullName"]',
+        'input[aria-label*="ime" i]',
+        'input[aria-label*="name" i]'
       ];
 
       let nameFound = false;
       for (const selector of nameSelectors) {
         try {
-          const element = await page.$(selector);
-          if (element) {
-            await element.waitForElementState('visible', { timeout: 3000 });
-            await page.fill(selector, userData.fullName);
-            logs.push(`✓ Puno ime unesen s selektorom: ${selector}`);
-            nameFound = true;
-            break;
-          }
+          const locator = page.locator(selector).first();
+          await locator.waitFor({ state: 'visible', timeout: 3000 });
+          await locator.fill(userData.fullName);
+          logs.push(`✓ Puno ime unesen s selektorom: ${selector}`);
+          nameFound = true;
+          break;
         } catch (e) {
           // Continue to next selector
         }
