@@ -2701,12 +2701,16 @@ export default function AdminTesting(){
             <h3 className="text-lg font-semibold mb-4">👥 Test Korisnici</h3>
             
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 text-sm">
-              <strong>📝 Upute:</strong>
+              <strong>📝 Upute za Testiranje:</strong>
               <ul className="list-disc list-inside text-xs text-amber-800 mt-2 space-y-1">
-                <li><strong>Minimalni podaci:</strong> Unesi samo Mailtrap Email i Inbox ID (ostatalo je već popunjeno)</li>
-                <li><strong>Dinamički podaci:</strong> Email, Lozinka, Puno Ime se koriste kao-je iz JSON-a</li>
-                <li><strong>OIB i Pravni Status:</strong> Za provajdere se automatski koriste iz JSON-a</li>
+                <li><strong>Minimalni podaci:</strong> Unesi samo Mailtrap Email i Inbox ID</li>
+                <li><strong>Dinamički podaci:</strong> Email, Lozinka, Puno Ime - koriste se kao-je iz JSON-a</li>
+                <li><strong>Provideri bez javnog registra (FREELANCER):</strong> Nema companyName - koristi se samo fullName</li>
+                <li><strong>Provideri s javnim registrom (OBRT, DOO, j.d.o.o.):</strong> ⚠️ Trebam unijeti točne podatke iz javnog registra!</li>
               </ul>
+              <p className="text-xs text-amber-700 mt-2 font-semibold">
+                👉 Detaljne upute: Vidi <code className="bg-amber-100 px-1 rounded">backend/PROVIDER-VERIFICATION-FLOW.md</code>
+              </p>
             </div>
 
             <div className="space-y-4">
