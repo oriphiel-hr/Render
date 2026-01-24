@@ -1453,11 +1453,39 @@ export default function AdminTesting(){
                   ]
                 },
                 {
-                  num: 12,
-                  title: 'Upravljanje Pretplatama',
+                  num: 18,
+                  title: 'Plaćanja i Stripe Integracija',
                   tests: [
-                    { id: '12.1', name: 'Pregled trenutne pretplate', desc: 'Testira prikaz aktivne pretplate' },
-                    { id: '12.2', name: 'Dostupni planovi', desc: 'Testira BASIC, PREMIUM, PRO planove' }
+                    { id: '18.1', name: 'Stripe Checkout integracija', desc: 'Testira Stripe Checkout za plaćanje pretplate' },
+                    { id: '18.2', name: 'Stripe Payment Intent', desc: 'Testira plaćanje s karticom za leadove' },
+                    { id: '18.3', name: 'Stripe Webhook', desc: 'Testira potvrdu plaćanja s webhooka' },
+                    { id: '18.4', name: 'Stripe Refund', desc: 'Testira povrat novca na karticu' }
+                  ]
+                },
+                {
+                  num: 19,
+                  title: 'Tvrtke i Timovi',
+                  tests: [
+                    { id: '19.1', name: 'Direktor Dashboard - upravljanje timovima', desc: 'Testira prikaz tima i upravljanje' },
+                    { id: '19.2', name: 'Interna distribucija leadova', desc: 'Testira dodjelu leadova timu' }
+                  ]
+                },
+                {
+                  num: 20,
+                  title: 'Chat Sustav (PUBLIC i INTERNAL)',
+                  tests: [
+                    { id: '20.1', name: 'PUBLIC chat (Klijent ↔ Tvrtka)', desc: 'Testira komunikaciju s tvrtkom' },
+                    { id: '20.2', name: 'INTERNAL chat (Direktor ↔ Team)', desc: 'Testira interni chat tima' }
+                  ]
+                },
+                {
+                  num: 21,
+                  title: 'TWILIO - SMS Verifikacija i Notifikacije',
+                  tests: [
+                    { id: '21.1', name: 'SMS verifikacija telefonskog broja', desc: 'Testira Twilio SMS verifikaciju' },
+                    { id: '21.2', name: 'SMS notifikacija - nova ponuda', desc: 'Testira slanje SMS-a za novu ponudu' },
+                    { id: '21.3', name: 'SMS notifikacija - nov posao', desc: 'Testira slanje SMS-a za novi posao' },
+                    { id: '21.4', name: 'Twilio error handling', desc: 'Testira rukovanje Twilio greškama' }
                   ]
                 }
               ].map((sector, idx) => (
@@ -1646,18 +1674,99 @@ export default function AdminTesting(){
                                       <li>5. Trebao bi vidjeti: Status (ACTIVE, EXPIRED, itd.)</li>
                                     </>
                                   )}
-                                  {test.id === '12.2' && (
+                                  {test.id === '18.1' && (
                                     <>
                                       <li>1. Kao provider: Otvori <strong>/subscription</strong></li>
-                                      <li>2. Trebao bi vidjeti: 3 dostupna plana</li>
-                                      <li>3. Trebao bi vidjeti: <strong>BASIC</strong> - 10 kredita, 500 kn/mj</li>
-                                      <li>4. Trebao bi vidjeti: <strong>PREMIUM</strong> - 30 kredita, 1500 kn/mj</li>
-                                      <li>5. Trebao bi vidjeti: <strong>PRO</strong> - 100 kredita, 5000 kn/mj</li>
-                                      <li>6. Trebao bi vidjeti: Napomenu o trenutnom planu</li>
-                                      <li>7. Testiraj: Odaberi novi plan → trebalo bi za Stripe checkout</li>
+                                      <li>2. Odaberi novi plan (npr. PREMIUM ako si na BASIC)</li>
+                                      <li>3. Klikni "Nadogradi plan" → trebalo bi redirect na <strong>Stripe Checkout</strong></li>
+                                      <li>4. ✅ TREBALO BI: Stripe forma s email, kartica, razmakom za adresu</li>
+                                      <li>5. Testiraj s test karticom: <strong>4242 4242 4242 4242</strong>, bilo koji budući datum, bilo koji CVC</li>
+                                      <li>6. Klikni "Plaćanje" → ✅ Trebala bi poruka "Plaćanje uspješno"</li>
+                                      <li>7. Provjeri: Korisnik je nadograđen na novi plan, krediti su dodeljeni</li>
                                     </>
                                   )}
-                                  {!['1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '2.1', '2.3', '3.1', '3.4', '3.5', '4.1', '4.3', '6.1', '6.4', '12.1', '12.2'].includes(test.id) && (
+                                  {test.id === '18.2' && (
+                                    <>
+                                      <li>1. Kao provider: Otvori <strong>/leads</strong> (tržište leadova)</li>
+                                      <li>2. Pronađi lead i klikni "Kupi lead"</li>
+                                      <li>3. Trebalo bi: "Plaćanje karticom" ili "Koristi kredite" opcija</li>
+                                      <li>4. Odaberi "Plaćanje karticom" → trebalo bi <strong>Stripe Payment Intent</strong> forma</li>
+                                      <li>5. Unesi test karticu: 4242 4242 4242 4242</li>
+                                      <li>6. Klikni "Kupi lead" → ✅ Trebala bi poruka "Lead uspješno kupljen"</li>
+                                      <li>7. Provjeri: Lead je u "Moji leadovi", Payment je zabilježen u Stripe dashboard-u</li>
+                                    </>
+                                  )}
+                                  {test.id === '18.3' && (
+                                    <>
+                                      <li>1. Backend test: Otvori <strong>Render logs</strong> ili backend monitoring</li>
+                                      <li>2. Trebalo bi vidjeti Stripe webhook povratne pozive na `/api/webhook/stripe`</li>
+                                      <li>3. Testiraj: Simuliraj webhook s Stripe CLI lokalnih ili test webhookima</li>
+                                      <li>4. ✅ TREBALO BI: `payment_intent.succeeded` - pretplata se aktivira</li>
+                                      <li>5. ✅ TREBALO BI: `invoice.payment_succeeded` - faktura se hvata</li>
+                                      <li>6. Provjeri: Nema error-a u logovima, webhook je procesuiran</li>
+                                    </>
+                                  )}
+                                  {test.id === '18.4' && (
+                                    <>
+                                      <li>1. Kao provider: Otvori kupljeni lead u <strong>/my-leads</strong></li>
+                                      <li>2. Trebao bi vidjeti gumb "Zatraži refund" (ako je lead stariji od X dana)</li>
+                                      <li>3. Klikni "Zatraži refund" → trebalo bi forma za razlog (npr. "Klijent nije odgovorio")</li>
+                                      <li>4. Unesi razlog i klikni "Zatraži refund" → ✅ Trebala bi poruka "Refund zahtjev prihvaćen"</li>
+                                      <li>5. Backend: Provjeri da je `CreditTransaction` tipa REFUND kreiran</li>
+                                      <li>6. Testiraj: Ako je Payment Intent, trebalo bi refund na kartici (Stripe Refund API)</li>
+                                    </>
+                                  )}
+                                  {test.id === '21.1' && (
+                                    <>
+                                      <li>1. Kreiraj novu registraciju ili otvori profil kaoProvider</li>
+                                      <li>2. Trebalo bi vidjeti gumb "Provjeri telefon s SMS-om" ili sličan</li>
+                                      <li>3. Klikni → trebalo bi formar za unos broja telefona (npr. +385911234567)</li>
+                                      <li>4. ✅ TREBALO BI: SMS s 6-znamenkastim kodom stiže na telefon (Twilio)</li>
+                                      <li>5. Unesi kod → ✅ Trebala bi poruka "Telefon verificiran"</li>
+                                      <li>6. Provjeri: Korisnik ima "Phone Identity Badge" znački na profilu</li>
+                                      <li>7. Edge case: Ako je ponovno kliknut, trebala bi poruka "Telefon već verificiran"</li>
+                                    </>
+                                  )}
+                                  {test.id === '21.2' && (
+                                    <>
+                                      <li>1. Kao provider: Sljeđi SMS notifikacije koje si postavio u AdminTesting</li>
+                                      <li>2. Kao klijent: Otvori jedan od svojih poslova i pošalji ponudu provideru</li>
+                                      <li>3. ✅ TREBALO BI: Provider prima SMS: "Nova ponuda za posao: [naslov]"</li>
+                                      <li>4. Provjeri SMS na Twilio console ili test broj</li>
+                                      <li>5. Edge case: Ako provider nema SMS notifikacije uključene, ne bi trebao dobiti SMS</li>
+                                    </>
+                                  )}
+                                  {test.id === '21.3' && (
+                                    <>
+                                      <li>1. Kao provider: Odaberi kategorije u profilu (npr. Električar)</li>
+                                      <li>2. Postavi SMS notifikacije uključene u settings-ima</li>
+                                      <li>3. Kao klijent: Kreiraj novi posao u kategoriji Električni → objavi</li>
+                                      <li>4. ✅ TREBALO BI: Provider dobije SMS: "Nov posao u [kategorija]: [naslov]"</li>
+                                      <li>5. Provjeri SMS na Twilio console ili test broj</li>
+                                      <li>6. Edge case: Ako provider ima filter po gradu, trebalo bi provjeriti i to</li>
+                                    </>
+                                  )}
+                                  {test.id === '21.4' && (
+                                    <>
+                                      <li>1. Backend test: Simuliraj Twilio greške:</li>
+                                      <li>   a) <strong>Code 20003</strong>: Invalid Twilio credentials</li>
+                                      <li>   b) <strong>Inactive user</strong>: Twilio račun je neaktivan</li>
+                                      <li>   c) <strong>Restricted account</strong>: Račun je suspenzioniran</li>
+                                      <li>2. Testiraj s pogrešnom Twilio API key ili account SID</li>
+                                      <li>3. ✅ TREBALO BI: Greške se bilježe u AdminSmsLogs s jasnom porukom</li>
+                                      <li>4. ✅ TREBALO BI: Frontend vidi jasnu poruku s instrukcijama što učiniti</li>
+                                      <li>5. Provjeri: Nema SMS-a poslano ako je greška, korisnik nije blokiran</li>
+                                    </>
+                                  )}
+                                  {!['18.1', '18.2', '18.3', '18.4', '21.1', '21.2', '21.3', '21.4'].includes(test.id) && (
+                                    <>
+                                      <li>1. Prijavi se s odgovarajućom ulogom za ovaj test</li>
+                                      <li>2. Navigiraj na relevantnu stranicu (vidi naziv testa)</li>
+                                      <li>3. Izvrši akcije prema opisu testa</li>
+                                      <li>4. ✅ Provjeri: Rezultati su kao što se očekuje (vidi opis testa)</li>
+                                      <li>5. Ako je greška: Provjeri console za error poruke (F12 → Console)</li>
+                                    </>
+                                  )}
                                     <>
                                       <li>1. Prijavi se s odgovarajućom ulogom za ovaj test</li>
                                       <li>2. Navigiraj na relevantnu stranicu (vidi naziv testa)</li>
