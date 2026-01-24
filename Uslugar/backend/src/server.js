@@ -225,6 +225,9 @@ app.get('/api/health', async (_req, res) => {
 // Serve uploads directory
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
 
+// Serve test screenshots directory
+app.use('/test-screenshots', express.static(path.join(__dirname, '../test-screenshots')))
+
 // Dodaj nedostajuće kategorije - javni endpoint
 app.post('/api/add-categories', async (req, res) => {
   try {

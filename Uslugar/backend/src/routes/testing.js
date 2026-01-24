@@ -5,6 +5,8 @@
 
 import { Router } from 'express';
 import { testCheckpointService } from '../services/testCheckpointService.js';
+import { testRunnerService } from '../services/testRunnerService.js';
+import { mailtrapService } from '../services/mailtrapService.js';
 import { prisma } from '../lib/prisma.js';
 
 const r = Router();
@@ -312,39 +314,117 @@ r.post('/runs', async (req, res, next) => {
 
 /**
  * POST /api/testing/run-single
- * Pokreni jedan test
+ * Pokreni jedan test s Playwright-om + Mailtrap integracijom
  */
 r.post('/run-single', async (req, res, next) => {
   try {
-    const { testId, testName } = req.body;
+    const { testId, testName, testType = 'registration', userData, mailtrapInboxId } = req.body;
     
-    if (!testId) {
-      return res.status(400).json({ error: 'testId je obavezan' });
+    if (!testId || !testName) {
+      return res.status(400).json({ error: 'testId i testName su obavezni' });
     }
     
     console.log(`[TEST] Pokrenuo test: ${testId} - ${testName}`);
     
-    // Za sada - simulacija test rezultata
-    // U budućnosti bi se ovdje pokrenuo Playwright test
-    const success = Math.random() > 0.3; // 70% success rate za simulaciju
-    
-    const testResult = {
+    const startTime = Date.now();
+    const results = {
       testId,
       testName,
-      status: success ? 'PASS' : 'FAIL',
+      testType,
+      status: 'RUNNING',
+      screenshots: [],
+      emailScreenshots: [],
+      logs: []
+    };
+
+    // 1. Pokreni Playwright test
+    console.log('[TEST] Korak 1: Pokrenuo Playwright test...');
+    let testResult;
+    
+    try {
+      // Ako nema userData, koristi default test podatke
+      const testData = userData || {
+        email: 'test.registration@uslugar.hr',
+        password: 'Test123456!',
+        fullName: 'Test User'
+      };
+
+      testResult = await testRunnerService.runGenericTest(testType, testData);
+      
+      results.screenshots = testResult.screenshots || [];
+      results.logs.push(`✓ Playwright test završen - ${results.screenshots.length} screenshotova`);
+      
+      if (!testResult.success) {
+        results.status = 'FAIL';
+        results.logs.push(`✗ Test failed: ${testResult.message}`);
+      }
+    } catch (error) {
+      console.error('[TEST] Playwright error:', error);
+      results.status = 'FAIL';
+      results.logs.push(`✗ Playwright error: ${error.message}`);
+      results.error = error.message;
+    }
+
+    // 2. Ako je test prošao i postoji Mailtrap konfiguracija - provjeri mailove
+    if (testResult?.success && mailtrapInboxId) {
+      console.log('[TEST] Korak 2: Dohvaćam mailove iz Mailtrap-a...');
+      
+      try {
+        const emails = await mailtrapService.getEmails(mailtrapInboxId);
+        results.logs.push(`✓ Pronađeno ${emails.length} mailova u Mailtrap inbox-u`);
+
+        if (emails.length > 0) {
+          // Obradi prvi mail
+          const firstEmail = emails[0];
+          console.log('[TEST] Obrađujem prvi mail...');
+          
+          const emailCapture = await mailtrapService.captureEmailAndClickLink(
+            mailtrapInboxId,
+            firstEmail.id,
+            testId
+          );
+
+          if (emailCapture.success) {
+            results.emailScreenshots.push({
+              subject: emailCapture.emailSubject,
+              from: emailCapture.emailFrom,
+              screenshotUrl: emailCapture.emailScreenshot,
+              linkClickScreenshot: emailCapture.linkClickResult?.url,
+              clickedLink: emailCapture.linkClickResult?.clickedLink
+            });
+            results.logs.push(`✓ Mail obrađen - ${emailCapture.emailSubject}`);
+            
+            if (emailCapture.linkClickResult?.success) {
+              results.logs.push(`✓ Link kliknut - screenshot sprema`);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('[TEST] Mailtrap error:', error);
+        results.logs.push(`⚠ Mailtrap error: ${error.message}`);
+      }
+    }
+
+    const duration = Date.now() - startTime;
+    
+    const finalResult = {
+      success: testResult?.success || false,
+      testId,
+      testName,
+      status: testResult?.success ? 'PASS' : 'FAIL',
       timestamp: new Date().toISOString(),
-      duration: Math.floor(Math.random() * 5000) + 1000, // 1-6 sekundi
-      message: success 
-        ? `✅ Test '${testName}' uspješno prošao`
+      duration,
+      screenshots: results.screenshots,
+      emailScreenshots: results.emailScreenshots,
+      logs: results.logs,
+      message: testResult?.success 
+        ? `✅ Test '${testName}' uspješno prošao (${duration}ms)`
         : `❌ Test '${testName}' nije prošao`
     };
     
-    console.log(`[TEST] Rezultat:`, testResult);
+    console.log(`[TEST] Rezultat:`, finalResult);
     
-    res.json({
-      success,
-      ...testResult
-    });
+    res.json(finalResult);
   } catch (e) {
     next(e);
   }
