@@ -1,0 +1,200 @@
+{
+  "email": {
+    "testService": {
+      "type": "mailtrap",
+      "apiKey": "YOUR_MAILTRAP_API_KEY_HERE",
+      "baseUrl": "https://mailtrap.io",
+      "description": "Mailtrap API za dohvaćanje emaila tijekom testiranja"
+    }
+  },
+  "users": {
+    "client": {
+      "email": "test.client@uslugar.hr",
+      "password": "Test123456!",
+      "fullName": "Test Klijent",
+      "phone": "+385991111111",
+      "city": "Zagreb",
+      "role": "USER",
+      "description": "Korisnik usluge koji objavljuje poslove",
+      "mailtrap": {
+        "email": "test.client@mailtrap.io",
+        "inboxId": "1111111",
+        "description": "Mailtrap inbox za test.client - koristi se za sve test scenarije (valid, invalid, missing data)"
+      },
+      "testScenarios": {
+        "validData": "Ispravni podaci - redovna registracija i korištenje",
+        "invalidData": "Neispravni podaci - login s pogrešnom lozinkom, unos invalid emaila",
+        "missingData": "Nedostajući podaci - bez telefona, bez grada",
+        "dataIsolation": "Sigurnost - ne može vidjeti poslove/ponude drugih korisnika"
+      }
+    },
+    "provider": {
+      "email": "test.provider@uslugar.hr",
+      "password": "Test123456!",
+      "fullName": "Test Provider Freelancer",
+      "phone": "+385991111112",
+      "city": "Split",
+      "role": "PROVIDER",
+      "legalStatus": "FREELANCER",
+      "oib": "12345678901",
+      "description": "Provider (freelancer) koji kupuje leadove i šalje ponude",
+      "mailtrap": {
+        "email": "test.provider@mailtrap.io",
+        "inboxId": "2222222",
+        "description": "Mailtrap inbox za test.provider - koristi se za sve provider scenarije"
+      },
+      "testScenarios": {
+        "validData": "Ispravni podaci - redovan provider s licencom",
+        "invalidData": "Neispravni OIB, nema licence",
+        "missingData": "Bez KYC dokumenta",
+        "dataIsolation": "Sigurnost - ne može vidjeti poslove/ponude drugog providera"
+      }
+    },
+    "director": {
+      "email": "test.director@uslugar.hr",
+      "password": "Test123456!",
+      "fullName": "Test Director",
+      "phone": "+385991111113",
+      "city": "Rijeka",
+      "role": "PROVIDER",
+      "legalStatus": "DOO",
+      "companyName": "Test Company DOO",
+      "oib": "12345678902",
+      "isDirector": true,
+      "description": "Direktor tvrtke s timom - kupuje leadove, upravlja timom",
+      "mailtrap": {
+        "email": "test.director@mailtrap.io",
+        "inboxId": "3333333",
+        "description": "Mailtrap inbox za test.director"
+      },
+      "testScenarios": {
+        "teamManagement": "Dodavanje/uklanjanje članova tima",
+        "internalChat": "Interni chat s timom",
+        "leadDistribution": "Dodjela leadova članovima tima",
+        "dataIsolation": "Sigurnost - ne može vidjeti podatke drugih providera"
+      }
+    },
+    "teamMember": {
+      "email": "test.team@uslugar.hr",
+      "password": "Test123456!",
+      "fullName": "Test Team Member",
+      "phone": "+385991111114",
+      "city": "Zadar",
+      "role": "PROVIDER",
+      "legalStatus": "FREELANCER",
+      "companyId": "director",
+      "isDirector": false,
+      "description": "Član tima - izvršava poslove, vidi samo dodjeljene leadove",
+      "mailtrap": {
+        "email": "test.team@mailtrap.io",
+        "inboxId": "4444444",
+        "description": "Mailtrap inbox za test.teamMember"
+      },
+      "testScenarios": {
+        "limitedAccess": "Može vidjeti samo dodjeljene leadove od direktora",
+        "noFullControl": "Ne može upravljati drugim članovima tima",
+        "dataIsolation": "Sigurnost - ne može vidjeti podatke drugog tima",
+        "reportingToDirector": "Vidi samo svoj tim i direktora"
+      }
+    },
+    "admin": {
+      "email": "admin@uslugar.hr",
+      "password": "Admin123456!",
+      "fullName": "Test Admin",
+      "role": "ADMIN",
+      "description": "Administrator platforme - vidi sve",
+      "mailtrap": {
+        "email": "test.admin@mailtrap.io",
+        "inboxId": "5555555",
+        "description": "Mailtrap inbox za admin (ako trebalo)"
+      },
+      "testScenarios": {
+        "fullAccess": "Vidi sve korisnike, sve poslove, sve ponude",
+        "userManagement": "Može odobravati/odbijati providere",
+        "moderation": "Može moderirati komentare, banirati korisnike",
+        "analytics": "Vidi sve statistike i analytics"
+      }
+    }
+  },
+  "documents": {
+    "license": {
+      "type": "PDF",
+      "name": "test-license.pdf",
+      "description": "Validan certifikat/licenca za testiranje"
+    },
+    "kycDocument": {
+      "type": "PDF",
+      "name": "test-kyc.pdf",
+      "description": "Validan KYC dokument za testiranje"
+    },
+    "portfolioImage": {
+      "type": "JPG",
+      "name": "test-portfolio.jpg",
+      "description": "Slika portfolija za testiranje"
+    }
+  },
+  "api": {
+    "baseUrl": "https://api.uslugar.eu",
+    "frontendUrl": "https://www.uslugar.eu",
+    "timeouts": {
+      "default": 10000,
+      "login": 15000,
+      "upload": 30000
+    }
+  },
+  "testScenarios": {
+    "dataIsolation": {
+      "description": "Sigurnosni testovi - korisnici ne smiju vidjeti tuđe podatke",
+      "scenarios": [
+        {
+          "name": "Client ne vidi poslove drugog klijenta",
+          "actors": ["client@test1", "client@test2"],
+          "test": "client1 kreira posao, client2 ne vidi posao na svojoj listi"
+        },
+        {
+          "name": "Provider ne vidi ponude drugog providera",
+          "actors": ["provider@test1", "provider@test2"],
+          "test": "provider1 prosljeđuje ponudu, provider2 je ne vidi"
+        },
+        {
+          "name": "Director vidi samo svoj tim",
+          "actors": ["director@groupA", "director@groupB", "teamMember@groupA"],
+          "test": "director@groupA vidi teamMember@groupA, ali ne vidi director@groupB ili njegov tim"
+        },
+        {
+          "name": "TeamMember vidi samo svoj director i svoj tim",
+          "actors": ["teamMember@groupA", "director@groupA", "director@groupB"],
+          "test": "teamMember@groupA vidi director@groupA i druge članove groupA, ali ne vidi groupB"
+        },
+        {
+          "name": "Klijent ne vidi ponude prije nego što je prihvati",
+          "actors": ["client", "provider1", "provider2"],
+          "test": "Samo provider koji je poslao ponudu vidi da je poslana"
+        },
+        {
+          "name": "Chat je vidljiv samo uključenim stranama",
+          "actors": ["client", "provider1", "provider2"],
+          "test": "Samo client i provider1 vide chat, provider2 nema pristupa"
+        }
+      ]
+    },
+    "edgeCases": {
+      "description": "Granični slučajevi i scenariji",
+      "scenarios": [
+        "Provider bez licence ne može kupiti lead",
+        "Korisnik bez verificiranog emaila ima ograničene akcije",
+        "Korisnik bez KYC-a ne može dobiti povratnu povratnu povratnu",
+        "Suspenzioniran korisnik ne može se prijaviti",
+        "Team member s istaknutom dozvolom može preuzeti lead",
+        "Trial korisnik ima limitirane kredite"
+      ]
+    }
+  },
+  "notes": {
+    "setupInstructions": "1. Unesi Mailtrap API Key u email.testService.apiKey\n2. Kreiraj inbox-e za svakog korisnika na Mailtrap.io\n3. Unesi inbox ID-eve u mailtrap.inboxId za svakog korisnika\n4. Kreiraj test dokumente (license, kyc, portfolio) i unesi putanje",
+    "mailtrapSetup": "Kreiraj 5 inbox-eva na https://mailtrap.io:\n- 1111111: test.client@mailtrap.io\n- 2222222: test.provider@mailtrap.io\n- 3333333: test.director@mailtrap.io\n- 4444444: test.team@mailtrap.io\n- 5555555: test.admin@mailtrap.io",
+    "dataIsolationTesting": "Testovi za data isolation provjeravaju da korisnici NE MOGU vidjeti:\n- Poslove/ponude drugih korisnika\n- Chat poruke s drugim strankama\n- Profile, KYC dokumente, portfolio drugih korisnika\n- Podatke drugih timova (za team members i directors)",
+    "optimizationBenefits": "Korištenje samo 5 globalnih korisnika umjesto 9+:\n- Brža inicijalizacija\n- Manje memorije\n- Jednostavniji checkpoint/rollback\n- Lakši cleanup\n- Legibilniji testovi"
+  }
+}
+

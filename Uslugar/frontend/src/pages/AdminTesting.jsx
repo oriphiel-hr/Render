@@ -1282,24 +1282,6 @@ export default function AdminTesting(){
         </button>
         <button 
           onClick={() => {
-            const newHash = 'test-data'
-            // Ažuriraj hash bez redirecta - koristi history API da zadržiš /admin/testing
-            if (window.location.hash !== `#${newHash}`) {
-              window.history.pushState(null, '', `/admin/testing#${newHash}`)
-              window.dispatchEvent(new HashChangeEvent('hashchange'))
-            }
-            setTab('test-data')
-          }} 
-          className={`px-4 py-2 rounded-t-lg font-medium transition-all duration-150 ${
-            tab==='test-data'
-              ? 'bg-indigo-600 text-white shadow-sm border-b-2 border-indigo-600' 
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          Test Podaci
-        </button>
-        <button 
-          onClick={() => {
             const newHash = 'new'
             // Ažuriraj hash bez redirecta - koristi history API da zadržiš /admin/testing
             if (window.location.hash !== `#${newHash}`) {
@@ -2570,16 +2552,7 @@ export default function AdminTesting(){
         </div>
       )}
 
-      {tab === 'test-data' && (
-        <div className="space-y-6">
-          {!testData ? (
-            <div className="text-center py-8">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-              <p className="mt-2 text-gray-500">Učitavanje test podataka...</p>
-            </div>
-          ) : (
-            <>
-              {/* Test Korisnici */}
+      {/* Test-data tab uklonjen - koristiš optimizirani test-data-optimized.json sa samo 5 globalnih korisnika */}
               <div className="border rounded-lg p-6 bg-white">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold">Test Korisnici</h3>
