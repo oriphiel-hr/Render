@@ -750,11 +750,19 @@ export default function AdminTesting(){
     try {
       console.log('[TEST DATA] Loading test data...')
       
+      // Prvo provjerim localStorage - ako postoje spremi podaci, koristi ih
+      const savedInStorage = loadTestDataFromStorage()
+      if (savedInStorage) {
+        console.log('[TEST DATA] Loaded from localStorage (no backend sync)')
+        return
+      }
+      
+      // Ako nema u localStorage, učitaj s backenda
       const res = await api.get('/testing/test-data', {
         timeout: 10000  // 10 sekundi za jedan request
       })
       
-      console.log('[TEST DATA] Loaded successfully:', res.data)
+      console.log('[TEST DATA] Loaded from backend:', res.data)
       // Debug: log user data
       if (res.data?.users) {
         console.log(`[TEST DATA] Total users found: ${Object.keys(res.data.users).length}`)
@@ -768,6 +776,7 @@ export default function AdminTesting(){
         console.warn('[TEST DATA] No users found in response!')
       }
       
+      // Spremi u state i automatski će se spremiiti u localStorage (useEffect)
       setTestData(res.data || {
         users: {},
         documents: {},
@@ -791,7 +800,14 @@ export default function AdminTesting(){
         code: e?.code
       })
       
-      // Fallback na default strukturu
+      // Pokušaj učitati iz localStorage kao fallback
+      const savedInStorage = loadTestDataFromStorage()
+      if (savedInStorage) {
+        console.log('[TEST DATA] Fallback: Loaded from localStorage after API error')
+        return
+      }
+      
+      // Ako nema ničega, koristi default strukturu
       setTestData({
         users: {},
         documents: {},
