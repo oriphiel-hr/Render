@@ -2554,22 +2554,6 @@ export default function AdminTesting(){
 
       {/* Test-data tab uklonjen - koristiš optimizirani test-data-optimized.json sa samo 5 globalnih korisnika */}
 
-                      if (group.key === 'client') {
-                        // client, clientInvalid, client1, client2, ...
-                        return key === 'client' || key === 'clientInvalid' || (key.startsWith('client') && /client\d+/.test(key));
-                      } else                       if (group.key === 'provider') {
-                        // provider, providerNoLicense, providerNoKYC, providerDirector, providerTeamMember, provider1, provider2, ... (ali ne providerCompany)
-                        return (key === 'provider' || key === 'providerNoLicense' || key === 'providerNoKYC' || 
-                                key === 'providerDirector' || key === 'providerTeamMember' ||
-                                (key.startsWith('provider') && /provider\d+/.test(key))) && key !== 'providerCompany';
-                      } else if (group.key === 'admin') {
-                        return key === 'admin' || key.startsWith('admin') && /admin\d+/.test(key);
-                      }
-                      return false;
-                    })
-                    .sort((a, b) => {
-                      // Prvo osnovni (client, provider, admin), zatim edge case (clientInvalid, providerNoLicense, providerNoKYC), zatim numerirani (client1, client2, ...)
-                      if (a === group.key) return -1;
                       if (b === group.key) return 1;
                       
                       // Edge case korisnici idu odmah nakon osnovnog
