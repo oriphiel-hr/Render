@@ -91,6 +91,8 @@ class TestRunnerService {
       console.log('[TEST RUNNER] Unošu podatke...');
       logs.push('Unošenje podataka...');
       
+      let emailFound = false;
+      
       // Debug: Pronađi sve input polja na stranici
       const allInputs = await page.evaluate(() => {
         const inputs = document.querySelectorAll('input, textarea');
@@ -185,9 +187,8 @@ class TestRunnerService {
           'label:has-text("email") input',
           'label:has-text("mail") input'
         ];
-
-      let emailFound = false;
-      for (const selector of emailSelectors) {
+        
+        for (const selector of emailSelectors) {
         try {
           const locator = page.locator(selector).first();
           await locator.waitFor({ state: 'visible', timeout: 3000 });
@@ -198,6 +199,7 @@ class TestRunnerService {
         } catch (e) {
           logs.push(`  ⚠ Selektor ${selector} nije pronađen: ${e.message.substring(0, 50)}`);
           // Continue to next selector
+        }
         }
       }
 
@@ -235,16 +237,16 @@ class TestRunnerService {
         ];
         
         for (const selector of passwordSelectors) {
-        try {
-          const locator = page.locator(selector).first();
-          await locator.waitFor({ state: 'visible', timeout: 3000 });
-          await locator.fill(userData.password);
-          logs.push(`✓ Lozinka unesen s selektorom: ${selector}`);
-          passwordFound = true;
-          break;
-        } catch (e) {
-          // Continue to next selector
-        }
+          try {
+            const locator = page.locator(selector).first();
+            await locator.waitFor({ state: 'visible', timeout: 3000 });
+            await locator.fill(userData.password);
+            logs.push(`✓ Lozinka unesen s selektorom: ${selector}`);
+            passwordFound = true;
+            break;
+          } catch (e) {
+            // Continue to next selector
+          }
         }
       }
 
