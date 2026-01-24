@@ -2444,13 +2444,21 @@ export default function AdminTesting(){
                                       testName: test.name
                                     }).catch(() => null)
                                     
+                                    console.log(`[TEST] Response:`, response?.data)
+                                    
                                     setTestResults(prev => ({
                                       ...prev,
                                       [test.id]: { 
                                         status: response?.data?.success ? 'PASS' : 'FAIL', 
                                         auto: true, 
                                         timestamp: new Date(),
-                                        message: response?.data?.message
+                                        message: response?.data?.message,
+                                        duration: response?.data?.duration,
+                                        logs: response?.data?.logs || [],
+                                        error: response?.data?.error,
+                                        errorStack: response?.data?.errorStack,
+                                        screenshots: response?.data?.screenshots || [],
+                                        emailScreenshots: response?.data?.emailScreenshots || []
                                       }
                                     }))
                                   } finally {
