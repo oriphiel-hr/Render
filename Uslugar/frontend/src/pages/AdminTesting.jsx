@@ -649,13 +649,18 @@ export default function AdminTesting(){
     return 'plans'
   }
   
-  const [tab, setTab] = useState(getInitialTab) // 'plans' | 'runs' | 'new' | 'test-data'
+  const [tab, setTab] = useState(getInitialTab) // 'plans' | 'runs' | 'new' | 'test-data' | 'detailed-tests'
   const [plans, setPlans] = useState([])
   const [runs, setRuns] = useState([])
   const [activePlan, setActivePlan] = useState(null)
   const [preset, setPreset] = useState('ALL')
   const [seeding, setSeeding] = useState(false)
   const [runningAutomated, setRunningAutomated] = useState(false)
+  
+  // Detaljni testovi
+  const [expandedSector, setExpandedSector] = useState(null)
+  const [runningTest, setRunningTest] = useState(null)
+  const [testResults, setTestResults] = useState({})
   const [automatedTestResult, setAutomatedTestResult] = useState(null)
   const [testResults, setTestResults] = useState(null)
   const [loadingTestResults, setLoadingTestResults] = useState(false)
@@ -1231,6 +1236,23 @@ export default function AdminTesting(){
         </button>
         <button 
           onClick={() => {
+            const newHash = 'detailed-tests'
+            if (window.location.hash !== `#${newHash}`) {
+              window.history.pushState(null, '', `/admin/testing#${newHash}`)
+              window.dispatchEvent(new HashChangeEvent('hashchange'))
+            }
+            setTab('detailed-tests')
+          }} 
+          className={`px-4 py-2 rounded-t-lg font-medium transition-all duration-150 flex items-center gap-2 ${
+            tab==='detailed-tests'
+              ? 'bg-indigo-600 text-white shadow-sm border-b-2 border-indigo-600' 
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          <span>Detaljni testovi</span>
+        </button>
+        <button 
+          onClick={() => {
             const newHash = 'runs'
             // Ažuriraj hash bez redirecta - koristi history API da zadržiš /admin/testing
             if (window.location.hash !== `#${newHash}`) {
@@ -1364,6 +1386,229 @@ export default function AdminTesting(){
           <span>{seeding ? 'Seeding...' : 'Seed iz MD fajlova'}</span>
         </button>
       </div>
+
+      {tab === 'detailed-tests' && (
+        <div className="space-y-6">
+          {/* Detaljni testovi s mogućnostima pojedinačnog testiranja */}
+          <div className="bg-white border rounded-lg p-6">
+            <div className="mb-6">
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">📋 Detaljni testovi - Sve funkcionalnosti</h3>
+              <p className="text-gray-600">Pokreni individualne testove ili cijele sektore. Pogledaj upute i rezultate za svaki test.</p>
+            </div>
+
+            {/* SEKTORI */}
+            <div className="space-y-3">
+              {[
+                {
+                  num: 1,
+                  title: 'Registracija i Autentifikacija',
+                  tests: [
+                    { id: '1.1', name: 'Registracija korisnika usluge', desc: 'Testira registraciju korisnika bez pravnog statusa' },
+                    { id: '1.2', name: 'Registracija pružatelja usluga', desc: 'Testira registraciju providera s pravnim statusom' },
+                    { id: '1.3', name: 'Prijava korisnika', desc: 'Testira login s ispravnim i neispravnim podacima' },
+                    { id: '1.4', name: 'Email verifikacija', desc: 'Testira otvaranje linka i verifikaciju emaila' },
+                    { id: '1.5', name: 'Resetiranje lozinke', desc: 'Testira slanje emaila i promjenu lozinke' },
+                    { id: '1.6', name: 'JWT token autentifikacija', desc: 'Testira token autentifikaciju i pristup API-ju' }
+                  ]
+                },
+                {
+                  num: 2,
+                  title: 'Upravljanje Kategorijama',
+                  tests: [
+                    { id: '2.1', name: 'Dinamičko učitavanje kategorija', desc: 'Testira učitavanje kategorija iz baze' },
+                    { id: '2.2', name: 'Hijerarhijska struktura kategorija', desc: 'Testira parent-child odnose' },
+                    { id: '2.3', name: 'Filtriranje poslova po kategorijama', desc: 'Testira filteriranje u pretrazi' }
+                  ]
+                },
+                {
+                  num: 3,
+                  title: 'Upravljanje Poslovima',
+                  tests: [
+                    { id: '3.1', name: 'Objavljivanje novih poslova', desc: 'Testira kreiranje i čuvanje posla' },
+                    { id: '3.2', name: 'Detaljni opis posla', desc: 'Testira prikaz svih detalja' },
+                    { id: '3.3', name: 'Postavljanje budžeta', desc: 'Testira min-max budžet' },
+                    { id: '3.4', name: 'Lokacija i Geolokacija', desc: 'Testira MapPicker i AddressAutocomplete' },
+                    { id: '3.5', name: 'Status posla', desc: 'Testira OTVOREN, U TIJEKU, ZAVRŠEN, OTKAZAN' },
+                    { id: '3.6', name: 'Pretraživanje poslova', desc: 'Testira search funkcionalnost' },
+                    { id: '3.7', name: 'Napredni filteri', desc: 'Testira filtriranje po više parametara' },
+                    { id: '3.8', name: 'Sortiranje poslova', desc: 'Testira sortiranje po relevantnosti' }
+                  ]
+                },
+                {
+                  num: 4,
+                  title: 'Sustav Ponuda',
+                  tests: [
+                    { id: '4.1', name: 'Slanje ponuda za poslove', desc: 'Testira slanje ponude i dedukciju kredita' },
+                    { id: '4.2', name: 'Status ponude', desc: 'Testira NA ČEKANJU, PRIHVAĆENA, ODBIJENA' },
+                    { id: '4.3', name: 'Prihvaćanje/odbijanje ponuda', desc: 'Testira akcije na ponudu' }
+                  ]
+                },
+                {
+                  num: 6,
+                  title: 'Profili Pružatelja',
+                  tests: [
+                    { id: '6.1', name: 'Detaljni profil pružatelja', desc: 'Testira prikaz profila' },
+                    { id: '6.2', name: 'Biografija pružatelja', desc: 'Testira ažuriranje biografije' },
+                    { id: '6.3', name: 'Kategorije u kojima radi', desc: 'Testira odabir kategorija' },
+                    { id: '6.4', name: 'Team Locations', desc: 'Testira MapPicker za lokacije tima' }
+                  ]
+                },
+                {
+                  num: 12,
+                  title: 'Upravljanje Pretplatama',
+                  tests: [
+                    { id: '12.1', name: 'Pregled trenutne pretplate', desc: 'Testira prikaz aktivne pretplate' },
+                    { id: '12.2', name: 'Dostupni planovi', desc: 'Testira BASIC, PREMIUM, PRO planove' }
+                  ]
+                }
+              ].map((sector, idx) => (
+                <div key={idx} className="border rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => setExpandedSector(expandedSector === sector.num ? null : sector.num)}
+                    className="w-full px-4 py-3 bg-gradient-to-r from-indigo-50 to-blue-50 hover:from-indigo-100 hover:to-blue-100 flex items-center justify-between font-semibold text-left transition-colors"
+                  >
+                    <span className="flex items-center gap-3">
+                      <span className="bg-indigo-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm">
+                        {sector.num}
+                      </span>
+                      <span className="text-gray-900">{sector.title}</span>
+                      <span className="text-xs text-gray-600">({sector.tests.length} testova)</span>
+                    </span>
+                    <span className={`transform transition-transform ${expandedSector === sector.num ? 'rotate-180' : ''}`}>
+                      ▼
+                    </span>
+                  </button>
+
+                  {expandedSector === sector.num && (
+                    <div className="bg-white border-t">
+                      {sector.tests.map((test, testIdx) => (
+                        <div key={testIdx} className="border-b last:border-b-0 p-4 hover:bg-gray-50">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="font-semibold text-gray-900">{test.id} - {test.name}</div>
+                              <div className="text-sm text-gray-600 mt-1">{test.desc}</div>
+                              
+                              {/* Upute */}
+                              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
+                                <strong>📖 Upute:</strong>
+                                <ul className="mt-2 space-y-1">
+                                  {test.id === '1.1' && (
+                                    <>
+                                      <li>1. Otvori registration formu kao korisnik usluge (USER)</li>
+                                      <li>2. Unesi email, lozinku, ime i grad</li>
+                                      <li>3. Nema polja za tvrtku/OIB za korisnike</li>
+                                      <li>4. Očekivani rezultat: uspješna registracija</li>
+                                    </>
+                                  )}
+                                  {test.id === '3.1' && (
+                                    <>
+                                      <li>1. Prijavi se kao klijent</li>
+                                      <li>2. Kreiraj novi posao s naslovom, opisom, kategorijom, budžetom</li>
+                                      <li>3. Odaberi lokaciju s MapPicker-om</li>
+                                      <li>4. Objavi posao i provjeri da je vidljiv na listi</li>
+                                    </>
+                                  )}
+                                  {test.id === '6.4' && (
+                                    <>
+                                      <li>1. Prijavi se kao direktor</li>
+                                      <li>2. Idi na Team Locations</li>
+                                      <li>3. Dodaj novu lokaciju s MapPicker-om</li>
+                                      <li>4. Postavi radijus pokrivanja (npr. 50km)</li>
+                                    </>
+                                  )}
+                                  {!['1.1', '3.1', '6.4'].includes(test.id) && (
+                                    <>
+                                      <li>1. Prijavi se s odgovarajućom ulogom</li>
+                                      <li>2. Navigiraj na relevantnu stranicu</li>
+                                      <li>3. Izvrši test akcije prema opisu</li>
+                                      <li>4. Provjeri da su rezultati očekivani</li>
+                                    </>
+                                  )}
+                                </ul>
+                              </div>
+                            </div>
+
+                            {/* Gumbi */}
+                            <div className="flex flex-col gap-2 flex-shrink-0">
+                              <button
+                                onClick={async () => {
+                                  setRunningTest(test.id)
+                                  try {
+                                    // Simulacija ručnog testa
+                                    console.log(`[TEST] Pokrenuo ručni test: ${test.id}`)
+                                    alert(`Ručni test: ${test.id} - ${test.name}\n\nSlijedi upute gore navedene.\n\nAko je test prošao uspješno, pritisni OK.`)
+                                    setTestResults(prev => ({
+                                      ...prev,
+                                      [test.id]: { status: 'PASS', manual: true, timestamp: new Date() }
+                                    }))
+                                  } finally {
+                                    setRunningTest(null)
+                                  }
+                                }}
+                                disabled={runningTest === test.id}
+                                className="px-3 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700 disabled:bg-gray-400 transition-colors"
+                                title="Ručni test - slijedi upute"
+                              >
+                                ✋ Ručni test
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  setRunningTest(test.id)
+                                  try {
+                                    // Simulacija automatskog testa s Playwright
+                                    console.log(`[TEST] Pokrenuo automatski test: ${test.id}`)
+                                    const response = await api.post(`/testing/run-single`, { 
+                                      testId: test.id,
+                                      testName: test.name
+                                    }).catch(() => null)
+                                    
+                                    setTestResults(prev => ({
+                                      ...prev,
+                                      [test.id]: { 
+                                        status: response?.data?.success ? 'PASS' : 'FAIL', 
+                                        auto: true, 
+                                        timestamp: new Date(),
+                                        message: response?.data?.message
+                                      }
+                                    }))
+                                  } finally {
+                                    setRunningTest(null)
+                                  }
+                                }}
+                                disabled={runningTest === test.id}
+                                className="px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:bg-gray-400 transition-colors"
+                                title="Automatski test s Playwright"
+                              >
+                                {runningTest === test.id ? '⏳ Testira...' : '🤖 Automatski'}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Rezultat testa */}
+                          {testResults[test.id] && (
+                            <div className={`mt-3 p-2 rounded text-sm ${
+                              testResults[test.id].status === 'PASS' 
+                                ? 'bg-green-50 border border-green-200 text-green-800' 
+                                : 'bg-red-50 border border-red-200 text-red-800'
+                            }`}>
+                              <strong>
+                                {testResults[test.id].status === 'PASS' ? '✅ PROŠAO' : '❌ NIJE PROŠAO'}
+                              </strong>
+                              {testResults[test.id].manual && ' (Ručni test)'}
+                              {testResults[test.id].auto && ' (Automatski)'}
+                              {testResults[test.id].message && ` - ${testResults[test.id].message}`}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {tab === 'plans' && (
         <div className="space-y-6">
