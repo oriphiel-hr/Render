@@ -1298,6 +1298,23 @@ export default function AdminTesting(){
         >
           Novi plan
         </button>
+        <button 
+          onClick={() => {
+            const newHash = 'test-data'
+            if (window.location.hash !== `#${newHash}`) {
+              window.history.pushState(null, '', `/admin/testing#${newHash}`)
+              window.dispatchEvent(new HashChangeEvent('hashchange'))
+            }
+            setTab('test-data')
+          }} 
+          className={`px-4 py-2 rounded-t-lg font-medium transition-all duration-150 ${
+            tab==='test-data'
+              ? 'bg-indigo-600 text-white shadow-sm border-b-2 border-indigo-600' 
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          ⚙️ Konfiguracija
+        </button>
         <div className="relative">
           <button 
             onClick={() => handleRunAutomated(null, 'all')} 
