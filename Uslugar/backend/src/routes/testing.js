@@ -318,7 +318,7 @@ r.post('/runs', async (req, res, next) => {
  */
 r.post('/run-single', async (req, res, next) => {
   try {
-    const { testId, testName, testType = 'registration', userData, mailtrapInboxId } = req.body;
+    const { testId, testName, testType = 'registration', userData, mailtrapInboxId, mailtrapApiKey } = req.body;
     
     if (!testId || !testName) {
       return res.status(400).json({ error: 'testId i testName su obavezni' });
@@ -378,6 +378,15 @@ r.post('/run-single', async (req, res, next) => {
       console.log('[TEST] Korak 2: Dohvaćam mailove iz Mailtrap-a...');
       results.logs.push('📧 Čekam da mail stigne u Mailtrap...');
       
+      // Postavi API key ako je proslijeđen
+      const mailtrapOptions = mailtrapApiKey ? { apiToken: mailtrapApiKey } : {};
+      if (mailtrapApiKey) {
+        mailtrapService.setApiToken(mailtrapApiKey);
+        results.logs.push('✓ Mailtrap API key postavljen');
+      } else {
+        results.logs.push('⚠ Mailtrap API key nije proslijeđen - koristim environment varijablu');
+      }
+      
       // Čekaj da mail stigne (može trebati nekoliko sekundi)
       let emails = [];
       let attempts = 0;
@@ -387,7 +396,7 @@ r.post('/run-single', async (req, res, next) => {
         await new Promise(resolve => setTimeout(resolve, 3000)); // Čekaj 3 sekunde
         attempts++;
         try {
-          emails = await mailtrapService.getEmails(mailtrapInboxId);
+          emails = await mailtrapService.getEmails(mailtrapInboxId, mailtrapOptions);
           results.logs.push(`  Pokušaj ${attempts}/${maxAttempts}: Pronađeno ${emails.length} mailova`);
         } catch (error) {
           results.logs.push(`  ⚠ Greška pri dohvaćanju mailova: ${error.message}`);
@@ -408,7 +417,8 @@ r.post('/run-single', async (req, res, next) => {
           const emailCapture = await mailtrapService.captureEmailAndClickLink(
             mailtrapInboxId,
             firstEmail.id,
-            testId
+            testId,
+            mailtrapOptions
           );
 
           if (emailCapture.success) {

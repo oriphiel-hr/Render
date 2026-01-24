@@ -2466,7 +2466,14 @@ export default function AdminTesting(){
                                       city: testUser.city
                                     } : null
                                     
-                                    console.log(`[TEST] Pokrenuo automatski test: ${test.id}`, { userDataForTest, mailtrapInboxId })
+                                    // Dohvati Mailtrap API key iz testData
+                                    const mailtrapApiKey = testData?.email?.testService?.apiKey || ''
+                                    
+                                    console.log(`[TEST] Pokrenuo automatski test: ${test.id}`, { 
+                                      userDataForTest, 
+                                      mailtrapInboxId,
+                                      hasApiKey: !!mailtrapApiKey
+                                    })
                                     
                                     // Simulacija automatskog testa s Playwright
                                     const response = await api.post(`/testing/run-single`, { 
@@ -2474,7 +2481,8 @@ export default function AdminTesting(){
                                       testName: test.name,
                                       testType: 'registration',
                                       userData: userDataForTest,
-                                      mailtrapInboxId: mailtrapInboxId
+                                      mailtrapInboxId: mailtrapInboxId,
+                                      mailtrapApiKey: mailtrapApiKey
                                     }).catch(() => null)
                                     
                                     console.log(`[TEST] Response:`, response?.data)

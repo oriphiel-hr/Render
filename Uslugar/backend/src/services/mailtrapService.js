@@ -31,9 +31,15 @@ class MailtrapService {
     return `/test-screenshots/${filename}`;
   }
 
+  setApiToken(token) {
+    this.apiToken = token;
+    console.log('[MAILTRAP] API token postavljen');
+  }
+
   async getEmails(inboxId, options = {}) {
     try {
-      if (!this.apiToken) {
+      const apiToken = options.apiToken || this.apiToken;
+      if (!apiToken) {
         console.warn('[MAILTRAP] API token nije postavljen');
         return [];
       }
@@ -42,7 +48,7 @@ class MailtrapService {
         `${this.baseUrl}/${this.accountId}/inboxes/${inboxId}/messages`,
         {
           headers: {
-            'Api-Token': this.apiToken,
+            'Api-Token': apiToken,
             'Content-Type': 'application/json'
           },
           params: {
@@ -60,9 +66,10 @@ class MailtrapService {
     }
   }
 
-  async getEmailDetails(inboxId, messageId) {
+  async getEmailDetails(inboxId, messageId, options = {}) {
     try {
-      if (!this.apiToken) {
+      const apiToken = options.apiToken || this.apiToken;
+      if (!apiToken) {
         console.warn('[MAILTRAP] API token nije postavljen');
         return null;
       }
@@ -71,7 +78,7 @@ class MailtrapService {
         `${this.baseUrl}/${this.accountId}/inboxes/${inboxId}/messages/${messageId}`,
         {
           headers: {
-            'Api-Token': this.apiToken,
+            'Api-Token': apiToken,
             'Content-Type': 'application/json'
           }
         }
@@ -97,7 +104,7 @@ class MailtrapService {
     }
   }
 
-  async captureEmailScreenshot(inboxId, messageId, testId) {
+  async captureEmailScreenshot(inboxId, messageId, testId, options = {}) {
     let browser;
     try {
       console.log(`[MAILTRAP] Kreiram screenshot maila: ${messageId}`);
@@ -143,12 +150,12 @@ class MailtrapService {
     }
   }
 
-  async clickEmailLinkAndCapture(inboxId, messageId, testId) {
+  async clickEmailLinkAndCapture(inboxId, messageId, testId, options = {}) {
     let browser;
     try {
       console.log(`[MAILTRAP] Kliknem link u mailu: ${messageId}`);
 
-      const emailDetails = await this.getEmailDetails(inboxId, messageId);
+      const emailDetails = await this.getEmailDetails(inboxId, messageId, options);
       
       if (!emailDetails || !emailDetails.html_body) {
         return {
@@ -222,10 +229,10 @@ class MailtrapService {
     }
   }
 
-  async captureEmailAndClickLink(inboxId, messageId, testId) {
+  async captureEmailAndClickLink(inboxId, messageId, testId, options = {}) {
     try {
       // 1. Dohvati email detalje
-      const emailDetails = await this.getEmailDetails(inboxId, messageId);
+      const emailDetails = await this.getEmailDetails(inboxId, messageId, options);
       
       if (!emailDetails) {
         return {
@@ -235,10 +242,10 @@ class MailtrapService {
       }
 
       // 2. Kreiraj screenshot maila
-      const emailScreenshot = await this.captureEmailScreenshot(inboxId, messageId, testId);
+      const emailScreenshot = await this.captureEmailScreenshot(inboxId, messageId, testId, options);
 
       // 3. Klikni link i kreiraj screenshot
-      const linkResult = await this.clickEmailLinkAndCapture(inboxId, messageId, testId);
+      const linkResult = await this.clickEmailLinkAndCapture(inboxId, messageId, testId, options);
 
       return {
         success: true,
