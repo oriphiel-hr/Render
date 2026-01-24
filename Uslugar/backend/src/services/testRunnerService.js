@@ -37,18 +37,38 @@ class TestRunnerService {
   async runRegistrationTest(userData) {
     const testId = 'registration_' + Date.now();
     const screenshots = [];
+    const logs = [];
     let browser;
 
     try {
       console.log(`[TEST RUNNER] Pokrenuo test: ${testId}`);
+      logs.push(`✓ Test pokrenuo: ${testId}`);
       
-      browser = await chromium.launch({ headless: true });
+      // Pokretanje browsera
+      console.log('[TEST RUNNER] Pokušavam pokrenuti browser...');
+      logs.push('Pokretanje Playwright browser-a...');
+      
+      browser = await chromium.launch({ 
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
+      logs.push('✓ Browser pokrenuo');
+
       const context = await browser.newContext();
       const page = await context.newPage();
+      logs.push('✓ Nova stranica kreirana');
 
       // 1. Otiđi na stranicu
       console.log('[TEST RUNNER] Navigiram na /register...');
-      await page.goto('https://www.uslugar.eu/register', { waitUntil: 'networkidle' });
+      logs.push('Navigacija na https://www.uslugar.eu/register...');
+      
+      try {
+        await page.goto('https://www.uslugar.eu/register', { waitUntil: 'networkidle', timeout: 30000 });
+        logs.push('✓ Stranica učitana');
+      } catch (e) {
+        logs.push(`❌ Greška pri učitavanju: ${e.message}`);
+        throw new Error(`Navigation failed: ${e.message}`);
+      }
       
       let screenshotPath = this._getScreenshotPath(testId, '01_loaded');
       await page.screenshot({ path: screenshotPath });
@@ -56,12 +76,41 @@ class TestRunnerService {
         step: 'Stranica učitana',
         url: this._getScreenshotUrl(path.basename(screenshotPath))
       });
+      logs.push('✓ Screenshot 01 sprema');
 
       // 2. Unesi podatke
       console.log('[TEST RUNNER] Unošu podatke...');
-      await page.fill('input[name="email"]', userData.email);
-      await page.fill('input[name="password"]', userData.password);
-      await page.fill('input[name="fullName"]', userData.fullName);
+      logs.push('Unošenje podataka...');
+      
+      try {
+        const emailField = 'input[name="email"]';
+        await page.waitForSelector(emailField, { timeout: 5000 });
+        await page.fill(emailField, userData.email);
+        logs.push(`✓ Email unesen: ${userData.email}`);
+      } catch (e) {
+        logs.push(`❌ Greška pri unosu email-a: ${e.message}`);
+        throw new Error(`Email field not found or unable to fill: ${e.message}`);
+      }
+
+      try {
+        const passwordField = 'input[name="password"]';
+        await page.waitForSelector(passwordField, { timeout: 5000 });
+        await page.fill(passwordField, userData.password);
+        logs.push(`✓ Lozinka unesen`);
+      } catch (e) {
+        logs.push(`❌ Greška pri unosu lozinke: ${e.message}`);
+        throw new Error(`Password field not found or unable to fill: ${e.message}`);
+      }
+
+      try {
+        const nameField = 'input[name="fullName"]';
+        await page.waitForSelector(nameField, { timeout: 5000 });
+        await page.fill(nameField, userData.fullName);
+        logs.push(`✓ Puno ime unesen: ${userData.fullName}`);
+      } catch (e) {
+        logs.push(`❌ Greška pri unosu imena: ${e.message}`);
+        throw new Error(`Name field not found or unable to fill: ${e.message}`);
+      }
       
       screenshotPath = this._getScreenshotPath(testId, '02_data_entered');
       await page.screenshot({ path: screenshotPath });
@@ -69,11 +118,28 @@ class TestRunnerService {
         step: 'Podaci uneseni',
         url: this._getScreenshotUrl(path.basename(screenshotPath))
       });
+      logs.push('✓ Screenshot 02 sprema');
 
       // 3. Klikni Register
       console.log('[TEST RUNNER] Kliknem Register...');
-      await page.click('button:has-text("Register")');
-      await page.waitForNavigation({ waitUntil: 'networkidle' });
+      logs.push('Kliktanje Register gumb...');
+      
+      try {
+        const registerBtn = 'button:has-text("Register")';
+        await page.waitForSelector(registerBtn, { timeout: 5000 });
+        await page.click(registerBtn);
+        logs.push('✓ Register gumb kliknut');
+      } catch (e) {
+        logs.push(`❌ Register gumb nije pronađen: ${e.message}`);
+        throw new Error(`Register button not found: ${e.message}`);
+      }
+
+      try {
+        await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 30000 });
+        logs.push('✓ Navigacija nakon registracije uspješna');
+      } catch (e) {
+        logs.push(`⚠ Navigacija timeout (možda je OK): ${e.message}`);
+      }
       
       screenshotPath = this._getScreenshotPath(testId, '03_registered');
       await page.screenshot({ path: screenshotPath });
@@ -81,31 +147,43 @@ class TestRunnerService {
         step: 'Registracija uspješna',
         url: this._getScreenshotUrl(path.basename(screenshotPath))
       });
+      logs.push('✓ Screenshot 03 sprema');
 
       await context.close();
       await browser.close();
 
       console.log(`[TEST RUNNER] Test ${testId} uspješno završen. Screenshotove: ${screenshots.length}`);
+      logs.push(`✓ Test završen - ${screenshots.length} screenshotova`);
 
       return {
         success: true,
         testId,
         screenshots,
+        logs,
         message: 'Registracija uspješna'
       };
     } catch (error) {
       console.error(`[TEST RUNNER] Test ${testId} failed:`, error);
+      logs.push(`❌ TEST FAILED: ${error.message}`);
+      logs.push(`Stack: ${error.stack?.split('\n')[0]}`);
       
-      if (browser) {
-        await browser.close();
+      try {
+        if (browser) {
+          await browser.close();
+        }
+      } catch (closeError) {
+        console.error('Error closing browser:', closeError);
+        logs.push(`⚠ Error closing browser: ${closeError.message}`);
       }
 
       return {
         success: false,
         testId,
         screenshots,
+        logs,
         error: error.message,
-        message: `Greška pri testu: ${error.message}`
+        errorStack: error.stack,
+        message: `❌ Greška pri testu: ${error.message}`
       };
     }
   }

@@ -2492,10 +2492,38 @@ export default function AdminTesting(){
 
                               {/* Test logovi */}
                               {testResults[test.id].logs && testResults[test.id].logs.length > 0 && (
-                                <div className="mb-2 p-2 bg-white rounded text-xs font-mono text-gray-700">
+                                <div className="mb-2 p-2 bg-white rounded text-xs font-mono text-gray-700 border border-gray-200">
                                   {testResults[test.id].logs.map((log, idx) => (
-                                    <div key={idx}>{log}</div>
+                                    <div 
+                                      key={idx}
+                                      className={`py-1 ${
+                                        log.includes('✓') ? 'text-green-700' :
+                                        log.includes('❌') ? 'text-red-700' :
+                                        log.includes('⚠') ? 'text-yellow-700' :
+                                        'text-gray-700'
+                                      }`}
+                                    >
+                                      {log}
+                                    </div>
                                   ))}
+                                </div>
+                              )}
+
+                              {/* Error detalji ako postoje */}
+                              {testResults[test.id].error && (
+                                <div className="mb-2 p-2 bg-red-50 rounded border border-red-300">
+                                  <div className="text-xs font-semibold text-red-700 mb-1">🔴 Greška:</div>
+                                  <div className="text-xs text-red-700 font-mono break-all mb-1">
+                                    {testResults[test.id].error}
+                                  </div>
+                                  {testResults[test.id].errorStack && (
+                                    <details className="text-xs text-red-600 cursor-pointer">
+                                      <summary className="font-semibold">Detalji greške</summary>
+                                      <pre className="mt-1 p-1 bg-red-100 rounded overflow-auto text-xs">
+                                        {testResults[test.id].errorStack.substring(0, 500)}...
+                                      </pre>
+                                    </details>
+                                  )}
                                 </div>
                               )}
 
