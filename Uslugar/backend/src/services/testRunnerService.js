@@ -561,14 +561,65 @@ class TestRunnerService {
       console.log('[TEST RUNNER] Kliknem Register...');
       logs.push('Kliktanje Register gumb...');
       
-      try {
-        const registerBtn = 'button:has-text("Register")';
-        await page.waitForSelector(registerBtn, { timeout: 5000 });
-        await page.click(registerBtn);
-        logs.push('✓ Register gumb kliknut');
-      } catch (e) {
-        logs.push(`❌ Register gumb nije pronađen: ${e.message}`);
-        throw new Error(`Register button not found: ${e.message}`);
+      // Debug: Pronađi sve gumbove na stranici
+      const allButtons = await page.evaluate(() => {
+        const buttons = document.querySelectorAll('button, input[type="submit"]');
+        return Array.from(buttons).map(btn => ({
+          tag: btn.tagName.toLowerCase(),
+          type: btn.type,
+          text: btn.textContent?.trim() || btn.value || '',
+          className: btn.className,
+          visible: btn.offsetParent !== null,
+          disabled: btn.disabled
+        }));
+      });
+      logs.push(`🔘 Pronađeni gumbovi: ${allButtons.length}`);
+      allButtons.forEach((btn, idx) => {
+        if (btn.visible && !btn.disabled) {
+          logs.push(`  ${idx}: ${btn.tag} type=${btn.type}, text="${btn.text.substring(0, 50)}"`);
+        }
+      });
+      
+      // Pokušaj s različitim selektorima za Register gumb
+      const registerSelectors = [
+        'button:has-text("Register")',
+        'button:has-text("Registriraj se")',
+        'button:has-text("Registriraj")',
+        'button:has-text("Spremi")',
+        'button:has-text("Pošalji")',
+        'button[type="submit"]',
+        'input[type="submit"]',
+        'button:has-text("Kreiraj račun")',
+        'button:has-text("Kreiraj")'
+      ];
+      
+      let registerClicked = false;
+      for (const selector of registerSelectors) {
+        try {
+          const button = page.locator(selector).first();
+          await button.waitFor({ state: 'visible', timeout: 3000 });
+          const isDisabled = await button.isDisabled();
+          if (!isDisabled) {
+            await button.click();
+            logs.push(`✓ Register gumb kliknut: ${selector}`);
+            registerClicked = true;
+            break;
+          } else {
+            logs.push(`  ⚠ Gumb ${selector} je disabled`);
+          }
+        } catch (e) {
+          // Continue to next selector
+        }
+      }
+      
+      if (!registerClicked) {
+        logs.push(`❌ Register gumb nije pronađen. Dostupni gumbovi:`);
+        allButtons.forEach(btn => {
+          if (btn.visible && !btn.disabled) {
+            logs.push(`  - ${btn.tag} type=${btn.type}, text="${btn.text}"`);
+          }
+        });
+        throw new Error(`Register button not found with any selector`);
       }
 
       try {
