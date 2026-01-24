@@ -688,6 +688,7 @@ export default function AdminTesting(){
         const hashToTab = {
           'admin': 'test-data',
           'test-data': 'test-data',
+          'checkpoint': 'test-data',
           'plans': 'plans',
           'runs': 'runs',
           'new': 'new'
