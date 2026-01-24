@@ -1366,70 +1366,150 @@ export default function AdminTesting(){
       </div>
 
       {tab === 'plans' && (
-        <div className="space-y-3">
-          {plans.map(pl => (
-            <div key={pl.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow duration-150">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="font-semibold text-lg">{pl.name}</div>
-                  <div className="text-sm text-gray-600 mt-1">{pl.description}</div>
-                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                    {!!pl.category && <span>📁 Kategorija: {pl.category}</span>}
-                    <span>📋 Stavki: <strong>{pl.items?.length || 0}</strong></span>
+        <div className="space-y-6">
+          {/* Novi sekvencijalni test suite */}
+          <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-2xl font-bold text-indigo-900">🚀 Kompletan Test Suite</h3>
+                <p className="text-sm text-indigo-700 mt-1">Sve funkcionalnosti iz dokumentacije - Sekvencijalno izvršavanje s checkpoint/rollback</p>
+              </div>
+              <div className="text-right">
+                <div className="text-3xl font-bold text-indigo-600">20</div>
+                <div className="text-xs text-indigo-600">Sektora</div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg p-4 mb-4 border border-indigo-100">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {[
+                  { num: '1', title: 'Registracija i Autentifikacija', tests: 6 },
+                  { num: '2', title: 'Upravljanje Kategorijama', tests: 3 },
+                  { num: '3', title: 'Upravljanje Poslovima', tests: 8 },
+                  { num: '4', title: 'Sustav Ponuda', tests: 3 },
+                  { num: '5', title: 'Bodovanja i Recenzija', tests: 2 },
+                  { num: '6', title: 'Profili Pružatelja', tests: 4 },
+                  { num: '7', title: 'Chat i Komunikacija', tests: 2 },
+                  { num: '8', title: 'Notifikacije', tests: 2 },
+                  { num: '9', title: 'USLUGAR EXCLUSIVE', tests: 3 },
+                  { num: '10', title: 'Queue Sustav', tests: 1 },
+                  { num: '11', title: 'Refund i Povrat Kredita', tests: 1 },
+                  { num: '12', title: 'Upravljanje Pretplatama', tests: 2 },
+                  { num: '13', title: 'Admin Funkcionalnosti', tests: 3 },
+                  { num: '14', title: 'Pravni Status i Verifikacija', tests: 2 },
+                  { num: '15', title: 'Identity Badge Sustav', tests: 1 },
+                  { num: '16', title: 'Reputacijski Sustav', tests: 1 },
+                  { num: '17', title: 'Upravljanje Licencama', tests: 1 },
+                  { num: '18', title: 'Plaćanja i Stripe', tests: 1 },
+                  { num: '19', title: 'Tvrtke i Timovi', tests: 2 },
+                  { num: '20', title: 'Chat Sustav', tests: 2 }
+                ].map((sector, idx) => (
+                  <div key={idx} className="border rounded-lg p-3 bg-gradient-to-br from-gray-50 to-white hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="text-sm font-semibold text-gray-900">
+                          <span className="inline-block bg-indigo-600 text-white rounded-full w-6 h-6 text-center text-xs leading-6 mr-2">
+                            {sector.num}
+                          </span>
+                          {sector.title}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {sector.tests} test{sector.tests !== 1 ? 'ova' : 'a'}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  {/* Prikaz prvih nekoliko stavki */}
-                  {pl.items && pl.items.length > 0 && (
-                    <div className="mt-3 pt-3 border-t">
-                      <div className="text-xs font-medium text-gray-500 mb-2">Stavke:</div>
-                      <div className="space-y-1">
-                        {pl.items.slice(0, 3).map((item, idx) => (
-                          <div key={item.id || idx} className="text-xs text-gray-600 flex items-start gap-2">
-                            <span className="text-gray-400">•</span>
-                            <span>{item.title}</span>
-                          </div>
-                        ))}
-                        {pl.items.length > 3 && (
-                          <div className="text-xs text-gray-400 italic">
-                            + još {pl.items.length - 3} stavki...
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => window.open('/test-results/', '_blank')}
+                className="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+              >
+                📊 Pogledaj test rezultate
+              </button>
+              <button
+                onClick={() => handleRunAutomated('complete-features-test', 'all')}
+                disabled={runningAutomated}
+                className={`flex-1 px-4 py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
+                  runningAutomated
+                    ? 'bg-gray-400 text-white cursor-not-allowed'
+                    : 'bg-green-600 text-white hover:bg-green-700'
+                }`}
+                title="Pokreće sve 50+ automatske testove sekvencijalno"
+              >
+                {runningAutomated && <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
+                <span>🤖 Pokreni sve testove</span>
+              </button>
+            </div>
+
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
+              <strong>ℹ️ Info:</strong> Test suite koristi checkpoint/rollback mehanizam. Svi testovi se izvršavaju sekvencijalno s automatskim cleanup-om između testova.
+            </div>
+          </div>
+
+          {/* Stari planovi (ako postoje) */}
+          {plans.length > 0 && (
+            <div>
+              <h4 className="font-semibold text-gray-700 mb-3">Ostali planovi:</h4>
+              <div className="space-y-3">
+                {plans.map(pl => (
+                  <div key={pl.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow duration-150">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="font-semibold text-lg">{pl.name}</div>
+                        <div className="text-sm text-gray-600 mt-1">{pl.description}</div>
+                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                          {!!pl.category && <span>📁 Kategorija: {pl.category}</span>}
+                          <span>📋 Stavki: <strong>{pl.items?.length || 0}</strong></span>
+                        </div>
+                        {/* Prikaz prvih nekoliko stavki */}
+                        {pl.items && pl.items.length > 0 && (
+                          <div className="mt-3 pt-3 border-t">
+                            <div className="text-xs font-medium text-gray-500 mb-2">Stavke:</div>
+                            <div className="space-y-1">
+                              {pl.items.slice(0, 3).map((item, idx) => (
+                                <div key={item.id || idx} className="text-xs text-gray-600 flex items-start gap-2">
+                                  <span className="text-gray-400">•</span>
+                                  <span>{item.title}</span>
+                                </div>
+                              ))}
+                              {pl.items.length > 3 && (
+                                <div className="text-xs text-gray-400 italic">
+                                  + još {pl.items.length - 3} stavki...
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
+                      <div className="flex flex-col gap-2 ml-4">
+                        <button 
+                          onClick={() => setActivePlan(pl)} 
+                          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors duration-150 text-sm"
+                        >
+                          ▶️ Pokreni run
+                        </button>
+                        <button 
+                          onClick={() => handleRunAutomated(pl.id, 'all')} 
+                          disabled={runningAutomated}
+                          className={`px-4 py-2 rounded hover:transition-colors duration-150 text-sm flex items-center gap-2 justify-center ${
+                            runningAutomated
+                              ? 'bg-gray-400 text-white cursor-not-allowed'
+                              : 'bg-blue-600 text-white hover:bg-blue-700'
+                          }`}
+                          title="Pokreće automatske testove za ovaj plan"
+                        >
+                          {runningAutomated && <div className="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>}
+                          <span>🤖 Auto test</span>
+                        </button>
+                      </div>
                     </div>
-                  )}
-                </div>
-                <div className="flex flex-col gap-2 ml-4">
-                  <button 
-                    onClick={() => setActivePlan(pl)} 
-                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors duration-150 text-sm"
-                  >
-                    ▶️ Pokreni run
-                  </button>
-                  <button 
-                    onClick={() => handleRunAutomated(pl.id, 'all')} 
-                    disabled={runningAutomated}
-                    className={`px-4 py-2 rounded hover:transition-colors duration-150 text-sm flex items-center gap-2 justify-center ${
-                      runningAutomated
-                        ? 'bg-gray-400 text-white cursor-not-allowed'
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}
-                    title="Pokreće automatske testove za ovaj plan"
-                  >
-                    {runningAutomated && <div className="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>}
-                    <span>🤖 Auto test</span>
-                  </button>
-                </div>
+                  </div>
+                ))}
               </div>
-            </div>
-          ))}
-          {plans.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              <p>Nema planova.</p>
-              <button 
-                onClick={() => setTab('new')} 
-                className="mt-2 text-indigo-600 hover:text-indigo-700"
-              >
-                Kreiraj novi plan →
-              </button>
             </div>
           )}
         </div>
