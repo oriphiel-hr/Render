@@ -2554,9 +2554,6 @@ export default function AdminTesting(){
 
       {/* Test-data tab uklonjen - koristiš optimizirani test-data-optimized.json sa samo 5 globalnih korisnika */}
 
-                  // Pronađi sve korisnike koji pripadaju ovoj grupi
-                  const groupUsers = testData && testData.users ? Object.keys(testData.users)
-                    .filter(key => {
                       if (group.key === 'client') {
                         // client, clientInvalid, client1, client2, ...
                         return key === 'client' || key === 'clientInvalid' || (key.startsWith('client') && /client\d+/.test(key));
