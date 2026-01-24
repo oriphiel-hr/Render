@@ -749,32 +749,25 @@ export default function AdminTesting(){
   const loadTestData = async () => {
     try {
       console.log('[TEST DATA] Loading test data...')
-      // Dodaj timeout za request (30 sekundi - prvi odziv može biti spor)
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout - test data loading took too long')), 30000)
-      )
       
-      const apiPromise = api.get('/testing/test-data')
+      const res = await api.get('/testing/test-data', {
+        timeout: 10000  // 10 sekundi za jedan request
+      })
       
-      const res = await Promise.race([apiPromise, timeoutPromise])
       console.log('[TEST DATA] Loaded successfully:', res.data)
-      // Debug: log user data to see invalidData/missingData
+      // Debug: log user data
       if (res.data?.users) {
         console.log(`[TEST DATA] Total users found: ${Object.keys(res.data.users).length}`)
         Object.keys(res.data.users).forEach(key => {
           const user = res.data.users[key]
           console.log(`[TEST DATA] User ${key}:`, {
-            invalidData: user.invalidData,
-            missingData: user.missingData,
-            mailtrapEmail: user.mailtrapEmail || 'MISSING',
-            mailtrapEmailInvalid: user.mailtrapEmailInvalid || 'MISSING',
-            mailtrapEmailMissing: user.mailtrapEmailMissing || 'MISSING',
-            emailConfig: user.emailConfig?.inboxId || 'MISSING'
+            mailtrap: user.mailtrap || 'MISSING'
           })
         })
       } else {
         console.warn('[TEST DATA] No users found in response!')
       }
+      
       setTestData(res.data || {
         users: {},
         documents: {},
@@ -790,14 +783,15 @@ export default function AdminTesting(){
         }
       })
     } catch (e) {
-      console.error('[TEST DATA] Error loading:', e)
+      console.error('[TEST DATA] Error loading:', e.message)
       console.error('[TEST DATA] Error details:', {
         message: e?.message,
         response: e?.response?.data,
         status: e?.response?.status,
         code: e?.code
       })
-      // Umjesto alert-a, postavi default strukturu
+      
+      // Fallback na default strukturu
       setTestData({
         users: {},
         documents: {},
@@ -812,7 +806,7 @@ export default function AdminTesting(){
           frontendUrl: 'https://www.uslugar.eu'
         }
       })
-      // Prikaži grešku samo u konzoli, ne blokiraj UI
+      
       console.warn('[TEST DATA] Using default test data structure due to load error')
     }
   }
