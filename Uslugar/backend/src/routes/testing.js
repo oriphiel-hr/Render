@@ -376,15 +376,34 @@ r.post('/run-single', async (req, res, next) => {
     // 2. Ako je test prošao i postoji Mailtrap konfiguracija - provjeri mailove
     if (testResult?.success && mailtrapInboxId) {
       console.log('[TEST] Korak 2: Dohvaćam mailove iz Mailtrap-a...');
+      results.logs.push('📧 Čekam da mail stigne u Mailtrap...');
       
-      try {
-        const emails = await mailtrapService.getEmails(mailtrapInboxId);
+      // Čekaj da mail stigne (može trebati nekoliko sekundi)
+      let emails = [];
+      let attempts = 0;
+      const maxAttempts = 10; // 10 pokušaja = ~30 sekundi
+      
+      while (emails.length === 0 && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 3000)); // Čekaj 3 sekunde
+        attempts++;
+        try {
+          emails = await mailtrapService.getEmails(mailtrapInboxId);
+          results.logs.push(`  Pokušaj ${attempts}/${maxAttempts}: Pronađeno ${emails.length} mailova`);
+        } catch (error) {
+          results.logs.push(`  ⚠ Greška pri dohvaćanju mailova: ${error.message}`);
+        }
+      }
+      
+      if (emails.length === 0) {
+        results.logs.push(`⚠ Nema mailova u inbox-u nakon ${maxAttempts} pokušaja`);
+      } else {
         results.logs.push(`✓ Pronađeno ${emails.length} mailova u Mailtrap inbox-u`);
-
-        if (emails.length > 0) {
-          // Obradi prvi mail
+        
+        try {
+          // Obradi prvi mail (najnoviji)
           const firstEmail = emails[0];
           console.log('[TEST] Obrađujem prvi mail...');
+          results.logs.push(`📧 Obrađujem mail: ${firstEmail.subject || firstEmail.id}`);
           
           const emailCapture = await mailtrapService.captureEmailAndClickLink(
             mailtrapInboxId,
@@ -397,20 +416,27 @@ r.post('/run-single', async (req, res, next) => {
               subject: emailCapture.emailSubject,
               from: emailCapture.emailFrom,
               screenshotUrl: emailCapture.emailScreenshot,
-              linkClickScreenshot: emailCapture.linkClickResult?.url,
-              clickedLink: emailCapture.linkClickResult?.clickedLink
+              linkClickScreenshot: emailCapture.linkClickResult?.success ? emailCapture.linkClickResult.url : null,
+              clickedLink: emailCapture.linkClickResult?.clickedLink || null
             });
-            results.logs.push(`✓ Mail obrađen - ${emailCapture.emailSubject}`);
+            results.logs.push(`✓ Mail screenshot kreiran: ${emailCapture.emailScreenshot ? 'DA' : 'NE'}`);
             
             if (emailCapture.linkClickResult?.success) {
-              results.logs.push(`✓ Link kliknut - screenshot sprema`);
+              results.logs.push(`✓ Link kliknut: ${emailCapture.linkClickResult.clickedLink}`);
+              results.logs.push(`✓ Link click screenshot: ${emailCapture.linkClickResult.url ? 'DA' : 'NE'}`);
+            } else {
+              results.logs.push(`⚠ Link nije kliknut: ${emailCapture.linkClickResult?.error || 'Nepoznata greška'}`);
             }
+          } else {
+            results.logs.push(`❌ Greška pri obradi maila: ${emailCapture.error || 'Nepoznata greška'}`);
           }
+        } catch (error) {
+          console.error('[TEST] Mailtrap processing error:', error);
+          results.logs.push(`❌ Greška pri obradi maila: ${error.message}`);
         }
-      } catch (error) {
-        console.error('[TEST] Mailtrap error:', error);
-        results.logs.push(`⚠ Mailtrap error: ${error.message}`);
       }
+    } else if (testResult?.success && !mailtrapInboxId) {
+      results.logs.push(`⚠ Test prošao, ali nema Mailtrap inbox ID - preskačem mail screenshotove`);
     }
 
     const duration = Date.now() - startTime;

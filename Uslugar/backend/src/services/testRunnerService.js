@@ -579,10 +579,12 @@ class TestRunnerService {
         }
 
         if (!phoneFound) {
-          logs.push(`⚠ Telefon input nije pronađen - nastavlja se bez njega`);
+          logs.push(`❌ Telefon input nije pronađen`);
+          throw new Error(`Phone field is required but not found or not filled`);
         }
       } else {
-        logs.push(`⚠ Telefon nije u userData - preskače se`);
+        logs.push(`❌ Telefon nije u userData`);
+        throw new Error(`Phone is required but missing from userData`);
       }
 
       // City field
@@ -623,10 +625,12 @@ class TestRunnerService {
         }
 
         if (!cityFound) {
-          logs.push(`⚠ Grad input nije pronađen - nastavlja se bez njega`);
+          logs.push(`❌ Grad input nije pronađen`);
+          throw new Error(`City field is required but not found or not filled`);
         }
       } else {
-        logs.push(`⚠ Grad nije u userData - preskače se`);
+        logs.push(`❌ Grad nije u userData`);
+        throw new Error(`City is required but missing from userData`);
       }
       
       screenshotPath = this._getScreenshotPath(testId, '02_data_entered');
@@ -702,15 +706,45 @@ class TestRunnerService {
         throw new Error(`Register button not found with any selector`);
       }
 
+      // Čekaj navigaciju ili poruku uspjeha
       try {
         await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 30000 });
-        logs.push('✓ Navigacija nakon registracije uspješna');
+        logs.push('✓ Navigacija nakon registracije');
       } catch (e) {
-        logs.push(`⚠ Navigacija timeout (možda je OK): ${e.message}`);
+        logs.push(`⚠ Navigacija timeout - provjeravam poruku uspjeha: ${e.message}`);
+      }
+      
+      // Provjeri da li je registracija stvarno uspjela
+      await page.waitForTimeout(2000); // Čekaj da se stranica učita
+      
+      const currentUrl = page.url();
+      const pageContent = await page.textContent('body');
+      const hasSuccessMessage = pageContent && (
+        pageContent.includes('uspješna') ||
+        pageContent.includes('success') ||
+        pageContent.includes('Registracija') ||
+        currentUrl.includes('/login') ||
+        currentUrl.includes('/dashboard') ||
+        currentUrl.includes('/profile')
+      );
+      
+      if (!hasSuccessMessage && !currentUrl.includes('/login') && !currentUrl.includes('/dashboard')) {
+        // Provjeri ima li greške na stranici
+        const errorElements = await page.locator('.error, .text-red, [role="alert"]').all();
+        if (errorElements.length > 0) {
+          const errorTexts = await Promise.all(errorElements.map(el => el.textContent()));
+          logs.push(`❌ Pronađene greške na stranici: ${errorTexts.join(', ')}`);
+          throw new Error(`Registration failed: ${errorTexts.join(', ')}`);
+        }
+        
+        logs.push(`⚠ Nema jasne poruke uspjeha - provjeravam URL: ${currentUrl}`);
+        // Ne baci grešku, ali logiraj upozorenje
+      } else {
+        logs.push(`✓ Registracija uspješna - URL: ${currentUrl}`);
       }
       
       screenshotPath = this._getScreenshotPath(testId, '03_registered');
-      await page.screenshot({ path: screenshotPath });
+      await page.screenshot({ path: screenshotPath, fullPage: true });
       screenshots.push({
         step: 'Registracija uspješna',
         url: this._getScreenshotUrl(path.basename(screenshotPath))
