@@ -2553,16 +2553,7 @@ export default function AdminTesting(){
       )}
 
       {/* Test-data tab uklonjen - koristiš optimizirani test-data-optimized.json sa samo 5 globalnih korisnika */}
-                    💡 Dodaj više korisnika po ulogama za kompleksnije testove
-                  </div>
-                </div>
-                
-                {/* Grupe korisnika po ulogama */}
-                {[
-                  { key: 'client', label: 'Klijenti (Clients)', role: 'USER', canAddMultiple: true },
-                  { key: 'provider', label: 'Pružatelji (Providers)', role: 'PROVIDER', canAddMultiple: true },
-                  { key: 'admin', label: 'Administratori', role: 'ADMIN', canAddMultiple: true }
-                ].map(group => {
+
                   // Pronađi sve korisnike koji pripadaju ovoj grupi
                   const groupUsers = testData && testData.users ? Object.keys(testData.users)
                     .filter(key => {
