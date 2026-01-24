@@ -662,7 +662,6 @@ export default function AdminTesting(){
   const [runningTest, setRunningTest] = useState(null)
   const [testResults, setTestResults] = useState({})
   const [automatedTestResult, setAutomatedTestResult] = useState(null)
-  const [testResults, setTestResults] = useState(null)
   const [loadingTestResults, setLoadingTestResults] = useState(false)
   const [testData, setTestData] = useState(null)
   const [savingTestData, setSavingTestData] = useState(false)
