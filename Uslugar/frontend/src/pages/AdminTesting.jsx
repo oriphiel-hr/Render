@@ -1487,6 +1487,106 @@ export default function AdminTesting(){
                     { id: '21.3', name: 'SMS notifikacija - nov posao', desc: 'Testira slanje SMS-a za novi posao' },
                     { id: '21.4', name: 'Twilio error handling', desc: 'Testira rukovanje Twilio greškama' }
                   ]
+                },
+                {
+                  num: 22,
+                  title: 'KYC i Verifikacija Dokumenata',
+                  tests: [
+                    { id: '22.1', name: 'Upload KYC dokumenta', desc: 'Testira upload PDF/JPG za KYC' },
+                    { id: '22.2', name: 'Verifikacija OIB-a', desc: 'Testira provjeru OIB-a iz dokumenta' },
+                    { id: '22.3', name: 'KYC status - pending/approved', desc: 'Testira status verification' },
+                    { id: '22.4', name: 'KYC rejection', desc: 'Testira odbijanje KYC-a s razlogom' }
+                  ]
+                },
+                {
+                  num: 23,
+                  title: 'Portfolio i Certifikati',
+                  tests: [
+                    { id: '23.1', name: 'Upload portfolio slika', desc: 'Testira upload više portfolio slika' },
+                    { id: '23.2', name: 'Upload certifikata/licenci', desc: 'Testira upload licence (PDF)' },
+                    { id: '23.3', name: 'Prikaz na profilu', desc: 'Testira prikaz portfolio na profilu' },
+                    { id: '23.4', name: 'Galerija i preview', desc: 'Testira galeriju i lightbox' }
+                  ]
+                },
+                {
+                  num: 24,
+                  title: 'Email Notifikacije',
+                  tests: [
+                    { id: '24.1', name: 'Email - nova ponuda', desc: 'Testira email za novu ponudu' },
+                    { id: '24.2', name: 'Email - novi posao', desc: 'Testira email za novi posao' },
+                    { id: '24.3', name: 'Email - trial expiry', desc: 'Testira email 3 dana prije isteka triala' },
+                    { id: '24.4', name: 'Email - inactivity podsjetnik', desc: 'Testira email za neaktivnost >14 dana' }
+                  ]
+                },
+                {
+                  num: 25,
+                  title: 'Saved Searches i Job Alerts',
+                  tests: [
+                    { id: '25.1', name: 'Spremanje pretraga', desc: 'Testira spremanje filter pretraga' },
+                    { id: '25.2', name: 'Job alerts - kreiranje', desc: 'Testira kreiranje job alert-a' },
+                    { id: '25.3', name: 'Job alerts - frekvencije', desc: 'Testira DAILY, WEEKLY, INSTANT' },
+                    { id: '25.4', name: 'Job alerts - notifikacije', desc: 'Testira slanje email notifikacija' }
+                  ]
+                },
+                {
+                  num: 26,
+                  title: 'Admin - Upravljanje Korisnicima',
+                  tests: [
+                    { id: '26.1', name: 'Admin - Approve provider', desc: 'Testira odobrenje novog providera' },
+                    { id: '26.2', name: 'Admin - Reject provider', desc: 'Testira odbijanje providera s razlogom' },
+                    { id: '26.3', name: 'Admin - Ban/Suspend korisnika', desc: 'Testira suspenziju ili ban korisnika' },
+                    { id: '26.4', name: 'Admin - KYC metrics', desc: 'Testira prikaz KYC statistike' }
+                  ]
+                },
+                {
+                  num: 27,
+                  title: 'Wizard Registracije',
+                  tests: [
+                    { id: '27.1', name: 'Odabir kategorija u wizard-u', desc: 'Testira multi-select kategorija' },
+                    { id: '27.2', name: 'Odabir regija', desc: 'Testira odabir radnih regija' },
+                    { id: '27.3', name: 'Wizard status', desc: 'Testira progres kroz wizard korake' },
+                    { id: '27.4', name: 'Wizard completion', desc: 'Testira završetak i spremanje' }
+                  ]
+                },
+                {
+                  num: 28,
+                  title: 'Upravljanje Pretplatom (Detaljno)',
+                  tests: [
+                    { id: '28.1', name: 'Upgrade pretplate', desc: 'Testira nadogradnju s prorated billingom' },
+                    { id: '28.2', name: 'Downgrade pretplate', desc: 'Testira sniženje pretplate' },
+                    { id: '28.3', name: 'Cancel pretplate', desc: 'Testira otkazivanje pretplate' },
+                    { id: '28.4', name: 'Trial period aktivacija', desc: 'Testira automatsku aktivaciju trial-a' }
+                  ]
+                },
+                {
+                  num: 29,
+                  title: 'ROI Dashboard i Analitike',
+                  tests: [
+                    { id: '29.1', name: 'ROI dashboard - prikaz', desc: 'Testira prikaz ROI metrika' },
+                    { id: '29.2', name: 'ROI grafici', desc: 'Testira grafičke prikaze (lineran, bar)' },
+                    { id: '29.3', name: 'Konverzija leadova', desc: 'Testira prikaz conversion rate' },
+                    { id: '29.4', name: 'Izvještaji', desc: 'Testira mjesečne/godišnje izvještaje' }
+                  ]
+                },
+                {
+                  num: 30,
+                  title: 'Credit Sustav (Detaljno)',
+                  tests: [
+                    { id: '30.1', name: 'Credit transakcije - kupnja', desc: 'Testira dodjeljivanje kredita' },
+                    { id: '30.2', name: 'Credit transakcije - trošenje', desc: 'Testira oduzimanje kredita pri kupnji leada' },
+                    { id: '30.3', name: 'Credit history', desc: 'Testira prikaz sve transakcije kredita' },
+                    { id: '30.4', name: 'Credit refund', desc: 'Testira vraćanje kredita' }
+                  ]
+                },
+                {
+                  num: 31,
+                  title: 'Security Testovi',
+                  tests: [
+                    { id: '31.1', name: 'CORS policy', desc: 'Testira CORS headers i cross-origin zahtjeve' },
+                    { id: '31.2', name: 'CSRF protection', desc: 'Testira CSRF token validaciju' },
+                    { id: '31.3', name: 'Rate limiting', desc: 'Testira rate limiting na API-ju' },
+                    { id: '31.4', name: 'SQL injection test', desc: 'Testira zaštitu od SQL injection-a' }
+                  ]
                 }
               ].map((sector, idx) => (
                 <div key={idx} className="border rounded-lg overflow-hidden">
@@ -1758,7 +1858,386 @@ export default function AdminTesting(){
                                       <li>5. Provjeri: Nema SMS-a poslano ako je greška, korisnik nije blokiran</li>
                                     </>
                                   )}
-                                  {!['18.1', '18.2', '18.3', '18.4', '21.1', '21.2', '21.3', '21.4'].includes(test.id) && (
+                                  {test.id === '22.1' && (
+                                    <>
+                                      <li>1. Kao provider: Otvori <strong>/profile/kyc</strong></li>
+                                      <li>2. Trebao bi vidjeti: Upload forma s tekstom "Učitajte dokument za KYC"</li>
+                                      <li>3. Odaberi dokument (PDF ili JPG/PNG)</li>
+                                      <li>4. Klikni "Upload" → ✅ Trebala bi poruka "Dokument spremat, čeka se provjera"</li>
+                                      <li>5. Provjeri: Dokument je vidljiv s statusom "PENDING"</li>
+                                    </>
+                                  )}
+                                  {test.id === '22.2' && (
+                                    <>
+                                      <li>1. Upload KYC dokument koji sadrži OIB (test 22.1)</li>
+                                      <li>2. Backend: Trebalo bi da automatski ekstraktira OIB iz dokumenta (OCR ili manual)</li>
+                                      <li>3. ✅ TREBALO BI: Ako OIB odgovara profilu providera → Status "VERIFIED"</li>
+                                      <li>4. ✅ TREBALO BI: Ako OIB NE odgovara → Status "MISMATCH" s napomenom za admin</li>
+                                      <li>5. Provjeri AdminKYCMetrics za ovaj report</li>
+                                    </>
+                                  )}
+                                  {test.id === '22.3' && (
+                                    <>
+                                      <li>1. Kao provider: Upload KYC dokument (test 22.1)</li>
+                                      <li>2. Trebao bi vidjeti status: <strong>PENDING</strong> - čeka se admin provjera</li>
+                                      <li>3. Kao admin: Otvori <strong>/admin/verification-documents</strong></li>
+                                      <li>4. Pronađi dokument i klikni "Provjeri" → trebalo bi forma za odobrenje/odbijanje</li>
+                                      <li>5. Klikni "Odobri" → Status se mijenja na <strong>APPROVED</strong></li>
+                                      <li>6. Kao provider: Status se osvježava na profilu</li>
+                                    </>
+                                  )}
+                                  {test.id === '22.4' && (
+                                    <>
+                                      <li>1. Kao admin: Otvori <strong>/admin/verification-documents</strong></li>
+                                      <li>2. Pronađi KYC dokument i klikni "Odbij"</li>
+                                      <li>3. Trebala bi forma za unos razloga (npr. "Dokument nije čitljiv")</li>
+                                      <li>4. Unesi razlog i klikni "Pošalji" → ✅ Status se mijenja na <strong>REJECTED</strong></li>
+                                      <li>5. ✅ TREBALO BI: Provider dobije email s razlogom odbijanja</li>
+                                      <li>6. Kao provider: Trebao bi moći ponovno uploadati dokument</li>
+                                    </>
+                                  )}
+                                  {test.id === '23.1' && (
+                                    <>
+                                      <li>1. Kao provider: Otvori <strong>/profile</strong></li>
+                                      <li>2. Pronađi "Portfolio" sekciju</li>
+                                      <li>3. Klikni "Dodaj sliku" i odaberi JPG/PNG datoteke (minimalno 2-3 slike)</li>
+                                      <li>4. ✅ TREBALO BI: Sve slike su uploadane i vidljive u preview-u</li>
+                                      <li>5. Klikni "Spremi" → ✅ Trebala bi poruka "Portfolio ažuriran"</li>
+                                      <li>6. Provjeri: Slike su vidljive na javnom profilu providera</li>
+                                    </>
+                                  )}
+                                  {test.id === '23.2' && (
+                                    <>
+                                      <li>1. Kao provider: Otvori <strong>/profile</strong></li>
+                                      <li>2. Pronađi "Certifikati" ili "Licence" sekciju</li>
+                                      <li>3. Klikni "Upload certifikat" i odaberi PDF datoteku</li>
+                                      <li>4. Unesi naziv certifikata (npr. "Elektrotehnička dozvola 2024")</li>
+                                      <li>5. Klikni "Upload" → ✅ Trebala bi poruka "Certifikat uploadan"</li>
+                                      <li>6. Provjeri: Certifikat je vidljiv s datumom isteka (ako je dostupan)</li>
+                                    </>
+                                  )}
+                                  {test.id === '23.3' && (
+                                    <>
+                                      <li>1. Kao provider: Upload portfolio slike i certifikate (test 23.1, 23.2)</li>
+                                      <li>2. Otvori svoj profil ili javni link profila</li>
+                                      <li>3. ✅ TREBALO BI: Portfolio sekcija je vidljiva s galericom slika</li>
+                                      <li>4. ✅ TREBALO BI: Certifikati/licence su vidljivi s downloadable linkovima</li>
+                                      <li>5. Kao klijent: Otvori profil providera → trebalo bi vidjeti sve portfolio slike</li>
+                                    </>
+                                  )}
+                                  {test.id === '23.4' && (
+                                    <>
+                                      <li>1. Upload nekoliko portfolio slika (test 23.1)</li>
+                                      <li>2. Trebalo bi biti dostupna galerija s thumbnailima</li>
+                                      <li>3. Klikni na sliku → trebalo bi otvoriti lightbox s full size slikom</li>
+                                      <li>4. Testiraj: Prethodna/sljedeća gumb za navigaciju kroz slike</li>
+                                      <li>5. Testiraj: Close gumb (X) za zatvaranje lightbox-a</li>
+                                    </>
+                                  )}
+                                  {test.id === '24.1' && (
+                                    <>
+                                      <li>1. Kao provider: Kupi lead (test 4.1)</li>
+                                      <li>2. Kao klijent: Pošalji ponudu provideru na taj lead</li>
+                                      <li>3. ✅ TREBALO BI: Provider dobije email: "Nova ponuda za posao: [naslov]"</li>
+                                      <li>4. Email trebao bi imati: Link do ponude, iznos, ili poruku</li>
+                                      <li>5. Provjeri: Email je stigao na ispravnu adresu (Mailtrap/Gmail)</li>
+                                    </>
+                                  )}
+                                  {test.id === '24.2' && (
+                                    <>
+                                      <li>1. Kao klijent: Kreiraj novi posao (test 3.1)</li>
+                                      <li>2. Trebalo bi da se email pošalje sve relevantnim providerima (ako su omogućili)</li>
+                                      <li>3. ✅ TREBALO BI: Provider dobije email: "Nov posao koji vas može zanimati: [naslov]"</li>
+                                      <li>4. Email trebao bi imati:Link do posla, kategorija, budžet</li>
+                                      <li>5. Provjeri: Email je stran samo providerima s tom kategorijom</li>
+                                    </>
+                                  )}
+                                  {test.id === '24.3' && (
+                                    <>
+                                      <li>1. Kreiraj novog providera (registracija)</li>
+                                      <li>2. Trebalo bi da je automatski upisana u TRIAL period (14 dana)</li>
+                                      <li>3. Simuliraj vrijeme: Postavi datum na 11 dana nakon kreiranja</li>
+                                      <li>4. ✅ TREBALO BI: Provider dobije email: "Trial istječe za 3 dana"</li>
+                                      <li>5. Email trebao bi imati: Link za upgrade s popustom (npr. 20%)</li>
+                                    </>
+                                  )}
+                                  {test.id === '24.4' && (
+                                    <>
+                                      <li>1. Kreiraj novog korisnika ali se ne prijavi 14+ dana</li>
+                                      <li>2. ✅ TREBALO BI: Korisnik dobije email podsjetnik: "Dugo niste bili aktivni"</li>
+                                      <li>3. Email trebao bi imati: Razlog (neactivity), Link za login</li>
+                                      <li>4. Edge case: Ako je korisnik aktivan (login, kupnja leada), email se ne šalje</li>
+                                    </>
+                                  )}
+                                  {test.id === '25.1' && (
+                                    <>
+                                      <li>1. Kao klijent: Otvori <strong>/jobs</strong> i primijeni filtre (kategorija, grad, budžet)</li>
+                                      <li>2. Trebao bi vidjeti gumb "Spremi pretragu"</li>
+                                      <li>3. Unesi naziv pretrage (npr. "Električni Zagreb")</li>
+                                      <li>4. Klikni "Spremi" → ✅ Trebala bi poruka "Pretraga sprema"</li>
+                                      <li>5. Otvori <strong>/profile/saved-searches</strong> → trebala bi vidjeti spremljenu pretragu</li>
+                                    </>
+                                  )}
+                                  {test.id === '25.2' && (
+                                    <>
+                                      <li>1. Kao provider: Otvori <strong>/jobs</strong></li>
+                                      <li>2. Primijeni filtre (kategorija, grad)</li>
+                                      <li>3. Trebao bi vidjeti gumb "Kreiraj alert" ili "Job Alert"</li>
+                                      <li>4. Klikni → trebalo bi forma za naziv i frekvenciju</li>
+                                      <li>5. Odaberi frekvenciju i klikni "Kreiraj" → ✅ Alert je kreiran</li>
+                                      <li>6. Provjeri <strong>/profile/job-alerts</strong> → trebaj vidjeti alert</li>
+                                    </>
+                                  )}
+                                  {test.id === '25.3' && (
+                                    <>
+                                      <li>1. Kreiraj job alert (test 25.2)</li>
+                                      <li>2. Trebalo bi vidjeti opcije za frekvenciju:</li>
+                                      <li>   - <strong>INSTANT</strong>: Email čim se novi posao objavi</li>
+                                      <li>   - <strong>DAILY</strong>: Dnevni summary email</li>
+                                      <li>   - <strong>WEEKLY</strong>: Tjedni summary email</li>
+                                      <li>3. Testiraj: Promijeni frekvenciju → trebalo bi se osvježiti</li>
+                                    </>
+                                  )}
+                                  {test.id === '25.4' && (
+                                    <>
+                                      <li>1. Kreiraj job alert s INSTANT frekvencijom (test 25.2)</li>
+                                      <li>2. Kreiraj novi posao koji odgovara alert filterima (test 3.1)</li>
+                                      <li>3. ✅ TREBALO BI: Provider odmah dobije email s novim poslom</li>
+                                      <li>4. Kreiraj job alert s DAILY frekvencijom</li>
+                                      <li>5. ✅ TREBALO BI: Svako jutro provider dobije daily summary</li>
+                                    </>
+                                  )}
+                                  {test.id === '26.1' && (
+                                    <>
+                                      <li>1. Kreiraj novog providera (registracija - test 1.2)</li>
+                                      <li>2. Kao admin: Otvori <strong>/admin/provider-approvals</strong></li>
+                                      <li>3. Pronađi novog providera s statusom "PENDING"</li>
+                                      <li>4. Klikni "Odobri" → ✅ Status se mijenja na <strong>APPROVED</strong></li>
+                                      <li>5. ✅ TREBALO BI: Provider dobije email "Vaš račun je odobren"</li>
+                                      <li>6. Provjeri: Provider može sada pristupiti svim funkcijama</li>
+                                    </>
+                                  )}
+                                  {test.id === '26.2' && (
+                                    <>
+                                      <li>1. Kao admin: Otvori <strong>/admin/provider-approvals</strong></li>
+                                      <li>2. Pronađi providera i klikni "Odbij"</li>
+                                      <li>3. Trebala bi forma za unos razloga odbijanja</li>
+                                      <li>4. Unesi razlog i klikni "Pošalji" → ✅ Status se mijenja na <strong>REJECTED</strong></li>
+                                      <li>5. ✅ TREBALO BI: Provider dobije email s razlogom</li>
+                                    </>
+                                  )}
+                                  {test.id === '26.3' && (
+                                    <>
+                                      <li>1. Kao admin: Otvori <strong>/admin/users</strong></li>
+                                      <li>2. Pronađi korisnika i otvori njegov profil</li>
+                                      <li>3. Trebao bi vidjeti gumb "Suspend" ili "Ban"</li>
+                                      <li>4. Klikni → trebala bi forma za razlog i trajanje (npr. 7 dana)</li>
+                                      <li>5. Unesi razlog i klikni "Suspend" → ✅ Korisnik je suspenzioniran</li>
+                                      <li>6. Provjeri: Korisnik ne može se prijavio ili pokreće ograničene akcije</li>
+                                    </>
+                                  )}
+                                  {test.id === '26.4' && (
+                                    <>
+                                      <li>1. Kao admin: Otvori <strong>/admin/kyc-metrics</strong></li>
+                                      <li>2. Trebalo bi vidjeti: Ukupan broj KYC aplikacija, verified, pending, rejected</li>
+                                      <li>3. Trebalo bi vidjeti: Prosječno vrijeme do verifikacije</li>
+                                      <li>4. Trebalo bi vidjeti: Grafički prikaz trendova (linerni graf)</li>
+                                      <li>5. Trebalo bi vidjeti: Filter po datumu i statusu</li>
+                                    </>
+                                  )}
+                                  {test.id === '27.1' && (
+                                    <>
+                                      <li>1. Kreiraj novog providera (test 1.2)</li>
+                                      <li>2. Nakon registracije, trebalo bi redirect na <strong>Wizard</strong></li>
+                                      <li>3. Trebalo bi vidjeti "Odabir kategorija" korak</li>
+                                      <li>4. Trebala bi biti dostupna lista svih 51 kategorije</li>
+                                      <li>5. Testiraj: Odaberi maksimalno 5 kategorija (trebalo bi blokirano 6+)</li>
+                                      <li>6. Klikni "Dalje" → trebalo bi idućih korak u wizard-u</li>
+                                    </>
+                                  )}
+                                  {test.id === '27.2' && (
+                                    <>
+                                      <li>1. U wizard-u: Korak "Odabir regija"</li>
+                                      <li>2. Trebala bi biti dostupna lista svih regija/županija Hrvatske</li>
+                                      <li>3. Testiraj: Odaberi nekoliko regija (npr. Zagreb, Split, Rijeka)</li>
+                                      <li>4. ✅ TREBALO BI: Odabrane regije su vidljive s checkbox-ima</li>
+                                      <li>5. Klikni "Dalje" → trebalo bi idućih korak</li>
+                                    </>
+                                  )}
+                                  {test.id === '27.3' && (
+                                    <>
+                                      <li>1. Kreiraj novog providera i kreni kroz wizard (test 27.1, 27.2)</li>
+                                      <li>2. Trebalo bi vidjeti progres bar (npr. "Korak 1 od 4")</li>
+                                      <li>3. Trebalo bi vidjeti trenutni korak i što je preostalo</li>
+                                      <li>4. Testiraj: "Nazad" gumb za vraćanje na prethodni korak</li>
+                                      <li>5. Provjeri: Uneseni podaci se čuvaju pri vraćanju nazad</li>
+                                    </>
+                                  )}
+                                  {test.id === '27.4' && (
+                                    <>
+                                      <li>1. Kreiraj novog providera i prođi kroz sve wizard korake</li>
+                                      <li>2. Na završnom koraku, trebalo bi sažetka (Review) što je unesen</li>
+                                      <li>3. Klikni "Završi" → ✅ Trebala bi poruka "Profil je aktivan"</li>
+                                      <li>4. Trebalo bi redirect na dashboard ili profil</li>
+                                      <li>5. Provjeri: Sve unesene podatke su spremljene (kategorije, regije, ostalo)</li>
+                                    </>
+                                  )}
+                                  {test.id === '28.1' && (
+                                    <>
+                                      <li>1. Kao provider: Otvori <strong>/subscription</strong></li>
+                                      <li>2. Trebao bi vidjeti trenutni plan (npr. BASIC)</li>
+                                      <li>3. Odaberi viši plan (npr. PREMIUM)</li>
+                                      <li>4. Trebalo bi vidjeti "Prorated billing" obračun:</li>
+                                      <li>   - Preostali dio od trenutnog plana: -500 kn (BASIC za 15 dana)</li>
+                                      <li>   - Novi plan PREMIUM: +1500 kn</li>
+                                      <li>   - Ukupno za plaćanje: ~1000 kn</li>
+                                      <li>5. Klikni "Nadogradi" → Stripe Checkout → plaćanje</li>
+                                    </>
+                                  )}
+                                  {test.id === '28.2' && (
+                                    <>
+                                      <li>1. Kao provider na PREMIUM planu: Otvori /subscription</li>
+                                      <li>2. Odaberi niži plan (BASIC)</li>
+                                      <li>3. Trebalo bi poruka: "Promjena plana će biti učinjena na kraju perioda"</li>
+                                      <li>4. Klikni "Sniži plan"</li>
+                                      <li>5. ✅ TREBALO BI: Plan ostaje PREMIUM do kraja mjeseca, onda se promijeni na BASIC</li>
+                                      <li>6. ✅ TREBALO BI: Povrat za preostali dio (prorated)</li>
+                                    </>
+                                  )}
+                                  {test.id === '28.3' && (
+                                    <>
+                                      <li>1. Kao provider: Otvori <strong>/subscription</strong></li>
+                                      <li>2. Trebao bi vidjeti gumb "Otkaži pretplatu"</li>
+                                      <li>3. Klikni → trebala bi forma za razlog otkazivanja</li>
+                                      <li>4. Unesi razlog i klikni "Otkaži" → ✅ Status se mijenja na "CANCELLED"</li>
+                                      <li>5. ✅ TREBALO BI: Pretplata ostaje do kraja trenutnog perioda</li>
+                                      <li>6. ✅ TREBALO BI: Korisnik dobije email potvrdu</li>
+                                    </>
+                                  )}
+                                  {test.id === '28.4' && (
+                                    <>
+                                      <li>1. Kreiraj novog providera (registracija)</li>
+                                      <li>2. ✅ TREBALO BI: Trebao bi biti automatski u TRIAL periodu (14 dana)</li>
+                                      <li>3. Trebalo bi vidjeti: 8 besplatnih kredita, sve Premium feature-e</li>
+                                      <li>4. Otvori <strong>/subscription</strong> → trebalo bi vidjeti "TRIAL" plan</li>
+                                      <li>5. Trebalo bi vidjeti: Broj dana preostalo do isteka (14 dana)</li>
+                                    </>
+                                  )}
+                                  {test.id === '29.1' && (
+                                    <>
+                                      <li>1. Kao provider: Otvori <strong>/roi</strong> dashboard</li>
+                                      <li>2. Trebalo bi vidjeti key metrics kartice:</li>
+                                      <li>   - Ukupan prihod od leadova</li>
+                                      <li>   - Konverzija rate (%)</li>
+                                      <li>   - Prosječna vrijednost leada</li>
+                                      <li>   - Ukupno potrošenih kredita</li>
+                                      <li>3. Trebalo bi vidjeti trenutne brojeve (npr. 5000 kn, 25%, 500 kn, 150)</li>
+                                    </>
+                                  )}
+                                  {test.id === '29.2' && (
+                                    <>
+                                      <li>1. Otvori /roi dashboard</li>
+                                      <li>2. Trebalo bi vidjeti grafičke prikaze:</li>
+                                      <li>   - Linerni graf: ROI trend (zadnjih 30 dana)</li>
+                                      <li>   - Bar graf: Konverzija po kategoriji</li>
+                                      <li>   - Doughnut graf: Raspodjela rashoda (po kategoriji/izvor)</li>
+                                      <li>3. Trebalo bi biti dostupan filter po datumu (danima, tjednom, mjesecom, godinom)</li>
+                                      <li>4. Testiraj: Promijeni filter → grafici se osvježavaju</li>
+                                    </>
+                                  )}
+                                  {test.id === '29.3' && (
+                                    <>
+                                      <li>1. Kao provider: Kupi nekoliko leadova (test 4.1)</li>
+                                      <li>2. Označi neke kao "Kontaktirani" ili "Konvertirani"</li>
+                                      <li>3. Otvori /roi dashboard</li>
+                                      <li>4. Trebalo bi vidjeti: Conversion rate = (kontaktirani+konvertirani) / ukupno leads * 100%</li>
+                                      <li>5. Trebalo bi vidjeti: Razrada po statusu (PENDING, INTERESTED, CONVERTED)</li>
+                                    </>
+                                  )}
+                                  {test.id === '29.4' && (
+                                    <>
+                                      <li>1. Otvori /roi dashboard</li>
+                                      <li>2. Trebao bi vidjeti gumb "Preuzmi izvještaj" ili sličan</li>
+                                      <li>3. Trebalo bi biti dostupni vremenski periodi:</li>
+                                      <li>   - Mjesečni (npr. Januar 2025)</li>
+                                      <li>   - Godišnji (npr. 2024)</li>
+                                      <li>4. Klikni na izvještaj → trebalo bi preuzeti PDF s detaljnom analizom</li>
+                                    </>
+                                  )}
+                                  {test.id === '30.1' && (
+                                    <>
+                                      <li>1. Kao korisnik: Otvori /subscription i kupi nove kredite</li>
+                                      <li>2. Nakon plaćanja, trebalo bi biti ažurirani krediti</li>
+                                      <li>3. Otvori <strong>/profile/credits</strong> ili <strong>/subscription</strong></li>
+                                      <li>4. Trebalo bi vidjeti novu transakciju: "+30 kredita" s datumom</li>
+                                      <li>5. Trebalo bi biti vidljiv razlog: "Kupnja - PREMIUM plan"</li>
+                                    </>
+                                  )}
+                                  {test.id === '30.2' && (
+                                    <>
+                                      <li>1. Kao provider: Kupi lead (test 4.1)</li>
+                                      <li>2. Trebalo bi biti oduzeto kredita (npr. -15 kredita za lead)</li>
+                                      <li>3. Otvori /profile/credits</li>
+                                      <li>4. Trebalo bi vidjeti transakciju: "-15 kredita" s datumom i razlogom: "Kupnja leada - [naziv posla]"</li>
+                                      <li>5. Krediti trebali bi biti stalno ažurirani</li>
+                                    </>
+                                  )}
+                                  {test.id === '30.3' && (
+                                    <>
+                                      <li>1. Kao provider: Otvori <strong>/profile/credit-history</strong> ili <strong>/subscription/history</strong></li>
+                                      <li>2. Trebalo bi vidjeti sve transakcije kredita (kupnja, trošenje, refund, itd.)</li>
+                                      <li>3. Trebalo bi biti dostupan filter po tipu (CREDIT, PURCHASE, REFUND)</li>
+                                      <li>4. Trebalo bi biti dostupan filter po datumu</li>
+                                      <li>5. Trebalo bi biti dostupna opcija "Preuzmi kao CSV"</li>
+                                    </>
+                                  )}
+                                  {test.id === '30.4' && (
+                                    <>
+                                      <li>1. Kao provider: Kupi lead i označi kao "Klijent nije odgovorio"</li>
+                                      <li>2. Trebalo bi biti opcija "Zatraži refund"</li>
+                                      <li>3. Klikni → trebalo bi biti vraćeno kredita</li>
+                                      <li>4. Otvori /profile/credits → trebalo bi vidjeti: "-15 PURCHASE" i "+15 REFUND"</li>
+                                      <li>5. ✅ Netto efekt: Krediti su vraćeni</li>
+                                    </>
+                                  )}
+                                  {test.id === '31.1' && (
+                                    <>
+                                      <li>1. Otvori DevTools (F12) → Network tab</li>
+                                      <li>2. Kreiraj neki API zahtjev (npr. load profile)</li>
+                                      <li>3. Pronađi zahtjev u Network tab-u</li>
+                                      <li>4. Pogledaj "Response Headers"</li>
+                                      <li>5. ✅ TREBALO BI: Trebao bi biti `Access-Control-Allow-Origin: https://www.uslugar.eu`</li>
+                                      <li>6. ✅ TREBALO BI: Trebao bi biti `Access-Control-Allow-Methods: GET, POST, PUT, DELETE`</li>
+                                    </>
+                                  )}
+                                  {test.id === '31.2' && (
+                                    <>
+                                      <li>1. Otvori DevTools → Console tab</li>
+                                      <li>2. Izvršiti POST zahtjev s "fetch" ali BEZ CSRF tokena</li>
+                                      <li>3. Trebalo bi biti HTTP 403 greška: "CSRF token missing"</li>
+                                      <li>4. ✅ TREBALO BI: POST zahtjev ne bi trebao biti procesiran bez validan CSRF tokena</li>
+                                      <li>5. Testiraj: Dodaj validan CSRF token → trebalo bi da radi</li>
+                                    </>
+                                  )}
+                                  {test.id === '31.3' && (
+                                    <>
+                                      <li>1. Backend test: Simuliraj više zahtjeva iz iste IP adrese u kratkom vremenu</li>
+                                      <li>2. Trebalo bi biti limit (npr. 100 zahtjeva po minuti)</li>
+                                      <li>3. ✅ TREBALO BI: Nakon limitavanja zahtjeva → HTTP 429 "Too Many Requests"</li>
+                                      <li>4. Provjeri: Korisnik ne može dalje slati zahtjeve dok se ne obnovi</li>
+                                      <li>5. Edge case: Admin ili VIP korisnici trebali bi imati viši limit</li>
+                                    </>
+                                  )}
+                                  {test.id === '31.4' && (
+                                    <>
+                                      <li>1. Backend test: Simuliraj SQL injection napad</li>
+                                      <li>2. Testiraj s payloadom: `' OR '1'='1` u nekom login field-u</li>
+                                      <li>3. ✅ TREBALO BI: Parametrizovani query trebao bi biti korišten (prepared statements)</li>
+                                      <li>4. ✅ TREBALO BI: SQL injection ne bi trebao biti moguć - trebala bi biti greška ili odbijeni zahtjev</li>
+                                      <li>5. ✅ TREBALO BI: Trebali bi biti logirani svaki pokušaj SQL injectiona</li>
+                                    </>
+                                  )}
+                                  {!['18.1', '18.2', '18.3', '18.4', '21.1', '21.2', '21.3', '21.4', '22.1', '22.2', '22.3', '22.4', '23.1', '23.2', '23.3', '23.4', '24.1', '24.2', '24.3', '24.4', '25.1', '25.2', '25.3', '25.4', '26.1', '26.2', '26.3', '26.4', '27.1', '27.2', '27.3', '27.4', '28.1', '28.2', '28.3', '28.4', '29.1', '29.2', '29.3', '29.4', '30.1', '30.2', '30.3', '30.4', '31.1', '31.2', '31.3', '31.4'].includes(test.id) && (
                                     <>
                                       <li>1. Prijavi se s odgovarajućom ulogom za ovaj test</li>
                                       <li>2. Navigiraj na relevantnu stranicu (vidi naziv testa)</li>
