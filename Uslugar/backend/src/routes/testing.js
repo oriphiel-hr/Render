@@ -123,7 +123,11 @@ r.get('/test-data', async (req, res, next) => {
           phone: '+385991111111',
           city: 'Zagreb',
           role: 'USER',
-          mailtrap: { email: '', inboxId: '' }
+          mailtrap: {
+            validData: { email: 'test.client@mailtrap.io', inboxId: '1111111' },
+            invalidData: { email: 'test.client.invalid@mailtrap.io', inboxId: '1111112' },
+            missingData: { email: 'test.client.missing@mailtrap.io', inboxId: '1111113' }
+          }
         },
         provider: {
           email: 'test.provider@uslugar.hr',
@@ -135,7 +139,11 @@ r.get('/test-data', async (req, res, next) => {
           legalStatus: 'FREELANCER',
           oib: '12345678901',
           description: 'FREELANCER - OIB je matematički validan ali nije u registru. Za ispravne podatke koristi svoj OIB.',
-          mailtrap: { email: '', inboxId: '' }
+          mailtrap: {
+            validData: { email: 'test.provider@mailtrap.io', inboxId: '2222222' },
+            invalidData: { email: 'test.provider.invalid@mailtrap.io', inboxId: '2222223' },
+            missingData: { email: 'test.provider.missing@mailtrap.io', inboxId: '2222224' }
+          }
         },
         director: {
           email: 'test.director@uslugar.hr',
@@ -147,7 +155,11 @@ r.get('/test-data', async (req, res, next) => {
           legalStatus: 'DOO',
           oib: 'UNESI_PRAVI_OIB_IZ_SUDSKOG_REGISTRA',
           companyName: 'UNESI_NAZIV_IZ_SUDSKOG_REGISTRA',
-          mailtrap: { email: '', inboxId: '' }
+          mailtrap: {
+            validData: { email: 'test.director@mailtrap.io', inboxId: '3333333' },
+            invalidData: { email: 'test.director.invalid@mailtrap.io', inboxId: '3333334' },
+            missingData: { email: 'test.director.missing@mailtrap.io', inboxId: '3333335' }
+          }
         },
         teamMember: {
           email: 'test.team@uslugar.hr',
@@ -158,14 +170,20 @@ r.get('/test-data', async (req, res, next) => {
           role: 'PROVIDER',
           legalStatus: 'FREELANCER',
           oib: '12345678903',
-          mailtrap: { email: '', inboxId: '' }
+          mailtrap: {
+            validData: { email: 'test.team@mailtrap.io', inboxId: '4444444' },
+            invalidData: { email: 'test.team.invalid@mailtrap.io', inboxId: '4444445' },
+            missingData: { email: 'test.team.missing@mailtrap.io', inboxId: '4444446' }
+          }
         },
         admin: {
           email: 'admin@uslugar.hr',
           password: 'Admin123456!',
           fullName: 'Test Admin',
           role: 'ADMIN',
-          mailtrap: { email: '', inboxId: '' }
+          mailtrap: {
+            validData: { email: 'test.admin@mailtrap.io', inboxId: '5555555' }
+          }
         }
       }
     };
