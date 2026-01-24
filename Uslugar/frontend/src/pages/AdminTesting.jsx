@@ -667,6 +667,14 @@ export default function AdminTesting(){
   const [savingTestData, setSavingTestData] = useState(false)
   const [uploadingDocument, setUploadingDocument] = useState(false)
   
+  // Checkpoint/Rollback
+  const [checkpoints, setCheckpoints] = useState([])
+  const [loadingCheckpoints, setLoadingCheckpoints] = useState(false)
+  const [creatingCheckpoint, setCreatingCheckpoint] = useState(false)
+  const [checkpointName, setCheckpointName] = useState('')
+  const [checkpointTables, setCheckpointTables] = useState('')
+  const [expandedCheckpoint, setExpandedCheckpoint] = useState(null)
+  
   // Slušaj promjene hash-a u URL-u
   useEffect(() => {
     let isHandlingHash = false // Flag da izbjegnemo beskonačnu petlju
@@ -808,11 +816,6 @@ export default function AdminTesting(){
     }
   }
 
-  useEffect(() => {
-    if (tab === 'test-data') {
-      loadTestData()
-    }
-  }, [tab])
 
   const saveTestData = async () => {
     if (!testData) return
@@ -832,6 +835,91 @@ export default function AdminTesting(){
       setSavingTestData(false)
     }
   }
+
+  // Checkpoint funkcije
+  const loadCheckpoints = async () => {
+    setLoadingCheckpoints(true)
+    try {
+      const res = await api.get('/testing/checkpoints')
+      setCheckpoints(res.data.checkpoints || [])
+      console.log('✅ Checkpoint-i učitani:', res.data.checkpoints?.length || 0)
+    } catch (e) {
+      console.error('❌ Greška pri učitavanju checkpoint-a:', e)
+      setCheckpoints([])
+    } finally {
+      setLoadingCheckpoints(false)
+    }
+  }
+
+  const createCheckpoint = async () => {
+    if (!checkpointName.trim()) {
+      alert('Unesi naziv checkpoint-a')
+      return
+    }
+
+    setCreatingCheckpoint(true)
+    try {
+      const tables = checkpointTables.trim() ? checkpointTables.split(',').map(t => t.trim()) : null
+      const res = await api.post('/testing/checkpoint/create', {
+        name: checkpointName,
+        tables
+      })
+
+      if (res.data.success) {
+        alert(`✅ Checkpoint kreiran: ${res.data.checkpointId}`)
+        setCheckpointName('')
+        setCheckpointTables('')
+        await loadCheckpoints()
+      }
+    } catch (e) {
+      console.error('❌ Greška pri kreiranju checkpointa:', e)
+      alert(`Greška: ${e?.response?.data?.error || e.message}`)
+    } finally {
+      setCreatingCheckpoint(false)
+    }
+  }
+
+  const rollbackCheckpoint = async (checkpointId) => {
+    if (!window.confirm(`Sigurno? Baza će biti vraćena na to stanje!`)) {
+      return
+    }
+
+    try {
+      const res = await api.post('/testing/checkpoint/rollback', {
+        checkpointId
+      })
+
+      if (res.data.success) {
+        alert(`✅ Rollback uspješan`)
+        await loadCheckpoints()
+      }
+    } catch (e) {
+      console.error('❌ Greška pri rollback-u:', e)
+      alert(`Greška: ${e?.response?.data?.error || e.message}`)
+    }
+  }
+
+  const deleteCheckpoint = async (checkpointId) => {
+    if (!window.confirm(`Sigurno obrisati checkpoint?`)) {
+      return
+    }
+
+    try {
+      await api.delete(`/testing/checkpoint/${checkpointId}`)
+      alert('✅ Checkpoint obrisan')
+      await loadCheckpoints()
+    } catch (e) {
+      console.error('❌ Greška pri brisanju checkpointa:', e)
+      alert(`Greška: ${e?.response?.data?.error || e.message}`)
+    }
+  }
+
+  useEffect(() => {
+    if (tab === 'test-data') {
+      loadTestData()
+      loadCheckpoints()
+    }
+  }, [tab])
 
   const uploadTestDocument = async (file, key, description) => {
     setUploadingDocument(true)
@@ -2695,6 +2783,130 @@ export default function AdminTesting(){
             >
               {savingTestData ? 'Spremanje...' : '💾 Spremi test podatke'}
             </button>
+          </div>
+
+          {/* CHECKPOINT & ROLLBACK SEKCIJA */}
+          <div className="border-t pt-6 mt-6">
+            <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+              <span>📸 Checkpoint & Rollback</span>
+              <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">Fleksibilan po tablicama</span>
+            </h2>
+            
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+              <strong>💡 Kako funkcionira:</strong> Kreiraj "snapshot" baze s odabranim tablicama. Nakon testa, vrati se u točnu točku. Savršeno za data isolation i scenarije s više korisnika.
+            </div>
+
+            {/* Kreiraj Checkpoint */}
+            <div className="border rounded-lg p-6 bg-white mb-4">
+              <h3 className="text-lg font-semibold mb-4">✨ Kreiraj Checkpoint</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Naziv</label>
+                  <input
+                    type="text"
+                    className="w-full border rounded px-3 py-2 text-sm"
+                    placeholder="npr. before_registration"
+                    value={checkpointName}
+                    onChange={e => setCheckpointName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Tablice (zarezom odvojene)</label>
+                  <input
+                    type="text"
+                    className="w-full border rounded px-3 py-2 text-sm font-mono text-xs"
+                    placeholder="npr. User,Job,Offer (prazno=SVE)"
+                    value={checkpointTables}
+                    onChange={e => setCheckpointTables(e.target.value)}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Ostavi prazno za sve tablice</p>
+                </div>
+                <div className="flex items-end">
+                  <button
+                    onClick={createCheckpoint}
+                    disabled={creatingCheckpoint}
+                    className="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors disabled:bg-gray-400"
+                  >
+                    {creatingCheckpoint ? 'Kreiram...' : '📸 Kreiraj'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Checkpoints Lista */}
+            <div className="border rounded-lg p-6 bg-white">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                📋 Dostupni Checkpoint-i
+                {checkpoints.length > 0 && (
+                  <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded">{checkpoints.length}</span>
+                )}
+              </h3>
+
+              {loadingCheckpoints ? (
+                <div className="text-center py-8 text-gray-500">Učitavam...</div>
+              ) : checkpoints.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">Nema kreiranih checkpoint-a</div>
+              ) : (
+                <div className="space-y-3">
+                  {checkpoints.map(cp => (
+                    <div
+                      key={cp.id}
+                      className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+                    >
+                      <div
+                        className="flex items-center justify-between cursor-pointer"
+                        onClick={() => setExpandedCheckpoint(expandedCheckpoint === cp.id ? null : cp.id)}
+                      >
+                        <div>
+                          <h4 className="font-semibold text-sm flex items-center gap-2">
+                            <span>{cp.name}</span>
+                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
+                              {cp.tables.length} tablica{cp.tables.length !== 1 ? 'a' : ''}
+                            </span>
+                          </h4>
+                          <p className="text-xs text-gray-500 mt-1">
+                            📅 {new Date(cp.timestamp).toLocaleString('hr-HR')}
+                          </p>
+                        </div>
+                        <svg
+                          className={`w-5 h-5 text-gray-500 transform transition-transform ${
+                            expandedCheckpoint === cp.id ? 'rotate-180' : ''
+                          }`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+
+                      {expandedCheckpoint === cp.id && (
+                        <div className="mt-4 space-y-3 border-t pt-4">
+                          <div className="text-xs text-gray-600 bg-white rounded p-2">
+                            <strong>Tablice:</strong> {cp.tables.join(', ')}
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => rollbackCheckpoint(cp.id)}
+                              className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                            >
+                              <span>⏪</span>
+                              <span>Rollback</span>
+                            </button>
+                            <button
+                              onClick={() => deleteCheckpoint(cp.id)}
+                              className="flex-1 px-3 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                            >
+                              🗑️ Obriši
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
