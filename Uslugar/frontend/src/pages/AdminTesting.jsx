@@ -2737,60 +2737,196 @@ export default function AdminTesting(){
 
                   {/* MINIMALNI PODACI - OVO TREBA UNIJETI */}
                   <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="font-semibold text-xs text-red-700 mb-2">✋ TREBAM UNIJETI (Minimalni podaci):</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-medium text-red-700 mb-1">Mailtrap Email *</label>
-                        <input
-                          type="email"
-                          className="w-full border border-red-300 rounded px-3 py-2 text-sm"
-                          placeholder="npr. test.client@mailtrap.io"
-                          value={userData?.mailtrap?.email || ''}
-                          onChange={e => {
-                            if (!testData) return
-                            setTestData({
-                              ...testData,
-                              users: {
-                                ...testData.users,
-                                [userKey]: {
-                                  ...userData,
-                                  mailtrap: {
-                                    ...userData.mailtrap,
-                                    email: e.target.value
+                    <p className="font-semibold text-xs text-red-700 mb-3">✋ TREBAM UNIJETI Mailtrap Email-e i Inbox ID-eve:</p>
+                    
+                    {/* VALID DATA */}
+                    <div className="mb-3 p-2 bg-white rounded border border-green-200">
+                      <p className="text-xs font-medium text-green-700 mb-2">✅ Za ispravne podatke (validData):</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-xs font-medium text-green-700 mb-1">Email</label>
+                          <input
+                            type="email"
+                            className="w-full border border-green-300 rounded px-2 py-1 text-xs"
+                            placeholder="npr. test.client@mailtrap.io"
+                            value={userData?.mailtrap?.validData?.email || ''}
+                            onChange={e => {
+                              if (!testData) return
+                              setTestData({
+                                ...testData,
+                                users: {
+                                  ...testData.users,
+                                  [userKey]: {
+                                    ...userData,
+                                    mailtrap: {
+                                      ...userData.mailtrap,
+                                      validData: {
+                                        ...userData.mailtrap?.validData,
+                                        email: e.target.value
+                                      }
+                                    }
                                   }
                                 }
-                              }
-                            })
-                          }}
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Kreiraj inbox na https://mailtrap.io/inboxes</p>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-red-700 mb-1">Mailtrap Inbox ID *</label>
-                        <input
-                          type="text"
-                          className="w-full border border-red-300 rounded px-3 py-2 text-sm font-mono"
-                          placeholder="npr. 1111111"
-                          value={userData?.mailtrap?.inboxId || ''}
-                          onChange={e => {
-                            if (!testData) return
-                            setTestData({
-                              ...testData,
-                              users: {
-                                ...testData.users,
-                                [userKey]: {
-                                  ...userData,
-                                  mailtrap: {
-                                    ...userData.mailtrap,
-                                    inboxId: e.target.value
+                              })
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-green-700 mb-1">Inbox ID</label>
+                          <input
+                            type="text"
+                            className="w-full border border-green-300 rounded px-2 py-1 text-xs font-mono"
+                            placeholder="npr. 1111111"
+                            value={userData?.mailtrap?.validData?.inboxId || ''}
+                            onChange={e => {
+                              if (!testData) return
+                              setTestData({
+                                ...testData,
+                                users: {
+                                  ...testData.users,
+                                  [userKey]: {
+                                    ...userData,
+                                    mailtrap: {
+                                      ...userData.mailtrap,
+                                      validData: {
+                                        ...userData.mailtrap?.validData,
+                                        inboxId: e.target.value
+                                      }
+                                    }
                                   }
                                 }
-                              }
-                            })
-                          }}
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Preuzmite iz Inboxes → Integrations → API</p>
+                              })
+                            }}
+                          />
+                        </div>
                       </div>
+                    </div>
+
+                    {/* INVALID DATA */}
+                    <div className="mb-3 p-2 bg-white rounded border border-red-200">
+                      <p className="text-xs font-medium text-red-700 mb-2">❌ Za neispravne podatke (invalidData):</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-xs font-medium text-red-700 mb-1">Email</label>
+                          <input
+                            type="email"
+                            className="w-full border border-red-300 rounded px-2 py-1 text-xs"
+                            placeholder="npr. test.client.invalid@mailtrap.io"
+                            value={userData?.mailtrap?.invalidData?.email || ''}
+                            onChange={e => {
+                              if (!testData) return
+                              setTestData({
+                                ...testData,
+                                users: {
+                                  ...testData.users,
+                                  [userKey]: {
+                                    ...userData,
+                                    mailtrap: {
+                                      ...userData.mailtrap,
+                                      invalidData: {
+                                        ...userData.mailtrap?.invalidData,
+                                        email: e.target.value
+                                      }
+                                    }
+                                  }
+                                }
+                              })
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-red-700 mb-1">Inbox ID</label>
+                          <input
+                            type="text"
+                            className="w-full border border-red-300 rounded px-2 py-1 text-xs font-mono"
+                            placeholder="npr. 1111112"
+                            value={userData?.mailtrap?.invalidData?.inboxId || ''}
+                            onChange={e => {
+                              if (!testData) return
+                              setTestData({
+                                ...testData,
+                                users: {
+                                  ...testData.users,
+                                  [userKey]: {
+                                    ...userData,
+                                    mailtrap: {
+                                      ...userData.mailtrap,
+                                      invalidData: {
+                                        ...userData.mailtrap?.invalidData,
+                                        inboxId: e.target.value
+                                      }
+                                    }
+                                  }
+                                }
+                              })
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* MISSING DATA */}
+                    <div className="p-2 bg-white rounded border border-yellow-200">
+                      <p className="text-xs font-medium text-yellow-700 mb-2">⚠️ Za nedostajuće podatke (missingData):</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-xs font-medium text-yellow-700 mb-1">Email</label>
+                          <input
+                            type="email"
+                            className="w-full border border-yellow-300 rounded px-2 py-1 text-xs"
+                            placeholder="npr. test.client.missing@mailtrap.io"
+                            value={userData?.mailtrap?.missingData?.email || ''}
+                            onChange={e => {
+                              if (!testData) return
+                              setTestData({
+                                ...testData,
+                                users: {
+                                  ...testData.users,
+                                  [userKey]: {
+                                    ...userData,
+                                    mailtrap: {
+                                      ...userData.mailtrap,
+                                      missingData: {
+                                        ...userData.mailtrap?.missingData,
+                                        email: e.target.value
+                                      }
+                                    }
+                                  }
+                                }
+                              })
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-yellow-700 mb-1">Inbox ID</label>
+                          <input
+                            type="text"
+                            className="w-full border border-yellow-300 rounded px-2 py-1 text-xs font-mono"
+                            placeholder="npr. 1111113"
+                            value={userData?.mailtrap?.missingData?.inboxId || ''}
+                            onChange={e => {
+                              if (!testData) return
+                              setTestData({
+                                ...testData,
+                                users: {
+                                  ...testData.users,
+                                  [userKey]: {
+                                    ...userData,
+                                    mailtrap: {
+                                      ...userData.mailtrap,
+                                      missingData: {
+                                        ...userData.mailtrap?.missingData,
+                                        inboxId: e.target.value
+                                      }
+                                    }
+                                  }
+                                }
+                              })
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
 
                       {/* OIB - Za providere koji trebaju javni registar */}
                       {userData?.oib && userData.oib.includes('UNESI_') && (
