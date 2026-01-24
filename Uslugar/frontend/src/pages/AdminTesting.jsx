@@ -2572,36 +2572,57 @@ export default function AdminTesting(){
       {tab === 'test-data' && (
         <div className="space-y-6">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <strong>ℹ️ Test Podaci:</strong> Ovdje možeš konfigurirati test korisnike, email adrese, dokumenti i API postavke za automatske testove.
+            <strong>ℹ️ Test Podaci:</strong> Ovdje možeš konfigurirati test korisnike, email adrese i Mailtrap inbox ID-eve za automatske testove.
+            <p className="text-xs text-blue-700 mt-2">⚠️ Svaki korisnik ima svoj Mailtrap Inbox ID - kreiraj ih na https://mailtrap.io</p>
           </div>
 
-          {/* Klijenti */}
+          {/* Globalni Mailtrap API Key */}
           <div className="border rounded-lg p-6 bg-white">
-            <h3 className="text-lg font-semibold mb-4">Klijenti (Clients)</h3>
+            <h3 className="text-lg font-semibold mb-4">🔑 Mailtrap API Key (Globalna)</h3>
+            <div>
+              <label className="block text-sm font-medium mb-2">API Key</label>
+              <input
+                type="password"
+                className="w-full border rounded px-3 py-2 text-sm"
+                placeholder="Mailtrap API Key"
+                value={testData?.email?.testService?.apiKey || ''}
+                onChange={e => {
+                  if (!testData) return
+                  const updated = { ...testData }
+                  if (!updated.email) updated.email = {}
+                  if (!updated.email.testService) updated.email.testService = {}
+                  setTestData({
+                    ...updated,
+                    email: {
+                      ...updated.email,
+                      testService: {
+                        ...updated.email.testService,
+                        apiKey: e.target.value
+                      }
+                    }
+                  })
+                }}
+              />
+              <p className="text-xs text-gray-500 mt-2">Preuzmite sa https://mailtrap.io → Settings → API Tokens</p>
+            </div>
+          </div>
+
+          {/* Svi Korisnici */}
+          <div className="border rounded-lg p-6 bg-white">
+            <h3 className="text-lg font-semibold mb-4">👥 Test Korisnici</h3>
             <div className="space-y-4">
-              {['client'].concat(Object.keys(testData?.users || {}).filter(k => k.startsWith('client') && k !== 'client')).map(userKey => (
+              {Object.entries(testData?.users || {}).map(([userKey, userData]) => (
                 <div key={userKey} className="border rounded p-4 bg-gray-50">
-                  <h4 className="font-medium mb-3 capitalize">{userKey}</h4>
-                  <div className="grid grid-cols-2 gap-3">
+                  <h4 className="font-semibold mb-3 capitalize text-indigo-600">{userKey}</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-sm font-medium mb-1">Email</label>
+                      <label className="block text-sm font-medium mb-1">Email (Uslugar)</label>
                       <input
                         type="email"
                         className="w-full border rounded px-3 py-2 text-sm"
-                        value={testData?.users?.[userKey]?.email || ''}
-                        onChange={e => {
-                          if (!testData) return
-                          const updated = { ...testData }
-                          if (!updated.users) updated.users = {}
-                          if (!updated.users[userKey]) updated.users[userKey] = {}
-                          setTestData({
-                            ...updated,
-                            users: {
-                              ...updated.users,
-                              [userKey]: { ...updated.users[userKey], email: e.target.value }
-                            }
-                          })
-                        }}
+                        value={userData?.email || ''}
+                        readOnly
+                        title="Email koji se koristi za registraciju"
                       />
                     </div>
                     <div>
@@ -2609,142 +2630,59 @@ export default function AdminTesting(){
                       <input
                         type="email"
                         className="w-full border rounded px-3 py-2 text-sm"
-                        placeholder="test.client@mailtrap.io"
-                        value={testData?.users?.[userKey]?.mailtrapEmail || ''}
+                        placeholder="npr. test.client@mailtrap.io"
+                        value={userData?.mailtrap?.email || ''}
                         onChange={e => {
                           if (!testData) return
-                          const updated = { ...testData }
-                          if (!updated.users) updated.users = {}
-                          if (!updated.users[userKey]) updated.users[userKey] = {}
                           setTestData({
-                            ...updated,
+                            ...testData,
                             users: {
-                              ...updated.users,
-                              [userKey]: { ...updated.users[userKey], mailtrapEmail: e.target.value }
+                              ...testData.users,
+                              [userKey]: {
+                                ...userData,
+                                mailtrap: {
+                                  ...userData.mailtrap,
+                                  email: e.target.value
+                                }
+                              }
                             }
                           })
                         }}
                       />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Pružatelji */}
-          <div className="border rounded-lg p-6 bg-white">
-            <h3 className="text-lg font-semibold mb-4">Pružatelji (Providers)</h3>
-            <div className="space-y-4">
-              {['provider'].concat(Object.keys(testData?.users || {}).filter(k => k.startsWith('provider') && k !== 'provider')).map(userKey => (
-                <div key={userKey} className="border rounded p-4 bg-gray-50">
-                  <h4 className="font-medium mb-3 capitalize">{userKey}</h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Email</label>
-                      <input
-                        type="email"
-                        className="w-full border rounded px-3 py-2 text-sm"
-                        value={testData?.users?.[userKey]?.email || ''}
-                        onChange={e => {
-                          if (!testData) return
-                          const updated = { ...testData }
-                          if (!updated.users) updated.users = {}
-                          if (!updated.users[userKey]) updated.users[userKey] = {}
-                          setTestData({
-                            ...updated,
-                            users: {
-                              ...updated.users,
-                              [userKey]: { ...updated.users[userKey], email: e.target.value }
-                            }
-                          })
-                        }}
-                      />
+                      <p className="text-xs text-gray-500 mt-1">Kreiraj na Mailtrap.io → Inboxes</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Mailtrap Email</label>
+                      <label className="block text-sm font-medium mb-1">Mailtrap Inbox ID</label>
                       <input
-                        type="email"
-                        className="w-full border rounded px-3 py-2 text-sm"
-                        placeholder="test.provider@mailtrap.io"
-                        value={testData?.users?.[userKey]?.mailtrapEmail || ''}
+                        type="text"
+                        className="w-full border rounded px-3 py-2 text-sm font-mono"
+                        placeholder="npr. 1111111"
+                        value={userData?.mailtrap?.inboxId || ''}
                         onChange={e => {
                           if (!testData) return
-                          const updated = { ...testData }
-                          if (!updated.users) updated.users = {}
-                          if (!updated.users[userKey]) updated.users[userKey] = {}
                           setTestData({
-                            ...updated,
+                            ...testData,
                             users: {
-                              ...updated.users,
-                              [userKey]: { ...updated.users[userKey], mailtrapEmail: e.target.value }
+                              ...testData.users,
+                              [userKey]: {
+                                ...userData,
+                                mailtrap: {
+                                  ...userData.mailtrap,
+                                  inboxId: e.target.value
+                                }
+                              }
                             }
                           })
                         }}
                       />
+                      <p className="text-xs text-gray-500 mt-1">Preuzmite sa Inboxes → Integrations → API</p>
                     </div>
                   </div>
+                  {userData?.description && (
+                    <p className="text-xs text-gray-600 mt-2 italic">📝 {userData.description}</p>
+                  )}
                 </div>
               ))}
-            </div>
-          </div>
-
-          {/* Email Konfiguracija */}
-          <div className="border rounded-lg p-6 bg-white">
-            <h3 className="text-lg font-semibold mb-4">Email Konfiguracija</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Mailtrap API Key</label>
-                <input
-                  type="password"
-                  className="w-full border rounded px-3 py-2 text-sm"
-                  placeholder="Mailtrap API Key"
-                  value={testData?.email?.testService?.apiKey || ''}
-                  onChange={e => {
-                    if (!testData) return
-                    const updated = { ...testData }
-                    if (!updated.email) updated.email = {}
-                    if (!updated.email.testService) updated.email.testService = {}
-                    setTestData({
-                      ...updated,
-                      email: {
-                        ...updated.email,
-                        testService: {
-                          ...updated.email.testService,
-                          apiKey: e.target.value
-                        }
-                      }
-                    })
-                  }}
-                />
-                <p className="text-xs text-gray-500 mt-1">API Key iz Mailtrap.io Settings → API Tokens</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Mailtrap Inbox ID</label>
-                <input
-                  type="text"
-                  className="w-full border rounded px-3 py-2 text-sm"
-                  placeholder="npr. 1234567"
-                  value={testData?.email?.testService?.inboxId || '0'}
-                  onChange={e => {
-                    if (!testData) return
-                    const updated = { ...testData }
-                    if (!updated.email) updated.email = {}
-                    if (!updated.email.testService) updated.email.testService = {}
-                    setTestData({
-                      ...updated,
-                      email: {
-                        ...updated.email,
-                        testService: {
-                          ...updated.email.testService,
-                          inboxId: e.target.value || '0'
-                        }
-                      }
-                    })
-                  }}
-                />
-              </div>
             </div>
           </div>
 
