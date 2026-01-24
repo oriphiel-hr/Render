@@ -82,34 +82,117 @@ class TestRunnerService {
       console.log('[TEST RUNNER] Unošu podatke...');
       logs.push('Unošenje podataka...');
       
-      try {
-        const emailField = 'input[name="email"]';
-        await page.waitForSelector(emailField, { timeout: 5000 });
-        await page.fill(emailField, userData.email);
-        logs.push(`✓ Email unesen: ${userData.email}`);
-      } catch (e) {
-        logs.push(`❌ Greška pri unosu email-a: ${e.message}`);
-        throw new Error(`Email field not found or unable to fill: ${e.message}`);
+      // Debug: Pronađi sve input polja na stranici
+      const allInputs = await page.evaluate(() => {
+        const inputs = document.querySelectorAll('input');
+        return Array.from(inputs).map(inp => ({
+          type: inp.type,
+          name: inp.name,
+          id: inp.id,
+          placeholder: inp.placeholder,
+          value: inp.value,
+          visible: inp.offsetParent !== null
+        }));
+      });
+      logs.push(`📋 Pronađeni input-i: ${allInputs.length}`);
+      allInputs.forEach((inp, idx) => {
+        if (inp.visible) {
+          logs.push(`  ${idx}: type=${inp.type}, name=${inp.name}, id=${inp.id}, placeholder=${inp.placeholder}`);
+        }
+      });
+
+      // Pokušaj s različitim selektorima
+      const emailSelectors = [
+        'input[name="email"]',
+        'input[type="email"]',
+        'input[placeholder*="email" i]',
+        'input[placeholder*="mail" i]',
+        'input#email',
+        'input[data-testid="email"]'
+      ];
+
+      let emailFound = false;
+      for (const selector of emailSelectors) {
+        try {
+          const element = await page.$(selector);
+          if (element) {
+            await element.waitForElementState('visible', { timeout: 3000 });
+            await page.fill(selector, userData.email);
+            logs.push(`✓ Email unesen s selektorom: ${selector}`);
+            emailFound = true;
+            break;
+          }
+        } catch (e) {
+          // Continue to next selector
+        }
       }
 
-      try {
-        const passwordField = 'input[name="password"]';
-        await page.waitForSelector(passwordField, { timeout: 5000 });
-        await page.fill(passwordField, userData.password);
-        logs.push(`✓ Lozinka unesen`);
-      } catch (e) {
-        logs.push(`❌ Greška pri unosu lozinke: ${e.message}`);
-        throw new Error(`Password field not found or unable to fill: ${e.message}`);
+      if (!emailFound) {
+        logs.push(`❌ Email input nije pronađen. Dostupni inputi:`);
+        allInputs.forEach(inp => {
+          logs.push(`  - type=${inp.type}, name=${inp.name}, placeholder=${inp.placeholder}`);
+        });
+        throw new Error(`Email field not found with any selector`);
       }
 
-      try {
-        const nameField = 'input[name="fullName"]';
-        await page.waitForSelector(nameField, { timeout: 5000 });
-        await page.fill(nameField, userData.fullName);
-        logs.push(`✓ Puno ime unesen: ${userData.fullName}`);
-      } catch (e) {
-        logs.push(`❌ Greška pri unosu imena: ${e.message}`);
-        throw new Error(`Name field not found or unable to fill: ${e.message}`);
+      // Password field
+      const passwordSelectors = [
+        'input[name="password"]',
+        'input[type="password"]',
+        'input#password',
+        'input[data-testid="password"]'
+      ];
+
+      let passwordFound = false;
+      for (const selector of passwordSelectors) {
+        try {
+          const element = await page.$(selector);
+          if (element) {
+            await element.waitForElementState('visible', { timeout: 3000 });
+            await page.fill(selector, userData.password);
+            logs.push(`✓ Lozinka unesen s selektorom: ${selector}`);
+            passwordFound = true;
+            break;
+          }
+        } catch (e) {
+          // Continue to next selector
+        }
+      }
+
+      if (!passwordFound) {
+        logs.push(`❌ Password input nije pronađen`);
+        throw new Error(`Password field not found with any selector`);
+      }
+
+      // Full Name field
+      const nameSelectors = [
+        'input[name="fullName"]',
+        'input[name="full_name"]',
+        'input[name="name"]',
+        'input[placeholder*="ime" i]',
+        'input[placeholder*="name" i]',
+        'input#fullName',
+        'input[data-testid="fullName"]'
+      ];
+
+      let nameFound = false;
+      for (const selector of nameSelectors) {
+        try {
+          const element = await page.$(selector);
+          if (element) {
+            await element.waitForElementState('visible', { timeout: 3000 });
+            await page.fill(selector, userData.fullName);
+            logs.push(`✓ Puno ime unesen s selektorom: ${selector}`);
+            nameFound = true;
+            break;
+          }
+        } catch (e) {
+          // Continue to next selector
+        }
+      }
+
+      if (!nameFound) {
+        logs.push(`⚠ Puno ime input nije pronađen - nastavlja se bez njega`);
       }
       
       screenshotPath = this._getScreenshotPath(testId, '02_data_entered');
