@@ -909,6 +909,60 @@ export default function AdminTesting(){
     }
   }
 
+  // localStorage funkcije za persistenciju test data-a
+  const saveTestDataToStorage = (data) => {
+    try {
+      localStorage.setItem('adminTestData', JSON.stringify(data))
+      console.log('✓ Test data saved to localStorage')
+    } catch (e) {
+      console.error('❌ Error saving to localStorage:', e)
+    }
+  }
+
+  const loadTestDataFromStorage = () => {
+    try {
+      const saved = localStorage.getItem('adminTestData')
+      if (saved) {
+        const parsedData = JSON.parse(saved)
+        setTestData(parsedData)
+        console.log('✓ Test data loaded from localStorage')
+        return true
+      }
+    } catch (e) {
+      console.error('❌ Error loading from localStorage:', e)
+    }
+    return false
+  }
+
+  const resetUserField = (userKey, fieldName) => {
+    const placeholders = {
+      oib: 'UNESI_PRAVI_OIB_IZ_SUDSKOG_REGISTRA',
+      companyName: 'UNESI_NAZIV_IZ_SUDSKOG_REGISTRA'
+    }
+    
+    const newData = {
+      ...testData,
+      users: {
+        ...testData.users,
+        [userKey]: {
+          ...testData.users[userKey],
+          [fieldName]: placeholders[fieldName]
+        }
+      }
+    }
+    
+    setTestData(newData)
+    saveTestDataToStorage(newData)
+    console.log(`✓ Field ${fieldName} reset to placeholder for ${userKey}`)
+  }
+
+  // Spremi u localStorage svaki put kada se testData promijeni
+  useEffect(() => {
+    if (testData && Object.keys(testData).length > 0) {
+      saveTestDataToStorage(testData)
+    }
+  }, [testData])
+
   useEffect(() => {
     if (tab === 'test-data') {
       loadTestData()
@@ -2923,13 +2977,38 @@ export default function AdminTesting(){
                     </div>
                   </div>
 
-                  {/* OIB - Za providere koji trebaju javni registar */}
-                  {userData?.oib && userData.oib.includes('UNESI_') && (
-                    <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                      <label className="block text-xs font-medium text-orange-700 mb-1">OIB * (Iz javnog registra)</label>
+                  {/* OIB - Za providere koji trebaju javni registar - UVIJEK vidljivo */}
+                  {userData?.oib && (
+                    <div className={`mb-4 p-3 rounded-lg border ${
+                      userData.oib.includes('UNESI_') 
+                        ? 'bg-orange-50 border-orange-200' 
+                        : 'bg-yellow-50 border-yellow-200'
+                    }`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className={`block text-xs font-medium ${
+                          userData.oib.includes('UNESI_') 
+                            ? 'text-orange-700' 
+                            : 'text-yellow-700'
+                        }`}>
+                          🆔 OIB * (Iz javnog registra)
+                        </label>
+                        {!userData.oib.includes('UNESI_') && (
+                          <button
+                            onClick={() => resetUserField(userKey, 'oib')}
+                            className="text-xs px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded"
+                            title="Vrati na placeholder"
+                          >
+                            ↻ Reset
+                          </button>
+                        )}
+                      </div>
                       <input
                         type="text"
-                        className="w-full border border-orange-300 rounded px-3 py-2 text-sm font-mono"
+                        className={`w-full border rounded px-3 py-2 text-sm font-mono ${
+                          userData.oib.includes('UNESI_')
+                            ? 'border-orange-300 bg-white'
+                            : 'border-yellow-300 bg-yellow-50'
+                        }`}
                         placeholder="npr. 12345678901"
                         value={userData?.oib || ''}
                         onChange={e => {
@@ -2946,17 +3025,46 @@ export default function AdminTesting(){
                           })
                         }}
                       />
-                      <p className="text-xs text-gray-500 mt-1">Unesi OIB iz Sudskog/Obrtnog registra</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {userData.oib.includes('UNESI_') 
+                          ? 'Unesi OIB iz Sudskog/Obrtnog registra' 
+                          : `Sprema no: ${userData.oib}`}
+                      </p>
                     </div>
                   )}
 
-                  {/* Naziv Tvrtke - Za providere koji trebaju javni registar */}
-                  {userData?.companyName && userData.companyName.includes('UNESI_') && (
-                    <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                      <label className="block text-xs font-medium text-orange-700 mb-1">Naziv Tvrtke * (Iz javnog registra)</label>
+                  {/* Naziv Tvrtke - Za providere koji trebaju javni registar - UVIJEK vidljivo */}
+                  {userData?.companyName && (
+                    <div className={`mb-4 p-3 rounded-lg border ${
+                      userData.companyName.includes('UNESI_') 
+                        ? 'bg-orange-50 border-orange-200' 
+                        : 'bg-yellow-50 border-yellow-200'
+                    }`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className={`block text-xs font-medium ${
+                          userData.companyName.includes('UNESI_') 
+                            ? 'text-orange-700' 
+                            : 'text-yellow-700'
+                        }`}>
+                          🏢 Naziv Tvrtke * (Iz javnog registra)
+                        </label>
+                        {!userData.companyName.includes('UNESI_') && (
+                          <button
+                            onClick={() => resetUserField(userKey, 'companyName')}
+                            className="text-xs px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded"
+                            title="Vrati na placeholder"
+                          >
+                            ↻ Reset
+                          </button>
+                        )}
+                      </div>
                       <input
                         type="text"
-                        className="w-full border border-orange-300 rounded px-3 py-2 text-sm"
+                        className={`w-full border rounded px-3 py-2 text-sm ${
+                          userData.companyName.includes('UNESI_')
+                            ? 'border-orange-300 bg-white'
+                            : 'border-yellow-300 bg-yellow-50'
+                        }`}
                         placeholder="npr. Test Company d.o.o."
                         value={userData?.companyName || ''}
                         onChange={e => {
@@ -2973,7 +3081,11 @@ export default function AdminTesting(){
                           })
                         }}
                       />
-                      <p className="text-xs text-gray-500 mt-1">Unesi naziv iz Sudskog/Obrtnog registra</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {userData.companyName.includes('UNESI_') 
+                          ? 'Unesi naziv iz Sudskog/Obrtnog registra' 
+                          : `Sprema no: ${userData.companyName}`}
+                      </p>
                     </div>
                   )}
 
