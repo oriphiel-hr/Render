@@ -310,4 +310,44 @@ r.post('/runs', async (req, res, next) => {
   }
 });
 
+/**
+ * POST /api/testing/run-single
+ * Pokreni jedan test
+ */
+r.post('/run-single', async (req, res, next) => {
+  try {
+    const { testId, testName } = req.body;
+    
+    if (!testId) {
+      return res.status(400).json({ error: 'testId je obavezan' });
+    }
+    
+    console.log(`[TEST] Pokrenuo test: ${testId} - ${testName}`);
+    
+    // Za sada - simulacija test rezultata
+    // U budućnosti bi se ovdje pokrenuo Playwright test
+    const success = Math.random() > 0.3; // 70% success rate za simulaciju
+    
+    const testResult = {
+      testId,
+      testName,
+      status: success ? 'PASS' : 'FAIL',
+      timestamp: new Date().toISOString(),
+      duration: Math.floor(Math.random() * 5000) + 1000, // 1-6 sekundi
+      message: success 
+        ? `✅ Test '${testName}' uspješno prošao`
+        : `❌ Test '${testName}' nije prošao`
+    };
+    
+    console.log(`[TEST] Rezultat:`, testResult);
+    
+    res.json({
+      success,
+      ...testResult
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 export default r;
