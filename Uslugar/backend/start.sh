@@ -19,10 +19,14 @@ else
   exit 1
 fi
 
-echo "🔄 Step 3: Running database migrations..."
+echo "🔄 Step 3: Installing Playwright browsers..."
+npx playwright install --with-deps chromium 2>&1
+echo "✅ Playwright browsers installed"
+
+echo "🔄 Step 4: Running database migrations..."
 LC_ALL=C.UTF-8 npx prisma migrate deploy > /tmp/migrate.log 2>&1 || cat /tmp/migrate.log
 echo "✅ Migrations complete."
 
-echo "🚀 Step 4: Starting server..."
+echo "🚀 Step 5: Starting server..."
 exec node src/server.js
 
