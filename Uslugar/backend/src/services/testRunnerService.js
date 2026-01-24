@@ -584,6 +584,50 @@ class TestRunnerService {
       } else {
         logs.push(`⚠ Telefon nije u userData - preskače se`);
       }
+
+      // City field
+      if (userData.city) {
+        const citySelectors = [
+          'input[name="city"]',
+          'input[name="grad"]',
+          'input[placeholder*="city" i]',
+          'input[placeholder*="grad" i]',
+          'input[placeholder*="Zagreb" i]',
+          'input#city',
+          'input[data-testid="city"]',
+          'input[aria-label*="city" i]',
+          'input[aria-label*="grad" i]',
+          'select[name="city"]' // Može biti i select dropdown
+        ];
+
+        let cityFound = false;
+        for (const selector of citySelectors) {
+          try {
+            const locator = page.locator(selector).first();
+            await locator.waitFor({ state: 'visible', timeout: 3000 });
+            
+            // Provjeri je li select ili input
+            const tagName = await locator.evaluate(el => el.tagName.toLowerCase());
+            if (tagName === 'select') {
+              await locator.selectOption({ label: userData.city });
+              logs.push(`✓ Grad odabran s selektorom: ${selector} (${userData.city})`);
+            } else {
+              await locator.fill(userData.city);
+              logs.push(`✓ Grad unesen s selektorom: ${selector}`);
+            }
+            cityFound = true;
+            break;
+          } catch (e) {
+            // Continue to next selector
+          }
+        }
+
+        if (!cityFound) {
+          logs.push(`⚠ Grad input nije pronađen - nastavlja se bez njega`);
+        }
+      } else {
+        logs.push(`⚠ Grad nije u userData - preskače se`);
+      }
       
       screenshotPath = this._getScreenshotPath(testId, '02_data_entered');
       await page.screenshot({ path: screenshotPath });

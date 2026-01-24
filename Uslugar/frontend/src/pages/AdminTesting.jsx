@@ -2462,7 +2462,8 @@ export default function AdminTesting(){
                                       email: testUser.email,
                                       password: testUser.password,
                                       fullName: testUser.fullName,
-                                      phone: testUser.phone
+                                      phone: testUser.phone,
+                                      city: testUser.city
                                     } : null
                                     
                                     console.log(`[TEST] Pokrenuo automatski test: ${test.id}`, { userDataForTest, mailtrapInboxId })
@@ -3312,6 +3313,12 @@ export default function AdminTesting(){
                         <span className="text-gray-600">📱 Telefon:</span>
                         <code className="bg-gray-100 px-2 py-1 rounded font-mono text-xs">
                           {userData?.phone || 'N/A'}
+                        </code>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-600">🏙️ Grad:</span>
+                        <code className="bg-gray-100 px-2 py-1 rounded font-mono text-xs">
+                          {userData?.city || 'N/A'}
                         </code>
                       </div>
                       {userData?.legalStatus && (
