@@ -2452,11 +2452,28 @@ export default function AdminTesting(){
                                 onClick={async () => {
                                   setRunningTest(test.id)
                                   try {
+                                    // Pronađi test korisnika iz testData (koristi prvi korisnik ili 'client')
+                                    const testUserKey = 'client' // Ili prvi korisnik iz testData
+                                    const testUser = testData?.users?.[testUserKey] || Object.values(testData?.users || {})[0]
+                                    const mailtrapInboxId = testUser?.mailtrap?.validData?.inboxId || testUser?.mailtrap?.inboxId
+                                    
+                                    // Pripremi userData za test
+                                    const userDataForTest = testUser ? {
+                                      email: testUser.email,
+                                      password: testUser.password,
+                                      fullName: testUser.fullName,
+                                      phone: testUser.phone
+                                    } : null
+                                    
+                                    console.log(`[TEST] Pokrenuo automatski test: ${test.id}`, { userDataForTest, mailtrapInboxId })
+                                    
                                     // Simulacija automatskog testa s Playwright
-                                    console.log(`[TEST] Pokrenuo automatski test: ${test.id}`)
                                     const response = await api.post(`/testing/run-single`, { 
                                       testId: test.id,
-                                      testName: test.name
+                                      testName: test.name,
+                                      testType: 'registration',
+                                      userData: userDataForTest,
+                                      mailtrapInboxId: mailtrapInboxId
                                     }).catch(() => null)
                                     
                                     console.log(`[TEST] Response:`, response?.data)

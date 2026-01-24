@@ -548,6 +548,42 @@ class TestRunnerService {
       if (!nameFound) {
         logs.push(`⚠ Puno ime input nije pronađen - nastavlja se bez njega`);
       }
+
+      // Phone field
+      if (userData.phone) {
+        const phoneSelectors = [
+          'input[name="phone"]',
+          'input[name="telefon"]',
+          'input[type="tel"]',
+          'input[placeholder*="phone" i]',
+          'input[placeholder*="telefon" i]',
+          'input[placeholder*="+385" i]',
+          'input#phone',
+          'input[data-testid="phone"]',
+          'input[aria-label*="phone" i]',
+          'input[aria-label*="telefon" i]'
+        ];
+
+        let phoneFound = false;
+        for (const selector of phoneSelectors) {
+          try {
+            const locator = page.locator(selector).first();
+            await locator.waitFor({ state: 'visible', timeout: 3000 });
+            await locator.fill(userData.phone);
+            logs.push(`✓ Telefon unesen s selektorom: ${selector}`);
+            phoneFound = true;
+            break;
+          } catch (e) {
+            // Continue to next selector
+          }
+        }
+
+        if (!phoneFound) {
+          logs.push(`⚠ Telefon input nije pronađen - nastavlja se bez njega`);
+        }
+      } else {
+        logs.push(`⚠ Telefon nije u userData - preskače se`);
+      }
       
       screenshotPath = this._getScreenshotPath(testId, '02_data_entered');
       await page.screenshot({ path: screenshotPath });
@@ -654,6 +690,22 @@ class TestRunnerService {
       console.error(`[TEST RUNNER] Test ${testId} failed:`, error);
       logs.push(`❌ TEST FAILED: ${error.message}`);
       logs.push(`Stack: ${error.stack?.split('\n')[0]}`);
+      
+      // Kreiraj screenshot prije zatvaranja browsera (ako postoji page)
+      try {
+        if (page && browser) {
+          const errorScreenshotPath = this._getScreenshotPath(testId, 'error_final');
+          await page.screenshot({ path: errorScreenshotPath, fullPage: true });
+          screenshots.push({
+            step: 'Greška - finalni screenshot',
+            url: this._getScreenshotUrl(path.basename(errorScreenshotPath))
+          });
+          logs.push('✓ Screenshot greške sprema');
+        }
+      } catch (screenshotError) {
+        console.error('Error taking error screenshot:', screenshotError);
+        logs.push(`⚠ Greška pri kreiranju screenshot-a greške: ${screenshotError.message}`);
+      }
       
       try {
         if (browser) {
