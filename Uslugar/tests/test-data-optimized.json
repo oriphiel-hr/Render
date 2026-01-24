@@ -17,9 +17,19 @@
       "role": "USER",
       "description": "Korisnik usluge koji objavljuje poslove",
       "mailtrap": {
-        "email": "test.client@mailtrap.io",
-        "inboxId": "1111111",
-        "description": "Mailtrap inbox za test.client - koristi se za sve test scenarije (valid, invalid, missing data)"
+        "validData": {
+          "email": "test.client@mailtrap.io",
+          "inboxId": "1111111"
+        },
+        "invalidData": {
+          "email": "test.client.invalid@mailtrap.io",
+          "inboxId": "1111112"
+        },
+        "missingData": {
+          "email": "test.client.missing@mailtrap.io",
+          "inboxId": "1111113"
+        },
+        "description": "Mailtrap inbox-evi za sve test scenarije client-a"
       },
       "testScenarios": {
         "validData": "Ispravni podaci - redovna registracija i korištenje",
@@ -39,9 +49,19 @@
       "oib": "12345678901",
       "description": "Provider (freelancer) - za ispravne podatke unesi svoj OIB ili testiraj s ovim (nije u registru, ali je matematički validan)",
       "mailtrap": {
-        "email": "test.provider@mailtrap.io",
-        "inboxId": "2222222",
-        "description": "Mailtrap inbox za test.provider - koristi se za sve provider scenarije"
+        "validData": {
+          "email": "test.provider@mailtrap.io",
+          "inboxId": "2222222"
+        },
+        "invalidData": {
+          "email": "test.provider.invalid@mailtrap.io",
+          "inboxId": "2222223"
+        },
+        "missingData": {
+          "email": "test.provider.missing@mailtrap.io",
+          "inboxId": "2222224"
+        },
+        "description": "Mailtrap inbox-evi za sve test scenarije providera"
       },
       "testScenarios": {
         "validData": "Ispravni podaci - redovan provider s licencom",
@@ -63,9 +83,19 @@
       "isDirector": true,
       "description": "Direktor tvrtke s timom - za ispravne podatke TREBAM UNIJETI pravi OIB i naziv iz Sudskog registra! (ovaj OIB nije pravi)",
       "mailtrap": {
-        "email": "test.director@mailtrap.io",
-        "inboxId": "3333333",
-        "description": "Mailtrap inbox za test.director"
+        "validData": {
+          "email": "test.director@mailtrap.io",
+          "inboxId": "3333333"
+        },
+        "invalidData": {
+          "email": "test.director.invalid@mailtrap.io",
+          "inboxId": "3333334"
+        },
+        "missingData": {
+          "email": "test.director.missing@mailtrap.io",
+          "inboxId": "3333335"
+        },
+        "description": "Mailtrap inbox-evi za sve test scenarije directora"
       },
       "testScenarios": {
         "teamManagement": "Dodavanje/uklanjanje članova tima",
@@ -87,9 +117,19 @@
       "isDirector": false,
       "description": "Član tima - izvršava poslove, vidi samo dodjeljene leadove (OIB je matematički validan ali nije u registru)",
       "mailtrap": {
-        "email": "test.team@mailtrap.io",
-        "inboxId": "4444444",
-        "description": "Mailtrap inbox za test.teamMember"
+        "validData": {
+          "email": "test.team@mailtrap.io",
+          "inboxId": "4444444"
+        },
+        "invalidData": {
+          "email": "test.team.invalid@mailtrap.io",
+          "inboxId": "4444445"
+        },
+        "missingData": {
+          "email": "test.team.missing@mailtrap.io",
+          "inboxId": "4444446"
+        },
+        "description": "Mailtrap inbox-evi za sve test scenarije team membera"
       },
       "testScenarios": {
         "limitedAccess": "Može vidjeti samo dodjeljene leadove od direktora",
@@ -105,9 +145,11 @@
       "role": "ADMIN",
       "description": "Administrator platforme - vidi sve",
       "mailtrap": {
-        "email": "test.admin@mailtrap.io",
-        "inboxId": "5555555",
-        "description": "Mailtrap inbox za admin (ako trebalo)"
+        "validData": {
+          "email": "test.admin@mailtrap.io",
+          "inboxId": "5555555"
+        },
+        "description": "Mailtrap inbox za admin"
       },
       "testScenarios": {
         "fullAccess": "Vidi sve korisnike, sve poslove, sve ponude",
