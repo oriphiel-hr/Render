@@ -7,8 +7,12 @@ const getScreenshotUrl = (url) => {
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url // Već je full URL
   }
-  // Relativni path - prependiraj s API base URL-om
-  const apiBaseUrl = api.defaults.baseURL || 'https://api.uslugar.eu'
+  // Relativni path - prependiraj s API base URL-om (bez /api prefiksa jer se servira kao static file)
+  let apiBaseUrl = api.defaults.baseURL || 'https://api.uslugar.eu'
+  // Ukloni /api prefiks ako postoji jer screenshotovi se serviraju na root levelu
+  if (apiBaseUrl.endsWith('/api')) {
+    apiBaseUrl = apiBaseUrl.slice(0, -4) // Ukloni '/api'
+  }
   return `${apiBaseUrl}${url.startsWith('/') ? url : '/' + url}`
 }
 
