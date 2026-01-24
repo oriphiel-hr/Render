@@ -134,6 +134,7 @@ r.get('/test-data', async (req, res, next) => {
           role: 'PROVIDER',
           legalStatus: 'FREELANCER',
           oib: '12345678901',
+          description: 'FREELANCER - OIB je matematički validan ali nije u registru. Za ispravne podatke koristi svoj OIB.',
           mailtrap: { email: '', inboxId: '' }
         },
         director: {
@@ -144,8 +145,8 @@ r.get('/test-data', async (req, res, next) => {
           city: 'Rijeka',
           role: 'PROVIDER',
           legalStatus: 'DOO',
-          oib: '12345678902',
-          companyName: 'Test Company DOO',
+          oib: 'UNESI_PRAVI_OIB_IZ_SUDSKOG_REGISTRA',
+          companyName: 'UNESI_NAZIV_IZ_SUDSKOG_REGISTRA',
           mailtrap: { email: '', inboxId: '' }
         },
         teamMember: {
