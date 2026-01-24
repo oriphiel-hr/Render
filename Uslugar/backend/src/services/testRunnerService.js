@@ -123,15 +123,37 @@ class TestRunnerService {
           bodyText: document.body?.textContent?.substring(0, 200) || 'N/A',
           rootContent: document.getElementById('root')?.innerHTML?.substring(0, 500) || 'N/A',
           allElements: document.querySelectorAll('*').length,
-          hasReact: window.React !== undefined || window.__REACT_DEVTOOLS_GLOBAL_HOOK__ !== undefined
+          hasReact: window.React !== undefined || window.__REACT_DEVTOOLS_GLOBAL_HOOK__ !== undefined,
+          links: Array.from(document.querySelectorAll('a')).map(a => ({
+            text: a.textContent?.trim().substring(0, 50),
+            href: a.href,
+            onclick: a.onclick ? 'has onclick' : 'no onclick'
+          })).slice(0, 10),
+          buttons: Array.from(document.querySelectorAll('button')).map(b => ({
+            text: b.textContent?.trim().substring(0, 50),
+            className: b.className,
+            onclick: b.onclick ? 'has onclick' : 'no onclick'
+          })).slice(0, 10)
         };
       });
       logs.push(`📄 Page Info: title=${pageInfo.title}, elements=${pageInfo.allElements}, hasReact=${pageInfo.hasReact}`);
       logs.push(`📄 Body text (prvih 200): ${pageInfo.bodyText}`);
       logs.push(`📄 Root content (prvih 500): ${pageInfo.rootContent.substring(0, 200)}...`);
+      logs.push(`🔗 Linkovi na stranici: ${pageInfo.links.length}`);
+      pageInfo.links.forEach((link, idx) => {
+        if (link.text.toLowerCase().includes('registr') || link.text.toLowerCase().includes('sign up') || link.href.includes('register')) {
+          logs.push(`  ${idx}: "${link.text}" -> ${link.href}`);
+        }
+      });
+      logs.push(`🔘 Gumbovi na stranici: ${pageInfo.buttons.length}`);
+      pageInfo.buttons.forEach((btn, idx) => {
+        if (btn.text.toLowerCase().includes('registr') || btn.text.toLowerCase().includes('sign up')) {
+          logs.push(`  ${idx}: "${btn.text}"`);
+        }
+      });
       
       // Debug: Pronađi sve input polja na stranici
-      const allInputs = await page.evaluate(() => {
+      let allInputs = await page.evaluate(() => {
         const inputs = document.querySelectorAll('input, textarea');
         return Array.from(inputs).map(inp => ({
           tag: inp.tagName.toLowerCase(),
@@ -147,6 +169,68 @@ class TestRunnerService {
         }));
       });
       logs.push(`📋 Pronađeni input-i/textarea: ${allInputs.length}`);
+      
+      // Pokušaj pronaći i kliknuti na link/gumb za registraciju ako forma nije vidljiva
+      if (allInputs.length === 0) {
+        logs.push('⚠️ Nema input polja - pokušavam pronaći link/gumb za registraciju...');
+        
+        // Pokušaj kliknuti na link "Registracija" ili "Sign up"
+        const registerLinks = [
+          'a:has-text("Registracija")',
+          'a:has-text("Registriraj se")',
+          'a:has-text("Sign up")',
+          'a[href*="register"]',
+          'button:has-text("Registracija")',
+          'button:has-text("Sign up")'
+        ];
+        
+        let linkClicked = false;
+        for (const linkSelector of registerLinks) {
+          try {
+            const link = page.locator(linkSelector).first();
+            await link.waitFor({ state: 'visible', timeout: 3000 });
+            await link.click();
+            logs.push(`✓ Kliknuo na: ${linkSelector}`);
+            linkClicked = true;
+            
+            // Čekaj da se forma učita nakon klika
+            await page.waitForTimeout(3000);
+            await page.waitForLoadState('networkidle');
+            break;
+          } catch (e) {
+            // Continue to next selector
+          }
+        }
+        
+        if (linkClicked) {
+          logs.push('✓ Čekam da se forma učita nakon klika...');
+          // Ponovno provjeri inpute
+          const inputsAfterClick = await page.evaluate(() => {
+            return document.querySelectorAll('input, textarea').length;
+          });
+          logs.push(`📋 Input polja nakon klika: ${inputsAfterClick}`);
+        }
+        
+        // Ako je link kliknut, ponovno provjeri inpute
+        if (linkClicked) {
+          allInputs = await page.evaluate(() => {
+            const inputs = document.querySelectorAll('input, textarea');
+            return Array.from(inputs).map(inp => ({
+              tag: inp.tagName.toLowerCase(),
+              type: inp.type,
+              name: inp.name,
+              id: inp.id,
+              placeholder: inp.placeholder,
+              value: inp.value,
+              visible: inp.offsetParent !== null,
+              display: window.getComputedStyle(inp).display,
+              className: inp.className,
+              outerHTML: inp.outerHTML.substring(0, 200)
+            }));
+          });
+          logs.push(`📋 Pronađeni input-i/textarea nakon klika: ${allInputs.length}`);
+        }
+      }
       allInputs.forEach((inp, idx) => {
         logs.push(`  ${idx}: ${inp.tag} type=${inp.type}, name=${inp.name || 'N/A'}, id=${inp.id || 'N/A'}, placeholder=${inp.placeholder || 'N/A'}, visible=${inp.visible}, display=${inp.display}`);
         if (!inp.visible) {
