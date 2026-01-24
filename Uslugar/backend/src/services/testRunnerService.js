@@ -189,26 +189,78 @@ class TestRunnerService {
           try {
             const link = page.locator(linkSelector).first();
             await link.waitFor({ state: 'visible', timeout: 3000 });
+            const href = await link.getAttribute('href');
             await link.click();
-            logs.push(`✓ Kliknuo na: ${linkSelector}`);
+            logs.push(`✓ Kliknuo na: ${linkSelector} (href: ${href})`);
             linkClicked = true;
             
+            // Ako je hash link (#register-user), scrollaj do sekcije
+            if (href && href.includes('#')) {
+              const hash = href.split('#')[1];
+              logs.push(`📍 Hash link detektiran: #${hash} - scrollam do sekcije...`);
+              
+              // Scrollaj do sekcije
+              await page.evaluate((sectionId) => {
+                const element = document.getElementById(sectionId) || document.querySelector(`[id="${sectionId}"]`);
+                if (element) {
+                  element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }, hash);
+              
+              await page.waitForTimeout(2000); // Čekaj scroll
+              logs.push(`✓ Scrollao do sekcije #${hash}`);
+            }
+            
             // Čekaj da se forma učita nakon klika
-            await page.waitForTimeout(3000);
+            await page.waitForTimeout(5000); // Duže čekanje za React render
             await page.waitForLoadState('networkidle');
+            logs.push('✓ Čekam da se forma učita nakon klika...');
+            
+            // Pokušaj pronaći formu u sekciji
+            if (href && href.includes('#')) {
+              const hash = href.split('#')[1];
+              try {
+                await page.waitForSelector(`#${hash}`, { timeout: 5000 });
+                logs.push(`✓ Sekcija #${hash} pronađena`);
+                
+                // Čekaj da se inputi pojave u toj sekciji
+                await page.waitForSelector(`#${hash} input`, { timeout: 10000 });
+                logs.push(`✓ Input polja u sekciji #${hash} pronađena`);
+              } catch (e) {
+                logs.push(`⚠ Sekcija #${hash} ili inputi nisu pronađeni: ${e.message}`);
+              }
+            }
+            
             break;
           } catch (e) {
+            logs.push(`  ⚠ Link ${linkSelector} nije kliknut: ${e.message.substring(0, 50)}`);
             // Continue to next selector
           }
         }
         
         if (linkClicked) {
-          logs.push('✓ Čekam da se forma učita nakon klika...');
           // Ponovno provjeri inpute
           const inputsAfterClick = await page.evaluate(() => {
             return document.querySelectorAll('input, textarea').length;
           });
           logs.push(`📋 Input polja nakon klika: ${inputsAfterClick}`);
+          
+          // Ako još nema inputa, čekaj dodatno
+          if (inputsAfterClick === 0) {
+            logs.push('⚠ Još nema input polja - čekam dodatno...');
+            await page.waitForTimeout(5000);
+            
+            // Pokušaj scrollati do gore i dolje da triggerira render
+            await page.evaluate(() => {
+              window.scrollTo(0, 0);
+            });
+            await page.waitForTimeout(1000);
+            await page.evaluate(() => {
+              window.scrollTo(0, document.body.scrollHeight);
+            });
+            await page.waitForTimeout(2000);
+            logs.push('✓ Scrollao kroz stranicu da triggeriram render');
+          }
         }
         
         // Ako je link kliknut, ponovno provjeri inpute
