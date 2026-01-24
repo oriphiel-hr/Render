@@ -2791,6 +2791,60 @@ export default function AdminTesting(){
                         />
                         <p className="text-xs text-gray-500 mt-1">Preuzmite iz Inboxes → Integrations → API</p>
                       </div>
+
+                      {/* OIB - Za providere koji trebaju javni registar */}
+                      {userData?.oib && userData.oib.includes('UNESI_') && (
+                        <div>
+                          <label className="block text-xs font-medium text-red-700 mb-1">OIB * (Iz javnog registra)</label>
+                          <input
+                            type="text"
+                            className="w-full border border-red-300 rounded px-3 py-2 text-sm font-mono"
+                            placeholder="npr. 12345678901"
+                            value={userData?.oib || ''}
+                            onChange={e => {
+                              if (!testData) return
+                              setTestData({
+                                ...testData,
+                                users: {
+                                  ...testData.users,
+                                  [userKey]: {
+                                    ...userData,
+                                    oib: e.target.value
+                                  }
+                                }
+                              })
+                            }}
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Unesi OIB iz Sudskog/Obrtnog registra</p>
+                        </div>
+                      )}
+
+                      {/* Naziv Tvrtke - Za providere koji trebaju javni registar */}
+                      {userData?.companyName && userData.companyName.includes('UNESI_') && (
+                        <div>
+                          <label className="block text-xs font-medium text-red-700 mb-1">Naziv Tvrtke * (Iz javnog registra)</label>
+                          <input
+                            type="text"
+                            className="w-full border border-red-300 rounded px-3 py-2 text-sm"
+                            placeholder="npr. Test Company d.o.o."
+                            value={userData?.companyName || ''}
+                            onChange={e => {
+                              if (!testData) return
+                              setTestData({
+                                ...testData,
+                                users: {
+                                  ...testData.users,
+                                  [userKey]: {
+                                    ...userData,
+                                    companyName: e.target.value
+                                  }
+                                }
+                              })
+                            }}
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Unesi naziv iz Sudskog/Obrtnog registra</p>
+                        </div>
+                      )}
                     </div>
                   </div>
 
