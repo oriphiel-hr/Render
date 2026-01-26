@@ -39,7 +39,34 @@
 
 ## 🎯 Kako Mailpit Radi
 
-### 1. **JEDAN Inbox za Sve Mailove**
+### 1. **Email Adrese NE MORAJU Postojati!**
+
+**✅ VAŽNO:** Email adrese kao `test.client@uslugar.hr` **NE MORAJU stvarno postojati**!
+
+Mailpit je **lokalni SMTP server** koji:
+- ✅ Prima **SVE mailove** koje mu pošalješ
+- ✅ **Ne provjerava DNS** - ne provjerava da li email adresa postoji
+- ✅ **Ne provjerava MX recorde** - ne provjerava da li domena postoji
+- ✅ **Catch-all server** - hvata sve mailove bez obzira na email adresu
+
+**Primjer:**
+```javascript
+// Možeš poslati email na BILO KOJU adresu:
+await sendEmail('test.client@uslugar.hr')        // ✅ Radi
+await sendEmail('nepostojeci@uslugar.hr')        // ✅ Radi
+await sendEmail('bilo.sta@bilo.koja.domena.hr')  // ✅ Radi
+await sendEmail('test@example.com')              // ✅ Radi
+
+// Mailpit će primiti SVE ove mailove u svoj inbox!
+```
+
+**Zašto je to dobro?**
+- ✅ Ne trebaš kreirati stvarne email adrese
+- ✅ Ne trebaš konfigurirati DNS
+- ✅ Možeš koristiti bilo koje email adrese za testiranje
+- ✅ Idealno za development i testiranje
+
+### 2. **JEDAN Inbox za Sve Mailove**
 
 Mailpit **nema različite inbox-ove** kao Mailtrap. Svi mailovi idu u **jedan inbox**.
 

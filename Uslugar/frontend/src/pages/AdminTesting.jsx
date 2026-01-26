@@ -3092,10 +3092,10 @@ export default function AdminTesting(){
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 text-sm">
               <strong>📝 Upute za Testiranje:</strong>
               <ul className="list-disc list-inside text-xs text-amber-800 mt-2 space-y-1">
-                <li><strong>Minimalni podaci:</strong> Unesi samo Email adresu (Mailpit automatski hvata sve mailove)</li>
-                <li><strong>Dinamički podaci:</strong> Email, Lozinka, Puno Ime - koriste se kao-je iz JSON-a</li>
+                <li><strong>Minimalni podaci:</strong> Unesi samo Email adresu za validData/invalidData/missingData (Mailpit automatski hvata sve mailove)</li>
+                <li><strong>Dinamički podaci:</strong> Email, Lozinka, Puno Ime, Telefon, Grad - možeš urediti u textboxovima ispod</li>
                 <li><strong>Provideri bez javnog registra (FREELANCER):</strong> Nema companyName - koristi se samo fullName</li>
-                <li><strong>Provideri s javnim registrom (OBRT, DOO, j.d.o.o.):</strong> ⚠️ Trebam unijeti točne podatke iz javnog registra!</li>
+                <li><strong>Provideri s javnim registrom (OBRT, DOO, j.d.o.o.):</strong> ⚠️ Trebam unijeti točne podatke iz javnog registra (OIB i Naziv Tvrtke)</li>
               </ul>
               <p className="text-xs text-amber-700 mt-2 font-semibold">
                 👉 Detaljne upute: Vidi <code className="bg-amber-100 px-1 rounded">backend/PROVIDER-VERIFICATION-FLOW.md</code>
@@ -3346,62 +3346,142 @@ export default function AdminTesting(){
                     </div>
                   )}
 
-                  {/* DINAMIČKI PODACI - KORISTE SE AUTOMATSKI */}
+                  {/* DINAMIČKI PODACI - KORISTE SE AUTOMATSKI - UREDIVI */}
                   <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="font-semibold text-xs text-green-700 mb-2">✅ KORISTE SE DINAMIČKI (Već popunjeno):</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-600">📧 Email:</span>
-                        <code className="bg-gray-100 px-2 py-1 rounded font-mono text-xs break-all">
-                          {userData?.email || 'N/A'}
-                        </code>
+                    <p className="font-semibold text-xs text-green-700 mb-1">✅ DINAMIČKI PODACI (Možeš urediti):</p>
+                    <p className="text-xs text-gray-600 mb-3">Ovi podaci se koriste u automatskim testovima za registraciju i prijavu.</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {/* Email */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">📧 Email *</label>
+                        <input
+                          type="email"
+                          className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                          placeholder="test.client@uslugar.hr"
+                          value={userData?.email || ''}
+                          onChange={e => {
+                            if (!testData) return
+                            setTestData({
+                              ...testData,
+                              users: {
+                                ...testData.users,
+                                [userKey]: {
+                                  ...userData,
+                                  email: e.target.value
+                                }
+                              }
+                            })
+                          }}
+                        />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-600">🔑 Lozinka:</span>
-                        <code className="bg-gray-100 px-2 py-1 rounded font-mono text-xs">
-                          {userData?.password || 'N/A'}
-                        </code>
+
+                      {/* Lozinka */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">🔑 Lozinka *</label>
+                        <input
+                          type="password"
+                          className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                          placeholder="Test123456!"
+                          value={userData?.password || ''}
+                          onChange={e => {
+                            if (!testData) return
+                            setTestData({
+                              ...testData,
+                              users: {
+                                ...testData.users,
+                                [userKey]: {
+                                  ...userData,
+                                  password: e.target.value
+                                }
+                              }
+                            })
+                          }}
+                        />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-600">👤 Puno Ime:</span>
-                        <code className="bg-gray-100 px-2 py-1 rounded font-mono text-xs">
-                          {userData?.fullName || 'N/A'}
-                        </code>
+
+                      {/* Puno Ime */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">👤 Puno Ime *</label>
+                        <input
+                          type="text"
+                          className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                          placeholder="Test Klijent"
+                          value={userData?.fullName || ''}
+                          onChange={e => {
+                            if (!testData) return
+                            setTestData({
+                              ...testData,
+                              users: {
+                                ...testData.users,
+                                [userKey]: {
+                                  ...userData,
+                                  fullName: e.target.value
+                                }
+                              }
+                            })
+                          }}
+                        />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-600">📱 Telefon:</span>
-                        <code className="bg-gray-100 px-2 py-1 rounded font-mono text-xs">
-                          {userData?.phone || 'N/A'}
-                        </code>
+
+                      {/* Telefon */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">📱 Telefon *</label>
+                        <input
+                          type="tel"
+                          className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                          placeholder="+385991111111"
+                          value={userData?.phone || ''}
+                          onChange={e => {
+                            if (!testData) return
+                            setTestData({
+                              ...testData,
+                              users: {
+                                ...testData.users,
+                                [userKey]: {
+                                  ...userData,
+                                  phone: e.target.value
+                                }
+                              }
+                            })
+                          }}
+                        />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-600">🏙️ Grad:</span>
-                        <code className="bg-gray-100 px-2 py-1 rounded font-mono text-xs">
-                          {userData?.city || 'N/A'}
-                        </code>
+
+                      {/* Grad */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">🏙️ Grad *</label>
+                        <input
+                          type="text"
+                          className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+                          placeholder="Zagreb"
+                          value={userData?.city || ''}
+                          onChange={e => {
+                            if (!testData) return
+                            setTestData({
+                              ...testData,
+                              users: {
+                                ...testData.users,
+                                [userKey]: {
+                                  ...userData,
+                                  city: e.target.value
+                                }
+                              }
+                            })
+                          }}
+                        />
                       </div>
+
+                      {/* Pravni Status - samo prikaz (ne može se mijenjati) */}
                       {userData?.legalStatus && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-600">⚖️ Pravni Status:</span>
-                          <code className="bg-gray-100 px-2 py-1 rounded font-mono text-xs">
-                            {userData.legalStatus}
-                          </code>
-                        </div>
-                      )}
-                      {userData?.oib && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-600">🆔 OIB:</span>
-                          <code className="bg-gray-100 px-2 py-1 rounded font-mono text-xs">
-                            {userData.oib}
-                          </code>
-                        </div>
-                      )}
-                      {userData?.companyName && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-600">🏢 Tvrtka:</span>
-                          <code className="bg-gray-100 px-2 py-1 rounded font-mono text-xs">
-                            {userData.companyName}
-                          </code>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">⚖️ Pravni Status</label>
+                          <input
+                            type="text"
+                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-gray-100"
+                            value={userData.legalStatus}
+                            disabled
+                            readOnly
+                          />
                         </div>
                       )}
                     </div>

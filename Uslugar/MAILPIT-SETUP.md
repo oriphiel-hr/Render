@@ -98,6 +98,7 @@ SMTP_PASS=
 - `MAILPIT_SMTP_USER` ili `SMTP_USER` može biti bilo koja email adresa (koristi se kao "from" adresa)
 - Ako nijedna varijabla nije postavljena, aplikacija neće slati emailove (vidjet ćeš upozorenje u logovima)
 - **Mailpit-specifične varijable (`MAILPIT_*`) imaju prioritet** - ako su postavljene, koriste se umjesto standardnih `SMTP_*` varijabli
+- **✅ Email adrese NE MORAJU postojati!** Mailpit prima sve mailove bez provjere DNS-a ili postojanja email adrese
 
 **Provjera konfiguracije:**
 Nakon što pokreneš backend, u logovima bi trebao vidjeti:
