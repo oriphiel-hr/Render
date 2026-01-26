@@ -101,6 +101,39 @@ r.get('/checkpoints', async (req, res, next) => {
 });
 
 /**
+ * GET /api/testing/mailpit/status
+ * Provjeri status Mailpit servisa
+ */
+r.get('/mailpit/status', async (req, res, next) => {
+  try {
+    const baseUrl = req.query.baseUrl || process.env.MAILPIT_API_URL || 'http://localhost:8025/api/v1';
+    
+    // Postavi base URL u servis
+    mailpitService.setBaseUrl(baseUrl);
+    
+    // Pokušaj dohvatiti mailove (provjera da li API radi)
+    const emails = await mailpitService.getEmails({ limit: 1 });
+    
+    res.json({
+      success: true,
+      connected: true,
+      baseUrl: baseUrl,
+      message: 'Mailpit servis je dostupan',
+      emailCount: emails.length
+    });
+  } catch (error) {
+    console.error('[MAILPIT] Status check failed:', error.message);
+    res.json({
+      success: false,
+      connected: false,
+      baseUrl: req.query.baseUrl || process.env.MAILPIT_API_URL || 'http://localhost:8025/api/v1',
+      message: `Mailpit servis nije dostupan: ${error.message}`,
+      error: error.message
+    });
+  }
+});
+
+/**
  * GET /api/testing/test-data
  * Preuzmi test podatke
  */

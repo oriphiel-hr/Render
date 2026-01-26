@@ -680,6 +680,7 @@ export default function AdminTesting(){
   const [loadingTestResults, setLoadingTestResults] = useState(false)
   const [testData, setTestData] = useState(null)
   const [savingTestData, setSavingTestData] = useState(false)
+  const [mailpitStatus, setMailpitStatus] = useState({ connected: null, checking: false })
   const [uploadingDocument, setUploadingDocument] = useState(false)
   
   // Checkpoint/Rollback
@@ -761,6 +762,30 @@ export default function AdminTesting(){
   }
   useEffect(() => { load() }, [])
 
+  const checkMailpitStatus = async (baseUrl) => {
+    if (!baseUrl) return
+    setMailpitStatus({ connected: null, checking: true })
+    try {
+      const res = await api.get(`/testing/mailpit/status?baseUrl=${encodeURIComponent(baseUrl)}`, {
+        timeout: 5000
+      })
+      setMailpitStatus({
+        connected: res.data.connected,
+        checking: false,
+        message: res.data.message,
+        baseUrl: res.data.baseUrl,
+        emailCount: res.data.emailCount
+      })
+    } catch (error) {
+      setMailpitStatus({
+        connected: false,
+        checking: false,
+        message: `Greška: ${error?.response?.data?.message || error.message}`,
+        baseUrl: baseUrl
+      })
+    }
+  }
+
   const loadTestData = async () => {
     try {
       console.log('[TEST DATA] Loading test data...')
@@ -769,6 +794,48 @@ export default function AdminTesting(){
       const savedInStorage = loadTestDataFromStorage()
       if (savedInStorage) {
         console.log('[TEST DATA] Loaded from localStorage (no backend sync)')
+        
+        // Očisti stare @mailtrap.io email adrese i zamijeni s @uslugar.hr
+        let cleanedData = savedInStorage
+        let needsUpdate = false
+        
+        if (savedInStorage.users) {
+          Object.keys(savedInStorage.users).forEach(userKey => {
+            const user = savedInStorage.users[userKey]
+            if (user.mailtrap) {
+              // Valid data
+              if (user.mailtrap.validData?.email?.includes('@mailtrap.io')) {
+                cleanedData.users[userKey].mailtrap.validData.email = user.mailtrap.validData.email.replace('@mailtrap.io', '@uslugar.hr')
+                needsUpdate = true
+              }
+              // Invalid data
+              if (user.mailtrap.invalidData?.email?.includes('@mailtrap.io')) {
+                cleanedData.users[userKey].mailtrap.invalidData.email = user.mailtrap.invalidData.email.replace('@mailtrap.io', '@uslugar.hr')
+                needsUpdate = true
+              }
+              // Missing data
+              if (user.mailtrap.missingData?.email?.includes('@mailtrap.io')) {
+                cleanedData.users[userKey].mailtrap.missingData.email = user.mailtrap.missingData.email.replace('@mailtrap.io', '@uslugar.hr')
+                needsUpdate = true
+              }
+            }
+          })
+        }
+        
+        // Ažuriraj localStorage ako je bilo promjena
+        if (needsUpdate) {
+          console.log('[TEST DATA] Cleaning old @mailtrap.io emails from localStorage')
+          saveTestDataToStorage(cleanedData)
+          setTestData(cleanedData)
+        } else {
+          setTestData(savedInStorage)
+        }
+        
+        // Provjeri Mailpit status nakon učitavanja
+        const baseUrl = cleanedData?.email?.testService?.baseUrl
+        if (baseUrl) {
+          checkMailpitStatus(baseUrl)
+        }
         return
       }
       
@@ -2933,35 +3000,74 @@ export default function AdminTesting(){
 
           {/* Globalni Mailpit Konfiguracija */}
           <div className="border rounded-lg p-6 bg-white">
-            <h3 className="text-lg font-semibold mb-4">📧 Mailpit Konfiguracija (Globalna)</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">📧 Mailpit Konfiguracija (Globalna)</h3>
+              {mailpitStatus.connected !== null && (
+                <div className={`flex items-center gap-2 px-3 py-1 rounded text-sm ${
+                  mailpitStatus.connected 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-red-100 text-red-800'
+                }`}>
+                  {mailpitStatus.checking ? (
+                    <>⏳ Provjeravam...</>
+                  ) : mailpitStatus.connected ? (
+                    <>✅ Mailpit dostupan</>
+                  ) : (
+                    <>❌ Mailpit nedostupan</>
+                  )}
+                </div>
+              )}
+            </div>
             <div>
               <label className="block text-sm font-medium mb-2">Mailpit API URL</label>
-              <input
-                type="text"
-                className="w-full border rounded px-3 py-2 text-sm"
-                placeholder="http://localhost:8025/api/v1"
-                value={testData?.email?.testService?.baseUrl || 'http://localhost:8025/api/v1'}
-                onChange={e => {
-                  if (!testData) return
-                  const updated = { ...testData }
-                  if (!updated.email) updated.email = {}
-                  if (!updated.email.testService) updated.email.testService = {}
-                  setTestData({
-                    ...updated,
-                    email: {
-                      ...updated.email,
-                      testService: {
-                        ...updated.email.testService,
-                        baseUrl: e.target.value,
-                        type: 'mailpit'
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  className="flex-1 border rounded px-3 py-2 text-sm"
+                  placeholder="http://localhost:8025/api/v1"
+                  value={testData?.email?.testService?.baseUrl || 'http://localhost:8025/api/v1'}
+                  onChange={e => {
+                    if (!testData) return
+                    const updated = { ...testData }
+                    if (!updated.email) updated.email = {}
+                    if (!updated.email.testService) updated.email.testService = {}
+                    setTestData({
+                      ...updated,
+                      email: {
+                        ...updated.email,
+                        testService: {
+                          ...updated.email.testService,
+                          baseUrl: e.target.value,
+                          type: 'mailpit'
+                        }
                       }
-                    }
-                  })
-                }}
-              />
+                    })
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    const baseUrl = testData?.email?.testService?.baseUrl || 'http://localhost:8025/api/v1'
+                    checkMailpitStatus(baseUrl)
+                  }}
+                  disabled={mailpitStatus.checking}
+                  className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+                >
+                  {mailpitStatus.checking ? '⏳' : '🔍'} Provjeri
+                </button>
+              </div>
+              {mailpitStatus.message && (
+                <p className={`text-xs mt-2 ${
+                  mailpitStatus.connected ? 'text-green-700' : 'text-red-700'
+                }`}>
+                  {mailpitStatus.message}
+                  {mailpitStatus.emailCount !== undefined && ` (${mailpitStatus.emailCount} mailova u inboxu)`}
+                </p>
+              )}
               <p className="text-xs text-gray-500 mt-2">
                 Mailpit API URL (default: http://localhost:8025/api/v1). 
-                Pokreni Mailpit s: <code className="bg-gray-100 px-1 rounded">docker run -d -p 8025:8025 -p 1025:1025 axllent/mailpit</code>
+                Za Render: <code className="bg-gray-100 px-1 rounded">http://mailpit:8025/api/v1</code>
+                <br />
+                Lokalno: <code className="bg-gray-100 px-1 rounded">docker run -d -p 8025:8025 -p 1025:1025 axllent/mailpit</code>
               </p>
             </div>
           </div>
