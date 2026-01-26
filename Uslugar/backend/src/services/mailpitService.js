@@ -53,6 +53,7 @@ class MailpitService {
     try {
       const params = {};
       if (options.limit) params.limit = options.limit;
+      if (options.start) params.start = options.start;
       if (options.query) params.query = options.query;
 
       const response = await axios.get(`${this.baseUrl}/messages`, {
@@ -60,7 +61,7 @@ class MailpitService {
         timeout: 10000
       });
 
-      // Mailpit vraća { messages: [...], total: N }
+      // Mailpit vraća { messages: [...], total: N } ili direktno array
       const messages = response.data.messages || response.data || [];
       console.log(`[MAILPIT] Dohvaćeno ${messages.length} mailova`);
       return messages;

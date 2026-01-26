@@ -795,48 +795,54 @@ export default function AdminTesting(){
       if (savedInStorage) {
         console.log('[TEST DATA] Loaded from localStorage (no backend sync)')
         
-        // Očisti stare @mailtrap.io email adrese i zamijeni s @uslugar.hr
-        let cleanedData = savedInStorage
-        let needsUpdate = false
-        
-        if (savedInStorage.users) {
-          Object.keys(savedInStorage.users).forEach(userKey => {
-            const user = savedInStorage.users[userKey]
-            if (user.mailtrap) {
-              // Valid data
-              if (user.mailtrap.validData?.email?.includes('@mailtrap.io')) {
-                cleanedData.users[userKey].mailtrap.validData.email = user.mailtrap.validData.email.replace('@mailtrap.io', '@uslugar.hr')
-                needsUpdate = true
-              }
-              // Invalid data
-              if (user.mailtrap.invalidData?.email?.includes('@mailtrap.io')) {
-                cleanedData.users[userKey].mailtrap.invalidData.email = user.mailtrap.invalidData.email.replace('@mailtrap.io', '@uslugar.hr')
-                needsUpdate = true
-              }
-              // Missing data
-              if (user.mailtrap.missingData?.email?.includes('@mailtrap.io')) {
-                cleanedData.users[userKey].mailtrap.missingData.email = user.mailtrap.missingData.email.replace('@mailtrap.io', '@uslugar.hr')
-                needsUpdate = true
-              }
-            }
-          })
-        }
-        
-        // Ažuriraj localStorage ako je bilo promjena
-        if (needsUpdate) {
-          console.log('[TEST DATA] Cleaning old @mailtrap.io emails from localStorage')
-          saveTestDataToStorage(cleanedData)
-          setTestData(cleanedData)
+        // Provjeri da li ima users - ako nema, učitaj s backenda
+        if (!savedInStorage.users || Object.keys(savedInStorage.users).length === 0) {
+          console.log('[TEST DATA] No users in localStorage, loading from backend...')
+          // Nastavi dalje da učitamo s backenda
         } else {
-          setTestData(savedInStorage)
+          // Očisti stare @mailtrap.io email adrese i zamijeni s @uslugar.hr
+          let cleanedData = JSON.parse(JSON.stringify(savedInStorage)) // Deep copy
+          let needsUpdate = false
+          
+          if (savedInStorage.users) {
+            Object.keys(savedInStorage.users).forEach(userKey => {
+              const user = savedInStorage.users[userKey]
+              if (user.mailtrap) {
+                // Valid data
+                if (user.mailtrap.validData?.email?.includes('@mailtrap.io')) {
+                  cleanedData.users[userKey].mailtrap.validData.email = user.mailtrap.validData.email.replace('@mailtrap.io', '@uslugar.hr')
+                  needsUpdate = true
+                }
+                // Invalid data
+                if (user.mailtrap.invalidData?.email?.includes('@mailtrap.io')) {
+                  cleanedData.users[userKey].mailtrap.invalidData.email = user.mailtrap.invalidData.email.replace('@mailtrap.io', '@uslugar.hr')
+                  needsUpdate = true
+                }
+                // Missing data
+                if (user.mailtrap.missingData?.email?.includes('@mailtrap.io')) {
+                  cleanedData.users[userKey].mailtrap.missingData.email = user.mailtrap.missingData.email.replace('@mailtrap.io', '@uslugar.hr')
+                  needsUpdate = true
+                }
+              }
+            })
+          }
+          
+          // Ažuriraj localStorage ako je bilo promjena
+          if (needsUpdate) {
+            console.log('[TEST DATA] Cleaning old @mailtrap.io emails from localStorage')
+            saveTestDataToStorage(cleanedData)
+            setTestData(cleanedData)
+          } else {
+            setTestData(savedInStorage)
+          }
+          
+          // Provjeri Mailpit status nakon učitavanja
+          const baseUrl = cleanedData?.email?.testService?.baseUrl
+          if (baseUrl) {
+            checkMailpitStatus(baseUrl)
+          }
+          return
         }
-        
-        // Provjeri Mailpit status nakon učitavanja
-        const baseUrl = cleanedData?.email?.testService?.baseUrl
-        if (baseUrl) {
-          checkMailpitStatus(baseUrl)
-        }
-        return
       }
       
       // Ako nema u localStorage, učitaj s backenda
@@ -859,20 +865,28 @@ export default function AdminTesting(){
       }
       
       // Spremi u state i automatski će se spremiiti u localStorage (useEffect)
-      setTestData(res.data || {
+      const loadedData = res.data || {
         users: {},
         documents: {},
         email: {
           testService: {
-            apiKey: '',
-            inboxId: '0'
+            type: 'mailpit',
+            baseUrl: 'http://localhost:8025/api/v1'
           }
         },
         api: {
           baseUrl: 'https://api.uslugar.eu',
           frontendUrl: 'https://www.uslugar.eu'
         }
-      })
+      }
+      
+      setTestData(loadedData)
+      
+      // Provjeri Mailpit status nakon učitavanja
+      const baseUrl = loadedData?.email?.testService?.baseUrl
+      if (baseUrl) {
+        checkMailpitStatus(baseUrl)
+      }
     } catch (e) {
       console.error('[TEST DATA] Error loading:', e.message)
       console.error('[TEST DATA] Error details:', {
@@ -1022,14 +1036,13 @@ export default function AdminTesting(){
       const saved = localStorage.getItem('adminTestData')
       if (saved) {
         const parsedData = JSON.parse(saved)
-        setTestData(parsedData)
         console.log('✓ Test data loaded from localStorage')
-        return true
+        return parsedData  // Vrati podatke, ne postavljaj state ovdje
       }
     } catch (e) {
       console.error('❌ Error loading from localStorage:', e)
     }
-    return false
+    return null  // Vrati null umjesto false
   }
 
   const resetUserField = (userKey, fieldName) => {
