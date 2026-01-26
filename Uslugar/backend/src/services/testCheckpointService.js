@@ -33,6 +33,46 @@ class TestCheckpointService {
   constructor() {
     this.prisma = new PrismaClient();
     this.checkpoints = new Map(); // checkpointId -> { tables, timestamp, data }
+    this._loadCheckpointsFromDisk();
+  }
+
+  /**
+   * Učitaj sve checkpoint-e iz datoteka pri inicijalizaciji
+   */
+  _loadCheckpointsFromDisk() {
+    try {
+      if (!fs.existsSync(CHECKPOINT_DIR)) {
+        return;
+      }
+
+      const files = fs.readdirSync(CHECKPOINT_DIR).filter(f => f.endsWith('.json'));
+      console.log(`📋 Učitavam ${files.length} checkpoint-a iz datoteka...`);
+
+      for (const file of files) {
+        try {
+          const filePath = path.join(CHECKPOINT_DIR, file);
+          const fileContent = fs.readFileSync(filePath, 'utf-8');
+          const checkpoint = JSON.parse(fileContent);
+          
+          // Učitaj samo metadata (bez podataka) za brže učitavanje
+          this.checkpoints.set(checkpoint.id, {
+            id: checkpoint.id,
+            name: checkpoint.name,
+            tables: checkpoint.tables,
+            timestamp: checkpoint.timestamp,
+            description: checkpoint.description || null,
+            purpose: checkpoint.purpose || null,
+            data: null // Ne učitavamo podatke dok ne trebamo rollback
+          });
+        } catch (err) {
+          console.warn(`⚠️  Greška pri učitavanju ${file}: ${err.message}`);
+        }
+      }
+
+      console.log(`✅ Učitano ${this.checkpoints.size} checkpoint-a`);
+    } catch (err) {
+      console.error(`❌ Greška pri učitavanju checkpoint-a: ${err.message}`);
+    }
   }
 
   /**
@@ -45,11 +85,13 @@ class TestCheckpointService {
    *   const id = await service.create('test1', ['User', 'Job', 'Offer']);
    *   const id = await service.create('test2', null); // sve tablice
    */
-  async create(name, tables = null) {
+  async create(name, tables = null, description = null, purpose = null) {
     const checkpointId = `${name}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     console.log(`📸 [CHECKPOINT] Kreiram checkpoint: ${checkpointId}`);
     console.log(`   Tablice: ${tables ? tables.join(', ') : 'SVE'}`);
+    if (description) console.log(`   Opis: ${description}`);
+    if (purpose) console.log(`   Svrha: ${purpose}`);
     
     try {
       // Ako tables nije specificiran, preuzmi sve tablice iz schema
@@ -80,6 +122,8 @@ class TestCheckpointService {
         name,
         tables,
         timestamp: new Date().toISOString(),
+        description: description || null,
+        purpose: purpose || null,
         data
       };
 
@@ -114,11 +158,13 @@ class TestCheckpointService {
       // Učitaj checkpoint iz memorije ili datoteke
       let checkpoint = this.checkpoints.get(checkpointId);
       
-      if (!checkpoint) {
+      if (!checkpoint || !checkpoint.data) {
         const filePath = path.join(CHECKPOINT_DIR, `${checkpointId}.json`);
         if (fs.existsSync(filePath)) {
           const fileContent = fs.readFileSync(filePath, 'utf-8');
           checkpoint = JSON.parse(fileContent);
+          // Ažuriraj u memoriji
+          this.checkpoints.set(checkpointId, checkpoint);
         } else {
           throw new Error(`Checkpoint ${checkpointId} nije pronađen`);
         }
@@ -201,13 +247,17 @@ class TestCheckpointService {
       id: cp.id,
       name: cp.name,
       tables: cp.tables,
-      timestamp: cp.timestamp
+      timestamp: cp.timestamp,
+      description: cp.description || null,
+      purpose: cp.purpose || null
     }));
     
     console.log('📋 Dostupni checkpoint-i:');
     list.forEach(cp => {
       console.log(`   - ${cp.id} (${cp.name})`);
       console.log(`     Tablice: ${cp.tables.join(', ')}`);
+      if (cp.description) console.log(`     Opis: ${cp.description}`);
+      if (cp.purpose) console.log(`     Svrha: ${cp.purpose}`);
     });
     
     return list;

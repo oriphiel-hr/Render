@@ -1,10 +1,9 @@
 {
   "email": {
     "testService": {
-      "type": "mailtrap",
-      "apiKey": "YOUR_MAILTRAP_API_KEY_HERE",
-      "baseUrl": "https://mailtrap.io",
-      "description": "Mailtrap API za dohvaćanje emaila tijekom testiranja"
+      "type": "mailpit",
+      "baseUrl": "http://localhost:8025/api/v1",
+      "description": "Mailpit API za dohvaćanje emaila tijekom testiranja (lokalni SMTP testing server)"
     }
   },
   "users": {
@@ -18,18 +17,15 @@
       "description": "Korisnik usluge koji objavljuje poslove",
       "mailtrap": {
         "validData": {
-          "email": "test.client@mailtrap.io",
-          "inboxId": "1111111"
+          "email": "test.client@uslugar.hr"
         },
         "invalidData": {
-          "email": "test.client.invalid@mailtrap.io",
-          "inboxId": "1111112"
+          "email": "test.client.invalid@uslugar.hr"
         },
         "missingData": {
-          "email": "test.client.missing@mailtrap.io",
-          "inboxId": "1111113"
+          "email": "test.client.missing@uslugar.hr"
         },
-        "description": "Mailtrap inbox-evi za sve test scenarije client-a"
+        "description": "Email adrese za testiranje (Mailpit automatski hvata sve mailove) za client-a"
       },
       "testScenarios": {
         "validData": "Ispravni podaci - redovna registracija i korištenje",
@@ -50,18 +46,15 @@
       "description": "Provider (freelancer) - za ispravne podatke unesi svoj OIB ili testiraj s ovim (nije u registru, ali je matematički validan)",
       "mailtrap": {
         "validData": {
-          "email": "test.provider@mailtrap.io",
-          "inboxId": "2222222"
+          "email": "test.provider@uslugar.hr"
         },
         "invalidData": {
-          "email": "test.provider.invalid@mailtrap.io",
-          "inboxId": "2222223"
+          "email": "test.provider.invalid@uslugar.hr"
         },
         "missingData": {
-          "email": "test.provider.missing@mailtrap.io",
-          "inboxId": "2222224"
+          "email": "test.provider.missing@uslugar.hr"
         },
-        "description": "Mailtrap inbox-evi za sve test scenarije providera"
+        "description": "Email adrese za testiranje (Mailpit automatski hvata sve mailove) za providera"
       },
       "testScenarios": {
         "validData": "Ispravni podaci - redovan provider s licencom",
@@ -84,18 +77,15 @@
       "description": "Direktor tvrtke s timom - za ispravne podatke TREBAM UNIJETI pravi OIB i naziv iz Sudskog registra! (ovaj OIB nije pravi)",
       "mailtrap": {
         "validData": {
-          "email": "test.director@mailtrap.io",
-          "inboxId": "3333333"
+          "email": "test.director@uslugar.hr"
         },
         "invalidData": {
-          "email": "test.director.invalid@mailtrap.io",
-          "inboxId": "3333334"
+          "email": "test.director.invalid@uslugar.hr"
         },
         "missingData": {
-          "email": "test.director.missing@mailtrap.io",
-          "inboxId": "3333335"
+          "email": "test.director.missing@uslugar.hr"
         },
-        "description": "Mailtrap inbox-evi za sve test scenarije directora"
+        "description": "Email adrese za testiranje (Mailpit automatski hvata sve mailove) za directora"
       },
       "testScenarios": {
         "teamManagement": "Dodavanje/uklanjanje članova tima",
@@ -118,18 +108,15 @@
       "description": "Član tima - izvršava poslove, vidi samo dodjeljene leadove (OIB je matematički validan ali nije u registru)",
       "mailtrap": {
         "validData": {
-          "email": "test.team@mailtrap.io",
-          "inboxId": "4444444"
+          "email": "test.team@uslugar.hr"
         },
         "invalidData": {
-          "email": "test.team.invalid@mailtrap.io",
-          "inboxId": "4444445"
+          "email": "test.team.invalid@uslugar.hr"
         },
         "missingData": {
-          "email": "test.team.missing@mailtrap.io",
-          "inboxId": "4444446"
+          "email": "test.team.missing@uslugar.hr"
         },
-        "description": "Mailtrap inbox-evi za sve test scenarije team membera"
+        "description": "Email adrese za testiranje (Mailpit automatski hvata sve mailove) za team membera"
       },
       "testScenarios": {
         "limitedAccess": "Može vidjeti samo dodjeljene leadove od direktora",
@@ -146,10 +133,9 @@
       "description": "Administrator platforme - vidi sve",
       "mailtrap": {
         "validData": {
-          "email": "test.admin@mailtrap.io",
-          "inboxId": "5555555"
+          "email": "test.admin@uslugar.hr"
         },
-        "description": "Mailtrap inbox za admin"
+        "description": "Email adresa za testiranje (Mailpit automatski hvata sve mailove) za admin"
       },
       "testScenarios": {
         "fullAccess": "Vidi sve korisnike, sve poslove, sve ponude",
@@ -234,8 +220,8 @@
     }
   },
   "notes": {
-    "setupInstructions": "1. Unesi Mailtrap API Key u email.testService.apiKey\n2. Kreiraj inbox-e za svakog korisnika na Mailtrap.io\n3. Unesi inbox ID-eve u mailtrap.inboxId za svakog korisnika\n4. Kreiraj test dokumente (license, kyc, portfolio) i unesi putanje",
-    "mailtrapSetup": "Kreiraj 5 inbox-eva na https://mailtrap.io:\n- 1111111: test.client@mailtrap.io\n- 2222222: test.provider@mailtrap.io\n- 3333333: test.director@mailtrap.io\n- 4444444: test.team@mailtrap.io\n- 5555555: test.admin@mailtrap.io",
+    "setupInstructions": "1. Pokreni Mailpit s: docker run -d -p 8025:8025 -p 1025:1025 axllent/mailpit\n2. Konfiguriraj aplikaciju da šalje emailove na Mailpit SMTP (localhost:1025)\n3. Unesi email adrese za testiranje u mailtrap.validData/invalidData/missingData.email\n4. Kreiraj test dokumente (license, kyc, portfolio) i unesi putanje",
+    "mailpitSetup": "Pokreni Mailpit s: docker run -d -p 8025:8025 -p 1025:1025 axllent/mailpit\nKonfiguriraj aplikaciju da šalje emailove na Mailpit SMTP (localhost:1025)\nSvi mailovi će biti dostupni na http://localhost:8025",
     "dataIsolationTesting": "Testovi za data isolation provjeravaju da korisnici NE MOGU vidjeti:\n- Poslove/ponude drugih korisnika\n- Chat poruke s drugim strankama\n- Profile, KYC dokumente, portfolio drugih korisnika\n- Podatke drugih timova (za team members i directors)",
     "optimizationBenefits": "Korištenje samo 5 globalnih korisnika umjesto 9+:\n- Brža inicijalizacija\n- Manje memorije\n- Jednostavniji checkpoint/rollback\n- Lakši cleanup\n- Legibilniji testovi"
   }

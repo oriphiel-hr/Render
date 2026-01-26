@@ -1816,7 +1816,7 @@ export default function AdminTesting(){
                                   )}
                                   {test.id === '1.4' && (
                                     <>
-                                      <li>1. Nakon registracije, otvori email (Mailtrap inbox ili Gmail)</li>
+                                      <li>1. Nakon registracije, otvori email (Mailpit web UI na http://localhost:8025 ili Gmail)</li>
                                       <li>2. Pronađi link za verifikaciju s tekstom "Provjeri email" ili "Verify"</li>
                                       <li>3. Klikni na link - trebao bi redirect na stranicu s porukom "Email verificiran"</li>
                                       <li>4. Provjeri: Korisnik je sada označen kao verified u bazi</li>
@@ -1827,7 +1827,7 @@ export default function AdminTesting(){
                                     <>
                                       <li>1. Otvori <strong>/forgot-password</strong></li>
                                       <li>2. Unesi email korisnika → trebala bi poruka "Email za reset poslan"</li>
-                                      <li>3. Provjeri email (Mailtrap/Gmail) za link s tekstom "Reset lozinke"</li>
+                                      <li>3. Provjeri email (Mailpit/Gmail) za link s tekstom "Reset lozinke"</li>
                                       <li>4. Klikni na link - trebao bi redirect na formu "Nova lozinka"</li>
                                       <li>5. Unesi novu lozinku (min 8 znakova) → ✅ Poruka "Lozinka promijenjena"</li>
                                       <li>6. Testiraj: Prijava s novom lozinkom trebala bi raditi</li>
@@ -2107,7 +2107,7 @@ export default function AdminTesting(){
                                       <li>2. Kao klijent: Pošalji ponudu provideru na taj lead</li>
                                       <li>3. ✅ TREBALO BI: Provider dobije email: "Nova ponuda za posao: [naslov]"</li>
                                       <li>4. Email trebao bi imati: Link do ponude, iznos, ili poruku</li>
-                                      <li>5. Provjeri: Email je stigao na ispravnu adresu (Mailtrap/Gmail)</li>
+                                      <li>5. Provjeri: Email je stigao na ispravnu adresu (Mailpit/Gmail)</li>
                                     </>
                                   )}
                                   {test.id === '24.2' && (
@@ -2455,7 +2455,6 @@ export default function AdminTesting(){
                                     // Pronađi test korisnika iz testData (koristi prvi korisnik ili 'client')
                                     const testUserKey = 'client' // Ili prvi korisnik iz testData
                                     const testUser = testData?.users?.[testUserKey] || Object.values(testData?.users || {})[0]
-                                    const mailtrapInboxId = testUser?.mailtrap?.validData?.inboxId || testUser?.mailtrap?.inboxId
                                     
                                     // Pripremi userData za test
                                     const userDataForTest = testUser ? {
@@ -2466,23 +2465,21 @@ export default function AdminTesting(){
                                       city: testUser.city
                                     } : null
                                     
-                                    // Dohvati Mailtrap API key iz testData
-                                    const mailtrapApiKey = testData?.email?.testService?.apiKey || ''
+                                    // Dohvati Mailpit base URL iz testData
+                                    const mailpitBaseUrl = testData?.email?.testService?.baseUrl
                                     
                                     console.log(`[TEST] Pokrenuo automatski test: ${test.id}`, { 
-                                      userDataForTest, 
-                                      mailtrapInboxId,
-                                      hasApiKey: !!mailtrapApiKey
+                                      userDataForTest,
+                                      mailpitBaseUrl
                                     })
                                     
-                                    // Simulacija automatskog testa s Playwright
+                                    // Simulacija automatskog testa s Playwright + Mailpit
                                     const response = await api.post(`/testing/run-single`, { 
                                       testId: test.id,
                                       testName: test.name,
                                       testType: 'registration',
                                       userData: userDataForTest,
-                                      mailtrapInboxId: mailtrapInboxId,
-                                      mailtrapApiKey: mailtrapApiKey
+                                      mailpitBaseUrl: mailpitBaseUrl
                                     }).catch(() => null)
                                     
                                     console.log(`[TEST] Response:`, response?.data)
@@ -2499,7 +2496,9 @@ export default function AdminTesting(){
                                         error: response?.data?.error,
                                         errorStack: response?.data?.errorStack,
                                         screenshots: response?.data?.screenshots || [],
-                                        emailScreenshots: response?.data?.emailScreenshots || []
+                                        emailScreenshots: response?.data?.emailScreenshots || [],
+                                        checkpointId: response?.data?.checkpointId || null,
+                                        checkpointCreated: response?.data?.checkpointCreated || false
                                       }
                                     }))
                                   } finally {
@@ -2536,6 +2535,19 @@ export default function AdminTesting(){
                               {testResults[test.id].duration && (
                                 <div className="text-xs text-gray-600 mb-2">
                                   ⏱️ Trajanje: {(testResults[test.id].duration / 1000).toFixed(2)}s
+                                </div>
+                              )}
+
+                              {/* Checkpoint informacije */}
+                              {testResults[test.id].checkpointCreated && testResults[test.id].checkpointId && (
+                                <div className="text-xs text-blue-700 mb-2 p-2 bg-blue-50 rounded border border-blue-200">
+                                  <div className="font-semibold mb-1">📸 Checkpoint:</div>
+                                  <div className="font-mono text-xs">
+                                    {testResults[test.id].checkpointId}
+                                  </div>
+                                  <div className="text-gray-600 mt-1">
+                                    Checkpoint je kreiran prije testa i rollback je izvršen nakon testa
+                                  </div>
                                 </div>
                               )}
 
@@ -2611,10 +2623,10 @@ export default function AdminTesting(){
                                 </div>
                               )}
 
-                              {/* Mailtrap Screenshots */}
+                              {/* Mailpit Screenshots */}
                               {testResults[test.id].emailScreenshots && testResults[test.id].emailScreenshots.length > 0 && (
                                 <div className="mb-3 p-2 bg-blue-50 rounded border border-blue-200">
-                                  <div className="font-semibold text-xs text-blue-800 mb-2">📧 Mailtrap Emaili:</div>
+                                  <div className="font-semibold text-xs text-blue-800 mb-2">📧 Mailpit Emaili:</div>
                                   {testResults[test.id].emailScreenshots.map((emailData, idx) => (
                                     <div key={idx} className="mb-2 p-2 bg-white rounded border border-blue-100">
                                       <div className="text-xs text-gray-700 mb-1">
@@ -2915,20 +2927,20 @@ export default function AdminTesting(){
       {tab === 'test-data' && (
         <div className="space-y-6">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <strong>ℹ️ Test Podaci:</strong> Ovdje možeš konfigurirati test korisnike, email adrese i Mailtrap inbox ID-eve za automatske testove.
-            <p className="text-xs text-blue-700 mt-2">⚠️ Svaki korisnik ima svoj Mailtrap Inbox ID - kreiraj ih na https://mailtrap.io</p>
+            <strong>ℹ️ Test Podaci:</strong> Ovdje možeš konfigurirati test korisnike i email adrese za automatske testove.
+            <p className="text-xs text-blue-700 mt-2">📧 Mailpit je lokalni SMTP testing server - pokreni ga s: <code className="bg-gray-100 px-1 rounded">docker run -d -p 8025:8025 -p 1025:1025 axllent/mailpit</code></p>
           </div>
 
-          {/* Globalni Mailtrap API Key */}
+          {/* Globalni Mailpit Konfiguracija */}
           <div className="border rounded-lg p-6 bg-white">
-            <h3 className="text-lg font-semibold mb-4">🔑 Mailtrap API Key (Globalna)</h3>
+            <h3 className="text-lg font-semibold mb-4">📧 Mailpit Konfiguracija (Globalna)</h3>
             <div>
-              <label className="block text-sm font-medium mb-2">API Key</label>
+              <label className="block text-sm font-medium mb-2">Mailpit API URL</label>
               <input
-                type="password"
+                type="text"
                 className="w-full border rounded px-3 py-2 text-sm"
-                placeholder="Mailtrap API Key"
-                value={testData?.email?.testService?.apiKey || ''}
+                placeholder="http://localhost:8025/api/v1"
+                value={testData?.email?.testService?.baseUrl || 'http://localhost:8025/api/v1'}
                 onChange={e => {
                   if (!testData) return
                   const updated = { ...testData }
@@ -2940,13 +2952,17 @@ export default function AdminTesting(){
                       ...updated.email,
                       testService: {
                         ...updated.email.testService,
-                        apiKey: e.target.value
+                        baseUrl: e.target.value,
+                        type: 'mailpit'
                       }
                     }
                   })
                 }}
               />
-              <p className="text-xs text-gray-500 mt-2">Preuzmite sa https://mailtrap.io → Settings → API Tokens</p>
+              <p className="text-xs text-gray-500 mt-2">
+                Mailpit API URL (default: http://localhost:8025/api/v1). 
+                Pokreni Mailpit s: <code className="bg-gray-100 px-1 rounded">docker run -d -p 8025:8025 -p 1025:1025 axllent/mailpit</code>
+              </p>
             </div>
           </div>
 
@@ -2957,7 +2973,7 @@ export default function AdminTesting(){
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 text-sm">
               <strong>📝 Upute za Testiranje:</strong>
               <ul className="list-disc list-inside text-xs text-amber-800 mt-2 space-y-1">
-                <li><strong>Minimalni podaci:</strong> Unesi samo Mailtrap Email i Inbox ID</li>
+                <li><strong>Minimalni podaci:</strong> Unesi samo Email adresu (Mailpit automatski hvata sve mailove)</li>
                 <li><strong>Dinamički podaci:</strong> Email, Lozinka, Puno Ime - koriste se kao-je iz JSON-a</li>
                 <li><strong>Provideri bez javnog registra (FREELANCER):</strong> Nema companyName - koristi se samo fullName</li>
                 <li><strong>Provideri s javnim registrom (OBRT, DOO, j.d.o.o.):</strong> ⚠️ Trebam unijeti točne podatke iz javnog registra!</li>
@@ -2991,7 +3007,7 @@ export default function AdminTesting(){
 
                   {/* MINIMALNI PODACI - OVO TREBA UNIJETI */}
                   <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="font-semibold text-xs text-red-700 mb-3">✋ TREBAM UNIJETI Mailtrap Email-e i Inbox ID-eve:</p>
+                    <p className="font-semibold text-xs text-red-700 mb-3">✋ TREBAM UNIJETI Email adrese za testiranje (Mailpit automatski hvata sve mailove):</p>
                     
                     {/* VALID DATA */}
                     <div className="mb-3 p-2 bg-white rounded border border-green-200">
@@ -3002,7 +3018,7 @@ export default function AdminTesting(){
                           <input
                             type="email"
                             className="w-full border border-green-300 rounded px-2 py-1 text-xs"
-                            placeholder="npr. test.client@mailtrap.io"
+                            placeholder="npr. test.client@uslugar.hr"
                             value={userData?.mailtrap?.validData?.email || ''}
                             onChange={e => {
                               if (!testData) return
@@ -3025,34 +3041,6 @@ export default function AdminTesting(){
                             }}
                           />
                         </div>
-                        <div>
-                          <label className="block text-xs font-medium text-green-700 mb-1">Inbox ID</label>
-                          <input
-                            type="text"
-                            className="w-full border border-green-300 rounded px-2 py-1 text-xs font-mono"
-                            placeholder="npr. 1111111"
-                            value={userData?.mailtrap?.validData?.inboxId || ''}
-                            onChange={e => {
-                              if (!testData) return
-                              setTestData({
-                                ...testData,
-                                users: {
-                                  ...testData.users,
-                                  [userKey]: {
-                                    ...userData,
-                                    mailtrap: {
-                                      ...userData.mailtrap,
-                                      validData: {
-                                        ...userData.mailtrap?.validData,
-                                        inboxId: e.target.value
-                                      }
-                                    }
-                                  }
-                                }
-                              })
-                            }}
-                          />
-                        </div>
                       </div>
                     </div>
 
@@ -3065,7 +3053,7 @@ export default function AdminTesting(){
                           <input
                             type="email"
                             className="w-full border border-red-300 rounded px-2 py-1 text-xs"
-                            placeholder="npr. test.client.invalid@mailtrap.io"
+                            placeholder="npr. test.client.invalid@uslugar.hr"
                             value={userData?.mailtrap?.invalidData?.email || ''}
                             onChange={e => {
                               if (!testData) return
@@ -3088,34 +3076,6 @@ export default function AdminTesting(){
                             }}
                           />
                         </div>
-                        <div>
-                          <label className="block text-xs font-medium text-red-700 mb-1">Inbox ID</label>
-                          <input
-                            type="text"
-                            className="w-full border border-red-300 rounded px-2 py-1 text-xs font-mono"
-                            placeholder="npr. 1111112"
-                            value={userData?.mailtrap?.invalidData?.inboxId || ''}
-                            onChange={e => {
-                              if (!testData) return
-                              setTestData({
-                                ...testData,
-                                users: {
-                                  ...testData.users,
-                                  [userKey]: {
-                                    ...userData,
-                                    mailtrap: {
-                                      ...userData.mailtrap,
-                                      invalidData: {
-                                        ...userData.mailtrap?.invalidData,
-                                        inboxId: e.target.value
-                                      }
-                                    }
-                                  }
-                                }
-                              })
-                            }}
-                          />
-                        </div>
                       </div>
                     </div>
 
@@ -3128,7 +3088,7 @@ export default function AdminTesting(){
                           <input
                             type="email"
                             className="w-full border border-yellow-300 rounded px-2 py-1 text-xs"
-                            placeholder="npr. test.client.missing@mailtrap.io"
+                            placeholder="npr. test.client.missing@uslugar.hr"
                             value={userData?.mailtrap?.missingData?.email || ''}
                             onChange={e => {
                               if (!testData) return
@@ -3143,34 +3103,6 @@ export default function AdminTesting(){
                                       missingData: {
                                         ...userData.mailtrap?.missingData,
                                         email: e.target.value
-                                      }
-                                    }
-                                  }
-                                }
-                              })
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-yellow-700 mb-1">Inbox ID</label>
-                          <input
-                            type="text"
-                            className="w-full border border-yellow-300 rounded px-2 py-1 text-xs font-mono"
-                            placeholder="npr. 1111113"
-                            value={userData?.mailtrap?.missingData?.inboxId || ''}
-                            onChange={e => {
-                              if (!testData) return
-                              setTestData({
-                                ...testData,
-                                users: {
-                                  ...testData.users,
-                                  [userKey]: {
-                                    ...userData,
-                                    mailtrap: {
-                                      ...userData.mailtrap,
-                                      missingData: {
-                                        ...userData.mailtrap?.missingData,
-                                        inboxId: e.target.value
                                       }
                                     }
                                   }
@@ -3553,13 +3485,23 @@ export default function AdminTesting(){
                         className="flex items-center justify-between cursor-pointer"
                         onClick={() => setExpandedCheckpoint(expandedCheckpoint === cp.id ? null : cp.id)}
                       >
-                        <div>
+                        <div className="flex-1">
                           <h4 className="font-semibold text-sm flex items-center gap-2">
                             <span>{cp.name}</span>
                             <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
                               {cp.tables.length} tablica{cp.tables.length !== 1 ? 'a' : ''}
                             </span>
                           </h4>
+                          {cp.description && (
+                            <p className="text-xs text-gray-700 mt-1">
+                              📝 {cp.description}
+                            </p>
+                          )}
+                          {cp.purpose && (
+                            <p className="text-xs text-blue-600 mt-1">
+                              🎯 {cp.purpose}
+                            </p>
+                          )}
                           <p className="text-xs text-gray-500 mt-1">
                             📅 {new Date(cp.timestamp).toLocaleString('hr-HR')}
                           </p>

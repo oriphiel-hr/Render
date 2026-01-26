@@ -6,7 +6,7 @@
 import { Router } from 'express';
 import { testCheckpointService } from '../services/testCheckpointService.js';
 import { testRunnerService } from '../services/testRunnerService.js';
-import { mailtrapService } from '../services/mailtrapService.js';
+import { mailpitService } from '../services/mailpitService.js';
 import { prisma } from '../lib/prisma.js';
 
 const r = Router();
@@ -23,13 +23,13 @@ const r = Router();
  */
 r.post('/checkpoint/create', async (req, res, next) => {
   try {
-    const { name, tables } = req.body;
+    const { name, tables, description, purpose } = req.body;
     
     if (!name) {
       return res.status(400).json({ error: 'Nedostaje "name"' });
     }
 
-    const checkpointId = await testCheckpointService.create(name, tables);
+    const checkpointId = await testCheckpointService.create(name, tables, description, purpose);
     
     res.json({
       success: true,
@@ -111,10 +111,8 @@ r.get('/test-data', async (req, res, next) => {
     const testData = {
       email: {
         testService: {
-          type: 'mailtrap',
-          apiKey: '',
-          inboxId: '0',
-          baseUrl: 'https://mailtrap.io'
+          type: 'mailpit',
+          baseUrl: process.env.MAILPIT_API_URL || 'http://localhost:8025/api/v1'
         }
       },
       users: {
@@ -318,7 +316,7 @@ r.post('/runs', async (req, res, next) => {
  */
 r.post('/run-single', async (req, res, next) => {
   try {
-    const { testId, testName, testType = 'registration', userData, mailtrapInboxId, mailtrapApiKey } = req.body;
+    const { testId, testName, testType = 'registration', userData } = req.body;
     
     if (!testId || !testName) {
       return res.status(400).json({ error: 'testId i testName su obavezni' });
@@ -334,8 +332,35 @@ r.post('/run-single', async (req, res, next) => {
       status: 'RUNNING',
       screenshots: [],
       emailScreenshots: [],
-      logs: []
+      logs: [],
+      checkpointId: null,
+      checkpointCreated: false
     };
+
+    // 0. Kreiraj checkpoint prije testa
+    let checkpointId = null;
+    try {
+      const checkpointName = `before_${testId}_${testType}`;
+      const checkpointDescription = `Checkpoint prije testa: ${testName}`;
+      const checkpointPurpose = `Izolacija testa ${testId} - vraćanje baze na početno stanje nakon testa`;
+      
+      checkpointId = await testCheckpointService.create(
+        checkpointName,
+        null, // sve tablice
+        checkpointDescription,
+        checkpointPurpose
+      );
+      
+      results.checkpointId = checkpointId;
+      results.checkpointCreated = true;
+      results.logs.push(`📸 Checkpoint kreiran: ${checkpointName} (ID: ${checkpointId})`);
+      results.logs.push(`   Opis: ${checkpointDescription}`);
+      results.logs.push(`   Svrha: ${checkpointPurpose}`);
+    } catch (error) {
+      console.error('[TEST] Greška pri kreiranju checkpointa:', error);
+      results.logs.push(`⚠ Greška pri kreiranju checkpointa: ${error.message}`);
+      // Nastavi s testom iako checkpoint nije kreiran
+    }
 
     // 1. Pokreni Playwright test
     console.log('[TEST] Korak 1: Pokrenuo Playwright test...');
@@ -373,19 +398,21 @@ r.post('/run-single', async (req, res, next) => {
       results.error = error.message;
     }
 
-    // 2. Ako je test prošao i postoji Mailtrap konfiguracija - provjeri mailove
-    if (testResult?.success && mailtrapInboxId) {
-      console.log('[TEST] Korak 2: Dohvaćam mailove iz Mailtrap-a...');
-      results.logs.push('📧 Čekam da mail stigne u Mailtrap...');
+    // 2. Ako je test prošao - provjeri mailove u Mailpit-u
+    if (testResult?.success) {
+      console.log('[TEST] Korak 2: Dohvaćam mailove iz Mailpit-a...');
+      results.logs.push('📧 Čekam da mail stigne u Mailpit...');
       
-      // Postavi API key ako je proslijeđen
-      const mailtrapOptions = mailtrapApiKey ? { apiToken: mailtrapApiKey } : {};
-      if (mailtrapApiKey) {
-        mailtrapService.setApiToken(mailtrapApiKey);
-        results.logs.push('✓ Mailtrap API key postavljen');
-      } else {
-        results.logs.push('⚠ Mailtrap API key nije proslijeđen - koristim environment varijablu');
+      // Postavi Mailpit base URL ako je proslijeđen u testData
+      const mailpitBaseUrl = req.body.mailpitBaseUrl || process.env.MAILPIT_API_URL;
+      if (mailpitBaseUrl) {
+        mailpitService.setBaseUrl(mailpitBaseUrl);
+        results.logs.push(`✓ Mailpit base URL postavljen: ${mailpitBaseUrl}`);
       }
+      
+      // Mailpit ne treba API key ili inbox ID - svi mailovi su u jednom inboxu
+      // Možemo filtrirati po recipient email adresi ako je potrebno
+      const recipientEmail = userData?.email;
       
       // Čekaj da mail stigne (može trebati nekoliko sekundi)
       let emails = [];
@@ -396,7 +423,13 @@ r.post('/run-single', async (req, res, next) => {
         await new Promise(resolve => setTimeout(resolve, 3000)); // Čekaj 3 sekunde
         attempts++;
         try {
-          emails = await mailtrapService.getEmails(mailtrapInboxId, mailtrapOptions);
+          if (recipientEmail) {
+            // Filtriraj po recipient email adresi
+            emails = await mailpitService.getEmailsByRecipient(recipientEmail);
+          } else {
+            // Dohvati sve mailove
+            emails = await mailpitService.getEmails({ limit: 10 });
+          }
           results.logs.push(`  Pokušaj ${attempts}/${maxAttempts}: Pronađeno ${emails.length} mailova`);
         } catch (error) {
           results.logs.push(`  ⚠ Greška pri dohvaćanju mailova: ${error.message}`);
@@ -404,24 +437,32 @@ r.post('/run-single', async (req, res, next) => {
       }
       
       if (emails.length === 0) {
-        results.logs.push(`⚠ Nema mailova u inbox-u nakon ${maxAttempts} pokušaja`);
+        results.logs.push(`⚠ Nema mailova u Mailpit-u nakon ${maxAttempts} pokušaja${recipientEmail ? ` za ${recipientEmail}` : ''}`);
+        // Test ne uspije ako nema mailova
+        testResult.success = false;
+        results.status = 'FAIL';
+        results.logs.push(`❌ Test neuspješan: Nema mailova u Mailpit-u`);
       } else {
-        results.logs.push(`✓ Pronađeno ${emails.length} mailova u Mailtrap inbox-u`);
+        results.logs.push(`✓ Pronađeno ${emails.length} mailova u Mailpit-u`);
+        
+        let emailSuccess = false;
+        let linkClickSuccess = false;
         
         try {
           // Obradi prvi mail (najnoviji)
           const firstEmail = emails[0];
+          const messageId = firstEmail.ID || firstEmail.id || firstEmail.messageId;
           console.log('[TEST] Obrađujem prvi mail...');
-          results.logs.push(`📧 Obrađujem mail: ${firstEmail.subject || firstEmail.id}`);
+          const emailSubject = firstEmail.Subject || firstEmail.subject || 'N/A';
+          results.logs.push(`📧 Obrađujem mail: ${emailSubject} (ID: ${messageId})`);
           
-          const emailCapture = await mailtrapService.captureEmailAndClickLink(
-            mailtrapInboxId,
-            firstEmail.id,
-            testId,
-            mailtrapOptions
+          const emailCapture = await mailpitService.captureEmailAndClickLink(
+            messageId,
+            testId
           );
 
           if (emailCapture.success) {
+            emailSuccess = true;
             results.emailScreenshots.push({
               subject: emailCapture.emailSubject,
               from: emailCapture.emailFrom,
@@ -432,6 +473,7 @@ r.post('/run-single', async (req, res, next) => {
             results.logs.push(`✓ Mail screenshot kreiran: ${emailCapture.emailScreenshot ? 'DA' : 'NE'}`);
             
             if (emailCapture.linkClickResult?.success) {
+              linkClickSuccess = true;
               results.logs.push(`✓ Link kliknut: ${emailCapture.linkClickResult.clickedLink}`);
               results.logs.push(`✓ Link click screenshot: ${emailCapture.linkClickResult.url ? 'DA' : 'NE'}`);
             } else {
@@ -440,13 +482,37 @@ r.post('/run-single', async (req, res, next) => {
           } else {
             results.logs.push(`❌ Greška pri obradi maila: ${emailCapture.error || 'Nepoznata greška'}`);
           }
+          
+          // Test uspije samo ako su i email screenshot i link click uspješni
+          if (!emailSuccess || !linkClickSuccess) {
+            testResult.success = false;
+            results.status = 'FAIL';
+            if (!emailSuccess) {
+              results.logs.push(`❌ Test neuspješan: Email screenshot nije kreiran`);
+            }
+            if (!linkClickSuccess) {
+              results.logs.push(`❌ Test neuspješan: Link click nije uspješan`);
+            }
+          }
         } catch (error) {
-          console.error('[TEST] Mailtrap processing error:', error);
+          console.error('[TEST] Mailpit processing error:', error);
           results.logs.push(`❌ Greška pri obradi maila: ${error.message}`);
+          testResult.success = false;
+          results.status = 'FAIL';
         }
       }
-    } else if (testResult?.success && !mailtrapInboxId) {
-      results.logs.push(`⚠ Test prošao, ali nema Mailtrap inbox ID - preskačem mail screenshotove`);
+    }
+
+    // 3. Rollback na checkpoint nakon testa (bez obzira na uspjeh)
+    if (checkpointId) {
+      try {
+        results.logs.push(`⏪ Vraćam bazu na checkpoint: ${checkpointId}`);
+        await testCheckpointService.rollback(checkpointId);
+        results.logs.push(`✓ Rollback uspješan - baza vraćena na početno stanje`);
+      } catch (error) {
+        console.error('[TEST] Greška pri rollbacku:', error);
+        results.logs.push(`❌ Greška pri rollbacku: ${error.message}`);
+      }
     }
 
     const duration = Date.now() - startTime;
@@ -460,6 +526,8 @@ r.post('/run-single', async (req, res, next) => {
       duration,
       screenshots: results.screenshots,
       emailScreenshots: results.emailScreenshots,
+      checkpointId: results.checkpointId,
+      checkpointCreated: results.checkpointCreated,
       logs: results.logs,
       message: testResult?.success 
         ? `✅ Test '${testName}' uspješno prošao (${duration}ms)`
