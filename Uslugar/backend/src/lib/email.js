@@ -1,25 +1,45 @@
 import nodemailer from 'nodemailer';
 
-// Kreiraj transporter (koristimo Hostinger SMTP)
+// Kreiraj transporter (koristimo Hostinger SMTP u produkciji, Mailpit za testiranje)
 // U produkciji koristite profesionalni SMTP servis (SendGrid, itd.)
+// Za testiranje koristi Mailpit varijable: MAILPIT_SMTP_HOST, MAILPIT_SMTP_PORT, MAILPIT_SMTP_USER
+// Ili standardne SMTP varijable: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS
 const createTransporter = () => {
-  if (!process.env.SMTP_USER) {
+  // Provjeri prvo Mailpit varijable (za testiranje), pa onda standardne SMTP varijable (za produkciju)
+  const host = process.env.MAILPIT_SMTP_HOST || process.env.SMTP_HOST || 'smtp.gmail.com';
+  const port = parseInt(process.env.MAILPIT_SMTP_PORT || process.env.SMTP_PORT || '587');
+  const user = process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER;
+  const pass = process.env.MAILPIT_SMTP_PASS || process.env.SMTP_PASS;
+  
+  if (!user) {
     console.warn('SMTP not configured - email notifications disabled');
     return null;
   }
   
-  const port = parseInt(process.env.SMTP_PORT || '587');
   const isSSL = port === 465;
   
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  // Mailpit ne zahtijeva autentifikaciju i koristi port 1025
+  // Detektiraj Mailpit po portu 1025 ili ako su postavljene MAILPIT_ varijable
+  const isMailpit = port === 1025 || !!process.env.MAILPIT_SMTP_HOST;
+  
+  const transporterConfig = {
+    host: host,
     port: port,
-    secure: isSSL, // true for 465 (SSL), false for 587 (TLS)
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
-    }
-  });
+    secure: isSSL, // true for 465 (SSL), false for 587 (TLS), false for 1025 (Mailpit)
+    ...(isMailpit ? {} : {
+      auth: {
+        user: user,
+        pass: pass
+      }
+    })
+  };
+  
+  if (isMailpit) {
+    console.log('[SMTP] Using Mailpit for email testing (no auth required)');
+    console.log(`[SMTP] Mailpit host: ${host}, port: ${port}, from: ${user}`);
+  }
+  
+  return nodemailer.createTransport(transporterConfig);
 };
 
 const transporter = createTransporter();
@@ -33,7 +53,7 @@ export const sendJobNotification = async (toEmail, jobTitle, jobUrl) => {
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
       to: toEmail,
       subject: `Novi posao: ${jobTitle}`,
       html: `
@@ -57,7 +77,7 @@ export const sendOfferNotification = async (toEmail, jobTitle, providerName, off
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
       to: toEmail,
       subject: `Nova ponuda za: ${jobTitle}`,
       html: `
@@ -81,7 +101,7 @@ export const sendOfferAcceptedNotification = async (toEmail, jobTitle, customerN
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
       to: toEmail,
       subject: `Ponuda prihvaćena: ${jobTitle}`,
       html: `
@@ -107,7 +127,7 @@ export const sendInvoiceEmail = async (toEmail, fullName, invoice, pdfBuffer) =>
     const invoiceUrl = `${process.env.FRONTEND_URL || 'https://uslugar.oriph.io'}#invoices/${invoice.id}`;
 
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
       to: toEmail,
       subject: `Faktura ${invoice.invoiceNumber} - Uslugar`,
       html: `
@@ -166,7 +186,7 @@ export const sendReviewNotification = async (toEmail, rating, comment, reviewerN
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
       to: toEmail,
       subject: 'Primili ste novu recenziju',
       html: `
@@ -199,7 +219,7 @@ export const sendVerificationEmail = async (toEmail, fullName, verificationToken
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
       to: toEmail,
       subject: 'Potvrdite vašu email adresu - Uslugar',
       html: `
@@ -363,7 +383,7 @@ export const sendPasswordResetEmail = async (toEmail, fullName, resetToken) => {
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
       to: toEmail,
       subject: 'Resetirajte vašu lozinku - Uslugar',
       html: `
@@ -449,7 +469,7 @@ export const sendAnonymousJobConfirmationEmail = async (toEmail, contactName, jo
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
       to: toEmail,
       subject: 'Hvala na upitu - Uslugar',
       html: `
@@ -572,7 +592,7 @@ export const sendPaymentConfirmationEmail = async (toEmail, fullName, planName, 
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
       to: toEmail,
       subject: `Potvrda plaćanja - ${planName} pretplata`,
       html: `
@@ -659,7 +679,7 @@ export const sendSubscriptionRefundEmail = async (toEmail, fullName, planName, r
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
       to: toEmail,
       subject: `Povrat novca za pretplatu ${planName} - Uslugar`,
       html: `
@@ -782,7 +802,7 @@ export const sendAddonUpsellEmail = async (
     }
 
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
       to: toEmail,
       subject: subject,
       html: `

@@ -11,10 +11,17 @@ CORS_ORIGINS="http://localhost:5173,http://localhost:3000,https://uslugar.oriph.
 FRONTEND_URL="http://localhost:5173"
 
 # SMTP Email Configuration (za notifikacije)
+# Za produkciju koristi standardne SMTP varijable:
 SMTP_HOST="smtp.gmail.com"
 SMTP_PORT=587
 SMTP_USER="your-email@gmail.com"
 SMTP_PASS="your-app-password"
+
+# Za testiranje s Mailpit-om koristi Mailpit-specifične varijable (imaju prioritet):
+# MAILPIT_SMTP_HOST="localhost"
+# MAILPIT_SMTP_PORT=1025
+# MAILPIT_SMTP_USER="test@uslugar.hr"
+# MAILPIT_SMTP_PASS=""  # Mailpit ne zahtijeva autentifikaciju
 
 # Server Port
 PORT=4000

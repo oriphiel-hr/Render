@@ -3,22 +3,30 @@ import { prisma } from './prisma.js';
 import nodemailer from 'nodemailer';
 
 const createTransporter = () => {
-  if (!process.env.SMTP_USER) {
+  // Provjeri prvo Mailpit varijable (za testiranje), pa onda standardne SMTP varijable (za produkciju)
+  const host = process.env.MAILPIT_SMTP_HOST || process.env.SMTP_HOST || 'smtp.gmail.com';
+  const port = parseInt(process.env.MAILPIT_SMTP_PORT || process.env.SMTP_PORT || '587');
+  const user = process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER;
+  const pass = process.env.MAILPIT_SMTP_PASS || process.env.SMTP_PASS;
+  
+  if (!user) {
     console.warn('SMTP not configured - email reminders disabled');
     return null;
   }
   
-  const port = parseInt(process.env.SMTP_PORT || '587');
   const isSSL = port === 465;
+  const isMailpit = port === 1025 || !!process.env.MAILPIT_SMTP_HOST;
   
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    host: host,
     port: port,
     secure: isSSL,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
-    }
+    ...(isMailpit ? {} : {
+      auth: {
+        user: user,
+        pass: pass
+      }
+    })
   });
 };
 
@@ -125,7 +133,7 @@ export async function sendExpiryReminder(subscription, daysLeft, user) {
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
       to: user.email,
       subject: subject,
       html: message
@@ -385,7 +393,7 @@ export async function sendTrialExpiredEmail(subscription, user) {
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
       to: user.email,
       subject: subject,
       html: message
@@ -539,7 +547,7 @@ export async function sendInactivityReminderEmail(user, daysInactive) {
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
       to: user.email,
       subject: subject,
       html: message

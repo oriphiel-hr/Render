@@ -104,9 +104,24 @@ async function ensureLegalStatuses() {
 // Debug: Log SMTP configuration status
 console.log('[DEBUG] Environment check:');
 console.log('  NODE_ENV:', process.env.NODE_ENV);
-console.log('  SMTP_HOST:', process.env.SMTP_HOST ? 'SET' : 'NOT SET');
-console.log('  SMTP_USER:', process.env.SMTP_USER ? 'SET (' + process.env.SMTP_USER + ')' : 'NOT SET');
-console.log('  SMTP_PORT:', process.env.SMTP_PORT || 'NOT SET');
+// Provjeri prvo Mailpit varijable, pa onda standardne SMTP varijable
+const smtpHost = process.env.MAILPIT_SMTP_HOST || process.env.SMTP_HOST;
+const smtpUser = process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER;
+const smtpPort = process.env.MAILPIT_SMTP_PORT || process.env.SMTP_PORT;
+const isUsingMailpit = !!process.env.MAILPIT_SMTP_HOST;
+
+console.log('  SMTP Configuration:');
+if (isUsingMailpit) {
+  console.log('  📧 Using Mailpit for email testing');
+  console.log('  MAILPIT_SMTP_HOST:', smtpHost || 'NOT SET');
+  console.log('  MAILPIT_SMTP_USER:', smtpUser ? 'SET (' + smtpUser + ')' : 'NOT SET');
+  console.log('  MAILPIT_SMTP_PORT:', smtpPort || 'NOT SET');
+} else {
+  console.log('  📧 Using production SMTP');
+  console.log('  SMTP_HOST:', smtpHost || 'NOT SET');
+  console.log('  SMTP_USER:', smtpUser ? 'SET (' + smtpUser + ')' : 'NOT SET');
+  console.log('  SMTP_PORT:', smtpPort || 'NOT SET');
+}
 console.log('  FRONTEND_URL:', process.env.FRONTEND_URL || 'NOT SET');
 
 // === CORS KONFIGURACIJA – PRIJE SVIH DRUGIH MIDDLEWARE-A ===================
