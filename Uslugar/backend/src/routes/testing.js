@@ -134,6 +134,80 @@ r.get('/mailpit/status', async (req, res, next) => {
 });
 
 /**
+ * GET /api/testing/mailpit/debug
+ * Debug endpoint - prikaži sve Mailpit/SMTP environment varijable
+ */
+r.get('/mailpit/debug', async (req, res, next) => {
+  try {
+    const debugInfo = {
+      environment: {
+        NODE_ENV: process.env.NODE_ENV,
+        // Mailpit varijable
+        MAILPIT_SMTP_HOST: process.env.MAILPIT_SMTP_HOST || 'NOT SET',
+        MAILPIT_SMTP_PORT: process.env.MAILPIT_SMTP_PORT || 'NOT SET',
+        MAILPIT_SMTP_USER: process.env.MAILPIT_SMTP_USER || 'NOT SET',
+        MAILPIT_SMTP_PASS: process.env.MAILPIT_SMTP_PASS ? 'SET (hidden)' : 'NOT SET',
+        MAILPIT_API_URL: process.env.MAILPIT_API_URL || 'NOT SET',
+        MAILPIT_WEB_URL: process.env.MAILPIT_WEB_URL || 'NOT SET',
+        // Standardne SMTP varijable (fallback)
+        SMTP_HOST: process.env.SMTP_HOST || 'NOT SET',
+        SMTP_PORT: process.env.SMTP_PORT || 'NOT SET',
+        SMTP_USER: process.env.SMTP_USER || 'NOT SET',
+        SMTP_PASS: process.env.SMTP_PASS ? 'SET (hidden)' : 'NOT SET',
+      },
+      detected: {
+        usingMailpit: !!process.env.MAILPIT_SMTP_HOST,
+        smtpHost: process.env.MAILPIT_SMTP_HOST || process.env.SMTP_HOST || 'smtp.gmail.com',
+        smtpPort: parseInt(process.env.MAILPIT_SMTP_PORT || process.env.SMTP_PORT || '587'),
+        smtpUser: process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER,
+        hasUser: !!(process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER),
+        isMailpitPort: parseInt(process.env.MAILPIT_SMTP_PORT || process.env.SMTP_PORT || '587') === 1025,
+      },
+      transporter: {
+        configured: false,
+        reason: 'unknown'
+      }
+    };
+
+    // Provjeri transporter status - pokušaj kreirati transporter
+    try {
+      const host = process.env.MAILPIT_SMTP_HOST || process.env.SMTP_HOST || 'smtp.gmail.com';
+      const port = parseInt(process.env.MAILPIT_SMTP_PORT || process.env.SMTP_PORT || '587');
+      const user = process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER;
+      
+      if (!user) {
+        debugInfo.transporter.configured = false;
+        debugInfo.transporter.reason = 'SMTP_USER not set (MAILPIT_SMTP_USER or SMTP_USER required)';
+      } else {
+        debugInfo.transporter.configured = true;
+        debugInfo.transporter.reason = 'OK - transporter should be configured';
+        debugInfo.transporter.details = {
+          host: host,
+          port: port,
+          user: user,
+          isMailpit: port === 1025 || !!process.env.MAILPIT_SMTP_HOST
+        };
+      }
+    } catch (err) {
+      debugInfo.transporter.configured = false;
+      debugInfo.transporter.reason = `Error checking transporter: ${err.message}`;
+    }
+
+    res.json({
+      success: true,
+      debug: debugInfo,
+      message: 'Debug info retrieved'
+    });
+  } catch (error) {
+    console.error('[MAILPIT] Debug endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * GET /api/testing/test-data
  * Preuzmi test podatke
  */
