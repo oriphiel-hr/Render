@@ -3069,18 +3069,40 @@ export default function AdminTesting(){
                 </button>
               </div>
               {mailpitStatus.message && (
-                <p className={`text-xs mt-2 ${
+                <div className={`text-xs mt-2 ${
                   mailpitStatus.connected ? 'text-green-700' : 'text-red-700'
                 }`}>
-                  {mailpitStatus.message}
-                  {mailpitStatus.emailCount !== undefined && ` (${mailpitStatus.emailCount} mailova u inboxu)`}
-                </p>
+                  <p className="font-semibold">{mailpitStatus.message}</p>
+                  {mailpitStatus.emailCount !== undefined && (
+                    <p className="text-gray-600 mt-1">📊 {mailpitStatus.emailCount} mailova u inboxu</p>
+                  )}
+                  {testData?.email?.testService?.baseUrl && (
+                    <p className="text-gray-500 mt-1 text-xs">
+                      🔗 Provjeravam: <code className="bg-gray-100 px-1 rounded">{testData.email.testService.baseUrl}</code>
+                    </p>
+                  )}
+                </div>
               )}
               <p className="text-xs text-gray-500 mt-2">
-                Mailpit API URL (default: http://localhost:8025/api/v1). 
-                Za Render: <code className="bg-gray-100 px-1 rounded">http://mailpit:8025/api/v1</code>
+                <strong>📍 Gdje je Mailpit pokrenut?</strong>
                 <br />
-                Lokalno: <code className="bg-gray-100 px-1 rounded">docker run -d -p 8025:8025 -p 1025:1025 axllent/mailpit</code>
+                • <strong>Lokalno:</strong> <code className="bg-gray-100 px-1 rounded">http://localhost:8025/api/v1</code> (pokreni: <code className="bg-gray-100 px-1 rounded">docker run -d -p 8025:8025 -p 1025:1025 axllent/mailpit</code>)
+                <br />
+                • <strong>Render Private Service:</strong> <code className="bg-gray-100 px-1 rounded">http://mailpit:8025/api/v1</code> (ili <code className="bg-gray-100 px-1 rounded">http://uslugar-mailpit:8025/api/v1</code> - ovisno o imenu servisa)
+                <br />
+                <br />
+                <strong>⚠️ Ne vidiš Mailpit servis na Renderu?</strong>
+                <br />
+                Mailpit mora biti kreiran kao <strong>Private Service</strong> na Render Dashboard-u. Vidi <code className="bg-blue-100 px-1 rounded">MAILPIT-RENDER-SETUP.md</code> za detaljne upute.
+                <br />
+                <br />
+                <strong>💡 Kako provjeriti:</strong>
+                <br />
+                • Ako vidiš "✅ Mailpit dostupan" s <code className="bg-gray-100 px-1 rounded">localhost</code> → Mailpit je pokrenut lokalno
+                <br />
+                • Ako vidiš "✅ Mailpit dostupan" s <code className="bg-gray-100 px-1 rounded">mailpit:8025</code> → Mailpit je na Renderu
+                <br />
+                • Ako vidiš "❌ Mailpit nedostupan" → Mailpit nije pokrenut ili URL je kriv
               </p>
             </div>
           </div>
