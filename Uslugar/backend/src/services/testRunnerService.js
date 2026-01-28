@@ -113,6 +113,27 @@ class TestRunnerService {
       // 2. Unesi podatke
       console.log('[TEST RUNNER] Unošu podatke...');
       logs.push('Unošenje podataka...');
+
+      // Generiraj jedinstven email za ovaj test (da izbjegnemo \"email already in use\")
+      let uniqueEmail = userData.email;
+      try {
+        if (userData.email) {
+          const timestamp = Date.now();
+          const [local, domain] = userData.email.split('@');
+          if (domain) {
+            uniqueEmail = `${local}+${timestamp}@${domain}`;
+            logs.push(`📧 Generiran jedinstven email za test: ${uniqueEmail}`);
+          }
+        }
+      } catch (e) {
+        console.warn('[TEST RUNNER] Greška pri generiranju jedinstvenog emaila:', e.message);
+      }
+
+      // Koristi jedinstven email u daljnjem toku
+      const effectiveUserData = {
+        ...userData,
+        email: uniqueEmail
+      };
       
       let emailFound = false;
       
@@ -425,7 +446,7 @@ class TestRunnerService {
       try {
         const emailByLabel = page.getByLabel(/email/i).first();
         await emailByLabel.waitFor({ state: 'visible', timeout: 5000 });
-        await emailByLabel.fill(userData.email);
+        await emailByLabel.fill(effectiveUserData.email);
         logs.push(`✓ Email unesen preko getByLabel(/email/i)`);
         emailFound = true;
       } catch (e) {
@@ -455,7 +476,7 @@ class TestRunnerService {
         try {
           const locator = page.locator(selector).first();
           await locator.waitFor({ state: 'visible', timeout: 3000 });
-          await locator.fill(userData.email);
+          await locator.fill(effectiveUserData.email);
           logs.push(`✓ Email unesen s selektorom: ${selector}`);
           emailFound = true;
           break;
@@ -822,7 +843,7 @@ class TestRunnerService {
       console.log('[TEST RUNNER] Navigiram na login...');
       await page.goto('https://www.uslugar.eu/login', { waitUntil: 'networkidle' });
       
-      await page.fill('input[name="email"]', userData.email);
+      await page.fill('input[name="email"]', effectiveUserData.email);
       await page.fill('input[name="password"]', userData.password);
       await page.click('button:has-text("Sign in")');
       await page.waitForNavigation({ waitUntil: 'networkidle' });

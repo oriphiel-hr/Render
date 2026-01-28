@@ -3083,6 +3083,25 @@ export default function AdminTesting(){
                   )}
                 </div>
               )}
+              {testData?.email?.testService?.baseUrl && (
+                <div className="mt-2 text-xs">
+                  <a
+                    href={
+                      testData.email.testService.baseUrl.includes('/api/v1')
+                        ? testData.email.testService.baseUrl.replace('/api/v1', '')
+                        : testData.email.testService.baseUrl
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2 py-1 bg-gray-800 text-white rounded hover:bg-gray-900 transition-colors"
+                  >
+                    📥 Otvori Mailpit inbox (Web UI)
+                  </a>
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    Na Render-u je ovaj URL interni. Ako se ne otvara direktno iz browsera, koristi SSH tunnel prema Mailpit servisu.
+                  </p>
+                </div>
+              )}
               <p className="text-xs text-gray-500 mt-2">
                 <strong>📍 Gdje je Mailpit pokrenut?</strong>
                 <br />
