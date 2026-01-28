@@ -225,38 +225,53 @@ class MailpitService {
         };
       }
 
-      // Dohvati HTML sadržaj
+      // 1. Dohvati HTML sadržaj
       const htmlContent = await this.getEmailHTML(messageId);
       
-      if (!htmlContent) {
-        return {
-          success: false,
-          error: 'Email nema HTML sadržaja'
-        };
-      }
-
-      // Ekstrakuj sve linkove iz HTML-a
-      const linkRegex = /href=["']([^"']+)["']/g;
-      const links = [];
-      let match;
-
-      while ((match = linkRegex.exec(htmlContent)) !== null) {
-        const link = match[1];
-        // Preskoči mailto: i javascript: linkove
-        if (!link.startsWith('mailto:') && !link.startsWith('javascript:')) {
-          links.push(link);
+      let links = [];
+      let source = 'html';
+      
+      if (htmlContent) {
+        // Ekstraktuj sve linkove iz HTML-a
+        const linkRegex = /href=["']([^"']+)["']/g;
+        let match;
+        
+        while ((match = linkRegex.exec(htmlContent)) !== null) {
+          const link = match[1];
+          // Preskoči mailto: i javascript: linkove
+          if (!link.startsWith('mailto:') && !link.startsWith('javascript:')) {
+            links.push(link);
+          }
         }
       }
-
+      
+      // 2. Ako nema HTML linkova, probaj iz plain text sadržaja
+      if (links.length === 0) {
+        const plainContent = await this.getEmailPlain(messageId);
+        source = 'plain';
+        
+        if (plainContent) {
+          // Jednostavan regex za URL-ove u plain textu
+          const urlRegex = /(https?:\/\/[^\s<>"]+)/g;
+          let match;
+          while ((match = urlRegex.exec(plainContent)) !== null) {
+            const link = match[1];
+            if (!link.startsWith('mailto:') && !link.startsWith('javascript:')) {
+              links.push(link);
+            }
+          }
+        }
+      }
+      
       if (links.length === 0) {
         return {
           success: false,
-          error: 'Nema linkova u mailu',
+          error: 'Nema linkova u mailu (ni u HTML ni u plain text sadržaju)',
           emailSubject: emailDetails.Subject || emailDetails.subject
         };
       }
-
-      console.log(`[MAILPIT] Pronađeno ${links.length} linkova`);
+      
+      console.log(`[MAILPIT] Pronađeno ${links.length} linkova (iz ${source} sadržaja)`);
 
       browser = await chromium.launch({ headless: true });
       const context = await browser.newContext();
