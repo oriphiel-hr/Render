@@ -227,6 +227,7 @@ class MailpitService {
 
       // 1. Dohvati HTML sadržaj
       const htmlContent = await this.getEmailHTML(messageId);
+      let plainContent = null;
       
       let links = [];
       let source = 'html';
@@ -247,7 +248,7 @@ class MailpitService {
       
       // 2. Ako nema HTML linkova, probaj iz plain text sadržaja
       if (links.length === 0) {
-        const plainContent = await this.getEmailPlain(messageId);
+        plainContent = await this.getEmailPlain(messageId);
         source = 'plain';
         
         if (plainContent) {
@@ -260,6 +261,29 @@ class MailpitService {
               links.push(link);
             }
           }
+        }
+      }
+      
+      // 3. Ako još nema linkova, probaj izvući verify token i složiti URL ručno
+      if (links.length === 0) {
+        const combined = `${htmlContent || ''}\n${plainContent || ''}`;
+        // Traži pattern koji sadrži 'verify' i 'token=' (može biti #verify?token=..., /#verify?token=..., itd.)
+        const tokenMatch = combined.match(/[#/]*verify[^\s"'?]*\?token=([A-Za-z0-9_-]+)/);
+        if (tokenMatch && tokenMatch[0]) {
+          let path = tokenMatch[0]; // npr. #verify?token=abc123 ili /#verify?token=abc123
+          const frontendBase = process.env.FRONTEND_URL || 'https://www.uslugar.eu';
+          
+          // Normaliziraj u punu URL adresu
+          if (path.startsWith('#')) {
+            links.push(`${frontendBase}${path}`);
+          } else if (path.startsWith('/')) {
+            links.push(`${frontendBase}${path}`);
+          } else if (path.startsWith('http')) {
+            links.push(path);
+          } else {
+            links.push(`${frontendBase}/${path}`);
+          }
+          source = 'token-constructed';
         }
       }
       
