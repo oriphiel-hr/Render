@@ -105,9 +105,15 @@ class MailpitService {
         responseType: 'text'
       });
 
-      return response.data;
+      const html = response.data;
+      console.log(`[MAILPIT] HTML dohvaćen (${html ? html.length : 0} karaktera)`);
+      if (html && html.length > 0) {
+        console.log(`[MAILPIT] HTML preview (prvih 500): ${html.substring(0, 500)}`);
+      }
+      return html;
     } catch (error) {
       console.error('[MAILPIT] Error fetching email HTML:', error.message);
+      console.error('[MAILPIT] Error details:', error.response?.status, error.response?.data);
       return null;
     }
   }
@@ -124,9 +130,15 @@ class MailpitService {
         responseType: 'text'
       });
 
-      return response.data;
+      const plain = response.data;
+      console.log(`[MAILPIT] Plain text dohvaćen (${plain ? plain.length : 0} karaktera)`);
+      if (plain && plain.length > 0) {
+        console.log(`[MAILPIT] Plain text preview (prvih 500): ${plain.substring(0, 500)}`);
+      }
+      return plain;
     } catch (error) {
       console.error('[MAILPIT] Error fetching email plain text:', error.message);
+      console.error('[MAILPIT] Error details:', error.response?.status, error.response?.data);
       return null;
     }
   }
@@ -232,28 +244,40 @@ class MailpitService {
       let links = [];
       let source = 'html';
       
-      if (htmlContent) {
-        // Ekstraktuj sve linkove iz HTML-a
-        const linkRegex = /href=["']([^"']+)["']/g;
-        let match;
+      console.log(`[MAILPIT] Pokušavam ekstraktovati linkove iz emaila ${messageId}...`);
+      console.log(`[MAILPIT] HTML content: ${htmlContent ? `DA (${htmlContent.length} chars)` : 'NE'}`);
+      
+      if (htmlContent && htmlContent.length > 0) {
+        // Ekstraktuj sve linkove iz HTML-a - probaj različite regex patternove
+        const linkPatterns = [
+          /href=["']([^"']+)["']/g,  // Standardni href
+          /href=([^\s>]+)/g,          // Bez navodnika
+          /<a[^>]+href=["']?([^"'\s>]+)["']?/gi  // Cijeli <a> tag
+        ];
         
-        while ((match = linkRegex.exec(htmlContent)) !== null) {
-          const link = match[1];
-          // Preskoči mailto: i javascript: linkove
-          if (!link.startsWith('mailto:') && !link.startsWith('javascript:')) {
-            links.push(link);
+        for (const pattern of linkPatterns) {
+          let match;
+          while ((match = pattern.exec(htmlContent)) !== null) {
+            const link = match[1];
+            // Preskoči mailto: i javascript: linkove
+            if (link && !link.startsWith('mailto:') && !link.startsWith('javascript:') && !link.startsWith('#')) {
+              links.push(link);
+            }
           }
         }
+        
+        console.log(`[MAILPIT] Pronađeno ${links.length} linkova u HTML-u`);
       }
       
       // 2. Ako nema HTML linkova, probaj iz plain text sadržaja
       if (links.length === 0) {
         plainContent = await this.getEmailPlain(messageId);
         source = 'plain';
+        console.log(`[MAILPIT] Plain content: ${plainContent ? `DA (${plainContent.length} chars)` : 'NE'}`);
         
-        if (plainContent) {
+        if (plainContent && plainContent.length > 0) {
           // Jednostavan regex za URL-ove u plain textu
-          const urlRegex = /(https?:\/\/[^\s<>"]+)/g;
+          const urlRegex = /(https?:\/\/[^\s<>"']+)/g;
           let match;
           while ((match = urlRegex.exec(plainContent)) !== null) {
             const link = match[1];
@@ -261,29 +285,51 @@ class MailpitService {
               links.push(link);
             }
           }
+          console.log(`[MAILPIT] Pronađeno ${links.length} linkova u plain textu`);
         }
       }
       
-      // 3. Ako još nema linkova, probaj izvući verify token i složiti URL ručno
+      // 3. Ako još nema linkova, probaj izvući verify token iz bilo kojeg sadržaja
       if (links.length === 0) {
         const combined = `${htmlContent || ''}\n${plainContent || ''}`;
+        console.log(`[MAILPIT] Pokušavam ekstraktovati token iz kombiniranog sadržaja (${combined.length} chars)`);
+        
         // Traži pattern koji sadrži 'verify' i 'token=' (može biti #verify?token=..., /#verify?token=..., itd.)
-        const tokenMatch = combined.match(/[#/]*verify[^\s"'?]*\?token=([A-Za-z0-9_-]+)/);
-        if (tokenMatch && tokenMatch[0]) {
-          let path = tokenMatch[0]; // npr. #verify?token=abc123 ili /#verify?token=abc123
-          const frontendBase = process.env.FRONTEND_URL || 'https://www.uslugar.eu';
-          
-          // Normaliziraj u punu URL adresu
-          if (path.startsWith('#')) {
-            links.push(`${frontendBase}${path}`);
-          } else if (path.startsWith('/')) {
-            links.push(`${frontendBase}${path}`);
-          } else if (path.startsWith('http')) {
-            links.push(path);
-          } else {
-            links.push(`${frontendBase}/${path}`);
+        const tokenPatterns = [
+          /[#/]*verify[^\s"'?]*\?token=([A-Za-z0-9_-]+)/,
+          /token=([A-Za-z0-9_-]{32,})/,  // Token je obično 32+ karaktera
+          /verify[^?]*\?[^=]*=([A-Za-z0-9_-]{32,})/
+        ];
+        
+        for (const pattern of tokenPatterns) {
+          const tokenMatch = combined.match(pattern);
+          if (tokenMatch) {
+            const token = tokenMatch[1] || tokenMatch[0];
+            const frontendBase = process.env.FRONTEND_URL || 'https://www.uslugar.eu';
+            const verifyUrl = `${frontendBase}/#verify?token=${token}`;
+            links.push(verifyUrl);
+            source = 'token-constructed';
+            console.log(`[MAILPIT] Konstruiran verify URL iz tokena: ${verifyUrl.substring(0, 100)}...`);
+            break;
           }
-          source = 'token-constructed';
+        }
+      }
+      
+      // 4. Ako još nema linkova, probaj izvući iz emailDetails (možda Mailpit API već ima linkove)
+      if (links.length === 0 && emailDetails) {
+        console.log(`[MAILPIT] Pokušavam ekstraktovati iz emailDetails...`);
+        const detailsStr = JSON.stringify(emailDetails);
+        const urlRegex = /(https?:\/\/[^\s<>"']+)/g;
+        let match;
+        while ((match = urlRegex.exec(detailsStr)) !== null) {
+          const link = match[1];
+          if (link.includes('verify') || link.includes('token')) {
+            links.push(link);
+          }
+        }
+        if (links.length > 0) {
+          source = 'emailDetails';
+          console.log(`[MAILPIT] Pronađeno ${links.length} linkova u emailDetails`);
         }
       }
       
