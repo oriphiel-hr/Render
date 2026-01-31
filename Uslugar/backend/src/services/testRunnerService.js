@@ -42,6 +42,9 @@ class TestRunnerService {
     const screenshots = [];
     const logs = [];
     let browser;
+    
+    // Definiraj uniqueEmail izvan try bloka da bude dostupna u catch bloku
+    let uniqueEmail = userData?.email || 'test@uslugar.hr';
 
     try {
       console.log(`[TEST RUNNER] Pokrenuo test: ${testId}`);
@@ -97,9 +100,8 @@ class TestRunnerService {
       logs.push('Unošenje podataka...');
 
       // Generiraj jedinstven email za ovaj test (da izbjegnemo \"email already in use\")
-      let uniqueEmail = userData.email;
       try {
-        if (userData.email) {
+        if (userData?.email) {
           const timestamp = Date.now();
           const [local, domain] = userData.email.split('@');
           if (domain) {
