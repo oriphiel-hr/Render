@@ -567,9 +567,13 @@ r.post('/run-single', async (req, res, next) => {
           const emailSubject = firstEmail.Subject || firstEmail.subject || 'N/A';
           results.logs.push(`📧 Obrađujem mail: ${emailSubject} (ID: ${messageId})`);
           
+          // Koristi testId iz testResult umjesto testId iz request body-ja
+          // testResult.testId je npr. "registration_1769874052096", dok testId iz body-ja je "1.1"
+          const effectiveTestId = testResult?.testId || testId;
+          
           const emailCapture = await mailpitService.captureEmailAndClickLink(
             messageId,
-            testId
+            effectiveTestId
           );
 
           if (emailCapture.success) {
