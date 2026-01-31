@@ -145,18 +145,51 @@ class MailpitService {
 
   /**
    * Filtriraj mailove po primatelju
-   * @param {string} recipient - Email adresa primatelja
+   * @param {string} recipient - Email adresa primatelja (može biti s ili bez timestamp-a)
    * @returns {Array} Filtrirani mailovi
    */
   async getEmailsByRecipient(recipient) {
     try {
       const emails = await this.getEmails();
+      const recipientLower = recipient.toLowerCase();
+      
+      // Ekstraktuj prefix i domenu iz recipient emaila
+      // Npr. "test.client+123@uslugar.hr" -> prefix: "test.client", domain: "uslugar.hr"
+      // Ili "test.client@uslugar.hr" -> prefix: "test.client", domain: "uslugar.hr"
+      const [localPart, domainPart] = recipientLower.split('@');
+      const basePrefix = localPart.split('+')[0]; // Uzmi dio prije "+" ako postoji
+      
+      console.log(`[MAILPIT] Filtriranje mailova: recipient=${recipientLower}, basePrefix=${basePrefix}, domain=${domainPart}`);
+      
       return emails.filter(email => {
         const to = email.To || [];
         const toArray = Array.isArray(to) ? to : [to];
         return toArray.some(t => {
           const emailAddr = typeof t === 'string' ? t : t.Address || t.email || '';
-          return emailAddr.toLowerCase().includes(recipient.toLowerCase());
+          const emailLower = emailAddr.toLowerCase();
+          
+          // Provjeri točno podudaranje
+          if (emailLower === recipientLower) {
+            return true;
+          }
+          
+          // Provjeri da li email sadrži recipient kao substring (za slučajeve gdje recipient nema timestamp)
+          if (emailLower.includes(recipientLower)) {
+            return true;
+          }
+          
+          // Provjeri da li email ima isti prefix i domenu (za slučajeve gdje recipient ima timestamp)
+          if (domainPart) {
+            const [emailLocal, emailDomain] = emailLower.split('@');
+            if (emailDomain === domainPart) {
+              const emailPrefix = emailLocal.split('+')[0];
+              if (emailPrefix === basePrefix) {
+                return true;
+              }
+            }
+          }
+          
+          return false;
         });
       });
     } catch (error) {

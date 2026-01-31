@@ -518,8 +518,12 @@ r.post('/run-single', async (req, res, next) => {
       }
       
       // Mailpit ne treba API key ili inbox ID - svi mailovi su u jednom inboxu
-      // Možemo filtrirati po recipient email adresi ako je potrebno
-      const recipientEmail = userData?.email;
+      // Koristi uniqueEmail iz testResult ako postoji (s timestamp-om), inače koristi userData.email
+      const recipientEmail = testResult?.uniqueEmail || userData?.email;
+      
+      if (recipientEmail) {
+        results.logs.push(`🔍 Tražim mailove za: ${recipientEmail}`);
+      }
       
       // Čekaj da mail stigne (može trebati nekoliko sekundi)
       let emails = [];
@@ -531,7 +535,7 @@ r.post('/run-single', async (req, res, next) => {
         attempts++;
         try {
           if (recipientEmail) {
-            // Filtriraj po recipient email adresi
+            // Filtriraj po recipient email adresi (getEmailsByRecipient koristi includes, pa će pronaći i email s timestamp-om)
             emails = await mailpitService.getEmailsByRecipient(recipientEmail);
           } else {
             // Dohvati sve mailove

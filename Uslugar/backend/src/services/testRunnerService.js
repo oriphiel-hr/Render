@@ -783,7 +783,8 @@ class TestRunnerService {
         testId,
         screenshots,
         logs,
-        message: 'Registracija uspješna'
+        message: 'Registracija uspješna',
+        uniqueEmail: uniqueEmail // Vrati uniqueEmail da se može koristiti za filtriranje mailova
       };
     } catch (error) {
       console.error(`[TEST RUNNER] Test ${testId} failed:`, error);
@@ -822,7 +823,8 @@ class TestRunnerService {
         logs,
         error: error.message,
         errorStack: error.stack,
-        message: `❌ Greška pri testu: ${error.message}`
+        message: `❌ Greška pri testu: ${error.message}`,
+        uniqueEmail: uniqueEmail || userData?.email // Vrati uniqueEmail i u slučaju greške
       };
     }
   }
