@@ -217,8 +217,8 @@ class MailpitService {
       const mailpitUrl = `${this.webUrl}/message/${messageId}`;
       await page.goto(mailpitUrl, { waitUntil: 'networkidle', timeout: 15000 });
 
-      // Čekaj da se mail učita
-      await page.waitForTimeout(2000);
+      // Čekaj da se mail učita (optimizirano)
+      await page.waitForTimeout(1000); // Smanjeno s 2 na 1 sekundu
 
       const timestamp = Date.now();
       const filename = `${testId}_email_${messageId}_${timestamp}.png`;
@@ -226,14 +226,25 @@ class MailpitService {
 
       await page.screenshot({ path: screenshotPath, fullPage: true });
       
-      console.log(`[MAILPIT] Screenshot sprema na: ${filename}`);
+      // Provjeri da li je screenshot stvarno kreiran
+      const fileExists = fs.existsSync(screenshotPath);
+      if (!fileExists) {
+        console.error(`[MAILPIT] Screenshot NIJE kreiran na: ${screenshotPath}`);
+        throw new Error(`Screenshot file not created: ${screenshotPath}`);
+      }
+      
+      const fileStats = fs.statSync(screenshotPath);
+      console.log(`[MAILPIT] Screenshot kreiran: ${filename} (${fileStats.size} bytes)`);
 
       await context.close();
       await browser.close();
 
+      const screenshotUrl = this._getScreenshotUrl(filename);
+      console.log(`[MAILPIT] Screenshot URL: ${screenshotUrl}`);
+
       return {
         success: true,
-        url: this._getScreenshotUrl(filename),
+        url: screenshotUrl,
         filename
       };
     } catch (error) {

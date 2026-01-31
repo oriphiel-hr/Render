@@ -77,30 +77,12 @@ class TestRunnerService {
       const currentUrl = page.url();
       logs.push(`📍 Trenutni URL: ${currentUrl}`);
       
-      // Čekaj da se React učita
+      // Čekaj da se React učita (optimizirano - manje čekanja)
       logs.push('Čekanje da se React učita...');
       await page.waitForLoadState('domcontentloaded');
-      await page.waitForLoadState('networkidle');
-      await page.waitForTimeout(5000); // Duže čekanje za React hydration
+      await page.waitForSelector('#root', { timeout: 5000 });
+      await page.waitForTimeout(2000); // Smanjeno s 5+3 na 2 sekunde
       logs.push('✓ React učitan');
-      
-      // Provjeri je li #root element prisutan
-      const rootExists = await page.evaluate(() => {
-        return document.getElementById('root') !== null;
-      });
-      logs.push(`📦 #root element: ${rootExists ? '✓ Postoji' : '❌ Ne postoji'}`);
-      
-      // Provjeri je li React učitan - čekaj da se pojavi neki React element
-      try {
-        await page.waitForSelector('#root', { timeout: 10000 });
-        logs.push('✓ #root element pronađen');
-      } catch (e) {
-        logs.push(`⚠ #root element nije pronađen: ${e.message}`);
-      }
-      
-      // Čekaj dodatno da se forma renderira
-      await page.waitForTimeout(3000);
-      logs.push('✓ Dodatno čekanje za render form-e');
       
       let screenshotPath = this._getScreenshotPath(testId, '01_loaded');
       await page.screenshot({ path: screenshotPath, fullPage: true });
@@ -137,59 +119,11 @@ class TestRunnerService {
       
       let emailFound = false;
       
-      // Debug: Provjeri HTML strukturu
-      const pageInfo = await page.evaluate(() => {
-        return {
-          title: document.title,
-          bodyText: document.body?.textContent?.substring(0, 200) || 'N/A',
-          rootContent: document.getElementById('root')?.innerHTML?.substring(0, 500) || 'N/A',
-          allElements: document.querySelectorAll('*').length,
-          hasReact: window.React !== undefined || window.__REACT_DEVTOOLS_GLOBAL_HOOK__ !== undefined,
-          links: Array.from(document.querySelectorAll('a')).map(a => ({
-            text: a.textContent?.trim().substring(0, 50),
-            href: a.href,
-            onclick: a.onclick ? 'has onclick' : 'no onclick'
-          })).slice(0, 10),
-          buttons: Array.from(document.querySelectorAll('button')).map(b => ({
-            text: b.textContent?.trim().substring(0, 50),
-            className: b.className,
-            onclick: b.onclick ? 'has onclick' : 'no onclick'
-          })).slice(0, 10)
-        };
-      });
-      logs.push(`📄 Page Info: title=${pageInfo.title}, elements=${pageInfo.allElements}, hasReact=${pageInfo.hasReact}`);
-      logs.push(`📄 Body text (prvih 200): ${pageInfo.bodyText}`);
-      logs.push(`📄 Root content (prvih 500): ${pageInfo.rootContent.substring(0, 200)}...`);
-      logs.push(`🔗 Linkovi na stranici: ${pageInfo.links.length}`);
-      pageInfo.links.forEach((link, idx) => {
-        if (link.text.toLowerCase().includes('registr') || link.text.toLowerCase().includes('sign up') || link.href.includes('register')) {
-          logs.push(`  ${idx}: "${link.text}" -> ${link.href}`);
-        }
-      });
-      logs.push(`🔘 Gumbovi na stranici: ${pageInfo.buttons.length}`);
-      pageInfo.buttons.forEach((btn, idx) => {
-        if (btn.text.toLowerCase().includes('registr') || btn.text.toLowerCase().includes('sign up')) {
-          logs.push(`  ${idx}: "${btn.text}"`);
-        }
-      });
-      
-      // Debug: Pronađi sve input polja na stranici
+      // Optimizirano - samo osnovne provjere (bez detaljnog debug logiranja)
       let allInputs = await page.evaluate(() => {
-        const inputs = document.querySelectorAll('input, textarea');
-        return Array.from(inputs).map(inp => ({
-          tag: inp.tagName.toLowerCase(),
-          type: inp.type,
-          name: inp.name,
-          id: inp.id,
-          placeholder: inp.placeholder,
-          value: inp.value,
-          visible: inp.offsetParent !== null,
-          display: window.getComputedStyle(inp).display,
-          className: inp.className,
-          outerHTML: inp.outerHTML.substring(0, 200) // Prvih 200 karaktera HTML-a
-        }));
+        return document.querySelectorAll('input, textarea').length;
       });
-      logs.push(`📋 Pronađeni input-i/textarea: ${allInputs.length}`);
+      logs.push(`📋 Pronađeni input-i/textarea: ${allInputs}`);
       
       // Pokušaj pronaći i kliknuti na link/gumb za registraciju ako forma nije vidljiva
       if (allInputs.length === 0) {
@@ -228,12 +162,12 @@ class TestRunnerService {
                 }
               }, hash);
               
-              await page.waitForTimeout(2000); // Čekaj scroll
+              await page.waitForTimeout(1000); // Smanjeno čekanje za scroll
               logs.push(`✓ Scrollao do sekcije #${hash}`);
             }
             
-            // Čekaj da se forma učita nakon klika
-            await page.waitForTimeout(5000); // Duže čekanje za React render
+            // Čekaj da se forma učita nakon klika (optimizirano)
+            await page.waitForTimeout(2000); // Smanjeno s 5 na 2 sekunde
             await page.waitForLoadState('networkidle');
             logs.push('✓ Čekam da se forma učita nakon klika...');
             
@@ -289,7 +223,7 @@ class TestRunnerService {
                         logs.push(`✓ Kliknuo na gumb: "${buttonToClick.text}"`);
                         
                         // Čekaj da se forma otvori
-                        await page.waitForTimeout(5000);
+                        await page.waitForTimeout(2000); // Smanjeno čekanje
                         await page.waitForLoadState('networkidle');
                         logs.push('✓ Čekam da se forma otvori nakon klika na gumb...');
                       } catch (e) {
@@ -319,30 +253,18 @@ class TestRunnerService {
         }
         
         if (linkClicked) {
-          // Ponovno provjeri inpute nakon svih akcija
+          // Ponovno provjeri inpute nakon svih akcija (optimizirano)
           allInputs = await page.evaluate(() => {
-            const inputs = document.querySelectorAll('input, textarea');
-            return Array.from(inputs).map(inp => ({
-              tag: inp.tagName.toLowerCase(),
-              type: inp.type,
-              name: inp.name,
-              id: inp.id,
-              placeholder: inp.placeholder,
-              value: inp.value,
-              visible: inp.offsetParent !== null,
-              display: window.getComputedStyle(inp).display,
-              className: inp.className,
-              outerHTML: inp.outerHTML.substring(0, 200)
-            }));
+            return document.querySelectorAll('input, textarea').length;
           });
-          logs.push(`📋 Input polja nakon klika: ${allInputs.length}`);
+          logs.push(`📋 Input polja nakon klika: ${allInputs}`);
           
           // Ako još nema inputa, čekaj dodatno
-          if (allInputs.length === 0) {
+          if (allInputs === 0) {
             logs.push('⚠ Još nema input polja - čekam dodatno...');
-            await page.waitForTimeout(5000);
+            await page.waitForTimeout(2000); // Smanjeno čekanje
             
-            // Pokušaj scrollati do gore i dolje da triggerira render
+            // Pokušaj scrollati da triggerira render
             await page.evaluate(() => {
               window.scrollTo(0, 0);
             });
@@ -353,23 +275,11 @@ class TestRunnerService {
             await page.waitForTimeout(2000);
             logs.push('✓ Scrollao kroz stranicu da triggeriram render');
             
-            // Ponovno provjeri inpute nakon scrolla
+            // Ponovno provjeri inpute nakon scrolla (optimizirano)
             allInputs = await page.evaluate(() => {
-              const inputs = document.querySelectorAll('input, textarea');
-              return Array.from(inputs).map(inp => ({
-                tag: inp.tagName.toLowerCase(),
-                type: inp.type,
-                name: inp.name,
-                id: inp.id,
-                placeholder: inp.placeholder,
-                value: inp.value,
-                visible: inp.offsetParent !== null,
-                display: window.getComputedStyle(inp).display,
-                className: inp.className,
-                outerHTML: inp.outerHTML.substring(0, 200)
-              }));
+              return document.querySelectorAll('input, textarea').length;
             });
-            logs.push(`📋 Input polja nakon scrolla: ${allInputs.length}`);
+            logs.push(`📋 Input polja nakon scrolla: ${allInputs}`);
           }
         }
         
