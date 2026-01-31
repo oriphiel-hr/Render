@@ -354,9 +354,200 @@ class MailpitService {
   }
 
   /**
+   * Ekstraktuj linkove iz emaila koristeći konfiguraciju strategija
+   * @param {string} htmlContent - HTML sadržaj emaila
+   * @param {string} plainContent - Plain text sadržaj emaila
+   * @param {Object} emailDetails - Email detalji
+   * @param {Object} linkExtractionConfig - Konfiguracija za link extraction
+   * @returns {Array} Pronađeni linkovi
+   */
+  _extractLinksWithStrategies(htmlContent, plainContent, emailDetails, linkExtractionConfig) {
+    const links = [];
+    let source = 'unknown';
+    
+    // Ako nema konfiguracije, koristi fallback na scraping
+    if (!linkExtractionConfig || !linkExtractionConfig.strategies || linkExtractionConfig.strategies.length === 0) {
+      console.log('[MAILPIT] Nema konfiguracije - koristim fallback scraping');
+      return this._extractLinksFallback(htmlContent, plainContent, emailDetails);
+    }
+    
+    const strategies = linkExtractionConfig.strategies.filter(s => s.enabled !== false);
+    const frontendUrl = linkExtractionConfig.frontendUrl || process.env.FRONTEND_URL || 'https://www.uslugar.eu';
+    
+    console.log(`[MAILPIT] Pokušavam ekstraktovati linkove koristeći ${strategies.length} strategija...`);
+    
+    // Pokušaj svaku strategiju redom dok ne pronađeš linkove
+    for (const strategy of strategies) {
+      try {
+        let foundLinks = [];
+        
+        switch (strategy.type) {
+          case 'selector':
+            // CSS selector strategija (za HTML)
+            if (htmlContent && strategy.selector && strategy.attribute) {
+              // Koristi regex da ekstraktujemo href iz <a> tagova koji odgovaraju selectoru
+              // Primjer: a[href*="verify"] -> href koji sadrži "verify"
+              const selectorPattern = strategy.selector.replace(/\[href\*="([^"]+)"\]/, '');
+              const hrefPattern = strategy.selector.match(/\[href\*="([^"]+)"\]/);
+              
+              if (hrefPattern) {
+                const hrefValue = hrefPattern[1];
+                const regex = new RegExp(`<a[^>]+href=["']([^"']*${hrefValue}[^"']*)["']`, 'gi');
+                let match;
+                while ((match = regex.exec(htmlContent)) !== null) {
+                  foundLinks.push(match[1]);
+                }
+              } else {
+                // Općenitiji pristup - ekstraktuj sve href-ove iz <a> tagova
+                const regex = /<a[^>]+href=["']([^"']+)["']/gi;
+                let match;
+                while ((match = regex.exec(htmlContent)) !== null) {
+                  if (strategy.selector.includes('verify') && match[1].includes('verify')) {
+                    foundLinks.push(match[1]);
+                  } else if (!strategy.selector.includes('verify')) {
+                    foundLinks.push(match[1]);
+                  }
+                }
+              }
+              
+              if (foundLinks.length > 0) {
+                source = `selector:${strategy.name}`;
+                links.push(...foundLinks);
+                console.log(`[MAILPIT] Strategija "${strategy.name}": Pronađeno ${foundLinks.length} linkova`);
+                break;
+              }
+            }
+            break;
+            
+          case 'regex':
+            // Regex strategija
+            if (strategy.pattern) {
+              const regex = new RegExp(strategy.pattern, strategy.flags || 'gi');
+              const content = htmlContent || plainContent || '';
+              let match;
+              
+              while ((match = regex.exec(content)) !== null) {
+                const link = match[strategy.group || 1] || match[0];
+                if (link && !link.startsWith('mailto:') && !link.startsWith('javascript:') && !link.startsWith('#')) {
+                  foundLinks.push(link);
+                }
+              }
+              
+              if (foundLinks.length > 0) {
+                source = `regex:${strategy.name}`;
+                links.push(...foundLinks);
+                console.log(`[MAILPIT] Strategija "${strategy.name}": Pronađeno ${foundLinks.length} linkova`);
+                break;
+              }
+            }
+            break;
+            
+          case 'template':
+            // Template strategija - konstruiraj URL iz tokena
+            if (strategy.pattern && strategy.tokenPattern) {
+              const content = htmlContent || plainContent || '';
+              const tokenRegex = new RegExp(strategy.tokenPattern, 'i');
+              const tokenMatch = content.match(tokenRegex);
+              
+              if (tokenMatch) {
+                const token = tokenMatch[1] || tokenMatch[0];
+                const url = strategy.pattern
+                  .replace('{FRONTEND_URL}', frontendUrl)
+                  .replace('{TOKEN}', token);
+                foundLinks.push(url);
+                source = `template:${strategy.name}`;
+                links.push(...foundLinks);
+                console.log(`[MAILPIT] Strategija "${strategy.name}": Konstruiran URL iz tokena`);
+                break;
+              }
+            }
+            break;
+        }
+        
+        // Ako je pronađen barem jedan link, prekini petlju
+        if (links.length > 0) {
+          break;
+        }
+      } catch (error) {
+        console.warn(`[MAILPIT] Greška u strategiji "${strategy.name}": ${error.message}`);
+        continue;
+      }
+    }
+    
+    // Ako nema linkova i fallback je omogućen, koristi scraping
+    if (links.length === 0 && linkExtractionConfig.fallback === 'scrape') {
+      console.log('[MAILPIT] Nema linkova iz strategija - koristim fallback scraping');
+      return this._extractLinksFallback(htmlContent, plainContent, emailDetails);
+    }
+    
+    return { links, source };
+  }
+  
+  /**
+   * Fallback metoda za ekstrakciju linkova (originalna hardkodirana logika)
+   */
+  _extractLinksFallback(htmlContent, plainContent, emailDetails) {
+    let links = [];
+    let source = 'fallback';
+    
+    if (htmlContent && htmlContent.length > 0) {
+      const linkPatterns = [
+        /href=["']([^"']+)["']/g,
+        /href=([^\s>]+)/g,
+        /<a[^>]+href=["']?([^"'\s>]+)["']?/gi
+      ];
+      
+      for (const pattern of linkPatterns) {
+        let match;
+        while ((match = pattern.exec(htmlContent)) !== null) {
+          const link = match[1];
+          if (link && !link.startsWith('mailto:') && !link.startsWith('javascript:') && !link.startsWith('#')) {
+            links.push(link);
+          }
+        }
+      }
+    }
+    
+    if (links.length === 0 && plainContent) {
+      const urlRegex = /(https?:\/\/[^\s<>"']+)/g;
+      let match;
+      while ((match = urlRegex.exec(plainContent)) !== null) {
+        const link = match[1];
+        if (!link.startsWith('mailto:') && !link.startsWith('javascript:')) {
+          links.push(link);
+        }
+      }
+    }
+    
+    if (links.length === 0) {
+      const combined = `${htmlContent || ''}\n${plainContent || ''}`;
+      const tokenPatterns = [
+        /[#/]*verify[^\s"'?]*\?token=([A-Za-z0-9_-]+)/,
+        /token=([A-Za-z0-9_-]{32,})/,
+        /verify[^?]*\?[^=]*=([A-Za-z0-9_-]{32,})/
+      ];
+      
+      for (const pattern of tokenPatterns) {
+        const tokenMatch = combined.match(pattern);
+        if (tokenMatch) {
+          const token = tokenMatch[1] || tokenMatch[0];
+          const frontendBase = process.env.FRONTEND_URL || 'https://www.uslugar.eu';
+          const verifyUrl = `${frontendBase}/#verify?token=${token}`;
+          links.push(verifyUrl);
+          source = 'fallback-token';
+          break;
+        }
+      }
+    }
+    
+    return { links, source };
+  }
+
+  /**
    * Klikni link u mailu i kreiraj screenshot
    * @param {string} messageId - ID poruke
    * @param {string} testId - ID testa
+   * @param {Object} options - Opcije (linkExtraction konfiguracija)
    * @returns {Object} Rezultat klika
    */
   async clickEmailLinkAndCapture(messageId, testId, options = {}) {
@@ -373,101 +564,22 @@ class MailpitService {
         };
       }
 
-      // 1. Dohvati HTML sadržaj
+      // 1. Dohvati HTML i plain text sadržaj
       const htmlContent = await this.getEmailHTML(messageId);
-      let plainContent = null;
-      
-      let links = [];
-      let source = 'html';
+      const plainContent = await this.getEmailPlain(messageId);
       
       console.log(`[MAILPIT] Pokušavam ekstraktovati linkove iz emaila ${messageId}...`);
       console.log(`[MAILPIT] HTML content: ${htmlContent ? `DA (${htmlContent.length} chars)` : 'NE'}`);
+      console.log(`[MAILPIT] Plain content: ${plainContent ? `DA (${plainContent.length} chars)` : 'NE'}`);
       
-      if (htmlContent && htmlContent.length > 0) {
-        // Ekstraktuj sve linkove iz HTML-a - probaj različite regex patternove
-        const linkPatterns = [
-          /href=["']([^"']+)["']/g,  // Standardni href
-          /href=([^\s>]+)/g,          // Bez navodnika
-          /<a[^>]+href=["']?([^"'\s>]+)["']?/gi  // Cijeli <a> tag
-        ];
-        
-        for (const pattern of linkPatterns) {
-          let match;
-          while ((match = pattern.exec(htmlContent)) !== null) {
-            const link = match[1];
-            // Preskoči mailto: i javascript: linkove
-            if (link && !link.startsWith('mailto:') && !link.startsWith('javascript:') && !link.startsWith('#')) {
-              links.push(link);
-            }
-          }
-        }
-        
-        console.log(`[MAILPIT] Pronađeno ${links.length} linkova u HTML-u`);
-      }
-      
-      // 2. Ako nema HTML linkova, probaj iz plain text sadržaja
-      if (links.length === 0) {
-        plainContent = await this.getEmailPlain(messageId);
-        source = 'plain';
-        console.log(`[MAILPIT] Plain content: ${plainContent ? `DA (${plainContent.length} chars)` : 'NE'}`);
-        
-        if (plainContent && plainContent.length > 0) {
-          // Jednostavan regex za URL-ove u plain textu
-          const urlRegex = /(https?:\/\/[^\s<>"']+)/g;
-          let match;
-          while ((match = urlRegex.exec(plainContent)) !== null) {
-            const link = match[1];
-            if (!link.startsWith('mailto:') && !link.startsWith('javascript:')) {
-              links.push(link);
-            }
-          }
-          console.log(`[MAILPIT] Pronađeno ${links.length} linkova u plain textu`);
-        }
-      }
-      
-      // 3. Ako još nema linkova, probaj izvući verify token iz bilo kojeg sadržaja
-      if (links.length === 0) {
-        const combined = `${htmlContent || ''}\n${plainContent || ''}`;
-        console.log(`[MAILPIT] Pokušavam ekstraktovati token iz kombiniranog sadržaja (${combined.length} chars)`);
-        
-        // Traži pattern koji sadrži 'verify' i 'token=' (može biti #verify?token=..., /#verify?token=..., itd.)
-        const tokenPatterns = [
-          /[#/]*verify[^\s"'?]*\?token=([A-Za-z0-9_-]+)/,
-          /token=([A-Za-z0-9_-]{32,})/,  // Token je obično 32+ karaktera
-          /verify[^?]*\?[^=]*=([A-Za-z0-9_-]{32,})/
-        ];
-        
-        for (const pattern of tokenPatterns) {
-          const tokenMatch = combined.match(pattern);
-          if (tokenMatch) {
-            const token = tokenMatch[1] || tokenMatch[0];
-            const frontendBase = process.env.FRONTEND_URL || 'https://www.uslugar.eu';
-            const verifyUrl = `${frontendBase}/#verify?token=${token}`;
-            links.push(verifyUrl);
-            source = 'token-constructed';
-            console.log(`[MAILPIT] Konstruiran verify URL iz tokena: ${verifyUrl.substring(0, 100)}...`);
-            break;
-          }
-        }
-      }
-      
-      // 4. Ako još nema linkova, probaj izvući iz emailDetails (možda Mailpit API već ima linkove)
-      if (links.length === 0 && emailDetails) {
-        console.log(`[MAILPIT] Pokušavam ekstraktovati iz emailDetails...`);
-        const detailsStr = JSON.stringify(emailDetails);
-        const urlRegex = /(https?:\/\/[^\s<>"']+)/g;
-        let match;
-        while ((match = urlRegex.exec(detailsStr)) !== null) {
-          const link = match[1];
-          if (link.includes('verify') || link.includes('token')) {
-            links.push(link);
-          }
-        }
-        if (links.length > 0) {
-          source = 'emailDetails';
-          console.log(`[MAILPIT] Pronađeno ${links.length} linkova u emailDetails`);
-        }
-      }
+      // 2. Ekstraktuj linkove koristeći konfiguraciju
+      const linkExtractionConfig = options.linkExtraction || null;
+      const { links, source } = this._extractLinksWithStrategies(
+        htmlContent,
+        plainContent,
+        emailDetails,
+        linkExtractionConfig
+      );
       
       if (links.length === 0) {
         return {
@@ -543,6 +655,7 @@ class MailpitService {
    * Kombinirana funkcija: screenshot maila + klik linka
    * @param {string} messageId - ID poruke
    * @param {string} testId - ID testa
+   * @param {Object} options - Opcije (linkExtraction konfiguracija)
    * @returns {Object} Rezultat obrade
    */
   async captureEmailAndClickLink(messageId, testId, options = {}) {
@@ -560,7 +673,7 @@ class MailpitService {
       // 2. Kreiraj screenshot maila
       const emailScreenshot = await this.captureEmailScreenshot(messageId, testId, options);
 
-      // 3. Klikni link i kreiraj screenshot
+      // 3. Klikni link i kreiraj screenshot (proslijedi linkExtraction opcije)
       const linkResult = await this.clickEmailLinkAndCapture(messageId, testId, options);
 
       // Ekstraktuj subject i from

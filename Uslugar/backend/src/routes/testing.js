@@ -220,6 +220,44 @@ r.get('/test-data', async (req, res, next) => {
         testService: {
           type: 'mailpit',
           baseUrl: process.env.MAILPIT_API_URL || 'http://localhost:8025/api/v1'
+        },
+        linkExtraction: {
+          strategies: [
+            {
+              type: 'selector',
+              name: 'CSS Selector - verify link',
+              selector: 'a[href*="verify"]',
+              attribute: 'href',
+              enabled: true,
+              description: 'Pronađi link koji sadrži "verify" u href atributu'
+            },
+            {
+              type: 'regex',
+              name: 'Regex - href pattern',
+              pattern: 'href=["\']([^"\']*verify[^"\']*)["\']',
+              group: 1,
+              enabled: true,
+              description: 'Ekstraktuj href iz <a> tagova koji sadrže "verify"'
+            },
+            {
+              type: 'template',
+              name: 'Template - construct from token',
+              pattern: '{FRONTEND_URL}/#verify?token={TOKEN}',
+              tokenSource: 'emailBody',
+              tokenPattern: 'token=([A-Za-z0-9_-]{32,})',
+              enabled: true,
+              description: 'Konstruiraj verify URL iz tokena u email body-ju'
+            },
+            {
+              type: 'regex',
+              name: 'Regex - plain text URLs',
+              pattern: '(https?://[^\\s<>"\']+)',
+              enabled: false,
+              description: 'Pronađi sve HTTP(S) URL-ove u plain textu'
+            }
+          ],
+          fallback: 'scrape',
+          frontendUrl: process.env.FRONTEND_URL || 'https://www.uslugar.eu'
         }
       },
       users: {
@@ -571,9 +609,13 @@ r.post('/run-single', async (req, res, next) => {
           // testResult.testId je npr. "registration_1769874052096", dok testId iz body-ja je "1.1"
           const effectiveTestId = testResult?.testId || testId;
           
+          // Proslijedi linkExtraction konfiguraciju iz testData (ako postoji u req.body)
+          const linkExtractionConfig = req.body.testData?.email?.linkExtraction || null;
+          
           const emailCapture = await mailpitService.captureEmailAndClickLink(
             messageId,
-            effectiveTestId
+            effectiveTestId,
+            { linkExtraction: linkExtractionConfig }
           );
 
           if (emailCapture.success) {

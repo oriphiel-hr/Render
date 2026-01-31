@@ -675,7 +675,22 @@ export default function AdminTesting(){
   // Detaljni testovi
   const [expandedSector, setExpandedSector] = useState(null)
   const [runningTest, setRunningTest] = useState(null)
-  const [testResults, setTestResults] = useState({})
+  // Učitaj rezultate iz localStorage pri inicijalizaciji
+  const loadTestResultsFromStorage = () => {
+    try {
+      const saved = localStorage.getItem('adminTestResults')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        console.log('[TEST RESULTS] Učitano iz localStorage:', Object.keys(parsed).length, 'rezultata')
+        return parsed
+      }
+    } catch (e) {
+      console.error('[TEST RESULTS] Greška pri učitavanju iz localStorage:', e)
+    }
+    return {}
+  }
+
+  const [testResults, setTestResults] = useState(loadTestResultsFromStorage)
   const [automatedTestResult, setAutomatedTestResult] = useState(null)
   const [loadingTestResults, setLoadingTestResults] = useState(false)
   const [testData, setTestData] = useState(null)
@@ -1231,10 +1246,20 @@ export default function AdminTesting(){
     try {
       const res = await api.get('/testing/test-results')
       // Merge s postojećim rezultatima umjesto prepisivanja
-      setTestResults(prev => ({
-        ...prev,
-        ...res.data
-      }))
+      setTestResults(prev => {
+        const updated = {
+          ...prev,
+          ...res.data
+        }
+        // Spremi u localStorage
+        try {
+          localStorage.setItem('adminTestResults', JSON.stringify(updated))
+          console.log('[TEST RESULTS] Rezultati spremljeni u localStorage nakon učitavanja s backenda')
+        } catch (e) {
+          console.error('[TEST RESULTS] Greška pri spremanju u localStorage:', e)
+        }
+        return updated
+      })
     } catch (e) {
       console.error('[TEST RESULTS] Error loading test results:', e)
       // Ne prepisuj postojeće rezultate ako dođe do greške
@@ -1255,6 +1280,16 @@ export default function AdminTesting(){
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [automatedTestResult?.success])
+
+  // Učitaj rezultate iz localStorage pri učitavanju komponente (ako već nisu učitani)
+  useEffect(() => {
+    const savedResults = loadTestResultsFromStorage()
+    if (Object.keys(savedResults).length > 0 && Object.keys(testResults).length === 0) {
+      setTestResults(savedResults)
+      console.log('[TEST RESULTS] Učitano', Object.keys(savedResults).length, 'rezultata iz localStorage pri učitavanju')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Izračunaj statistike za badge-ove
   const plansCount = plans.length
@@ -2511,10 +2546,20 @@ export default function AdminTesting(){
                                     // Simulacija ručnog testa
                                     console.log(`[TEST] Pokrenuo ručni test: ${test.id}`)
                                     alert(`Ručni test: ${test.id} - ${test.name}\n\nSlijedi upute gore navedene.\n\nAko je test prošao uspješno, pritisni OK.`)
-                                    setTestResults(prev => ({
-                                      ...prev,
-                                      [test.id]: { status: 'PASS', manual: true, timestamp: new Date() }
-                                    }))
+                                    setTestResults(prev => {
+                                      const updated = {
+                                        ...prev,
+                                        [test.id]: { status: 'PASS', manual: true, timestamp: new Date().toISOString() }
+                                      }
+                                      // Spremi u localStorage
+                                      try {
+                                        localStorage.setItem('adminTestResults', JSON.stringify(updated))
+                                        console.log(`[TEST] Ručni test rezultati spremljeni u localStorage za test ${test.id}`)
+                                      } catch (e) {
+                                        console.error('[TEST] Greška pri spremanju u localStorage:', e)
+                                      }
+                                      return updated
+                                    })
                                   } finally {
                                     setRunningTest(null)
                                   }
@@ -2556,28 +2601,48 @@ export default function AdminTesting(){
                                       testName: test.name,
                                       testType: 'registration',
                                       userData: userDataForTest,
-                                      mailpitBaseUrl: mailpitBaseUrl
+                                      mailpitBaseUrl: mailpitBaseUrl,
+                                      testData: {
+                                        email: {
+                                          linkExtraction: testData?.email?.linkExtraction || null
+                                        }
+                                      }
                                     }).catch(() => null)
                                     
                                     console.log(`[TEST] Response:`, response?.data)
                                     
-                                    setTestResults(prev => ({
-                                      ...prev,
-                                      [test.id]: { 
-                                        status: response?.data?.success ? 'PASS' : 'FAIL', 
-                                        auto: true, 
-                                        timestamp: new Date(),
-                                        message: response?.data?.message,
-                                        duration: response?.data?.duration,
-                                        logs: response?.data?.logs || [],
-                                        error: response?.data?.error,
-                                        errorStack: response?.data?.errorStack,
-                                        screenshots: response?.data?.screenshots || [],
-                                        emailScreenshots: response?.data?.emailScreenshots || [],
-                                        checkpointId: response?.data?.checkpointId || null,
-                                        checkpointCreated: response?.data?.checkpointCreated || false
-                                      }
-                                    }))
+                                    if (response?.data) {
+                                      setTestResults(prev => {
+                                        const updated = {
+                                          ...prev,
+                                          [test.id]: { 
+                                            status: response.data.success ? 'PASS' : 'FAIL', 
+                                            auto: true, 
+                                            timestamp: new Date().toISOString(), // Spremi kao string za JSON
+                                            message: response.data.message,
+                                            duration: response.data.duration,
+                                            logs: response.data.logs || [],
+                                            error: response.data.error,
+                                            errorStack: response.data.errorStack,
+                                            screenshots: response.data.screenshots || [],
+                                            emailScreenshots: response.data.emailScreenshots || [],
+                                            checkpointId: response.data.checkpointId || null,
+                                            checkpointCreated: response.data.checkpointCreated || false
+                                          }
+                                        }
+                                        // Spremi u localStorage
+                                        try {
+                                          localStorage.setItem('adminTestResults', JSON.stringify(updated))
+                                          console.log(`[TEST] Rezultati spremljeni u localStorage za test ${test.id}`)
+                                        } catch (e) {
+                                          console.error('[TEST] Greška pri spremanju u localStorage:', e)
+                                        }
+                                        return updated
+                                      })
+                                      console.log(`[TEST] Rezultati postavljeni za test ${test.id}:`, response.data.success ? 'PASS' : 'FAIL')
+                                    } else {
+                                      console.error(`[TEST] Nema podataka u response za test ${test.id}`)
+                                    }
                                   } finally {
                                     setRunningTest(null)
                                   }
@@ -2598,14 +2663,38 @@ export default function AdminTesting(){
                                 ? 'bg-green-50 border-green-200' 
                                 : 'bg-red-50 border-red-200'
                             }`}>
-                              <div className={`font-semibold text-sm mb-2 ${
-                                testResults[test.id].status === 'PASS' 
-                                  ? 'text-green-800' 
-                                  : 'text-red-800'
-                              }`}>
-                                {testResults[test.id].status === 'PASS' ? '✅ PROŠAO' : '❌ NIJE PROŠAO'}
-                                {testResults[test.id].manual && ' (Ručni test)'}
-                                {testResults[test.id].auto && ' (Automatski)'}
+                              <div className="flex items-start justify-between mb-2">
+                                <div className={`font-semibold text-sm ${
+                                  testResults[test.id].status === 'PASS' 
+                                    ? 'text-green-800' 
+                                    : 'text-red-800'
+                                }`}>
+                                  {testResults[test.id].status === 'PASS' ? '✅ PROŠAO' : '❌ NIJE PROŠAO'}
+                                  {testResults[test.id].manual && ' (Ručni test)'}
+                                  {testResults[test.id].auto && ' (Automatski)'}
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    if (window.confirm('Sigurno obrisati rezultate ovog testa?')) {
+                                      setTestResults(prev => {
+                                        const updated = { ...prev }
+                                        delete updated[test.id]
+                                        // Ažuriraj localStorage
+                                        try {
+                                          localStorage.setItem('adminTestResults', JSON.stringify(updated))
+                                          console.log(`[TEST] Rezultati obrisani iz localStorage za test ${test.id}`)
+                                        } catch (e) {
+                                          console.error('[TEST] Greška pri brisanju iz localStorage:', e)
+                                        }
+                                        return updated
+                                      })
+                                    }
+                                  }}
+                                  className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+                                  title="Obriši rezultate testa"
+                                >
+                                  🗑️ Obriši
+                                </button>
                               </div>
 
                               {/* Trajanje testa */}
@@ -2703,7 +2792,24 @@ export default function AdminTesting(){
                               {/* Mailpit Screenshots */}
                               {testResults[test.id].emailScreenshots && testResults[test.id].emailScreenshots.length > 0 && (
                                 <div className="mb-3 p-2 bg-blue-50 rounded border border-blue-200">
-                                  <div className="font-semibold text-xs text-blue-800 mb-2">📧 Mailpit Emaili:</div>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="font-semibold text-xs text-blue-800">📧 Mailpit Emaili:</div>
+                                    {testData?.email?.testService?.baseUrl && (
+                                      <button
+                                        onClick={() => {
+                                          let webUrl = testData.email.testService.baseUrl.replace('/api/v1', '');
+                                          if (!webUrl.startsWith('http')) {
+                                            webUrl = `http://${webUrl}`;
+                                          }
+                                          window.open(webUrl, '_blank');
+                                        }}
+                                        className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                        title="Otvori Mailpit inbox u novom prozoru"
+                                      >
+                                        📥 Otvori Mailpit inbox
+                                      </button>
+                                    )}
+                                  </div>
                                   {testResults[test.id].emailScreenshots.map((emailData, idx) => (
                                     <div key={idx} className="mb-2 p-2 bg-white rounded border border-blue-100">
                                       <div className="text-xs text-gray-700 mb-1">
@@ -3081,21 +3187,28 @@ export default function AdminTesting(){
                 </div>
               )}
               {testData?.email?.testService?.baseUrl && (
-                <div className="mt-2 text-xs">
-                  <a
-                    href={
-                      testData.email.testService.baseUrl.includes('/api/v1')
-                        ? testData.email.testService.baseUrl.replace('/api/v1', '')
-                        : testData.email.testService.baseUrl
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 px-2 py-1 bg-gray-800 text-white rounded hover:bg-gray-900 transition-colors"
-                  >
-                    📥 Otvori Mailpit inbox (Web UI)
-                  </a>
-                  <p className="text-[10px] text-gray-500 mt-1">
-                    Na Render-u je ovaj URL interni. Ako se ne otvara direktno iz browsera, koristi SSH tunnel prema Mailpit servisu.
+                <div className="mt-3 p-3 bg-indigo-50 border border-indigo-200 rounded">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-indigo-800">📥 Mailpit Inbox</span>
+                    <button
+                      onClick={() => {
+                        let webUrl = testData.email.testService.baseUrl.replace('/api/v1', '');
+                        if (!webUrl.startsWith('http')) {
+                          webUrl = `http://${webUrl}`;
+                        }
+                        window.open(webUrl, '_blank');
+                      }}
+                      className="px-3 py-1 bg-indigo-600 text-white rounded text-xs hover:bg-indigo-700 transition-colors"
+                      title="Otvori Mailpit inbox u novom prozoru"
+                    >
+                      🌐 Otvori u browseru
+                    </button>
+                  </div>
+                  <p className="text-xs text-indigo-700 mb-1">
+                    URL: <code className="bg-white px-1 rounded">{testData.email.testService.baseUrl.replace('/api/v1', '')}</code>
+                  </p>
+                  <p className="text-[10px] text-indigo-600 mt-1">
+                    💡 <strong>Na Render-u:</strong> Ovaj URL je interni i neće raditi direktno iz browsera. Koristi SSH tunnel ili Render Dashboard → Mailpit Service → View Logs → Web UI link.
                   </p>
                 </div>
               )}
@@ -3120,6 +3233,221 @@ export default function AdminTesting(){
                 <br />
                 • Ako vidiš "❌ Mailpit nedostupan" → Mailpit nije pokrenut ili URL je kriv
               </p>
+            </div>
+            
+            {/* Link Extraction Strategije */}
+            <div className="mt-6">
+              <label className="block text-sm font-medium mb-2">
+                🔗 Link Extraction Strategije
+                <span className="text-xs text-gray-500 ml-2">(Kako pronaći linkove u emailima)</span>
+              </label>
+              <p className="text-xs text-gray-500 mb-3">
+                Konfiguriraj kako se linkovi ekstraktuju iz emaila. Ako se HTML promijeni, jednostavno dodaj/uredi strategiju umjesto mijenjanja koda.
+              </p>
+              
+              {(!testData?.email?.linkExtraction?.strategies || testData.email.linkExtraction.strategies.length === 0) && (
+                <button
+                  onClick={() => {
+                    const defaultStrategies = [
+                      {
+                        type: 'selector',
+                        name: 'CSS Selector - verify link',
+                        selector: 'a[href*="verify"]',
+                        attribute: 'href',
+                        enabled: true,
+                        description: 'Pronađi link koji sadrži "verify" u href atributu'
+                      },
+                      {
+                        type: 'regex',
+                        name: 'Regex - href pattern',
+                        pattern: 'href=["\']([^"\']*verify[^"\']*)["\']',
+                        group: 1,
+                        enabled: true,
+                        description: 'Ekstraktuj href iz <a> tagova koji sadrže "verify"'
+                      },
+                      {
+                        type: 'template',
+                        name: 'Template - construct from token',
+                        pattern: '{FRONTEND_URL}/#verify?token={TOKEN}',
+                        tokenSource: 'emailBody',
+                        tokenPattern: 'token=([A-Za-z0-9_-]{32,})',
+                        enabled: true,
+                        description: 'Konstruiraj verify URL iz tokena u email body-ju'
+                      }
+                    ]
+                    
+                    updateTestDataField('email.linkExtraction', {
+                      strategies: defaultStrategies,
+                      fallback: 'scrape',
+                      frontendUrl: (typeof window !== 'undefined' && window.location?.origin) || 'https://www.uslugar.eu'
+                    })
+                  }}
+                  className="px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors mb-3"
+                >
+                  ➕ Dodaj Default Strategije
+                </button>
+              )}
+              
+              {testData?.email?.linkExtraction?.strategies?.map((strategy, idx) => (
+                <div key={idx} className="mb-4 p-4 border rounded bg-gray-50">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <input
+                          type="checkbox"
+                          checked={strategy.enabled !== false}
+                          onChange={e => {
+                            const strategies = [...(testData?.email?.linkExtraction?.strategies || [])]
+                            strategies[idx] = { ...strategies[idx], enabled: e.target.checked }
+                            updateTestDataField('email.linkExtraction.strategies', strategies)
+                          }}
+                          className="mt-1"
+                        />
+                        <span className="font-semibold text-sm">{strategy.name || `Strategija ${idx + 1}`}</span>
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                          {strategy.type}
+                        </span>
+                      </div>
+                      {strategy.description && (
+                        <p className="text-xs text-gray-600 italic mb-2">{strategy.description}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => {
+                        const strategies = testData?.email?.linkExtraction?.strategies?.filter((_, i) => i !== idx) || []
+                        updateTestDataField('email.linkExtraction.strategies', strategies)
+                      }}
+                      className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600 transition-colors"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-2 text-xs">
+                    {strategy.type === 'selector' && (
+                      <>
+                        <div>
+                          <label className="block text-xs font-medium mb-1">CSS Selector:</label>
+                          <input
+                            type="text"
+                            value={strategy.selector || ''}
+                            onChange={e => {
+                              const strategies = [...(testData?.email?.linkExtraction?.strategies || [])]
+                              strategies[idx] = { ...strategies[idx], selector: e.target.value }
+                              updateTestDataField('email.linkExtraction.strategies', strategies)
+                            }}
+                            className="w-full border rounded px-2 py-1 text-xs"
+                            placeholder="a[href*='verify']"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium mb-1">Attribute:</label>
+                          <input
+                            type="text"
+                            value={strategy.attribute || 'href'}
+                            onChange={e => {
+                              const strategies = [...(testData?.email?.linkExtraction?.strategies || [])]
+                              strategies[idx] = { ...strategies[idx], attribute: e.target.value }
+                              updateTestDataField('email.linkExtraction.strategies', strategies)
+                            }}
+                            className="w-full border rounded px-2 py-1 text-xs"
+                            placeholder="href"
+                          />
+                        </div>
+                      </>
+                    )}
+                    
+                    {strategy.type === 'regex' && (
+                      <>
+                        <div>
+                          <label className="block text-xs font-medium mb-1">Regex Pattern:</label>
+                          <input
+                            type="text"
+                            value={strategy.pattern || ''}
+                            onChange={e => {
+                              const strategies = [...(testData?.email?.linkExtraction?.strategies || [])]
+                              strategies[idx] = { ...strategies[idx], pattern: e.target.value }
+                              updateTestDataField('email.linkExtraction.strategies', strategies)
+                            }}
+                            className="w-full border rounded px-2 py-1 text-xs font-mono"
+                            placeholder="href pattern regex"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium mb-1">Capture Group:</label>
+                          <input
+                            type="number"
+                            value={strategy.group || 1}
+                            onChange={e => {
+                              const strategies = [...(testData?.email?.linkExtraction?.strategies || [])]
+                              strategies[idx] = { ...strategies[idx], group: parseInt(e.target.value) || 1 }
+                              updateTestDataField('email.linkExtraction.strategies', strategies)
+                            }}
+                            className="w-full border rounded px-2 py-1 text-xs"
+                            placeholder="1"
+                          />
+                        </div>
+                      </>
+                    )}
+                    
+                    {strategy.type === 'template' && (
+                      <>
+                        <div>
+                          <label className="block text-xs font-medium mb-1">URL Template:</label>
+                          <input
+                            type="text"
+                            value={strategy.pattern || ''}
+                            onChange={e => {
+                              const strategies = [...(testData?.email?.linkExtraction?.strategies || [])]
+                              strategies[idx] = { ...strategies[idx], pattern: e.target.value }
+                              updateTestDataField('email.linkExtraction.strategies', strategies)
+                            }}
+                            className="w-full border rounded px-2 py-1 text-xs font-mono"
+                            placeholder="{FRONTEND_URL}/#verify?token={TOKEN}"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium mb-1">Token Pattern:</label>
+                          <input
+                            type="text"
+                            value={strategy.tokenPattern || ''}
+                            onChange={e => {
+                              const strategies = [...(testData?.email?.linkExtraction?.strategies || [])]
+                              strategies[idx] = { ...strategies[idx], tokenPattern: e.target.value }
+                              updateTestDataField('email.linkExtraction.strategies', strategies)
+                            }}
+                            className="w-full border rounded px-2 py-1 text-xs font-mono"
+                            placeholder="token=([A-Za-z0-9_-]{32,})"
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+              
+              <button
+                onClick={() => {
+                  const strategies = testData?.email?.linkExtraction?.strategies || []
+                  const newStrategy = {
+                    type: 'regex',
+                    name: `Nova strategija ${strategies.length + 1}`,
+                    pattern: '',
+                    enabled: true,
+                    description: ''
+                  }
+                  updateTestDataField('email.linkExtraction.strategies', [...strategies, newStrategy])
+                }}
+                className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors mt-2"
+              >
+                ➕ Dodaj Strategiju
+              </button>
+              
+              <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                <strong>💡 Fallback:</strong> Ako sve strategije ne uspiju, koristi se automatski scraping (hardkodirana logika).
+                <br />
+                <strong>⚠️ Napomena:</strong> Strategije se izvršavaju redom dok se ne pronađe link. Prva uspješna strategija se koristi.
+              </div>
             </div>
           </div>
 
