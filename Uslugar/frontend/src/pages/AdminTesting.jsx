@@ -3196,10 +3196,24 @@ export default function AdminTesting(){
                         if (!webUrl.startsWith('http')) {
                           webUrl = `http://${webUrl}`;
                         }
+                        // Interni Render URL (mailpit, mailpit-dam5, uslugar-mailpit) ne radi iz browsera
+                        // - otvori localhost:8025 gdje SSH tunel prosleđuje
+                        const isInternalRender = /mailpit(-[a-z0-9]+)?(\.onrender\.com)?/i.test(webUrl) && !webUrl.includes('localhost');
+                        if (isInternalRender) {
+                          webUrl = 'http://localhost:8025';
+                          // Kratka napomena - tunnel mora biti pokrenut
+                          setTimeout(() => {
+                            const msg = document.createElement('div');
+                            msg.className = 'fixed bottom-4 right-4 bg-amber-100 border border-amber-300 text-amber-800 px-4 py-2 rounded-lg shadow text-sm z-50 max-w-sm';
+                            msg.innerHTML = '🔗 Mailpit na Renderu: prvo pokreni <code class="bg-amber-200 px-1 rounded">.\\mailpit-tunnel.ps1</code> da tunel radi';
+                            document.body.appendChild(msg);
+                            setTimeout(() => msg.remove(), 6000);
+                          }, 100);
+                        }
                         window.open(webUrl, '_blank');
                       }}
                       className="px-3 py-1 bg-indigo-600 text-white rounded text-xs hover:bg-indigo-700 transition-colors"
-                      title="Otvori Mailpit inbox u novom prozoru"
+                      title="Otvori Mailpit inbox u novom prozoru (localhost ili preko SSH tunela)"
                     >
                       🌐 Otvori u browseru
                     </button>
@@ -3208,7 +3222,7 @@ export default function AdminTesting(){
                     URL: <code className="bg-white px-1 rounded">{testData.email.testService.baseUrl.replace('/api/v1', '')}</code>
                   </p>
                   <p className="text-[10px] text-indigo-600 mt-1">
-                    💡 <strong>Na Render-u:</strong> Ovaj URL je interni i neće raditi direktno iz browsera. Koristi SSH tunnel ili Render Dashboard → Mailpit Service → View Logs → Web UI link.
+                    💡 <strong>Na Render-u:</strong> Pokreni <code className="bg-indigo-100 px-1 rounded">.\mailpit-tunnel.ps1</code> pa otvori <code className="bg-indigo-100 px-1 rounded">http://localhost:8025</code>. Vidi MAILPIT-RENDER-SETUP.md.
                   </p>
                 </div>
               )}

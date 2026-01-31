@@ -129,6 +129,9 @@ taskdef*.json
 container*.json
 netcfg.json
 
+# ── Mailpit tunnel config (sadrži Render service ID)
+mailpit-tunnel.config.ps1
+
 # ── Seed override files (mogu sadržavati test data)
 seed-override.json
 subcategories-override.json

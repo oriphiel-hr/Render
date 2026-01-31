@@ -158,26 +158,38 @@ U Render Dashboard → Mailpit Service → Logs:
 
 Mailpit Web UI nije javno dostupan, ali možeš koristiti **SSH Tunnel**:
 
-### 4.1. Render SSH Access
+### 4.1. Jednostavno: mailpit-tunnel.ps1 (Windows)
 
-1. Render Dashboard → Mailpit Service → SSH
-2. Kopiraj SSH komandu (npr. `ssh ...`)
-3. Pokreni u terminalu
+Projekt uključuje skriptu koja automatski pokreće tunel i otvara browser:
 
-### 4.2. SSH Tunnel
+```powershell
+# 1. Prvi put - konfiguriraj Render SSH komandu:
+#    Kopiraj mailpit-tunnel.config.example.ps1 -> mailpit-tunnel.config.ps1
+#    Uredi i zalijepi svoju SSH komandu iz Render Dashboard (Connect → SSH)
 
-```bash
-# U jednom terminalu - kreiraj tunnel
-ssh -L 8025:localhost:8025 <render-ssh-command>
-
-# U drugom terminalu - otvori browser
-# Web UI će biti dostupan na http://localhost:8025
+# 2. Pokreni:
+.\mailpit-tunnel.ps1
 ```
 
-**ILI** koristi Render CLI:
-```bash
-render ssh --service mailpit --port 8025:8025
+Skripta će otvoriti novi prozor s SSH tunelom i Mailpit Web UI u browseru.
+
+### 4.2. Ručno: Render SSH Access
+
+1. Render Dashboard → Mailpit Service → Connect → SSH tab
+2. Kopiraj SSH komandu (npr. `ssh srv-xxxxx@ssh.frankfurt.render.com`)
+3. Pokreni s port forwarding:
+
+```powershell
+# Windows (PowerShell)
+ssh -L 8025:localhost:8025 -N srv-xxxxx@ssh.frankfurt.render.com
 ```
+
+```bash
+# Linux/Mac
+ssh -L 8025:localhost:8025 -N srv-xxxxx@ssh.frankfurt.render.com
+```
+
+4. Otvori http://localhost:8025 u browseru
 
 ## 📊 Korak 5: Alternativa - Render Background Worker
 
