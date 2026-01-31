@@ -75,9 +75,10 @@ if (-not $sshHost) {
 }
 
 # Kreiraj SSH komandu s port forwarding
-# -L 8025:localhost:8025 = lokalni port 8025 -> remote localhost:8025
+# Mailpit na Renderu sluša na portu 10000 (Render PORT env)
+# -L 8025:localhost:10000 = lokalni 8025 -> remote Mailpit:10000
 # -N = ne izvršavaj remote komandu (samo tunel)
-$tunnelCmd = "ssh -L 8025:localhost:8025 -N $sshHost"
+$tunnelCmd = "ssh -L 8025:localhost:10000 -N $sshHost"
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green

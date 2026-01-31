@@ -31,7 +31,7 @@
 ```json
 {
   "mailpit": {
-    "baseUrl": "http://localhost:8025/api/v1",  // Ili http://mailpit:8025/api/v1 na Render-u
+    "baseUrl": "http://localhost:8025/api/v1",  // Ili http://mailpit:10000/api/v1 na Render-u
     "email": "test.client@uslugar.hr"  // Bilo koja email adresa
   }
 }

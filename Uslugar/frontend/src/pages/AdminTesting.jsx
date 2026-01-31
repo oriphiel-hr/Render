@@ -3231,7 +3231,7 @@ export default function AdminTesting(){
                 <br />
                 • <strong>Lokalno:</strong> <code className="bg-gray-100 px-1 rounded">http://localhost:8025/api/v1</code> (pokreni: <code className="bg-gray-100 px-1 rounded">docker run -d -p 8025:8025 -p 1025:1025 axllent/mailpit</code>)
                 <br />
-                • <strong>Render Private Service:</strong> <code className="bg-gray-100 px-1 rounded">http://mailpit:8025/api/v1</code> (ili <code className="bg-gray-100 px-1 rounded">http://uslugar-mailpit:8025/api/v1</code> - ovisno o imenu servisa)
+                • <strong>Render Private Service:</strong> <code className="bg-gray-100 px-1 rounded">http://mailpit:10000/api/v1</code> (ili <code className="bg-gray-100 px-1 rounded">http://uslugar-mailpit:10000/api/v1</code> - ovisno o imenu servisa)
                 <br />
                 <br />
                 <strong>⚠️ Ne vidiš Mailpit servis na Renderu?</strong>
@@ -3243,7 +3243,7 @@ export default function AdminTesting(){
                 <br />
                 • Ako vidiš "✅ Mailpit dostupan" s <code className="bg-gray-100 px-1 rounded">localhost</code> → Mailpit je pokrenut lokalno
                 <br />
-                • Ako vidiš "✅ Mailpit dostupan" s <code className="bg-gray-100 px-1 rounded">mailpit:8025</code> → Mailpit je na Renderu
+                • Ako vidiš "✅ Mailpit dostupan" s <code className="bg-gray-100 px-1 rounded">mailpit:10000</code> → Mailpit je na Renderu
                 <br />
                 • Ako vidiš "❌ Mailpit nedostupan" → Mailpit nije pokrenut ili URL je kriv
               </p>

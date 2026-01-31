@@ -80,13 +80,15 @@ Mailpit pokrenut lokalno na tvom računalu.
 
 Nakon što se servis pokrene, Render će dodijeliti **internal URL**:
 ```
-http://mailpit:8025
+http://mailpit:10000
 ```
 
 **ILI** ako je ime servisa `uslugar-mailpit`:
 ```
-http://uslugar-mailpit:8025
+http://uslugar-mailpit:10000
 ```
+
+**Napomena:** Mailpit na Renderu koristi port **10000** (ne 8025) jer Render postavlja PORT=10000. To sprječava "500 5.5.2 Syntax error" u logovima (Render bi inače slao HTTP health check na SMTP port).
 
 **Važno:** 
 - Internal URL je dostupan **samo unutar Render network-a**
@@ -106,9 +108,9 @@ MAILPIT_SMTP_PORT=1025
 MAILPIT_SMTP_USER=test@uslugar.hr
 MAILPIT_SMTP_PASS=
 
-# Mailpit API URL (za dohvaćanje mailova)
-MAILPIT_API_URL=http://mailpit:8025/api/v1  # Ili http://uslugar-mailpit:8025/api/v1
-MAILPIT_WEB_URL=http://mailpit:8025  # Ili http://uslugar-mailpit:8025
+# Mailpit API URL (za dohvaćanje mailova) - port 10000 na Renderu!
+MAILPIT_API_URL=http://mailpit:10000/api/v1  # Ili http://uslugar-mailpit:10000/api/v1
+MAILPIT_WEB_URL=http://mailpit:10000  # Ili http://uslugar-mailpit:10000
 ```
 
 **Napomena:** 
@@ -119,7 +121,7 @@ MAILPIT_WEB_URL=http://mailpit:8025  # Ili http://uslugar-mailpit:8025
 
 U Admin Panelu → Testing → Test Podaci:
 
-- **Mailpit API URL:** `http://mailpit:8025/api/v1` (ili internal URL tvog servisa)
+- **Mailpit API URL:** `http://mailpit:10000/api/v1` (ili internal URL tvog servisa)
 
 **ILI** koristi environment varijablu:
 - Backend automatski koristi `MAILPIT_API_URL` ako je postavljen
@@ -136,7 +138,7 @@ SMTP Configuration:
   MAILPIT_SMTP_USER: SET (test@uslugar.hr)
   MAILPIT_SMTP_PORT: 1025
 [SMTP] Using Mailpit for email testing (no auth required)
-[MAILPIT] Base URL postavljen: http://mailpit:8025/api/v1
+[MAILPIT] Base URL postavljen: http://mailpit:10000/api/v1
 ```
 
 ### 3.2. Testiraj Slanje Emaila
@@ -180,16 +182,16 @@ Skripta će otvoriti novi prozor s SSH tunelom i Mailpit Web UI u browseru.
 3. Pokreni s port forwarding:
 
 ```powershell
-# Windows (PowerShell)
-ssh -L 8025:localhost:8025 -N srv-xxxxx@ssh.frankfurt.render.com
+# Windows - Mailpit na Renderu koristi port 10000
+ssh -L 8025:localhost:10000 -N srv-xxxxx@ssh.frankfurt.render.com
 ```
 
 ```bash
 # Linux/Mac
-ssh -L 8025:localhost:8025 -N srv-xxxxx@ssh.frankfurt.render.com
+ssh -L 8025:localhost:10000 -N srv-xxxxx@ssh.frankfurt.render.com
 ```
 
-4. Otvori http://localhost:8025 u browseru
+4. Otvori http://localhost:8025 u browseru (tunel prosleđuje na mailpit:10000)
 
 ## 📊 Korak 5: Alternativa - Render Background Worker
 
@@ -236,7 +238,7 @@ Ako ne želiš plaćati dodatni servis, možeš pokrenuti Mailpit kao **Backgrou
 3. Provjeri internal URL - koristi ime servisa (npr. `mailpit`, ne `mailpit.onrender.com`)
 4. Provjeri environment varijable u backend servisu:
    ```
-   MAILPIT_API_URL=http://mailpit:8025/api/v1
+   MAILPIT_API_URL=http://mailpit:10000/api/v1
    MAILPIT_SMTP_HOST=mailpit
    ```
 
@@ -244,13 +246,19 @@ Ako ne želiš plaćati dodatni servis, možeš pokrenuti Mailpit kao **Backgrou
 
 **Rješenje:**
 1. Provjeri da Mailpit servis radi (Render Dashboard → Logs)
-2. Provjeri da Mailpit sluša na portu 8025 (provjeri logove)
-3. Provjeri da koristiš **internal URL** (npr. `http://mailpit:8025`, ne `http://mailpit.onrender.com:8025`)
+2. Provjeri da Mailpit sluša na portu 10000 (provjeri logove - trebao bi vidjeti "[http] starting on [::]:10000")
+3. Provjeri da koristiš **internal URL** (npr. `http://mailpit:10000`, ne `http://mailpit.onrender.com`)
 
 ### Problem: Ne mogu pristupiti Web UI
 
 **Rješenje:**
 - Web UI nije javno dostupan - koristi SSH tunnel (vidi Korak 4)
+
+### Problem: "500 5.5.2 Syntax error, command unrecognized" u Mailpit logovima
+
+**Uzrok:** Render je slao HTTP health check na SMTP port (1025). SMTP očekuje naredbe poput EHLO, ne HTTP GET.
+
+**Rješenje:** Dockerfile je ažuriran da Mailpit sluša HTTP na portu 10000 (MP_UI_BIND_ADDR). Redeployaj Mailpit servis.
 
 ## 📚 Dodatni Resursi
 

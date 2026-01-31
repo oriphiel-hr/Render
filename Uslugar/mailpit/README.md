@@ -41,8 +41,8 @@ MAILPIT_SMTP_USER=test@uslugar.hr
 MAILPIT_SMTP_PASS=
 
 # Mailpit API Configuration (za dohvaćanje mailova)
-MAILPIT_API_URL=http://mailpit:8025/api/v1
-MAILPIT_WEB_URL=http://mailpit:8025
+MAILPIT_API_URL=http://mailpit:10000/api/v1
+MAILPIT_WEB_URL=http://mailpit:10000
 ```
 
 **Napomena:** 
@@ -54,12 +54,12 @@ MAILPIT_WEB_URL=http://mailpit:8025
 Nakon deploy-a, provjeri backend logove:
 ```
 [SMTP] Using Mailpit for email testing (no auth required)
-[MAILPIT] Base URL postavljen: http://mailpit:8025/api/v1
+[MAILPIT] Base URL postavljen: http://mailpit:10000/api/v1
 ```
 
 ## Portovi
 
-- **8025** - Web UI i REST API
+- **10000** - Web UI i REST API (na Renderu; lokalno docker koristi 8025)
 - **1025** - SMTP server
 
 ## Pristup Web UI
@@ -69,7 +69,7 @@ Mailpit Web UI nije javno dostupan, ali možeš koristiti SSH tunnel:
 ```bash
 # Render Dashboard → Mailpit Service → SSH
 # Kopiraj SSH komandu i pokreni:
-ssh -L 8025:localhost:8025 <render-ssh-command>
+ssh -L 8025:localhost:10000 <render-ssh-command>
 
 # Zatim otvori browser: http://localhost:8025
 ```
@@ -79,7 +79,7 @@ ssh -L 8025:localhost:8025 <render-ssh-command>
 ### Backend ne može pristupiti Mailpit-u
 
 1. Provjeri da su oba servisa u **istom projektu** na Render-u
-2. Provjeri da koristiš **internal URL** (`http://mailpit:8025`, ne `http://mailpit.onrender.com:8025`)
+2. Provjeri da koristiš **internal URL** (`http://mailpit:10000`, ne `http://mailpit.onrender.com`)
 3. Provjeri da je ime servisa ispravno u environment varijablama
 
 ### Mailpit se ne pokreće

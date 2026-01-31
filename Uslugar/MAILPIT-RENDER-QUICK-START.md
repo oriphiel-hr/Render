@@ -42,7 +42,7 @@
   1. Klonirati repo
   2. Build-ati Docker image iz `mailpit/Dockerfile`
   3. Pokrenuti Mailpit servis
-  4. Dodijeliti internal URL: `http://mailpit:8025`
+  4. Dodijeliti internal URL: `http://mailpit:10000`
 
 **Vrijeme:** ~2-5 minuta
 
@@ -62,8 +62,8 @@ MAILPIT_SMTP_USER=test@uslugar.hr
 MAILPIT_SMTP_PASS=
 
 # Mailpit API Configuration (za dohvaćanje mailova)
-MAILPIT_API_URL=http://mailpit:8025/api/v1
-MAILPIT_WEB_URL=http://mailpit:8025
+MAILPIT_API_URL=http://mailpit:10000/api/v1
+MAILPIT_WEB_URL=http://mailpit:10000
 ```
 
 **Napomena:** 
@@ -79,14 +79,14 @@ MAILPIT_WEB_URL=http://mailpit:8025
 1. **Admin Panel** → **Testing** → **Test Podaci**
 2. **Mailpit API URL:** Promijeni na:
    ```
-   http://mailpit:8025/api/v1
+   http://mailpit:10000/api/v1
    ```
    (umjesto `http://localhost:8025/api/v1`)
 
 3. **Klikni "Provjeri"** → Trebao bi vidjeti:
    ```
    ✅ Mailpit dostupan
-   🔗 Provjeravam: http://mailpit:8025/api/v1
+   🔗 Provjeravam: http://mailpit:10000/api/v1
    ```
 
 ---
@@ -98,7 +98,7 @@ MAILPIT_WEB_URL=http://mailpit:8025
    - Trebao bi vidjeti:
      ```
      [SMTP] Using Mailpit for email testing (no auth required)
-     [MAILPIT] Base URL postavljen: http://mailpit:8025/api/v1
+     [MAILPIT] Base URL postavljen: http://mailpit:10000/api/v1
      ```
 
 2. **Mailpit Logs:**
@@ -117,7 +117,7 @@ MAILPIT_WEB_URL=http://mailpit:8025
 
 **Rješenje:**
 1. Provjeri da su oba servisa u **istom projektu** na Render-u
-2. Provjeri da koristiš **internal URL** (`http://mailpit:8025`, ne `http://mailpit.onrender.com:8025`)
+2. Provjeri da koristiš **internal URL** (`http://mailpit:10000`, ne `http://mailpit.onrender.com`)
 3. Provjeri da je ime servisa ispravno u environment varijablama
 4. Provjeri da je Mailpit servis **pokrenut** (Render Dashboard → Mailpit Service → Status)
 
@@ -132,7 +132,7 @@ MAILPIT_WEB_URL=http://mailpit:8025
 ### Problem: "Mailpit nedostupan" u Admin Panelu
 
 **Rješenje:**
-1. Provjeri da je URL u Admin Panelu: `http://mailpit:8025/api/v1` (ne `localhost`)
+1. Provjeri da je URL u Admin Panelu: `http://mailpit:10000/api/v1` (ne `localhost`)
 2. Provjeri da je Mailpit servis pokrenut
 3. Provjeri backend logove za greške
 
@@ -140,7 +140,7 @@ MAILPIT_WEB_URL=http://mailpit:8025
 
 ## 📊 Portovi
 
-- **8025** - Web UI i REST API
+- **10000** - Web UI i REST API (na Renderu; lokalno je 8025)
 - **1025** - SMTP server
 
 ---
@@ -153,9 +153,9 @@ Mailpit Web UI nije javno dostupan, ali možeš koristiti **SSH Tunnel**:
 2. Kopiraj SSH komandu
 3. Pokreni u terminalu:
    ```bash
-   ssh -L 8025:localhost:8025 <render-ssh-command>
+   ssh -L 8025:localhost:10000 <render-ssh-command>
    ```
-4. Otvori browser: http://localhost:8025
+4. Otvori browser: http://localhost:8025 (tunel prosleđuje na mailpit:10000)
 
 ---
 
