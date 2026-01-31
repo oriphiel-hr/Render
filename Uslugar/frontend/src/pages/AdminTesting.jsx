@@ -1225,15 +1225,20 @@ export default function AdminTesting(){
     }
   }
 
-  // Učitaj rezultate testova
+  // Učitaj rezultate testova (merge s postojećim rezultatima)
   const loadTestResults = async () => {
     setLoadingTestResults(true)
     try {
       const res = await api.get('/testing/test-results')
-      setTestResults(res.data)
+      // Merge s postojećim rezultatima umjesto prepisivanja
+      setTestResults(prev => ({
+        ...prev,
+        ...res.data
+      }))
     } catch (e) {
       console.error('[TEST RESULTS] Error loading test results:', e)
-      setTestResults({ exists: false, error: e?.response?.data?.error || e?.message })
+      // Ne prepisuj postojeće rezultate ako dođe do greške
+      // setTestResults({ exists: false, error: e?.response?.data?.error || e?.message })
     } finally {
       setLoadingTestResults(false)
     }
@@ -2485,14 +2490,6 @@ export default function AdminTesting(){
                                     </>
                                   )}
                                   {!['18.1', '18.2', '18.3', '18.4', '21.1', '21.2', '21.3', '21.4', '22.1', '22.2', '22.3', '22.4', '23.1', '23.2', '23.3', '23.4', '24.1', '24.2', '24.3', '24.4', '25.1', '25.2', '25.3', '25.4', '26.1', '26.2', '26.3', '26.4', '27.1', '27.2', '27.3', '27.4', '28.1', '28.2', '28.3', '28.4', '29.1', '29.2', '29.3', '29.4', '30.1', '30.2', '30.3', '30.4', '31.1', '31.2', '31.3', '31.4'].includes(test.id) && (
-                                    <>
-                                      <li>1. Prijavi se s odgovarajućom ulogom za ovaj test</li>
-                                      <li>2. Navigiraj na relevantnu stranicu (vidi naziv testa)</li>
-                                      <li>3. Izvrši akcije prema opisu testa</li>
-                                      <li>4. ✅ Provjeri: Rezultati su kao što se očekuje (vidi opis testa)</li>
-                                      <li>5. Ako je greška: Provjeri console za error poruke (F12 → Console)</li>
-                                    </>
-                                  )}
                                     <>
                                       <li>1. Prijavi se s odgovarajućom ulogom za ovaj test</li>
                                       <li>2. Navigiraj na relevantnu stranicu (vidi naziv testa)</li>

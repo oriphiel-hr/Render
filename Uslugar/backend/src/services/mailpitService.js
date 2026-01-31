@@ -209,16 +209,108 @@ class MailpitService {
     try {
       console.log(`[MAILPIT] Kreiram screenshot maila: ${messageId}`);
 
+      // Dohvati email detalje i HTML preko API-ja (pouzdanije od web UI-ja)
+      const emailDetails = await this.getEmailDetails(messageId);
+      if (!emailDetails) {
+        throw new Error(`Email ${messageId} nije pronađen`);
+      }
+
+      const htmlContent = await this.getEmailHTML(messageId);
+      let plainContent = null;
+      if (!htmlContent) {
+        // Ako nema HTML, pokušaj plain text
+        plainContent = await this.getEmailPlain(messageId);
+        if (!plainContent) {
+          throw new Error(`Email ${messageId} nema HTML ni plain text sadržaj`);
+        }
+      }
+
       browser = await chromium.launch({ headless: true });
       const context = await browser.newContext();
       const page = await context.newPage();
 
-      // Navigiraj na Mailpit web UI
-      const mailpitUrl = `${this.webUrl}/message/${messageId}`;
-      await page.goto(mailpitUrl, { waitUntil: 'networkidle', timeout: 15000 });
+      // Kreiraj HTML stranicu s email sadržajem
+      const emailSubject = emailDetails.Subject || emailDetails.subject || 'N/A';
+      const emailFrom = emailDetails.From?.Address || emailDetails.From?.email || emailDetails.from_email || 'N/A';
+      const emailTo = emailDetails.To?.[0]?.Address || emailDetails.To?.[0]?.email || emailDetails.to_email || 'N/A';
+      const emailDate = emailDetails.Date || emailDetails.date || new Date().toISOString();
 
-      // Čekaj da se mail učita (optimizirano)
-      await page.waitForTimeout(1000); // Smanjeno s 2 na 1 sekundu
+      // Odredi body sadržaj
+      let emailBodyContent = '';
+      if (htmlContent) {
+        emailBodyContent = htmlContent;
+      } else if (plainContent) {
+        emailBodyContent = `<pre style="white-space: pre-wrap; font-family: monospace;">${plainContent}</pre>`;
+      } else {
+        emailBodyContent = '<p>No content available</p>';
+      }
+
+      const emailHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>${emailSubject}</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              max-width: 800px;
+              margin: 0 auto;
+              padding: 20px;
+              background: #f5f5f5;
+            }
+            .email-container {
+              background: white;
+              border-radius: 8px;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+              padding: 20px;
+            }
+            .email-header {
+              border-bottom: 1px solid #e0e0e0;
+              padding-bottom: 15px;
+              margin-bottom: 20px;
+            }
+            .email-header h2 {
+              margin: 0 0 10px 0;
+              color: #333;
+            }
+            .email-meta {
+              color: #666;
+              font-size: 14px;
+              line-height: 1.6;
+            }
+            .email-meta strong {
+              color: #333;
+            }
+            .email-body {
+              margin-top: 20px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="email-container">
+            <div class="email-header">
+              <h2>${emailSubject}</h2>
+              <div class="email-meta">
+                <div><strong>From:</strong> ${emailFrom}</div>
+                <div><strong>To:</strong> ${emailTo}</div>
+                <div><strong>Date:</strong> ${emailDate}</div>
+              </div>
+            </div>
+            <div class="email-body">
+              ${emailBodyContent}
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      // Učitaj HTML direktno u Playwright (bez navigacije na web UI)
+      await page.setContent(emailHTML, { waitUntil: 'networkidle' });
+      console.log(`[MAILPIT] Email HTML učitano u Playwright`);
+
+      // Čekaj da se renderira
+      await page.waitForTimeout(500);
 
       const timestamp = Date.now();
       const filename = `${testId}_email_${messageId}_${timestamp}.png`;
