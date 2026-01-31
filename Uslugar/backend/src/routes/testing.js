@@ -106,7 +106,9 @@ r.get('/checkpoints', async (req, res, next) => {
  */
 r.get('/mailpit/status', async (req, res, next) => {
   try {
-    const baseUrl = req.query.baseUrl || process.env.MAILPIT_API_URL || 'http://localhost:8025/api/v1';
+    const smtpHost = process.env.MAILPIT_SMTP_HOST;
+    const defaultBase = smtpHost ? `http://${smtpHost}:10000/api/v1` : 'http://localhost:8025/api/v1';
+    const baseUrl = req.query.baseUrl || process.env.MAILPIT_API_URL || defaultBase;
     
     // Postavi base URL u servis
     mailpitService.setBaseUrl(baseUrl);
@@ -126,7 +128,7 @@ r.get('/mailpit/status', async (req, res, next) => {
     res.json({
       success: false,
       connected: false,
-      baseUrl: req.query.baseUrl || process.env.MAILPIT_API_URL || 'http://localhost:8025/api/v1',
+      baseUrl: req.query.baseUrl || process.env.MAILPIT_API_URL || (process.env.MAILPIT_SMTP_HOST ? `http://${process.env.MAILPIT_SMTP_HOST}:10000/api/v1` : 'http://localhost:8025/api/v1'),
       message: `Mailpit servis nije dostupan: ${error.message}`,
       error: error.message
     });
@@ -219,7 +221,7 @@ r.get('/test-data', async (req, res, next) => {
       email: {
         testService: {
           type: 'mailpit',
-          baseUrl: process.env.MAILPIT_API_URL || 'http://localhost:8025/api/v1'
+          baseUrl: process.env.MAILPIT_API_URL || (process.env.MAILPIT_SMTP_HOST ? `http://${process.env.MAILPIT_SMTP_HOST}:10000/api/v1` : 'http://localhost:8025/api/v1')
         },
         linkExtraction: {
           strategies: [
@@ -548,8 +550,11 @@ r.post('/run-single', async (req, res, next) => {
       console.log('[TEST] Korak 2: Dohvaćam mailove iz Mailpit-a...');
       results.logs.push('📧 Čekam da mail stigne u Mailpit...');
       
-      // Postavi Mailpit base URL ako je proslijeđen u testData
-      const mailpitBaseUrl = req.body.mailpitBaseUrl || process.env.MAILPIT_API_URL;
+      // Postavi Mailpit base URL - testData, env, ili smart default (10000 za Render, 8025 lokalno)
+      const defaultMailpitUrl = process.env.MAILPIT_SMTP_HOST
+        ? `http://${process.env.MAILPIT_SMTP_HOST}:10000/api/v1`
+        : 'http://localhost:8025/api/v1';
+      const mailpitBaseUrl = req.body.mailpitBaseUrl || process.env.MAILPIT_API_URL || defaultMailpitUrl;
       if (mailpitBaseUrl) {
         mailpitService.setBaseUrl(mailpitBaseUrl);
         results.logs.push(`✓ Mailpit base URL postavljen: ${mailpitBaseUrl}`);

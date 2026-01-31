@@ -3247,6 +3247,66 @@ export default function AdminTesting(){
                 <br />
                 • Ako vidiš "❌ Mailpit nedostupan" → Mailpit nije pokrenut ili URL je kriv
               </p>
+
+              {/* SSH Tunnel upute - Render */}
+              <details className="mt-4 border border-amber-200 rounded-lg bg-amber-50/50">
+                <summary className="px-4 py-3 cursor-pointer font-medium text-amber-900 hover:bg-amber-100 rounded-lg">
+                  🔐 SSH Tunnel – skripte i upute za pristup Mailpitu na Renderu
+                </summary>
+                <div className="px-4 pb-4 pt-2 space-y-4">
+                  <p className="text-sm text-gray-700">
+                    Mailpit na Renderu je interni servis – nije dostupan direktno u browseru. SSH tunel prosleđuje <code className="bg-amber-100 px-1 rounded">localhost:8025</code> na Mailpit na Renderu.
+                  </p>
+
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-gray-800">1. Datoteka <code className="bg-amber-100 px-1 rounded">mailpit-tunnel.config.ps1</code> (u rootu projekta):</p>
+                    <pre className="bg-gray-900 text-gray-100 p-4 rounded text-xs overflow-x-auto select-all">{`# Mailpit Tunnel - Konfiguracija
+$RENDER_SSH_COMMAND = "ssh srv-d5s6p4718n1s73c7q8p0@ssh.frankfurt.render.com"`}</pre>
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-gray-800">2. Skripta <code className="bg-amber-100 px-1 rounded">mailpit-tunnel.ps1</code> (u rootu projekta):</p>
+                    <pre className="bg-gray-900 text-gray-100 p-4 rounded text-xs overflow-x-auto max-h-80 overflow-y-auto select-all whitespace-pre">{`#Requires -Version 5.1
+param([switch]$NoBrowser)
+
+$RENDER_SSH_COMMAND = "ssh srv-XXXXX@ssh.frankfurt.render.com"
+$configPath = Join-Path $PSScriptRoot "mailpit-tunnel.config.ps1"
+if (Test-Path $configPath) { . $configPath }
+
+if ($RENDER_SSH_COMMAND -match "srv-XXXXX") {
+    Write-Host "KONFIGURACIJA POTREBNA" -ForegroundColor Yellow
+    Write-Host "Kreiraj mailpit-tunnel.config.ps1 s: \$RENDER_SSH_COMMAND = \"ssh srv-xxx@ssh.frankfurt.render.com\"" -ForegroundColor Cyan
+    exit 1
+}
+
+$sshParts = $RENDER_SSH_COMMAND.Trim() -split "\\s+", 2
+$sshHost = if ($sshParts[0] -eq "ssh") { $sshParts[1] } else { $sshParts[0] }
+$tunnelCmd = "ssh -L 8025:localhost:10000 -N $sshHost"
+
+Write-Host "Pokrećem SSH tunel u novom prozoru..." -ForegroundColor Green
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "Write-Host 'SSH Tunnel aktivan - zatvori ovaj prozor da prekineš tunel' -ForegroundColor Green; $tunnelCmd"
+Start-Sleep -Seconds 3
+if (-not $NoBrowser) { Start-Process "http://localhost:8025" }
+Write-Host "Tunel radi! Otvori http://localhost:8025" -ForegroundColor Green`}</pre>
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-gray-800">3. Kako pokrenuti:</p>
+                    <ol className="list-decimal list-inside text-sm text-gray-700 space-y-1">
+                      <li>Otvori PowerShell</li>
+                      <li>Navigiraj u root projekta: <code className="bg-amber-100 px-1 rounded">cd c:\GIT_PROJEKTI\Render\Uslugar</code></li>
+                      <li>Pokreni skriptu: <code className="bg-amber-100 px-1 rounded">.\mailpit-tunnel.ps1</code></li>
+                      <li>Prvi put: upiši <code className="bg-amber-100 px-1 rounded">yes</code> kad SSH pita za fingerprint</li>
+                      <li>Ostavi prozor s tunelom otvoren – zatvoriš ga kad završiš</li>
+                      <li>Browser otvori <code className="bg-amber-100 px-1 rounded">http://localhost:8025</code> ili klikni "Otvori u browseru" gore</li>
+                    </ol>
+                  </div>
+
+                  <p className="text-xs text-gray-600">
+                    💡 Puna verzija skripte je u <code className="bg-amber-100 px-1 rounded">mailpit-tunnel.ps1</code>. Config datoteka override-a default SSH komandu.
+                  </p>
+                </div>
+              </details>
             </div>
             
             {/* Link Extraction Strategije */}

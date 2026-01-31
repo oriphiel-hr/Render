@@ -219,15 +219,15 @@ MAILPIT_WEB_URL=http://localhost:8025
 **Općenito (ako je Mailpit na drugom serveru):**
 ```env
 # Mailpit API URL (ako je na drugom serveru)
-MAILPIT_API_URL=http://your-mailpit-server:8025/api/v1
-MAILPIT_WEB_URL=http://your-mailpit-server:8025
+MAILPIT_API_URL=http://your-mailpit-server:10000/api/v1
+MAILPIT_WEB_URL=http://your-mailpit-server:10000
 ```
 
 **Za Render Private Service:**
 ```env
 # Koristi internal URL (ime servisa)
-MAILPIT_API_URL=http://mailpit:8025/api/v1
-MAILPIT_WEB_URL=http://mailpit:8025
+MAILPIT_API_URL=http://mailpit:10000/api/v1
+MAILPIT_WEB_URL=http://mailpit:10000
 MAILPIT_SMTP_HOST=mailpit
 MAILPIT_SMTP_PORT=1025
 ```

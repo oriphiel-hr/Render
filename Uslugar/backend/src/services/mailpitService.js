@@ -16,9 +16,14 @@ const SCREENSHOTS_DIR = path.join(__dirname, '..', '..', 'test-screenshots');
 
 class MailpitService {
   constructor() {
-    // Mailpit default URL - može se override-ati kroz environment varijablu ili setBaseUrl
-    this.baseUrl = process.env.MAILPIT_API_URL || 'http://localhost:8025/api/v1';
-    this.webUrl = process.env.MAILPIT_WEB_URL || 'http://localhost:8025';
+    // Mailpit default URL - Render koristi port 10000, lokalno 8025
+    const smtpHost = process.env.MAILPIT_SMTP_HOST;
+    const defaultBase = smtpHost
+      ? `http://${smtpHost}:10000/api/v1`   // Render: port 10000
+      : 'http://localhost:8025/api/v1';     // Lokalno: port 8025
+    const defaultWeb = process.env.MAILPIT_WEB_URL || (smtpHost ? `http://${smtpHost}:10000` : 'http://localhost:8025');
+    this.baseUrl = process.env.MAILPIT_API_URL || defaultBase;
+    this.webUrl = defaultWeb;
     this._ensureScreenshotsDir();
   }
 
