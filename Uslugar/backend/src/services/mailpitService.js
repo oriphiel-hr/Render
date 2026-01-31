@@ -353,9 +353,23 @@ class MailpitService {
 
       try {
         await page.goto(linkToClick, { waitUntil: 'networkidle', timeout: 15000 });
+        
+        // Čekaj da se stranica učita i verifikacija završi (ako je verify link)
+        if (linkToClick.includes('verify') || linkToClick.includes('token')) {
+          console.log('[MAILPIT] Čekam da se verifikacija završi...');
+          await page.waitForTimeout(3000); // Čekaj 3 sekunde da se API poziv završi
+          
+          // Provjeri da li je verifikacija uspješna (traži success poruku ili redirect)
+          try {
+            await page.waitForSelector('text=/verifikacij|uspješn|success|verified/i', { timeout: 5000 });
+            console.log('[MAILPIT] Verifikacija uspješna - pronađena success poruka');
+          } catch (e) {
+            console.log('[MAILPIT] Nema success poruke (možda je redirect ili drugačiji format)');
+          }
+        }
       } catch (e) {
         // Ako link ne radi, nastavi
-        console.warn(`[MAILPIT] Link nije dostupan: ${linkToClick}`);
+        console.warn(`[MAILPIT] Link nije dostupan: ${linkToClick}`, e.message);
       }
 
       const timestamp = Date.now();

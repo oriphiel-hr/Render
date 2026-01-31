@@ -611,8 +611,23 @@ r.post('/run-single', async (req, res, next) => {
     }
 
     // 3. Rollback na checkpoint nakon testa (bez obzira na uspjeh)
+    // VAŽNO: Rollback se izvršava NAKON što se email obradi i link klikne
+    // jer verifikacija zahtijeva da user i token postoje u bazi
+    // Dodatno čekanje da se verifikacija završi prije rollbacka
     if (checkpointId) {
       try {
+        // Ako je test uključivao verifikacijski link, čekaj malo da se verifikacija završi
+        if (testResult?.success && results.emailScreenshots?.length > 0) {
+          const hasVerifyLink = results.emailScreenshots.some(e => 
+            e.clickedLink && (e.clickedLink.includes('verify') || e.clickedLink.includes('token'))
+          );
+          if (hasVerifyLink) {
+            console.log('[TEST] Čekam da se verifikacija završi prije rollbacka...');
+            results.logs.push('⏳ Čekam da se verifikacija završi prije rollbacka...');
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Čekaj 2 sekunde
+          }
+        }
+        
         results.logs.push(`⏪ Vraćam bazu na checkpoint: ${checkpointId}`);
         await testCheckpointService.rollback(checkpointId);
         results.logs.push(`✓ Rollback uspješan - baza vraćena na početno stanje`);
