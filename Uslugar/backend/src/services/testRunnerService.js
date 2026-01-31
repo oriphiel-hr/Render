@@ -128,7 +128,7 @@ class TestRunnerService {
       logs.push(`📋 Pronađeni input-i/textarea: ${allInputs}`);
       
       // Pokušaj pronaći i kliknuti na link/gumb za registraciju ako forma nije vidljiva
-      if (allInputs.length === 0) {
+      if (allInputs === 0) {
         logs.push('⚠️ Nema input polja - pokušavam pronaći link/gumb za registraciju...');
         
         // Pokušaj kliknuti na link "Registracija" ili "Sign up"
@@ -305,54 +305,19 @@ class TestRunnerService {
         }
       }
       
-      // Loguj sve inpute
-      allInputs.forEach((inp, idx) => {
-        logs.push(`  ${idx}: ${inp.tag} type=${inp.type}, name=${inp.name || 'N/A'}, id=${inp.id || 'N/A'}, placeholder=${inp.placeholder || 'N/A'}, visible=${inp.visible}, display=${inp.display}`);
-        if (!inp.visible) {
-          logs.push(`    ⚠️ Input ${idx} nije vidljiv!`);
-        }
+      // Optimizirano - samo provjeri ima li email inputa (bez detaljnog logiranja)
+      const hasEmailInput = await page.evaluate(() => {
+        return document.querySelector('input[type="email"], input[name="email"], input[name*="email" i]') !== null;
       });
+      if (!hasEmailInput && allInputs > 0) {
+        logs.push('⚠ Email input nije pronađen. Dostupni inputi:');
+      }
       
-      // Debug: Pronađi sve elemente koji sadrže "email" u bilo kojem atributu
-      const emailRelated = await page.evaluate(() => {
-        const all = document.querySelectorAll('input, label, div, span');
-        return Array.from(all)
-          .filter(el => {
-            const text = (el.textContent || '').toLowerCase();
-            const html = (el.outerHTML || '').toLowerCase();
-            return text.includes('email') || text.includes('mail') || 
-                   html.includes('email') || html.includes('mail') ||
-                   (el.id && el.id.toLowerCase().includes('email')) ||
-                   (el.className && el.className.toLowerCase().includes('email'));
-          })
-          .slice(0, 10) // Prvih 10
-          .map(el => ({
-            tag: el.tagName.toLowerCase(),
-            id: el.id,
-            className: el.className,
-            text: (el.textContent || '').substring(0, 50),
-            html: el.outerHTML.substring(0, 200)
-          }));
+      // Provjeri forme (optimizirano)
+      const formsCount = await page.evaluate(() => {
+        return document.querySelectorAll('form').length;
       });
-      logs.push(`📧 Elementi povezani s email-om: ${emailRelated.length}`);
-      emailRelated.forEach((el, idx) => {
-        logs.push(`  ${idx}: ${el.tag} id=${el.id || 'N/A'}, class=${el.className || 'N/A'}, text=${el.text}`);
-      });
-      
-      // Debug: Pronađi sve forme
-      const forms = await page.evaluate(() => {
-        const forms = document.querySelectorAll('form');
-        return Array.from(forms).map(f => ({
-          id: f.id,
-          action: f.action,
-          method: f.method,
-          inputs: f.querySelectorAll('input, textarea').length
-        }));
-      });
-      logs.push(`📋 Pronađene forme: ${forms.length}`);
-      forms.forEach((f, idx) => {
-        logs.push(`  Form ${idx}: id=${f.id}, action=${f.action}, inputs=${f.inputs}`);
-      });
+      logs.push(`📋 Pronađene forme: ${formsCount}`);
 
       // Pokušaj s getByLabelText pristupom (najbolji za React Hook Form)
       try {
@@ -400,10 +365,7 @@ class TestRunnerService {
       }
 
       if (!emailFound) {
-        logs.push(`❌ Email input nije pronađen. Dostupni inputi:`);
-        allInputs.forEach(inp => {
-          logs.push(`  - ${inp.tag} type=${inp.type}, name=${inp.name}, id=${inp.id}, placeholder=${inp.placeholder}`);
-        });
+        logs.push(`❌ Email input nije pronađen`);
         throw new Error(`Email field not found with any selector`);
       }
 
