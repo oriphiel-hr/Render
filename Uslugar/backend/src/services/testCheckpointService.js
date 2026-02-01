@@ -306,11 +306,11 @@ class TestCheckpointService {
       const newRecords = fullRecords.filter(r => r.id && !beforeIds.has(r.id));
       if (newRecords.length > 0 || (checkpointSummary.tables?.[table]?.count ?? 0) !== afterTable.count) {
         const KEY_FIELDS = {
-          User: ['id', 'email', 'fullName', 'role', 'createdAt'],
-          Notification: ['id', 'type', 'title', 'createdAt'],
-          Job: ['id', 'title', 'status', 'createdAt'],
-          Offer: ['id', 'amount', 'status', 'createdAt'],
-          ProviderProfile: ['id', 'companyName', 'createdAt']
+          user: ['id', 'email', 'fullName', 'role', 'isVerified', 'createdAt'],
+          providerProfile: ['id', 'userId', 'companyName', 'createdAt'],
+          notification: ['id', 'userId', 'type', 'title', 'createdAt'],
+          job: ['id', 'title', 'status', 'clientId', 'createdAt'],
+          offer: ['id', 'jobId', 'providerId', 'amount', 'status', 'createdAt']
         };
         const fields = KEY_FIELDS[table] || ['id'];
         delta[table] = {
@@ -331,12 +331,31 @@ class TestCheckpointService {
   }
 
   _summarizeData(data, includeFullRecords = false) {
+    // camelCase ključevi – Prisma vraća user, providerProfile, itd.
     const KEY_FIELDS = {
-      User: ['id', 'email', 'fullName', 'role', 'createdAt'],
-      Notification: ['id', 'type', 'title', 'createdAt'],
-      Job: ['id', 'title', 'status', 'createdAt'],
-      Offer: ['id', 'amount', 'status', 'createdAt'],
-      ProviderProfile: ['id', 'companyName', 'createdAt']
+      user: ['id', 'email', 'fullName', 'role', 'isVerified', 'createdAt'],
+      providerProfile: ['id', 'userId', 'companyName', 'bio', 'ratingAvg', 'createdAt'],
+      supportTicket: ['id', 'userId', 'subject', 'status', 'createdAt'],
+      whiteLabel: ['id', 'userId', 'companyName', 'createdAt'],
+      category: ['id', 'name', 'slug', 'parentId'],
+      job: ['id', 'title', 'status', 'clientId', 'createdAt'],
+      offer: ['id', 'jobId', 'providerId', 'amount', 'status', 'createdAt'],
+      review: ['id', 'jobId', 'authorId', 'rating', 'createdAt'],
+      notification: ['id', 'userId', 'type', 'title', 'read', 'createdAt'],
+      chatRoom: ['id', 'jobId', 'createdAt'],
+      chatMessage: ['id', 'roomId', 'senderId', 'createdAt'],
+      subscription: ['id', 'userId', 'planId', 'status', 'createdAt'],
+      subscriptionPlan: ['id', 'name', 'price', 'interval'],
+      invoice: ['id', 'userId', 'amount', 'status', 'createdAt'],
+      legalStatus: ['id', 'name', 'slug'],
+      testPlan: ['id', 'name', 'createdAt'],
+      testItem: ['id', 'planId', 'title', 'testId', 'testType'],
+      documentationCategory: ['id', 'name', 'slug'],
+      documentationFeature: ['id', 'categoryId', 'title', 'slug'],
+      clientVerification: ['id', 'userId', 'status', 'createdAt'],
+      smsLog: ['id', 'userId', 'phone', 'createdAt'],
+      apiRequestLog: ['id', 'path', 'method', 'statusCode', 'createdAt'],
+      errorLog: ['id', 'userId', 'message', 'createdAt']
     };
     const tables = {};
     for (const [table, rows] of Object.entries(data)) {
