@@ -705,6 +705,8 @@ export default function AdminTesting(){
   const [checkpointName, setCheckpointName] = useState('')
   const [checkpointTables, setCheckpointTables] = useState('')
   const [expandedCheckpoint, setExpandedCheckpoint] = useState(null)
+  const [checkpointSummaries, setCheckpointSummaries] = useState({})
+  const [loadingCheckpointSummary, setLoadingCheckpointSummary] = useState(null)
   
   // Slušaj promjene hash-a u URL-u
   useEffect(() => {
@@ -1021,6 +1023,19 @@ export default function AdminTesting(){
     }
   }
 
+  const loadCheckpointSummary = async (checkpointId) => {
+    if (checkpointSummaries[checkpointId]) return
+    setLoadingCheckpointSummary(checkpointId)
+    try {
+      const res = await api.get(`/testing/checkpoint/${checkpointId}/summary`)
+      setCheckpointSummaries(prev => ({ ...prev, [checkpointId]: res.data }))
+    } catch (e) {
+      console.error('Greška pri učitavanju checkpoint summary:', e)
+    } finally {
+      setLoadingCheckpointSummary(null)
+    }
+  }
+
   const deleteCheckpoint = async (checkpointId) => {
     if (!window.confirm(`Sigurno obrisati checkpoint?`)) {
       return
@@ -1028,6 +1043,7 @@ export default function AdminTesting(){
 
     try {
       await api.delete(`/testing/checkpoint/${checkpointId}`)
+      setCheckpointSummaries(prev => { const n = {...prev}; delete n[checkpointId]; return n })
       alert('✅ Checkpoint obrisan')
       await loadCheckpoints()
     } catch (e) {
@@ -2612,6 +2628,9 @@ export default function AdminTesting(){
                                     console.log(`[TEST] Response:`, response?.data)
                                     
                                     if (response?.data) {
+                                      if (response.data.afterCheckpointId) {
+                                        loadCheckpoints()
+                                      }
                                       setTestResults(prev => {
                                         const updated = {
                                           ...prev,
@@ -2627,7 +2646,10 @@ export default function AdminTesting(){
                                             screenshots: response.data.screenshots || [],
                                             emailScreenshots: response.data.emailScreenshots || [],
                                             checkpointId: response.data.checkpointId || null,
-                                            checkpointCreated: response.data.checkpointCreated || false
+                                            checkpointCreated: response.data.checkpointCreated || false,
+                                            afterCheckpointId: response.data.afterCheckpointId || null,
+                                            checkpointSnapshot: response.data.checkpointSnapshot || null,
+                                            checkpointDelta: response.data.checkpointDelta || null
                                           }
                                         }
                                         // Spremi u localStorage
@@ -2708,9 +2730,15 @@ export default function AdminTesting(){
                               {testResults[test.id].checkpointCreated && testResults[test.id].checkpointId && (
                                 <div className="text-xs mb-2 space-y-2">
                                   <div className="p-2 bg-blue-50 rounded border border-blue-200">
-                                    <div className="font-semibold mb-1 text-blue-800">📸 Checkpoint:</div>
+                                    <div className="font-semibold mb-1 text-blue-800">📸 Prije testa:</div>
                                     <div className="font-mono text-xs text-blue-700">{testResults[test.id].checkpointId}</div>
-                                    <div className="text-gray-600 mt-1">Checkpoint kreiran prije testa, rollback nakon testa</div>
+                                    {testResults[test.id].afterCheckpointId && (
+                                      <>
+                                        <div className="font-semibold mt-2 mb-1 text-green-800">📸 Nakon testa (savepoint):</div>
+                                        <div className="font-mono text-xs text-green-700">{testResults[test.id].afterCheckpointId}</div>
+                                      </>
+                                    )}
+                                    <div className="text-gray-600 mt-1">Checkpoint prije testa, savepoint nakon uspjeha, rollback na početno</div>
                                   </div>
                                   {/* Checkpoint snapshot - podaci u checkpointu */}
                                   {testResults[test.id].checkpointSnapshot?.tables && Object.keys(testResults[test.id].checkpointSnapshot.tables).length > 0 && (
@@ -4157,7 +4185,11 @@ Write-Host "Tunel radi! Otvori http://localhost:8025" -ForegroundColor Green`}</
                     >
                       <div
                         className="flex items-center justify-between cursor-pointer"
-                        onClick={() => setExpandedCheckpoint(expandedCheckpoint === cp.id ? null : cp.id)}
+                        onClick={() => {
+                          const next = expandedCheckpoint === cp.id ? null : cp.id
+                          setExpandedCheckpoint(next)
+                          if (next) loadCheckpointSummary(next)
+                        }}
                       >
                         <div className="flex-1">
                           <h4 className="font-semibold text-sm flex items-center gap-2">
@@ -4197,6 +4229,26 @@ Write-Host "Tunel radi! Otvori http://localhost:8025" -ForegroundColor Green`}</
                           <div className="text-xs text-gray-600 bg-white rounded p-2">
                             <strong>Tablice:</strong> {cp.tables.join(', ')}
                           </div>
+                          {/* Podaci checkpointa */}
+                          {loadingCheckpointSummary === cp.id ? (
+                            <div className="text-xs text-gray-500 py-2">Učitavam podatke...</div>
+                          ) : checkpointSummaries[cp.id]?.tables && Object.keys(checkpointSummaries[cp.id].tables).length > 0 ? (
+                            <details className="p-2 bg-slate-50 rounded border border-slate-200">
+                              <summary className="font-semibold cursor-pointer text-slate-800 text-xs">📋 Podaci u checkpointu</summary>
+                              <div className="mt-2 space-y-2 font-mono text-xs max-h-48 overflow-y-auto">
+                                {Object.entries(checkpointSummaries[cp.id].tables).map(([table, info]) => (
+                                  <div key={table} className="border-b border-slate-200 pb-2 last:border-0">
+                                    <span className="font-semibold text-slate-700">{table}:</span> {info.count} redaka
+                                    {info.records?.length > 0 && (
+                                      <pre className="mt-1 p-1 bg-white rounded text-[10px] overflow-x-auto max-h-20 overflow-y-auto">
+                                        {JSON.stringify(info.records, null, 2)}
+                                      </pre>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </details>
+                          ) : null}
                           <div className="flex gap-2">
                             <button
                               onClick={() => rollbackCheckpoint(cp.id)}

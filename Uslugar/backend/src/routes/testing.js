@@ -97,6 +97,23 @@ r.delete('/checkpoint/:id', async (req, res, next) => {
 });
 
 /**
+ * GET /api/testing/checkpoint/:id/summary
+ * Dohvati sažetak podataka checkpointa (broj redaka, uzorak zapisa po tablici)
+ */
+r.get('/checkpoint/:id/summary', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const summary = testCheckpointService.getCheckpointSummary(id);
+    if (!summary) {
+      return res.status(404).json({ error: `Checkpoint ${id} nije pronađen` });
+    }
+    res.json(_sanitizeCheckpointForResponse(summary));
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
  * GET /api/testing/checkpoints
  * Prikazi sve checkpoint-e
  */
@@ -674,9 +691,10 @@ r.post('/run-single', async (req, res, next) => {
       }
     }
 
-    // 3. Prije rollbacka - snimi checkpoint podatke i delta (što je test promijenio)
+    // 3. Prije rollbacka - snimi checkpoint podatke, delta i (ako test uspješan) "after" savepoint
     let checkpointSnapshot = null;
     let checkpointDelta = null;
+    let afterCheckpointId = null;
     if (checkpointId) {
       try {
         checkpointSnapshot = testCheckpointService.getCheckpointSummary(checkpointId);
@@ -684,6 +702,15 @@ r.post('/run-single', async (req, res, next) => {
           const tables = Object.keys(checkpointSnapshot.tables || {});
           const currentSummary = await testCheckpointService.getCurrentStateSummary(tables);
           checkpointDelta = testCheckpointService.computeDelta(checkpointSnapshot, currentSummary);
+
+          // Ako je test uspješan - kreiraj "after" savepoint (stanje baze nakon testa, prije rollbacka)
+          if (testResult?.success) {
+            const afterName = `after_${testId}_${testType}`;
+            const afterDesc = `Savepoint nakon uspješnog testa: ${testName}`;
+            const afterPurpose = `Stanje baze nakon testa ${testId} - za pregled promjena`;
+            afterCheckpointId = await testCheckpointService.create(afterName, tables, afterDesc, afterPurpose);
+            results.logs.push(`📸 Savepoint nakon testa kreiran: ${afterName} (ID: ${afterCheckpointId})`);
+          }
         }
       } catch (err) {
         console.warn('[TEST] Nisam mogao dohvatiti checkpoint snapshot/delta:', err.message);
@@ -726,6 +753,7 @@ r.post('/run-single', async (req, res, next) => {
       emailScreenshots: results.emailScreenshots,
       checkpointId: results.checkpointId,
       checkpointCreated: results.checkpointCreated,
+      afterCheckpointId,
       checkpointSnapshot: checkpointSnapshot ? _sanitizeCheckpointForResponse(checkpointSnapshot) : null,
       checkpointDelta,
       logs: results.logs,
