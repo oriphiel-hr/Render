@@ -124,6 +124,24 @@ class MailpitService {
   }
 
   /**
+   * Dohvati raw MIME sadržaj maila (fallback ako HTML/plain nisu dostupni)
+   * @param {string} messageId - ID poruke
+   * @returns {string|null} Raw MIME sadržaj
+   */
+  async _getEmailRaw(messageId) {
+    try {
+      const response = await axios.get(`${this.baseUrl}/message/${messageId}/raw`, {
+        timeout: 10000,
+        responseType: 'text'
+      });
+      return response.data || null;
+    } catch (error) {
+      console.warn('[MAILPIT] Error fetching raw:', error.message);
+      return null;
+    }
+  }
+
+  /**
    * Dohvati plain text sadržaj maila
    * @param {string} messageId - ID poruke
    * @returns {string|null} Plain text sadržaj
@@ -526,21 +544,28 @@ class MailpitService {
     
     if (links.length === 0) {
       const combined = `${htmlContent || ''}\n${plainContent || ''}`;
-      const tokenPatterns = [
-        /[#/]*verify[^\s"'?]*\?token=([A-Za-z0-9_-]+)/,
-        /token=([A-Za-z0-9_-]{32,})/,
-        /verify[^?]*\?[^=]*=([A-Za-z0-9_-]{32,})/
-      ];
-      
-      for (const pattern of tokenPatterns) {
-        const tokenMatch = combined.match(pattern);
-        if (tokenMatch) {
-          const token = tokenMatch[1] || tokenMatch[0];
-          const frontendBase = process.env.FRONTEND_URL || 'https://www.uslugar.eu';
-          const verifyUrl = `${frontendBase}/#verify?token=${token}`;
-          links.push(verifyUrl);
-          source = 'fallback-token';
-          break;
+      // Direktno traži verify URL (npr. https://www.uslugar.eu/#verify?token=xxx)
+      const fullUrlPattern = /(https?:\/\/[^\s"'<>]+#verify\?token=[A-Za-z0-9_-]+)/i;
+      const fullMatch = combined.match(fullUrlPattern);
+      if (fullMatch) {
+        links.push(fullMatch[1]);
+        source = 'fallback-url';
+      } else {
+        const tokenPatterns = [
+          /[#/]*verify[^\s"'?]*\?token=([A-Za-z0-9_-]+)/i,
+          /token=([A-Za-z0-9_-]{16,})/i,
+          /token=([A-Za-z0-9_-]+)/i
+        ];
+        for (const pattern of tokenPatterns) {
+          const tokenMatch = combined.match(pattern);
+          if (tokenMatch) {
+            const token = tokenMatch[1] || tokenMatch[0];
+            const frontendBase = process.env.FRONTEND_URL || 'https://www.uslugar.eu';
+            const verifyUrl = `${frontendBase}/#verify?token=${token}`;
+            links.push(verifyUrl);
+            source = 'fallback-token';
+            break;
+          }
         }
       }
     }
@@ -569,9 +594,18 @@ class MailpitService {
         };
       }
 
-      // 1. Dohvati HTML i plain text sadržaj
-      const htmlContent = await this.getEmailHTML(messageId);
-      const plainContent = await this.getEmailPlain(messageId);
+      // 1. Dohvati HTML i plain text - Mailpit Message JSON može sadržavati HTML/Text direktno
+      let htmlContent = emailDetails.HTML || emailDetails.html || null;
+      let plainContent = emailDetails.Text || emailDetails.text || null;
+      if (!htmlContent) htmlContent = await this.getEmailHTML(messageId);
+      if (!plainContent) plainContent = await this.getEmailPlain(messageId);
+      if (!htmlContent && !plainContent) {
+        const raw = await this._getEmailRaw(messageId);
+        if (raw) {
+          htmlContent = raw;
+          plainContent = raw;
+        }
+      }
       
       console.log(`[MAILPIT] Pokušavam ekstraktovati linkove iz emaila ${messageId}...`);
       console.log(`[MAILPIT] HTML content: ${htmlContent ? `DA (${htmlContent.length} chars)` : 'NE'}`);
