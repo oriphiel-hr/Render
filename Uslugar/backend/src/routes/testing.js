@@ -5,6 +5,15 @@
 
 import { Router } from 'express';
 import { testCheckpointService } from '../services/testCheckpointService.js';
+
+function _sanitizeCheckpointForResponse(summary) {
+  if (!summary?.tables) return summary;
+  const out = { tables: {} };
+  for (const [table, data] of Object.entries(summary.tables)) {
+    out.tables[table] = { count: data.count, records: data.records || [] };
+  }
+  return out;
+}
 import { testRunnerService } from '../services/testRunnerService.js';
 import { mailpitService } from '../services/mailpitService.js';
 import { prisma } from '../lib/prisma.js';
@@ -665,13 +674,25 @@ r.post('/run-single', async (req, res, next) => {
       }
     }
 
-    // 3. Rollback na checkpoint nakon testa (bez obzira na uspjeh)
-    // VAŽNO: Rollback se izvršava NAKON što se email obradi i link klikne
-    // jer verifikacija zahtijeva da user i token postoje u bazi
-    // Dodatno čekanje da se verifikacija završi prije rollbacka
+    // 3. Prije rollbacka - snimi checkpoint podatke i delta (što je test promijenio)
+    let checkpointSnapshot = null;
+    let checkpointDelta = null;
     if (checkpointId) {
       try {
-        // Ako je test uključivao verifikacijski link, čekaj malo da se verifikacija završi
+        checkpointSnapshot = testCheckpointService.getCheckpointSummary(checkpointId);
+        if (checkpointSnapshot) {
+          const tables = Object.keys(checkpointSnapshot.tables || {});
+          const currentSummary = await testCheckpointService.getCurrentStateSummary(tables);
+          checkpointDelta = testCheckpointService.computeDelta(checkpointSnapshot, currentSummary);
+        }
+      } catch (err) {
+        console.warn('[TEST] Nisam mogao dohvatiti checkpoint snapshot/delta:', err.message);
+      }
+    }
+
+    // 4. Rollback na checkpoint nakon testa (bez obzira na uspjeh)
+    if (checkpointId) {
+      try {
         if (testResult?.success && results.emailScreenshots?.length > 0) {
           const hasVerifyLink = results.emailScreenshots.some(e => 
             e.clickedLink && (e.clickedLink.includes('verify') || e.clickedLink.includes('token'))
@@ -679,10 +700,10 @@ r.post('/run-single', async (req, res, next) => {
           if (hasVerifyLink) {
             console.log('[TEST] Čekam da se verifikacija završi prije rollbacka...');
             results.logs.push('⏳ Čekam da se verifikacija završi prije rollbacka...');
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Čekaj 2 sekunde
+            await new Promise(resolve => setTimeout(resolve, 2000));
           }
         }
-        
+
         results.logs.push(`⏪ Vraćam bazu na checkpoint: ${checkpointId}`);
         await testCheckpointService.rollback(checkpointId);
         results.logs.push(`✓ Rollback uspješan - baza vraćena na početno stanje`);
@@ -705,6 +726,8 @@ r.post('/run-single', async (req, res, next) => {
       emailScreenshots: results.emailScreenshots,
       checkpointId: results.checkpointId,
       checkpointCreated: results.checkpointCreated,
+      checkpointSnapshot: checkpointSnapshot ? _sanitizeCheckpointForResponse(checkpointSnapshot) : null,
+      checkpointDelta,
       logs: results.logs,
       message: testResult?.success 
         ? `✅ Test '${testName}' uspješno prošao (${duration}ms)`

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { randomBytes } from 'crypto';
 import { prisma } from '../lib/prisma.js';
 import { hashPassword, verifyPassword, signToken, auth } from '../lib/auth.js';
-import { sendVerificationEmail, sendPasswordResetEmail } from '../lib/email.js';
+import { sendVerificationEmail, sendPasswordResetEmail, sendVerificationConfirmationEmail } from '../lib/email.js';
 import { deleteUserWithRelations } from '../lib/delete-helpers.js';
 import axios from 'axios';
 import { validateOIB } from '../lib/kyc-verification.js';
@@ -407,12 +407,19 @@ r.get('/verify', async (req, res, next) => {
       // Ne baci grešku - samo logiraj
     }
     
-    // Obavijesti korisnika o email verifikaciji
+    // Obavijesti korisnika o email verifikaciji (in-app notifikacija)
     try {
       const { notifyEmailVerification } = await import('../services/verification-notifications.js');
       await notifyEmailVerification(user.id, true);
     } catch (notifError) {
       console.error('[Auth] Failed to send email verification notification:', notifError);
+    }
+
+    // Pošalji email potvrdu (Članstvo aktivirano - dolazi u Mailpit)
+    try {
+      await sendVerificationConfirmationEmail(user.email, user.fullName);
+    } catch (emailError) {
+      console.error('[Auth] Failed to send verification confirmation email:', emailError);
     }
     
     res.json({ 

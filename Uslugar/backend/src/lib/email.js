@@ -286,6 +286,73 @@ export const sendVerificationEmail = async (toEmail, fullName, verificationToken
 };
 
 /**
+ * Pošalji email potvrdu nakon uspješne verifikacije
+ * Korisnik prima poruku da je članstvo aktivirano
+ */
+export const sendVerificationConfirmationEmail = async (toEmail, fullName) => {
+  if (!transporter) {
+    console.warn('SMTP not configured - skipping verification confirmation email to:', toEmail);
+    return;
+  }
+
+  const loginUrl = `${process.env.FRONTEND_URL || 'https://www.uslugar.eu'}/login`;
+
+  try {
+    await transporter.sendMail({
+      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
+      to: toEmail,
+      subject: 'Članstvo aktivirano - Uslugar',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+        </head>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background-color: #f0fdf4; padding: 30px; border-radius: 10px; border-left: 4px solid #22c55e;">
+            <h1 style="color: #166534; margin-bottom: 20px;">✅ Članstvo aktivirano!</h1>
+            
+            <p style="font-size: 16px; color: #555;">Poštovani/a <strong>${fullName || 'korisniče'}</strong>,</p>
+            
+            <p style="font-size: 16px; color: #555; line-height: 1.6;">
+              Vaš email je uspješno verificiran. Vaše članstvo na Uslugar platformi je sada aktivirano!
+            </p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${loginUrl}" 
+                 style="background-color: #22c55e; 
+                        color: white; 
+                        padding: 15px 40px; 
+                        text-decoration: none; 
+                        border-radius: 5px; 
+                        font-size: 18px;
+                        font-weight: bold;
+                        display: inline-block;">
+                Prijavi se
+              </a>
+            </div>
+            
+            <p style="font-size: 14px; color: #888; margin-top: 30px;">
+              Možete se sada prijaviti s vašom email adresom i lozinkom.
+            </p>
+            
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+            
+            <p style="font-size: 12px; color: #999; text-align: center;">
+              Uslugar - Platforma za pronalaženje lokalnih pružatelja usluga
+            </p>
+          </div>
+        </body>
+        </html>
+      `
+    });
+    console.log('[OK] Verification confirmation email sent to:', toEmail);
+  } catch (error) {
+    console.error('Error sending verification confirmation email:', error);
+  }
+};
+
+/**
  * Send company email verification email
  * @param {string} toEmail - Company email address to verify
  * @param {string} fullName - Full name of the user

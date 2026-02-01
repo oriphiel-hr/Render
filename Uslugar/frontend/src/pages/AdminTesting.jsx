@@ -2704,16 +2704,51 @@ export default function AdminTesting(){
                                 </div>
                               )}
 
-                              {/* Checkpoint informacije */}
+                              {/* Checkpoint informacije i podaci */}
                               {testResults[test.id].checkpointCreated && testResults[test.id].checkpointId && (
-                                <div className="text-xs text-blue-700 mb-2 p-2 bg-blue-50 rounded border border-blue-200">
-                                  <div className="font-semibold mb-1">📸 Checkpoint:</div>
-                                  <div className="font-mono text-xs">
-                                    {testResults[test.id].checkpointId}
+                                <div className="text-xs mb-2 space-y-2">
+                                  <div className="p-2 bg-blue-50 rounded border border-blue-200">
+                                    <div className="font-semibold mb-1 text-blue-800">📸 Checkpoint:</div>
+                                    <div className="font-mono text-xs text-blue-700">{testResults[test.id].checkpointId}</div>
+                                    <div className="text-gray-600 mt-1">Checkpoint kreiran prije testa, rollback nakon testa</div>
                                   </div>
-                                  <div className="text-gray-600 mt-1">
-                                    Checkpoint je kreiran prije testa i rollback je izvršen nakon testa
-                                  </div>
+                                  {/* Checkpoint snapshot - podaci u checkpointu */}
+                                  {testResults[test.id].checkpointSnapshot?.tables && Object.keys(testResults[test.id].checkpointSnapshot.tables).length > 0 && (
+                                    <details className="p-2 bg-slate-50 rounded border border-slate-200">
+                                      <summary className="font-semibold cursor-pointer text-slate-800">📋 Podaci u checkpointu (prije testa)</summary>
+                                      <div className="mt-2 space-y-2 font-mono text-xs">
+                                        {Object.entries(testResults[test.id].checkpointSnapshot.tables).map(([table, info]) => (
+                                          <div key={table} className="border-b border-slate-200 pb-2 last:border-0">
+                                            <span className="font-semibold text-slate-700">{table}:</span> {info.count} redaka
+                                            {info.records?.length > 0 && (
+                                              <pre className="mt-1 p-1 bg-white rounded text-[10px] overflow-x-auto max-h-24 overflow-y-auto">
+                                                {JSON.stringify(info.records, null, 2)}
+                                              </pre>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </details>
+                                  )}
+                                  {/* Delta - što je test dodao/promijenio */}
+                                  {testResults[test.id].checkpointDelta && Object.keys(testResults[test.id].checkpointDelta).length > 0 && (
+                                    <details className="p-2 bg-amber-50 rounded border border-amber-200">
+                                      <summary className="font-semibold cursor-pointer text-amber-900">🔄 Razlika (što je test dodao)</summary>
+                                      <div className="mt-2 space-y-2 font-mono text-xs">
+                                        {Object.entries(testResults[test.id].checkpointDelta).map(([table, diff]) => (
+                                          <div key={table} className="border-b border-amber-200 pb-2 last:border-0">
+                                            <span className="font-semibold text-amber-800">{table}:</span>{' '}
+                                            {diff.beforeCount} → {diff.afterCount} (+{diff.added})
+                                            {diff.newRecords?.length > 0 && (
+                                              <pre className="mt-1 p-1 bg-white rounded text-[10px] overflow-x-auto max-h-32 overflow-y-auto">
+                                                {JSON.stringify(diff.newRecords, null, 2)}
+                                              </pre>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </details>
+                                  )}
                                 </div>
                               )}
 

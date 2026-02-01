@@ -240,6 +240,133 @@ class TestCheckpointService {
   }
 
   /**
+   * Dohvati sažetak checkpointa - broj redaka po tablici i ključni podaci za prikaz
+   * @param {string} checkpointId
+   * @returns {Object} { tables: { TableName: { count, records: [{id, ...keyFields}] } } }
+   */
+  getCheckpointSummary(checkpointId) {
+    try {
+      let checkpoint = this.checkpoints.get(checkpointId);
+      if (!checkpoint || !checkpoint.data) {
+        const filePath = path.join(CHECKPOINT_DIR, `${checkpointId}.json`);
+        if (fs.existsSync(filePath)) {
+          const fileContent = fs.readFileSync(filePath, 'utf-8');
+          checkpoint = JSON.parse(fileContent);
+        } else {
+          return null;
+        }
+      }
+      return this._summarizeData(checkpoint.data);
+    } catch (err) {
+      console.error(`[CHECKPOINT] getCheckpointSummary error: ${err.message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Dohvati trenutno stanje baze (isti format kao checkpoint summary)
+   * @param {Array<string>} tables - tablice
+   */
+  async getCurrentStateSummary(tables) {
+    try {
+      if (!tables || tables.length === 0) {
+        tables = await this._getAllTables();
+      }
+      const data = {};
+      for (const table of tables) {
+        try {
+          const model = this.prisma[this._camelCase(table)];
+          if (!model) continue;
+          const rows = await model.findMany();
+          data[table] = rows;
+        } catch (err) {
+          console.warn(`[CHECKPOINT] getCurrentState ${table}: ${err.message}`);
+        }
+      }
+      return this._summarizeData(data, true);
+    } catch (err) {
+      console.error(`[CHECKPOINT] getCurrentStateSummary error: ${err.message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Izračunaj razliku između checkpointa i trenutnog stanja (što je test dodao)
+   * @param {Object} checkpointSummary
+   * @param {Object} currentSummary - mora imati fullRecords za točan delta
+   * @returns {Object} { tables: { TableName: { beforeCount, afterCount, added, newRecords } } }
+   */
+  computeDelta(checkpointSummary, currentSummary) {
+    if (!checkpointSummary || !currentSummary) return null;
+    const delta = {};
+    for (const table of Object.keys(currentSummary.tables || {})) {
+      const beforeIds = new Set(checkpointSummary.tables?.[table]?.recordIds || []);
+      const afterTable = currentSummary.tables?.[table] || { count: 0, fullRecords: [], records: [] };
+      const fullRecords = afterTable.fullRecords || afterTable.records || [];
+      const newRecords = fullRecords.filter(r => r.id && !beforeIds.has(r.id));
+      if (newRecords.length > 0 || (checkpointSummary.tables?.[table]?.count ?? 0) !== afterTable.count) {
+        const KEY_FIELDS = {
+          User: ['id', 'email', 'fullName', 'role', 'createdAt'],
+          Notification: ['id', 'type', 'title', 'createdAt'],
+          Job: ['id', 'title', 'status', 'createdAt'],
+          Offer: ['id', 'amount', 'status', 'createdAt'],
+          ProviderProfile: ['id', 'companyName', 'createdAt']
+        };
+        const fields = KEY_FIELDS[table] || ['id'];
+        delta[table] = {
+          beforeCount: checkpointSummary.tables?.[table]?.count ?? 0,
+          afterCount: afterTable.count,
+          added: newRecords.length,
+          newRecords: newRecords.slice(0, 10).map(r => {
+            const rec = {};
+            for (const f of fields) {
+              if (r[f] !== undefined) rec[f] = r[f] instanceof Date ? r[f].toISOString() : r[f];
+            }
+            return rec;
+          })
+        };
+      }
+    }
+    return Object.keys(delta).length > 0 ? delta : null;
+  }
+
+  _summarizeData(data, includeFullRecords = false) {
+    const KEY_FIELDS = {
+      User: ['id', 'email', 'fullName', 'role', 'createdAt'],
+      Notification: ['id', 'type', 'title', 'createdAt'],
+      Job: ['id', 'title', 'status', 'createdAt'],
+      Offer: ['id', 'amount', 'status', 'createdAt'],
+      ProviderProfile: ['id', 'companyName', 'createdAt']
+    };
+    const tables = {};
+    for (const [table, rows] of Object.entries(data)) {
+      const keyFields = KEY_FIELDS[table] || ['id'];
+      const records = (rows || []).slice(0, 10).map(r => {
+        const rec = {};
+        for (const f of keyFields) {
+          if (r[f] !== undefined) {
+            rec[f] = r[f] instanceof Date ? r[f].toISOString() : r[f];
+          }
+        }
+        return rec;
+      });
+      const recordIds = (rows || []).map(r => r.id).filter(Boolean);
+      const out = { count: (rows || []).length, records, recordIds };
+      if (includeFullRecords) {
+        out.fullRecords = (rows || []).map(r => {
+          const rec = {};
+          for (const f of keyFields) {
+            if (r[f] !== undefined) rec[f] = r[f] instanceof Date ? r[f].toISOString() : r[f];
+          }
+          return rec;
+        });
+      }
+      tables[table] = out;
+    }
+    return { tables };
+  }
+
+  /**
    * Prikazi sve dostupne checkpoint-e
    */
   listCheckpoints() {
