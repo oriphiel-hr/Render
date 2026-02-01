@@ -1746,6 +1746,13 @@ export default function AdminTesting(){
                   ]
                 },
                 {
+                  num: 14,
+                  title: 'Pravni Status i Verifikacija',
+                  tests: [
+                    { id: '14.1', name: 'Verifikacija Sudski/Obrtni registar', desc: 'Testira provjeru da li je tvrtka/obrt stvarno u službenom registru (DOO→Sudski, obrt→Obrtni)' }
+                  ]
+                },
+                {
                   num: 6,
                   title: 'Profili Pružatelja',
                   tests: [
@@ -1976,6 +1983,15 @@ export default function AdminTesting(){
                                       <li>3. Navigiraj na <strong>/profile</strong> (zaštićena ruta)</li>
                                       <li>4. ✅ Trebala bi biti dostupna bez novog login-a (token se automatski šalje u zaglavlju)</li>
                                       <li>5. Odjavi se i provjeri: token je obrisan iz localStorage</li>
+                                    </>
+                                  )}
+                                  {test.id === '14.1' && (
+                                    <>
+                                      <li><strong>🤖 Automatski:</strong> Poziva Sudski registar (DOO/j.d.o.o.) ili Obrtni registar (obrt) API s OIB-om i nazivom tvrtke</li>
+                                      <li>1. Koristi <strong>providerDoo</strong> podatke (OIB, naziv, pravni status DOO)</li>
+                                      <li>2. ✅ TREBALO BI: API odgovori (verified/active ili napomena o credentials)</li>
+                                      <li>3. Za pravi test: postavi <strong>SUDREG_CLIENT_ID</strong> i <strong>SUDREG_CLIENT_SECRET</strong> u env</li>
+                                      <li>4. Ručno: Registriraj providera s DOO → provjeri u bazi je li badge SUDSKI_REGISTAR postavljen</li>
                                     </>
                                   )}
                                   {test.id === '2.1' && (
@@ -2540,15 +2556,12 @@ export default function AdminTesting(){
                                       <li>5. ✅ TREBALO BI: Trebali bi biti logirani svaki pokušaj SQL injectiona</li>
                                     </>
                                   )}
-                                  {!['18.1', '18.2', '18.3', '18.4', '21.1', '21.2', '21.3', '21.4', '22.1', '22.2', '22.3', '22.4', '23.1', '23.2', '23.3', '23.4', '24.1', '24.2', '24.3', '24.4', '25.1', '25.2', '25.3', '25.4', '26.1', '26.2', '26.3', '26.4', '27.1', '27.2', '27.3', '27.4', '28.1', '28.2', '28.3', '28.4', '29.1', '29.2', '29.3', '29.4', '30.1', '30.2', '30.3', '30.4', '31.1', '31.2', '31.3', '31.4'].includes(test.id) && (
-                                    <>
-                                      <li>1. Prijavi se s odgovarajućom ulogom za ovaj test</li>
-                                      <li>2. Navigiraj na relevantnu stranicu (vidi naziv testa)</li>
-                                      <li>3. Izvrši akcije prema opisu testa</li>
-                                      <li>4. ✅ Provjeri: Rezultati su kao što se očekuje (vidi opis testa)</li>
-                                      <li>5. Ako je greška: Provjeri console za error poruke (F12 → Console)</li>
-                                    </>
-                                  )}
+                                  {/* Opće upute za ručni test */}
+                                  <li>1. Prijavi se s odgovarajućom ulogom za ovaj test</li>
+                                  <li>2. Navigiraj na relevantnu stranicu (vidi naziv testa)</li>
+                                  <li>3. Izvrši akcije prema opisu testa</li>
+                                  <li>4. ✅ Provjeri: Rezultati su kao što se očekuje (vidi opis testa)</li>
+                                  <li>5. Ako je greška: Provjeri console za error poruke (F12 → Console)</li>
                                 </ul>
                               </div>
                             </div>
@@ -2594,6 +2607,7 @@ export default function AdminTesting(){
                                     const TEST_USER_MAP = {
                                       '1.1': 'client', '1.2': 'providerDoo', '1.3': 'client', '1.4': 'client', '1.5': 'client', '1.6': 'client',
                                       '2.1': 'client', '2.2': 'client', '2.3': 'client',
+                                      '14.1': 'providerDoo',
                                       '3.1': 'client', '3.4': 'client', '3.5': 'client',
                                       '4.1': 'provider', '4.3': 'client',
                                       '6.1': 'provider', '6.4': 'provider',
@@ -2618,29 +2632,22 @@ export default function AdminTesting(){
                                     if (!testUser && testUserKey === 'providerDoo') testUser = testData?.users?.provider
                                     if (!testUser) testUser = Object.values(testData?.users || {})[0]
                                     
-                                    // Pripremi userData za test
-                                    const userDataForTest = testUser ? {
-                                      email: testUser.email,
-                                      password: testUser.password,
-                                      fullName: testUser.fullName,
-                                      phone: testUser.phone,
-                                      city: testUser.city
-                                    } : null
-                                    
-                                    // Dohvati Mailpit base URL iz testData
+                                    // Pripremi userData prema tipu testa
+                                    const userDataForTest = testUser ? (test.id === '14.1'
+                                      ? { oib: testUser.oib, companyName: testUser.companyName, legalStatus: testUser.legalStatus || testUser.legalStatusId }
+                                      : { email: testUser.email, password: testUser.password, fullName: testUser.fullName, phone: testUser.phone, city: testUser.city, role: testUser.role, ...testUser }
+                                    ) : null
+
                                     const mailpitBaseUrl = testData?.email?.testService?.baseUrl
-                                    
-                                    console.log(`[TEST] Pokrenuo automatski test: ${test.id}`, { 
-                                      userDataForTest,
-                                      mailpitBaseUrl
-                                    })
-                                    
-                                    // Simulacija automatskog testa s Playwright + Mailpit
-                                    const response = await api.post(`/testing/run-single`, { 
+                                    const reqApiBase = api?.defaults?.baseURL ? new URL(api.defaults.baseURL.replace(/\/api\/?$/, '')).origin : undefined
+
+                                    console.log(`[TEST] Pokrenuo automatski test: ${test.id}`, { userDataForTest, mailpitBaseUrl })
+
+                                    const response = await api.post(`/testing/run-single`, {
                                       testId: test.id,
                                       testName: test.name,
-                                      testType: 'registration',
                                       userData: userDataForTest,
+                                      apiBaseUrl: reqApiBase,
                                       mailpitBaseUrl: mailpitBaseUrl,
                                       testData: {
                                         email: {

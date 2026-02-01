@@ -15,6 +15,7 @@ function _sanitizeCheckpointForResponse(summary) {
   return out;
 }
 import { testRunnerService } from '../services/testRunnerService.js';
+import { TEST_ID_MAP } from '../config/testTypes.js';
 import { mailpitService } from '../services/mailpitService.js';
 import { prisma } from '../lib/prisma.js';
 
@@ -507,14 +508,17 @@ r.post('/runs', async (req, res, next) => {
  */
 r.post('/run-single', async (req, res, next) => {
   try {
-    const { testId, testName, testType = 'registration', userData } = req.body;
-    
+    const { testId, testName, testType: reqTestType, userData } = req.body;
+    const mapping = TEST_ID_MAP[testId];
+    const testType = mapping?.testType ?? reqTestType ?? 'registration';
+    const isApiOnlyTest = mapping?.apiOnly ?? false;
+
     if (!testId || !testName) {
       return res.status(400).json({ error: 'testId i testName su obavezni' });
     }
-    
-    console.log(`[TEST] Pokrenuo test: ${testId} - ${testName}`);
-    
+
+    console.log(`[TEST] Pokrenuo test: ${testId} - ${testName} (type: ${testType})`);
+
     const startTime = Date.now();
     const results = {
       testId,
@@ -528,42 +532,48 @@ r.post('/run-single', async (req, res, next) => {
       checkpointCreated: false
     };
 
-    // 0. Kreiraj checkpoint prije testa
+    // 0. Kreiraj checkpoint prije testa (preskoči za API-only testove koji ne mijenjaju bazu)
     let checkpointId = null;
-    try {
-      const checkpointName = `before_${testId}_${testType}`;
-      const checkpointDescription = `Checkpoint prije testa: ${testName}`;
-      const checkpointPurpose = `Izolacija testa ${testId} - vraćanje baze na početno stanje nakon testa`;
-      
-      checkpointId = await testCheckpointService.create(
-        checkpointName,
-        null, // sve tablice
-        checkpointDescription,
-        checkpointPurpose
-      );
-      
-      results.checkpointId = checkpointId;
-      results.checkpointCreated = true;
-      results.logs.push(`📸 Checkpoint kreiran: ${checkpointName} (ID: ${checkpointId})`);
-      results.logs.push(`   Opis: ${checkpointDescription}`);
-      results.logs.push(`   Svrha: ${checkpointPurpose}`);
-    } catch (error) {
-      console.error('[TEST] Greška pri kreiranju checkpointa:', error);
-      results.logs.push(`⚠ Greška pri kreiranju checkpointa: ${error.message}`);
-      // Nastavi s testom iako checkpoint nije kreiran
+    if (!isApiOnlyTest) {
+      try {
+        const checkpointName = `before_${testId}_${testType}`;
+        const checkpointDescription = `Checkpoint prije testa: ${testName}`;
+        const checkpointPurpose = `Izolacija testa ${testId} - vraćanje baze na početno stanje nakon testa`;
+
+        checkpointId = await testCheckpointService.create(
+          checkpointName,
+          null,
+          checkpointDescription,
+          checkpointPurpose
+        );
+
+        results.checkpointId = checkpointId;
+        results.checkpointCreated = true;
+        results.logs.push(`📸 Checkpoint kreiran: ${checkpointName} (ID: ${checkpointId})`);
+        results.logs.push(`   Opis: ${checkpointDescription}`);
+        results.logs.push(`   Svrha: ${checkpointPurpose}`);
+      } catch (error) {
+        console.error('[TEST] Greška pri kreiranju checkpointa:', error);
+        results.logs.push(`⚠ Greška pri kreiranju checkpointa: ${error.message}`);
+      }
+    } else {
+      results.logs.push('ℹ API test - checkpoint preskočen (baza se ne mijenja)');
     }
 
-    // 1. Pokreni Playwright test
-    console.log('[TEST] Korak 1: Pokrenuo Playwright test...');
+    // 1. Pokreni test (Playwright ili API)
+    console.log(`[TEST] Korak 1: Pokrećem ${isApiOnlyTest ? 'API' : 'Playwright'} test...`);
     let testResult;
     
     try {
-      // Ako nema userData, koristi default test podatke
-      const testData = userData || {
-        email: 'test.registration@uslugar.hr',
-        password: 'Test123456!',
-        fullName: 'Test User'
-      };
+      const apiBaseUrl = req.body.apiBaseUrl || `${req.protocol}://${req.get('host')}`;
+      testRunnerService.setApiBaseUrl?.(apiBaseUrl);
+
+      let testData = userData;
+      if (!testData) {
+        testData = testType === 'verify-registar'
+          ? { oib: '12345678901', companyName: 'Test Company DOO', legalStatus: 'DOO' }
+          : { email: 'test.registration@uslugar.hr', password: 'Test123456!', fullName: 'Test User' };
+      }
 
       testResult = await testRunnerService.runGenericTest(testType, testData);
       
@@ -574,8 +584,8 @@ r.post('/run-single', async (req, res, next) => {
         results.logs.push(...testResult.logs);
       }
       
-      results.logs.push(`✓ Playwright test završen - ${results.screenshots.length} screenshotova`);
-      
+      results.logs.push(isApiOnlyTest ? '✓ API test završen' : `✓ Playwright test završen - ${results.screenshots.length} screenshotova`);
+
       if (!testResult.success) {
         results.status = 'FAIL';
         results.logs.push(`✗ Test failed: ${testResult.message}`);
@@ -589,8 +599,8 @@ r.post('/run-single', async (req, res, next) => {
       results.error = error.message;
     }
 
-    // 2. Ako je test prošao - provjeri mailove u Mailpit-u
-    if (testResult?.success) {
+    // 2. Ako je test prošao i nije API-only - provjeri mailove u Mailpit-u
+    if (!isApiOnlyTest && testResult?.success) {
       console.log('[TEST] Korak 2: Dohvaćam mailove iz Mailpit-a...');
       results.logs.push('📧 Čekam da mail stigne u Mailpit...');
       
