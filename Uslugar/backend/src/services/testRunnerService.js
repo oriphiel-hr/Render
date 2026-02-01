@@ -206,16 +206,19 @@ class TestRunnerService {
                   });
                   logs.push(`📋 Input polja u sekciji: ${sectionContent.inputs}`);
                   
-                  // Ako nema inputa, pokušaj kliknuti na gumb u sekciji
+                  // Ako nema inputa, pokušaj kliknuti na gumb u sekciji (Korisnik ili Pružatelj)
                   if (sectionContent.inputs === 0 && sectionContent.buttons.length > 0) {
                     logs.push('⚠ Nema input polja - pokušavam kliknuti na gumb u sekciji...');
                     
-                    // Pokušaj kliknuti na prvi gumb koji ima "registr" ili "majstor" u tekstu
-                    const buttonToClick = sectionContent.buttons.find(btn => 
-                      btn.text && (btn.text.toLowerCase().includes('registr') || 
-                                   btn.text.toLowerCase().includes('majstor') ||
-                                   btn.text.toLowerCase().includes('postani'))
-                    );
+                    const isProvider = userData?.role === 'PROVIDER';
+                    const buttonToClick = sectionContent.buttons.find(btn => {
+                      if (!btn.text) return false;
+                      const t = btn.text.toLowerCase();
+                      if (isProvider) {
+                        return t.includes('pružatelj') || t.includes('provider') || t.includes('majstor') || t.includes('postani');
+                      }
+                      return t.includes('korisnik') || t.includes('client') || t.includes('registr') || t.includes('majstor') || t.includes('postani');
+                    });
                     
                     if (buttonToClick) {
                       try {
@@ -526,6 +529,61 @@ class TestRunnerService {
       } else {
         logs.push(`❌ Grad nije u userData`);
         throw new Error(`City is required but missing from userData`);
+      }
+
+      // Provider-specifična polja (legalStatus, oib, companyName)
+      if (userData?.role === 'PROVIDER') {
+        if (userData.legalStatusId || userData.legalStatus) {
+          const legalSelectors = ['select[name="legalStatusId"]', 'select[name="legalStatus"]', 'select[id="legalStatus"]'];
+          for (const sel of legalSelectors) {
+            try {
+              const loc = page.locator(sel).first();
+              await loc.waitFor({ state: 'visible', timeout: 2000 });
+              if (userData.legalStatusId) {
+                await loc.selectOption({ value: userData.legalStatusId });
+                logs.push(`✓ Pravni status odabran (by value): ${userData.legalStatusId}`);
+              } else {
+                const options = await loc.locator('option').all();
+                const code = (userData.legalStatus || '').toLowerCase();
+                for (let i = 0; i < options.length; i++) {
+                  const text = (await options[i].textContent())?.toLowerCase() || '';
+                  const val = await options[i].getAttribute('value');
+                  if (val && (text.includes(code) || (code === 'freelancer' && text.includes('freelancer')) || (code === 'doo' && (text.includes('doo') || text.includes('d.o.o'))))) {
+                    await loc.selectOption({ value: val });
+                    logs.push(`✓ Pravni status odabran: ${userData.legalStatus}`);
+                    break;
+                  }
+                }
+              }
+              await page.waitForTimeout(500);
+              break;
+            } catch (e) { /* next selector */ }
+          }
+        }
+        if (userData.oib) {
+          const oibSelectors = ['input[name="taxId"]', 'input[name="oib"]', 'input[placeholder*="OIB" i]', 'input[placeholder*="oib" i]'];
+          for (const sel of oibSelectors) {
+            try {
+              const loc = page.locator(sel).first();
+              await loc.waitFor({ state: 'visible', timeout: 2000 });
+              await loc.fill(String(userData.oib));
+              logs.push(`✓ OIB unesen: ${userData.oib}`);
+              break;
+            } catch (e) { /* next selector */ }
+          }
+        }
+        if (userData.companyName) {
+          const companySelectors = ['input[name="companyName"]', 'input[name="company_name"]', 'input[placeholder*="tvrtk" i]', 'input[placeholder*="firm" i]'];
+          for (const sel of companySelectors) {
+            try {
+              const loc = page.locator(sel).first();
+              await loc.waitFor({ state: 'visible', timeout: 2000 });
+              await loc.fill(userData.companyName);
+              logs.push(`✓ Naziv tvrtke unesen: ${userData.companyName}`);
+              break;
+            } catch (e) { /* next selector */ }
+          }
+        }
       }
       
       screenshotPath = this._getScreenshotPath(testId, '02_data_entered');

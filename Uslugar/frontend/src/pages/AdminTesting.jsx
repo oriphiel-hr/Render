@@ -2590,9 +2590,33 @@ export default function AdminTesting(){
                                 onClick={async () => {
                                   setRunningTest(test.id)
                                   try {
-                                    // Pronađi test korisnika iz testData (koristi prvi korisnik ili 'client')
-                                    const testUserKey = 'client' // Ili prvi korisnik iz testData
-                                    const testUser = testData?.users?.[testUserKey] || Object.values(testData?.users || {})[0]
+                                    // Mapiranje test ID -> user key (client, provider, admin, director, teamMember)
+                                    const TEST_USER_MAP = {
+                                      '1.1': 'client', '1.2': 'providerDoo', '1.3': 'client', '1.4': 'client', '1.5': 'client', '1.6': 'client',
+                                      '2.1': 'client', '2.2': 'client', '2.3': 'client',
+                                      '3.1': 'client', '3.4': 'client', '3.5': 'client',
+                                      '4.1': 'provider', '4.3': 'client',
+                                      '6.1': 'provider', '6.4': 'provider',
+                                      '12.1': 'provider',
+                                      '18.1': 'provider', '18.2': 'provider', '18.3': 'provider', '18.4': 'provider',
+                                      '19.1': 'director', '19.2': 'director',
+                                      '20.1': 'client', '20.2': 'provider',
+                                      '21.1': 'provider', '21.2': 'provider', '21.3': 'provider', '21.4': 'provider',
+                                      '22.1': 'provider', '22.2': 'provider', '22.3': 'provider', '22.4': 'provider',
+                                      '23.1': 'provider', '23.2': 'provider', '23.3': 'provider', '23.4': 'provider',
+                                      '24.1': 'client', '24.2': 'client', '24.3': 'provider', '24.4': 'provider',
+                                      '25.1': 'client', '25.2': 'client', '25.3': 'client', '25.4': 'client',
+                                      '26.1': 'admin', '26.2': 'admin', '26.3': 'admin', '26.4': 'admin',
+                                      '27.1': 'provider', '27.2': 'provider', '27.3': 'provider', '27.4': 'provider',
+                                      '28.1': 'provider', '28.2': 'provider', '28.3': 'provider', '28.4': 'provider',
+                                      '29.1': 'provider', '29.2': 'provider', '29.3': 'provider', '29.4': 'provider',
+                                      '30.1': 'provider', '30.2': 'provider', '30.3': 'provider', '30.4': 'provider',
+                                      '31.1': 'client', '31.2': 'client', '31.3': 'client', '31.4': 'client'
+                                    }
+                                    let testUserKey = TEST_USER_MAP[test.id] || 'client'
+                                    let testUser = testData?.users?.[testUserKey]
+                                    if (!testUser && testUserKey === 'providerDoo') testUser = testData?.users?.provider
+                                    if (!testUser) testUser = Object.values(testData?.users || {})[0]
                                     
                                     // Pripremi userData za test
                                     const userDataForTest = testUser ? {

@@ -310,12 +310,29 @@ r.get('/test-data', async (req, res, next) => {
           city: 'Split',
           role: 'PROVIDER',
           legalStatus: 'FREELANCER',
+          legalStatusId: 'cls6_freelancer',
           oib: '12345678901',
-          description: 'FREELANCER - OIB je matematički validan ali nije u registru. Za ispravne podatke koristi svoj OIB.',
+          description: 'FREELANCER - OIB je matematički validan ali nije u registru.',
           mailtrap: {
             validData: { email: 'test.provider@uslugar.hr' },
             invalidData: { email: 'test.provider.invalid@uslugar.hr' },
             missingData: { email: 'test.provider.missing@uslugar.hr' }
+          }
+        },
+        providerDoo: {
+          email: 'test.provider.doo@uslugar.hr',
+          password: 'Test123456!',
+          fullName: 'Test Company DOO',
+          phone: '+385914974871',
+          city: 'Zagreb',
+          role: 'PROVIDER',
+          legalStatus: 'DOO',
+          legalStatusId: 'cls4_doo',
+          oib: '12345678901',
+          companyName: 'Test Company DOO',
+          description: 'DOO - za test 1.2 (registracija pružatelja s pravnim statusom)',
+          mailtrap: {
+            validData: { email: 'test.provider.doo@uslugar.hr' }
           }
         },
         director: {
@@ -326,8 +343,9 @@ r.get('/test-data', async (req, res, next) => {
           city: 'Rijeka',
           role: 'PROVIDER',
           legalStatus: 'DOO',
-          oib: 'UNESI_PRAVI_OIB_IZ_SUDSKOG_REGISTRA',
-          companyName: 'UNESI_NAZIV_IZ_SUDSKOG_REGISTRA',
+          legalStatusId: 'cls4_doo',
+          oib: '12345678901',
+          companyName: 'Test Company DOO',
           mailtrap: {
             validData: { email: 'test.director@uslugar.hr' },
             invalidData: { email: 'test.director.invalid@uslugar.hr' },
