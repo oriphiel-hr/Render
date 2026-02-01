@@ -143,78 +143,75 @@ class TestCheckpointService {
     }
   }
 
-  /**
-   * Vrati bazu na stanje u определ checkpoint-u
-   * @param {string} checkpointId - ID checkpoint-a
-   * @returns {void}
-   * 
-   * Primjer:
-   *   await service.rollback(checkpointId);
-   */
+  _getRollbackOrder(tables) {
+    // Redoslijed: roditelji prije djece (za INSERT). DELETE koristi reverse.
+    const INSERT_FIRST = [
+      'legalStatus', 'category', 'subscriptionPlan', 'featureCatalog', 'documentationCategory',
+      'user', 'providerProfile', 'providerTeamLocation', 'supportTicket', 'whiteLabel',
+      'job', 'offer', 'review', 'chatRoom', 'notification', 'chatMessage', 'messageVersion',
+      'subscription', 'trialEngagement', 'subscriptionHistory', 'addonSubscription', 'addonUsage', 'addonEventLog',
+      'invoice', 'leadPurchase', 'billingPlan', 'billingAdjustment', 'companyFeatureOwnership', 'featureOwnershipHistory',
+      'providerROI', 'creditTransaction', 'clientVerification', 'providerLicense', 'leadQueue', 'companyLeadQueue',
+      'testPlan', 'testItem', 'testRun', 'testRunItem', 'documentationFeature',
+      'auditLog', 'smsLog', 'pushSubscription', 'messageSLA', 'chatbotSession', 'savedSearch', 'jobAlert',
+      'apiRequestLog', 'errorLog'
+    ];
+    const tableSet = new Set(tables);
+    const ordered = [];
+    for (const t of INSERT_FIRST) {
+      if (tableSet.has(t)) { ordered.push(t); tableSet.delete(t); }
+    }
+    for (const t of tableSet) ordered.push(t);
+    return ordered;
+  }
+
+  _parseRowForPrisma(row) {
+    const out = { ...row };
+    for (const k of Object.keys(out)) {
+      const v = out[k];
+      if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(v)) {
+        out[k] = new Date(v);
+      }
+    }
+    return out;
+  }
+
   async rollback(checkpointId) {
     console.log(`⏪ [ROLLBACK] Vrati se na checkpoint: ${checkpointId}`);
-    
     try {
-      // Učitaj checkpoint iz memorije ili datoteke
       let checkpoint = this.checkpoints.get(checkpointId);
-      
       if (!checkpoint || !checkpoint.data) {
         const filePath = path.join(CHECKPOINT_DIR, `${checkpointId}.json`);
         if (fs.existsSync(filePath)) {
-          const fileContent = fs.readFileSync(filePath, 'utf-8');
-          checkpoint = JSON.parse(fileContent);
-          // Ažuriraj u memoriji
+          checkpoint = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
           this.checkpoints.set(checkpointId, checkpoint);
         } else {
           throw new Error(`Checkpoint ${checkpointId} nije pronađen`);
         }
       }
-
       const { tables, data } = checkpoint;
-      
-      console.log(`   Vraćam tablice: ${tables.join(', ')}`);
+      const deleteOrder = [...this._getRollbackOrder(tables)].reverse();
+      const insertOrder = this._getRollbackOrder(tables);
 
-      // Za svaku tablicu: obriši sve i vrati checkpoint podatke
-      for (const table of tables) {
-        try {
-          const model = this.prisma[this._camelCase(table)];
-          if (!model) {
-            console.warn(`   ⚠️  Tablica ${table} nije pronađena u Prisma modelu`);
-            continue;
+      await this.prisma.$transaction(async (tx) => {
+        for (const table of deleteOrder) {
+          const model = tx[this._camelCase(table)];
+          if (!model) continue;
+          const deleted = await model.deleteMany({});
+          if (deleted?.count > 0) {
+            console.log(`   ✓ Obrisano ${deleted.count} redaka iz ${table}`);
           }
-
-          // Obriši sve redake iz tablice
-          await model.deleteMany({});
-          console.log(`   ✓ Obrisao sve redake iz ${table}`);
-
-          // Vrati checkpoint podatke
-          if (data[table] && data[table].length > 0) {
-            // Koristi createMany ili create u petlji
-            try {
-              if (model.createMany) {
-                await model.createMany({ data: data[table], skipDuplicates: true });
-              } else {
-                for (const row of data[table]) {
-                  try {
-                    await model.create({ data: row });
-                  } catch (err) {
-                    // Ignoriraj duplikate i strane ključeve
-                    if (!err.message.includes('Unique constraint') && !err.message.includes('Foreign key')) {
-                      console.warn(`   ⚠️  Greška pri vraćanju reda u ${table}: ${err.message}`);
-                    }
-                  }
-                }
-              }
-              console.log(`   ✓ Vratio ${data[table].length} redaka u ${table}`);
-            } catch (err) {
-              console.warn(`   ⚠️  Greška pri vraćanju podataka u ${table}: ${err.message}`);
-            }
-          }
-        } catch (err) {
-          console.warn(`   ⚠️  Greška pri rollback-u za ${table}: ${err.message}`);
         }
-      }
-
+        for (const table of insertOrder) {
+          const rows = data[table];
+          if (!rows || rows.length === 0) continue;
+          const model = tx[this._camelCase(table)];
+          if (!model) continue;
+          const parsed = rows.map(r => this._parseRowForPrisma(r));
+          await model.createMany({ data: parsed, skipDuplicates: true });
+          console.log(`   ✓ Vraćeno ${parsed.length} redaka u ${table}`);
+        }
+      });
       console.log(`✅ Rollback ${checkpointId} uspješan`);
     } catch (err) {
       console.error(`❌ Greška pri rollback-u: ${err.message}`);
