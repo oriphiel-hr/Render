@@ -1064,23 +1064,29 @@ class TestRunnerService {
 
   async runJwtAuthTest(userData) {
     const logs = [];
-    try {
-      const loginRes = await this._runApiTest('POST', '/api/auth/login', {
-        body: { email: userData?.email || 'test.client@uslugar.hr', password: userData?.password || 'Test123456!' },
-        expectedStatus: 200
-      });
-      if (!loginRes.ok || !loginRes.data?.token) {
-        return this._apiTestLog('JWT login', loginRes, logs);
-      }
-      const token = loginRes.data.token;
-      const profileRes = await this._runApiTest('GET', '/api/users/me', { token });
-      const ok = profileRes.ok && profileRes.data;
-      logs.push(`✓ JWT: token dobiven, /me ${ok ? 'OK' : 'fail'}`);
-      return { success: ok, logs };
-    } catch (e) {
-      logs.push(`❌ ${e.message}`);
-      return { success: false, logs };
+    const candidates = [
+      { email: userData?.email || 'test.client@uslugar.hr', password: userData?.password || 'Test123456!' },
+      { email: 'test.provider@uslugar.hr', password: 'Test123456!' },
+      { email: 'admin@uslugar.hr', password: 'Admin123!' }
+    ];
+    for (const { email, password } of candidates) {
+      try {
+        const loginRes = await this._runApiTest('POST', '/api/auth/login', {
+          body: { email, password },
+          expectedStatus: 200
+        });
+        if (loginRes.status === 200 && loginRes.data?.token) {
+          const token = loginRes.data.token;
+          const profileRes = await this._runApiTest('GET', '/api/users/me', { token });
+          const ok = profileRes.ok && profileRes.data;
+          logs.push(`✓ JWT login: ${email}, /me ${ok ? 'OK' : 'fail'}`);
+          return { success: ok, logs };
+        }
+      } catch (_) { /* sljedeći kandidat */ }
     }
+    logs.push(`📡 JWT login: 401 - Niti jedan korisnik (test.client, test.provider, admin)`);
+    logs.push(`💡 Pokreni seed ili test 1.1`);
+    return { success: false, logs };
   }
 
   async runCategoriesLoadTest() {
