@@ -248,6 +248,7 @@ export default function Login({ onSuccess }) {
             </label>
             <input
               id="login-email"
+              name="email"
               type="email"
               required
               value={email}
@@ -274,6 +275,7 @@ export default function Login({ onSuccess }) {
             </label>
             <input
               id="login-password"
+              name="password"
               type="password"
               required
               value={password}

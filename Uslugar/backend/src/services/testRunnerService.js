@@ -1021,19 +1021,25 @@ class TestRunnerService {
       const password = userData?.password || 'Test123456!';
       browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
       const page = await browser.newPage();
-      await page.goto('https://www.uslugar.eu/#login', { waitUntil: 'networkidle', timeout: 30000 });
-      await page.waitForTimeout(2000);
-      await page.fill('input[name="email"]', email);
-      await page.fill('input[name="password"]', password);
+      const frontendUrl = process.env.FRONTEND_URL || 'https://www.uslugar.eu';
+      await page.goto(`${frontendUrl}/#login`, { waitUntil: 'networkidle', timeout: 30000 });
+      await page.waitForSelector('#root', { timeout: 10000 });
+      await page.waitForTimeout(3000);
+      const emailSel = 'input[name="email"], #login-email, input[type="email"]';
+      const pwdSel = 'input[name="password"], #login-password, input[type="password"]';
+      await page.locator(emailSel).first().waitFor({ state: 'visible', timeout: 10000 });
+      await page.locator(emailSel).first().fill(email);
+      await page.locator(pwdSel).first().fill(password);
+      logs.push('✓ Email i lozinka uneseni');
       await page.click('button:has-text("Prijavi"), button:has-text("Sign in"), button[type="submit"]').catch(() => page.click('button[type="submit"]'));
       await page.waitForTimeout(3000);
       const url = page.url();
-      const hasDashboard = url.includes('dashboard') || url.includes('profile') || (await page.locator('text=Odjava').count()) > 0;
+      const hasDashboard = url.includes('dashboard') || url.includes('profile') || url.includes('leads') || (await page.locator('text=Odjava').count()) > 0;
       logs.push(`✓ Login test: ${hasDashboard ? 'uspješan' : 'provjeri ručno'}`);
       await browser.close();
       return { success: hasDashboard, logs, screenshots: [] };
     } catch (e) {
-      if (browser) await browser.close();
+      try { if (browser) await browser.close(); } catch (_) {}
       logs.push(`❌ ${e.message}`);
       return { success: false, logs };
     }
