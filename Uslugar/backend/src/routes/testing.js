@@ -570,9 +570,13 @@ r.post('/run-single', async (req, res, next) => {
 
       let testData = userData;
       if (!testData) {
-        testData = testType === 'verify-registar'
-          ? { oib: '12345678901', companyName: 'Test Company DOO', legalStatus: 'DOO' }
-          : { email: 'test.registration@uslugar.hr', password: 'Test123456!', fullName: 'Test User', phone: '+385991111111', city: 'Zagreb' };
+        if (testType === 'verify-registar') {
+          testData = { oib: '12345678901', companyName: 'Test Company DOO', legalStatus: 'DOO' };
+        } else if (testType === 'forgot-password') {
+          testData = { email: 'admin@uslugar.hr' };
+        } else {
+          testData = { email: 'test.registration@uslugar.hr', password: 'Test123456!', fullName: 'Test User', phone: '+385991111111', city: 'Zagreb' };
+        }
       }
 
       testResult = await testRunnerService.runGenericTest(testType, testData);

@@ -1046,7 +1046,7 @@ class TestRunnerService {
       const page = await browser.newPage();
       await page.goto('https://www.uslugar.eu/#forgot-password', { waitUntil: 'networkidle', timeout: 30000 });
       await page.waitForTimeout(2000);
-      const email = userData?.email || 'test.client@uslugar.hr';
+      const email = userData?.email || 'admin@uslugar.hr';
       await page.fill('input[name="email"], input[type="email"]', email);
       await page.click('button[type="submit"], button:has-text("Pošalji"), button:has-text("Reset")');
       await page.waitForTimeout(2000);

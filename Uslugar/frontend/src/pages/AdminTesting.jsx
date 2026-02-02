@@ -2605,7 +2605,7 @@ export default function AdminTesting(){
                                   try {
                                     // Mapiranje test ID -> user key (client, provider, admin, director, teamMember)
                                     const TEST_USER_MAP = {
-                                      '1.1': 'client', '1.2': 'providerDoo', '1.3': 'client', '1.4': 'client', '1.5': 'client', '1.6': 'client',
+                                      '1.1': 'client', '1.2': 'providerDoo', '1.3': 'client', '1.4': 'client', '1.5': 'admin', '1.6': 'client',
                                       '2.1': 'client', '2.2': 'client', '2.3': 'client',
                                       '14.1': 'providerDoo',
                                       '3.1': 'client', '3.4': 'client', '3.5': 'client',
