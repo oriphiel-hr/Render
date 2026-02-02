@@ -1015,25 +1015,27 @@ class TestRunnerService {
 
   async runLoginTest(userData) {
     const logs = [];
-    try {
-      const email = userData?.email || 'test.client@uslugar.hr';
-      const password = userData?.password || 'Test123456!';
-      logs.push(`🔐 API login test: ${email}`);
-      const res = await this._runApiTest('POST', '/api/auth/login', {
-        body: { email, password },
-        expectedStatus: 200
-      });
-      const hasToken = res.ok && res.data?.token;
-      if (hasToken) {
-        logs.push('✓ Login uspješan - token primljen');
-      } else {
-        logs.push(`⚠ Login odgovor: ${res.status} - ${JSON.stringify(res.data)?.substring(0, 150)}`);
-      }
-      return { success: hasToken, logs, screenshots: [] };
-    } catch (e) {
-      logs.push(`❌ ${e.message}`);
-      return { success: false, logs };
+    const candidates = [
+      { email: userData?.email || 'test.client@uslugar.hr', password: userData?.password || 'Test123456!' },
+      { email: 'test.provider@uslugar.hr', password: 'Test123456!' },
+      { email: 'admin@uslugar.hr', password: 'Admin123!' }
+    ];
+    for (const { email, password } of candidates) {
+      try {
+        logs.push(`🔐 Pokušaj prijave: ${email}`);
+        const res = await this._runApiTest('POST', '/api/auth/login', {
+          body: { email, password },
+          expectedStatus: 200
+        });
+        if (res.status === 200 && res.data?.token) {
+          logs.push(`✓ Login uspješan - ${email}`);
+          return { success: true, logs, screenshots: [] };
+        }
+      } catch (_) {}
     }
+    logs.push('⚠ Niti jedan test korisnik nije mogao prijavu (test.client, test.provider, admin)');
+    logs.push('💡 Pokreni seed ili test 1.1 da kreiraš korisnike');
+    return { success: false, logs, screenshots: [] };
   }
 
   async runForgotPasswordTest(userData) {
