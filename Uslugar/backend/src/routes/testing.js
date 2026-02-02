@@ -578,6 +578,8 @@ r.post('/run-single', async (req, res, next) => {
           testData = { email: 'test.registration@uslugar.hr', password: 'Test123456!', fullName: 'Test User', phone: '+385991111111', city: 'Zagreb' };
         }
       }
+      // Za forgot-password uvijek admin - frontend može slati client ako admin nije u testData
+      if (testType === 'forgot-password') testData = { ...testData, email: 'admin@uslugar.hr' };
 
       testResult = await testRunnerService.runGenericTest(testType, testData);
       
@@ -619,8 +621,10 @@ r.post('/run-single', async (req, res, next) => {
       }
       
       // Mailpit ne treba API key ili inbox ID - svi mailovi su u jednom inboxu
-      // Koristi uniqueEmail iz testResult ako postoji (s timestamp-om), inače koristi userData.email
-      const recipientEmail = testResult?.uniqueEmail || userData?.email;
+      // Koristi uniqueEmail iz testResult ako postoji (s timestamp-om), inače userData.email
+      // Za test 1.5 (forgot-password) uvijek admin@uslugar.hr - Playwright šalje na admin, admin postoji u bazi
+      let recipientEmail = testResult?.uniqueEmail || userData?.email;
+      if (testId === '1.5') recipientEmail = 'admin@uslugar.hr';
       
       if (recipientEmail) {
         results.logs.push(`🔍 Tražim mailove za: ${recipientEmail}`);
