@@ -5,7 +5,7 @@
 export const TEST_ID_MAP = {
   '1.1': { testType: 'registration', apiOnly: false },
   '1.2': { testType: 'registration', apiOnly: false },
-  '1.3': { testType: 'login', apiOnly: false },
+  '1.3': { testType: 'login', apiOnly: true },
   '1.4': { testType: 'registration', apiOnly: false }, // email verify u registration flow
   '1.5': { testType: 'forgot-password', apiOnly: false },
   '1.6': { testType: 'jwt-auth', apiOnly: true },

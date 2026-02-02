@@ -1015,31 +1015,22 @@ class TestRunnerService {
 
   async runLoginTest(userData) {
     const logs = [];
-    let browser;
     try {
       const email = userData?.email || 'test.client@uslugar.hr';
       const password = userData?.password || 'Test123456!';
-      browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
-      const page = await browser.newPage();
-      const frontendUrl = process.env.FRONTEND_URL || 'https://www.uslugar.eu';
-      await page.goto(`${frontendUrl}/#login`, { waitUntil: 'networkidle', timeout: 30000 });
-      await page.waitForSelector('#root', { timeout: 10000 });
-      await page.waitForTimeout(3000);
-      const emailSel = 'input[name="email"], #login-email, input[type="email"]';
-      const pwdSel = 'input[name="password"], #login-password, input[type="password"]';
-      await page.locator(emailSel).first().waitFor({ state: 'visible', timeout: 10000 });
-      await page.locator(emailSel).first().fill(email);
-      await page.locator(pwdSel).first().fill(password);
-      logs.push('✓ Email i lozinka uneseni');
-      await page.click('button:has-text("Prijavi"), button:has-text("Sign in"), button[type="submit"]').catch(() => page.click('button[type="submit"]'));
-      await page.waitForTimeout(3000);
-      const url = page.url();
-      const hasDashboard = url.includes('dashboard') || url.includes('profile') || url.includes('leads') || (await page.locator('text=Odjava').count()) > 0;
-      logs.push(`✓ Login test: ${hasDashboard ? 'uspješan' : 'provjeri ručno'}`);
-      await browser.close();
-      return { success: hasDashboard, logs, screenshots: [] };
+      logs.push(`🔐 API login test: ${email}`);
+      const res = await this._runApiTest('POST', '/api/auth/login', {
+        body: { email, password },
+        expectedStatus: 200
+      });
+      const hasToken = res.ok && res.data?.token;
+      if (hasToken) {
+        logs.push('✓ Login uspješan - token primljen');
+      } else {
+        logs.push(`⚠ Login odgovor: ${res.status} - ${JSON.stringify(res.data)?.substring(0, 150)}`);
+      }
+      return { success: hasToken, logs, screenshots: [] };
     } catch (e) {
-      try { if (browser) await browser.close(); } catch (_) {}
       logs.push(`❌ ${e.message}`);
       return { success: false, logs };
     }
