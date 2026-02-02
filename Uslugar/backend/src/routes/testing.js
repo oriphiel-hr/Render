@@ -652,13 +652,27 @@ r.post('/run-single', async (req, res, next) => {
         results.logs.push(`❌ Test neuspješan: Nema mailova u Mailpit-u`);
       } else {
         results.logs.push(`✓ Pronađeno ${emails.length} mailova u Mailpit-u`);
-        
+
+        // Za test 1.5 (forgot-password) traži mail s reset lozinke, ne prvi koji nađeš
+        let targetEmail = emails[0];
+        if (testId === '1.5') {
+          const resetEmail = emails.find(e => {
+            const subj = (e.Subject || e.subject || '').toLowerCase();
+            return subj.includes('reset') || subj.includes('lozink');
+          });
+          if (resetEmail) {
+            targetEmail = resetEmail;
+            results.logs.push(`📧 Odabran mail za reset lozinke: ${targetEmail.Subject || targetEmail.subject}`);
+          } else {
+            results.logs.push(`⚠ Nema maila "Reset lozinke" - koristim prvi (test može pasti)`);
+          }
+        }
+
         let emailSuccess = false;
         let linkClickSuccess = false;
-        
+
         try {
-          // Obradi prvi mail (najnoviji)
-          const firstEmail = emails[0];
+          const firstEmail = targetEmail;
           const messageId = firstEmail.ID || firstEmail.id || firstEmail.messageId;
           console.log('[TEST] Obrađujem prvi mail...');
           const emailSubject = firstEmail.Subject || firstEmail.subject || 'N/A';
@@ -687,11 +701,18 @@ r.post('/run-single', async (req, res, next) => {
               clickedLink: emailCapture.linkClickResult?.clickedLink || null
             });
             results.logs.push(`✓ Mail screenshot kreiran: ${emailCapture.emailScreenshot ? 'DA' : 'NE'}`);
-            
+
+            const clickedLink = emailCapture.linkClickResult?.clickedLink || '';
+            const isResetLink = clickedLink.includes('reset-password') || clickedLink.includes('reset_password');
             if (emailCapture.linkClickResult?.success) {
-              linkClickSuccess = true;
-              results.logs.push(`✓ Link kliknut: ${emailCapture.linkClickResult.clickedLink}`);
-              results.logs.push(`✓ Link click screenshot: ${emailCapture.linkClickResult.url ? 'DA' : 'NE'}`);
+              if (testId === '1.5' && !isResetLink) {
+                linkClickSuccess = false;
+                results.logs.push(`❌ Test 1.5 zahtijeva reset link, primljen: ${clickedLink}`);
+              } else {
+                linkClickSuccess = true;
+                results.logs.push(`✓ Link kliknut: ${clickedLink}`);
+                results.logs.push(`✓ Link click screenshot: ${emailCapture.linkClickResult.url ? 'DA' : 'NE'}`);
+              }
             } else {
               results.logs.push(`⚠ Link nije kliknut: ${emailCapture.linkClickResult?.error || 'Nepoznata greška'}`);
             }
