@@ -1,16 +1,15 @@
-// SMS Notification Service - USLUGAR EXCLUSIVE
-// Twilio Integration Ready
+// SMS Notification Service - USLUGAR
+// Infobip Integration
 
 /**
- * SMS Service - Twilio Integration
- * 
+ * SMS Service - Infobip Integration
+ *
  * Setup:
- * 1. Install Twilio: npm install twilio
- * 2. Add to .env:
- *    TEST_TWILIO_ACCOUNT_SID=your_account_sid
- *    TEST_TWILIO_AUTH_TOKEN=your_auth_token
- *    TEST_TWILIO_PHONE_NUMBER=+1234567890
- * 3. Uncomment Twilio integration code below
+ * 1. Add to .env:
+ *    INFOBIP_BASE_URL=https://eejv92.api.infobip.com
+ *    INFOBIP_API_KEY=your_api_key
+ *    INFOBIP_SENDER=ServiceSMS
+ * 2. Trial: verificiraj broj u Infobip portalu, koristi ServiceSMS kao sender
  */
 
 import dotenv from 'dotenv';
@@ -20,12 +19,6 @@ dotenv.config();
 
 /**
  * Logiraj SMS u bazu
- * @param {String} phone - Broj telefona
- * @param {String} message - Poruka
- * @param {String} type - Tip poruke (VERIFICATION, LEAD_NOTIFICATION, REFUND, URGENT, OTHER)
- * @param {Object} result - Rezultat slanja SMS-a
- * @param {String} userId - ID korisnika (opcionalno)
- * @param {Object} metadata - Dodatni podaci (opcionalno)
  */
 async function logSMS(phone, message, type, result, userId = null, metadata = null) {
   try {
@@ -36,16 +29,67 @@ async function logSMS(phone, message, type, result, userId = null, metadata = nu
         type,
         status: result.success ? 'SUCCESS' : 'FAILED',
         mode: result.mode || 'unknown',
-        twilioSid: result.sid || null,
+        twilioSid: result.sid || result.messageId || null,
         error: result.error || null,
         userId: userId || null,
         metadata: metadata || null
       }
     });
   } catch (error) {
-    // Ne bacaj grešku ako logiranje ne uspije - samo logiraj
     console.error('❌ Failed to log SMS to database:', error);
   }
+}
+
+/**
+ * Pošalji SMS preko Infobip API-ja
+ */
+async function sendViaInfobip(phone, message, type, userId, metadata) {
+  const baseUrl = (process.env.INFOBIP_BASE_URL || 'https://api.infobip.com').replace(/\/$/, '');
+  const apiKey = process.env.INFOBIP_API_KEY;
+  const sender = process.env.INFOBIP_SENDER || 'ServiceSMS';
+
+  const url = `${baseUrl}/sms/3/messages`;
+  const body = {
+    messages: [{
+      sender,
+      destinations: [{ to: phone }],
+      content: { text: message }
+    }]
+  };
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `App ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (res.ok && data?.messages?.[0]?.messageId) {
+    const msg = data.messages[0];
+    const smsResult = {
+      success: true,
+      sid: msg.messageId,
+      messageId: msg.messageId,
+      mode: 'infobip',
+      status: msg.status?.groupName || 'PENDING'
+    };
+    await logSMS(phone, message, type, smsResult, userId, metadata);
+    return smsResult;
+  }
+
+  const errorMsg = data?.requestError?.serviceException?.text || data?.requestError?.message || `HTTP ${res.status}`;
+  const smsResult = {
+    success: false,
+    error: errorMsg,
+    sid: 'sm_error_' + Date.now(),
+    mode: 'infobip_error'
+  };
+  await logSMS(phone, message, type, smsResult, userId, metadata);
+  return smsResult;
 }
 
 /**
@@ -59,92 +103,38 @@ async function logSMS(phone, message, type, result, userId = null, metadata = nu
  */
 export async function sendSMS(phone, message, type = 'OTHER', userId = null, metadata = null) {
   try {
-    // Provjeri Twilio konfiguraciju
-    const hasTwilioConfig = process.env.TEST_TWILIO_ACCOUNT_SID && 
-                           process.env.TEST_TWILIO_AUTH_TOKEN && 
-                           process.env.TEST_TWILIO_PHONE_NUMBER;
-    
-    
-    // Twilio integration
-    if (hasTwilioConfig) {
+    const hasInfobipConfig = process.env.INFOBIP_API_KEY;
+
+    if (hasInfobipConfig) {
       try {
-        const twilio = (await import('twilio')).default;
-        const client = twilio(
-          process.env.TEST_TWILIO_ACCOUNT_SID,
-          process.env.TEST_TWILIO_AUTH_TOKEN
-        );
-        
-        
-        const result = await client.messages.create({
-          body: message,
-          from: process.env.TEST_TWILIO_PHONE_NUMBER,
-          to: phone
-        });
-        
-        const smsResult = { success: true, sid: result.sid, mode: 'twilio', status: result.status };
-        
-        // Logiraj u bazu
-        await logSMS(phone, message, type, smsResult, userId, metadata);
-        
-        return smsResult;
-      } catch (twilioError) {
-        console.error('❌ Twilio SMS error:', twilioError);
-        console.error('   Error code:', twilioError.code);
-        console.error('   Error message:', twilioError.message);
-        console.error('   Full error:', JSON.stringify(twilioError, null, 2));
-        
-        // Ako je Twilio trial i broj nije verificiran
-        if (twilioError.code === 21608 || twilioError.message?.includes('verified')) {
-          console.warn('⚠️ Twilio trial: Broj mora biti verificiran u Twilio konzoli');
-          console.warn('   Dodajte broj na: https://console.twilio.com/us1/develop/phone-numbers/manage/verified');
-          // Fallback na simulation mode
-          const errorResult = { 
-            success: false, 
-            error: twilioError.message,
-            code: twilioError.code,
-            sid: 'sm_error_' + Date.now(),
-            mode: 'simulation',
-            needsVerification: true
-          };
-          
-          // Logiraj u bazu
-          await logSMS(phone, message, type, errorResult, userId, metadata);
-          
-          return errorResult;
+        const result = await sendViaInfobip(phone, message, type, userId, metadata);
+        if (result.success) {
+          console.log(`✓ [SMS] Poslano na ${phone} (${result.sid})`);
+        } else {
+          console.error(`❌ [SMS] Infobip error To: ${phone} - ${result.error}`);
         }
-        
-        // Za sve ostale Twilio greške, također logiraj detaljno
-        console.error(`📱 [SMS FAILED - Twilio error] To: ${phone}`);
-        console.error(`   Error: ${twilioError.message} (Code: ${twilioError.code})`);
-        
-        // Ne baci grešku, nego vrati error response
+        return result;
+      } catch (err) {
+        console.error('❌ Infobip SMS error:', err);
         const errorResult = {
           success: false,
-          error: twilioError.message,
-          code: twilioError.code,
+          error: err.message,
           sid: 'sm_error_' + Date.now(),
-          mode: 'twilio_error'
+          mode: 'infobip_error'
         };
-        
-        // Logiraj u bazu
         await logSMS(phone, message, type, errorResult, userId, metadata);
-        
         return errorResult;
       }
     }
-    
-    // Simulation mode (for development when Twilio not configured)
-    const simResult = { 
-      success: true, 
+
+    // Simulation mode (kad Infobip nije konfiguriran)
+    const simResult = {
+      success: true,
       sid: 'sm_simulation_' + Date.now(),
       mode: 'simulation'
     };
-    
-    // Logiraj u bazu
     await logSMS(phone, message, type, simResult, userId, metadata);
-    
     return simResult;
-    
   } catch (error) {
     console.error('❌ SMS error:', error);
     throw new Error('Failed to send SMS: ' + error.message);
@@ -153,9 +143,6 @@ export async function sendSMS(phone, message, type = 'OTHER', userId = null, met
 
 /**
  * Pošalji SMS kod za verifikaciju
- * @param {String} phone - Broj telefona
- * @param {String} code - 6-znamenkasti kod
- * @param {String} userId - ID korisnika (opcionalno)
  */
 export async function sendVerificationCode(phone, code, userId = null) {
   const message = `Vaš Uslugar kod: ${code}\n\nKod važi 10 minuta. Nemojte dijeliti taj kod.`;
@@ -164,11 +151,6 @@ export async function sendVerificationCode(phone, code, userId = null) {
 
 /**
  * Obavijest o novom leadu
- * @param {String} phone - Broj telefona
- * @param {String} leadTitle - Naziv leada
- * @param {Number} leadPrice - Cijena leada
- * @param {String} userId - ID korisnika (opcionalno)
- * @param {String} leadId - ID leada (opcionalno)
  */
 export async function notifyNewLeadAvailable(phone, leadTitle, leadPrice, userId = null, leadId = null) {
   const message = `🎯 Novi ekskluzivni lead dostupan!\n\n${leadTitle}\nCijena: ${leadPrice} kredita\n\nImate 24h da odgovorite.\n\nUslugar`;
@@ -177,10 +159,6 @@ export async function notifyNewLeadAvailable(phone, leadTitle, leadPrice, userId
 
 /**
  * Obavijest o kupnji leada
- * @param {String} phone - Broj telefona
- * @param {String} leadTitle - Naziv leada
- * @param {String} userId - ID korisnika (opcionalno)
- * @param {String} leadId - ID leada (opcionalno)
  */
 export async function notifyLeadPurchased(phone, leadTitle, userId = null, leadId = null) {
   const message = `✅ Lead uspješno kupljen!\n\n${leadTitle}\n\nKontaktirajte klijenta u roku od 24h.\n\nUslugar`;
@@ -189,10 +167,6 @@ export async function notifyLeadPurchased(phone, leadTitle, userId = null, leadI
 
 /**
  * Obavijest o refundaciji
- * @param {String} phone - Broj telefona
- * @param {Number} creditsRefunded - Broj vraćenih kredita
- * @param {String} userId - ID korisnika (opcionalno)
- * @param {String} transactionId - ID transakcije (opcionalno)
  */
 export async function notifyRefund(phone, creditsRefunded, userId = null, transactionId = null) {
   const message = `💰 Refund uspješan!\n\n${creditsRefunded} kredita vraćeno na vaš račun.\n\nUslugar`;
@@ -201,10 +175,6 @@ export async function notifyRefund(phone, creditsRefunded, userId = null, transa
 
 /**
  * Urgentna obavijest (VIP podrška)
- * @param {String} phone - Broj telefona
- * @param {String} title - Naslov
- * @param {String} body - Sadržaj
- * @param {String} userId - ID korisnika (opcionalno)
  */
 export async function sendUrgentNotification(phone, title, body, userId = null) {
   const message = `🚨 URGENT\n\n${title}\n\n${body}\n\nUslugar VIP Support`;
@@ -219,4 +189,3 @@ export default {
   notifyRefund,
   sendUrgentNotification
 };
-

@@ -138,7 +138,7 @@ const features = [
         { name: "Notifikacije za nove poruke", implemented: true },
         { name: "Notifikacije za nove poslove (providere)", implemented: true },
         { name: "Email notifikacije", implemented: true },
-        { name: "SMS notifikacije (Twilio)", implemented: true },
+        { name: "SMS notifikacije (Infobip)", implemented: true },
         { name: "In-app notifikacije", implemented: true },
         { name: "Push notifikacije (browser notifications)", implemented: true },
         { name: "Brojač nepročitanih notifikacija", implemented: true }
@@ -222,7 +222,7 @@ const features = [
         { name: "Auto-verifikacija naziva tvrtke (Sudski registar, Obrtni registar)", implemented: true }, // Implementirano: Prava integracija s Sudskim registrom API (OAuth), scraping Obrtnog registra, automatska provjera pri registraciji
         { name: "Porezni broj", implemented: true },
         { name: "Email verifikacija", implemented: true },
-        { name: "SMS verifikacija telefonskog broja (Twilio)", implemented: true },
+        { name: "SMS verifikacija telefonskog broja (Infobip)", implemented: true },
         { name: "DNS TXT record verifikacija domena", implemented: true },
         { name: "Email verifikacija na domeni tvrtke", implemented: true }, // Implementirano: Slanje verifikacijskog emaila na company email adresu, verifikacijski token, endpoint za verifikaciju i resend
         { name: "Identity Badge sustav (Email, Phone, DNS, Business značke)", implemented: true },

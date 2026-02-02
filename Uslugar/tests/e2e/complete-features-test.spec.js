@@ -1462,11 +1462,11 @@ test.describe('Kompletan Test Suite - Sve funkcionalnosti iz dokumentacije', () 
     });
 
     /**
-     * Test: SMS verifikacija telefonskog broja (Twilio)
+     * Test: SMS verifikacija telefonskog broja (Infobip)
      * IZVRŠAVA: Provider
      * ROLLBACK: Da
      */
-    test('14.2 - SMS verifikacija telefonskog broja (Twilio)', async ({ page }) => {
+    test('14.2 - SMS verifikacija telefonskog broja (Infobip)', async ({ page }) => {
       await checkpointManager.rollbackToCheckpoint('initial-setup');
       
       // Prijava kao Provider

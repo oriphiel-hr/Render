@@ -1790,12 +1790,12 @@ export default function AdminTesting(){
                 },
                 {
                   num: 21,
-                  title: 'TWILIO - SMS Verifikacija i Notifikacije',
+                  title: 'SMS - Verifikacija i Notifikacije (Infobip)',
                   tests: [
-                    { id: '21.1', name: 'SMS verifikacija telefonskog broja', desc: 'Testira Twilio SMS verifikaciju' },
+                    { id: '21.1', name: 'SMS verifikacija telefonskog broja', desc: 'Testira Infobip SMS verifikaciju' },
                     { id: '21.2', name: 'SMS notifikacija - nova ponuda', desc: 'Testira slanje SMS-a za novu ponudu' },
                     { id: '21.3', name: 'SMS notifikacija - nov posao', desc: 'Testira slanje SMS-a za novi posao' },
-                    { id: '21.4', name: 'Twilio error handling', desc: 'Testira rukovanje Twilio greškama' }
+                    { id: '21.4', name: 'SMS error handling', desc: 'Testira rukovanje SMS greškama' }
                   ]
                 },
                 {
@@ -2140,7 +2140,7 @@ export default function AdminTesting(){
                                       <li>1. Kreiraj novu registraciju ili otvori profil kaoProvider</li>
                                       <li>2. Trebalo bi vidjeti gumb "Provjeri telefon s SMS-om" ili sličan</li>
                                       <li>3. Klikni → trebalo bi formar za unos broja telefona (npr. +385911234567)</li>
-                                      <li>4. ✅ TREBALO BI: SMS s 6-znamenkastim kodom stiže na telefon (Twilio)</li>
+                                      <li>4. ✅ TREBALO BI: SMS s 6-znamenkastim kodom stiže na telefon (Infobip)</li>
                                       <li>5. Unesi kod → ✅ Trebala bi poruka "Telefon verificiran"</li>
                                       <li>6. Provjeri: Korisnik ima "Phone Identity Badge" znački na profilu</li>
                                       <li>7. Edge case: Ako je ponovno kliknut, trebala bi poruka "Telefon već verificiran"</li>
@@ -2151,7 +2151,7 @@ export default function AdminTesting(){
                                       <li>1. Kao provider: Sljeđi SMS notifikacije koje si postavio u AdminTesting</li>
                                       <li>2. Kao klijent: Otvori jedan od svojih poslova i pošalji ponudu provideru</li>
                                       <li>3. ✅ TREBALO BI: Provider prima SMS: "Nova ponuda za posao: [naslov]"</li>
-                                      <li>4. Provjeri SMS na Twilio console ili test broj</li>
+                                      <li>4. Provjeri SMS u Infobip portalu ili na test broj</li>
                                       <li>5. Edge case: Ako provider nema SMS notifikacije uključene, ne bi trebao dobiti SMS</li>
                                     </>
                                   )}
@@ -2161,17 +2161,17 @@ export default function AdminTesting(){
                                       <li>2. Postavi SMS notifikacije uključene u settings-ima</li>
                                       <li>3. Kao klijent: Kreiraj novi posao u kategoriji Električni → objavi</li>
                                       <li>4. ✅ TREBALO BI: Provider dobije SMS: "Nov posao u [kategorija]: [naslov]"</li>
-                                      <li>5. Provjeri SMS na Twilio console ili test broj</li>
+                                      <li>5. Provjeri SMS u Infobip portalu ili na test broj</li>
                                       <li>6. Edge case: Ako provider ima filter po gradu, trebalo bi provjeriti i to</li>
                                     </>
                                   )}
                                   {test.id === '21.4' && (
                                     <>
-                                      <li>1. Backend test: Simuliraj Twilio greške:</li>
-                                      <li>   a) <strong>Code 20003</strong>: Invalid Twilio credentials</li>
-                                      <li>   b) <strong>Inactive user</strong>: Twilio račun je neaktivan</li>
+                                      <li>1. Backend test: Simuliraj SMS greške:</li>
+                                      <li>   a) <strong>Invalid credentials</strong>: Neispravan Infobip API key</li>
+                                      <li>   b) <strong>Inactive account</strong>: Račun je neaktivan</li>
                                       <li>   c) <strong>Restricted account</strong>: Račun je suspenzioniran</li>
-                                      <li>2. Testiraj s pogrešnom Twilio API key ili account SID</li>
+                                      <li>2. Testiraj s pogrešnim Infobip API key</li>
                                       <li>3. ✅ TREBALO BI: Greške se bilježe u AdminSmsLogs s jasnom porukom</li>
                                       <li>4. ✅ TREBALO BI: Frontend vidi jasnu poruku s instrukcijama što učiniti</li>
                                       <li>5. Provjeri: Nema SMS-a poslano ako je greška, korisnik nije blokiran</li>

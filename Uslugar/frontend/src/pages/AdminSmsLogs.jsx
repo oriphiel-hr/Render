@@ -114,7 +114,7 @@ export default function AdminSmsLogs() {
                            err.response?.data?.error || 
                            err.message || 
                            'Greška pri sinkronizaciji';
-      console.error('Error syncing from Twilio:', err);
+      console.error('Error syncing from provider:', err);
       console.error('Error response:', err.response?.data);
       
       let displayMessage = errorMessage;
@@ -123,7 +123,7 @@ export default function AdminSmsLogs() {
       if (err.response?.status === 400) {
         const details = err.response?.data?.details;
         if (details) {
-          displayMessage = `${errorMessage}\n\nAccount SID: ${details.hasAccountSid ? '✅ Postavljen' : '❌ Nedostaje'}\nAuth Token: ${details.hasAuthToken ? '✅ Postavljen' : '❌ Nedostaje'}\n\nMolimo provjerite environment variables na Render.com: TEST_TWILIO_ACCOUNT_SID i TEST_TWILIO_AUTH_TOKEN`;
+          displayMessage = `${errorMessage}\n\nAccount SID: ${details.hasAccountSid ? '✅' : '❌'}, Auth Token: ${details.hasAuthToken ? '✅' : '❌'}\n\nPostavi INFOBIP_API_KEY (Render) ili TEST_TWILIO_* za legacy.`;
         }
       }
       
@@ -155,16 +155,16 @@ export default function AdminSmsLogs() {
             displayMessage += `2. ${actionRequired.step2}\n`;
             displayMessage += `3. ${actionRequired.step3}\n`;
           }
-          displayMessage += `\nTwilio račun je deaktiviran ili nije aktivan. Kontaktirajte Twilio Support za aktivaciju.`;
+          displayMessage += `\nRačun providera je deaktiviran. Kontaktirajte podršku (Infobip/Twilio).`;
         }
       }
       
       // Ako je greška zbog neispravnih credentials (401)
       if (err.response?.status === 401) {
         const details = err.response?.data?.details;
-        displayMessage = `${errorMessage}\n\n${details ? `Account SID: ${details.hasAccountSid ? '✅' : '❌'}, Auth Token: ${details.hasAuthToken ? '✅' : '❌'}` : ''}\n\nMolimo provjerite da su Twilio credentials ispravni u Render.com environment variables.`;
+        displayMessage = `${errorMessage}\n\n${details ? `Account SID: ${details.hasAccountSid ? '✅' : '❌'}, Auth Token: ${details.hasAuthToken ? '✅' : '❌'}` : ''}\n\nProvjeri INFOBIP_API_KEY ili Twilio credentials u Render.com.`;
         if (err.response?.data?.code === 20003) {
-          displayMessage += '\n\nTwilio error code 20003: Credentials su neispravni ili su istekli. Provjerite Twilio Console za ispravne credentials.';
+          displayMessage += '\n\nCredentials su neispravni ili istekli. Provjeri Infobip Portal ili Twilio Console.';
         }
       }
       
@@ -217,8 +217,10 @@ export default function AdminSmsLogs() {
   const getModeBadge = (mode) => {
     const colors = {
       twilio: 'bg-indigo-100 text-indigo-800',
+      infobip: 'bg-emerald-100 text-emerald-800',
       simulation: 'bg-gray-100 text-gray-800',
-      twilio_error: 'bg-orange-100 text-orange-800'
+      twilio_error: 'bg-orange-100 text-orange-800',
+      infobip_error: 'bg-orange-100 text-orange-800'
     };
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[mode] || 'bg-gray-100 text-gray-800'}`}>
@@ -236,6 +238,7 @@ export default function AdminSmsLogs() {
         </div>
         <button
           onClick={syncFromTwilio}
+          title="Infobip: SmsLog se popunjava pri slanju. Twilio: dohvaća poruke iz API-ja."
           disabled={syncing}
           className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
@@ -247,7 +250,7 @@ export default function AdminSmsLogs() {
           ) : (
             <>
               <span>🔄</span>
-              <span>Sinkroniziraj iz Twilio</span>
+              <span>Sinkroniziraj iz providera</span>
             </>
           )}
         </button>
@@ -295,8 +298,8 @@ export default function AdminSmsLogs() {
             <div className="text-2xl font-bold text-red-600">{stats.byStatus?.FAILED || 0}</div>
           </div>
           <div className="bg-white p-4 rounded-lg shadow">
-            <div className="text-sm text-gray-600">Twilio</div>
-            <div className="text-2xl font-bold text-indigo-600">{stats.byMode?.twilio || 0}</div>
+            <div className="text-sm text-gray-600">Infobip/Twilio</div>
+            <div className="text-2xl font-bold text-indigo-600">{(stats.byMode?.infobip || 0) + (stats.byMode?.twilio || 0)}</div>
           </div>
         </div>
       )}
@@ -514,7 +517,7 @@ export default function AdminSmsLogs() {
                 
                 {selectedLog.twilioSid && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Twilio SID</label>
+                    <label className="block text-sm font-medium text-gray-700">Message ID</label>
                     <div className="mt-1 text-sm text-gray-900 font-mono">{selectedLog.twilioSid}</div>
                   </div>
                 )}

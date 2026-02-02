@@ -32,7 +32,7 @@ export const TEST_ID_MAP = {
   '21.1': { testType: 'sms-verify', apiOnly: false },
   '21.2': { testType: 'sms-offer', apiOnly: false },
   '21.3': { testType: 'sms-job', apiOnly: false },
-  '21.4': { testType: 'twilio-error', apiOnly: true },
+  '21.4': { testType: 'sms-error', apiOnly: true },
   '22.1': { testType: 'kyc-upload', apiOnly: false },
   '22.2': { testType: 'kyc-verify-oib', apiOnly: true },
   '22.3': { testType: 'kyc-status', apiOnly: true },

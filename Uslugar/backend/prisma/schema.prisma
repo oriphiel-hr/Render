@@ -1466,7 +1466,7 @@ model SmsLog {
   type      String // Tip poruke: VERIFICATION, LEAD_NOTIFICATION, REFUND, URGENT, OTHER
   status    String // Status: SUCCESS, FAILED, PENDING
   mode      String // Mode: twilio, simulation, twilio_error
-  twilioSid String? // Twilio SID (ako je poslano preko Twilio)
+  twilioSid String? // Provider message ID (Infobip messageId ili Twilio SID)
   error     String? // Error poruka (ako je neuspješno)
   userId    String? // ID korisnika (ako je vezano za korisnika)
   metadata  Json? // Dodatni podaci (npr. leadId, jobId, itd.)

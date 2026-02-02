@@ -41,10 +41,10 @@
    - `TEST_STRIPE_WEBHOOK_SECRET`
    - **Status:** Koristi se u `backend/src/routes/payments.js` i drugim fajlovima
 
-5. **Twilio** (ako ne koristiš SMS funkcionalnost)
-   - `TEST_TWILIO_ACCOUNT_SID`
-   - `TEST_TWILIO_AUTH_TOKEN`
-   - `TEST_TWILIO_PHONE_NUMBER`
+5. **Infobip SMS** (obavezno za SMS)
+   - `INFOBIP_BASE_URL`
+   - `INFOBIP_API_KEY`
+   - `INFOBIP_SENDER`
    - **Status:** Koristi se u `backend/src/services/sms-service.js` i `backend/src/routes/admin.js`
 
 6. **OpenAI** (ako ne koristiš AI moderaciju recenzija)

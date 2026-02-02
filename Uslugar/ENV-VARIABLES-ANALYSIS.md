@@ -33,10 +33,10 @@
 - ✅ `TEST_STRIPE_PUBLISHABLE_KEY` - Stripe publishable key (`backend/src/routes/payments.js`)
 - ✅ `TEST_STRIPE_WEBHOOK_SECRET` - Stripe webhook secret (`backend/src/routes/payments.js`)
 
-### **8. Twilio SMS** (Opcionalno - ako koristiš Twilio)
-- ✅ `TEST_TWILIO_ACCOUNT_SID` - Twilio Account SID (`backend/src/services/sms-service.js`, `backend/src/routes/admin.js`)
-- ✅ `TEST_TWILIO_AUTH_TOKEN` - Twilio Auth Token (`backend/src/services/sms-service.js`, `backend/src/routes/admin.js`)
-- ✅ `TEST_TWILIO_PHONE_NUMBER` - Twilio phone number (`backend/src/services/sms-service.js`)
+### **8. Infobip SMS**
+- ✅ `INFOBIP_BASE_URL` - Infobip API base (npr. https://eejv92.api.infobip.com)
+- ✅ `INFOBIP_API_KEY` - Infobip API key
+- ✅ `INFOBIP_SENDER` - Sender (ServiceSMS za trial)
 
 ### **9. OpenAI** (Opcionalno - za AI moderaciju recenzija)
 - ✅ `OPENAI_API_KEY` - OpenAI API key za Review Moderation (`backend/src/services/review-moderation-service.js`)
@@ -108,7 +108,7 @@ grep -r "COMPANY_OIB\|COMPANY_NAME\|COMPANY_ADDRESS\|COMPANY_DIRECTOR" backend/s
 ### **Varijable koje su OPCIONALNE:**
 
 9. ✅ `TEST_STRIPE_SECRET_KEY`, `TEST_STRIPE_PUBLISHABLE_KEY`, `TEST_STRIPE_WEBHOOK_SECRET` (ako koristiš Stripe)
-10. ✅ `TEST_TWILIO_ACCOUNT_SID`, `TEST_TWILIO_AUTH_TOKEN`, `TEST_TWILIO_PHONE_NUMBER` (ako koristiš Twilio)
+10. ✅ `INFOBIP_BASE_URL`, `INFOBIP_API_KEY`, `INFOBIP_SENDER` (SMS)
 11. ✅ `OPENAI_API_KEY` (ako koristiš AI moderaciju)
 12. ✅ `API_URL` (za testove)
 13. ✅ `CLIENT_URL` (ako se koristi umjesto FRONTEND_URL)
@@ -153,7 +153,7 @@ Nakon brisanja varijabli:
 2. **Testiraj funkcionalnost:**
    - Email slanje
    - Stripe payments (ako koristiš)
-   - Twilio SMS (ako koristiš)
+   - Infobip SMS
    - Push notifications (ako koristiš)
    - AI moderacija (ako koristiš)
 

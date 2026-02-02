@@ -31,9 +31,9 @@ Render će automatski izvući sve varijable i postaviti ih.
 - ✅ `TEST_STRIPE_SECRET_KEY` - Kopiraj iz Stripe Dashboard (Test mode)
 - ✅ `TEST_STRIPE_PUBLISHABLE_KEY` - Kopiraj iz Stripe Dashboard (Test mode)
 - ✅ `TEST_STRIPE_WEBHOOK_SECRET` - **Moraš prvo kreirati webhook** u Stripe Dashboard-u, zatim kopirati Signing secret
-- ✅ `TEST_TWILIO_ACCOUNT_SID` - Iz Twilio Dashboard
-- ✅ `TEST_TWILIO_AUTH_TOKEN` - Iz Twilio Dashboard
-- ✅ `TEST_TWILIO_PHONE_NUMBER` - Iz Twilio Dashboard
+- ✅ `INFOBIP_BASE_URL` - https://eejv92.api.infobip.com (ili tvoj subdomain)
+- ✅ `INFOBIP_API_KEY` - Iz Infobip Portal → API keys
+- ✅ `INFOBIP_SENDER` - ServiceSMS (trial) ili tvoj broj/sender
 - ✅ `DATABASE_URL` - Iz Render PostgreSQL add-on ili tvoja baza
 - ✅ `JWT_SECRET` - Generiran jak secret
 
@@ -96,9 +96,9 @@ TEST_STRIPE_WEBHOOK_SECRET=whsec_... (nakon kreiranja webhook-a)
 
 #### **8. Twilio (TEST MODE)**
 ```
-TEST_TWILIO_ACCOUNT_SID=AC...
-TEST_TWILIO_AUTH_TOKEN=your-auth-token
-TEST_TWILIO_PHONE_NUMBER=+1234567890
+INFOBIP_BASE_URL=https://eejv92.api.infobip.com
+INFOBIP_API_KEY=your_api_key_from_portal
+INFOBIP_SENDER=ServiceSMS
 ```
 
 #### **9. SUDREG API**

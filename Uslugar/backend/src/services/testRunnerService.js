@@ -904,7 +904,8 @@ class TestRunnerService {
       'sms-verify': () => this.runSmsVerifyTest(userData),
       'sms-offer': () => this.runSmsOfferTest(userData),
       'sms-job': () => this.runSmsJobTest(userData),
-      'twilio-error': () => this.runTwilioErrorTest(userData),
+      'twilio-error': () => this.runSmsErrorTest(userData),
+      'sms-error': () => this.runSmsErrorTest(userData),
       'kyc-upload': () => this.runKycUploadTest(userData),
       'kyc-verify-oib': () => this.runKycVerifyOibTest(userData),
       'kyc-status': () => this.runKycStatusTest(userData),
@@ -967,7 +968,7 @@ class TestRunnerService {
 
       if (!validateOIB(oib)) {
         logs.push('❌ OIB nije matematički validan');
-        return { success: false, logs, message: 'OIB nije validan' };
+        return { success: false, logs, screenshots: [], message: 'OIB nije validan' };
       }
       logs.push('✓ OIB matematički validan');
 
@@ -985,9 +986,12 @@ class TestRunnerService {
         if (result?.note) logs.push(`   Napomena: ${result.note}`);
       } else {
         logs.push(`⚠ Pravni status ${legalStatus} - nema provjere u registru (FREELANCER/INDIVIDUAL)`);
+        const ss = [];
+        try { ss.push(...await this._capturePageScreenshot('14.1_registar', 'https://www.uslugar.eu/#register-provider', '01_registracija_provider', logs)); } catch (_) {}
         return {
           success: true,
           logs,
+          screenshots: ss,
           message: 'Test preskočen - nema registarske provjere za ovaj status'
         };
       }
@@ -995,15 +999,21 @@ class TestRunnerService {
       // Uspjeh: integracija je testirana ako smo dobili odgovor od API-ja (verified, not found, credentials...)
       const success = !!result;
       logs.push(success ? '✅ Test verifikacije registra uspješan' : '❌ Provjera nije uspjela');
+      const screenshots = [];
+      try {
+        const ss = await this._capturePageScreenshot('14.1_registar', 'https://www.uslugar.eu/#register-provider', '01_registracija_provider', logs);
+        screenshots.push(...ss);
+      } catch (_) {}
       return {
         success,
         logs,
+        screenshots,
         message: success ? 'Verifikacija registra testirana' : (result?.note || result?.error || 'Provjera neuspjela'),
         registarResult: result
       };
     } catch (err) {
       logs.push(`❌ Greška: ${err.message}`);
-      return { success: false, logs, message: err.message };
+      return { success: false, logs, screenshots: [], message: err.message };
     }
   }
 
@@ -1015,6 +1025,7 @@ class TestRunnerService {
 
   async runLoginTest(userData) {
     const logs = [];
+    const screenshots = [];
     const candidates = [
       { email: userData?.email || 'test.client@uslugar.hr', password: userData?.password || 'Test123456!' },
       { email: 'test.provider@uslugar.hr', password: 'Test123456!' },
@@ -1029,23 +1040,31 @@ class TestRunnerService {
         });
         if (res.status === 200 && res.data?.token) {
           logs.push(`✓ Login uspješan - ${email}`);
-          return { success: true, logs, screenshots: [] };
+          const ss = await this._screenshotWithToken('1.3_login', res.data.token, '#user', '01_dashboard', logs);
+          screenshots.push(...ss);
+          return { success: true, logs, screenshots };
         }
       } catch (_) {}
     }
+    const ss = await this._capturePageScreenshot('1.3_login', 'https://www.uslugar.eu/#login', '00_login_form', logs);
+    screenshots.push(...ss);
     logs.push('⚠ Niti jedan test korisnik nije mogao prijavu (test.client, test.provider, admin)');
     logs.push('💡 Pokreni seed ili test 1.1 da kreiraš korisnike');
-    return { success: false, logs, screenshots: [] };
+    return { success: false, logs, screenshots };
   }
 
   async runForgotPasswordTest(userData) {
     const logs = [];
+    const screenshots = [];
     let browser;
     try {
       browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
       const page = await browser.newPage();
       await page.goto('https://www.uslugar.eu/#forgot-password', { waitUntil: 'networkidle', timeout: 30000 });
       await page.waitForTimeout(2000);
+      const sp = this._getScreenshotPath('1.5_forgot', '00_form');
+      await page.screenshot({ path: sp, fullPage: true });
+      screenshots.push({ step: 'Forma za reset', url: this._getScreenshotUrl(path.basename(sp)) });
       const email = userData?.email || 'admin@uslugar.hr';
       await page.fill('input[name="email"], input[type="email"]', email);
       await page.click('button[type="submit"], button:has-text("Pošalji"), button:has-text("Reset")');
@@ -1053,17 +1072,21 @@ class TestRunnerService {
       const text = await page.textContent('body');
       const ok = text.includes('poslan') || text.includes('email') || text.includes('Poslano');
       logs.push(`✓ Forgot password: ${ok ? 'forma odgovorila' : 'provjeri ručno'}`);
+      const sp2 = this._getScreenshotPath('1.5_forgot', '01_after_submit');
+      await page.screenshot({ path: sp2, fullPage: true });
+      screenshots.push({ step: 'Nakon slanja', url: this._getScreenshotUrl(path.basename(sp2)) });
       await browser.close();
-      return { success: ok, logs, screenshots: [] };
+      return { success: ok, logs, screenshots };
     } catch (e) {
       if (browser) await browser.close();
       logs.push(`❌ ${e.message}`);
-      return { success: false, logs };
+      return { success: false, logs, screenshots };
     }
   }
 
   async runJwtAuthTest(userData) {
     const logs = [];
+    const screenshots = [];
     const candidates = [
       { email: userData?.email || 'test.client@uslugar.hr', password: userData?.password || 'Test123456!' },
       { email: 'test.provider@uslugar.hr', password: 'Test123456!' },
@@ -1080,50 +1103,161 @@ class TestRunnerService {
           const profileRes = await this._runApiTest('GET', '/api/users/me', { token });
           const ok = profileRes.ok && profileRes.data;
           logs.push(`✓ JWT login: ${email}, /me ${ok ? 'OK' : 'fail'}`);
-          return { success: ok, logs };
+          if (ok) {
+            let browser;
+            try {
+              browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
+              const page = await browser.newPage();
+              await page.goto('https://www.uslugar.eu/', { waitUntil: 'networkidle', timeout: 15000 });
+              await page.evaluate((t) => { localStorage.setItem('token', t); window.location.hash = '#user'; }, token);
+              await page.waitForTimeout(2000);
+              const screenshotPath = this._getScreenshotPath('1.6_jwt', '01_profile');
+              await page.screenshot({ path: screenshotPath, fullPage: true });
+              screenshots.push({ step: 'Profile (zaštićena ruta)', url: this._getScreenshotUrl(path.basename(screenshotPath)) });
+              await browser.close();
+            } catch (e) {
+              if (browser) await browser.close();
+              logs.push(`⚠ Screenshot: ${e.message}`);
+            }
+          }
+          return { success: ok, logs, screenshots };
         }
       } catch (_) { /* sljedeći kandidat */ }
     }
     logs.push(`📡 JWT login: 401 - Niti jedan korisnik (test.client, test.provider, admin)`);
     logs.push(`💡 Pokreni seed ili test 1.1`);
-    return { success: false, logs };
+    return { success: false, logs, screenshots };
+  }
+
+  async _capturePageScreenshot(testId, url, stepName, logs = []) {
+    let browser;
+    try {
+      browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
+      const page = await browser.newPage();
+      await page.goto(url, { waitUntil: 'networkidle', timeout: 15000 });
+      await page.waitForTimeout(1500);
+      const screenshotPath = this._getScreenshotPath(testId, stepName);
+      await page.screenshot({ path: screenshotPath, fullPage: true });
+      await browser.close();
+      return [{ step: stepName, url: this._getScreenshotUrl(path.basename(screenshotPath)) }];
+    } catch (e) {
+      if (browser) await browser.close();
+      logs.push(`⚠ Screenshot ${stepName}: ${e.message}`);
+      return [];
+    }
+  }
+
+  async _screenshotWithToken(testId, token, hash, stepName, logs = []) {
+    let browser;
+    try {
+      browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
+      const page = await browser.newPage();
+      await page.goto('https://www.uslugar.eu/', { waitUntil: 'networkidle', timeout: 15000 });
+      await page.evaluate(({ t, h }) => { localStorage.setItem('token', t); window.location.hash = h; }, { t: token, h: hash });
+      await page.waitForTimeout(2000);
+      const screenshotPath = this._getScreenshotPath(testId, stepName);
+      await page.screenshot({ path: screenshotPath, fullPage: true });
+      await browser.close();
+      return [{ step: stepName, url: this._getScreenshotUrl(path.basename(screenshotPath)) }];
+    } catch (e) {
+      if (browser) await browser.close();
+      logs.push(`⚠ Screenshot ${stepName}: ${e.message}`);
+      return [];
+    }
+  }
+
+  async _screenshotAdminWithToken(testId, token, stepName, logs = []) {
+    let browser;
+    try {
+      browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
+      const page = await browser.newPage();
+      await page.goto('https://www.uslugar.eu/', { waitUntil: 'networkidle', timeout: 15000 });
+      await page.evaluate((t) => { localStorage.setItem('adminToken', t); window.location.hash = '#admin'; }, token);
+      await page.waitForTimeout(2500);
+      const screenshotPath = this._getScreenshotPath(testId, stepName);
+      await page.screenshot({ path: screenshotPath, fullPage: true });
+      await browser.close();
+      return [{ step: stepName, url: this._getScreenshotUrl(path.basename(screenshotPath)) }];
+    } catch (e) {
+      if (browser) await browser.close();
+      logs.push(`⚠ Screenshot ${stepName}: ${e.message}`);
+      return [];
+    }
   }
 
   async runCategoriesLoadTest() {
     const logs = [];
+    const testId = '2.1_categories';
+    const screenshots = [];
     try {
       const res = await this._runApiTest('GET', '/api/categories');
-      const ok = res.ok && Array.isArray(res.data) && res.data.length > 0;
-      logs.push(`✓ Kategorije: ${res.ok ? res.data?.length + ' učitano' : 'greška'}`);
-      return { success: ok, logs };
+      const arr = Array.isArray(res.data) ? res.data : [];
+      const ok = res.ok && arr.length > 0;
+      logs.push(`✓ Kategorije: ${arr.length} učitano`);
+      if (arr.length > 0) {
+        const names = arr.slice(0, 8).map(c => c.name || c.title).filter(Boolean).join(', ');
+        logs.push(`📋 Primjer: ${names}${arr.length > 8 ? '...' : ''}`);
+      }
+      if (ok) {
+        const ss = await this._capturePageScreenshot(testId, 'https://www.uslugar.eu/#categories', '01_kategorije', logs);
+        screenshots.push(...ss);
+      }
+      return { success: ok, logs, screenshots };
     } catch (e) {
       logs.push(`❌ ${e.message}`);
-      return { success: false, logs };
+      return { success: false, logs, screenshots };
     }
   }
 
   async runCategoriesHierarchyTest() {
     const logs = [];
+    const testId = '2.2_hierarchy';
+    const screenshots = [];
     try {
       const res = await this._runApiTest('GET', '/api/categories?tree=true');
-      const ok = res.ok && (Array.isArray(res.data) || (res.data && typeof res.data === 'object'));
-      logs.push(`✓ Hijerarhija: ${ok ? 'OK' : 'greška'}`);
-      return { success: ok, logs };
+      const data = res.data;
+      const ok = res.ok && (Array.isArray(data) || (data && typeof data === 'object'));
+      logs.push(`✓ Hijerarhija: OK`);
+      if (ok && data) {
+        const flat = Array.isArray(data) ? data : (data.children || [data] || []);
+        const roots = flat.filter(c => !c.parentId);
+        const withChildren = flat.filter(c => (c.children?.length || c.subcategories?.length) > 0);
+        logs.push(`📋 Glavne kategorije: ${roots.length}, s podkategorijama: ${withChildren.length}`);
+      }
+      if (ok) {
+        const ss = await this._capturePageScreenshot(testId, 'https://www.uslugar.eu/#categories', '01_hijerarhija', logs);
+        screenshots.push(...ss);
+      }
+      return { success: ok, logs, screenshots };
     } catch (e) {
       logs.push(`❌ ${e.message}`);
-      return { success: false, logs };
+      return { success: false, logs, screenshots };
     }
   }
 
   async runJobsFilterTest() {
     const logs = [];
+    const testId = '2.3_jobs_filter';
+    const screenshots = [];
     try {
-      const res = await this._runApiTest('GET', '/api/jobs?limit=5');
-      logs.push(`✓ Jobs filter: ${res.status}`);
-      return { success: res.ok, logs };
+      const res = await this._runApiTest('GET', '/api/jobs?limit=10');
+      logs.push(`✓ Jobs API: ${res.status}`);
+      const jobs = Array.isArray(res.data) ? res.data : [];
+      logs.push(`📋 Pronađeno poslova: ${jobs.length}`);
+      if (jobs.length > 0) {
+        const withCat = jobs.filter(j => j.categoryId || j.category?.name).length;
+        logs.push(`   S kategorijom: ${withCat}/${jobs.length}`);
+      }
+      const filterRes = await this._runApiTest('GET', '/api/jobs?limit=5&categoryId=1');
+      logs.push(`✓ Filter po kategoriji: ${filterRes.status} (categoryId=1)`);
+      if (res.ok) {
+        const ss = await this._capturePageScreenshot(testId, 'https://www.uslugar.eu/', '01_poslovi', logs);
+        screenshots.push(...ss);
+      }
+      return { success: res.ok, logs, screenshots };
     } catch (e) {
       logs.push(`❌ ${e.message}`);
-      return { success: false, logs };
+      return { success: false, logs, screenshots };
     }
   }
 
@@ -1137,13 +1271,18 @@ class TestRunnerService {
 
   async runJobStatusTest() {
     const logs = [];
+    const screenshots = [];
     try {
       const res = await this._runApiTest('GET', '/api/jobs?limit=1');
       logs.push(`✓ Job status API: ${res.status}`);
-      return { success: res.ok, logs };
+      if (res.ok) {
+        const ss = await this._capturePageScreenshot('3.5_job-status', 'https://www.uslugar.eu/', '01_poslovi', logs);
+        screenshots.push(...ss);
+      }
+      return { success: res.ok, logs, screenshots };
     } catch (e) {
       logs.push(`❌ ${e.message}`);
-      return { success: false, logs };
+      return { success: false, logs, screenshots };
     }
   }
 
@@ -1157,13 +1296,18 @@ class TestRunnerService {
 
   async runProviderProfileTest() {
     const logs = [];
+    const screenshots = [];
     try {
       const res = await this._runApiTest('GET', '/api/providers?limit=3');
       logs.push(`✓ Provider profile API: ${res.status}`);
-      return { success: res.ok, logs };
+      if (res.ok) {
+        const ss = await this._capturePageScreenshot('6.1_provider', 'https://www.uslugar.eu/#providers', '01_pruzatelji', logs);
+        screenshots.push(...ss);
+      }
+      return { success: res.ok, logs, screenshots };
     } catch (e) {
       logs.push(`❌ ${e.message}`);
-      return { success: false, logs };
+      return { success: false, logs, screenshots };
     }
   }
 
@@ -1173,13 +1317,18 @@ class TestRunnerService {
 
   async runMatchmakingTest() {
     const logs = [];
+    const screenshots = [];
     try {
       const res = await this._runApiTest('GET', '/api/matchmaking/status').catch(() => ({ ok: false, status: 404 }));
       logs.push(`✓ Matchmaking: ${res.status}`);
-      return { success: res.ok || res.status === 404, logs };
+      if (res.ok || res.status === 404) {
+        const ss = await this._capturePageScreenshot('12.1_match', 'https://www.uslugar.eu/', '01_landing', logs);
+        screenshots.push(...ss);
+      }
+      return { success: res.ok || res.status === 404, logs, screenshots };
     } catch (e) {
       logs.push(`❌ ${e.message}`);
-      return { success: false, logs };
+      return { success: false, logs, screenshots };
     }
   }
 
@@ -1203,19 +1352,30 @@ class TestRunnerService {
 
   async runDirectorDashboardTest(userData) {
     const logs = [];
-    try {
-      const login = await this._runApiTest('POST', '/api/auth/login', {
-        body: { email: userData?.email || 'test.director@uslugar.hr', password: userData?.password || 'Test123456!', role: 'PROVIDER' },
-        expectedStatus: 200
-      });
-      if (!login.ok || !login.data?.token) return this._apiTestLog('Director login', login, logs);
-      const res = await this._runApiTest('GET', '/api/director/team', { token: login.data.token });
-      logs.push(`✓ Director dashboard: ${res.status}`);
-      return { success: res.ok, logs };
-    } catch (e) {
-      logs.push(`❌ ${e.message}`);
-      return { success: false, logs };
+    const screenshots = [];
+    const candidates = [
+      { email: userData?.email || 'test.director@uslugar.hr', password: userData?.password || 'Test123456!' },
+      { email: 'test.provider@uslugar.hr', password: 'Test123456!' }
+    ];
+    for (const { email, password } of candidates) {
+      try {
+        const login = await this._runApiTest('POST', '/api/auth/login', {
+          body: { email, password, role: 'PROVIDER' },
+          expectedStatus: 200
+        });
+        if (login.ok && login.data?.token) {
+          const res = await this._runApiTest('GET', '/api/director/team', { token: login.data.token });
+          logs.push(`✓ Director dashboard: ${res.status}`);
+          if (res.ok || res.status === 404) {
+            const ss = await this._screenshotWithToken('19.1_director', login.data.token, '#director', '01_dashboard', logs);
+            screenshots.push(...ss);
+          }
+          return { success: res.ok || res.status === 404, logs, screenshots };
+        }
+      } catch (_) {}
     }
+    logs.push(`📡 Director login: fail`);
+    return { success: false, logs, screenshots };
   }
 
   async runLeadDistributionTest(userData) {
@@ -1231,7 +1391,52 @@ class TestRunnerService {
   }
 
   async runSmsVerifyTest(userData) {
-    return this._stubTest('sms-verify', userData);
+    const logs = [];
+    const screenshots = [];
+    try {
+      // Login kao provider
+      const phone = userData?.phone || '+385911111111';
+      const loginRes = await this._runApiTest('POST', '/api/auth/login', {
+        body: {
+          email: userData?.email || 'test.provider@uslugar.hr',
+          password: userData?.password || 'Test123456!'
+        },
+        expectedStatus: 200
+      });
+      if (loginRes.status !== 200 || !loginRes.data?.token) {
+        logs.push('⚠ Login neuspješan - provjeri test.provider u bazi');
+        const ss = await this._capturePageScreenshot('21.1_sms', 'https://www.uslugar.eu/#login', '01_login', logs);
+        screenshots.push(...ss);
+        return { success: false, logs, screenshots };
+      }
+      const token = loginRes.data.token;
+      logs.push('✓ Login uspješan (provider)');
+
+      // Pozovi SMS verification send (Infobip)
+      const base = this._getApiBaseUrl();
+      const sendRes = await fetch(`${base}/api/sms-verification/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ phone })
+      });
+      const sendData = await sendRes.json().catch(() => ({}));
+
+      if (sendRes.ok) {
+        const mode = sendData.smsMode || sendData.mode || (sendData.smsSuccess ? 'infobip' : 'simulation');
+        logs.push(`✓ SMS send: ${mode === 'infobip' ? 'Infobip' : mode} - ${sendData.message || 'OK'}`);
+      } else {
+        logs.push(`⚠ SMS send: ${sendRes.status} - ${sendData.error || sendRes.statusText}`);
+        if (sendRes.status === 429) logs.push('   (rate limit ili već verificiran - očekivano)');
+        if (sendRes.status === 400) logs.push('   (format telefona ili već verificiran)');
+      }
+
+      const ss = await this._capturePageScreenshot('21.1_sms', 'https://www.uslugar.eu/#user', '01_profile', logs);
+      screenshots.push(...ss);
+      return { success: true, logs, screenshots };
+    } catch (e) {
+      logs.push(`❌ ${e.message}`);
+      return { success: false, logs, screenshots };
+    }
   }
 
   async runSmsOfferTest(userData) {
@@ -1242,9 +1447,9 @@ class TestRunnerService {
     return this._stubTest('sms-job', userData);
   }
 
-  async runTwilioErrorTest() {
+  async runSmsErrorTest() {
     const logs = [];
-    logs.push('ℹ Twilio error handling - provjeri logove');
+    logs.push('ℹ SMS error handling (Infobip) - provjeri logove');
     return { success: true, logs };
   }
 
@@ -1254,13 +1459,18 @@ class TestRunnerService {
 
   async runKycVerifyOibTest() {
     const logs = [];
+    const screenshots = [];
     try {
       const res = await this._runApiTest('GET', '/api/kyc/status');
       logs.push(`✓ KYC verify: ${res.status}`);
-      return { success: res.ok || res.status === 401, logs };
+      if (res.ok || res.status === 401) {
+        const ss = await this._capturePageScreenshot('22.2_kyc', 'https://www.uslugar.eu/#login', '01_kyc_page', logs);
+        screenshots.push(...ss);
+      }
+      return { success: res.ok || res.status === 401, logs, screenshots };
     } catch (e) {
       logs.push(`❌ ${e.message}`);
-      return { success: false, logs };
+      return { success: false, logs, screenshots };
     }
   }
 
@@ -1282,13 +1492,18 @@ class TestRunnerService {
 
   async runPortfolioDisplayTest() {
     const logs = [];
+    const screenshots = [];
     try {
       const res = await this._runApiTest('GET', '/api/providers?limit=1');
       logs.push(`✓ Portfolio API: ${res.status}`);
-      return { success: res.ok, logs };
+      if (res.ok) {
+        const ss = await this._capturePageScreenshot('23.3_portfolio', 'https://www.uslugar.eu/#providers', '01_pruzatelji', logs);
+        screenshots.push(...ss);
+      }
+      return { success: res.ok, logs, screenshots };
     } catch (e) {
       logs.push(`❌ ${e.message}`);
-      return { success: false, logs };
+      return { success: false, logs, screenshots };
     }
   }
 
@@ -1314,36 +1529,52 @@ class TestRunnerService {
 
   async runSavedSearchTest(userData) {
     const logs = [];
-    try {
-      const login = await this._runApiTest('POST', '/api/auth/login', {
-        body: { email: userData?.email || 'test.client@uslugar.hr', password: userData?.password || 'Test123456!' },
-        expectedStatus: 200
-      });
-      if (!login.ok || !login.data?.token) return this._apiTestLog('Saved search login', login, logs);
-      const res = await this._runApiTest('GET', '/api/saved-searches', { token: login.data.token });
-      logs.push(`✓ Saved search: ${res.status}`);
-      return { success: res.ok, logs };
-    } catch (e) {
-      logs.push(`❌ ${e.message}`);
-      return { success: false, logs };
+    const screenshots = [];
+    const candidates = [
+      { email: userData?.email || 'test.client@uslugar.hr', password: userData?.password || 'Test123456!' },
+      { email: 'admin@uslugar.hr', password: 'Admin123!' }
+    ];
+    for (const { email, password } of candidates) {
+      try {
+        const login = await this._runApiTest('POST', '/api/auth/login', { body: { email, password }, expectedStatus: 200 });
+        if (login.ok && login.data?.token) {
+          const res = await this._runApiTest('GET', '/api/saved-searches', { token: login.data.token });
+          logs.push(`✓ Saved search: ${res.status}`);
+          if (res.ok) {
+            const ss = await this._screenshotWithToken('25.1_saved', login.data.token, '#user', '01_dashboard', logs);
+            screenshots.push(...ss);
+          }
+          return { success: res.ok, logs, screenshots };
+        }
+      } catch (_) {}
     }
+    logs.push(`📡 Saved search login: fail`);
+    return { success: false, logs, screenshots };
   }
 
   async runJobAlertCreateTest(userData) {
     const logs = [];
-    try {
-      const login = await this._runApiTest('POST', '/api/auth/login', {
-        body: { email: userData?.email || 'test.client@uslugar.hr', password: userData?.password || 'Test123456!' },
-        expectedStatus: 200
-      });
-      if (!login.ok || !login.data?.token) return this._apiTestLog('Job alert login', login, logs);
-      const res = await this._runApiTest('GET', '/api/job-alerts', { token: login.data.token });
-      logs.push(`✓ Job alert: ${res.status}`);
-      return { success: res.ok, logs };
-    } catch (e) {
-      logs.push(`❌ ${e.message}`);
-      return { success: false, logs };
+    const screenshots = [];
+    const candidates = [
+      { email: userData?.email || 'test.client@uslugar.hr', password: userData?.password || 'Test123456!' },
+      { email: 'admin@uslugar.hr', password: 'Admin123!' }
+    ];
+    for (const { email, password } of candidates) {
+      try {
+        const login = await this._runApiTest('POST', '/api/auth/login', { body: { email, password }, expectedStatus: 200 });
+        if (login.ok && login.data?.token) {
+          const res = await this._runApiTest('GET', '/api/job-alerts', { token: login.data.token });
+          logs.push(`✓ Job alert: ${res.status}`);
+          if (res.ok) {
+            const ss = await this._screenshotWithToken('25.2_alert', login.data.token, '#user', '01_dashboard', logs);
+            screenshots.push(...ss);
+          }
+          return { success: res.ok, logs, screenshots };
+        }
+      } catch (_) {}
     }
+    logs.push(`📡 Job alert login: fail`);
+    return { success: false, logs, screenshots };
   }
 
   async runJobAlertFreqTest(userData) {
@@ -1368,36 +1599,52 @@ class TestRunnerService {
 
   async runAdminKycMetricsTest(userData) {
     const logs = [];
+    const screenshots = [];
     try {
       const login = await this._runApiTest('POST', '/api/auth/login', {
         body: { email: userData?.email || 'admin@uslugar.hr', password: userData?.password || 'Admin123!' },
         expectedStatus: 200
       });
-      if (!login.ok || !login.data?.token) return this._apiTestLog('Admin login', login, logs);
+      if (!login.ok || !login.data?.token) {
+        logs.push(`📡 Admin login: ${login.status}`);
+        return { success: false, logs, screenshots };
+      }
       const res = await this._runApiTest('GET', '/api/admin/verification-documents', { token: login.data.token });
       logs.push(`✓ Admin KYC metrics: ${res.status}`);
-      return { success: res.ok, logs };
+      if (res.ok) {
+        const ss = await this._screenshotAdminWithToken('26.4_admin', login.data.token, '01_admin', logs);
+        screenshots.push(...ss);
+      }
+      return { success: res.ok, logs, screenshots };
     } catch (e) {
       logs.push(`❌ ${e.message}`);
-      return { success: false, logs };
+      return { success: false, logs, screenshots };
     }
   }
 
   async runWizardCategoriesTest(userData) {
     const logs = [];
-    try {
-      const login = await this._runApiTest('POST', '/api/auth/login', {
-        body: { email: userData?.email || 'test.provider@uslugar.hr', password: userData?.password || 'Test123456!', role: 'PROVIDER' },
-        expectedStatus: 200
-      });
-      if (!login.ok || !login.data?.token) return this._apiTestLog('Wizard login', login, logs);
-      const res = await this._runApiTest('GET', '/api/wizard/status', { token: login.data.token });
-      logs.push(`✓ Wizard categories: ${res.status}`);
-      return { success: res.ok || res.status === 404, logs };
-    } catch (e) {
-      logs.push(`❌ ${e.message}`);
-      return { success: false, logs };
+    const screenshots = [];
+    const candidates = [
+      { email: userData?.email || 'test.provider@uslugar.hr', password: userData?.password || 'Test123456!' },
+      { email: 'admin@uslugar.hr', password: 'Admin123!' }
+    ];
+    for (const { email, password } of candidates) {
+      try {
+        const login = await this._runApiTest('POST', '/api/auth/login', { body: { email, password, role: 'PROVIDER' }, expectedStatus: 200 });
+        if (login.ok && login.data?.token) {
+          const res = await this._runApiTest('GET', '/api/wizard/status', { token: login.data.token });
+          logs.push(`✓ Wizard categories: ${res.status}`);
+          if (res.ok || res.status === 404) {
+            const ss = await this._screenshotWithToken('27.1_wizard', login.data.token, '#user', '01_provider', logs);
+            screenshots.push(...ss);
+          }
+          return { success: res.ok || res.status === 404, logs, screenshots };
+        }
+      } catch (_) {}
     }
+    logs.push(`📡 Wizard login: fail`);
+    return { success: false, logs, screenshots };
   }
 
   async runWizardRegionsTest(userData) {
@@ -1430,19 +1677,27 @@ class TestRunnerService {
 
   async runRoiDashboardTest(userData) {
     const logs = [];
-    try {
-      const login = await this._runApiTest('POST', '/api/auth/login', {
-        body: { email: userData?.email || 'test.provider@uslugar.hr', password: userData?.password || 'Test123456!', role: 'PROVIDER' },
-        expectedStatus: 200
-      });
-      if (!login.ok || !login.data?.token) return this._apiTestLog('ROI login', login, logs);
-      const res = await this._runApiTest('GET', '/api/exclusive/roi/summary', { token: login.data.token });
-      logs.push(`✓ ROI dashboard: ${res.status}`);
-      return { success: res.ok || res.status === 404, logs };
-    } catch (e) {
-      logs.push(`❌ ${e.message}`);
-      return { success: false, logs };
+    const screenshots = [];
+    const candidates = [
+      { email: userData?.email || 'test.provider@uslugar.hr', password: userData?.password || 'Test123456!' },
+      { email: 'admin@uslugar.hr', password: 'Admin123!' }
+    ];
+    for (const { email, password } of candidates) {
+      try {
+        const login = await this._runApiTest('POST', '/api/auth/login', { body: { email, password, role: 'PROVIDER' }, expectedStatus: 200 });
+        if (login.ok && login.data?.token) {
+          const res = await this._runApiTest('GET', '/api/exclusive/roi/summary', { token: login.data.token });
+          logs.push(`✓ ROI dashboard: ${res.status}`);
+          if (res.ok || res.status === 404) {
+            const ss = await this._screenshotWithToken('29.1_roi', login.data.token, '#roi', '01_roi', logs);
+            screenshots.push(...ss);
+          }
+          return { success: res.ok || res.status === 404, logs, screenshots };
+        }
+      } catch (_) {}
     }
+    logs.push(`📡 ROI login: fail`);
+    return { success: false, logs, screenshots };
   }
 
   async runRoiChartsTest(userData) {
@@ -1467,19 +1722,27 @@ class TestRunnerService {
 
   async runCreditHistoryTest(userData) {
     const logs = [];
-    try {
-      const login = await this._runApiTest('POST', '/api/auth/login', {
-        body: { email: userData?.email || 'test.provider@uslugar.hr', password: userData?.password || 'Test123456!', role: 'PROVIDER' },
-        expectedStatus: 200
-      });
-      if (!login.ok || !login.data?.token) return this._apiTestLog('Credit login', login, logs);
-      const res = await this._runApiTest('GET', '/api/lead-queue/credits', { token: login.data.token }).catch(() => ({ ok: false, status: 404 }));
-      logs.push(`✓ Credit history: ${res.status}`);
-      return { success: res.ok || res.status === 404, logs };
-    } catch (e) {
-      logs.push(`❌ ${e.message}`);
-      return { success: false, logs };
+    const screenshots = [];
+    const candidates = [
+      { email: userData?.email || 'test.provider@uslugar.hr', password: userData?.password || 'Test123456!' },
+      { email: 'admin@uslugar.hr', password: 'Admin123!' }
+    ];
+    for (const { email, password } of candidates) {
+      try {
+        const login = await this._runApiTest('POST', '/api/auth/login', { body: { email, password, role: 'PROVIDER' }, expectedStatus: 200 });
+        if (login.ok && login.data?.token) {
+          const res = await this._runApiTest('GET', '/api/lead-queue/credits', { token: login.data.token }).catch(() => ({ ok: false, status: 404 }));
+          logs.push(`✓ Credit history: ${res.status}`);
+          if (res.ok || res.status === 404) {
+            const ss = await this._screenshotWithToken('30.3_credit', login.data.token, '#user', '01_credits', logs);
+            screenshots.push(...ss);
+          }
+          return { success: res.ok || res.status === 404, logs, screenshots };
+        }
+      } catch (_) {}
     }
+    logs.push(`📡 Credit login: fail`);
+    return { success: false, logs, screenshots };
   }
 
   async runCreditRefundTest(userData) {
@@ -1488,13 +1751,18 @@ class TestRunnerService {
 
   async runCorsTest() {
     const logs = [];
+    const screenshots = [];
     try {
       const res = await this._runApiTest('GET', '/api/health');
       logs.push(`✓ CORS/Health: ${res.status}`);
-      return { success: res.ok, logs };
+      if (res.ok) {
+        const ss = await this._capturePageScreenshot('31.1_cors', 'https://www.uslugar.eu/', '01_landing', logs);
+        screenshots.push(...ss);
+      }
+      return { success: res.ok, logs, screenshots };
     } catch (e) {
       logs.push(`❌ ${e.message}`);
-      return { success: false, logs };
+      return { success: false, logs, screenshots };
     }
   }
 

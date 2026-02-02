@@ -101,9 +101,8 @@ r.post('/send', auth(true), async (req, res, next) => {
     try {
       smsResult = await sendVerificationCode(phone, code, userId);
       
-      if (smsResult.mode === 'twilio_error') {
-        console.error(`[SMS Verification] Twilio API error:`, smsResult.error);
-        console.error(`[SMS Verification] Error code:`, smsResult.code);
+      if (smsResult.mode === 'twilio_error' || smsResult.mode === 'infobip_error') {
+        console.error(`[SMS Verification] SMS API error:`, smsResult.error);
       }
     } catch (smsError) {
       console.error('[SMS Verification] Failed to send SMS:', smsError);
@@ -112,7 +111,7 @@ r.post('/send', auth(true), async (req, res, next) => {
     }
 
     // Uvijek vraćamo kod ako je simulation mode ili ako je development
-    // Također vraćamo kod ako Twilio ne radi (za testiranje)
+    // Također vraćamo kod ako SMS provider ne radi (za testiranje)
     const shouldReturnCode = 
       process.env.NODE_ENV === 'development' || 
       !smsResult || 
@@ -123,7 +122,7 @@ r.post('/send', auth(true), async (req, res, next) => {
     // Detaljnija poruka o grešci
     let errorMessage = 'SMS nije poslan';
     if (smsResult?.needsVerification) {
-      errorMessage = 'SMS nije poslan - broj mora biti verificiran u Twilio konzoli.';
+      errorMessage = 'SMS nije poslan - broj mora biti verificiran u Infobip portalu (trial).';
     } else if (smsResult?.error) {
       errorMessage = `SMS nije poslan (${smsResult.error})`;
     }

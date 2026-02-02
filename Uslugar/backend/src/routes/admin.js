@@ -2040,31 +2040,37 @@ r.get('/sms-logs', auth(true, ['ADMIN']), async (req, res, next) => {
 
 /**
  * POST /api/admin/sms-logs/sync-from-twilio
- * Sinkroniziraj SMS-ove iz Twilio API-ja u bazu (admin)
+ * Sinkroniziraj SMS-ove iz providera u bazu (admin)
+ * Infobip: SmsLog se popunjava pri slanju - vanjski sync nije potreban
+ * Twilio (legacy): dohvaća poruke iz Twilio API-ja
  * Query params: limit (default 100), days (default 30)
  */
 r.post('/sms-logs/sync-from-twilio', auth(true, ['ADMIN']), async (req, res, next) => {
   try {
-    // Query params, ne body
     const { limit = 100, days = 30 } = req.query;
-    
-    // Provjeri Twilio konfiguraciju
+
+    // Infobip: SmsLog je izvor podataka (logira se pri svakom slanju)
+    if (process.env.INFOBIP_API_KEY) {
+      const count = await prisma.smsLog.count();
+      return res.json({
+        success: true,
+        message: 'Infobip: SmsLog se automatski popunjava pri slanju. Vanjski sync nije potreban.',
+        synced: 0,
+        total: count,
+        provider: 'infobip'
+      });
+    }
+
+    // Twilio (legacy - ako netko još koristi)
     const accountSid = process.env.TEST_TWILIO_ACCOUNT_SID;
     const authToken = process.env.TEST_TWILIO_AUTH_TOKEN;
-    
+
     if (!accountSid || !authToken) {
-      console.error('❌ Twilio credentials missing:', {
-        hasAccountSid: !!accountSid,
-        hasAuthToken: !!authToken
-      });
       return res.status(400).json({
         success: false,
-        error: 'Twilio credentials not configured',
-        message: 'TEST_TWILIO_ACCOUNT_SID and TEST_TWILIO_AUTH_TOKEN must be set in environment variables',
-        details: {
-          hasAccountSid: !!accountSid,
-          hasAuthToken: !!authToken
-        }
+        error: 'SMS provider not configured',
+        message: 'Postavi INFOBIP_API_KEY ili TEST_TWILIO_ACCOUNT_SID i TEST_TWILIO_AUTH_TOKEN',
+        details: { hasInfobip: !!process.env.INFOBIP_API_KEY, hasTwilio: !!(accountSid && authToken) }
       });
     }
     
@@ -4082,13 +4088,13 @@ r.get('/api-reference', (req, res, next) => {
         }
         if (pathLower.includes('/sms-logs')) {
           if (methodUpper === 'GET' && !pathLower.includes('/stats') && !pathLower.includes('/sync')) {
-            return 'Pregled SMS logova. Prikazuje sve poslane SMS poruke s detaljima o statusu, tipu, korisniku i Twilio SID-u. Omogućava filtriranje po telefonu, tipu, statusu i datumu.';
+            return 'Pregled SMS logova. Prikazuje sve poslane SMS poruke (Infobip) s detaljima o statusu, tipu, korisniku i Message ID-u.';
           }
           if (pathLower.includes('/stats')) {
             return 'Statistike SMS logova. Vraća agregirane podatke po statusu, tipu i modu. Koristi se za monitoring uspješnosti SMS slanja.';
           }
           if (pathLower.includes('/sync-from-twilio')) {
-            return 'Sinkronizacija SMS logova iz Twilio API-ja. Dohvaća SMS poruke iz Twilio-a i sprema ih u bazu. Omogućava ručno osvježavanje logova.';
+            return 'Sinkronizacija SMS logova. Infobip: SmsLog se popunjava pri slanju. Twilio (legacy): dohvaća iz API-ja.';
           }
         }
         // Generic admin CRUD endpoints
