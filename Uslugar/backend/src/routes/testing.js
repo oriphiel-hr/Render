@@ -572,7 +572,7 @@ r.post('/run-single', async (req, res, next) => {
       if (!testData) {
         testData = testType === 'verify-registar'
           ? { oib: '12345678901', companyName: 'Test Company DOO', legalStatus: 'DOO' }
-          : { email: 'test.registration@uslugar.hr', password: 'Test123456!', fullName: 'Test User' };
+          : { email: 'test.registration@uslugar.hr', password: 'Test123456!', fullName: 'Test User', phone: '+385991111111', city: 'Zagreb' };
       }
 
       testResult = await testRunnerService.runGenericTest(testType, testData);
