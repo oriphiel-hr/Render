@@ -1,18 +1,20 @@
 /**
- * Mapiranje testId -> { testType, apiOnly }
- * apiOnly = true: ne treba checkpoint, Mailpit, rollback (samo API pozivi)
+ * Mapiranje testId -> { testType, apiOnly, requiresMailpit, mailpitSubjectFilter }
+ * apiOnly = true: ne treba checkpoint, Mailpit, rollback
+ * requiresMailpit = true: test šalje email - provjeri Mailpit
+ * mailpitSubjectFilter: ključne riječi u subjectu očekivanog maila (case insensitive, bilo koja)
  */
 export const TEST_ID_MAP = {
-  '1.1': { testType: 'registration', apiOnly: false },
-  '1.2': { testType: 'registration', apiOnly: false },
+  '1.1': { testType: 'registration', apiOnly: false, requiresMailpit: true, mailpitSubjectFilter: ['potvrdite', 'verify', 'email adresu'] },
+  '1.2': { testType: 'registration', apiOnly: false, requiresMailpit: true, mailpitSubjectFilter: ['potvrdite', 'verify', 'email adresu'] },
   '1.3': { testType: 'login', apiOnly: true },
-  '1.4': { testType: 'registration', apiOnly: false }, // email verify u registration flow
-  '1.5': { testType: 'forgot-password', apiOnly: false },
+  '1.4': { testType: 'registration', apiOnly: false, requiresMailpit: true, mailpitSubjectFilter: ['potvrdite', 'verify', 'email adresu'] },
+  '1.5': { testType: 'forgot-password', apiOnly: false, requiresMailpit: true, mailpitSubjectFilter: ['reset', 'lozink', 'password'] },
   '1.6': { testType: 'jwt-auth', apiOnly: true },
   '2.1': { testType: 'categories-load', apiOnly: true },
   '2.2': { testType: 'categories-hierarchy', apiOnly: true },
   '2.3': { testType: 'jobs-filter', apiOnly: true },
-  '3.1': { testType: 'job-create', apiOnly: false },
+  '3.1': { testType: 'job_creation', apiOnly: false },
   '3.4': { testType: 'map-picker', apiOnly: false },
   '3.5': { testType: 'job-status', apiOnly: true },
   '4.1': { testType: 'offer-send', apiOnly: false },

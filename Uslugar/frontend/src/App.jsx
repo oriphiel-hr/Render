@@ -89,7 +89,7 @@ export default function App(){
     const hash = window.location.hash?.slice(1).split('?')[0];
     // Obfuscated admin panel pristup: #adm -> admin
     const normalizedHash = hash === 'adm' ? 'admin' : hash;
-    const validTabs = ['admin', 'login', 'register-user', 'register-provider', 'provider-profile', 'user-profile', 'upgrade-to-provider', 'verify', 'forgot-password', 'reset-password', 'leads', 'my-leads', 'my-jobs', 'roi', 'subscription', 'subscription-success', 'pricing', 'providers', 'documentation', 'faq', 'about', 'contact', 'time-landing', 'team-locations', 'invoices', 'user', 'user-types', 'user-types-flowcharts', 'director', 'chat'];
+    const validTabs = ['admin', 'login', 'register-user', 'register-provider', 'provider-profile', 'user-profile', 'upgrade-to-provider', 'verify', 'forgot-password', 'reset-password', 'leads', 'my-leads', 'my-jobs', 'roi', 'subscription', 'subscription-success', 'pricing', 'providers', 'categories', 'documentation', 'faq', 'about', 'contact', 'time-landing', 'team-locations', 'invoices', 'user', 'user-types', 'user-types-flowcharts', 'director', 'chat'];
     return validTabs.includes(normalizedHash) ? normalizedHash : 'time-landing';
   });
 
@@ -283,7 +283,7 @@ export default function App(){
       const hash = window.location.hash?.slice(1).split('?')[0];
       // Obfuscated admin panel pristup: #adm -> admin
       const normalizedHash = hash === 'adm' ? 'admin' : hash;
-      const validTabs = ['admin', 'login', 'register-user', 'register-provider', 'provider-profile', 'user-profile', 'upgrade-to-provider', 'verify', 'forgot-password', 'reset-password', 'leads', 'my-leads', 'my-jobs', 'roi', 'subscription', 'subscription-success', 'pricing', 'providers', 'documentation', 'faq', 'about', 'contact', 'time-landing', 'team-locations', 'invoices', 'user', 'user-types', 'user-types-flowcharts', 'director', 'chat'];
+      const validTabs = ['admin', 'login', 'register-user', 'register-provider', 'provider-profile', 'user-profile', 'upgrade-to-provider', 'verify', 'forgot-password', 'reset-password', 'leads', 'my-leads', 'my-jobs', 'roi', 'subscription', 'subscription-success', 'pricing', 'providers', 'categories', 'documentation', 'faq', 'about', 'contact', 'time-landing', 'team-locations', 'invoices', 'user', 'user-types', 'user-types-flowcharts', 'director', 'chat'];
       
       // Check for provider direct link: #provider/{providerId}
       const providerMatch = normalizedHash.match(/^provider\/(.+)$/);

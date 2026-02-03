@@ -605,8 +605,9 @@ r.post('/run-single', async (req, res, next) => {
       results.error = error.message;
     }
 
-    // 2. Ako je test prošao i nije API-only - provjeri mailove u Mailpit-u
-    if (!isApiOnlyTest && testResult?.success) {
+    // 2. Ako je test prošao, nije API-only I test šalje email - provjeri Mailpit (samo 1.1, 1.2, 1.4, 1.5)
+    const requiresMailpit = mapping?.requiresMailpit ?? false;
+    if (!isApiOnlyTest && testResult?.success && requiresMailpit) {
       console.log('[TEST] Korak 2: Dohvaćam mailove iz Mailpit-a...');
       results.logs.push('📧 Čekam da mail stigne u Mailpit...');
       
@@ -661,18 +662,19 @@ r.post('/run-single', async (req, res, next) => {
       } else {
         results.logs.push(`✓ Pronađeno ${emails.length} mailova u Mailpit-u`);
 
-        // Za test 1.5 (forgot-password) traži mail s reset lozinke, ne prvi koji nađeš
+        // Filtriraj po očekivanom subjectu za ovaj test (mailpitSubjectFilter u testTypes)
+        const subjectFilter = mapping?.mailpitSubjectFilter;
         let targetEmail = emails[0];
-        if (testId === '1.5') {
-          const resetEmail = emails.find(e => {
+        if (subjectFilter && Array.isArray(subjectFilter) && subjectFilter.length > 0) {
+          const match = emails.find(e => {
             const subj = (e.Subject || e.subject || '').toLowerCase();
-            return subj.includes('reset') || subj.includes('lozink');
+            return subjectFilter.some(kw => subj.includes(String(kw).toLowerCase()));
           });
-          if (resetEmail) {
-            targetEmail = resetEmail;
-            results.logs.push(`📧 Odabran mail za reset lozinke: ${targetEmail.Subject || targetEmail.subject}`);
+          if (match) {
+            targetEmail = match;
+            results.logs.push(`📧 Odabran mail (filter: ${subjectFilter.join(', ')}): ${targetEmail.Subject || targetEmail.subject}`);
           } else {
-            results.logs.push(`⚠ Nema maila "Reset lozinke" - koristim prvi (test može pasti)`);
+            results.logs.push(`⚠ Nema maila s subjectom [${subjectFilter.join('|')}] - koristim prvi (test može pasti)`);
           }
         }
 
