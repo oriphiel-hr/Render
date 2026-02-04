@@ -819,18 +819,27 @@ class TestRunnerService {
         return { success: false, logs, screenshots };
       }
 
-      const base = this._getApiBaseUrl();
       const title = userData?.jobTitle || 'Test posao - Popravak (3.1)';
       const description = userData?.jobDescription || 'Automatski kreiran za test objavljivanja poslova.';
-      const createRes = await fetch(`${base}/api/jobs`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ title, description, categoryId })
+      // Jobs API zahtijeva contact info za anonimne; prijavljeni korisnici koriste token
+      // Dodajemo contact info kao rezervu ako token ne prođe (npr. različiti API host)
+      const jobPayload = {
+        title,
+        description,
+        categoryId,
+        contactEmail: userData?.email || 'admin@uslugar.hr',
+        contactPhone: userData?.phone || '+385999999999',
+        contactName: userData?.fullName || 'Test Administrator'
+      };
+      const createRes = await this._runApiTest('POST', '/api/jobs', {
+        body: jobPayload,
+        token,
+        expectedStatus: [200, 201]
       });
-      const createData = await createRes.json().catch(() => ({}));
+      const createData = createRes.data || {};
 
       if (!createRes.ok || !createData?.id) {
-        logs.push(`❌ Kreiranje posla: ${createRes.status} - ${createData?.error || createRes.statusText}`);
+        logs.push(`❌ Kreiranje posla: ${createRes.status} - ${createData?.error || createRes.statusText || 'Unknown error'}`);
         const ss = await this._screenshotWithToken(testId, token, '#user', '01_dashboard', logs);
         screenshots.push(...ss);
         return { success: false, logs, screenshots };
