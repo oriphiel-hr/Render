@@ -13,7 +13,7 @@ export const TEST_ID_MAP = {
   '1.6': { testType: 'jwt-auth', apiOnly: true },
   '2.1': { testType: 'categories-load', apiOnly: true },
   '2.2': { testType: 'categories-hierarchy', apiOnly: true },
-  '2.3': { testType: 'jobs-filter', apiOnly: true },
+  '2.3': { testType: 'jobs-filter', apiOnly: false },
   '3.1': { testType: 'job_creation', apiOnly: false },
   '3.4': { testType: 'map-picker', apiOnly: false },
   '3.5': { testType: 'job-status', apiOnly: true },

@@ -1240,6 +1240,48 @@ class TestRunnerService {
     const testId = '2.3_jobs_filter';
     const screenshots = [];
     try {
+      const candidates = [
+        { email: userData?.email || 'test.client@uslugar.hr', password: userData?.password || 'Test123456!' },
+        { email: 'admin@uslugar.hr', password: 'Admin123!' }
+      ];
+      let token = null;
+      for (const { email, password } of candidates) {
+        const loginRes = await this._runApiTest('POST', '/api/auth/login', { body: { email, password }, expectedStatus: 200 });
+        if (loginRes.ok && loginRes.data?.token) {
+          token = loginRes.data.token;
+          logs.push(`✓ Login: ${email}`);
+          break;
+        }
+      }
+      if (!token) {
+        logs.push('⚠ Login neuspješan - provjeri test.client/admin u bazi');
+        const ss = await this._capturePageScreenshot(testId, 'https://www.uslugar.eu/#login', '00_login', logs);
+        screenshots.push(...ss);
+        return { success: false, logs, screenshots };
+      }
+
+      const catsRes = await this._runApiTest('GET', '/api/categories');
+      const categories = Array.isArray(catsRes.data) ? catsRes.data : [];
+      const categoryId = categories.find(c => !c.parentId)?.id || categories[0]?.id;
+      if (!categoryId) logs.push('⚠ Nema kategorija u bazi - posao bez categoryId');
+
+      const base = this._getApiBaseUrl();
+      const createRes = await fetch(`${base}/api/jobs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+          title: 'Test posao - Električar (2.3)',
+          description: 'Automatski kreiran za test filtriranja kategorija.',
+          categoryId: categoryId || '1'
+        })
+      });
+      const createData = await createRes.json().catch(() => ({}));
+      if (createRes.ok && createData?.id) {
+        logs.push(`✓ Posao kreiran: ${createData.title} (categoryId=1)`);
+      } else {
+        logs.push(`⚠ Kreiranje posla: ${createRes.status} - ${createData?.error || createRes.statusText}`);
+      }
+
       const res = await this._runApiTest('GET', '/api/jobs?limit=10');
       logs.push(`✓ Jobs API: ${res.status}`);
       const jobs = Array.isArray(res.data) ? res.data : [];
@@ -1247,31 +1289,18 @@ class TestRunnerService {
       if (jobs.length > 0) {
         const withCat = jobs.filter(j => j.categoryId || j.category?.name).length;
         logs.push(`   S kategorijom: ${withCat}/${jobs.length}`);
+        jobs.slice(0, 3).forEach((j, i) => logs.push(`   ${i + 1}. ${j.title || j.id} (cat: ${j.categoryId || j.category?.name || '-'})`));
       }
-      const filterRes = await this._runApiTest('GET', '/api/jobs?limit=5&categoryId=1');
-      logs.push(`✓ Filter po kategoriji: ${filterRes.status} (categoryId=1)`);
-      if (res.ok) {
-        const candidates = [
-          { email: userData?.email || 'test.client@uslugar.hr', password: userData?.password || 'Test123456!' },
-          { email: 'admin@uslugar.hr', password: 'Admin123!' }
-        ];
-        let token = null;
-        for (const { email, password } of candidates) {
-          const loginRes = await this._runApiTest('POST', '/api/auth/login', { body: { email, password }, expectedStatus: 200 });
-          if (loginRes.ok && loginRes.data?.token) {
-            token = loginRes.data.token;
-            logs.push(`✓ Login: ${email}`);
-            break;
-          }
-        }
-        if (token) {
-          const ss = await this._screenshotWithToken(testId, token, '#user', '01_poslovi_filter', logs);
-          screenshots.push(...ss);
-        } else {
-          const ss = await this._capturePageScreenshot(testId, 'https://www.uslugar.eu/', '01_poslovi', logs);
-          screenshots.push(...ss);
-        }
-      }
+      const filterCatId = categoryId || '1';
+      const filterRes = await this._runApiTest('GET', `/api/jobs?limit=5&categoryId=${filterCatId}`);
+      logs.push(`✓ Filter po kategoriji: ${filterRes.status} (categoryId=${filterCatId})`);
+      const filteredJobs = Array.isArray(filterRes.data) ? filterRes.data : [];
+      if (filteredJobs.length > 0) logs.push(`   Filtrirano: ${filteredJobs.length} poslova u kategoriji`);
+
+      const ss = await this._screenshotWithToken(testId, token, '#user', '01_poslovi_filter', logs);
+      screenshots.push(...ss);
+      if (ss.length === 0) logs.push('⚠ Screenshot nije kreiran');
+
       return { success: res.ok, logs, screenshots };
     } catch (e) {
       logs.push(`❌ ${e.message}`);
