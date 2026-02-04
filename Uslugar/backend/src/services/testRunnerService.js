@@ -61,6 +61,109 @@ class TestRunnerService {
     return { ok, status: res.status, data: res.data };
   }
 
+  /** Helper: login + create job, vrati { token, job, logs } ili null ako ne uspije */
+  async _createTestJobWithLogin(logs, overrides = {}) {
+    const candidates = [
+      { email: 'test.client@uslugar.hr', password: 'Test123456!' },
+      { email: 'admin@uslugar.hr', password: 'Admin123!' }
+    ];
+    let token = null;
+    for (const { email, password } of candidates) {
+      const loginRes = await this._runApiTest('POST', '/api/auth/login', { body: { email, password }, expectedStatus: 200 });
+      if (loginRes.ok && loginRes.data?.token) {
+        token = loginRes.data.token;
+        logs.push(`✓ Login: ${email}`);
+        break;
+      }
+    }
+    if (!token) {
+      logs.push('⚠ Login neuspješan');
+      return null;
+    }
+    const catsRes = await this._runApiTest('GET', '/api/categories');
+    const categories = Array.isArray(catsRes.data) ? catsRes.data : [];
+    const categoryId = categories.find(c => !c.parentId)?.id || categories[0]?.id;
+    if (!categoryId) {
+      logs.push('❌ Nema kategorija');
+      return null;
+    }
+    const payload = {
+      title: overrides.title || 'Test posao za automatski test',
+      description: overrides.description || 'Opis test posla.',
+      categoryId,
+      contactEmail: 'admin@uslugar.hr',
+      contactPhone: '+385999999999',
+      contactName: 'Test Administrator',
+      ...overrides
+    };
+    const createRes = await this._runApiTest('POST', '/api/jobs', {
+      body: payload,
+      token,
+      expectedStatus: [200, 201]
+    });
+    const job = createRes.data || {};
+    if (!createRes.ok || !job.id) {
+      logs.push(`❌ Kreiranje posla: ${createRes.status}`);
+      return null;
+    }
+    logs.push(`✓ Posao kreiran: ${job.title} (id: ${job.id})`);
+    return { token, job, logs };
+  }
+
+  /** Helper: registriraj providera, ažuriraj bio i kategorije, vrati { token, provider, logs } */
+  async _createTestProviderWithLogin(logs, overrides = {}) {
+    const email = `test.provider+${Date.now()}@uslugar.hr`;
+    const legalStatusId = 'cls6_freelancer';
+    const regRes = await this._runApiTest('POST', '/api/auth/register', {
+      body: {
+        email,
+        password: 'Test123456!',
+        fullName: 'Test Provider Auto',
+        role: 'PROVIDER',
+        phone: '+385911111111',
+        city: 'Zagreb',
+        legalStatusId,
+        taxId: '12345678901'
+      },
+      expectedStatus: [200, 201]
+    });
+    if (!regRes.ok) {
+      logs.push(`❌ Registracija providera: ${regRes.status}`);
+      return null;
+    }
+    logs.push(`✓ Provider registriran: ${email}`);
+    const loginRes = await this._runApiTest('POST', '/api/auth/login', {
+      body: { email, password: 'Test123456!' },
+      expectedStatus: 200
+    });
+    if (!loginRes.ok || !loginRes.data?.token) {
+      logs.push(`❌ Login providera: ${loginRes.status}`);
+      return null;
+    }
+    const token = loginRes.data.token;
+    const catsRes = await this._runApiTest('GET', '/api/categories');
+    const categories = Array.isArray(catsRes.data) ? catsRes.data : [];
+    const categoryId = categories.find(c => !c.parentId)?.id || categories[0]?.id;
+    if (!categoryId) {
+      logs.push(`⚠ Nema kategorija za providera`);
+    }
+    const updateRes = await this._runApiTest('PUT', '/api/providers/me', {
+      body: {
+        bio: overrides.bio || 'Test biografija - automatski kreiran provider za test.',
+        categoryIds: [categoryId].filter(Boolean)
+      },
+      token,
+      expectedStatus: [200]
+    });
+    if (!updateRes.ok && categoryId) {
+      logs.push(`⚠ Ažuriranje profila: ${updateRes.status}`);
+    } else if (updateRes.ok) {
+      logs.push(`✓ Profil ažuriran (bio, kategorije)`);
+    }
+    const provider = updateRes.data || loginRes.data?.user || {};
+    return { token, provider, logs };
+  }
+
   async runRegistrationTest(userData) {
     const testId = 'registration_' + Date.now();
     const screenshots = [];
@@ -1400,144 +1503,253 @@ class TestRunnerService {
     return this._stubTest('map-picker', userData);
   }
 
-  async runJobStatusTest() {
+  async runJobStatusTest(userData) {
     const logs = [];
     const screenshots = [];
+    const testId = '3.5_job_status';
     try {
-      const res = await this._runApiTest('GET', '/api/jobs?limit=10');
+      const setup = await this._createTestJobWithLogin(logs);
+      if (!setup) {
+        return { success: false, logs, screenshots };
+      }
+      const { token } = setup;
+      const res = await this._runApiTest('GET', '/api/jobs?limit=10', { token });
       logs.push(`✓ Job list API: ${res.status}`);
       const jobs = Array.isArray(res.data) ? res.data : [];
       const statuses = [...new Set(jobs.map(j => j.status).filter(Boolean))];
-      if (statuses.length > 0) logs.push(`📋 Statusi poslova: ${statuses.join(', ')} (OPEN, IN_PROGRESS, COMPLETED, CANCELLED)`);
-      if (res.ok) {
-        const ss = await this._capturePageScreenshot('3.5_job-status', 'https://www.uslugar.eu/#user', '01_poslovi_status', logs);
-        screenshots.push(...ss);
-      }
-      return { success: res.ok, logs, screenshots };
-    } catch (e) {
-      logs.push(`❌ ${e.message}`);
-      return { success: false, logs, screenshots };
-    }
-  }
-
-  async runJobBudgetTest() {
-    const logs = [];
-    const screenshots = [];
-    try {
-      const res = await this._runApiTest('GET', '/api/jobs?minBudget=100&maxBudget=5000&limit=5');
-      logs.push(`✓ Budget filter API: ${res.status}`);
-      const jobs = Array.isArray(res.data) ? res.data : [];
-      const withBudget = jobs.filter(j => j.budgetMin != null || j.budgetMax != null);
-      logs.push(`📋 Poslova s budžetom: ${withBudget.length}/${jobs.length}`);
-      const ss = await this._capturePageScreenshot('3.3_job-budget', 'https://www.uslugar.eu/#user', '01_budget', logs);
+      logs.push(`📋 Poslova: ${jobs.length}, statusi: ${statuses.length > 0 ? statuses.join(', ') : 'OPEN (novi)'}`);
+      const ss = await this._screenshotWithToken(testId, token, '#user', '01_poslovi_status', logs);
       screenshots.push(...ss);
-      return { success: res.ok, logs, screenshots };
+      return { success: res.ok && jobs.length > 0, logs, screenshots };
     } catch (e) {
       logs.push(`❌ ${e.message}`);
       return { success: false, logs, screenshots };
     }
   }
 
-  async runJobSearchTest() {
+  async runJobBudgetTest(userData) {
     const logs = [];
+    const testId = '3.3_job_budget';
     const screenshots = [];
     try {
-      const res = await this._runApiTest('GET', '/api/jobs?q=elektricar&limit=5');
+      const candidates = [
+        { email: userData?.email || 'test.client@uslugar.hr', password: userData?.password || 'Test123456!' },
+        { email: 'admin@uslugar.hr', password: 'Admin123!' }
+      ];
+      let token = null;
+      for (const { email, password } of candidates) {
+        const loginRes = await this._runApiTest('POST', '/api/auth/login', { body: { email, password }, expectedStatus: 200 });
+        if (loginRes.ok && loginRes.data?.token) {
+          token = loginRes.data.token;
+          logs.push(`✓ Login: ${email}`);
+          break;
+        }
+      }
+      if (!token) {
+        logs.push('⚠ Login neuspješan');
+        return { success: false, logs, screenshots };
+      }
+
+      const catsRes = await this._runApiTest('GET', '/api/categories');
+      const categories = Array.isArray(catsRes.data) ? catsRes.data : [];
+      const categoryId = categories.find(c => !c.parentId)?.id || categories[0]?.id;
+      if (!categoryId) {
+        logs.push('❌ Nema kategorija');
+        return { success: false, logs, screenshots };
+      }
+
+      const budgetMin = 500;
+      const budgetMax = 2000;
+      const jobPayload = {
+        title: 'Test posao - Budžet 500-2000 € (3.3)',
+        description: 'Posao s min-max budžetom za test.',
+        categoryId,
+        budgetMin,
+        budgetMax,
+        contactEmail: 'admin@uslugar.hr',
+        contactPhone: '+385999999999',
+        contactName: 'Test Administrator'
+      };
+      const createRes = await this._runApiTest('POST', '/api/jobs', {
+        body: jobPayload,
+        token,
+        expectedStatus: [200, 201]
+      });
+      const createData = createRes.data || {};
+      if (!createRes.ok || !createData?.id) {
+        logs.push(`❌ Kreiranje posla: ${createRes.status}`);
+        return { success: false, logs, screenshots };
+      }
+      logs.push(`✓ Posao kreiran s budžetom: ${budgetMin}-${budgetMax} €`);
+
+      const listRes = await this._runApiTest('GET', '/api/jobs?limit=20', { token, expectedStatus: 200 });
+      const jobs = Array.isArray(listRes.data) ? listRes.data : [];
+      const jobDetail = jobs.find(j => j.id === createData.id);
+      if (!jobDetail) {
+        logs.push(`❌ Posao nije u listi`);
+        const ss = await this._screenshotWithToken(testId, token, '#user', '01_budget', logs);
+        screenshots.push(...ss);
+        return { success: false, logs, screenshots };
+      }
+      const hasBudget = (jobDetail.budgetMin != null || jobDetail.budgetMax != null);
+      if (!hasBudget) {
+        logs.push(`❌ Posao nema budgetMin/budgetMax u odgovoru`);
+      } else {
+        logs.push(`✓ Budžet u odgovoru: ${jobDetail.budgetMin ?? '-'} - ${jobDetail.budgetMax ?? '-'} €`);
+      }
+
+      const filterRes = await this._runApiTest('GET', `/api/jobs?minBudget=${budgetMin}&maxBudget=${budgetMax}&limit=5`, { token });
+      const filtered = Array.isArray(filterRes.data) ? filterRes.data : [];
+      const oursInFilter = filtered.some(j => j.id === createData.id);
+      logs.push(`✓ Filter minBudget/maxBudget: ${filterRes.status}, naš posao u rezultatima: ${oursInFilter ? 'DA' : 'NE'}`);
+
+      const ss = await this._screenshotWithToken(testId, token, '#user', '01_budget_posao', logs);
+      screenshots.push(...ss);
+
+      return { success: createRes.ok && hasBudget, logs, screenshots };
+    } catch (e) {
+      logs.push(`❌ ${e.message}`);
+      return { success: false, logs, screenshots };
+    }
+  }
+
+  async runJobSearchTest(userData) {
+    const logs = [];
+    const screenshots = [];
+    const testId = '3.6_job_search';
+    try {
+      const setup = await this._createTestJobWithLogin(logs, {
+        title: 'Potreban električar za montažu (3.6)',
+        description: 'Tražim električara za instalaciju u stanu.'
+      });
+      if (!setup) return { success: false, logs, screenshots };
+      const { token } = setup;
+      const res = await this._runApiTest('GET', '/api/jobs?q=elektricar&limit=10', { token });
       logs.push(`✓ Job search API: ${res.status}`);
       const jobs = Array.isArray(res.data) ? res.data : [];
-      logs.push(`📋 Rezultata pretrage "elektricar": ${jobs.length}`);
-      const ss = await this._capturePageScreenshot('3.6_job-search', 'https://www.uslugar.eu/#user', '01_search', logs);
+      const found = jobs.some(j => j.id === setup.job.id || (j.title && j.title.toLowerCase().includes('elektricar')));
+      logs.push(`📋 Rezultata pretrage "elektricar": ${jobs.length}, naš posao pronađen: ${found ? 'DA' : 'NE'}`);
+      const ss = await this._screenshotWithToken(testId, token, '#user', '01_search', logs);
       screenshots.push(...ss);
-      return { success: res.ok, logs, screenshots };
+      return { success: res.ok && jobs.length > 0, logs, screenshots };
     } catch (e) {
       logs.push(`❌ ${e.message}`);
       return { success: false, logs, screenshots };
     }
   }
 
-  async runJobAdvancedFiltersTest() {
+  async runJobAdvancedFiltersTest(userData) {
     const logs = [];
     const screenshots = [];
+    const testId = '3.7_job_filters';
     try {
-      const res = await this._runApiTest('GET', '/api/jobs?categoryId=1&minBudget=100&limit=5');
+      const setup = await this._createTestJobWithLogin(logs, {
+        title: 'Test - Napredni filter (3.7)',
+        budgetMin: 500,
+        budgetMax: 3000
+      });
+      if (!setup) return { success: false, logs, screenshots };
+      const { token, job } = setup;
+      const categoryId = job.categoryId || job.category?.id;
+      const res = await this._runApiTest('GET', `/api/jobs?categoryId=${categoryId}&minBudget=100&maxBudget=5000&limit=10`, { token });
       logs.push(`✓ Advanced filters API: ${res.status}`);
       const jobs = Array.isArray(res.data) ? res.data : [];
-      logs.push(`📋 Filtrirano (kategorija+budžet): ${jobs.length} poslova`);
-      const ss = await this._capturePageScreenshot('3.7_job-filters', 'https://www.uslugar.eu/#user', '01_filters', logs);
+      const ours = jobs.find(j => j.id === job.id);
+      logs.push(`📋 Filtrirano (kategorija+budžet): ${jobs.length} poslova, naš posao u rezultatima: ${ours ? 'DA' : 'NE'}`);
+      const ss = await this._screenshotWithToken(testId, token, '#user', '01_filters', logs);
       screenshots.push(...ss);
-      return { success: res.ok, logs, screenshots };
+      return { success: res.ok && jobs.length > 0, logs, screenshots };
     } catch (e) {
       logs.push(`❌ ${e.message}`);
       return { success: false, logs, screenshots };
     }
   }
 
-  async runJobSortingTest() {
+  async runJobSortingTest(userData) {
     const logs = [];
     const screenshots = [];
+    const testId = '3.8_job_sorting';
     try {
-      const res = await this._runApiTest('GET', '/api/jobs?limit=5');
+      const setup = await this._createTestJobWithLogin(logs, { title: 'Test posao - Sortiranje (3.8)' });
+      if (!setup) return { success: false, logs, screenshots };
+      const { token } = setup;
+      const res = await this._runApiTest('GET', '/api/jobs?limit=10', { token });
       logs.push(`✓ Job list (sorting): ${res.status}`);
       const jobs = Array.isArray(res.data) ? res.data : [];
       logs.push(`📋 Poslova (default sort): ${jobs.length}`);
-      const ss = await this._capturePageScreenshot('3.8_job-sorting', 'https://www.uslugar.eu/#user', '01_sorting', logs);
+      const ss = await this._screenshotWithToken(testId, token, '#user', '01_sorting', logs);
       screenshots.push(...ss);
-      return { success: res.ok, logs, screenshots };
+      return { success: res.ok && jobs.length > 0, logs, screenshots };
     } catch (e) {
       logs.push(`❌ ${e.message}`);
       return { success: false, logs, screenshots };
     }
   }
 
-  async runOfferStatusTest() {
+  async runOfferStatusTest(userData) {
     const logs = [];
     const screenshots = [];
+    const testId = '4.2_offer_status';
     try {
-      const res = await this._runApiTest('GET', '/api/jobs?limit=3');
+      const setup = await this._createTestJobWithLogin(logs, { title: 'Test posao - Status ponude (4.2)' });
+      if (!setup) return { success: false, logs, screenshots };
+      const { token } = setup;
+      const res = await this._runApiTest('GET', '/api/jobs?limit=10', { token });
       logs.push(`✓ Jobs/Offers API: ${res.status}`);
       const jobs = Array.isArray(res.data) ? res.data : [];
       const withOffers = jobs.filter(j => j.offers && j.offers.length > 0);
       const statuses = withOffers.flatMap(j => j.offers.map(o => o.status));
-      if (statuses.length > 0) logs.push(`📋 Statusi ponuda: ${[...new Set(statuses)].join(', ')}`);
-      const ss = await this._capturePageScreenshot('4.2_offer-status', 'https://www.uslugar.eu/#user', '01_offer_status', logs);
+      logs.push(`📋 Poslova: ${jobs.length}, s ponudama: ${withOffers.length}`);
+      if (statuses.length > 0) logs.push(`   Statusi ponuda: ${[...new Set(statuses)].join(', ')}`);
+      const ss = await this._screenshotWithToken(testId, token, '#user', '01_offer_status', logs);
       screenshots.push(...ss);
-      return { success: res.ok, logs, screenshots };
+      return { success: res.ok && jobs.length > 0, logs, screenshots };
     } catch (e) {
       logs.push(`❌ ${e.message}`);
       return { success: false, logs, screenshots };
     }
   }
 
-  async runProviderBioTest() {
+  async runProviderBioTest(userData) {
     const logs = [];
     const screenshots = [];
+    const testId = '6.2_provider_bio';
     try {
-      const res = await this._runApiTest('GET', '/api/providers?limit=3');
+      const setup = await this._createTestProviderWithLogin(logs, {
+        bio: 'Električar s 10+ godina iskustva. Specijalizacija: stanovi, kuće, komercijalni objekti.'
+      });
+      if (!setup) return { success: false, logs, screenshots };
+      const { token } = setup;
+      const res = await this._runApiTest('GET', '/api/providers?limit=5', { token });
       logs.push(`✓ Providers API: ${res.status}`);
       const providers = Array.isArray(res.data) ? res.data : [];
       const withBio = providers.filter(p => p.bio || p.providerProfile?.bio);
       logs.push(`📋 Providera s biografijom: ${withBio.length}/${providers.length}`);
-      const ss = await this._capturePageScreenshot('6.2_provider-bio', 'https://www.uslugar.eu/#providers', '01_bio', logs);
+      const ss = await this._screenshotWithToken(testId, token, '#providers', '01_bio', logs);
       screenshots.push(...ss);
-      return { success: res.ok, logs, screenshots };
+      return { success: res.ok && withBio.length > 0, logs, screenshots };
     } catch (e) {
       logs.push(`❌ ${e.message}`);
       return { success: false, logs, screenshots };
     }
   }
 
-  async runProviderCategoriesTest() {
+  async runProviderCategoriesTest(userData) {
     const logs = [];
     const screenshots = [];
+    const testId = '6.3_provider_categories';
     try {
-      const res = await this._runApiTest('GET', '/api/providers?limit=3');
+      const setup = await this._createTestProviderWithLogin(logs);
+      if (!setup) return { success: false, logs, screenshots };
+      const { token } = setup;
+      const res = await this._runApiTest('GET', '/api/providers?limit=5', { token });
       logs.push(`✓ Providers (categories): ${res.status}`);
       const providers = Array.isArray(res.data) ? res.data : [];
       const withCats = providers.filter(p => (p.categories?.length || p.providerProfile?.categories?.length) > 0);
       logs.push(`📋 Providera s kategorijama: ${withCats.length}/${providers.length}`);
-      const ss = await this._capturePageScreenshot('6.3_provider-categories', 'https://www.uslugar.eu/#providers', '01_categories', logs);
+      const ss = await this._screenshotWithToken(testId, token, '#providers', '01_categories', logs);
       screenshots.push(...ss);
-      return { success: res.ok, logs, screenshots };
+      return { success: res.ok && withCats.length > 0, logs, screenshots };
     } catch (e) {
       logs.push(`❌ ${e.message}`);
       return { success: false, logs, screenshots };
@@ -1552,17 +1764,21 @@ class TestRunnerService {
     return this._stubTest('offer-accept', userData);
   }
 
-  async runProviderProfileTest() {
+  async runProviderProfileTest(userData) {
     const logs = [];
     const screenshots = [];
+    const testId = '6.1_provider';
     try {
-      const res = await this._runApiTest('GET', '/api/providers?limit=3');
+      const setup = await this._createTestProviderWithLogin(logs);
+      if (!setup) return { success: false, logs, screenshots };
+      const { token } = setup;
+      const res = await this._runApiTest('GET', '/api/providers?limit=5', { token });
       logs.push(`✓ Provider profile API: ${res.status}`);
-      if (res.ok) {
-        const ss = await this._capturePageScreenshot('6.1_provider', 'https://www.uslugar.eu/#providers', '01_pruzatelji', logs);
-        screenshots.push(...ss);
-      }
-      return { success: res.ok, logs, screenshots };
+      const providers = Array.isArray(res.data) ? res.data : [];
+      logs.push(`📋 Providera: ${providers.length}`);
+      const ss = await this._screenshotWithToken(testId, token, '#providers', '01_pruzatelji', logs);
+      screenshots.push(...ss);
+      return { success: res.ok && providers.length > 0, logs, screenshots };
     } catch (e) {
       logs.push(`❌ ${e.message}`);
       return { success: false, logs, screenshots };
@@ -1748,17 +1964,21 @@ class TestRunnerService {
     return this._stubTest('license-upload', userData);
   }
 
-  async runPortfolioDisplayTest() {
+  async runPortfolioDisplayTest(userData) {
     const logs = [];
     const screenshots = [];
+    const testId = '23.3_portfolio';
     try {
-      const res = await this._runApiTest('GET', '/api/providers?limit=1');
+      const setup = await this._createTestProviderWithLogin(logs);
+      if (!setup) return { success: false, logs, screenshots };
+      const { token } = setup;
+      const res = await this._runApiTest('GET', '/api/providers?limit=5', { token });
       logs.push(`✓ Portfolio API: ${res.status}`);
-      if (res.ok) {
-        const ss = await this._capturePageScreenshot('23.3_portfolio', 'https://www.uslugar.eu/#providers', '01_pruzatelji', logs);
-        screenshots.push(...ss);
-      }
-      return { success: res.ok, logs, screenshots };
+      const providers = Array.isArray(res.data) ? res.data : [];
+      logs.push(`📋 Providera: ${providers.length}`);
+      const ss = await this._screenshotWithToken(testId, token, '#providers', '01_portfolio', logs);
+      screenshots.push(...ss);
+      return { success: res.ok && providers.length > 0, logs, screenshots };
     } catch (e) {
       logs.push(`❌ ${e.message}`);
       return { success: false, logs, screenshots };
@@ -1788,6 +2008,7 @@ class TestRunnerService {
   async runSavedSearchTest(userData) {
     const logs = [];
     const screenshots = [];
+    const testId = '25.1_saved_search';
     const candidates = [
       { email: userData?.email || 'test.client@uslugar.hr', password: userData?.password || 'Test123456!' },
       { email: 'admin@uslugar.hr', password: 'Admin123!' }
@@ -1796,13 +2017,20 @@ class TestRunnerService {
       try {
         const login = await this._runApiTest('POST', '/api/auth/login', { body: { email, password }, expectedStatus: 200 });
         if (login.ok && login.data?.token) {
-          const res = await this._runApiTest('GET', '/api/saved-searches', { token: login.data.token });
-          logs.push(`✓ Saved search: ${res.status}`);
-          if (res.ok) {
-            const ss = await this._screenshotWithToken('25.1_saved', login.data.token, '#user', '01_dashboard', logs);
-            screenshots.push(...ss);
-          }
-          return { success: res.ok, logs, screenshots };
+          const token = login.data.token;
+          const createRes = await this._runApiTest('POST', '/api/saved-searches', {
+            body: { name: 'Test pretraga (25.1)', searchQuery: 'elektricar', filters: {} },
+            token,
+            expectedStatus: [200, 201]
+          });
+          if (createRes.ok) logs.push(`✓ Spremljena pretraga kreirana`);
+          const res = await this._runApiTest('GET', '/api/saved-searches', { token });
+          logs.push(`✓ Saved search API: ${res.status}`);
+          const list = Array.isArray(res.data) ? res.data : [];
+          logs.push(`📋 Spremljenih pretraga: ${list.length}`);
+          const ss = await this._screenshotWithToken(testId, token, '#user-profile', '01_saved_searches', logs);
+          screenshots.push(...ss);
+          return { success: res.ok && list.length > 0, logs, screenshots };
         }
       } catch (_) {}
     }
@@ -1813,6 +2041,7 @@ class TestRunnerService {
   async runJobAlertCreateTest(userData) {
     const logs = [];
     const screenshots = [];
+    const testId = '25.2_job_alert';
     const candidates = [
       { email: userData?.email || 'test.client@uslugar.hr', password: userData?.password || 'Test123456!' },
       { email: 'admin@uslugar.hr', password: 'Admin123!' }
@@ -1821,13 +2050,20 @@ class TestRunnerService {
       try {
         const login = await this._runApiTest('POST', '/api/auth/login', { body: { email, password }, expectedStatus: 200 });
         if (login.ok && login.data?.token) {
-          const res = await this._runApiTest('GET', '/api/job-alerts', { token: login.data.token });
-          logs.push(`✓ Job alert: ${res.status}`);
-          if (res.ok) {
-            const ss = await this._screenshotWithToken('25.2_alert', login.data.token, '#user', '01_dashboard', logs);
-            screenshots.push(...ss);
-          }
-          return { success: res.ok, logs, screenshots };
+          const token = login.data.token;
+          const createRes = await this._runApiTest('POST', '/api/job-alerts', {
+            body: { name: 'Test alert (25.2)', searchQuery: 'elektricar', frequency: 'DAILY' },
+            token,
+            expectedStatus: [200, 201]
+          });
+          if (createRes.ok) logs.push(`✓ Job alert kreiran`);
+          const res = await this._runApiTest('GET', '/api/job-alerts', { token });
+          logs.push(`✓ Job alert API: ${res.status}`);
+          const list = Array.isArray(res.data) ? res.data : [];
+          logs.push(`📋 Job alertova: ${list.length}`);
+          const ss = await this._screenshotWithToken(testId, token, '#user-profile', '01_job_alerts', logs);
+          screenshots.push(...ss);
+          return { success: res.ok && list.length > 0, logs, screenshots };
         }
       } catch (_) {}
     }
