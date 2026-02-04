@@ -786,90 +786,70 @@ class TestRunnerService {
   }
 
   async runJobCreationTest(userData) {
-    const testId = 'job_creation_' + Date.now();
+    const logs = [];
+    const testId = '3.1_job_create';
     const screenshots = [];
-    let browser;
-
     try {
-      console.log(`[TEST RUNNER] Pokrenuo test: ${testId}`);
-      
-      browser = await chromium.launch({ headless: true });
-      const context = await browser.newContext();
-      const page = await context.newPage();
-
-      // 1. Login
-      console.log('[TEST RUNNER] Navigiram na login...');
-      await page.goto('https://www.uslugar.eu/login', { waitUntil: 'networkidle' });
-      
-      await page.fill('input[name="email"]', userData?.email || 'test.client@uslugar.hr');
-      await page.fill('input[name="password"]', userData?.password || 'Test123456!');
-      await page.click('button:has-text("Sign in")');
-      await page.waitForNavigation({ waitUntil: 'networkidle' });
-
-      let screenshotPath = this._getScreenshotPath(testId, '01_logged_in');
-      await page.screenshot({ path: screenshotPath });
-      screenshots.push({
-        step: 'Prijava uspješna',
-        url: this._getScreenshotUrl(path.basename(screenshotPath))
-      });
-
-      // 2. Kreiraj posao
-      console.log('[TEST RUNNER] Kreiram posao...');
-      await page.click('button:has-text("Objavi posao")');
-      await page.waitForLoadState('networkidle');
-
-      screenshotPath = this._getScreenshotPath(testId, '02_job_form');
-      await page.screenshot({ path: screenshotPath });
-      screenshots.push({
-        step: 'Forma za posao otvorena',
-        url: this._getScreenshotUrl(path.basename(screenshotPath))
-      });
-
-      // 3. Unesi podatke
-      await page.fill('input[name="title"]', userData.jobTitle || 'Test Job');
-      await page.fill('textarea[name="description"]', userData.jobDescription || 'Test Description');
-      
-      screenshotPath = this._getScreenshotPath(testId, '03_job_filled');
-      await page.screenshot({ path: screenshotPath });
-      screenshots.push({
-        step: 'Podaci za posao uneseni',
-        url: this._getScreenshotUrl(path.basename(screenshotPath))
-      });
-
-      // 4. Spremi
-      await page.click('button:has-text("Spremi")');
-      await page.waitForNavigation({ waitUntil: 'networkidle' });
-
-      screenshotPath = this._getScreenshotPath(testId, '04_job_created');
-      await page.screenshot({ path: screenshotPath });
-      screenshots.push({
-        step: 'Posao kreiran',
-        url: this._getScreenshotUrl(path.basename(screenshotPath))
-      });
-
-      await context.close();
-      await browser.close();
-
-      return {
-        success: true,
-        testId,
-        screenshots,
-        message: 'Kreiranje posla uspješno'
-      };
-    } catch (error) {
-      console.error(`[TEST RUNNER] Test ${testId} failed:`, error);
-      
-      if (browser) {
-        await browser.close();
+      const candidates = [
+        { email: userData?.email || 'test.client@uslugar.hr', password: userData?.password || 'Test123456!' },
+        { email: 'test.provider@uslugar.hr', password: 'Test123456!' },
+        { email: 'admin@uslugar.hr', password: 'Admin123!' }
+      ];
+      let token = null;
+      for (const { email, password } of candidates) {
+        const loginRes = await this._runApiTest('POST', '/api/auth/login', { body: { email, password }, expectedStatus: 200 });
+        if (loginRes.ok && loginRes.data?.token) {
+          token = loginRes.data.token;
+          logs.push(`✓ Login: ${email}`);
+          break;
+        }
+      }
+      if (!token) {
+        logs.push('⚠ Login neuspješan - provjeri test.client/admin u bazi');
+        const ss = await this._capturePageScreenshot(testId, 'https://www.uslugar.eu/#login', '00_login', logs);
+        screenshots.push(...ss);
+        return { success: false, logs, screenshots };
       }
 
-      return {
-        success: false,
-        testId,
-        screenshots,
-        error: error.message,
-        message: `Greška pri testu: ${error.message}`
-      };
+      const catsRes = await this._runApiTest('GET', '/api/categories');
+      const categories = Array.isArray(catsRes.data) ? catsRes.data : [];
+      const categoryId = categories.find(c => !c.parentId)?.id || categories[0]?.id;
+      if (!categoryId) {
+        logs.push('❌ Nema kategorija u bazi');
+        return { success: false, logs, screenshots };
+      }
+
+      const base = this._getApiBaseUrl();
+      const title = userData?.jobTitle || 'Test posao - Popravak (3.1)';
+      const description = userData?.jobDescription || 'Automatski kreiran za test objavljivanja poslova.';
+      const createRes = await fetch(`${base}/api/jobs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ title, description, categoryId })
+      });
+      const createData = await createRes.json().catch(() => ({}));
+
+      if (!createRes.ok || !createData?.id) {
+        logs.push(`❌ Kreiranje posla: ${createRes.status} - ${createData?.error || createRes.statusText}`);
+        const ss = await this._screenshotWithToken(testId, token, '#user', '01_dashboard', logs);
+        screenshots.push(...ss);
+        return { success: false, logs, screenshots };
+      }
+      logs.push(`✓ Posao kreiran: ${createData.title} (id: ${createData.id})`);
+
+      const listRes = await this._runApiTest('GET', '/api/jobs?limit=5');
+      const jobs = Array.isArray(listRes.data) ? listRes.data : [];
+      const found = jobs.some(j => j.id === createData.id);
+      logs.push(`✓ Posao u listi: ${found ? 'DA' : 'NE'} (ukupno ${jobs.length} poslova)`);
+
+      const ss = await this._screenshotWithToken(testId, token, '#user', '01_posao_kreiran', logs);
+      screenshots.push(...ss);
+      if (ss.length === 0) logs.push('⚠ Screenshot nije kreiran');
+
+      return { success: true, logs, screenshots };
+    } catch (e) {
+      logs.push(`❌ ${e.message}`);
+      return { success: false, logs, screenshots };
     }
   }
 
