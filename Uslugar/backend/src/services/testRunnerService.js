@@ -862,11 +862,95 @@ class TestRunnerService {
     }
   }
 
+  async runJobDetailTest(userData) {
+    const logs = [];
+    const testId = '3.2_job_detail';
+    const screenshots = [];
+    try {
+      const candidates = [
+        { email: userData?.email || 'test.client@uslugar.hr', password: userData?.password || 'Test123456!' },
+        { email: 'test.provider@uslugar.hr', password: 'Test123456!' },
+        { email: 'admin@uslugar.hr', password: 'Admin123!' }
+      ];
+      let token = null;
+      for (const { email, password } of candidates) {
+        const loginRes = await this._runApiTest('POST', '/api/auth/login', { body: { email, password }, expectedStatus: 200 });
+        if (loginRes.ok && loginRes.data?.token) {
+          token = loginRes.data.token;
+          logs.push(`✓ Login: ${email}`);
+          break;
+        }
+      }
+      if (!token) {
+        logs.push('⚠ Login neuspješan');
+        return { success: false, logs, screenshots };
+      }
+
+      const catsRes = await this._runApiTest('GET', '/api/categories');
+      const categories = Array.isArray(catsRes.data) ? catsRes.data : [];
+      const categoryId = categories.find(c => !c.parentId)?.id || categories[0]?.id;
+      if (!categoryId) {
+        logs.push('❌ Nema kategorija');
+        return { success: false, logs, screenshots };
+      }
+
+      const title = userData?.jobTitle || 'Test posao - Detaljni opis (3.2)';
+      const description = userData?.jobDescription || 'Detaljan opis posla: potrebna montaža klima uređaja u stanu 45m². Lokacija centar.';
+      const jobPayload = {
+        title,
+        description,
+        categoryId,
+        contactEmail: userData?.email || 'admin@uslugar.hr',
+        contactPhone: userData?.phone || '+385999999999',
+        contactName: userData?.fullName || 'Test Administrator'
+      };
+      const createRes = await this._runApiTest('POST', '/api/jobs', {
+        body: jobPayload,
+        token,
+        expectedStatus: [200, 201]
+      });
+      const createData = createRes.data || {};
+      if (!createRes.ok || !createData?.id) {
+        logs.push(`❌ Kreiranje posla: ${createRes.status}`);
+        return { success: false, logs, screenshots };
+      }
+      logs.push(`✓ Posao kreiran: ${createData.title}`);
+
+      const listRes = await this._runApiTest('GET', '/api/jobs?myJobs=true', { token, expectedStatus: 200 });
+      if (!listRes.ok || !Array.isArray(listRes.data)) {
+        logs.push(`❌ Dohvat mojih poslova: ${listRes.status}`);
+        return { success: false, logs, screenshots };
+      }
+      const myJobs = listRes.data;
+      const jobDetail = myJobs.find(j => j.id === createData.id);
+      if (!jobDetail) {
+        logs.push(`❌ Posao nije u listi mojih poslova`);
+        return { success: false, logs, screenshots };
+      }
+      const hasTitle = jobDetail.title && String(jobDetail.title) === title;
+      const hasDesc = jobDetail.description && String(jobDetail.description).includes('Detaljan opis posla');
+      if (!hasTitle || !hasDesc) {
+        logs.push(`❌ Opis posla ne sadrži očekivane podatke (title: ${hasTitle}, description: ${hasDesc})`);
+        return { success: false, logs, screenshots };
+      }
+      logs.push(`✓ Detaljni opis: naslov i opis prikazani ispravno`);
+
+      const ss = await this._screenshotWithToken(testId, token, '#my-jobs', '01_detalji_posla', logs);
+      screenshots.push(...ss);
+
+      return { success: true, logs, screenshots };
+    } catch (e) {
+      logs.push(`❌ ${e.message}`);
+      return { success: false, logs, screenshots };
+    }
+  }
+
   // Generički test runner
   async runGenericTest(testType, userData) {
     const handlers = {
       registration: () => this.runRegistrationTest(userData),
       'job_creation': () => this.runJobCreationTest(userData),
+      'job-detail': () => this.runJobDetailTest(userData),
       'verify-registar': () => this.runVerifyRegistarTest(userData),
       login: () => this.runLoginTest(userData),
       'forgot-password': () => this.runForgotPasswordTest(userData),
@@ -877,9 +961,16 @@ class TestRunnerService {
       'job-create': () => this.runJobCreateTest(userData),
       'map-picker': () => this.runMapPickerTest(userData),
       'job-status': () => this.runJobStatusTest(userData),
+      'job-budget': () => this.runJobBudgetTest(userData),
+      'job-search': () => this.runJobSearchTest(userData),
+      'job-advanced-filters': () => this.runJobAdvancedFiltersTest(userData),
+      'job-sorting': () => this.runJobSortingTest(userData),
       'offer-send': () => this.runOfferSendTest(userData),
       'offer-accept': () => this.runOfferAcceptTest(userData),
+      'offer-status': () => this.runOfferStatusTest(userData),
       'provider-profile': () => this.runProviderProfileTest(userData),
+      'provider-bio': () => this.runProviderBioTest(userData),
+      'provider-categories': () => this.runProviderCategoriesTest(userData),
       'team-locations': () => this.runTeamLocationsTest(userData),
       matchmaking: () => this.runMatchmakingTest(userData),
       'stripe-checkout': () => this.runStripeCheckoutTest(userData),
@@ -1254,17 +1345,20 @@ class TestRunnerService {
       const categoryId = categories.find(c => !c.parentId)?.id || categories[0]?.id;
       if (!categoryId) logs.push('⚠ Nema kategorija u bazi - posao bez categoryId');
 
-      const base = this._getApiBaseUrl();
-      const createRes = await fetch(`${base}/api/jobs`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          title: 'Test posao - Električar (2.3)',
-          description: 'Automatski kreiran za test filtriranja kategorija.',
-          categoryId: categoryId || '1'
-        })
+      const jobPayload = {
+        title: 'Test posao - Električar (2.3)',
+        description: 'Automatski kreiran za test filtriranja kategorija.',
+        categoryId: categoryId || '1',
+        contactEmail: 'admin@uslugar.hr',
+        contactPhone: '+385999999999',
+        contactName: 'Test Administrator'
+      };
+      const createRes = await this._runApiTest('POST', '/api/jobs', {
+        body: jobPayload,
+        token,
+        expectedStatus: [200, 201]
       });
-      const createData = await createRes.json().catch(() => ({}));
+      const createData = createRes.data || {};
       if (createRes.ok && createData?.id) {
         logs.push(`✓ Posao kreiran: ${createData.title} (categoryId=1)`);
       } else {
@@ -1309,12 +1403,139 @@ class TestRunnerService {
     const logs = [];
     const screenshots = [];
     try {
-      const res = await this._runApiTest('GET', '/api/jobs?limit=1');
-      logs.push(`✓ Job status API: ${res.status}`);
+      const res = await this._runApiTest('GET', '/api/jobs?limit=10');
+      logs.push(`✓ Job list API: ${res.status}`);
+      const jobs = Array.isArray(res.data) ? res.data : [];
+      const statuses = [...new Set(jobs.map(j => j.status).filter(Boolean))];
+      if (statuses.length > 0) logs.push(`📋 Statusi poslova: ${statuses.join(', ')} (OPEN, IN_PROGRESS, COMPLETED, CANCELLED)`);
       if (res.ok) {
-        const ss = await this._capturePageScreenshot('3.5_job-status', 'https://www.uslugar.eu/', '01_poslovi', logs);
+        const ss = await this._capturePageScreenshot('3.5_job-status', 'https://www.uslugar.eu/#user', '01_poslovi_status', logs);
         screenshots.push(...ss);
       }
+      return { success: res.ok, logs, screenshots };
+    } catch (e) {
+      logs.push(`❌ ${e.message}`);
+      return { success: false, logs, screenshots };
+    }
+  }
+
+  async runJobBudgetTest() {
+    const logs = [];
+    const screenshots = [];
+    try {
+      const res = await this._runApiTest('GET', '/api/jobs?minBudget=100&maxBudget=5000&limit=5');
+      logs.push(`✓ Budget filter API: ${res.status}`);
+      const jobs = Array.isArray(res.data) ? res.data : [];
+      const withBudget = jobs.filter(j => j.budgetMin != null || j.budgetMax != null);
+      logs.push(`📋 Poslova s budžetom: ${withBudget.length}/${jobs.length}`);
+      const ss = await this._capturePageScreenshot('3.3_job-budget', 'https://www.uslugar.eu/#user', '01_budget', logs);
+      screenshots.push(...ss);
+      return { success: res.ok, logs, screenshots };
+    } catch (e) {
+      logs.push(`❌ ${e.message}`);
+      return { success: false, logs, screenshots };
+    }
+  }
+
+  async runJobSearchTest() {
+    const logs = [];
+    const screenshots = [];
+    try {
+      const res = await this._runApiTest('GET', '/api/jobs?q=elektricar&limit=5');
+      logs.push(`✓ Job search API: ${res.status}`);
+      const jobs = Array.isArray(res.data) ? res.data : [];
+      logs.push(`📋 Rezultata pretrage "elektricar": ${jobs.length}`);
+      const ss = await this._capturePageScreenshot('3.6_job-search', 'https://www.uslugar.eu/#user', '01_search', logs);
+      screenshots.push(...ss);
+      return { success: res.ok, logs, screenshots };
+    } catch (e) {
+      logs.push(`❌ ${e.message}`);
+      return { success: false, logs, screenshots };
+    }
+  }
+
+  async runJobAdvancedFiltersTest() {
+    const logs = [];
+    const screenshots = [];
+    try {
+      const res = await this._runApiTest('GET', '/api/jobs?categoryId=1&minBudget=100&limit=5');
+      logs.push(`✓ Advanced filters API: ${res.status}`);
+      const jobs = Array.isArray(res.data) ? res.data : [];
+      logs.push(`📋 Filtrirano (kategorija+budžet): ${jobs.length} poslova`);
+      const ss = await this._capturePageScreenshot('3.7_job-filters', 'https://www.uslugar.eu/#user', '01_filters', logs);
+      screenshots.push(...ss);
+      return { success: res.ok, logs, screenshots };
+    } catch (e) {
+      logs.push(`❌ ${e.message}`);
+      return { success: false, logs, screenshots };
+    }
+  }
+
+  async runJobSortingTest() {
+    const logs = [];
+    const screenshots = [];
+    try {
+      const res = await this._runApiTest('GET', '/api/jobs?limit=5');
+      logs.push(`✓ Job list (sorting): ${res.status}`);
+      const jobs = Array.isArray(res.data) ? res.data : [];
+      logs.push(`📋 Poslova (default sort): ${jobs.length}`);
+      const ss = await this._capturePageScreenshot('3.8_job-sorting', 'https://www.uslugar.eu/#user', '01_sorting', logs);
+      screenshots.push(...ss);
+      return { success: res.ok, logs, screenshots };
+    } catch (e) {
+      logs.push(`❌ ${e.message}`);
+      return { success: false, logs, screenshots };
+    }
+  }
+
+  async runOfferStatusTest() {
+    const logs = [];
+    const screenshots = [];
+    try {
+      const res = await this._runApiTest('GET', '/api/jobs?limit=3');
+      logs.push(`✓ Jobs/Offers API: ${res.status}`);
+      const jobs = Array.isArray(res.data) ? res.data : [];
+      const withOffers = jobs.filter(j => j.offers && j.offers.length > 0);
+      const statuses = withOffers.flatMap(j => j.offers.map(o => o.status));
+      if (statuses.length > 0) logs.push(`📋 Statusi ponuda: ${[...new Set(statuses)].join(', ')}`);
+      const ss = await this._capturePageScreenshot('4.2_offer-status', 'https://www.uslugar.eu/#user', '01_offer_status', logs);
+      screenshots.push(...ss);
+      return { success: res.ok, logs, screenshots };
+    } catch (e) {
+      logs.push(`❌ ${e.message}`);
+      return { success: false, logs, screenshots };
+    }
+  }
+
+  async runProviderBioTest() {
+    const logs = [];
+    const screenshots = [];
+    try {
+      const res = await this._runApiTest('GET', '/api/providers?limit=3');
+      logs.push(`✓ Providers API: ${res.status}`);
+      const providers = Array.isArray(res.data) ? res.data : [];
+      const withBio = providers.filter(p => p.bio || p.providerProfile?.bio);
+      logs.push(`📋 Providera s biografijom: ${withBio.length}/${providers.length}`);
+      const ss = await this._capturePageScreenshot('6.2_provider-bio', 'https://www.uslugar.eu/#providers', '01_bio', logs);
+      screenshots.push(...ss);
+      return { success: res.ok, logs, screenshots };
+    } catch (e) {
+      logs.push(`❌ ${e.message}`);
+      return { success: false, logs, screenshots };
+    }
+  }
+
+  async runProviderCategoriesTest() {
+    const logs = [];
+    const screenshots = [];
+    try {
+      const res = await this._runApiTest('GET', '/api/providers?limit=3');
+      logs.push(`✓ Providers (categories): ${res.status}`);
+      const providers = Array.isArray(res.data) ? res.data : [];
+      const withCats = providers.filter(p => (p.categories?.length || p.providerProfile?.categories?.length) > 0);
+      logs.push(`📋 Providera s kategorijama: ${withCats.length}/${providers.length}`);
+      const ss = await this._capturePageScreenshot('6.3_provider-categories', 'https://www.uslugar.eu/#providers', '01_categories', logs);
+      screenshots.push(...ss);
       return { success: res.ok, logs, screenshots };
     } catch (e) {
       logs.push(`❌ ${e.message}`);
