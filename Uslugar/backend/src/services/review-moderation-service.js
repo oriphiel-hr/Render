@@ -241,7 +241,8 @@ export async function approveReview(reviewId, adminId, notes = null) {
     const review = await prisma.review.findUnique({
       where: { id: reviewId },
       include: {
-        to: { select: { id: true, role: true } }
+        to: { select: { id: true, role: true, email: true } },
+        from: { select: { fullName: true } }
       }
     });
 
@@ -261,6 +262,16 @@ export async function approveReview(reviewId, adminId, notes = null) {
         publishedAt: review.publishedAt || new Date()
       }
     });
+
+    // Pošalji email primatelju recenzije ako je sada objavljena
+    if (updatedReview.isPublished && !review.isPublished && review.to?.email && review.from?.fullName) {
+      try {
+        const { sendReviewNotification } = await import('../lib/email.js');
+        await sendReviewNotification(review.to.email, review.rating, review.comment || '', review.from.fullName);
+      } catch (e) {
+        console.error('[REVIEW_MODERATION] Error sending review notification email:', e);
+      }
+    }
 
     // Ažuriraj aggregate ako je review objavljen i toUserId je PROVIDER
     if (updatedReview.isPublished && review.to.role === 'PROVIDER') {

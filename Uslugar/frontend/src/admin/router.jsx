@@ -9,6 +9,7 @@ import AdminProviderApprovals from '../pages/AdminProviderApprovals'
 import AdminKYCMetrics from '../pages/AdminKYCMetrics'
 import AdminDataCleanup from '../pages/AdminDataCleanup'
 import AdminTesting from '../pages/AdminTesting'
+import AdminTestingBlocks from '../pages/AdminTestingBlocks'
 import AdminVerificationDocuments from '../pages/AdminVerificationDocuments'
 import AdminPlatformStats from '../pages/AdminPlatformStats'
 import AdminModeration from '../pages/AdminModeration'
@@ -77,7 +78,7 @@ export default function AdminRouter(){
     // Admin panel path rute (koje se koriste u BrowserRouter)
     const adminPathRoutes = ['payments', 'provider-approvals', 'kyc-metrics', 'verification-documents', 
                              'platform-stats', 'moderation', 'sms-logs', 'invoices', 
-                             'users-overview', 'cleanup', 'testing', 'database', 'api-reference', 'user-types',
+                             'users-overview', 'cleanup', 'testing', 'testing-blocks', 'database', 'api-reference', 'user-types',
                              'audit-logs', 'api-request-logs', 'error-logs', 'addon-event-logs'];
     // Dodaj sve MODELS kao admin rute
     const adminModelRoutes = MODELS.map(m => m.toLowerCase());
@@ -254,6 +255,7 @@ export default function AdminRouter(){
           <Route path="/admin/users-overview" element={<AdminUsersOverview />} />
           <Route path="/admin/cleanup" element={<AdminDataCleanup />} />
           <Route path="/admin/testing" element={<AdminTesting />} />
+          <Route path="/admin/testing-blocks" element={<AdminTestingBlocks />} />
           <Route path="/admin/database" element={<AdminDatabaseEditor />} />
           <Route path="/admin/api-reference" element={<AdminApiReference />} />
           <Route path="/admin/user-types" element={<UserTypesOverview isAdmin={true} />} />

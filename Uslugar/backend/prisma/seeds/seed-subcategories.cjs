@@ -8,10 +8,30 @@ const subcategories = require('./subcategories.cjs');
 
 const prisma = new PrismaClient();
 
+// Preimenovanje starih podkategorija u nove nazive (duh hrvatskog jezika)
+const SUB_RENAME_MAP = {
+  'Uređivanje vrta': 'Uređivanje vrtnih površina',
+  'Sadnja biljaka': 'Sadnja bilja i cvijeća',
+  'Održavanje vrta': 'Održavanje vrtova i travnjaka',
+  'Automatsko zalijevanje': 'Sustavi automatskog zalijevanja'
+};
+
 async function seedSubcategories() {
   console.log('🌱 Početak seed-a podkategorija...');
 
   try {
+    // Preimenuj stare podkategorije
+    for (const [oldName, newName] of Object.entries(SUB_RENAME_MAP)) {
+      const existing = await prisma.category.findUnique({ where: { name: oldName } });
+      if (existing) {
+        await prisma.category.update({
+          where: { id: existing.id },
+          data: { name: newName }
+        });
+        console.log(`🔄 Preimenovano: "${oldName}" → "${newName}"`);
+      }
+    }
+
     let createdCount = 0;
     let skippedCount = 0;
 
@@ -30,7 +50,7 @@ async function seedSubcategories() {
           continue;
         }
 
-        // Provjeri postoji li već podkategorija
+        // Provjeri postoji li već podkategorija (name je unique globalno)
         const existingSubcategory = await prisma.category.findFirst({
           where: {
             name: subcategoryData.name,
@@ -39,7 +59,19 @@ async function seedSubcategories() {
         });
 
         if (existingSubcategory) {
-          console.log(`⏭️  Podkategorija "${subcategoryData.name}" već postoji, preskačem...`);
+          // Ažuriraj ikonu i opis ako nisu usklađeni
+          const updates = {};
+          if (existingSubcategory.icon !== (subcategoryData.icon || null)) updates.icon = subcategoryData.icon || null;
+          if (existingSubcategory.description !== subcategoryData.description) updates.description = subcategoryData.description;
+          if (Object.keys(updates).length > 0) {
+            await prisma.category.update({
+              where: { id: existingSubcategory.id },
+              data: updates
+            });
+            console.log(`🔄 Ažurirana podkategorija: "${subcategoryData.name}" (ikona/opis)`);
+          } else {
+            console.log(`⏭️  Podkategorija "${subcategoryData.name}" već postoji, preskačem...`);
+          }
           skippedCount++;
           continue;
         }

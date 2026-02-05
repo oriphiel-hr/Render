@@ -116,6 +116,115 @@ export const sendOfferAcceptedNotification = async (toEmail, jobTitle, customerN
   }
 };
 
+export const sendJobCompletedEmail = async (toEmail, fullName, jobTitle) => {
+  if (!transporter) return;
+  try {
+    const jobsUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/#my-jobs`;
+    await transporter.sendMail({
+      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
+      to: toEmail,
+      subject: `Posao završen: ${jobTitle}`,
+      html: `
+        <h2>Posao završen</h2>
+        <p>Poštovani/na <strong>${fullName}</strong>,</p>
+        <p>Posao <strong>${jobTitle}</strong> je označen kao završen.</p>
+        <p><a href="${jobsUrl}" style="color: #4CAF50;">Pregled mojih poslova</a></p>
+      `
+    });
+    console.log('Job completed email sent to:', toEmail);
+  } catch (error) {
+    console.error('Error sending job completed email:', error);
+  }
+};
+
+export const sendJobCancelledEmail = async (toEmail, fullName, jobTitle, reason = null) => {
+  if (!transporter) return;
+  try {
+    const jobsUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/#my-jobs`;
+    await transporter.sendMail({
+      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
+      to: toEmail,
+      subject: `Posao otkazan: ${jobTitle}`,
+      html: `
+        <h2>Posao otkazan</h2>
+        <p>Poštovani/na <strong>${fullName}</strong>,</p>
+        <p>Posao <strong>${jobTitle}</strong> je otkazan od strane naručitelja.${reason ? ` Razlog: ${reason}` : ''}</p>
+        <p><a href="${jobsUrl}" style="color: #4CAF50;">Pregled mojih poslova</a></p>
+      `
+    });
+    console.log('Job cancelled email sent to:', toEmail);
+  } catch (error) {
+    console.error('Error sending job cancelled email:', error);
+  }
+};
+
+export const sendJobAlertEmail = async (toEmail, fullName, alertName, jobs) => {
+  if (!transporter) return;
+  if (!jobs || jobs.length === 0) return;
+
+  try {
+    const jobsUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/#user`;
+    const listItems = jobs
+      .slice(0, 10)
+      .map(
+        j =>
+          `<li><strong>${escapeHtml(j.title)}</strong>${j.category?.name ? ` (${escapeHtml(j.category.name)})` : ''}${j.city ? ` – ${escapeHtml(j.city)}` : ''}</li>`
+      )
+      .join('');
+    const more = jobs.length > 10 ? `<p>... i još ${jobs.length - 10} poslova.</p>` : '';
+
+    await transporter.sendMail({
+      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
+      to: toEmail,
+      subject: `Novi poslovi za "${alertName}" – Uslugar`,
+      html: `
+        <h2>Novi poslovi prema vašoj pretrazi</h2>
+        <p>Poštovani/na <strong>${escapeHtml(fullName)}</strong>,</p>
+        <p>Pronađeno je <strong>${jobs.length}</strong> novih poslova koji odgovaraju alertu "${escapeHtml(alertName)}":</p>
+        <ul>${listItems}</ul>
+        ${more}
+        <p><a href="${jobsUrl}" style="background-color: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Pogledaj poslove</a></p>
+      `
+    });
+    console.log('Job alert email sent to:', toEmail);
+  } catch (error) {
+    console.error('Error sending job alert email:', error);
+    throw error;
+  }
+};
+
+function escapeHtml(text) {
+  if (!text) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+export const sendProviderRegistrationStatusEmail = async (toEmail, fullName, approved, reason = null) => {
+  if (!transporter) return;
+  try {
+    const subject = approved ? 'Registracija odobrena - Uslugar' : 'Registracija odbijena - Uslugar';
+    const msg = approved
+      ? 'Vaša registracija kao pružatelj usluga je odobrena! Sada možete koristiti platformu i prikazivati svoje usluge.'
+      : `Vaša registracija je odbijena.${reason ? ` Razlog: ${reason}` : ''}`;
+    await transporter.sendMail({
+      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
+      to: toEmail,
+      subject,
+      html: `
+        <h2>${approved ? 'Registracija odobrena!' : 'Registracija odbijena'}</h2>
+        <p>Poštovani/na <strong>${fullName}</strong>,</p>
+        <p>${msg}</p>
+      `
+    });
+    console.log('Provider registration status email sent to:', toEmail);
+  } catch (error) {
+    console.error('Error sending provider registration status email:', error);
+  }
+};
+
 export const sendInvoiceEmail = async (toEmail, fullName, invoice, pdfBuffer) => {
   if (!transporter) {
     console.log('SMTP not configured, skipping invoice email:', toEmail);
@@ -516,6 +625,69 @@ export const sendPasswordResetEmail = async (toEmail, fullName, resetToken) => {
   } catch (error) {
     console.error('Error sending password reset email:', error);
     throw error;
+  }
+};
+
+export const sendLoggedInJobConfirmationEmail = async (toEmail, fullName, jobTitle, jobId) => {
+  if (!transporter) {
+    console.log('SMTP not configured, skipping job confirmation email:', toEmail);
+    return;
+  }
+
+  const jobUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/#my-jobs`;
+
+  try {
+    await transporter.sendMail({
+      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
+      to: toEmail,
+      subject: `Posao kreiran: ${jobTitle}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+        </head>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background-color: #f8f9fa; padding: 30px; border-radius: 10px;">
+            <h1 style="color: #333; margin-bottom: 20px;">Posao kreiran uspješno! ✅</h1>
+
+            <p style="font-size: 16px; color: #555;">Poštovani/a <strong>${fullName}</strong>,</p>
+
+            <p style="font-size: 16px; color: #555; line-height: 1.6;">
+              Vaš upit <strong>${jobTitle}</strong> je objavljen.
+            </p>
+
+            <div style="background-color: #E0F2FE; border-left: 4px solid #0EA5E9; padding: 20px; margin: 30px 0; border-radius: 5px;">
+              <p style="font-size: 15px; color: #0369A1; margin: 0;">
+                Pružatelji usluga će vidjeti vaš upit i moći će vam poslati ponude. Primit ćete obavijest emailom kada netko pošalje ponudu.
+              </p>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${jobUrl}"
+                 style="background-color: #4CAF50;
+                        color: white;
+                        padding: 15px 40px;
+                        text-decoration: none;
+                        border-radius: 5px;
+                        font-size: 18px;
+                        font-weight: bold;
+                        display: inline-block;">
+                Pregled mojih poslova
+              </a>
+            </div>
+
+            <p style="font-size: 12px; color: #999; text-align: center; margin-top: 30px;">
+              Uslugar - Platforma za pronalaženje lokalnih pružatelja usluga
+            </p>
+          </div>
+        </body>
+        </html>
+      `
+    });
+    console.log('[OK] Job confirmation email sent to:', toEmail);
+  } catch (error) {
+    console.error('Error sending job confirmation email:', error);
   }
 };
 

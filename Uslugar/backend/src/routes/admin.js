@@ -815,6 +815,21 @@ r.patch('/providers/:providerId/approval', auth(true, ['ADMIN']), async (req, re
       }
     });
 
+    // Pošalji email provideru
+    if (provider.user?.email) {
+      try {
+        const { sendProviderRegistrationStatusEmail } = await import('../lib/email.js');
+        await sendProviderRegistrationStatusEmail(
+          provider.user.email,
+          provider.user.fullName || 'Korisnik',
+          status === 'APPROVED',
+          status === 'REJECTED' ? (notes || 'Nisu zadovoljeni uvjeti.') : null
+        );
+      } catch (emailErr) {
+        console.error('[ADMIN] Failed to send provider status email:', emailErr);
+      }
+    }
+
     // If approved, ensure they have a subscription or set them to TRIAL
     if (status === 'APPROVED') {
       const existingSubscription = await prisma.subscription.findUnique({

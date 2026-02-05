@@ -10,8 +10,62 @@ const categoriesWithNKD = require('./categories-nkd.cjs')
 
 const prisma = new PrismaClient()
 
+// Mapiranje starih naziva na nove (za preimenovanje u duhu hrvatskog jezika)
+const RENAME_MAP = {
+  'Baštanski radovi': 'Vrtni radovi',
+  'Čistoća i održavanje': 'Čišćenje i održavanje',
+  'Transport robe': 'Prijevoz robe',
+  'Prijevoz': 'Usluge prijevoza',
+  'IT podrška': 'IT usluge'
+}
+
 async function seedCategories() {
   console.log('🌱 Započinjem seed kategorija...')
+
+  // Preimenuj stare kategorije u nove nazive (ili spoji ako nova već postoji)
+  for (const [oldName, newName] of Object.entries(RENAME_MAP)) {
+    const existingOld = await prisma.category.findUnique({ where: { name: oldName } })
+    const existingNew = await prisma.category.findUnique({ where: { name: newName } })
+
+    if (!existingOld) continue
+
+    if (existingNew) {
+      // Nova kategorija već postoji – spoji stare reference u novu, zatim obriši staru
+      const oldId = existingOld.id
+      const newId = existingNew.id
+      if (oldId === newId) continue // Ista kategorija
+
+      const subcats = await prisma.category.updateMany({ where: { parentId: oldId }, data: { parentId: newId } })
+      const jobs = await prisma.job.updateMany({ where: { categoryId: oldId }, data: { categoryId: newId } })
+      const providersWithOld = await prisma.providerProfile.findMany({
+        where: { categories: { some: { id: oldId } } },
+        select: { id: true }
+      })
+      for (const p of providersWithOld) {
+        await prisma.providerProfile.update({
+          where: { id: p.id },
+          data: {
+            categories: {
+              disconnect: { id: oldId },
+              connect: { id: newId }
+            }
+          }
+        })
+      }
+      if (subcats.count > 0 || jobs.count > 0 || providersWithOld.length > 0) {
+        console.log(`🔄 Spojeno u "${newName}": ${subcats.count} podkategorija, ${jobs.count} poslova, ${providersWithOld.length} pružatelja`)
+      }
+      await prisma.category.delete({ where: { id: oldId } })
+      console.log(`🗑️ Obrisana duplikat: "${oldName}" (reference prebačene na "${newName}")`)
+    } else {
+      // Jednostavno preimenovanje
+      await prisma.category.update({
+        where: { id: existingOld.id },
+        data: { name: newName }
+      })
+      console.log(`🔄 Preimenovano: "${oldName}" → "${newName}"`)
+    }
+  }
   
   let created = 0
   let updated = 0
@@ -30,6 +84,7 @@ async function seedCategories() {
           where: { id: existing.id },
           data: {
             description: category.description,
+            icon: category.icon || null,
             nkdCode: category.nkdCode,
             requiresLicense: category.requiresLicense,
             licenseType: category.licenseType || null,
@@ -45,6 +100,7 @@ async function seedCategories() {
           data: {
             name: category.name,
             description: category.description,
+            icon: category.icon || null,
             nkdCode: category.nkdCode,
             requiresLicense: category.requiresLicense,
             licenseType: category.licenseType || null,

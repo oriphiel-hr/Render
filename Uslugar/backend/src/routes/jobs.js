@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { auth } from '../lib/auth.js';
 import { notifyNewJob, notifyAcceptedOffer, notifyJobCompleted } from '../lib/notifications.js';
-import { sendAnonymousJobConfirmationEmail } from '../lib/email.js';
+import { sendAnonymousJobConfirmationEmail, sendLoggedInJobConfirmationEmail, sendJobCancelledEmail } from '../lib/email.js';
 
 const r = Router();
 
@@ -270,7 +270,24 @@ r.post('/', async (req, res, next) => {
         // Don't fail the job creation if email fails
       }
     }
-    
+
+    // If logged-in user, send confirmation email
+    if (userId) {
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { email: true, fullName: true }
+        });
+        if (user?.email) {
+          await sendLoggedInJobConfirmationEmail(user.email, user.fullName || 'Korisnik', title, job.id);
+          console.log(`[JOB] Confirmation email sent to: ${user.email}`);
+        }
+      } catch (emailError) {
+        console.error('[JOB] Failed to send confirmation email:', emailError);
+        // Don't fail the job creation if email fails
+      }
+    }
+
     // Pošalji notifikacije pružateljima u kategoriji
     await notifyNewJob(job, finalCategoryId);
     
@@ -433,7 +450,7 @@ r.patch('/:jobId/cancel', auth(true, ['USER', 'PROVIDER']), async (req, res, nex
       data: { status: 'CANCELLED' }
     });
     
-    // If there was an accepted offer, notify provider
+    // If there was an accepted offer, notify provider (in-app + email)
     if (job.offers.length > 0) {
       const provider = job.offers[0].user;
       await prisma.notification.create({
@@ -445,6 +462,9 @@ r.patch('/:jobId/cancel', auth(true, ['USER', 'PROVIDER']), async (req, res, nex
           jobId: job.id
         }
       });
+      if (provider?.email) {
+        await sendJobCancelledEmail(provider.email, provider.fullName || 'Pružatelj', job.title, reason);
+      }
     }
     
     res.json({

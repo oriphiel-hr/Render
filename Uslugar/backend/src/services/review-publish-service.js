@@ -6,6 +6,7 @@
  */
 
 import { prisma } from '../lib/prisma.js';
+import { sendReviewNotification } from '../lib/email.js';
 
 /**
  * Provjerava i objavljuje review-e čiji je rok istekao
@@ -30,7 +31,9 @@ export async function publishExpiredReviews() {
             userId: true,
             assignedProviderId: true
           }
-        }
+        },
+        from: { select: { fullName: true } },
+        to: { select: { email: true } }
       }
     });
 
@@ -50,6 +53,15 @@ export async function publishExpiredReviews() {
 
         publishedCount++;
         console.log(`[REVIEW_PUBLISH] Published expired review ${review.id} for job ${review.jobId}`);
+
+        // Pošalji email primatelju recenzije
+        if (review.to?.email && review.from?.fullName) {
+          try {
+            await sendReviewNotification(review.to.email, review.rating, review.comment || '', review.from.fullName);
+          } catch (e) {
+            console.error(`[REVIEW_PUBLISH] Error sending review email:`, e);
+          }
+        }
 
         // Ažuriraj aggregate samo za provider profile
         const toUser = await prisma.user.findUnique({ 

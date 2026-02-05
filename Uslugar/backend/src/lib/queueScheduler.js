@@ -16,6 +16,7 @@ import { batchAutoVerifyClients } from '../services/auto-verification.js'
 
 import { lockInactiveThreads, reLockExpiredTemporaryUnlocks } from '../services/thread-locking-service.js';
 import { checkAndSendSLAReminders } from '../services/sla-reminder-service.js';
+import { processJobAlerts } from '../services/job-alert-service.js';
 import { checkAddonLifecycles, processAutoRenewals, processAddonUpsells } from '../services/addon-lifecycle-service.js';
 import { checkAndDowngradeExpiredSubscriptions } from '../routes/subscriptions.js';
 import { publishExpiredReviews } from '../services/review-publish-service.js';
@@ -71,6 +72,12 @@ export function startQueueScheduler() {
       const reviewPublish = await publishExpiredReviews()
       if (reviewPublish.published > 0) {
         console.log(`✅ Published ${reviewPublish.published} expired reviews`)
+      }
+
+      // Job alerts - pošalji email obavijesti za nove poslove
+      const jobAlerts = await processJobAlerts()
+      if (jobAlerts.sent > 0) {
+        console.log(`✅ Sent ${jobAlerts.sent} job alert emails (${jobAlerts.errors} errors)`)
       }
       
       console.log('✅ Scheduled check completed')
@@ -214,6 +221,7 @@ export function startQueueScheduler() {
   console.log('   - Add-on upsell offers: Every hour at :00')
   console.log('   - Expired subscriptions downgrade (TRIAL→BASIC): Every hour at :00')
   console.log('   - Review publish (reciprocal delay): Every hour at :00')
+  console.log('   - Job alerts (INSTANT/DAILY/WEEKLY): Every hour at :00')
   console.log('   - Monthly reports: 1st of month at 09:00')
   console.log('   - License expiry check: Daily at 09:00')
   console.log('   - License validity check: Daily at 10:00')

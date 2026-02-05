@@ -16,6 +16,7 @@ function _sanitizeCheckpointForResponse(summary) {
 }
 import { testRunnerService } from '../services/testRunnerService.js';
 import { TEST_ID_MAP } from '../config/testTypes.js';
+import { getBlocksForTest, BLOCKS_BY_TEST } from '../config/blocksManifest.js';
 import { mailpitService } from '../services/mailpitService.js';
 import { prisma } from '../lib/prisma.js';
 
@@ -503,6 +504,14 @@ r.post('/runs', async (req, res, next) => {
 });
 
 /**
+ * GET /api/testing/blocks-manifest
+ * Vraća manifest blokova za sve testove (prozirnost - koji blokovi čine koji test)
+ */
+r.get('/blocks-manifest', (req, res) => {
+  res.json({ blocksByTest: BLOCKS_BY_TEST });
+});
+
+/**
  * POST /api/testing/run-single
  * Pokreni jedan test s Playwright-om + Mailtrap integracijom
  */
@@ -581,7 +590,13 @@ r.post('/run-single', async (req, res, next) => {
       // Za forgot-password uvijek admin - frontend može slati client ako admin nije u testData
       if (testType === 'forgot-password') testData = { ...testData, email: 'admin@uslugar.hr' };
 
-      testResult = await testRunnerService.runGenericTest(testType, testData);
+      // Koristi blokovski orkestrator kad manifest ima blokove za ovaj test
+      const blocksInfo = getBlocksForTest(testId);
+      if (blocksInfo.blocks && blocksInfo.blocks.length > 0) {
+        testResult = await testRunnerService.runTestByBlocks(testId, testData);
+      } else {
+        testResult = await testRunnerService.runGenericTest(testType, testData);
+      }
       
       results.screenshots = testResult.screenshots || [];
       
@@ -801,6 +816,11 @@ r.post('/run-single', async (req, res, next) => {
 
     const duration = Date.now() - startTime;
     
+    const blocksInfo = getBlocksForTest(testId);
+    const blockStatuses = testResult?.blockStatuses?.length
+      ? testResult.blockStatuses
+      : (blocksInfo.blocks || []).map(b => ({ id: b, status: testResult?.success ? 'ok' : 'unknown' }));
+
     const finalResult = {
       success: testResult?.success || false,
       testId,
@@ -816,6 +836,9 @@ r.post('/run-single', async (req, res, next) => {
       checkpointSnapshot: checkpointSnapshot ? _sanitizeCheckpointForResponse(checkpointSnapshot) : null,
       checkpointDelta,
       logs: results.logs,
+      blocks: blocksInfo.blocks,
+      assert: blocksInfo.assert,
+      blockStatuses,
       message: testResult?.success 
         ? `✅ Test '${testName}' uspješno prošao (${duration}ms)`
         : `❌ Test '${testName}' nije prošao`

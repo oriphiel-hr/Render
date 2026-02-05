@@ -74,6 +74,7 @@ const NAVIGATION_GROUPS = [
     icon: '🛠️',
     items: [
       { to: '/admin/testing', label: 'Testiranje', icon: '🧪' },
+      { to: '/admin/testing-blocks', label: 'Blokovski testovi', icon: '🧱' },
       { to: '/admin/database', label: 'Database Editor', icon: '🗄️' },
       { to: '/admin/api-reference', label: 'API Reference', icon: '📚' },
       { to: '/admin/documentation', label: 'Dokumentacija', icon: '📖' },
@@ -126,6 +127,7 @@ function getPageTitle(pathname) {
     'payments': 'Plaćanja',
     'cleanup': 'Čišćenje podataka',
     'testing': 'Testiranje',
+    'testing-blocks': 'Blokovski testovi',
     'user-types': 'Tipovi korisnika',
     'audit-logs': 'Audit Logs',
     'api-request-logs': 'API Request Logs',

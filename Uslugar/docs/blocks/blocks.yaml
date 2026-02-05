@@ -1,0 +1,34 @@
+# Katalog blokova - prema TEST-BLOCKS-MANIFEST-SPEC.md
+# Svaki blok = logička cjelina (API + URL + metoda ili kombinacija cigli)
+
+login:
+  inputs: { from: [] }
+  outputs: [userId, token]
+  api: { method: POST, path: /auth/login }
+  auth: { required: false }
+
+create-job:
+  inputs: { from: [login], inherit: [userId] }
+  outputs: [jobId]
+  api: { method: POST, path: /jobs }
+  db: { output: { Job: { id: jobId } } }
+  frontend: { url: "#user", trigger: "form submit" }
+
+view-job-detail:
+  inputs: { from: [create-job], inherit: [jobId] }
+  outputs: [jobId]
+  frontend: { url: "#user", stateAfter: { selectedJobId: jobId } }
+
+send-offer:
+  inputs: { from: [create-job, login], inherit: [jobId, userId] }
+  outputs: [jobId, offerId]
+  api: { method: POST, path: /offers }
+  db: { input: { Job: { id: jobId } }, output: { Offer: { id: offerId, jobId } } }
+  auth: { required: true, role: PROVIDER }
+
+fetch-categories:
+  inputs: { from: [] }
+  outputs: [categories]
+  api: { method: GET, path: /categories }
+
+# Dodati ostale blokove prema potrebi...

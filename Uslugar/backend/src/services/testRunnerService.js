@@ -1,9 +1,12 @@
 /**
  * Test Runner Service
  * Pokreće Playwright i API teste
+ * Podržava blokovski orkestrator - izvršavanje po blokovima s statusom po bloku
  */
 
 import { chromium } from 'playwright';
+import { getBlocksForTest } from '../config/blocksManifest.js';
+import { TEST_ID_MAP } from '../config/testTypes.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -2297,7 +2300,250 @@ class TestRunnerService {
     logs.push(`ℹ Test "${name}" - osnovna automatska provjera (za punu provjeru koristi ručni test)`);
     return { success: true, logs };
   }
+
+  // ─── Blokovski orkestrator ─────────────────────────────────────────────────
+
+  /** Mapiranje blokId → testType kad je blok = cijeli test (npr. register-user → registration) */
+  static BLOCK_TO_TEST = {
+    'register-user': 'registration',
+    'register-provider': 'registration',
+    'forgot-password': 'forgot-password',
+    'email-reset-link': 'forgot-password',
+    'jwt-auth': 'jwt-auth',
+    'fetch-categories': 'categories-load',
+    'hierarchy-correct': 'categories-hierarchy',
+    'filter-jobs-by-category': 'jobs-filter',
+    'job-search': 'job-search',
+    'job-sorting': 'job-sorting',
+    'job-advanced-filters': 'job-advanced-filters',
+    'job-status-flow': 'job-status',
+    'job-budget': 'job-budget',
+    'create-job-with-budget': 'job-budget',
+    'verify-registar': 'verify-registar',
+    'matchmaking': 'matchmaking',
+    'provider-profile': 'provider-profile',
+    'provider-bio-update': 'provider-bio',
+    'provider-categories': 'provider-categories',
+    'admin-kyc-metrics': 'admin-kyc-metrics',
+    'wizard-categories': 'wizard-categories',
+    'wizard-regions': 'wizard-regions',
+    'wizard-status': 'wizard-status',
+    'credit-history': 'credit-history',
+    'cors-check': 'cors',
+    'csrf-check': 'csrf',
+    'rate-limiting': 'rate-limiting',
+    'sql-injection': 'sql-injection',
+    'kyc-verify-oib': 'kyc-verify-oib',
+    'kyc-status': 'kyc-status',
+    'sms-error-handling': 'sms-error',
+    'stripe-webhook': 'stripe-webhook',
+    'director-dashboard': 'director-dashboard',
+    'lead-distribution': 'lead-distribution',
+    'job-alert-freq': 'job-alert-freq',
+    'roi-dashboard': 'roi-dashboard',
+    'roi-charts': 'roi-charts',
+    'roi-conversion': 'roi-conversion',
+    'roi-reports': 'roi-reports'
+  };
+
+  /** Izvršava jedan blok s kontekstom. Vraća { success, context, logs, screenshots }. */
+  async _executeBlock(blockId, context, userData, logs, testId) {
+    const screenshots = context?.screenshots || [];
+
+    // Kontekst-nošeni blokovi (sekvencijalno izvršavanje)
+    if (blockId === 'login') {
+      const candidates = [
+        { email: userData?.email || 'test.client@uslugar.hr', password: userData?.password || 'Test123456!' },
+        { email: 'admin@uslugar.hr', password: 'Admin123!' }
+      ];
+      for (const { email, password } of candidates) {
+        const loginRes = await this._runApiTest('POST', '/api/auth/login', { body: { email, password }, expectedStatus: 200 });
+        if (loginRes.ok && loginRes.data?.token) {
+          logs.push(`✓ [login] Prijavljen: ${email}`);
+          return { success: true, context: { ...context, token: loginRes.data.token }, logs, screenshots };
+        }
+      }
+      logs.push(`❌ [login] Neuspjela prijava`);
+      return { success: false, context, logs, screenshots };
+    }
+
+    if (blockId === 'create-job') {
+      const token = context?.token;
+      if (!token) {
+        logs.push(`❌ [create-job] Nema tokena (prvo login)`);
+        return { success: false, context, logs, screenshots };
+      }
+      const catsRes = await this._runApiTest('GET', '/api/categories');
+      const categories = Array.isArray(catsRes.data) ? catsRes.data : [];
+      const categoryId = categories.find(c => !c.parentId)?.id || categories[0]?.id;
+      if (!categoryId) {
+        logs.push(`❌ [create-job] Nema kategorija`);
+        return { success: false, context, logs, screenshots };
+      }
+      const payload = {
+        title: userData?.jobTitle || 'Test posao - Blokovski',
+        description: 'Automatski kreiran.',
+        categoryId,
+        contactEmail: userData?.email || 'admin@uslugar.hr',
+        contactPhone: userData?.phone || '+385999999999',
+        contactName: userData?.fullName || 'Test'
+      };
+      const createRes = await this._runApiTest('POST', '/api/jobs', { body: payload, token, expectedStatus: [200, 201] });
+      const job = createRes.data || {};
+      if (!createRes.ok || !job.id) {
+        logs.push(`❌ [create-job] Kreiranje posla: ${createRes.status}`);
+        return { success: false, context, logs, screenshots };
+      }
+      logs.push(`✓ [create-job] Posao kreiran: ${job.title} (id: ${job.id})`);
+      let ss = [];
+      try {
+        ss = await this._screenshotWithToken(testId, token, '#user', `block_create_job_${Date.now()}`, logs);
+      } catch (e) {
+        logs.push(`❌ [create-job] Screenshot izuzetak: ${e.message}`);
+        return { success: false, context, logs, screenshots };
+      }
+      if (!ss || ss.length === 0) {
+        logs.push(`❌ [create-job] Kreiranje screenshota nije uspjelo – blok pada`);
+        return { success: false, context, logs, screenshots };
+      }
+      return { success: true, context: { ...context, job }, logs, screenshots: [...screenshots, ...ss] };
+    }
+
+    if (blockId === 'view-job-detail') {
+      const token = context?.token;
+      const job = context?.job;
+      if (!token || !job) {
+        logs.push(`❌ [view-job-detail] Nema tokena ili posla`);
+        return { success: false, context, logs, screenshots };
+      }
+      const listRes = await this._runApiTest('GET', '/api/jobs?limit=20', { token });
+      if (!listRes.ok || !Array.isArray(listRes.data)) {
+        logs.push(`❌ [view-job-detail] Dohvat poslova: ${listRes.status}`);
+        return { success: false, context, logs, screenshots };
+      }
+      const found = listRes.data.find(j => j.id === job.id);
+      if (!found || !found.title) {
+        logs.push(`❌ [view-job-detail] Posao nije u listi ili nema detalja`);
+        return { success: false, context, logs, screenshots };
+      }
+      logs.push(`✓ [view-job-detail] Detalji vidljivi`);
+      let ss = [];
+      try {
+        ss = await this._screenshotWithToken(testId, token, '#user', `block_view_detail_${Date.now()}`, logs);
+      } catch (e) {
+        logs.push(`❌ [view-job-detail] Screenshot izuzetak: ${e.message}`);
+        return { success: false, context, logs, screenshots };
+      }
+      if (!ss || ss.length === 0) {
+        logs.push(`❌ [view-job-detail] Kreiranje screenshota nije uspjelo – blok pada`);
+        return { success: false, context, logs, screenshots };
+      }
+      return { success: true, context, logs, screenshots: [...screenshots, ...ss] };
+    }
+
+    // Blokovi koji mapiraju na cijeli test
+    const testType = TestRunnerService.BLOCK_TO_TEST[blockId];
+    if (testType) {
+      const result = await this.runGenericTest(testType, userData);
+      const mergedLogs = [...logs, ...(result.logs || [])];
+      const mergedScreenshots = [...screenshots, ...(result.screenshots || [])];
+      const isApiOnly = Object.values(TEST_ID_MAP).some(m => m.testType === testType && m.apiOnly);
+      const hasScreenshots = Array.isArray(result.screenshots) && result.screenshots.length > 0;
+      if (result.success && !isApiOnly && !hasScreenshots) {
+        mergedLogs.push(`❌ [${blockId}] Kreiranje screenshota nije uspjelo – blok pada`);
+        return {
+          success: false,
+          context,
+          logs: mergedLogs,
+          screenshots: mergedScreenshots
+        };
+      }
+      if (result.success) {
+        mergedLogs.push(`✓ [${blockId}] Blok prošao`);
+      } else {
+        mergedLogs.push(`❌ [${blockId}] Blok pao: ${result.message || result.error || 'Nepoznato'}`);
+      }
+      const nextContext = { ...context, ...(result.context || {}) };
+      if (result.uniqueEmail) nextContext.uniqueEmail = result.uniqueEmail;
+      return {
+        success: result.success,
+        context: nextContext,
+        logs: mergedLogs,
+        screenshots: mergedScreenshots
+      };
+    }
+
+    // Nema handlera – pokreni kao stub
+    logs.push(`⚠ [${blockId}] Nema blok handlera – delegiram na runGenericTest`);
+    const fallback = await this._stubTest(blockId);
+    return { success: fallback.success, context, logs: [...logs, ...fallback.logs], screenshots };
+  }
+
+  /**
+   * Pokreće test prema manifestu blokova. Izvršava blokove sekvencijalno, vraća blockStatuses.
+   */
+  async runTestByBlocks(testId, userData) {
+    const blocksInfo = getBlocksForTest(testId);
+    const blocks = blocksInfo.blocks || [];
+    const allLogs = [];
+    const allScreenshots = [];
+    const blockStatuses = [];
+
+    if (blocks.length === 0) {
+      return { success: false, logs: allLogs, screenshots: allScreenshots, blockStatuses, message: 'Nema blokova u manifestu' };
+    }
+
+    allLogs.push(`🧱 Blokovski orkestrator: ${blocks.join(' → ')}`);
+    let context = {};
+
+    for (let i = 0; i < blocks.length; i++) {
+      const blockId = blocks[i];
+      const blockLogs = [];
+      try {
+        const result = await this._executeBlock(blockId, context, userData, blockLogs, testId);
+        allLogs.push(...blockLogs);
+        if (result.screenshots?.length) allScreenshots.push(...result.screenshots);
+
+        if (result.success) {
+          blockStatuses.push({ id: blockId, status: 'ok' });
+          context = result.context || context;
+        } else {
+          blockStatuses.push({ id: blockId, status: 'fail', error: blockLogs.filter(l => l.includes('❌')).pop() || 'Blok pao' });
+          return {
+            success: false,
+            logs: allLogs,
+            screenshots: allScreenshots,
+            blockStatuses,
+            message: `Blok '${blockId}' pao`,
+            uniqueEmail: context?.uniqueEmail
+          };
+        }
+      } catch (e) {
+        blockStatuses.push({ id: blockId, status: 'fail', error: e.message });
+        allLogs.push(`❌ [${blockId}] Izuzetak: ${e.message}`);
+        return {
+          success: false,
+          logs: allLogs,
+          screenshots: allScreenshots,
+          blockStatuses,
+          message: `Blok '${blockId}' izuzetak: ${e.message}`,
+          error: e.message,
+          uniqueEmail: context?.uniqueEmail
+        };
+      }
+    }
+
+    return {
+      success: true,
+      logs: allLogs,
+      screenshots: allScreenshots,
+      blockStatuses,
+      message: `Svi blokovi prošli: ${blocks.join(', ')}`,
+      uniqueEmail: context?.uniqueEmail
+    };
+  }
 }
 
 export const testRunnerService = new TestRunnerService();
+
 

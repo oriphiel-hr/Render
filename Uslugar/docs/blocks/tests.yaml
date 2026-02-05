@@ -1,0 +1,58 @@
+# Test kompozicija - kontejneri prema detailed-tests
+# Kontejner = grupa blokova. Test je uspješan ako svaki blok uspio.
+
+# Sektor 1 - Registracija i Autentifikacija
+"1.1":
+  name: "Registracija korisnika usluge"
+  blocks: [register-user]
+  assert: [user-created, email-sent]
+
+"1.2":
+  name: "Registracija pružatelja usluga"
+  blocks: [register-provider]
+  assert: [provider-created, email-sent]
+
+"1.3":
+  name: "Prijava korisnika"
+  blocks: [login]
+  assert: [token-received]
+
+# Sektor 2 - Kategorije
+"2.1":
+  name: "Dinamičko učitavanje kategorija"
+  blocks: [fetch-categories]
+  assert: [categories-loaded]
+
+"2.2":
+  name: "Hijerarhijska struktura kategorija"
+  blocks: [fetch-categories]
+  assert: [hierarchy-correct]
+
+"2.3":
+  name: "Filtriranje poslova po kategorijama"
+  blocks: [login, fetch-categories, filter-jobs-by-category]
+  assert: [filtered-results]
+
+# Sektor 3 - Poslovi
+"3.1":
+  name: "Objavljivanje novih poslova"
+  blocks: [login, create-job]
+  assert: [job-in-list]
+
+"3.2":
+  name: "Detaljni opis posla"
+  blocks: [login, create-job, view-job-detail]
+  assert: [details-visible]
+
+"3.3":
+  name: "Postavljanje budžeta"
+  blocks: [login, create-job-with-budget, view-job-detail]
+  assert: [budget-visible]
+
+# Sektor 4 - Ponude
+"4.1":
+  name: "Slanje ponuda za poslove"
+  blocks: [login, create-job, send-offer]
+  assert: [offer-visible]
+
+# Dodati ostale kontejnere prema detailed-tests...

@@ -1,0 +1,13 @@
+# Konkretne vrijednosti za testove - odvojene od manifesta
+# Koristi se za: amount, categoryId, grad, poruke, credentials itd.
+
+"3.3":
+  budgetMin: 500
+  budgetMax: 2000
+
+"4.1":
+  amount: 150
+  message: "Ponuda za elektroinstalaterske radove"
+
+# Credentials dolaze iz test-data (backend) - ne hardkodirati ovdje
+# Ovdje samo vrijednosti specifične za pojedini test

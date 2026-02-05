@@ -30,6 +30,7 @@ async function seedCategories() {
           where: { id: existing.id },
           data: {
             description: category.description,
+            icon: category.icon || null,
             nkdCode: category.nkdCode,
             requiresLicense: category.requiresLicense,
             licenseType: category.licenseType || null,
@@ -45,6 +46,7 @@ async function seedCategories() {
           data: {
             name: category.name,
             description: category.description,
+            icon: category.icon || null,
             nkdCode: category.nkdCode,
             requiresLicense: category.requiresLicense,
             licenseType: category.licenseType || null,

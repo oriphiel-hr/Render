@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { auth } from '../lib/auth.js';
 import { autoModerateReview } from '../services/review-moderation-service.js';
+import { sendReviewNotification } from '../lib/email.js';
 
 const r = Router();
 
@@ -202,6 +203,13 @@ r.post('/', auth(true), async (req, res, next) => {
     // Također provjeri da li je review odobren od strane AI-a
     if (shouldPublish && moderationResult.isApproved) {
       const toUser = await prisma.user.findUnique({ where: { id: toUserId } });
+      if (toUser?.email && review.from?.fullName) {
+        try {
+          await sendReviewNotification(toUser.email, Number(rating), comment || '', review.from.fullName);
+        } catch (e) {
+          console.error('[REVIEWS] Error sending review notification email:', e);
+        }
+      }
       if (toUser?.role === 'PROVIDER') {
         const aggr = await prisma.review.aggregate({
           where: { 

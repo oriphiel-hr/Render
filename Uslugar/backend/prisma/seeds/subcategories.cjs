@@ -185,7 +185,7 @@ const subcategories = [
     name: 'Centralna klima',
     description: 'Ugradnja centralnih klimatizacijskih sustava',
     parentCategoryName: 'Klima uređaji',
-    icon: '🏢',
+    icon: '❄️',
     isActive: true
   },
   {
@@ -197,129 +197,129 @@ const subcategories = [
   },
 
   // ========================================
-  // ČISTOĆA I ODRŽAVANJE - Podkategorije
+  // ČIŠĆENJE I ODRŽAVANJE - Podkategorije
   // ========================================
   {
     name: 'Čišćenje kuće',
     description: 'Redovno čišćenje stanova i kuća',
-    parentCategoryName: 'Čistoća i održavanje',
+    parentCategoryName: 'Čišćenje i održavanje',
     icon: '🧹',
     isActive: true
   },
   {
     name: 'Čišćenje ureda',
     description: 'Poslovni prostori i uredi',
-    parentCategoryName: 'Čistoća i održavanje',
+    parentCategoryName: 'Čišćenje i održavanje',
     icon: '🏢',
     isActive: true
   },
   {
     name: 'Čišćenje nakon gradnje',
     description: 'Čišćenje nakon renovacije i gradnje',
-    parentCategoryName: 'Čistoća i održavanje',
+    parentCategoryName: 'Čišćenje i održavanje',
     icon: '🏗️',
     isActive: true
   },
   {
     name: 'Čišćenje tepiha',
     description: 'Profesionalno čišćenje tepiha i tapeta',
-    parentCategoryName: 'Čistoća i održavanje',
-    icon: '🪣',
+    parentCategoryName: 'Čišćenje i održavanje',
+    icon: '🛋️',
     isActive: true
   },
 
   // ========================================
-  // BAŠTANSKI RADOVI - Podkategorije
+  // VRTNI RADOVI - Podkategorije
   // ========================================
   {
-    name: 'Uređivanje vrta',
+    name: 'Uređivanje vrtnih površina',
     description: 'Dizajn i uređivanje vrtnih prostora',
-    parentCategoryName: 'Baštanski radovi',
+    parentCategoryName: 'Vrtni radovi',
     icon: '🌿',
     isActive: true
   },
   {
-    name: 'Sadnja biljaka',
+    name: 'Sadnja bilja i cvijeća',
     description: 'Sadnja cvijeća, grmlja i drveća',
-    parentCategoryName: 'Baštanski radovi',
+    parentCategoryName: 'Vrtni radovi',
     icon: '🌱',
     isActive: true
   },
   {
-    name: 'Održavanje vrta',
+    name: 'Održavanje vrtova i travnjaka',
     description: 'Košenje, obrezivanje, zalijevanje',
-    parentCategoryName: 'Baštanski radovi',
+    parentCategoryName: 'Vrtni radovi',
     icon: '✂️',
     isActive: true
   },
   {
-    name: 'Automatsko zalijevanje',
+    name: 'Sustavi automatskog zalijevanja',
     description: 'Ugradnja sustava automatskog zalijevanja',
-    parentCategoryName: 'Baštanski radovi',
+    parentCategoryName: 'Vrtni radovi',
     icon: '💧',
     isActive: true
   },
 
   // ========================================
-  // PRIJEVOZ - Podkategorije
+  // USLUGE PRIJEVOZA - Podkategorije
   // ========================================
   {
     name: 'Selidba',
     description: 'Selidba stanova i kuća',
-    parentCategoryName: 'Prijevoz',
+    parentCategoryName: 'Usluge prijevoza',
     icon: '📦',
     isActive: true
   },
   {
     name: 'Prijevoz namještaja',
     description: 'Transport namještaja i velikih predmeta',
-    parentCategoryName: 'Prijevoz',
+    parentCategoryName: 'Usluge prijevoza',
     icon: '🚚',
     isActive: true
   },
   {
     name: 'Prijevoz građevinskog materijala',
     description: 'Transport cementa, pijeska, cigle',
-    parentCategoryName: 'Prijevoz',
+    parentCategoryName: 'Usluge prijevoza',
     icon: '🧱',
     isActive: true
   },
   {
     name: 'Prijevoz otpada',
     description: 'Odvoz građevinskog i komunalnog otpada',
-    parentCategoryName: 'Prijevoz',
+    parentCategoryName: 'Usluge prijevoza',
     icon: '🗑️',
     isActive: true
   },
 
   // ========================================
-  // IT PODRŠKA - Podkategorije
+  // IT USLUGE - Podkategorije
   // ========================================
   {
     name: 'Popravak računala',
     description: 'Servis desktop i laptop računala',
-    parentCategoryName: 'IT podrška',
+    parentCategoryName: 'IT usluge',
     icon: '💻',
     isActive: true
   },
   {
     name: 'Mrežne instalacije',
     description: 'Ugradnja WiFi mreža i kabeliranje',
-    parentCategoryName: 'IT podrška',
+    parentCategoryName: 'IT usluge',
     icon: '📶',
     isActive: true
   },
   {
     name: 'Sigurnosni sustavi',
     description: 'Kamere, alarmi, kontrolni sustavi',
-    parentCategoryName: 'IT podrška',
-    icon: '🔒',
+    parentCategoryName: 'IT usluge',
+    icon: '📹',
     isActive: true
   },
   {
     name: 'Software podrška',
     description: 'Instalacija programa i tehnička podrška',
-    parentCategoryName: 'IT podrška',
+    parentCategoryName: 'IT usluge',
     icon: '⚙️',
     isActive: true
   }

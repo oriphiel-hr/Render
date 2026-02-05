@@ -1,5 +1,5 @@
 import { prisma } from './prisma.js';
-import { sendJobNotification, sendOfferNotification, sendOfferAcceptedNotification } from './email.js';
+import { sendJobNotification, sendOfferNotification, sendOfferAcceptedNotification, sendJobCompletedEmail } from './email.js';
 import { sendPushNotification } from '../services/push-notification-service.js';
 
 // Notify providers about new job
@@ -169,18 +169,21 @@ export const notifyJobCompleted = async (jobId) => {
 
     if (!job) return;
 
-    // Notify customer
-    await prisma.notification.create({
-      data: {
-        title: 'Posao završen',
-        message: `Posao "${job.title}" je označen kao završen`,
-        type: 'JOB_COMPLETED',
-        userId: job.userId,
-        jobId: job.id
-      }
-    });
+    // Notify customer (in-app + email)
+    if (job.userId && job.user?.email) {
+      await prisma.notification.create({
+        data: {
+          title: 'Posao završen',
+          message: `Posao "${job.title}" je označen kao završen`,
+          type: 'JOB_COMPLETED',
+          userId: job.userId,
+          jobId: job.id
+        }
+      });
+      await sendJobCompletedEmail(job.user.email, job.user.fullName || 'Korisnik', job.title);
+    }
 
-    // Notify provider
+    // Notify provider (in-app + email)
     if (job.offers.length > 0) {
       const provider = job.offers[0].user;
       await prisma.notification.create({
@@ -192,6 +195,9 @@ export const notifyJobCompleted = async (jobId) => {
           jobId: job.id
         }
       });
+      if (provider?.email) {
+        await sendJobCompletedEmail(provider.email, provider.fullName || 'Pružatelj', job.title);
+      }
     }
   } catch (error) {
     console.error('Error notifying about job completion:', error);
