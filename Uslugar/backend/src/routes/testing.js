@@ -572,7 +572,8 @@ r.post('/run-single', async (req, res, next) => {
     // 1. Pokreni test (Playwright ili API)
     console.log(`[TEST] Korak 1: Pokrećem ${isApiOnlyTest ? 'API' : 'Playwright'} test...`);
     let testResult;
-    
+    let apiCalls = [];
+
     try {
       const apiBaseUrl = req.body.apiBaseUrl || `${req.protocol}://${req.get('host')}`;
       testRunnerService.setApiBaseUrl?.(apiBaseUrl);
@@ -601,7 +602,7 @@ r.post('/run-single', async (req, res, next) => {
         testResult = await testRunnerService.runGenericTest(testType, testData);
       }
 
-      const apiCalls = testRunnerService.getCollectedApiCalls?.() || [];
+      apiCalls = testRunnerService.getCollectedApiCalls?.() || [];
       
       results.screenshots = testResult.screenshots || [];
       
@@ -623,6 +624,7 @@ r.post('/run-single', async (req, res, next) => {
       results.status = 'FAIL';
       results.logs.push(`✗ Playwright error: ${error.message}`);
       results.error = error.message;
+      apiCalls = testRunnerService.getCollectedApiCalls?.() || [];
     }
 
     // 2. Ako je test prošao, nije API-only I test šalje email - provjeri Mailpit (samo 1.1, 1.2, 1.4, 1.5)
