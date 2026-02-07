@@ -7,11 +7,11 @@ import api from '../api'
 
 const SECTORS = [
   { num: 1, title: 'Registracija i Autentifikacija', tests: [
-    { id: '1.1', name: 'Registracija korisnika usluge', desc: 'Testira registraciju korisnika bez pravnog statusa' },
-    { id: '1.2', name: 'Registracija pružatelja usluga', desc: 'Testira registraciju providera s pravnim statusom' },
-    { id: '1.3', name: 'Prijava korisnika', desc: 'Testira login s ispravnim i neispravnim podacima' },
-    { id: '1.4', name: 'Email verifikacija', desc: 'Testira otvaranje linka i verifikaciju emaila' },
-    { id: '1.5', name: 'Resetiranje lozinke', desc: 'Testira slanje emaila i promjenu lozinke' },
+    { id: '1.1', name: 'Registracija korisnika usluge', desc: 'Testira registraciju korisnika bez pravnog statusa', userSteps: 'Ispunite formu registracije (email, lozinka, ime, telefon, grad). Kliknite Registracija. Provjerite Mailpit za verifikacijski mail.' },
+    { id: '1.2', name: 'Registracija pružatelja usluga', desc: 'Testira registraciju providera s pravnim statusom', userSteps: 'Odaberite tip Pružatelj, ispunite formu s OIB-om i pravnim statusom. Provjerite Mailpit.' },
+    { id: '1.3', name: 'Prijava korisnika', desc: 'Testira login s ispravnim i neispravnim podacima', userSteps: 'Unesite email i lozinku test korisnika (npr. test.client@uslugar.hr). Kliknite Prijava.' },
+    { id: '1.4', name: 'Email verifikacija', desc: 'Testira otvaranje linka i verifikaciju emaila', userSteps: 'Registrirajte se, provjerite Mailpit za verifikacijski mail, kliknite link u mailu.' },
+    { id: '1.5', name: 'Resetiranje lozinke', desc: 'Testira slanje emaila i promjenu lozinke', userSteps: 'Na #forgot-password unesite admin@uslugar.hr. Provjerite Mailpit za reset link.' },
     { id: '1.6', name: 'JWT token autentifikacija', desc: 'Testira token autentifikaciju i pristup API-ju' }
   ]},
   { num: 2, title: 'Upravljanje Kategorijama', tests: [
@@ -139,8 +139,17 @@ function loadTestResultsFromStorage() {
   return {}
 }
 
+function getScreenshotBaseUrl() {
+  try {
+    const base = (typeof api !== 'undefined' && api?.defaults?.baseURL) ? api.defaults.baseURL : ''
+    if (base) return base.replace(/\/api\/?$/, '')
+  } catch (_) {}
+  return ''
+}
+
 export default function AdminTestingBlocks() {
   const [expandedSector, setExpandedSector] = useState(null)
+  const [expandedDetails, setExpandedDetails] = useState({})
   const [runningTest, setRunningTest] = useState(null)
   const [testResults, setTestResults] = useState(loadTestResultsFromStorage)
   const [testData, setTestData] = useState(null)
@@ -190,6 +199,7 @@ export default function AdminTestingBlocks() {
             duration: res.data.duration,
             error: res.data.error,
             screenshots: res.data.screenshots || [],
+            emailScreenshots: res.data.emailScreenshots || [],
             checkpointDelta: res.data.checkpointDelta || null,
             apiCalls: res.data.apiCalls || [],
             blocks: res.data.blocks || [],
@@ -302,6 +312,12 @@ export default function AdminTestingBlocks() {
                           )}
                         </div>
                         <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setExpandedDetails(prev => ({ ...prev, [test.id]: !prev[test.id] }))}
+                            className="text-xs text-indigo-600 hover:text-indigo-800"
+                          >
+                            {expandedDetails[test.id] ? '▼ Detalji' : '▶ Detalji'}
+                          </button>
                           <span className={`px-2 py-1 rounded text-xs font-medium ${statusCls}`}>
                             {result?.status || '—'}
                           </span>
@@ -314,43 +330,85 @@ export default function AdminTestingBlocks() {
                           </button>
                         </div>
                       </div>
-                      {result && (result.error || result.message) && (
-                        <div className="mt-3 p-2 bg-gray-50 rounded text-xs text-gray-700">
-                          {result.error || result.message}
-                          {result.duration != null && <span className="ml-2">({(result.duration / 1000).toFixed(1)}s)</span>}
-                        </div>
-                      )}
-                      {result && (result.apiCalls?.length > 0 || result.checkpointDelta) && (
-                        <div className="mt-3 space-y-2">
-                          {result.apiCalls?.length > 0 && (
+                      {expandedDetails[test.id] && (
+                        <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
+                          <div>
+                            <h4 className="text-xs font-semibold text-slate-700 mb-1">Čemu služi test</h4>
+                            <p className="text-sm text-slate-600">{test.desc}</p>
+                          </div>
+                          {test.userSteps && (
+                            <div>
+                              <h4 className="text-xs font-semibold text-slate-700 mb-1">Što korisnik treba napraviti</h4>
+                              <p className="text-sm text-slate-600">{test.userSteps}</p>
+                            </div>
+                          )}
+                          <div>
+                            <h4 className="text-xs font-semibold text-slate-700 mb-1">Definicija</h4>
+                            <p className="text-xs text-slate-600">
+                              Blokovi: {blocks.length ? blocks.join(' → ') : '—'}. Assert: {assertList.length ? assertList.join(', ') : '—'}
+                            </p>
+                            <a href="/docs/TEST-BLOCKS-MANIFEST-SPEC.md" target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-600 hover:underline">Spec: docs/TEST-BLOCKS-MANIFEST-SPEC.md</a>
+                          </div>
+                          {result?.screenshots?.length > 0 && (
+                            <div>
+                              <h4 className="text-xs font-semibold text-slate-700 mb-1">Screenshotovi</h4>
+                              <div className="flex flex-wrap gap-2">
+                                {result.screenshots.map((s, i) => (
+                                  <a key={i} href={s.url?.startsWith('http') ? s.url : getScreenshotBaseUrl() + s.url} target="_blank" rel="noopener noreferrer" className="block">
+                                    <img src={s.url?.startsWith('http') ? s.url : getScreenshotBaseUrl() + s.url} alt={s.step} className="max-w-[200px] max-h-[120px] object-contain border rounded" />
+                                    <span className="text-[10px] text-slate-500 block">{s.step}</span>
+                                  </a>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {result?.emailScreenshots?.length > 0 && (
+                            <div>
+                              <h4 className="text-xs font-semibold text-slate-700 mb-1">Poslani mailovi</h4>
+                              <div className="space-y-2">
+                                {result.emailScreenshots.map((em, i) => (
+                                  <div key={i} className="text-xs bg-white p-2 rounded border">
+                                    <div><strong>Subject:</strong> {em.subject}</div>
+                                    <div><strong>From:</strong> {em.from}</div>
+                                    {em.clickedLink && <div><strong>Kliknuti link:</strong> {em.clickedLink}</div>}
+                                    {em.screenshotUrl && (
+                                      <a href={em.screenshotUrl?.startsWith('http') ? em.screenshotUrl : getScreenshotBaseUrl() + em.screenshotUrl} target="_blank" rel="noopener noreferrer">
+                                        <img src={em.screenshotUrl?.startsWith('http') ? em.screenshotUrl : getScreenshotBaseUrl() + em.screenshotUrl} alt="Email" className="max-w-[280px] mt-1 border rounded" />
+                                      </a>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {result?.apiCalls?.length > 0 && (
                             <details className="text-xs">
-                              <summary className="cursor-pointer font-medium text-indigo-700 hover:text-indigo-900">
-                                📡 API pozivi ({result.apiCalls.length})
-                              </summary>
+                              <summary className="cursor-pointer font-medium text-indigo-700">📡 API pozivi ({result.apiCalls.length})</summary>
                               <div className="mt-1 space-y-1 pl-2 border-l-2 border-indigo-200">
                                 {result.apiCalls.map((ac, i) => (
                                   <div key={i} className="bg-indigo-50/50 rounded p-2 font-mono">
                                     <div><strong>Ulaz:</strong> {ac.input?.method} {ac.input?.path}</div>
                                     {ac.input?.body && <div className="text-gray-600">body: {JSON.stringify(ac.input.body).slice(0, 120)}…</div>}
                                     <div><strong>Rezultat:</strong> {ac.result?.status} {ac.result?.ok ? '✓' : '✗'}</div>
-                                    {ac.result?.data && typeof ac.result.data === 'object' && (
-                                      <div className="text-gray-600 truncate">data: {JSON.stringify(ac.result.data).slice(0, 100)}…</div>
-                                    )}
                                   </div>
                                 ))}
                               </div>
                             </details>
                           )}
-                          {result.checkpointDelta && (
+                          {result?.checkpointDelta && (
                             <details className="text-xs">
-                              <summary className="cursor-pointer font-medium text-emerald-700 hover:text-emerald-900">
-                                🗄️ Promjene u bazi
-                              </summary>
+                              <summary className="cursor-pointer font-medium text-emerald-700">🗄️ Promjene u bazi</summary>
                               <pre className="mt-1 p-2 bg-emerald-50 rounded overflow-x-auto text-[10px] font-mono">
                                 {JSON.stringify(result.checkpointDelta, null, 2)}
                               </pre>
                             </details>
                           )}
+                        </div>
+                      )}
+                      {result && (result.error || result.message) && (
+                        <div className="mt-3 p-2 bg-gray-50 rounded text-xs text-gray-700">
+                          {result.error || result.message}
+                          {result.duration != null && <span className="ml-2">({(result.duration / 1000).toFixed(1)}s)</span>}
                         </div>
                       )}
                     </div>
