@@ -191,6 +191,7 @@ export default function AdminTestingBlocks() {
             error: res.data.error,
             screenshots: res.data.screenshots || [],
             checkpointDelta: res.data.checkpointDelta || null,
+            apiCalls: res.data.apiCalls || [],
             blocks: res.data.blocks || [],
             assert: res.data.assert || [],
             blockStatuses: res.data.blockStatuses || []
@@ -317,6 +318,39 @@ export default function AdminTestingBlocks() {
                         <div className="mt-3 p-2 bg-gray-50 rounded text-xs text-gray-700">
                           {result.error || result.message}
                           {result.duration != null && <span className="ml-2">({(result.duration / 1000).toFixed(1)}s)</span>}
+                        </div>
+                      )}
+                      {result && (result.apiCalls?.length > 0 || result.checkpointDelta) && (
+                        <div className="mt-3 space-y-2">
+                          {result.apiCalls?.length > 0 && (
+                            <details className="text-xs">
+                              <summary className="cursor-pointer font-medium text-indigo-700 hover:text-indigo-900">
+                                📡 API pozivi ({result.apiCalls.length})
+                              </summary>
+                              <div className="mt-1 space-y-1 pl-2 border-l-2 border-indigo-200">
+                                {result.apiCalls.map((ac, i) => (
+                                  <div key={i} className="bg-indigo-50/50 rounded p-2 font-mono">
+                                    <div><strong>Ulaz:</strong> {ac.input?.method} {ac.input?.path}</div>
+                                    {ac.input?.body && <div className="text-gray-600">body: {JSON.stringify(ac.input.body).slice(0, 120)}…</div>}
+                                    <div><strong>Rezultat:</strong> {ac.result?.status} {ac.result?.ok ? '✓' : '✗'}</div>
+                                    {ac.result?.data && typeof ac.result.data === 'object' && (
+                                      <div className="text-gray-600 truncate">data: {JSON.stringify(ac.result.data).slice(0, 100)}…</div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </details>
+                          )}
+                          {result.checkpointDelta && (
+                            <details className="text-xs">
+                              <summary className="cursor-pointer font-medium text-emerald-700 hover:text-emerald-900">
+                                🗄️ Promjene u bazi
+                              </summary>
+                              <pre className="mt-1 p-2 bg-emerald-50 rounded overflow-x-auto text-[10px] font-mono">
+                                {JSON.stringify(result.checkpointDelta, null, 2)}
+                              </pre>
+                            </details>
+                          )}
                         </div>
                       )}
                     </div>

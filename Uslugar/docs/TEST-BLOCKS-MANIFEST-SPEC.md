@@ -237,12 +237,25 @@ Test 4.1 (slanje ponude):
 - Samo relevantne informacije: prošao/pao, koji blokovi, assertioni
 - Bez: svi pokušaji pronalaska elementa, svi mailovi, debug logovi
 
-### 8.2 Simulacija pravog korisnika
+### 8.2 Što se tiče API-ja u rezultatima
+Za svaki API poziv unutar bloka, rezultati moraju prikazivati:
+- **Ulazni parametri** – što je poslano (method, path, body, headers gdje je relevantno)
+- **Rezultat** – status, odgovor (response body), eventualne greške
+
+### 8.3 Promjene u bazi
+Rezultati moraju prikazivati **promjene u bazi** – koji su redovi se promijenili:
+- **INSERT** – novo dodani redovi (tablica, ključni podaci)
+- **UPDATE** – izmijenjeni redovi (prije/poslije ili delta)
+- **DELETE** – obrisani redovi
+
+Format: delta po tablicama, npr. `{ Job: { inserted: [1], updated: [], deleted: [] }, Offer: { inserted: [1], ... } }` – ili sažetak koji omogućuje audit što se dogodilo tijekom testa.
+
+### 8.4 Simulacija pravog korisnika
 - Direktan put – bez LIKE, search, retry
 - Korisnik odmah klikne – zna gdje je gumb
 - Email: filter na jedan očekivani mail, jedan link, jedan klik
 
-### 8.3 Pohrana rezultata
+### 8.5 Pohrana rezultata
 ```
 test-results/
   2025-01-31/
@@ -256,6 +269,19 @@ test-results/
 - **Sažetak** – može se committati u Git (mali footprint)
 - **Screenshotovi, puni logovi** – obično ne, ili samo za failed testove
 - **CI artifacts** – rezultati dostupni preko GitHub Actions / Jenkinsa
+
+### 8.6 Pravilo obaveznog screenshota
+
+**Ako blok treba screenshot i on se ne može kreirati, blok pada.**
+
+Ovo pravilo rješava probleme starih testova gdje su screenshotovi bili često samo početne stranice, a nekreiranje screenshota nije zaustavljalo test.
+
+Implementacija:
+- **Context blokovi** (npr. `create-job`, `view-job-detail`): uzimaju screenshot nakon uspješnog izvršavanja. Ako `_screenshotWithToken` baci iznimku ili vrati prazan niz → blok pada.
+- **Blokovi koji delegiraju na runGenericTest**: ako je test UI (nije `apiOnly`), uspješan, a nema nijedan screenshot → blok pada.
+- **API blokovi** (npr. `login`): ne uzimaju screenshot, pravilo se ne primjenjuje.
+
+Rezultat: test se ne može proglasiti uspješnim ako screenshot nije kreiran tamo gdje je očekivan – debugiranje je pouzdano.
 
 ---
 

@@ -590,6 +590,9 @@ r.post('/run-single', async (req, res, next) => {
       // Za forgot-password uvijek admin - frontend može slati client ako admin nije u testData
       if (testType === 'forgot-password') testData = { ...testData, email: 'admin@uslugar.hr' };
 
+      // Prikupljaj API pozive (spec 8.2 – ulazni parametri i rezultati)
+      testRunnerService.startCollectingApiCalls?.();
+
       // Koristi blokovski orkestrator kad manifest ima blokove za ovaj test
       const blocksInfo = getBlocksForTest(testId);
       if (blocksInfo.blocks && blocksInfo.blocks.length > 0) {
@@ -597,6 +600,8 @@ r.post('/run-single', async (req, res, next) => {
       } else {
         testResult = await testRunnerService.runGenericTest(testType, testData);
       }
+
+      const apiCalls = testRunnerService.getCollectedApiCalls?.() || [];
       
       results.screenshots = testResult.screenshots || [];
       
@@ -835,6 +840,7 @@ r.post('/run-single', async (req, res, next) => {
       afterCheckpointId,
       checkpointSnapshot: checkpointSnapshot ? _sanitizeCheckpointForResponse(checkpointSnapshot) : null,
       checkpointDelta,
+      apiCalls,
       logs: results.logs,
       blocks: blocksInfo.blocks,
       assert: blocksInfo.assert,

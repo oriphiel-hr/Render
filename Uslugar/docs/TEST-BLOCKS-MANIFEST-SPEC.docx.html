@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="Generator" content="Uslugar Test Blocks Manifest Spec">
+  <title>Specifikacija: Blokovski pristup testiranju</title>
+  <style>
+    body { font-family: Calibri, 'Segoe UI', Arial, sans-serif; font-size: 11pt; line-height: 1.5; max-width: 800px; margin: 2cm auto; }
+    h1 { font-size: 18pt; color: #1a365d; border-bottom: 2px solid #2c5282; padding-bottom: 6px; }
+    h2 { font-size: 14pt; color: #2d3748; margin-top: 24px; }
+    h3 { font-size: 12pt; color: #4a5568; margin-top: 16px; }
+    p { margin: 8px 0; }
+    ul { margin: 8px 0; padding-left: 24px; }
+    li { margin: 4px 0; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+    th, td { border: 1px solid #cbd5e0; padding: 8px 12px; text-align: left; }
+    th { background: #edf2f7; font-weight: 600; }
+    pre, code { font-family: 'Consolas', 'Monaco', monospace; font-size: 10pt; background: #f7fafc; padding: 2px 6px; }
+    pre { padding: 12px; overflow-x: auto; border: 1px solid #e2e8f0; }
+    .meta { font-size: 10pt; color: #718096; margin-top: 32px; }
+    strong { font-weight: 600; }
+    hr { border: none; border-top: 1px solid #e2e8f0; margin: 24px 0; }
+  </style>
+</head>
+<body>
+
+<h1>Specifikacija: Blokovski pristup testiranju</h1>
+
+<p>Dokument definira koncept blokova (cigle), manifesta, test kompozicije i sve povezane komponente za standardizirani, održivi sustav testiranja.</p>
+
+<hr>
+
+<h2>1. Osnovni koncepti</h2>
+
+<h3>1.1 Cigla (brick)</h3>
+<ul>
+  <li><strong>Najmanja jedinica</strong> – API endpoint, URL, HTTP metoda, polje forme, jedan klik</li>
+  <li>Može biti i bez API-ja (npr. promjena URL-a, otvaranje modala)</li>
+</ul>
+
+<h3>1.2 Blok (block)</h3>
+<ul>
+  <li><strong>Logička cjelina</strong> – kombinacija cigli</li>
+  <li>Sastavljen od: endpoint + URL + metoda (npr. POST) ili druge kombinacije</li>
+  <li>Ne mora imati API – može biti samo navigacija ili UI akcija</li>
+</ul>
+
+<h3>1.3 Manifest</h3>
+<ul>
+  <li><strong>Katalog svih blokova</strong> – definicija strukture, ovisnosti, što blok radi</li>
+  <li>Jedan fajl, lako pronaći i ažurirati</li>
+  <li>Ne sadrži konkretne vrijednosti – samo shema</li>
+</ul>
+
+<h3>1.4 Test kompozicija</h3>
+<ul>
+  <li><strong>Koji blokovi se izvršavaju</strong> u pojedinom testu</li>
+  <li>Ne koriste se svi blokovi – svaki test bira podskup</li>
+  <li>Definira slijed (ili slijed proizlazi iz ovisnosti)</li>
+</ul>
+
+<h3>1.5 Datoteka vrijednosti</h3>
+<ul>
+  <li><strong>Konkretni podaci</strong> – amount, categoryId, grad, poruke, credentials</li>
+  <li>Odvojena od manifesta – manifest = struktura, vrijednosti = podaci</li>
+  <li>Može varirati po testu, okolini, scenariju</li>
+</ul>
+
+<h3>1.6 Kontejner (test)</h3>
+<ul>
+  <li><strong>Logička cjelina</strong> – grupa blokova s jasnom svrhom (npr. "3.3 - Postavljanje budžeta")</li>
+  <li>Ima: identifikator (3.3), naziv, opis, listu blokova, assertion, vrijednosti</li>
+  <li>Blok = izvršna jedinica (ponovno upotrebljiva)</li>
+  <li>Kontejner = test slučaj (poslovni smisao)</li>
+</ul>
+
+<p><strong>Pravilo uspjeha:</strong> Test (kontejner) je uspješan <strong>ako je svaki blok uspio</strong>. Ako jedan blok padne → test pada.</p>
+
+<hr>
+
+<h2>2. Struktura bloka u manifestu</h2>
+
+<pre>block-id:
+  # Ovisnosti (od prethodnih blokova)
+  inputs:
+    from: [block-a, block-b]
+    inherit: [jobId, userId]
+  
+  params:
+    amount: number
+    message: string
+  
+  outputs: [jobId, offerId]
+  
+  # Baza
+  db:
+    input: { Job: { id: jobId } }
+    output: { Offer: { id: offerId, jobId } }
+  
+  # API
+  api:
+    method: POST
+    path: /offers
+    body: { jobId, amount, message }
+  
+  # Frontend / React state
+  frontend:
+    url: "#user"
+    stateBefore: { tab: "user" }
+    stateAfter: { selectedJobId: jobId, showOfferForm: false }
+    trigger: "form submit"
+    interactions:
+      - type: "dropdown"
+        target: "category"
+        selector: "[data-testid=category-filter]"
+        value: categoryId
+      - type: "click"
+        target: "submit"
+        selector: "button[type=submit]"
+  
+  # Auth
+  auth:
+    required: true
+    role: PROVIDER
+  
+  # Screenshot
+  screenshot:
+    after: true
+    capture: "viewport"  # ili "fullPage", "element"
+    element: "[data-testid=job-detail]"
+    waitFor: "[data-testid=job-detail]"
+  
+  # Savepoint na razini bloka
+  savepoint:
+    db: true
+    frontend: true
+    backend: false</pre>
+
+<hr>
+
+<h2>3. Ulančavanje blokova</h2>
+
+<h3>3.1 Ovisnost = slijed</h3>
+<ul>
+  <li>Blok deklarira <code>inputs.from: [block-a, block-b]</code></li>
+  <li>Orkestrator gradi graf ovisnosti (DAG)</li>
+  <li>Topološkim sortiranjem dobiva se redoslijed izvršavanja</li>
+</ul>
+
+<h3>3.2 Automatsko rješavanje</h3>
+<ul>
+  <li>Test navodi <code>blocks: [send-offer]</code></li>
+  <li>Orkestrator automatski dodaje <code>create-job</code> i <code>login</code> zbog ovisnosti</li>
+  <li>Nije potrebno eksplicitno navoditi redoslijed</li>
+</ul>
+
+<hr>
+
+<h2>4. Savepoint i rollback</h2>
+
+<h3>4.1 Na razini bloka</h3>
+<ul>
+  <li><strong>DB savepoint</strong> – prije/poslije bloka</li>
+  <li><strong>Frontend savepoint</strong> – React state, URL (gdje je moguće)</li>
+  <li><strong>Backend savepoint</strong> – opcionalno (teško implementirati)</li>
+</ul>
+
+<h3>4.2 U test kompoziciji</h3>
+<pre>db:
+  savepoints:
+    - name: initial
+      at: test-start
+    - name: after-setup
+      at: after-block
+      block: create-job
+  
+  rollback:
+    at: test-end
+    to: initial
+    onFailure:
+      to: previous</pre>
+
+<h3>4.3 SQL</h3>
+<ul>
+  <li><strong>Ne</strong> u manifestu – ostaje deklarativno (at, to)</li>
+  <li>Orkestrator prevodi u stvarne DB pozive (Prisma, SAVEPOINT, ROLLBACK)</li>
+</ul>
+
+<hr>
+
+<h2>5. Pokrivenost</h2>
+
+<h3>5.1 Što blok može uključivati</h3>
+<ul>
+  <li>API (unutarnji)</li>
+  <li>Vanjski servisi (Stripe, Infobip)</li>
+  <li>Cron/jobovi (npr. processJobAlerts)</li>
+  <li>Klik na link u emailu</li>
+  <li>Klik na link u SMS-u</li>
+  <li>Webhookovi</li>
+</ul>
+
+<h3>5.2 UI interakcije</h3>
+<ul>
+  <li>Dropdown, click, fill</li>
+  <li>File upload, modal, redirect</li>
+  <li>Map picker, validacijske greške</li>
+</ul>
+
+<hr>
+
+<h2>6. Datoteke sustava</h2>
+
+<table>
+  <tr>
+    <th>Datoteka</th>
+    <th>Sadržaj</th>
+  </tr>
+  <tr>
+    <td><strong>Manifest</strong> (blocks.yaml)</td>
+    <td>Katalog blokova, shema, ovisnosti</td>
+  </tr>
+  <tr>
+    <td><strong>Vrijednosti</strong> (values.yaml)</td>
+    <td>Konkretni podaci po testu</td>
+  </tr>
+  <tr>
+    <td><strong>Test kompozicija</strong> (tests.yaml)</td>
+    <td>Koji blokovi za koji test</td>
+  </tr>
+</table>
+
+<hr>
+
+<h2>7. Kontejner i sadašnji testovi</h2>
+
+<h3>7.1 Struktura kontejnera</h3>
+<pre>3.3-postavljanje-budzeta:
+  id: "3.3"
+  name: "Postavljanje budžeta"
+  description: "Korisnik može postaviti min i max budžet za posao"
+  blocks: [login, create-job-with-budget, view-job-detail]
+  assert:
+    - budget-visible
+    - budget-correct-range
+  values:
+    budgetMin: 500
+    budgetMax: 2000</pre>
+
+<h3>7.2 Hijerarhija</h3>
+<pre>Kontejner (3.3 Postavljanje budžeta)
+    └── blok: login
+    └── blok: create-job-with-budget
+    └── blok: view-job-detail
+    └── assert</pre>
+
+<h3>7.3 Primjeri kompozicije blokova</h3>
+<p>Test 3.1 (kreiranje posla):</p>
+<pre>[login] → [navigate-#user] → [open-job-form] → [fill-submit-job] → [assert-job-in-list]</pre>
+
+<p>Test 4.1 (slanje ponude):</p>
+<pre>[login] → [create-job] → [navigate-to-job] → [open-offer-form] → [fill-submit-offer] → [assert-offer-visible]</pre>
+
+<hr>
+
+<h2>8. Rezultati</h2>
+
+<h3>8.1 Standardizirani format</h3>
+<ul>
+  <li>JSON schema za results</li>
+  <li>Samo relevantne informacije: prošao/pao, koji blokovi, assertioni</li>
+  <li>Bez: svi pokušaji pronalaska elementa, svi mailovi, debug logovi</li>
+</ul>
+
+<h3>8.2 Što se tiče API-ja u rezultatima</h3>
+<p>Za svaki API poziv unutar bloka, rezultati moraju prikazivati:</p>
+<ul>
+  <li><strong>Ulazni parametri</strong> – što je poslano (method, path, body, headers gdje je relevantno)</li>
+  <li><strong>Rezultat</strong> – status, odgovor (response body), eventualne greške</li>
+</ul>
+
+<h3>8.3 Promjene u bazi</h3>
+<p>Rezultati moraju prikazivati <strong>promjene u bazi</strong> – koji su redovi se promijenili:</p>
+<ul>
+  <li><strong>INSERT</strong> – novo dodani redovi (tablica, ključni podaci)</li>
+  <li><strong>UPDATE</strong> – izmijenjeni redovi (prije/poslije ili delta)</li>
+  <li><strong>DELETE</strong> – obrisani redovi</li>
+</ul>
+<p>Format: delta po tablicama, npr. <code>{ Job: { inserted: [1], updated: [], deleted: [] }, Offer: { inserted: [1], ... } }</code> – ili sažetak koji omogućuje audit što se dogodilo tijekom testa.</p>
+
+<h3>8.4 Simulacija pravog korisnika</h3>
+<ul>
+  <li>Direktan put – bez LIKE, search, retry</li>
+  <li>Korisnik odmah klikne – zna gdje je gumb</li>
+  <li>Email: filter na jedan očekivani mail, jedan link, jedan klik</li>
+</ul>
+
+<h3>8.5 Pohrana rezultata</h3>
+<pre>test-results/
+  2025-01-31/
+    run-001/
+      results.json
+      screenshots/
+        block-view-job-detail.png
+      db-delta.json  # opcionalno</pre>
+
+<ul>
+  <li><strong>Sažetak</strong> – može se committati u Git (mali footprint)</li>
+  <li><strong>Screenshotovi, puni logovi</strong> – obično ne, ili samo za failed testove</li>
+  <li><strong>CI artifacts</strong> – rezultati dostupni preko GitHub Actions / Jenkinsa</li>
+</ul>
+
+<h3>8.6 Pravilo obaveznog screenshota</h3>
+
+<p><strong>Ako blok treba screenshot i on se ne može kreirati, blok pada.</strong></p>
+
+<p>Ovo pravilo rješava probleme starih testova gdje su screenshotovi bili često samo početne stranice, a nekreiranje screenshota nije zaustavljalo test.</p>
+
+<p>Implementacija:</p>
+<ul>
+  <li><strong>Context blokovi</strong> (npr. <code>create-job</code>, <code>view-job-detail</code>): uzimaju screenshot nakon uspješnog izvršavanja. Ako <code>_screenshotWithToken</code> baci iznimku ili vrati prazan niz → blok pada.</li>
+  <li><strong>Blokovi koji delegiraju na runGenericTest</strong>: ako je test UI (nije <code>apiOnly</code>), uspješan, a nema nijedan screenshot → blok pada.</li>
+  <li><strong>API blokovi</strong> (npr. <code>login</code>): ne uzimaju screenshot, pravilo se ne primjenjuje.</li>
+</ul>
+
+<p>Rezultat: test se ne može proglasiti uspješnim ako screenshot nije kreiran tamo gdje je očekivan – debugiranje je pouzdano.</p>
+
+<hr>
+
+<h2>9. Što još nedostaje (za implementaciju)</h2>
+
+<table>
+  <tr>
+    <th>Komponenta</th>
+    <th>Opis</th>
+  </tr>
+  <tr><td>Assertions</td><td>Što točno provjeravamo – selektor, API, DB</td></tr>
+  <tr><td>Timeout / wait</td><td>Koliko čekati na API, element, mail</td></tr>
+  <tr><td>Okruženje</td><td>Base URL, API URL, Mailpit – local vs CI vs staging</td></tr>
+  <tr><td>Retry / error handling</td><td>Retry na pad, rollback na previous</td></tr>
+  <tr><td>Izolacija podataka</td><td>Jedinstveni emailovi, useri po testu</td></tr>
+  <tr><td>Credentials</td><td>Test useri, API ključevi – env, secrets</td></tr>
+  <tr><td>Test metadata</td><td>Naziv, opis, tagovi, prioritet – za reporting</td></tr>
+</table>
+
+<hr>
+
+<h2>10. Orkestrator i komponente</h2>
+
+<h3>10.1 Orkestrator</h3>
+<ul>
+  <li><strong>Uloga:</strong> Čita manifest, kompoziciju i vrijednosti; izvršava blokove u ispravnom redoslijedu</li>
+  <li><strong>Lokacija:</strong> npr. tests/orchestrator/ ili tests/runner/</li>
+  <li><strong>Funkcije:</strong> rješavanje ovisnosti (DAG), savepoint/rollback, pozivanje API-ja, Playwright za UI, dohvat mailova</li>
+</ul>
+
+<h3>10.2 Izvještavanje grešaka</h3>
+<ul>
+  <li>Kad blok padne: ime bloka, koji korak, poruka greške</li>
+  <li>Screenshot u trenutku pada</li>
+  <li>Opcionalno: debug mod – pokreni pojedini blok, pauza za inspekciju</li>
+</ul>
+
+<h3>10.3 Validacija</h3>
+<ul>
+  <li>Provjera da referencirani blokovi postoje u manifestu</li>
+  <li>Validacija sheme manifesta (YAML schema)</li>
+  <li>Provjera da kompozicija ima sve potrebne ovisnosti</li>
+</ul>
+
+<h3>10.4 Put migracije</h3>
+<ul>
+  <li>Inkrementalno: prvo kontejner 3.1, zatim ostali</li>
+  <li>Postojeći testovi se postupno zamjenjuju kompozicijama blokova</li>
+</ul>
+
+<h3>10.5 Paralelno izvršavanje</h3>
+<ul>
+  <li>Neovisni kontejneri mogu se pokretati paralelno</li>
+  <li>Blokovi bez međusobne ovisnosti – mogu se izvršavati paralelno</li>
+</ul>
+
+<h3>10.6 Načini izvršavanja</h3>
+<table>
+  <tr><th>Način</th><th>Što radi</th><th>Primjena</th></tr>
+  <tr><td>API-only</td><td>Preskače UI, koristi samo API za setup</td><td>Brži setup</td></tr>
+  <tr><td>Full</td><td>DB + API + frontend</td><td>Kompletan test</td></tr>
+  <tr><td>Definicija u kontejneru ili bloku</td><td>Odabir načina po potrebi</td><td>—</td></tr>
+</table>
+
+<h3>10.7 Generiranje dokumentacije</h3>
+<ul>
+  <li>Automatska dokumentacija iz manifesta</li>
+  <li>Popis blokova, kontejnera, ovisnosti</li>
+  <li>Export u HTML/Markdown za pregled</li>
+</ul>
+
+<hr>
+
+<h2>11. Prednosti pristupa</h2>
+
+<ul>
+  <li><strong>Manifest</strong> – jedan katalog, lako naći i ažurirati</li>
+  <li><strong>Kompozicija</strong> – testovi se sastoje od blokova, bez dupliciranja</li>
+  <li><strong>Vrijednosti odvojeno</strong> – manifest stabilan, podaci se mijenjaju</li>
+  <li><strong>Cjelovit test</strong> – DB + API + frontend + interakcije</li>
+  <li><strong>Direktan put</strong> – simulacija pravog korisnika, bez nepotrebnog traženja</li>
+  <li><strong>Standardizirani rezultati</strong> – usporedba, povijest, CI integracija</li>
+</ul>
+
+<hr>
+
+<p class="meta">Dokument kreiran: 31.01.2025<br>Verzija: 1.2</p>
+
+<p class="meta"><em>Za spremanje kao Word (.docx): Otvori ovu datoteku u Microsoft Wordu te odaberi Datoteka → Spremi kao → Word dokument (.docx)</em></p>
+
+</body>
+</html>

@@ -46,6 +46,28 @@ class TestRunnerService {
     this._apiBaseUrl = url;
   }
 
+  /** Počni prikupljati API pozive (spec 8.2 – ulazni parametri i rezultati) */
+  startCollectingApiCalls() {
+    this._apiCalls = [];
+  }
+
+  /** Vrati prikupljene API pozive i zaustavi prikupljanje */
+  getCollectedApiCalls() {
+    const calls = this._apiCalls || [];
+    this._apiCalls = null;
+    return calls;
+  }
+
+  _sanitizeForApiCall(obj) {
+    if (obj == null) return obj;
+    if (typeof obj !== 'object') return obj;
+    const copy = Array.isArray(obj) ? [...obj] : { ...obj };
+    for (const k of ['password', 'token']) {
+      if (copy[k] !== undefined) copy[k] = '***';
+    }
+    return copy;
+  }
+
   async _runApiTest(method, urlPath, options = {}) {
     const { body, headers = {}, expectedStatus = 200, token } = options;
     const baseUrl = this._getApiBaseUrl();
@@ -61,6 +83,17 @@ class TestRunnerService {
     if (body && method !== 'GET') reqConfig.data = body;
     const res = await axios(reqConfig);
     const ok = Array.isArray(expectedStatus) ? expectedStatus.includes(res.status) : res.status === expectedStatus;
+
+    if (Array.isArray(this._apiCalls)) {
+      const resData = res.data && typeof res.data === 'object'
+        ? (res.data.token ? { ...res.data, token: '***' } : res.data)
+        : res.data;
+      this._apiCalls.push({
+        input: { method: method || 'GET', path: urlPath, body: body ? this._sanitizeForApiCall(body) : undefined },
+        result: { status: res.status, ok, data: resData }
+      });
+    }
+
     return { ok, status: res.status, data: res.data };
   }
 
