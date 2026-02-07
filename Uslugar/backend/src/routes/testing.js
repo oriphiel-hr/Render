@@ -512,6 +512,19 @@ r.get('/blocks-manifest', (req, res) => {
 });
 
 /**
+ * GET /api/testing/blocks-manifest/:testId
+ * Vraća definiciju samo za zadani kontejner
+ */
+r.get('/blocks-manifest/:testId', (req, res) => {
+  const { testId } = req.params;
+  const def = getBlocksForTest(testId);
+  if (!def.blocks?.length && !def.assert?.length) {
+    return res.status(404).json({ error: `Kontejner ${testId} nije u manifestu` });
+  }
+  res.json({ testId, ...def });
+});
+
+/**
  * POST /api/testing/run-single
  * Pokreni jedan test s Playwright-om + Mailtrap integracijom
  */

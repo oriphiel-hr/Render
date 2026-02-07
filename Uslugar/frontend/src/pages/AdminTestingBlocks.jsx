@@ -363,6 +363,14 @@ export default function AdminTestingBlocks() {
                             <div className="text-xs text-slate-600 space-y-1">
                               <p><strong>Blokovi:</strong> {blocks.length ? blocks.join(' → ') : '—'}</p>
                               <p><strong>Assert:</strong> {assertList.length ? assertList.join(', ') : '—'}</p>
+                              <a
+                                href={(api?.defaults?.baseURL || '').replace(/\/api\/?$/, '') + `/api/testing/blocks-manifest/${test.id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-indigo-600 hover:underline"
+                              >
+                                Definicija kontejnera →
+                              </a>
                             </div>
                           </div>
                           {result?.screenshots?.length > 0 && (
