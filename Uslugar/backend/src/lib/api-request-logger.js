@@ -39,8 +39,17 @@ export async function apiRequestLogger(req, res, next) {
   res.send = function(data) {
     const responseTime = Date.now() - startTime;
     const statusCode = res.statusCode;
-    
-    // Log asynchronously (ne blokira response)
+    let responseBody = null;
+    try {
+      const parsed = typeof data === 'string' ? (data && data[0] === '{' ? JSON.parse(data) : data) : data;
+      if (parsed && typeof parsed === 'object') {
+        responseBody = JSON.parse(JSON.stringify(parsed));
+        if (responseBody.token) responseBody.token = '***REDACTED***';
+        if (responseBody.accessToken) responseBody.accessToken = '***REDACTED***';
+      } else if (typeof parsed === 'string' && parsed.length < 2000) {
+        responseBody = parsed;
+      }
+    } catch (_) {}
     logRequest({
       method: req.method,
       path: req.path,
@@ -49,13 +58,12 @@ export async function apiRequestLogger(req, res, next) {
       ipAddress: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
       userAgent: req.headers['user-agent'],
       requestBody,
+      responseBody,
       responseTime,
       errorMessage: statusCode >= 400 ? (data?.error || data?.message || 'Unknown error') : null
     }).catch(err => {
       console.error('Error logging API request:', err);
     });
-
-    // Call original send
     return originalSend.call(this, data);
   };
 
@@ -94,6 +102,7 @@ async function logRequest(data) {
         ipAddress: data.ipAddress,
         userAgent: data.userAgent,
         requestBody: data.requestBody,
+        responseBody: data.responseBody,
         responseTime: data.responseTime,
         errorMessage: data.errorMessage
       }

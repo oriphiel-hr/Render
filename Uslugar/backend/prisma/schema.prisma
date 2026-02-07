@@ -1597,6 +1597,7 @@ model ApiRequestLog {
   ipAddress   String? // IP adresa klijenta
   userAgent   String? // User agent
   requestBody Json? // Request body (za POST/PUT/PATCH)
+  responseBody Json? // Response body (za debugging)
   responseTime Int // Vrijeme izvršavanja u ms
   errorMessage String? // Error poruka (ako ima)
   createdAt   DateTime  @default(now())

@@ -4,6 +4,7 @@ import api from '@/api'
 export default function AdminApiRequestLogs() {
   const [loading, setLoading] = useState(false)
   const [logs, setLogs] = useState([])
+  const [expandedId, setExpandedId] = useState(null)
   const [total, setTotal] = useState(0)
   const [stats, setStats] = useState({})
   const [filters, setFilters] = useState({
@@ -216,6 +217,7 @@ export default function AdminApiRequestLogs() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-8"></th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Datum</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Metoda</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Path</th>
@@ -227,40 +229,85 @@ export default function AdminApiRequestLogs() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {logs.map(log => (
-                  <tr key={log.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(log.createdAt).toLocaleString('hr-HR')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {log.method}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 font-mono">
-                      {log.path}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(log.statusCode)}`}>
-                        {log.statusCode}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className={`font-medium ${getResponseTimeColor(log.responseTime)}`}>
-                        {log.responseTime}ms
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {log.user ? (
-                        <div>
-                          <div className="font-medium">{log.user.fullName}</div>
-                          <div className="text-gray-500 text-xs">{log.user.email}</div>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">Anonimno</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {log.ipAddress || '-'}
-                    </td>
-                  </tr>
+                  <React.Fragment key={log.id}>
+                    <tr
+                      className={`hover:bg-gray-50 cursor-pointer ${expandedId === log.id ? 'bg-indigo-50/30' : ''}`}
+                      onClick={() => setExpandedId(expandedId === log.id ? null : log.id)}
+                    >
+                      <td className="px-2 py-4 text-gray-400">
+                        {(log.requestBody || log.responseBody || log.errorMessage) ? (expandedId === log.id ? '▼' : '▶') : ' '}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(log.createdAt).toLocaleString('hr-HR')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {log.method}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900 font-mono">
+                        {log.path}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(log.statusCode)}`}>
+                          {log.statusCode}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <span className={`font-medium ${getResponseTimeColor(log.responseTime)}`}>
+                          {log.responseTime}ms
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {log.user ? (
+                          <div>
+                            <div className="font-medium">{log.user.fullName}</div>
+                            <div className="text-gray-500 text-xs">{log.user.email}</div>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">Anonimno</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {log.ipAddress || '-'}
+                      </td>
+                    </tr>
+                    {expandedId === log.id && (log.requestBody || log.responseBody || log.errorMessage) && (
+                      <tr>
+                        <td colSpan={8} className="px-6 py-3 bg-gray-50 border-b border-gray-200">
+                          <div className="space-y-2 text-sm">
+                            {log.requestBody != null && (
+                              <div>
+                                <div className="font-semibold text-gray-700 mb-1">Request body:</div>
+                                <pre className="p-3 bg-white rounded border text-xs font-mono overflow-x-auto max-h-40 overflow-y-auto">
+                                  {typeof log.requestBody === 'object'
+                                    ? JSON.stringify(log.requestBody, null, 2)
+                                    : String(log.requestBody)}
+                                </pre>
+                              </div>
+                            )}
+                            {log.responseBody != null && (
+                              <div>
+                                <div className="font-semibold text-gray-700 mb-1">Response:</div>
+                                <pre className="p-3 bg-white rounded border text-xs font-mono overflow-x-auto max-h-40 overflow-y-auto">
+                                  {typeof log.responseBody === 'object'
+                                    ? JSON.stringify(log.responseBody, null, 2)
+                                    : String(log.responseBody)}
+                                </pre>
+                              </div>
+                            )}
+                            {log.errorMessage && (
+                              <div>
+                                <div className="font-semibold text-red-700 mb-1">Error:</div>
+                                <div className="p-2 bg-red-50 rounded text-red-800 text-xs">{log.errorMessage}</div>
+                              </div>
+                            )}
+                            {!log.requestBody && !log.responseBody && !log.errorMessage && (
+                              <div className="text-gray-500 italic">Nema dodatnih podataka</div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>

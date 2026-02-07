@@ -757,7 +757,11 @@ r.post('/run-single', async (req, res, next) => {
               linkClickScreenshot: emailCapture.linkClickResult?.success ? emailCapture.linkClickResult.url : null,
               clickedLink: emailCapture.linkClickResult?.clickedLink || null
             });
-            results.logs.push(`✓ Mail screenshot kreiran: ${emailCapture.emailScreenshot ? 'DA' : 'NE'}`);
+            const ssOk = !!emailCapture.emailScreenshot;
+            results.logs.push(`✓ Mail screenshot kreiran: ${ssOk ? 'DA' : 'NE'}`);
+            if (!ssOk && emailCapture.emailScreenshotError) {
+              results.logs.push(`⚠ Razlog: ${emailCapture.emailScreenshotError}`);
+            }
 
             const clickedLink = emailCapture.linkClickResult?.clickedLink || '';
             const isResetLink = clickedLink.includes('reset-password') || clickedLink.includes('reset_password');

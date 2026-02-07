@@ -248,7 +248,7 @@ class MailpitService {
         }
       }
 
-      browser = await chromium.launch({ headless: true });
+      browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
       const context = await browser.newContext();
       const page = await context.newPage();
 
@@ -630,7 +630,7 @@ class MailpitService {
       
       console.log(`[MAILPIT] Pronađeno ${links.length} linkova (iz ${source} sadržaja)`);
 
-      browser = await chromium.launch({ headless: true });
+      browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
       const context = await browser.newContext();
       const page = await context.newPage();
 
@@ -724,6 +724,7 @@ class MailpitService {
         emailSubject: subject,
         emailFrom: from,
         emailScreenshot: emailScreenshot.success ? emailScreenshot.url : null,
+        emailScreenshotError: emailScreenshot.success ? null : (emailScreenshot.error || 'Screenshot nije kreiran'),
         linkClickResult: linkResult,
         message: 'Email obrađen'
       };
