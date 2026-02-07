@@ -328,6 +328,22 @@ export default function AdminTestingBlocks() {
                           >
                             {runningTest === test.id ? '⏳' : '🤖 Automatski'}
                           </button>
+                          {result && (
+                            <button
+                              onClick={() => {
+                                setTestResults(prev => {
+                                  const next = { ...prev }
+                                  delete next[test.id]
+                                  try { localStorage.setItem('adminTestResults', JSON.stringify(next)) } catch (e) {}
+                                  return next
+                                })
+                              }}
+                              className="px-2 py-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded text-sm"
+                              title="Obriši rezultat"
+                            >
+                              🗑️
+                            </button>
+                          )}
                         </div>
                       </div>
                       {expandedDetails[test.id] && (
@@ -343,11 +359,11 @@ export default function AdminTestingBlocks() {
                             </div>
                           )}
                           <div>
-                            <h4 className="text-xs font-semibold text-slate-700 mb-1">Definicija</h4>
-                            <p className="text-xs text-slate-600">
-                              Blokovi: {blocks.length ? blocks.join(' → ') : '—'}. Assert: {assertList.length ? assertList.join(', ') : '—'}
-                            </p>
-                            <a href="/docs/TEST-BLOCKS-MANIFEST-SPEC.md" target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-600 hover:underline">Spec: docs/TEST-BLOCKS-MANIFEST-SPEC.md</a>
+                            <h4 className="text-xs font-semibold text-slate-700 mb-1">Definicija kontejnera</h4>
+                            <div className="text-xs text-slate-600 space-y-1">
+                              <p><strong>Blokovi:</strong> {blocks.length ? blocks.join(' → ') : '—'}</p>
+                              <p><strong>Assert:</strong> {assertList.length ? assertList.join(', ') : '—'}</p>
+                            </div>
                           </div>
                           {result?.screenshots?.length > 0 && (
                             <div>
