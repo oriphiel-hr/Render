@@ -17,6 +17,8 @@ function _sanitizeCheckpointForResponse(summary) {
 import { testRunnerService } from '../services/testRunnerService.js';
 import { TEST_ID_MAP } from '../config/testTypes.js';
 import { getBlocksForTest, BLOCKS_BY_TEST } from '../config/blocksManifest.js';
+import { BLOCK_DEFINITIONS } from '../config/blocksDefinitions.js';
+import { VALUES_BY_TEST } from '../config/blocksValues.js';
 import { mailpitService } from '../services/mailpitService.js';
 import { prisma } from '../lib/prisma.js';
 
@@ -513,15 +515,25 @@ r.get('/blocks-manifest', (req, res) => {
 
 /**
  * GET /api/testing/blocks-manifest/:testId
- * Vraća definiciju samo za zadani kontejner
+ * Vraća punu definiciju kontejnera: kontejner, definicije blokova, ulazni podaci
  */
 r.get('/blocks-manifest/:testId', (req, res) => {
   const { testId } = req.params;
-  const def = getBlocksForTest(testId);
-  if (!def.blocks?.length && !def.assert?.length) {
+  const container = getBlocksForTest(testId);
+  if (!container.blocks?.length && !container.assert?.length) {
     return res.status(404).json({ error: `Kontejner ${testId} nije u manifestu` });
   }
-  res.json({ testId, ...def });
+  const blockDefinitions = {};
+  for (const blockId of container.blocks || []) {
+    blockDefinitions[blockId] = BLOCK_DEFINITIONS[blockId] || { _note: 'Definicija bloka još nije u katalogu' };
+  }
+  const values = VALUES_BY_TEST[testId] || null;
+  res.json({
+    container: { testId, name: container.name, blocks: container.blocks, assert: container.assert },
+    blockDefinitions,
+    values,
+    _note: 'Credentials (email, password) dolaze iz test-data API-ja'
+  });
 });
 
 /**

@@ -102,7 +102,31 @@ export const BLOCKS_BY_TEST = {
   '31.4': { blocks: ['sql-injection'], assert: ['injection-blocked'] }
 }
 
+export const CONTAINER_NAMES = {
+  '1.1': 'Registracija korisnika usluge',
+  '1.2': 'Registracija pružatelja usluga',
+  '1.3': 'Prijava korisnika',
+  '1.4': 'Email verifikacija',
+  '1.5': 'Resetiranje lozinke',
+  '1.6': 'JWT token autentifikacija',
+  '2.1': 'Dinamičko učitavanje kategorija',
+  '2.2': 'Hijerarhijska struktura kategorija',
+  '2.3': 'Filtriranje poslova po kategorijama',
+  '3.1': 'Objavljivanje novih poslova',
+  '3.2': 'Detaljni opis posla',
+  '3.3': 'Postavljanje budžeta',
+  '3.4': 'Lokacija i Geolokacija',
+  '3.5': 'Status posla',
+  '3.6': 'Pretraživanje poslova',
+  '3.7': 'Napredni filteri',
+  '3.8': 'Sortiranje poslova',
+  '4.1': 'Slanje ponuda za poslove',
+  '4.2': 'Status ponude',
+  '4.3': 'Prihvaćanje/odbijanje ponuda'
+}
+
 /** Dohvati blokove za testId (ili prazan objekt ako ne postoji) */
 export function getBlocksForTest(testId) {
-  return BLOCKS_BY_TEST[testId] || { blocks: [], assert: [] }
+  const base = BLOCKS_BY_TEST[testId] || { blocks: [], assert: [] }
+  return { ...base, name: CONTAINER_NAMES[testId] || base.name }
 }

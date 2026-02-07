@@ -204,7 +204,8 @@ export default function AdminTestingBlocks() {
             apiCalls: res.data.apiCalls || [],
             blocks: res.data.blocks || [],
             assert: res.data.assert || [],
-            blockStatuses: res.data.blockStatuses || []
+            blockStatuses: res.data.blockStatuses || [],
+            logs: res.data.logs || []
           }
         }
         try { localStorage.setItem('adminTestResults', JSON.stringify(updated)) } catch (e) {}
@@ -362,6 +363,23 @@ export default function AdminTestingBlocks() {
                             <h4 className="text-xs font-semibold text-slate-700 mb-1">Definicija kontejnera</h4>
                             <div className="text-xs text-slate-600 space-y-1">
                               <p><strong>Blokovi:</strong> {blocks.length ? blocks.join(' → ') : '—'}</p>
+                              {blockStatuses.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {blockStatuses.map((bs, i) => (
+                                    <span
+                                      key={i}
+                                      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                        bs.status === 'ok' ? 'bg-green-100 text-green-800' :
+                                        bs.status === 'fail' ? 'bg-red-100 text-red-800' :
+                                        'bg-gray-100 text-gray-600'
+                                      }`}
+                                      title={`Blok ${bs.id}: ${bs.status}`}
+                                    >
+                                      {bs.id}: {bs.status === 'ok' ? '✓' : bs.status === 'fail' ? '✗' : '?'}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
                               <p><strong>Assert:</strong> {assertList.length ? assertList.join(', ') : '—'}</p>
                               <a
                                 href={(api?.defaults?.baseURL || '').replace(/\/api\/?$/, '') + `/api/testing/blocks-manifest/${test.id}`}
@@ -373,6 +391,24 @@ export default function AdminTestingBlocks() {
                               </a>
                             </div>
                           </div>
+                          {result?.logs?.length > 0 && (
+                            <details className="text-xs" open>
+                              <summary className="cursor-pointer font-medium text-slate-700">📋 Koraci ({result.logs.length}) – uspješnost</summary>
+                              <ol className="mt-1 pl-4 space-y-0.5 max-h-48 overflow-y-auto list-decimal">
+                                {result.logs.map((log, i) => {
+                                  const isOk = typeof log === 'string' && log.startsWith('✓')
+                                  const isFail = typeof log === 'string' && (log.startsWith('✗') || log.startsWith('❌'))
+                                  const isWarn = typeof log === 'string' && log.startsWith('⚠')
+                                  const cls = isFail ? 'text-red-700' : isWarn ? 'text-amber-700' : isOk ? 'text-green-700' : 'text-slate-600'
+                                  return (
+                                    <li key={i} className={`font-mono text-[11px] ${cls}`} title={isOk ? 'Uspješno' : isFail ? 'Neuspješno' : isWarn ? 'Upozorenje' : ''}>
+                                      {typeof log === 'string' ? log : JSON.stringify(log)}
+                                    </li>
+                                  )
+                                })}
+                              </ol>
+                            </details>
+                          )}
                           {result?.screenshots?.length > 0 && (
                             <div>
                               <h4 className="text-xs font-semibold text-slate-700 mb-1">Screenshotovi</h4>
@@ -406,15 +442,29 @@ export default function AdminTestingBlocks() {
                             </div>
                           )}
                           {result?.apiCalls?.length > 0 && (
-                            <details className="text-xs">
-                              <summary className="cursor-pointer font-medium text-indigo-700">📡 API pozivi ({result.apiCalls.length})</summary>
-                              <div className="mt-1 space-y-1 pl-2 border-l-2 border-indigo-200">
+                            <details className="text-xs" open>
+                              <summary className="cursor-pointer font-medium text-indigo-700">📡 API pozivi ({result.apiCalls.length}) – ulaz i rezultat</summary>
+                              <div className="mt-1 space-y-3 pl-2 border-l-2 border-indigo-200">
                                 {result.apiCalls.map((ac, i) => (
-                                  <div key={i} className="bg-indigo-50/50 rounded p-2 font-mono">
-                                    <div><strong>Ulaz:</strong> {ac.input?.method} {ac.input?.path}</div>
-                                    {ac.input?.body && <div className="text-gray-600">body: {JSON.stringify(ac.input.body).slice(0, 120)}…</div>}
-                                    <div><strong>Rezultat:</strong> {ac.result?.status} {ac.result?.ok ? '✓' : '✗'}</div>
-                                  </div>
+                                  <details key={i} className="bg-indigo-50/50 rounded p-2">
+                                    <summary className="cursor-pointer font-mono font-medium">
+                                      {ac.input?.method} {ac.input?.path} → {ac.result?.status} {ac.result?.ok ? '✓' : '✗'}
+                                    </summary>
+                                    <div className="mt-2 space-y-2 text-[11px]">
+                                      <div>
+                                        <strong className="text-indigo-800">Ulaz:</strong>
+                                        <pre className="mt-0.5 p-2 bg-white rounded overflow-x-auto max-h-40 overflow-y-auto text-gray-700">
+                                          {JSON.stringify({ method: ac.input?.method, path: ac.input?.path, body: ac.input?.body }, null, 2)}
+                                        </pre>
+                                      </div>
+                                      <div>
+                                        <strong className="text-indigo-800">Rezultat:</strong>
+                                        <pre className="mt-0.5 p-2 bg-white rounded overflow-x-auto max-h-40 overflow-y-auto text-gray-700">
+                                          {JSON.stringify({ status: ac.result?.status, ok: ac.result?.ok, data: ac.result?.data }, null, 2)}
+                                        </pre>
+                                      </div>
+                                    </div>
+                                  </details>
                                 ))}
                               </div>
                             </details>
