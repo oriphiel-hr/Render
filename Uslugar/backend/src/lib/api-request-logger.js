@@ -24,7 +24,8 @@ function redact(obj) {
 
 export async function apiRequestLogger(req, res, next) {
   const startTime = Date.now();
-  const originalSend = res.send;
+  const originalSend = res.send.bind(res);
+  const originalJson = res.json.bind(res);
   let requestBody = null;
   let errorMessage = null;
 
@@ -40,13 +41,17 @@ export async function apiRequestLogger(req, res, next) {
     requestBody = { query: redact(req.query) };
   }
 
-  // Intercept response – uvijek snimi Request i Response za debugging (i nakon rollbacka ako log ne rollbackamo)
-  res.send = function(data) {
+  let logged = false;
+  function captureAndLog(payload) {
+    if (logged) return;
+    logged = true;
     const responseTime = Date.now() - startTime;
     const statusCode = res.statusCode;
     let responseBody = null;
     try {
-      const parsed = typeof data === 'string' ? (data && data.trim() && (data.trim()[0] === '{' || data.trim()[0] === '[') ? JSON.parse(data) : data) : data;
+      const parsed = typeof payload === 'string'
+        ? (payload && payload.trim() && (payload.trim()[0] === '{' || payload.trim()[0] === '[') ? JSON.parse(payload) : payload)
+        : payload;
       if (parsed && typeof parsed === 'object') {
         responseBody = JSON.parse(JSON.stringify(parsed));
         responseBody = redact(responseBody);
@@ -65,14 +70,21 @@ export async function apiRequestLogger(req, res, next) {
       requestBody,
       responseBody,
       responseTime,
-      errorMessage: statusCode >= 400 ? (data?.error || data?.message || 'Unknown error') : null
+      errorMessage: statusCode >= 400 ? (payload && typeof payload === 'object' && (payload.error || payload.message)) || null : null
     }).catch(err => {
       console.error('Error logging API request:', err);
     });
+  }
+
+  res.send = function (data) {
+    captureAndLog(data);
     return originalSend.call(this, data);
   };
+  res.json = function (data) {
+    captureAndLog(data);
+    return originalJson.call(this, data);
+  };
 
-  // Handle errors
   res.on('finish', () => {
     if (res.statusCode >= 500) {
       errorMessage = 'Server error';
