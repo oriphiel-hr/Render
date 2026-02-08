@@ -814,42 +814,6 @@ r.post('/run-single', async (req, res, next) => {
           const currentSummary = await testCheckpointService.getCurrentStateSummary(tables);
           checkpointDelta = testCheckpointService.computeDelta(checkpointSnapshot, currentSummary);
 
-          const apiLogFields = ['id', 'method', 'path', 'statusCode', 'userId', 'responseTime', 'errorMessage', 'createdAt'];
-          const checkpointCreatedAt = (() => {
-            const parts = (checkpointId || '').split('_');
-            for (const p of parts) {
-              const ts = parseInt(p, 10);
-              if (p.length >= 12 && !isNaN(ts) && ts > 1e11) return new Date(ts);
-            }
-            return null;
-          })();
-          if (checkpointCreatedAt) {
-            try {
-              const newApiLogs = await prisma.apiRequestLog.findMany({
-                where: { createdAt: { gte: checkpointCreatedAt } },
-                orderBy: { createdAt: 'asc' },
-                take: 50
-              });
-              if (newApiLogs.length > 0) {
-                checkpointDelta = checkpointDelta || {};
-                checkpointDelta.apiRequestLog = {
-                  beforeCount: 0,
-                  afterCount: newApiLogs.length,
-                  added: newApiLogs.length,
-                  newRecords: newApiLogs.slice(0, 10).map(row => {
-                    const rec = {};
-                    for (const f of apiLogFields) {
-                      if (row[f] !== undefined) rec[f] = row[f] instanceof Date ? row[f].toISOString() : row[f];
-                    }
-                    return rec;
-                  })
-                };
-              }
-            } catch (e) {
-              console.warn('[TEST] ApiRequestLog delta:', e.message);
-            }
-          }
-
           // Ako je test uspješan - kreiraj "after" savepoint (stanje baze nakon testa, prije rollbacka)
           if (testResult?.success) {
             const afterName = `after_${testId}_${testType}`;
@@ -861,6 +825,36 @@ r.post('/run-single', async (req, res, next) => {
         }
       } catch (err) {
         console.warn('[TEST] Nisam mogao dohvatiti checkpoint snapshot/delta:', err.message);
+      }
+    }
+
+    // API request logovi u deltu (mora prije rollbacka – inače rollback obriše te redove)
+    if (checkpointId) {
+      try {
+        const since = new Date(startTime - 3000);
+        const newApiLogs = await prisma.apiRequestLog.findMany({
+          where: { createdAt: { gte: since } },
+          orderBy: { createdAt: 'asc' },
+          take: 50
+        });
+        if (newApiLogs.length > 0) {
+          checkpointDelta = checkpointDelta || {};
+          const apiLogFields = ['id', 'method', 'path', 'statusCode', 'userId', 'responseTime', 'errorMessage', 'createdAt'];
+          checkpointDelta.apiRequestLog = {
+            beforeCount: 0,
+            afterCount: newApiLogs.length,
+            added: newApiLogs.length,
+            newRecords: newApiLogs.slice(0, 10).map(row => {
+              const rec = {};
+              for (const f of apiLogFields) {
+                if (row[f] !== undefined) rec[f] = row[f] instanceof Date ? row[f].toISOString() : row[f];
+              }
+              return rec;
+            })
+          };
+        }
+      } catch (e) {
+        console.warn('[TEST] ApiRequestLog u delta:', e.message);
       }
     }
 
