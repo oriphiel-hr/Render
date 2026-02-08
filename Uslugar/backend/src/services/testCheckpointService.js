@@ -55,7 +55,7 @@ const KEY_FIELDS = {
   documentationFeature: ['id', 'categoryId', 'title', 'slug'],
   clientVerification: ['id', 'userId', 'status', 'createdAt'],
   smsLog: ['id', 'phone', 'type', 'status', 'mode', 'twilioSid', 'error', 'createdAt'],
-  apiRequestLog: ['id', 'method', 'path', 'statusCode', 'userId', 'responseTime', 'errorMessage', 'createdAt'],
+  apiRequestLog: ['id', 'method', 'path', 'statusCode', 'userId', 'responseTime', 'errorMessage', 'requestBody', 'responseBody', 'createdAt'],
   errorLog: ['id', 'userId', 'level', 'message', 'endpoint', 'createdAt'],
   auditLog: ['id', 'action', 'entityType', 'entityId', 'userId', 'createdAt'],
   leadQueue: ['id', 'jobId', 'providerId', 'status', 'createdAt'],

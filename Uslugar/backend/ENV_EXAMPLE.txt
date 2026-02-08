@@ -7,7 +7,8 @@ JWT_SECRET="your-secret-key-change-in-production"
 # CORS Origins (comma-separated)
 CORS_ORIGINS="http://localhost:5173,http://localhost:3000,https://uslugar.oriph.io"
 
-# Frontend URL (za email linkove)
+# Frontend URL (za email linkove i za run-single: Playwright otvara ovaj URL)
+# Da ApiRequestLog u delti bude pun: ovaj frontend mora biti buildan s VITE_API_URL = URL ovog backenda.
 FRONTEND_URL="http://localhost:5173"
 
 # SMTP Email Configuration (za notifikacije)
