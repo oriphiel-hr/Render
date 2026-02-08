@@ -837,24 +837,26 @@ r.post('/run-single', async (req, res, next) => {
           orderBy: { createdAt: 'asc' },
           take: 50
         });
-        if (newApiLogs.length > 0) {
-          checkpointDelta = checkpointDelta || {};
-          const apiLogFields = ['id', 'method', 'path', 'statusCode', 'userId', 'responseTime', 'errorMessage', 'createdAt'];
-          checkpointDelta.apiRequestLog = {
-            beforeCount: 0,
-            afterCount: newApiLogs.length,
-            added: newApiLogs.length,
-            newRecords: newApiLogs.slice(0, 10).map(row => {
-              const rec = {};
-              for (const f of apiLogFields) {
-                if (row[f] !== undefined) rec[f] = row[f] instanceof Date ? row[f].toISOString() : row[f];
-              }
-              return rec;
-            })
-          };
-        }
+        checkpointDelta = checkpointDelta || {};
+        const apiLogFields = ['id', 'method', 'path', 'statusCode', 'userId', 'responseTime', 'errorMessage', 'createdAt'];
+        checkpointDelta.apiRequestLog = {
+          beforeCount: 0,
+          afterCount: newApiLogs.length,
+          added: newApiLogs.length,
+          newRecords: newApiLogs.slice(0, 10).map(row => {
+            const rec = {};
+            for (const f of apiLogFields) {
+              if (row[f] !== undefined) rec[f] = row[f] instanceof Date ? row[f].toISOString() : row[f];
+            }
+            return rec;
+          })
+        };
+        results.logs.push(`📡 API request logova (od početka testa): ${newApiLogs.length}`);
       } catch (e) {
         console.warn('[TEST] ApiRequestLog u delta:', e.message);
+        results.logs.push(`⚠ API request logovi (delta): ${e.message}`);
+        checkpointDelta = checkpointDelta || {};
+        checkpointDelta.apiRequestLog = { beforeCount: 0, afterCount: 0, added: 0, newRecords: [], _error: e.message };
       }
     }
 
