@@ -809,7 +809,8 @@ r.post('/run-single', async (req, res, next) => {
       try {
         checkpointSnapshot = testCheckpointService.getCheckpointSummary(checkpointId);
         if (checkpointSnapshot) {
-          const tables = Object.keys(checkpointSnapshot.tables || {});
+          const baseTables = Object.keys(checkpointSnapshot.tables || {});
+          const tables = [...new Set([...baseTables, 'apiRequestLog', 'errorLog'])];
           const currentSummary = await testCheckpointService.getCurrentStateSummary(tables);
           checkpointDelta = testCheckpointService.computeDelta(checkpointSnapshot, currentSummary);
 
