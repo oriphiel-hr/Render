@@ -88,8 +88,21 @@ class TestRunnerService {
       const resData = res.data && typeof res.data === 'object'
         ? (res.data.token ? { ...res.data, token: '***' } : res.data)
         : res.data;
+      const hasQuery = urlPath && urlPath.includes('?');
+      const input = {
+        method: method || 'GET',
+        path: urlPath,
+        body: body ? this._sanitizeForApiCall(body) : undefined
+      };
+      if (hasQuery) {
+        try {
+          const qs = urlPath.split('?')[1] || '';
+          const params = Object.fromEntries(new URLSearchParams(qs));
+          input.query = this._sanitizeForApiCall(params);
+        } catch (_) {}
+      }
       this._apiCalls.push({
-        input: { method: method || 'GET', path: urlPath, body: body ? this._sanitizeForApiCall(body) : undefined },
+        input,
         result: { status: res.status, ok, data: resData }
       });
     }

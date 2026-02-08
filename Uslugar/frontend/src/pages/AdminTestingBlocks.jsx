@@ -454,7 +454,7 @@ export default function AdminTestingBlocks() {
                                       <div>
                                         <strong className="text-indigo-800">Ulaz:</strong>
                                         <pre className="mt-0.5 p-2 bg-white rounded overflow-x-auto max-h-40 overflow-y-auto text-gray-700">
-                                          {JSON.stringify({ method: ac.input?.method, path: ac.input?.path, body: ac.input?.body }, null, 2)}
+                                          {JSON.stringify({ method: ac.input?.method, path: ac.input?.path, body: ac.input?.body, query: ac.input?.query }, null, 2)}
                                         </pre>
                                       </div>
                                       <div>

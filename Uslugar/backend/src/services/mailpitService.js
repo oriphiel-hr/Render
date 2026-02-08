@@ -105,7 +105,7 @@ class MailpitService {
    */
   async getEmailHTML(messageId) {
     try {
-      const response = await axios.get(`${this.baseUrl}/message/${messageId}/html`, {
+      const response = await axios.get(`${this.webUrl}/view/${messageId}.html`, {
         timeout: 10000,
         responseType: 'text'
       });
@@ -148,7 +148,7 @@ class MailpitService {
    */
   async getEmailPlain(messageId) {
     try {
-      const response = await axios.get(`${this.baseUrl}/message/${messageId}/plain`, {
+      const response = await axios.get(`${this.webUrl}/view/${messageId}.txt`, {
         timeout: 10000,
         responseType: 'text'
       });

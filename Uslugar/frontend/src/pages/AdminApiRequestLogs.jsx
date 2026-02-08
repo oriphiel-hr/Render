@@ -276,7 +276,7 @@ export default function AdminApiRequestLogs() {
                           <div className="space-y-2 text-sm">
                             {log.requestBody != null && (
                               <div>
-                                <div className="font-semibold text-gray-700 mb-1">Request body:</div>
+                                <div className="font-semibold text-gray-700 mb-1">Request {log.method === 'GET' ? '(query)' : '(body)'}:</div>
                                 <pre className="p-3 bg-white rounded border text-xs font-mono overflow-x-auto max-h-40 overflow-y-auto">
                                   {typeof log.requestBody === 'object'
                                     ? JSON.stringify(log.requestBody, null, 2)
@@ -286,7 +286,7 @@ export default function AdminApiRequestLogs() {
                             )}
                             {log.responseBody != null && (
                               <div>
-                                <div className="font-semibold text-gray-700 mb-1">Response:</div>
+                                <div className="font-semibold text-gray-700 mb-1">Response (body):</div>
                                 <pre className="p-3 bg-white rounded border text-xs font-mono overflow-x-auto max-h-40 overflow-y-auto">
                                   {typeof log.responseBody === 'object'
                                     ? JSON.stringify(log.responseBody, null, 2)

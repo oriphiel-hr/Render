@@ -1,0 +1,225 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
+<head>
+<meta charset="UTF-8">
+<meta name="ProgId" content="Word.Document">
+<meta name="Generator" content="Microsoft Word">
+<title>Specifikacija: Blokovski pristup testiranju</title>
+<style>
+body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.5; max-width: 21cm; margin: 2cm auto; }
+h1 { font-size: 18pt; color: #1a365d; border-bottom: 2px solid #2c5282; padding-bottom: 6px; margin-top: 0; }
+h2 { font-size: 14pt; color: #2d3748; margin-top: 24px; page-break-before: auto; }
+h3 { font-size: 12pt; color: #4a5568; margin-top: 16px; }
+p { margin: 8px 0; }
+ul { margin: 8px 0; padding-left: 24px; }
+li { margin: 4px 0; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; page-break-inside: avoid; }
+th, td { border: 1px solid #cbd5e0; padding: 8px 12px; text-align: left; }
+th { background: #edf2f7; font-weight: 600; }
+pre, code { font-family: Consolas, Monaco, monospace; font-size: 9pt; background: #f7fafc; padding: 2px 6px; }
+pre { padding: 12px; overflow-x: auto; border: 1px solid #e2e8f0; white-space: pre-wrap; }
+.meta { font-size: 10pt; color: #718096; margin-top: 32px; }
+strong { font-weight: 600; }
+hr { border: none; border-top: 1px solid #e2e8f0; margin: 24px 0; }
+.toc { background: #f7fafc; padding: 16px; margin: 16px 0; }
+</style>
+</head>
+<body>
+
+<h1>Specifikacija: Blokovski pristup testiranju</h1>
+
+<p>Dokument definira koncept blokova (cigle), manifesta, test kompozicije i sve povezane komponente za standardizirani, održivi sustav testiranja. Ovaj pristup omogućuje modularno građenje end-to-end testova iz ponovno upotrebljivih blokova, jasnu prozirnost (što se testira i kako) te konzistentne rezultate s detaljima o API pozivima, promjenama u bazi i koracima korisnika.</p>
+
+<p><strong>Svrha:</strong> Zamjena fragmentiranih, teško održivih testova jedinstvenim sustavom gdje svaki test (kontejner) sastoji se od blokova definiranih u manifestu, s odvojenim vrijednostima i standardiziranim rezultatima.</p>
+
+<hr>
+
+<h2>1. Osnovni koncepti</h2>
+
+<h3>1.1 Cigla (brick)</h3>
+<p>Cigla je <strong>najmanja izvršna jedinica</strong> – atomarna akcija koju test može izvršiti. Može biti:</p>
+<ul>
+<li><strong>API poziv</strong> – jedan HTTP zahtjev (metoda, path, body)</li>
+<li><strong>URL navigacija</strong> – promjena hash-a ili putanje (npr. #user, #register)</li>
+<li><strong>Jedan klik</strong> – na gumb, link, dropdown</li>
+<li><strong>Jedan unos</strong> – popunjavanje polja forme</li>
+<li><strong>Jedan API endpoint</strong> – bez dodatne logike</li>
+</ul>
+<p>Cigla <strong>ne mora</strong> imati API – može biti samo promjena URL-a, otvaranje modala ili čitanje elementa sa stranice. Cilj je dekomponirati složene flow-ove u male, jasno definirane korake.</p>
+<p><strong>Primjer:</strong> Klik na "Registriraj se", unos emaila u polje, POST na /api/auth/register – svaki je posebna cigla.</p>
+
+<h3>1.2 Blok (block)</h3>
+<p>Blok je <strong>logička cjelina</strong> – kombinacija cigli koja ima jasnu poslovnu svrhu. Sastavljen je od:</p>
+<ul>
+<li><strong>API dio</strong> – endpoint + HTTP metoda + tijelo zahtjeva (npr. POST /offers)</li>
+<li><strong>Frontend dio</strong> – URL, state prije/poslije, trigger (form submit, klik)</li>
+<li><strong>Izlaz</strong> – što blok proizvodi (npr. jobId, offerId, userId)</li>
+</ul>
+<p>Blok <strong>ne mora</strong> imati API – može biti samo navigacija ili UI akcija. Npr. blok view-job-detail može biti isključivo otvaranje stranice s odabranim poslom, bez API poziva.</p>
+<p><strong>Razlika od cigle:</strong> Cigla = jedna akcija. Blok = skupina akcija s jasnim ulazima, izlazima i ovisnostima. Blok se može ponovno koristiti u više testova.</p>
+<p><strong>Primjer:</strong> Blok send-offer uključuje navigaciju na posao, otvaranje forme ponude, unos iznosa i poruke, slanje API poziva i provjeru da je ponuda vidljiva. Izlaz: offerId, jobId.</p>
+
+<h3>1.3 Manifest</h3>
+<p>Manifest je <strong>katalog svih blokova</strong> – centralna definicija strukture, ovisnosti i ponašanja svakog bloka. Sadrži:</p>
+<ul>
+<li>Definiciju svakog bloka (inputs, outputs, api, frontend, auth, sideEffects)</li>
+<li>Ovisnosti između blokova (inputs.from, inherit)</li>
+<li>Shemu – što blok očekuje i što vraća</li>
+</ul>
+<p>Manifest <strong>ne sadrži</strong> konkretne vrijednosti (email, lozinka, iznosi). Vrijednosti dolaze iz datoteke vrijednosti ili test-data API-ja.</p>
+<p><strong>Lokacija u projektu:</strong> backend/src/config/blocksManifest.js, backend/src/config/blocksDefinitions.js</p>
+
+<h3>1.4 Test kompozicija</h3>
+<p>Test kompozicija definira <strong>koji blokovi se izvršavaju</strong> u pojedinom testu. Eksplicitni slijed: blocks: [login, create-job, send-offer]. Implicitni: orkestrator automatski dodaje ovisnosti. Redoslijed proizlazi iz DAG-a – orkestrator topološki sortira blokove.</p>
+
+<h3>1.5 Datoteka vrijednosti</h3>
+<p>Sadrži konkretne podatke po testu: amount, categoryId, grad, poruke. Credentials dolaze iz test-data API-ja. Lokacija: backend/src/config/blocksValues.js, /api/testing/test-data</p>
+
+<h3>1.6 Kontejner (test)</h3>
+<p>Logička cjelina s jasnom poslovnom svrhom – identifikator, naziv, opis, blokove, assert, vrijednosti. <strong>Pravilo uspjeha:</strong> Test je uspješan ako je svaki blok uspio. Ako jedan blok padne → test pada.</p>
+
+<hr>
+
+<h2>2. Struktura bloka u manifestu</h2>
+<p>Svaki blok definira ulaze, izlaze, API, frontend, auth, sideEffects. Ključna polja:</p>
+<ul>
+<li><strong>inputs.from</strong> – od kojih blokova ovisi</li>
+<li><strong>inputs.inherit</strong> – koje izlaze preuzima (npr. jobId iz create-job)</li>
+<li><strong>params</strong> – parametri iz values ili konteksta</li>
+<li><strong>outputs</strong> – što vraća u kontekst</li>
+<li><strong>db</strong> – koji DB entiteti se koriste/stvaraju</li>
+<li><strong>api</strong> – puna putanja (npr. /api/auth/register) za prozirnost</li>
+<li><strong>frontend</strong> – URL, stanje, trigger, interakcije</li>
+<li><strong>auth</strong> – JWT, rola (USER, PROVIDER, ADMIN)</li>
+<li><strong>sideEffects</strong> – email, SMS</li>
+<li><strong>screenshot</strong> – kad snimiti, što (viewport/fullPage/element)</li>
+</ul>
+
+<hr>
+
+<h2>3. Ulančavanje blokova</h2>
+<p>Blok deklarira ovisnosti kroz inputs.from. Orkestrator: gradi DAG, topološki sortira, izvršava u redoslijedu. Ako test navodi samo [send-offer], automatski se dodaju login i create-job.</p>
+
+<hr>
+
+<h2>4. Savepoint i rollback</h2>
+<p>DB savepoint prije testa, rollback na kraju. Na razini bloka: db, frontend (opcionalno). U manifestu ostaje deklarativno – orkestrator prevodi u Prisma/SAVEPOINT/ROLLBACK.</p>
+
+<hr>
+
+<h2>5. Pokrivenost</h2>
+<p>Blok može uključivati: API, vanjske servise (Stripe, Infobip), cron, klik na link u emailu/SMS-u, webhookove. UI interakcije: dropdown, click, fill, file upload, modal, redirect, map picker, validacijske greške.</p>
+
+<hr>
+
+<h2>6. Datoteke sustava</h2>
+<table>
+<tr><th>Datoteka</th><th>Sadržaj</th><th>Lokacija</th></tr>
+<tr><td>Manifest</td><td>Katalog blokova, ovisnosti</td><td>blocksManifest.js, blocksDefinitions.js</td></tr>
+<tr><td>Vrijednosti</td><td>Konkretni podaci po testu</td><td>blocksValues.js, /api/testing/test-data</td></tr>
+<tr><td>Test kompozicija</td><td>Koji blokovi za koji test</td><td>blocksManifest.js (BLOCKS_BY_TEST)</td></tr>
+</table>
+<p>API: GET /api/testing/blocks-manifest/:testId vraća punu definiciju kontejnera.</p>
+
+<hr>
+
+<h2>7. Kontejner i primjeri</h2>
+<p>Struktura: id, name, description, blocks, assert, values. Primjeri flow-a:</p>
+<ul>
+<li>Test 3.1: [login] → [navigate-#user] → [open-job-form] → [fill-submit-job] → [assert-job-in-list]</li>
+<li>Test 4.1: [login] → [create-job] → [navigate-to-job] → [open-offer-form] → [fill-submit-offer]</li>
+<li>Test 1.1: [register-user] → assert: user-created, email-sent</li>
+</ul>
+
+<hr>
+
+<h2>8. Rezultati</h2>
+<p>Standardizirani format: prošao/pao, blokovi, assertioni, koraci (logs). API u rezultatima: ulazni parametri (method, path, body), rezultat (status, response body). Promjene u bazi: INSERT/UPDATE/DELETE po tablicama. Simulacija pravog korisnika: direktan put, jedinstveni email. Pravilo obaveznog screenshota: ako blok treba screenshot i nije kreiran, blok pada.</p>
+
+<hr>
+
+<h2>9. Što još nedostaje</h2>
+<table>
+<tr><th>Komponenta</th><th>Opis</th></tr>
+<tr><td>Assertions</td><td>Što provjeravamo – selektor, API, DB</td></tr>
+<tr><td>Timeout/wait</td><td>Koliko čekati na API, element, mail</td></tr>
+<tr><td>Okruženje</td><td>Base URL, Mailpit – local vs CI</td></tr>
+<tr><td>Retry/error handling</td><td>Retry na pad, rollback</td></tr>
+<tr><td>Izolacija podataka</td><td>Jedinstveni emailovi, useri</td></tr>
+<tr><td>Credentials</td><td>Test useri, env, test-data</td></tr>
+</table>
+
+<hr>
+
+<h2>10. Orkestrator</h2>
+<p>Lokacija: backend/src/services/testRunnerService.js – runTestByBlocks. Funkcije: DAG, savepoint/rollback, _runApiTest, Playwright, mailpitService, apiCalls, blockStatuses. Načini: API-only (brži), Full (DB+API+frontend).</p>
+
+<hr>
+
+<h2>11. Prednosti pristupa</h2>
+<p>Manifest – jedan katalog. Kompozicija – bez dupliciranja. Vrijednosti odvojeno. Cjelovit test – DB+API+frontend. Direktan put. Standardizirani rezultati – prozirni API pozivi, promjene u bazi.</p>
+
+<hr>
+
+<h2>12. API endpointi</h2>
+<table>
+<tr><th>Endpoint</th><th>Opis</th></tr>
+<tr><td>GET /api/testing/blocks-manifest</td><td>Manifest svih testova</td></tr>
+<tr><td>GET /api/testing/blocks-manifest/:testId</td><td>Puna definicija kontejnera</td></tr>
+<tr><td>POST /api/testing/run-single</td><td>Pokreće test, vraća status, screenshots, logs, apiCalls, blockStatuses, checkpointDelta</td></tr>
+<tr><td>GET /api/testing/test-data</td><td>Test korisnici, Mailpit konfiguracija</td></tr>
+</table>
+
+<hr>
+
+<h2>13. Stvarna implementacija – primjeri iz koda</h2>
+<p><strong>login:</strong> inputs: [], outputs: [userId, token], api: POST /auth/login</p>
+<p><strong>send-offer:</strong> inputs: [create-job, login], inherit: [jobId, userId], outputs: [jobId, offerId], api: POST /offers, auth: PROVIDER</p>
+<p><strong>register-user:</strong> inputs: [], outputs: [userId], api: POST /api/auth/register, frontend: #register, sideEffects: email</p>
+<p>Mapiranje: register-user → registration (Playwright), login → API direktno, create-job → job_creation.</p>
+
+<hr>
+
+<h2>14. Tok izvršavanja testa</h2>
+<ol>
+<li>Zahtjev – POST run-single</li>
+<li>Checkpoint – kreiranje DB checkpointa</li>
+<li>Mapiranje – testId → blocks</li>
+<li>Redoslijed – topološko sortiranje</li>
+<li>Izvršavanje – za svaki blok: handler, apiCalls, screenshots, logs</li>
+<li>Mailpit – za testove s emailom: čekanje, screenshot, klik na link</li>
+<li>Checkpoint delta – usporedba baze</li>
+<li>Rollback – vraćanje baze</li>
+<li>Odgovor – JSON s rezultatima</li>
+</ol>
+
+<hr>
+
+<h2>15. Troubleshooting</h2>
+<table>
+<tr><th>Problem</th><th>Uzrok</th><th>Rješenje</th></tr>
+<tr><td>Mail screenshot: NE</td><td>Chromium bez --no-sandbox</td><td>args: ['--no-sandbox', '--disable-setuid-sandbox']</td></tr>
+<tr><td>apiCalls prazan za 1.1</td><td>Playwright, ne _runApiTest</td><td>API u browseru – definicija bloka ima api.path</td></tr>
+<tr><td>path "/" u ApiRequestLog</td><td>Zahtjev na root</td><td>GET base URL – userId null</td></tr>
+<tr><td>Blok pada bez razloga</td><td>Screenshot nije kreiran</td><td>Provjeriti Playwright, logs "Razlog:"</td></tr>
+</table>
+
+<hr>
+
+<h2>16. Implementacijski checklist</h2>
+<ul>
+<li>Blokovi s API imaju api: { method, path }</li>
+<li>Credentials iz test-data ili env</li>
+<li>Playwright s --no-sandbox u kontejnerima</li>
+<li>apiCalls i blockStatuses u run-single odgovoru</li>
+<li>Logs u Admin UI (Koraci)</li>
+<li>Request/response body u ApiRequestLog</li>
+<li>Pravilo screenshota – blok pada ako screenshot nije kreiran</li>
+</ul>
+
+<hr>
+
+<p class="meta">Dokument kreiran: 31.01.2025 | Verzija: 1.3 | Prošireno: više detalja, primjeri iz koda, tok izvršavanja, troubleshooting, checklist</p>
+<p class="meta">Za punu verziju s potpunim YAML primjerima vidi: docs/TEST-BLOCKS-MANIFEST-SPEC.md</p>
+
+</body>
+</html>
