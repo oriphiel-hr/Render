@@ -813,6 +813,32 @@ r.post('/run-single', async (req, res, next) => {
           const tables = [...new Set([...baseTables, 'apiRequestLog', 'errorLog'])];
           const currentSummary = await testCheckpointService.getCurrentStateSummary(tables);
           checkpointDelta = testCheckpointService.computeDelta(checkpointSnapshot, currentSummary);
+          if (currentSummary?.tables && (!checkpointDelta || !('apiRequestLog' in checkpointDelta))) {
+            const apiLogTable = currentSummary.tables.apiRequestLog;
+            if (apiLogTable && (apiLogTable.count > 0 || (checkpointSnapshot.tables?.apiRequestLog?.count ?? 0) > 0)) {
+              const beforeIds = new Set(checkpointSnapshot.tables?.apiRequestLog?.recordIds || []);
+              const fullRecords = apiLogTable.fullRecords || apiLogTable.records || [];
+              const newRecords = fullRecords.filter(r => r.id && !beforeIds.has(r.id));
+              const beforeCount = checkpointSnapshot.tables?.apiRequestLog?.count ?? 0;
+              if (newRecords.length > 0 || beforeCount !== apiLogTable.count) {
+                checkpointDelta = checkpointDelta || {};
+                const KEY_FIELDS = { apiRequestLog: ['id', 'method', 'path', 'statusCode', 'userId', 'responseTime', 'errorMessage', 'createdAt'] };
+                const fields = KEY_FIELDS.apiRequestLog;
+                checkpointDelta.apiRequestLog = {
+                  beforeCount,
+                  afterCount: apiLogTable.count,
+                  added: newRecords.length,
+                  newRecords: newRecords.slice(0, 10).map(r => {
+                    const rec = {};
+                    for (const f of fields) {
+                      if (r[f] !== undefined) rec[f] = r[f] instanceof Date ? r[f].toISOString() : r[f];
+                    }
+                    return rec;
+                  })
+                };
+              }
+            }
+          }
 
           // Ako je test uspješan - kreiraj "after" savepoint (stanje baze nakon testa, prije rollbacka)
           if (testResult?.success) {
