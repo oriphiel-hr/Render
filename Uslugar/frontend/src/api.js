@@ -3,10 +3,14 @@ import axios from 'axios'
 
 // Production: https://api.uslugar.oriph.io/api (Render.com)
 // Development: http://localhost:4000/api
-// Runtime (run-single): ?apiUrl=... u URL-u – zahtjevi idu na backend koji servira test.
-// App koristi hash routing (#login, #register), pa apiUrl može biti u search (?apiUrl=) ili u hash (#login?apiUrl=).
+// Runtime (run-single): Playwright injektira window.__USLUGAR_API_URL__; inače ?apiUrl= u URL-u ili hash.
 function getApiBase() {
   if (typeof window === 'undefined') return import.meta.env.VITE_API_URL || 'https://api.uslugar.oriph.io';
+  const injected = window.__USLUGAR_API_URL__;
+  if (injected && typeof injected === 'string') {
+    try { sessionStorage.setItem('uslugar_test_api_url', injected); } catch (_) {}
+    return injected;
+  }
   let fromQuery = new URLSearchParams(window.location.search).get('apiUrl');
   if (!fromQuery && window.location.hash) {
     const hashPart = window.location.hash.indexOf('?') >= 0 ? window.location.hash.substring(window.location.hash.indexOf('?') + 1) : '';

@@ -57,6 +57,16 @@ class TestRunnerService {
     return `${url}${sep}apiUrl=${encodeURIComponent(apiBase)}`;
   }
 
+  /** Injektira window.__USLUGAR_API_URL__ prije učitavanja stranice – frontend ga koristi u getApiBase(). */
+  async _injectApiUrl(pageOrContext) {
+    const apiBase = this._getApiBaseUrl();
+    const escaped = apiBase.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    const script = `window.__USLUGAR_API_URL__ = "${escaped}";`;
+    if (typeof pageOrContext.addInitScript === 'function') {
+      await pageOrContext.addInitScript({ content: script });
+    }
+  }
+
   setApiBaseUrl(url) {
     this._apiBaseUrl = url;
   }
@@ -252,6 +262,7 @@ class TestRunnerService {
       logs.push('✓ Browser pokrenuo');
 
       const context = await browser.newContext();
+      await this._injectApiUrl(context);
       const page = await context.newPage();
       logs.push('✓ Nova stranica kreirana');
 
@@ -1308,6 +1319,7 @@ class TestRunnerService {
     try {
       browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
       const page = await browser.newPage();
+      await this._injectApiUrl(page);
       await page.goto(this._getTestPageUrl('/#forgot-password'), { waitUntil: 'networkidle', timeout: 30000 });
       await page.waitForTimeout(2000);
       const sp = this._getScreenshotPath('1.5_forgot', '00_form');
@@ -1356,6 +1368,7 @@ class TestRunnerService {
             try {
               browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
               const page = await browser.newPage();
+              await this._injectApiUrl(page);
               await page.goto(this._getTestPageUrl('/'), { waitUntil: 'networkidle', timeout: 15000 });
               await page.evaluate((t) => { localStorage.setItem('token', t); window.location.hash = '#user'; }, token);
               await page.waitForTimeout(2000);
@@ -1382,6 +1395,7 @@ class TestRunnerService {
     try {
       browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
       const page = await browser.newPage();
+      await this._injectApiUrl(page);
       await page.goto(url, { waitUntil: 'networkidle', timeout: 15000 });
       await page.waitForTimeout(1500);
       const screenshotPath = this._getScreenshotPath(testId, stepName);
@@ -1400,6 +1414,7 @@ class TestRunnerService {
     try {
       browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
       const page = await browser.newPage();
+      await this._injectApiUrl(page);
       await page.goto(this._getTestPageUrl('/'), { waitUntil: 'networkidle', timeout: 15000 });
       await page.evaluate(({ t, h }) => { localStorage.setItem('token', t); window.location.hash = h; }, { t: token, h: hash });
       await page.waitForTimeout(2000);
@@ -1419,6 +1434,7 @@ class TestRunnerService {
     try {
       browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
       const page = await browser.newPage();
+      await this._injectApiUrl(page);
       await page.goto(this._getTestPageUrl('/'), { waitUntil: 'networkidle', timeout: 15000 });
       await page.evaluate((t) => { localStorage.setItem('adminToken', t); window.location.hash = '#admin'; }, token);
       await page.waitForTimeout(2500);
