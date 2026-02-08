@@ -3,11 +3,15 @@ import axios from 'axios'
 
 // Production: https://api.uslugar.oriph.io/api (Render.com)
 // Development: http://localhost:4000/api
-// Runtime (run-single): ?apiUrl=... u URL-u – zahtjevi idu na backend koji servira test
+// Runtime (run-single): ?apiUrl=... u URL-u – zahtjevi idu na backend koji servira test.
+// App koristi hash routing (#login, #register), pa apiUrl može biti u search (?apiUrl=) ili u hash (#login?apiUrl=).
 function getApiBase() {
   if (typeof window === 'undefined') return import.meta.env.VITE_API_URL || 'https://api.uslugar.oriph.io';
-  const params = new URLSearchParams(window.location.search);
-  const fromQuery = params.get('apiUrl');
+  let fromQuery = new URLSearchParams(window.location.search).get('apiUrl');
+  if (!fromQuery && window.location.hash) {
+    const hashPart = window.location.hash.indexOf('?') >= 0 ? window.location.hash.substring(window.location.hash.indexOf('?') + 1) : '';
+    fromQuery = new URLSearchParams(hashPart).get('apiUrl');
+  }
   if (fromQuery) {
     try {
       sessionStorage.setItem('uslugar_test_api_url', fromQuery);
