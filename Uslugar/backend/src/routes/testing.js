@@ -813,30 +813,40 @@ r.post('/run-single', async (req, res, next) => {
           const tables = [...new Set([...baseTables, 'apiRequestLog', 'errorLog'])];
           const currentSummary = await testCheckpointService.getCurrentStateSummary(tables);
           checkpointDelta = testCheckpointService.computeDelta(checkpointSnapshot, currentSummary);
-          if (currentSummary?.tables && (!checkpointDelta || !('apiRequestLog' in checkpointDelta))) {
-            const apiLogTable = currentSummary.tables.apiRequestLog;
-            if (apiLogTable && (apiLogTable.count > 0 || (checkpointSnapshot.tables?.apiRequestLog?.count ?? 0) > 0)) {
-              const beforeIds = new Set(checkpointSnapshot.tables?.apiRequestLog?.recordIds || []);
-              const fullRecords = apiLogTable.fullRecords || apiLogTable.records || [];
-              const newRecords = fullRecords.filter(r => r.id && !beforeIds.has(r.id));
-              const beforeCount = checkpointSnapshot.tables?.apiRequestLog?.count ?? 0;
-              if (newRecords.length > 0 || beforeCount !== apiLogTable.count) {
+
+          const apiLogFields = ['id', 'method', 'path', 'statusCode', 'userId', 'responseTime', 'errorMessage', 'createdAt'];
+          const checkpointCreatedAt = (() => {
+            const parts = (checkpointId || '').split('_');
+            for (const p of parts) {
+              const ts = parseInt(p, 10);
+              if (p.length >= 12 && !isNaN(ts) && ts > 1e11) return new Date(ts);
+            }
+            return null;
+          })();
+          if (checkpointCreatedAt) {
+            try {
+              const newApiLogs = await prisma.apiRequestLog.findMany({
+                where: { createdAt: { gte: checkpointCreatedAt } },
+                orderBy: { createdAt: 'asc' },
+                take: 50
+              });
+              if (newApiLogs.length > 0) {
                 checkpointDelta = checkpointDelta || {};
-                const KEY_FIELDS = { apiRequestLog: ['id', 'method', 'path', 'statusCode', 'userId', 'responseTime', 'errorMessage', 'createdAt'] };
-                const fields = KEY_FIELDS.apiRequestLog;
                 checkpointDelta.apiRequestLog = {
-                  beforeCount,
-                  afterCount: apiLogTable.count,
-                  added: newRecords.length,
-                  newRecords: newRecords.slice(0, 10).map(r => {
+                  beforeCount: 0,
+                  afterCount: newApiLogs.length,
+                  added: newApiLogs.length,
+                  newRecords: newApiLogs.slice(0, 10).map(row => {
                     const rec = {};
-                    for (const f of fields) {
-                      if (r[f] !== undefined) rec[f] = r[f] instanceof Date ? r[f].toISOString() : r[f];
+                    for (const f of apiLogFields) {
+                      if (row[f] !== undefined) rec[f] = row[f] instanceof Date ? row[f].toISOString() : row[f];
                     }
                     return rec;
                   })
                 };
               }
+            } catch (e) {
+              console.warn('[TEST] ApiRequestLog delta:', e.message);
             }
           }
 
