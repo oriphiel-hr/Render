@@ -42,9 +42,19 @@ class TestRunnerService {
     return this._apiBaseUrl || process.env.API_BASE_URL || process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
   }
 
-  /** Frontend URL za Playwright (page.goto). TEST_FRONTEND_URL ima prioritet (za lokalno: localhost:5173); inače FRONTEND_URL. ApiRequestLog u delti zahtijeva da taj frontend zove ovaj backend (VITE_API_URL pri buildu). */
+  /** Frontend URL za Playwright (page.goto). TEST_FRONTEND_URL ima prioritet; inače FRONTEND_URL. */
   _getFrontendUrl() {
     return process.env.TEST_FRONTEND_URL || process.env.FRONTEND_URL || 'https://www.uslugar.eu';
+  }
+
+  /** URL stranice za test s apiUrl param – frontend šalje zahtjeve na ovaj backend, ApiRequestLog u delti se puni. */
+  _getTestPageUrl(path) {
+    const base = this._getFrontendUrl().replace(/\/$/, '');
+    const pathPart = path.startsWith('/') ? path : `/${path}`;
+    const url = `${base}${pathPart}`;
+    const sep = url.includes('?') ? '&' : '?';
+    const apiBase = this._getApiBaseUrl();
+    return `${url}${sep}apiUrl=${encodeURIComponent(apiBase)}`;
   }
 
   setApiBaseUrl(url) {
@@ -247,10 +257,10 @@ class TestRunnerService {
 
       // 1. Otiđi na stranicu
       console.log('[TEST RUNNER] Navigiram na /register...');
-      logs.push(`Navigacija na ${this._getFrontendUrl()}/register...`);
+      logs.push(`Navigacija na ${this._getTestPageUrl('/register')}...`);
       
       try {
-        await page.goto(`${this._getFrontendUrl()}/register`, { waitUntil: 'networkidle', timeout: 30000 });
+        await page.goto(this._getTestPageUrl('/register'), { waitUntil: 'networkidle', timeout: 30000 });
         logs.push('✓ Stranica učitana');
       } catch (e) {
         logs.push(`❌ Greška pri učitavanju: ${e.message}`);
@@ -963,7 +973,7 @@ class TestRunnerService {
       }
       if (!token) {
         logs.push('⚠ Login neuspješan - provjeri test.client/admin u bazi');
-        const ss = await this._capturePageScreenshot(testId, `${this._getFrontendUrl()}/#login`, '00_login', logs);
+        const ss = await this._capturePageScreenshot(testId, this._getTestPageUrl('/#login'), '00_login', logs);
         screenshots.push(...ss);
         return { success: false, logs, screenshots };
       }
@@ -1225,7 +1235,7 @@ class TestRunnerService {
       } else {
         logs.push(`⚠ Pravni status ${legalStatus} - nema provjere u registru (FREELANCER/INDIVIDUAL)`);
         const ss = [];
-        try { ss.push(...await this._capturePageScreenshot('14.1_registar', `${this._getFrontendUrl()}/#register-provider`, '01_registracija_provider', logs)); } catch (_) {}
+        try { ss.push(...await this._capturePageScreenshot('14.1_registar', this._getTestPageUrl('/#register-provider'), '01_registracija_provider', logs)); } catch (_) {}
         return {
           success: true,
           logs,
@@ -1239,7 +1249,7 @@ class TestRunnerService {
       logs.push(success ? '✅ Test verifikacije registra uspješan' : '❌ Provjera nije uspjela');
       const screenshots = [];
       try {
-        const ss = await this._capturePageScreenshot('14.1_registar', `${this._getFrontendUrl()}/#register-provider`, '01_registracija_provider', logs);
+        const ss = await this._capturePageScreenshot('14.1_registar', this._getTestPageUrl('/#register-provider'), '01_registracija_provider', logs);
         screenshots.push(...ss);
       } catch (_) {}
       return {
@@ -1284,7 +1294,7 @@ class TestRunnerService {
         }
       } catch (_) {}
     }
-    const ss = await this._capturePageScreenshot('1.3_login', `${this._getFrontendUrl()}/#login`, '00_login_form', logs);
+    const ss = await this._capturePageScreenshot('1.3_login', this._getTestPageUrl('/#login'), '00_login_form', logs);
     screenshots.push(...ss);
     logs.push('⚠ Niti jedan test korisnik nije mogao prijavu (test.client, test.provider, admin)');
     logs.push('💡 Pokreni seed ili test 1.1 da kreiraš korisnike');
@@ -1298,7 +1308,7 @@ class TestRunnerService {
     try {
       browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
       const page = await browser.newPage();
-      await page.goto(`${this._getFrontendUrl()}/#forgot-password`, { waitUntil: 'networkidle', timeout: 30000 });
+      await page.goto(this._getTestPageUrl('/#forgot-password'), { waitUntil: 'networkidle', timeout: 30000 });
       await page.waitForTimeout(2000);
       const sp = this._getScreenshotPath('1.5_forgot', '00_form');
       await page.screenshot({ path: sp, fullPage: true });
@@ -1346,7 +1356,7 @@ class TestRunnerService {
             try {
               browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
               const page = await browser.newPage();
-              await page.goto(`${this._getFrontendUrl()}/`, { waitUntil: 'networkidle', timeout: 15000 });
+              await page.goto(this._getTestPageUrl('/'), { waitUntil: 'networkidle', timeout: 15000 });
               await page.evaluate((t) => { localStorage.setItem('token', t); window.location.hash = '#user'; }, token);
               await page.waitForTimeout(2000);
               const screenshotPath = this._getScreenshotPath('1.6_jwt', '01_profile');
@@ -1390,7 +1400,7 @@ class TestRunnerService {
     try {
       browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
       const page = await browser.newPage();
-      await page.goto(`${this._getFrontendUrl()}/`, { waitUntil: 'networkidle', timeout: 15000 });
+      await page.goto(this._getTestPageUrl('/'), { waitUntil: 'networkidle', timeout: 15000 });
       await page.evaluate(({ t, h }) => { localStorage.setItem('token', t); window.location.hash = h; }, { t: token, h: hash });
       await page.waitForTimeout(2000);
       const screenshotPath = this._getScreenshotPath(testId, stepName);
@@ -1409,7 +1419,7 @@ class TestRunnerService {
     try {
       browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
       const page = await browser.newPage();
-      await page.goto(`${this._getFrontendUrl()}/`, { waitUntil: 'networkidle', timeout: 15000 });
+      await page.goto(this._getTestPageUrl('/'), { waitUntil: 'networkidle', timeout: 15000 });
       await page.evaluate((t) => { localStorage.setItem('adminToken', t); window.location.hash = '#admin'; }, token);
       await page.waitForTimeout(2500);
       const screenshotPath = this._getScreenshotPath(testId, stepName);
@@ -1437,7 +1447,7 @@ class TestRunnerService {
         logs.push(`📋 Primjer: ${names}${arr.length > 8 ? '...' : ''}`);
       }
       if (ok) {
-        const ss = await this._capturePageScreenshot(testId, `${this._getFrontendUrl()}/#categories`, '01_kategorije', logs);
+        const ss = await this._capturePageScreenshot(testId, this._getTestPageUrl('/#categories'), '01_kategorije', logs);
         screenshots.push(...ss);
       }
       return { success: ok, logs, screenshots };
@@ -1463,7 +1473,7 @@ class TestRunnerService {
         logs.push(`📋 Glavne kategorije: ${roots.length}, s podkategorijama: ${withChildren.length}`);
       }
       if (ok) {
-        const ss = await this._capturePageScreenshot(testId, `${this._getFrontendUrl()}/#categories`, '01_hijerarhija', logs);
+        const ss = await this._capturePageScreenshot(testId, this._getTestPageUrl('/#categories'), '01_hijerarhija', logs);
         screenshots.push(...ss);
       }
       return { success: ok, logs, screenshots };
@@ -1493,7 +1503,7 @@ class TestRunnerService {
       }
       if (!token) {
         logs.push('⚠ Login neuspješan - provjeri test.client/admin u bazi');
-        const ss = await this._capturePageScreenshot(testId, `${this._getFrontendUrl()}/#login`, '00_login', logs);
+        const ss = await this._capturePageScreenshot(testId, this._getTestPageUrl('/#login'), '00_login', logs);
         screenshots.push(...ss);
         return { success: false, logs, screenshots };
       }
@@ -1850,7 +1860,7 @@ class TestRunnerService {
       const res = await this._runApiTest('GET', '/api/matchmaking/status').catch(() => ({ ok: false, status: 404 }));
       logs.push(`✓ Matchmaking: ${res.status}`);
       if (res.ok || res.status === 404) {
-        const ss = await this._capturePageScreenshot('12.1_match', `${this._getFrontendUrl()}/`, '01_landing', logs);
+        const ss = await this._capturePageScreenshot('12.1_match', this._getTestPageUrl('/'), '01_landing', logs);
         screenshots.push(...ss);
       }
       return { success: res.ok || res.status === 404, logs, screenshots };
@@ -1933,7 +1943,7 @@ class TestRunnerService {
       });
       if (loginRes.status !== 200 || !loginRes.data?.token) {
         logs.push('⚠ Login neuspješan - provjeri test.provider u bazi');
-        const ss = await this._capturePageScreenshot('21.1_sms', `${this._getFrontendUrl()}/#login`, '01_login', logs);
+        const ss = await this._capturePageScreenshot('21.1_sms', this._getTestPageUrl('/#login'), '01_login', logs);
         screenshots.push(...ss);
         return { success: false, logs, screenshots };
       }
@@ -1958,7 +1968,7 @@ class TestRunnerService {
         if (sendRes.status === 400) logs.push('   (format telefona ili već verificiran)');
       }
 
-      const ss = await this._capturePageScreenshot('21.1_sms', `${this._getFrontendUrl()}/#user`, '01_profile', logs);
+      const ss = await this._capturePageScreenshot('21.1_sms', this._getTestPageUrl('/#user'), '01_profile', logs);
       screenshots.push(...ss);
       return { success: true, logs, screenshots };
     } catch (e) {
@@ -1992,7 +2002,7 @@ class TestRunnerService {
       const res = await this._runApiTest('GET', '/api/kyc/status');
       logs.push(`✓ KYC verify: ${res.status}`);
       if (res.ok || res.status === 401) {
-        const ss = await this._capturePageScreenshot('22.2_kyc', `${this._getFrontendUrl()}/#login`, '01_kyc_page', logs);
+        const ss = await this._capturePageScreenshot('22.2_kyc', this._getTestPageUrl('/#login'), '01_kyc_page', logs);
         screenshots.push(...ss);
       }
       return { success: res.ok || res.status === 401, logs, screenshots };
@@ -2304,7 +2314,7 @@ class TestRunnerService {
       const res = await this._runApiTest('GET', '/api/health');
       logs.push(`✓ CORS/Health: ${res.status}`);
       if (res.ok) {
-        const ss = await this._capturePageScreenshot('31.1_cors', `${this._getFrontendUrl()}/`, '01_landing', logs);
+        const ss = await this._capturePageScreenshot('31.1_cors', this._getTestPageUrl('/'), '01_landing', logs);
         screenshots.push(...ss);
       }
       return { success: res.ok, logs, screenshots };
