@@ -46,6 +46,7 @@ api.interceptors.request.use((config) => {
   let base = getApiBase().replace(/\/$/, '');
   if (!base.endsWith('/api')) base += '/api';
   config.baseURL = base;
+  try { window.__USLUGAR_ACTUAL_API_BASE__ = base; } catch (_) {}
   const isAdminRequest = config.url && String(config.url).startsWith('/admin');
   const token = isAdminRequest ? localStorage.getItem('adminToken') : localStorage.getItem('token');
   if (token) {

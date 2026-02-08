@@ -288,7 +288,15 @@ class TestRunnerService {
       await page.waitForSelector('#root', { timeout: 5000 });
       await page.waitForTimeout(2000); // Smanjeno s 5+3 na 2 sekunde
       logs.push('✓ React učitan');
-      
+      await page.waitForTimeout(1500);
+      try {
+        const apiDetect = await page.evaluate(() => ({
+          injected: window.__USLUGAR_API_URL__ || null,
+          actual: window.__USLUGAR_ACTUAL_API_BASE__ || null
+        }));
+        logs.push(`🔍 API: injektirano=${apiDetect.injected || 'NE'} | frontend koristi=${apiDetect.actual || 'NE (stari build?)'}`);
+      } catch (_) {}
+
       let screenshotPath = this._getScreenshotPath(testId, '01_loaded');
       await page.screenshot({ path: screenshotPath, fullPage: true });
       screenshots.push({

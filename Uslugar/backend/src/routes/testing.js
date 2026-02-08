@@ -598,10 +598,10 @@ r.post('/run-single', async (req, res, next) => {
     console.log(`[TEST] Korak 1: Pokrećem ${isApiOnlyTest ? 'API' : 'Playwright'} test...`);
     let testResult;
     let apiCalls = [];
+    const apiBaseUrl = req.body.apiBaseUrl || `${req.protocol}://${req.get('host')}`;
+    testRunnerService.setApiBaseUrl?.(apiBaseUrl);
 
     try {
-      const apiBaseUrl = req.body.apiBaseUrl || `${req.protocol}://${req.get('host')}`;
-      testRunnerService.setApiBaseUrl?.(apiBaseUrl);
 
       let testData = userData;
       if (!testData) {
@@ -916,6 +916,7 @@ r.post('/run-single', async (req, res, next) => {
       blocks: blocksInfo.blocks,
       assert: blocksInfo.assert,
       blockStatuses,
+      apiBaseUrlInjected: apiBaseUrl,
       message: testResult?.success 
         ? `✅ Test '${testName}' uspješno prošao (${duration}ms)`
         : `❌ Test '${testName}' nije prošao`
