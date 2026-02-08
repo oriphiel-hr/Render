@@ -33,8 +33,11 @@ const api = axios.create({
   }
 });
 
-// Add token to all requests
+// Svaki zahtjev koristi aktualni API base (runtime ?apiUrl ili sessionStorage) – važno za run-single
 api.interceptors.request.use((config) => {
+  let base = getApiBase().replace(/\/$/, '');
+  if (!base.endsWith('/api')) base += '/api';
+  config.baseURL = base;
   const isAdminRequest = config.url && String(config.url).startsWith('/admin');
   const token = isAdminRequest ? localStorage.getItem('adminToken') : localStorage.getItem('token');
   if (token) {

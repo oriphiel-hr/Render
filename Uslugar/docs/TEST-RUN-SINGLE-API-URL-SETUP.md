@@ -26,16 +26,10 @@ Svi pozivi tipa `page.goto(...)` i `_capturePageScreenshot(..., url, ...)` u tom
 
 | Što | Gdje | Kada |
 |-----|------|------|
-| API base URL za axios/fetch | `frontend/src/api.js` redak 8: `import.meta.env.VITE_API_URL` | **Build time** (vrijednost se ugrađuje u build) |
-| Isti izvor koriste | `frontend/api/http.js` redak 2, `frontend/src/hooks/usePushNotifications.js` redak 4 | **Build time** |
+| API base URL | `frontend/src/api.js`: funkcija `getApiBase()` | **Runtime**: prvo `?apiUrl=...` u URL-u, zatim `sessionStorage`, na kraju `VITE_API_URL` (build) |
+| Test runner | `testRunnerService._getTestPageUrl(path)` dodaje `apiUrl=<backend URL>` na sve otvorene stranice | Runtime |
 
-```js
-// frontend/src/api.js
-const API_BASE = import.meta.env.VITE_API_URL || 'https://api.uslugar.oriph.io';
-// Zatim se dodaje /api ako nedostaje (redaci 11–14)
-```
-
-U Vite projektu `import.meta.env.VITE_*` se zamjenjuje **prilikom builda** (`npm run build` / `vite build`). Nema koda koji u ovom repozitoriju runtime mijenja API URL na temelju backend env varijabli.
+Playwright otvara npr. `FRONTEND_URL/register?apiUrl=https://api.uslugar.oriph.io`. Ako frontend na **FRONTEND_URL** sadrži novi kod (čitanje `apiUrl` u `api.js`), svi zahtjevi idu na taj backend i ApiRequestLog u delti se puni. **Važno:** frontend na FRONTEND_URL mora biti **deployan s tim kodom** (build i deploy nakon promjena u `frontend/src/api.js`).
 
 ### 1.3 run-single – koji backend „vladá” testom
 

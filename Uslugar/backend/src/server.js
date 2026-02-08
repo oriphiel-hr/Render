@@ -64,6 +64,8 @@ if (process.env.NODE_ENV !== 'production') {
 
 // Configure body parser for webhooks (before json)
 const app = express()
+// Iza reverse proxyja (Render, nginx) req.protocol i req.get('host') koriste X-Forwarded-*
+app.set('trust proxy', 1)
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' })) // Stripe webhook needs raw body
 
 const prisma = new PrismaClient()
