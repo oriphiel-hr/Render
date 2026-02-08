@@ -813,6 +813,32 @@ r.post('/run-single', async (req, res, next) => {
           const tables = [...new Set([...baseTables, 'apiRequestLog', 'errorLog'])];
           const currentSummary = await testCheckpointService.getCurrentStateSummary(tables);
           checkpointDelta = testCheckpointService.computeDelta(checkpointSnapshot, currentSummary);
+          checkpointDelta = checkpointDelta || {};
+
+          // apiRequestLog uvijek u delti (i kad nema novih zapisa), da se vidi before/after i eventualno _note
+          const beforeIds = new Set(checkpointSnapshot.tables?.apiRequestLog?.recordIds || []);
+          const afterTable = currentSummary?.tables?.apiRequestLog;
+          const fullRecords = afterTable?.fullRecords || afterTable?.records || [];
+          const beforeApi = checkpointSnapshot.tables?.apiRequestLog?.count ?? 0;
+          const afterApi = afterTable?.count ?? 0;
+          const newApiRecords = fullRecords.filter(r => r?.id && !beforeIds.has(r.id));
+          const addedApi = newApiRecords.length;
+          const fields = ['id', 'method', 'path', 'statusCode', 'userId', 'responseTime', 'errorMessage', 'requestBody', 'responseBody', 'createdAt'];
+          checkpointDelta.apiRequestLog = checkpointDelta.apiRequestLog || {
+            beforeCount: beforeApi,
+            afterCount: afterApi,
+            added: addedApi,
+            newRecords: newApiRecords.slice(0, 10).map(r => {
+              const rec = {};
+              for (const f of fields) {
+                if (r[f] !== undefined) rec[f] = r[f] instanceof Date ? r[f].toISOString() : r[f];
+              }
+              return rec;
+            })
+          };
+          if (addedApi === 0 && afterApi > 0) {
+            checkpointDelta.apiRequestLog._note = 'Zahtjevi iz testa nisu prošli ovim backendom (0 novih). FRONTEND_URL treba biti frontend buildan s VITE_API_URL = URL ovog backenda.';
+          }
 
           // Ako je test uspješan - kreiraj "after" savepoint (stanje baze nakon testa, prije rollbacka)
           if (testResult?.success) {
