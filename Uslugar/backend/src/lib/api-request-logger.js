@@ -47,6 +47,16 @@ export async function apiRequestLogger(req, res, next) {
     logged = true;
     const responseTime = Date.now() - startTime;
     const statusCode = res.statusCode;
+    // Request body: uzeti u trenutku odgovora (tada je req.body sigurno parsiran)
+    let reqBody = null;
+    if (['POST', 'PUT', 'PATCH'].includes(req.method) && req.body != null) {
+      try {
+        reqBody = JSON.parse(JSON.stringify(req.body));
+        reqBody = redact(reqBody);
+      } catch (_) {}
+    } else if (req.method === 'GET' && req.query && Object.keys(req.query).length > 0) {
+      reqBody = { query: redact(req.query) };
+    }
     let responseBody = null;
     try {
       const parsed = typeof payload === 'string'
@@ -67,8 +77,8 @@ export async function apiRequestLogger(req, res, next) {
       userId: req.user?.id || null,
       ipAddress: req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress,
       userAgent: req.headers['user-agent'],
-      requestBody,
-      responseBody,
+      requestBody: reqBody ?? null,
+      responseBody: responseBody ?? null,
       responseTime,
       errorMessage: statusCode >= 400 ? (payload && typeof payload === 'object' && (payload.error || payload.message)) || null : null
     }).catch(err => {
@@ -102,11 +112,9 @@ async function logRequest(data) {
   try {
     const pathBase = (data.path || '').split('?')[0];
     if (pathBase === '/health' || pathBase === '/api/health') return;
+    if (!(data.path || '').startsWith('/api')) return;
 
-    // Ne logiraj ako je response time prekratak (vjerojatno health check ili static file)
-    if (data.responseTime < 10) {
-      return;
-    }
+    if (data.responseTime < 10) return;
 
     await prisma.apiRequestLog.create({
       data: {

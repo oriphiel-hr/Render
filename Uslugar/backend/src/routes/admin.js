@@ -2652,7 +2652,7 @@ r.get('/api-request-logs', auth(true, ['ADMIN']), async (req, res, next) => {
       }
     }
     
-    const [logs, total] = await Promise.all([
+    const [rawLogs, total] = await Promise.all([
       prisma.apiRequestLog.findMany({
         where,
         include: {
@@ -2673,7 +2673,12 @@ r.get('/api-request-logs', auth(true, ['ADMIN']), async (req, res, next) => {
       }),
       prisma.apiRequestLog.count({ where })
     ]);
-    
+    const logs = rawLogs.map(log => ({
+      ...log,
+      requestBody: log.requestBody ?? null,
+      responseBody: log.responseBody ?? null
+    }));
+
     // Statistike
     const [statusStats, methodStats, pathStats] = await Promise.all([
       prisma.apiRequestLog.groupBy({

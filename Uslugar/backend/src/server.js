@@ -207,8 +207,8 @@ app.use((req, res, next) => {
 app.use(express.json())
 app.use(morgan('dev'))
 
-// API Request Logger - logira sve API zahtjeve (prije ruta)
-app.use('/api', apiRequestLogger)
+// API Request Logger - presreće sve zahtjeve da uhvati res.send/res.json, u bazu piše samo /api (osim health)
+app.use(apiRequestLogger)
 
 // Health check endpoints - OVO MORA BITI NAJBLIŽE POČETKU DA BI RADILO PRIJE INICIJALIZACIJE
 app.get('/health', (_req, res) => {
