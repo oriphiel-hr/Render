@@ -266,6 +266,22 @@ class TestRunnerService {
       const page = await context.newPage();
       logs.push('✓ Nova stranica kreirana');
 
+      // Network monitoring – prati sve API zahtjeve iz Playwrighta
+      const networkApiCalls = [];
+      page.on('request', req => {
+        const u = req.url();
+        if (u.includes('/api/') && !u.includes('/test-screenshots/')) {
+          networkApiCalls.push({ method: req.method(), url: u });
+        }
+      });
+      page.on('response', resp => {
+        const u = resp.url();
+        if (u.includes('/api/') && !u.includes('/test-screenshots/')) {
+          const entry = networkApiCalls.find(c => c.url === u && !c.status);
+          if (entry) entry.status = resp.status();
+        }
+      });
+
       // 1. Otiđi na stranicu
       console.log('[TEST RUNNER] Navigiram na /register...');
       logs.push(`Navigacija na ${this._getTestPageUrl('/register')}...`);
@@ -286,7 +302,7 @@ class TestRunnerService {
       logs.push('Čekanje da se React učita...');
       await page.waitForLoadState('domcontentloaded');
       await page.waitForSelector('#root', { timeout: 5000 });
-      await page.waitForTimeout(2000); // Smanjeno s 5+3 na 2 sekunde
+      await page.waitForTimeout(2000);
       logs.push('✓ React učitan');
       await page.waitForTimeout(1500);
       try {
@@ -914,6 +930,16 @@ class TestRunnerService {
       });
       logs.push('✓ Screenshot 03 sprema');
 
+      // Network dijagnostika – koji API zahtjevi su otišli iz browsera
+      if (networkApiCalls.length > 0) {
+        logs.push(`🌐 Playwright network: ${networkApiCalls.length} API zahtjeva uhvaćeno:`);
+        networkApiCalls.slice(0, 20).forEach(c => {
+          logs.push(`   ${c.method} ${c.url} → ${c.status || '?'}`);
+        });
+      } else {
+        logs.push('🌐 Playwright network: 0 API zahtjeva uhvaćeno (frontend nije slao nijedan /api/ zahtjev!)');
+      }
+
       await context.close();
       await browser.close();
 
@@ -925,8 +951,9 @@ class TestRunnerService {
         testId,
         screenshots,
         logs,
+        networkApiCalls: networkApiCalls.slice(0, 30),
         message: 'Registracija uspješna',
-        uniqueEmail: uniqueEmail // Vrati uniqueEmail da se može koristiti za filtriranje mailova
+        uniqueEmail: uniqueEmail
       };
     } catch (error) {
       console.error(`[TEST RUNNER] Test ${testId} failed:`, error);
