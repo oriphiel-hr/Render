@@ -889,7 +889,7 @@ class TestRunnerService {
       try {
         await Promise.race([
           page.waitForNavigation({ waitUntil: 'load', timeout: 20000 }),
-          page.waitForURL(u => u.includes('register-user') || u.includes('/login') || u.includes('/dashboard'), { timeout: 20000 }),
+          page.waitForURL(u => { const href = typeof u === 'string' ? u : (u && u.href); return href && (href.includes('register-user') || href.includes('/login') || href.includes('/dashboard')); }, { timeout: 20000 }),
           page.locator('text=Potvrdite').first().waitFor({ state: 'visible', timeout: 20000 })
         ]);
         logs.push('✓ Navigacija ili poruka uspjeha');

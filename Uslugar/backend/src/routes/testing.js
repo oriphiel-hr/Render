@@ -598,7 +598,10 @@ r.post('/run-single', async (req, res, next) => {
     console.log(`[TEST] Korak 1: Pokrećem ${isApiOnlyTest ? 'API' : 'Playwright'} test...`);
     let testResult;
     let apiCalls = [];
-    const apiBaseUrl = req.body.apiBaseUrl || `${req.protocol}://${req.get('host')}`;
+    // Da apiRequestLog na ovom backendu bilježi zahtjeve iz testa, Playwright mora otvoriti frontend
+    // s apiUrl = ovaj backend. Zato uvijek koristimo URL ovog backenda (env ili request host),
+    // ne req.body.apiBaseUrl koji frontend šalje (npr. api.uslugar.eu).
+    const apiBaseUrl = process.env.API_BASE_URL || process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
     testRunnerService.setApiBaseUrl?.(apiBaseUrl);
 
     try {
@@ -823,15 +826,17 @@ r.post('/run-single', async (req, res, next) => {
           const afterApi = afterTable?.count ?? 0;
           const newApiRecords = fullRecords.filter(r => r?.id && !beforeIds.has(r.id));
           const addedApi = newApiRecords.length;
-          const fields = ['id', 'method', 'path', 'statusCode', 'userId', 'responseTime', 'errorMessage', 'requestBody', 'responseBody', 'createdAt'];
+          // Ista struktura kao clientVerification: beforeCount, afterCount, added, newRecords s punim podacima (request/response u bazi već logira api-request-logger)
+          const apiLogFields = ['id', 'method', 'path', 'statusCode', 'userId', 'ipAddress', 'userAgent', 'responseTime', 'errorMessage', 'requestBody', 'responseBody', 'createdAt'];
           checkpointDelta.apiRequestLog = checkpointDelta.apiRequestLog || {
             beforeCount: beforeApi,
             afterCount: afterApi,
             added: addedApi,
             newRecords: newApiRecords.slice(0, 10).map(r => {
               const rec = {};
-              for (const f of fields) {
-                if (r[f] !== undefined) rec[f] = r[f] instanceof Date ? r[f].toISOString() : r[f];
+              for (const f of apiLogFields) {
+                if (r[f] === undefined) continue;
+                rec[f] = r[f] instanceof Date ? r[f].toISOString() : r[f];
               }
               return rec;
             })
