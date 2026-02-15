@@ -1,11 +1,14 @@
 /**
  * HTTP server za Registar poslovnih subjekata.
  * - GET/POST /api/token – OAuth token za Sudski registar.
- * - GET /api/sudreg/:endpoint – proxy prema sudreg-data.gov.hr (samo dohvat, bez spremanja u bazu).
+ * - GET /api/sudreg/:endpoint – proxy prema sudreg-data.gov.hr (samo dohvat).
+ * - Svaki proxy poziv zapisuje se u sudreg_proxy_log (endpoint, parametri, status, trajanje, headeri).
  */
 const http = require('http');
 const https = require('https');
+const { PrismaClient } = require('@prisma/client');
 
+const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3000;
 const SUDREG_API_BASE = process.env.SUDREG_API_BASE || 'https://sudreg-data.gov.hr/api/javni';
 const SUDREG_TOKEN_URL = process.env.SUDREG_TOKEN_URL || 'https://sudreg-data.gov.hr/api/oauth/token';
@@ -142,22 +145,46 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // GET /api/sudreg/:endpoint – proxy (samo dohvat, bez spremanja u bazu)
+  // GET /api/sudreg/:endpoint – proxy (samo dohvat) + zapis u sudreg_proxy_log
   const sudregMatch = path.match(/^\/api\/sudreg\/(.+)$/);
   if (method === 'GET' && sudregMatch) {
     const endpoint = sudregMatch[1].replace(/\/$/, '');
     const queryString = url.search ? url.search.slice(1) : '';
     const snapshotId = url.searchParams.get('X-Snapshot-Id') || req.headers['x-snapshot-id'];
+    const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.headers['x-real-ip'] || null;
+    const userAgent = req.headers['user-agent'] || null;
+    const startMs = Date.now();
     try {
       const token = await getSudregToken();
       const result = await proxyWithToken(endpoint, queryString, snapshotId, token);
+      const durationMs = Date.now() - startMs;
       sendJson(result.statusCode, result.body);
+      // Zapis u bazu (ne blokira odgovor; greške samo u konzolu)
+      prisma.sudregProxyLog.create({
+        data: {
+          endpoint,
+          queryString: queryString || null,
+          responseStatus: result.statusCode,
+          durationMs,
+          clientIp: clientIp || null,
+          userAgent: userAgent || null,
+        },
+      }).catch((e) => console.error('SudregProxyLog create error:', e.message));
     } catch (err) {
-      if (err.statusCode) {
-        sendJson(err.statusCode, err.body || { error: 'sudreg_error' });
-      } else {
-        sendJson(502, { error: 'proxy_failed', message: err.message });
-      }
+      const durationMs = Date.now() - startMs;
+      const statusCode = err.statusCode || 502;
+      const body = err.body || { error: 'proxy_failed', message: err.message };
+      sendJson(statusCode, body);
+      prisma.sudregProxyLog.create({
+        data: {
+          endpoint,
+          queryString: queryString || null,
+          responseStatus: statusCode,
+          durationMs,
+          clientIp: clientIp || null,
+          userAgent: userAgent || null,
+        },
+      }).catch((e) => console.error('SudregProxyLog create error:', e.message));
     }
     return;
   }

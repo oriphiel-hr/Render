@@ -4,6 +4,8 @@ Ovaj servis izlaže **samo dohvat** (proxy) prema [sudreg-data.gov.hr](https://s
 
 **Autorizacija:** Servis sam dohvaća OAuth token (cache 6 h). Klijent ne šalje credentials.
 
+**Logiranje:** Svaki poziv na `/api/sudreg/:endpoint` zapisuje se u tablicu **sudreg_proxy_log**: endpoint, query_string, response_status, duration_ms, client_ip (iz X-Forwarded-For / X-Real-IP), user_agent, created_at. Korisno za audit, statistiku i debug.
+
 **Base URL:** `https://registar-poslovnih-subjekata.onrender.com` (ili lokalno `http://localhost:PORT`)
 
 ---
