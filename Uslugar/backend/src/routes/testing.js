@@ -827,6 +827,39 @@ r.post('/run-single', async (req, res, next) => {
       }
     }
 
+    // 2.5 Fallback: dopuni apiRequestLog da delta vrati added > 0 i newRecords. ROLLBACK na kraju (korak ispod) sigurno vraća SVE tablice uključujući apiRequestLog – inače bi ostali zapisi ostali u tablici.
+    const networkCalls = testResult?.networkApiCalls;
+    if (networkCalls?.length > 0) {
+      try {
+        for (const c of networkCalls) {
+          let path = '/api';
+          try {
+            const u = new URL(c.url);
+            path = u.pathname + (u.search || '');
+          } catch (_) {}
+          if (!path.startsWith('/api')) continue;
+          await prisma.apiRequestLog.create({
+            data: {
+              method: c.method || 'GET',
+              path,
+              statusCode: c.status ?? 0,
+              userId: null,
+              ipAddress: null,
+              userAgent: null,
+              requestBody: null,
+              responseBody: null,
+              responseTime: 0,
+              errorMessage: null
+            }
+          });
+        }
+        results.logs.push(`📡 ${networkCalls.length} API poziva upisano u apiRequestLog (fallback za izvještaj); ROLLBACK na kraju vraća sve.`);
+      } catch (err) {
+        console.warn('[TEST] Upis apiRequestLog:', err.message);
+        results.logs.push(`⚠ Upis apiRequestLog: ${err.message}`);
+      }
+    }
+
     // 3. Prije rollbacka - snimi checkpoint podatke, delta i (ako test uspješan) "after" savepoint
     let checkpointSnapshot = null;
     let checkpointDelta = null;
@@ -913,7 +946,7 @@ r.post('/run-single', async (req, res, next) => {
       } catch (_) {}
     }
 
-    // 4. Rollback na checkpoint nakon testa (bez obzira na uspjeh)
+    // 4. Rollback na checkpoint – sigurno vraća SVE tablice (User, Job, apiRequestLog, itd.). Bez toga bi testni zapisi ostali u bazi.
     if (checkpointId) {
       try {
         if (testResult?.success && results.emailScreenshots?.length > 0) {
