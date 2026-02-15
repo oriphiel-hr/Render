@@ -2613,7 +2613,7 @@ class TestRunnerService {
       const blockLogs = [];
       try {
         const result = await this._executeBlock(blockId, context, userData, blockLogs, testId);
-        allLogs.push(...blockLogs);
+        allLogs.push(...(result.logs || []));
         if (result.screenshots?.length) allScreenshots.push(...result.screenshots);
 
         if (result.success) {
