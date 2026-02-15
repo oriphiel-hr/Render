@@ -885,16 +885,20 @@ class TestRunnerService {
         throw new Error(`Register button not found with any selector`);
       }
 
-      // Čekaj navigaciju ili poruku uspjeha
+      // Čekaj navigaciju ili poruku uspjeha (SPA često ne radi full reload, pa networkidle nikad ne nastupi)
       try {
-        await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 30000 });
-        logs.push('✓ Navigacija nakon registracije');
+        await Promise.race([
+          page.waitForNavigation({ waitUntil: 'load', timeout: 20000 }),
+          page.waitForURL(u => u.includes('register-user') || u.includes('/login') || u.includes('/dashboard'), { timeout: 20000 }),
+          page.locator('text=Potvrdite').first().waitFor({ state: 'visible', timeout: 20000 })
+        ]);
+        logs.push('✓ Navigacija ili poruka uspjeha');
       } catch (e) {
-        logs.push(`⚠ Navigacija timeout - provjeravam poruku uspjeha: ${e.message}`);
+        logs.push(`⚠ Timeout - provjeravam poruku uspjeha: ${e.message}`);
       }
-      
-      // Provjeri da li je registracija stvarno uspjela
-      await page.waitForTimeout(2000); // Čekaj da se stranica učita
+
+      // Kratka pauza da se DOM ažurira prije provjere
+      await page.waitForTimeout(1500);
       
       const finalUrl = page.url();
       const pageContent = await page.textContent('body');
