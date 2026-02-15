@@ -598,10 +598,12 @@ r.post('/run-single', async (req, res, next) => {
     console.log(`[TEST] Korak 1: Pokrećem ${isApiOnlyTest ? 'API' : 'Playwright'} test...`);
     let testResult;
     let apiCalls = [];
-    // Da apiRequestLog na ovom backendu bilježi zahtjeve iz testa, Playwright mora otvoriti frontend
-    // s apiUrl = ovaj backend. Zato uvijek koristimo URL ovog backenda (env ili request host),
-    // ne req.body.apiBaseUrl koji frontend šalje (npr. api.uslugar.eu).
-    const apiBaseUrl = process.env.API_BASE_URL || process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
+    // Da apiRequestLog na ovom backendu bilježi zahtjeve, zahtjevi iz testa moraju ići na ISTI backend
+    // koji prima ovaj run-single. Zato koristimo request host (server koji nas je pozvao), ne env.
+    // Env (RUN_SINGLE_API_BASE_URL / API_BASE_URL) samo ako je request host krivi (npr. iza proxyja).
+    const host = req.get('host');
+    const requestOrigin = host ? `${req.protocol}://${host}` : null;
+    const apiBaseUrl = process.env.RUN_SINGLE_API_BASE_URL || requestOrigin || process.env.API_BASE_URL || process.env.BACKEND_URL;
     testRunnerService.setApiBaseUrl?.(apiBaseUrl);
 
     try {
@@ -842,7 +844,7 @@ r.post('/run-single', async (req, res, next) => {
             })
           };
           if (addedApi === 0 && afterApi > 0) {
-            checkpointDelta.apiRequestLog._note = 'Zahtjevi iz testa nisu prošli ovim backendom (0 novih). FRONTEND_URL treba biti frontend buildan s VITE_API_URL = URL ovog backenda.';
+            checkpointDelta.apiRequestLog._note = 'Zahtjevi iz testa nisu prošli ovim backendom (0 novih). Pokreni test s istog backenda na kojem želiš API log (run-single i zahtjevi iz preglednika moraju ići na isti server).';
           }
 
           // Ako je test uspješan - kreiraj "after" savepoint (stanje baze nakon testa, prije rollbacka)
