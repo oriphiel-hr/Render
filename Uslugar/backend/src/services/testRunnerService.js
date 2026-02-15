@@ -2585,7 +2585,8 @@ class TestRunnerService {
         success: result.success,
         context: nextContext,
         logs: mergedLogs,
-        screenshots: mergedScreenshots
+        screenshots: mergedScreenshots,
+        networkApiCalls: result.networkApiCalls
       };
     }
 
@@ -2611,6 +2612,7 @@ class TestRunnerService {
 
     allLogs.push(`🧱 Blokovski orkestrator: ${blocks.join(' → ')}`);
     let context = {};
+    const allNetworkApiCalls = [];
 
     for (let i = 0; i < blocks.length; i++) {
       const blockId = blocks[i];
@@ -2619,6 +2621,7 @@ class TestRunnerService {
         const result = await this._executeBlock(blockId, context, userData, blockLogs, testId);
         allLogs.push(...(result.logs || []));
         if (result.screenshots?.length) allScreenshots.push(...result.screenshots);
+        if (result.networkApiCalls?.length) allNetworkApiCalls.push(...result.networkApiCalls);
 
         if (result.success) {
           blockStatuses.push({ id: blockId, status: 'ok' });
@@ -2631,7 +2634,8 @@ class TestRunnerService {
             screenshots: allScreenshots,
             blockStatuses,
             message: `Blok '${blockId}' pao`,
-            uniqueEmail: context?.uniqueEmail
+            uniqueEmail: context?.uniqueEmail,
+            networkApiCalls: allNetworkApiCalls
           };
         }
       } catch (e) {
@@ -2644,7 +2648,8 @@ class TestRunnerService {
           blockStatuses,
           message: `Blok '${blockId}' izuzetak: ${e.message}`,
           error: e.message,
-          uniqueEmail: context?.uniqueEmail
+          uniqueEmail: context?.uniqueEmail,
+          networkApiCalls: allNetworkApiCalls
         };
       }
     }
@@ -2655,7 +2660,8 @@ class TestRunnerService {
       screenshots: allScreenshots,
       blockStatuses,
       message: `Svi blokovi prošli: ${blocks.join(', ')}`,
-      uniqueEmail: context?.uniqueEmail
+      uniqueEmail: context?.uniqueEmail,
+      networkApiCalls: allNetworkApiCalls.length ? allNetworkApiCalls : undefined
     };
   }
 }

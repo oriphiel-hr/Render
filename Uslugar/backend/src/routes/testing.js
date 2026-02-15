@@ -849,7 +849,7 @@ r.post('/run-single', async (req, res, next) => {
           const afterApi = afterTable?.count ?? 0;
           const newApiRecords = fullRecords.filter(r => r?.id && !beforeIds.has(r.id));
           const addedApi = newApiRecords.length;
-          // Ista struktura kao clientVerification: beforeCount, afterCount, added, newRecords s punim podacima (request/response u bazi već logira api-request-logger)
+          // newRecords uključuje requestBody i responseBody (iz apiRequestLoggera) – za prikaz što je poslano i što je vratio svaki API poziv
           const apiLogFields = ['id', 'method', 'path', 'statusCode', 'userId', 'ipAddress', 'userAgent', 'responseTime', 'errorMessage', 'requestBody', 'responseBody', 'createdAt'];
           checkpointDelta.apiRequestLog = checkpointDelta.apiRequestLog || {
             beforeCount: beforeApi,
@@ -864,6 +864,11 @@ r.post('/run-single', async (req, res, next) => {
               return rec;
             })
           };
+          // Dijagnostika: koliko je u ovoj bazi upisano apiRequestLog od početka testa (bez obzira na checkpoint)
+          const sinceTestStart = new Date(startTime - 5000);
+          const countSinceTestStart = await prisma.apiRequestLog.count({ where: { createdAt: { gte: sinceTestStart } } }).catch(() => 0);
+          checkpointDelta.apiRequestLog._countSinceTestStart = countSinceTestStart;
+
           if (addedApi === 0 && afterApi > 0) {
             const injected = apiBaseUrl;
             const received = results._requestHost || '';
@@ -872,9 +877,13 @@ r.post('/run-single', async (req, res, next) => {
             try { originInjected = new URL(injected).origin; } catch (_) {}
             try { originReceived = received ? new URL(received).origin : ''; } catch (_) {}
             const sameOrigin = originInjected && originReceived && originInjected === originReceived;
-            checkpointDelta.apiRequestLog._note = sameOrigin
-              ? 'Zahtjevi iz testa nisu prošli ovim backendom (0 novih). Isti origin – provjeri je li apiRequestLogger aktivan ili druga instanca/load balancer.'
-              : `Zahtjevi iz testa idu na drugi server: test šalje na ${injected} (izvor: ${results._apiBaseUrlSource}), run-single primljen na ${received}. Da bi added > 0, otvori Admin na ${received} i pokreni test, ili postavi apiBaseUrl na ${received}.`;
+            if (sameOrigin) {
+              checkpointDelta.apiRequestLog._note = countSinceTestStart === 0
+                ? 'Isti origin, ali u ovoj bazi 0 novih zapisa od početka testa (_countSinceTestStart=0). Zahtjevi s api.uslugar.eu vjerojatno prima druga instanca s drugom bazom (ili apiRequestLogger ne upisuje – provjeri logove backenda).'
+                : `Isti origin. U bazi je ${countSinceTestStart} novih zapisa od početka testa, ali delta (checkpoint vs sada) ne vidi ih kao nove – moguće stare recordIds u checkpointu.`;
+            } else {
+              checkpointDelta.apiRequestLog._note = `Zahtjevi idu na drugi server: test šalje na ${injected}, run-single primljen na ${received}. Da bi added > 0, otvori Admin na ${received} i pokreni test.`;
+            }
           }
 
           // Ako je test uspješan - kreiraj "after" savepoint (stanje baze nakon testa, prije rollbacka)
