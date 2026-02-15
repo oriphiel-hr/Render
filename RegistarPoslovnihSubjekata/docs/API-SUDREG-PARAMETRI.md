@@ -1,10 +1,10 @@
 # API Sudskog registra – endpointe i parametri
 
-Ovaj servis izlaže **samo dohvat** (proxy) prema [sudreg-data.gov.hr](https://sudreg-data.gov.hr). Zahtjevi idu na `GET /api/sudreg/:endpoint`; query parametri i header `X-Snapshot-Id` prosljeđuju se Sudreg API-ju. **Podaci se ne spremaju u bazu** – to je zasebna funkcionalnost (ETL/sync).
+Ovaj servis izlaže **samo dohvat** (proxy) prema [sudreg-data.gov.hr](https://sudreg-data.gov.hr). Zahtjevi idu na `GET /api/sudreg_<endpoint>` (npr. `/api/sudreg_sudovi`, `/api/sudreg_detalji_subjekta`); query parametri i header `X-Snapshot-Id` prosljeđuju se Sudreg API-ju. **Podaci se ne spremaju u bazu** – to je zasebna funkcionalnost (ETL/sync).
 
 **Autorizacija:** Servis sam dohvaća OAuth token (cache 6 h). Klijent ne šalje credentials.
 
-**Logiranje:** Svaki poziv na `/api/sudreg/:endpoint` zapisuje se u tablicu **sudreg_proxy_log**: endpoint, query_string, response_status, duration_ms, client_ip (iz X-Forwarded-For / X-Real-IP), user_agent, created_at. Korisno za audit, statistiku i debug.
+**Logiranje:** Svaki poziv na `/api/sudreg_<endpoint>` zapisuje se u tablicu **sudreg_proxy_log** (u polju endpoint: npr. `sudreg_sudovi`): endpoint, query_string, response_status, duration_ms, client_ip (iz X-Forwarded-For / X-Real-IP), user_agent, created_at. Korisno za audit, statistiku i debug.
 
 **Base URL:** `https://registar-poslovnih-subjekata.onrender.com` (ili lokalno `http://localhost:PORT`)
 
@@ -13,9 +13,11 @@ Ovaj servis izlaže **samo dohvat** (proxy) prema [sudreg-data.gov.hr](https://s
 ## Format poziva
 
 ```
-GET /api/sudreg/{endpoint}?param1=value1&param2=value2
+GET /api/sudreg_{endpoint}?param1=value1&param2=value2
 Header: X-Snapshot-Id (opcionalno) – za konzistentan snapshot
 ```
+
+Primjer: `GET /api/sudreg_sudovi`, `GET /api/sudreg_detalji_subjekta?tip_identifikatora=oib&identifikator=...`
 
 ---
 
@@ -75,25 +77,25 @@ curl "https://registar-poslovnih-subjekata.onrender.com/api/token"
 
 **Detalji subjekta po OIB-u:**
 ```bash
-curl "https://registar-poslovnih-subjekata.onrender.com/api/sudreg/detalji_subjekta?tip_identifikatora=oib&identifikator=12345678901&expand_relations=true"
+curl "https://registar-poslovnih-subjekata.onrender.com/api/sudreg_detalji_subjekta?tip_identifikatora=oib&identifikator=12345678901&expand_relations=true"
 ```
 
 **Detalji subjekta po MBS-u:**
 ```bash
-curl "https://registar-poslovnih-subjekata.onrender.com/api/sudreg/detalji_subjekta?tip_identifikatora=mbo&identifikator=080229250&expand_relations=true"
+curl "https://registar-poslovnih-subjekata.onrender.com/api/sudreg_detalji_subjekta?tip_identifikatora=mbo&identifikator=080229250&expand_relations=true"
 ```
 
 **Sudovi (šifrarnik):**
 ```bash
-curl "https://registar-poslovnih-subjekata.onrender.com/api/sudreg/sudovi?expand_relations=true"
+curl "https://registar-poslovnih-subjekata.onrender.com/api/sudreg_sudovi?expand_relations=true"
 ```
 
 **Snapshots:**
 ```bash
-curl "https://registar-poslovnih-subjekata.onrender.com/api/sudreg/snapshots"
+curl "https://registar-poslovnih-subjekata.onrender.com/api/sudreg_snapshots"
 ```
 
 **S konzistentnim snapshotom (header):**
 ```bash
-curl -H "X-Snapshot-Id: 12345" "https://registar-poslovnih-subjekata.onrender.com/api/sudreg/subjekti?page=1&limit=10"
+curl -H "X-Snapshot-Id: 12345" "https://registar-poslovnih-subjekata.onrender.com/api/sudreg_subjekti?page=1&limit=10"
 ```

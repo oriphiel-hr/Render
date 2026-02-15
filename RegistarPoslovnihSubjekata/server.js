@@ -1,7 +1,7 @@
 /**
  * HTTP server za Registar poslovnih subjekata.
  * - GET/POST /api/token – OAuth token za Sudski registar.
- * - GET /api/sudreg/:endpoint – proxy prema sudreg-data.gov.hr (samo dohvat).
+ * - GET /api/sudreg_:endpoint – proxy prema sudreg-data.gov.hr (npr. /api/sudreg_sudovi, /api/sudreg_detalji_subjekta).
  * - Svaki proxy poziv zapisuje se u sudreg_proxy_log (endpoint, parametri, status, trajanje, headeri).
  */
 const http = require('http');
@@ -127,7 +127,7 @@ const server = http.createServer(async (req, res) => {
       status: 'ok',
       endpoints: {
         token: 'GET|POST /api/token',
-        sudreg: 'GET /api/sudreg/:endpoint (query params i X-Snapshot-Id proslijeđeni Sudregu)',
+        sudreg: 'GET /api/sudreg_<endpoint> (npr. /api/sudreg_sudovi, /api/sudreg_detalji_subjekta)',
       },
     });
     return;
@@ -145,10 +145,11 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // GET /api/sudreg/:endpoint – proxy (samo dohvat) + zapis u sudreg_proxy_log
-  const sudregMatch = path.match(/^\/api\/sudreg\/(.+)$/);
+  // GET /api/sudreg_:endpoint – proxy (samo dohvat) + zapis u sudreg_proxy_log; u logu endpoint = sudreg_*
+  const sudregMatch = path.match(/^\/api\/sudreg_(.+)$/);
   if (method === 'GET' && sudregMatch) {
-    const endpoint = sudregMatch[1].replace(/\/$/, '');
+    const endpointSuffix = sudregMatch[1].replace(/\/$/, ''); // npr. sudovi, detalji_subjekta
+    const endpointForLog = 'sudreg_' + endpointSuffix;        // u log: sudreg_sudovi
     const queryString = url.search ? url.search.slice(1) : '';
     const snapshotId = url.searchParams.get('X-Snapshot-Id') || req.headers['x-snapshot-id'];
     const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.headers['x-real-ip'] || null;
@@ -156,13 +157,12 @@ const server = http.createServer(async (req, res) => {
     const startMs = Date.now();
     try {
       const token = await getSudregToken();
-      const result = await proxyWithToken(endpoint, queryString, snapshotId, token);
+      const result = await proxyWithToken(endpointSuffix, queryString, snapshotId, token);
       const durationMs = Date.now() - startMs;
       sendJson(result.statusCode, result.body);
-      // Zapis u bazu (ne blokira odgovor; greške samo u konzolu)
       prisma.sudregProxyLog.create({
         data: {
-          endpoint,
+          endpoint: endpointForLog,
           queryString: queryString || null,
           responseStatus: result.statusCode,
           durationMs,
@@ -177,7 +177,7 @@ const server = http.createServer(async (req, res) => {
       sendJson(statusCode, body);
       prisma.sudregProxyLog.create({
         data: {
-          endpoint,
+          endpoint: endpointForLog,
           queryString: queryString || null,
           responseStatus: statusCode,
           durationMs,
