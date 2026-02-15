@@ -1,0 +1,157 @@
+// Predložak sheme za RegistarPoslovnihSubjekata
+// Izvučeno iz: https://sudreg-data.gov.hr/api/javni/dokumentacija/open_api
+// Generator: Prisma (prisma generate)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Izvor podataka (tvrtka/obrt/OPG može doći iz više registara) ---
+enum Izvor {
+  SUDREG       // Sudski registar
+  FINA
+  OBRTNI
+  OPG
+}
+
+// --- Glavna agregirana tablica za pretragu ---
+model Subjekt {
+  id             String    @id @default(uuid())
+  izvor          Izvor
+  externalId     String    @map("external_id")   // MBS za SUDREG
+  oib            String?   @db.VarChar(11)
+  mb             String?   @db.VarChar(8)
+  status         Int       @default(1)          // 0 neaktivan, 1 aktivan
+  nazivPuni      String?   @map("naziv_puni")    @db.VarChar(1024)
+  nazivNaznaka   String?   @map("naziv_naznaka") @db.VarChar(512)
+  nazivSkraceni  String?   @map("naziv_skraceni") @db.VarChar(512)
+  inoPodruznica  Int?      @map("ino_podruznica") @default(0)
+  postupak       Int?                            // šifra postupka (stečaj, likvidacija)
+  datumOsnivanja DateTime? @map("datum_osnivanja") @db.Date
+  datumBrisanja  DateTime? @map("datum_brisanja")  @db.Date
+  snapshotId     BigInt?   @map("snapshot_id")  // X-Snapshot-Id iz Sudskog registra
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  adrese         SubjektAdresa[]
+  emailovi       SubjektEmail[]
+  djelatnosti    SubjektDjelatnost[]
+  kapitali       SubjektTemeljniKapital[]
+  pravniOblik    SubjektPravniOblik?
+  postupakRow    SubjektPostupak?
+
+  @@unique([izvor, externalId])
+  @@index([oib])
+  @@index([nazivPuni])
+  @@map("subjekt")
+}
+
+// --- Sjedišta / adrese (API: sjedista) ---
+model SubjektAdresa {
+  id                 BigInt   @id @default(autoincrement())
+  subjektId          String   @map("subjekt_id")
+  redniBroj          Int      @default(1) @map("redni_broj")
+  drzavaId           BigInt?  @map("drzava_id")
+  sifraZupanije      Int?     @map("sifra_zupanije")
+  nazivZupanije      String?  @map("naziv_zupanije") @db.VarChar(128)
+  sifraOpcine        Int?     @map("sifra_opcine")
+  nazivOpcine        String?  @map("naziv_opcine")   @db.VarChar(128)
+  sifraNaselja       BigInt?  @map("sifra_naselja")
+  nazivNaselja       String?  @map("naziv_naselja") @db.VarChar(128)
+  naseljeVanSifrarnika String? @map("naselje_van_sifrarnika") @db.VarChar(128)
+  sifraUlice         BigInt?  @map("sifra_ulice")
+  ulica              String?  @db.VarChar(512)
+  kucniBroj          Int?     @map("kucni_broj")
+  kucniPodbroj       String?  @map("kucni_podbroj") @db.VarChar(10)
+  postanskiBroj      Int?     @map("postanski_broj")
+
+  subjekt            Subjekt @relation(fields: [subjektId], references: [id], onDelete: Cascade)
+
+  @@index([subjektId])
+  @@map("subjekt_adresa")
+}
+
+// --- Email adrese (API: email_adrese) ---
+model SubjektEmail {
+  id        BigInt @id @default(autoincrement())
+  subjektId String @map("subjekt_id")
+  redniBroj Int    @map("redni_broj")  // email_adresa_rbr
+  adresa    String @db.VarChar(256)
+
+  subjekt   Subjekt @relation(fields: [subjektId], references: [id], onDelete: Cascade)
+
+  @@index([subjektId])
+  @@map("subjekt_email")
+}
+
+// --- Pravni oblik (API: pravni_oblici) ---
+model SubjektPravniOblik {
+  id                      BigInt  @id @default(autoincrement())
+  subjektId               String  @unique @map("subjekt_id")
+  vrstaPravnogOblikaId    BigInt  @map("vrsta_pravnog_oblika_id")
+
+  subjekt                 Subjekt @relation(fields: [subjektId], references: [id], onDelete: Cascade)
+
+  @@map("subjekt_pravni_oblik")
+}
+
+// --- Djelatnosti: pretežita, predmet poslovanja, evidencijska (API: pretezite_djelatnosti, predmeti_poslovanja, evidencijske_djelatnosti) ---
+enum VrstaDjelatnosti {
+  pretezita
+  predmet_poslovanja
+  evidencijska
+}
+
+model SubjektDjelatnost {
+  id                              BigInt          @id @default(autoincrement())
+  subjektId                       String          @map("subjekt_id")
+  redniBroj                       Int             @map("redni_broj")
+  vrsta                           VrstaDjelatnosti
+  nacionalnaKlasifikacijaDjelatnostiId BigInt?    @map("nacionalna_klasifikacija_djelatnosti_id")
+  djelatnostTekst                 String?         @map("djelatnost_tekst") @db.VarChar(4000)
+
+  subjekt                         Subjekt @relation(fields: [subjektId], references: [id], onDelete: Cascade)
+
+  @@index([subjektId])
+  @@map("subjekt_djelatnost")
+}
+
+// --- Temeljni kapitali (API: temeljni_kapitali) ---
+model SubjektTemeljniKapital {
+  id                    BigInt   @id @default(autoincrement())
+  subjektId             String   @map("subjekt_id")
+  temeljniKapitalRbr    Int      @map("temeljni_kapital_rbr")
+  valutaId              BigInt   @map("valuta_id")
+  iznos                 Decimal  @db.Decimal(22, 2)
+
+  subjekt               Subjekt  @relation(fields: [subjektId], references: [id], onDelete: Cascade)
+
+  @@index([subjektId])
+  @@map("subjekt_temeljni_kapital")
+}
+
+// --- Postupak: stečaj, likvidacija (API: postupci) ---
+model SubjektPostupak {
+  id             BigInt    @id @default(autoincrement())
+  subjektId      String    @unique @map("subjekt_id")
+  postupak       Int       // šifra vrste postupka
+  datumStecaja   DateTime? @map("datum_stecaja") @db.Date
+
+  subjekt        Subjekt   @relation(fields: [subjektId], references: [id], onDelete: Cascade)
+
+  @@map("subjekt_postupak")
+}
+
+// --- Snimke Sudskog registra (API: snapshots) – za konzistentno ETL ---
+model Snapshot {
+  id              BigInt    @id  // snapshot_id iz API-ja
+  timestamp       DateTime  @db.Timestamp(6)
+  availableUntil  DateTime  @map("available_until") @db.Timestamp(6)
+  staleness       Int       // 1=zadnja, 2=predzadnja
+
+  @@map("snapshot")
+}
