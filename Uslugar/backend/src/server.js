@@ -209,8 +209,7 @@ app.use((req, res, next) => {
 app.use(express.json())
 app.use(morgan('dev'))
 
-// API Request Logger – svaki API zahtjev (osim /health) upisuje se u apiRequestLog u ovom procesu.
-// Jedini izvor upisa: tko god primi zahtjev, on upisuje. Rezultat u delti ovisi o tome da run-single i zahtjevi idu na isti backend (ista baza).
+// API Request Logger – svaki API zahtjev (osim /health) upisuje u apiRequestLog. Nije bitno s koje instance je pozvan – baza je jedna (DATABASE_URL).
 app.use(apiRequestLogger)
 
 // Health check endpoints - OVO MORA BITI NAJBLIŽE POČETKU DA BI RADILO PRIJE INICIJALIZACIJE

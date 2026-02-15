@@ -1,6 +1,7 @@
 /**
  * API Request Logger Middleware
- * Logira sve API zahtjeve u bazu za monitoring i debugging
+ * Logira sve API zahtjeve u bazu za monitoring i debugging.
+ * Nije bitno tko poziva API ni s koje instance – API zna u koju bazu upisati (isti DATABASE_URL).
  */
 
 import { prisma } from './prisma.js';
@@ -128,6 +129,8 @@ async function logRequest(data) {
         errorMessage: data.errorMessage
       }
     });
+    // Jedna baza: svaki proces koji primi zahtjev upisuje u istu DB – u logovima vidiš tko je zapisao
+    console.log('[apiRequestLog]', data.method, data.path, data.statusCode);
   } catch (error) {
     // Ne bacaj grešku - logging ne smije blokirati aplikaciju
     console.error('Error creating API request log:', error);
