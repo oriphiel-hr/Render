@@ -159,17 +159,19 @@ const SYNC_CONFIG = {
   },
 };
 
-/** Sync metode promjene: dohvaća cijeli popis (offset/limit), sprema stavke s snapshotId iz headera. requestedSnapshotId = opcionalno. Na početku briše postojeće redove za taj snapshot (čisto snimanje). Pri grešci: rollback – briše sve upisane redove za taj snapshot. */
+/** Sync metode promjene: dohvaća cijeli popis (offset/limit), sprema stavke. requestedSnapshotId = opcionalno. Na početku briše postojeće redove za taj snapshot. Pri grešci: rollback. Faza (phase) u logu/odgovoru: token|fetch|write – za dijagnostiku tko prekida (Render vs Sudreg API). */
 async function runSyncPromjene(sendJson, requestedSnapshotId = null) {
   const BATCH_SIZE = 500;
   const startMs = Date.now();
-  let writtenSnapshotId = null; // za rollback ako se prekine
+  let writtenSnapshotId = null;
+  let lastPhase = 'token'; // token | fetch | write – gdje je došlo do greške
   try {
     if (requestedSnapshotId != null && requestedSnapshotId !== '') {
       const sid = BigInt(Number(requestedSnapshotId));
       const deleted = await prisma.promjeneStavka.deleteMany({ where: { snapshotId: sid } });
       if (deleted?.count > 0) console.log('[Sync promjene] Na početku obrisano', deleted.count, 'redaka za snapshot', requestedSnapshotId);
     }
+    lastPhase = 'token';
     const token = await getSudregToken();
     let offset = 0;
     let totalSynced = 0;
@@ -177,6 +179,7 @@ async function runSyncPromjene(sendJson, requestedSnapshotId = null) {
     let batchCount = 0;
     let rows;
     do {
+      lastPhase = 'fetch';
       const queryString = `offset=${offset}&limit=${BATCH_SIZE}`;
       const result = await proxyWithToken('promjene', queryString, requestedSnapshotId, token);
       if (result.statusCode !== 200 || !Array.isArray(result.body)) {
@@ -205,6 +208,7 @@ async function runSyncPromjene(sendJson, requestedSnapshotId = null) {
           vrijeme,
         };
       }).filter((r) => r.mbs != null);
+      lastPhase = 'write';
       await prisma.$transaction(
         toUpsert.map((row) =>
           prisma.promjeneStavka.upsert({
@@ -230,6 +234,9 @@ async function runSyncPromjene(sendJson, requestedSnapshotId = null) {
       durationMs,
     });
   } catch (err) {
+    const errCode = err.code || err.errno || '';
+    const errMsg = err.message || String(err);
+    console.error('[Sync promjene] GREŠKA phase=%s code=%s batch≈%s message=%s', lastPhase, errCode, batchCount, errMsg);
     if (writtenSnapshotId != null) {
       try {
         const rolled = await prisma.promjeneStavka.deleteMany({ where: { snapshotId: writtenSnapshotId } });
@@ -238,7 +245,13 @@ async function runSyncPromjene(sendJson, requestedSnapshotId = null) {
         console.error('[Sync promjene] Rollback nije uspio:', rollbackErr.message);
       }
     }
-    sendJson(502, { error: 'sync_failed', message: err.message });
+    sendJson(502, {
+      error: 'sync_failed',
+      message: errMsg,
+      errorCode: errCode,
+      phase: lastPhase,
+      hint: lastPhase === 'fetch' ? 'Prekid vjerojatno od strane Sudreg API-ja ili mreže prema njemu.' : (lastPhase === 'write' ? 'Prekid tijekom upisa u bazu (možda Render timeout).' : 'Prekid pri dohvatu tokena.'),
+    });
   }
 }
 
