@@ -159,6 +159,144 @@ const SYNC_CONFIG = {
   },
 };
 
+/** Tablice koje se syncaju po snapshot_id: na početku brišu sve redove za taj snapshot, zatim batch upis. Pri grešci rollback (brišu se upisani redovi za taj snapshot). mapRow(r, snapshotIdBig) vraća objekt za createMany. */
+const toBigInt = (v) => (v != null && v !== '' ? BigInt(Number(v)) : null);
+const toDate = (v) => (v != null && v !== '' ? new Date(v) : null);
+const SYNC_SNAPSHOT_CONFIG = {
+  subjekti: {
+    apiPath: 'subjekti',
+    model: 'subjekti',
+    mapRow: (r, sid) => ({
+      mbs: toBigInt(r.mbs),
+      oib: r.oib ?? null,
+      status: r.status != null ? Number(r.status) : 1,
+      inoPodruznica: r.ino_podruznica != null ? Number(r.ino_podruznica) : 0,
+      postupak: r.postupak != null ? Number(r.postupak) : null,
+      datumOsnivanja: toDate(r.datum_osnivanja),
+      datumBrisanja: toDate(r.datum_brisanja),
+      snapshotId: sid,
+    }),
+  },
+  tvrtke: {
+    apiPath: 'tvrtke',
+    model: 'tvrtke',
+    mapRow: (r, sid) => ({
+      subjektId: toBigInt(r.subjekt_id),
+      ime: r.ime ?? null,
+      naznakaImena: r.naznaka_imena ?? null,
+      snapshotId: sid,
+    }),
+  },
+  sjedista: {
+    apiPath: 'sjedista',
+    model: 'sjedista',
+    mapRow: (r, sid) => ({
+      subjektId: toBigInt(r.subjekt_id),
+      redniBroj: r.redni_broj != null ? Number(r.redni_broj) : 1,
+      drzavaId: toBigInt(r.drzava_id),
+      sifraZupanije: r.sifra_zupanije != null ? Number(r.sifra_zupanije) : null,
+      nazivZupanije: r.naziv_zupanije ?? null,
+      sifraOpcine: r.sifra_opcine != null ? Number(r.sifra_opcine) : null,
+      nazivOpcine: r.naziv_opcine ?? null,
+      sifraNaselja: toBigInt(r.sifra_naselja),
+      nazivNaselja: r.naziv_naselja ?? null,
+      naseljeVanSifrarnika: r.naselje_van_sifrarnika ?? null,
+      sifraUlice: toBigInt(r.sifra_ulice),
+      ulica: r.ulica ?? null,
+      kucniBroj: r.kucni_broj != null ? Number(r.kucni_broj) : null,
+      kucniPodbroj: r.kucni_podbroj ?? null,
+      postanskiBroj: r.postanski_broj != null ? Number(r.postanski_broj) : null,
+      snapshotId: sid,
+    }),
+  },
+};
+
+/** Sync tablice s snapshot_id: delete za snapshot na početku, batch createMany, rollback pri grešci. */
+async function runSyncWithSnapshot(sendJson, endpointName, requestedSnapshotId, config) {
+  const BATCH_SIZE = 500;
+  const startMs = Date.now();
+  let writtenSnapshotId = null;
+  let lastPhase = 'token';
+  let batchCount = 0;
+  try {
+  const model = prisma[config.model];
+  if (!model || typeof model.deleteMany !== 'function') {
+    sendJson(500, { error: 'sync_failed', message: `Model ${config.model} not found` });
+    return;
+  }
+  if (requestedSnapshotId != null && requestedSnapshotId !== '') {
+    const sid = BigInt(Number(requestedSnapshotId));
+    const deleted = await model.deleteMany({ where: { snapshotId: sid } });
+    if (deleted?.count > 0) console.log(`[Sync ${endpointName}] Na početku obrisano`, deleted.count, 'redaka za snapshot', requestedSnapshotId);
+  }
+  lastPhase = 'token';
+  const token = await getSudregToken();
+  let offset = 0;
+  let totalSynced = 0;
+  let snapshotId = null;
+  let rows;
+  do {
+    lastPhase = 'fetch';
+    const queryString = `offset=${offset}&limit=${BATCH_SIZE}`;
+    const result = await proxyWithToken(config.apiPath, queryString, requestedSnapshotId, token);
+    if (result.statusCode !== 200 || !Array.isArray(result.body)) {
+      sendJson(result.statusCode || 500, result.body || { error: 'sync_failed' });
+      return;
+    }
+    rows = result.body;
+    if (result.headers && result.headers.xSnapshotId != null) snapshotId = result.headers.xSnapshotId;
+    if (rows.length === 0) break;
+    const snapshotIdBig = requestedSnapshotId != null && requestedSnapshotId !== ''
+      ? BigInt(Number(requestedSnapshotId))
+      : (snapshotId != null ? BigInt(Number(snapshotId)) : null);
+    if (snapshotIdBig == null) {
+      sendJson(500, { error: 'sync_failed', message: 'X-Snapshot-Id missing; navedi snapshot_id u queryu ili X-Snapshot-Id u headeru' });
+      return;
+    }
+    writtenSnapshotId = snapshotIdBig;
+    lastPhase = 'write';
+    const toInsert = rows.map((r) => config.mapRow(r, snapshotIdBig)).filter((row) => row != null);
+    if (toInsert.length > 0) {
+      await model.createMany({ data: toInsert, skipDuplicates: true });
+    }
+    totalSynced += toInsert.length;
+    batchCount += 1;
+    offset += BATCH_SIZE;
+  } while (rows.length === BATCH_SIZE);
+  const durationMs = Date.now() - startMs;
+  sendJson(200, {
+    ok: true,
+    endpoint: endpointName,
+    synced: totalSynced,
+    batches: batchCount,
+    snapshotId: snapshotId != null ? String(snapshotId) : null,
+    durationMs,
+  });
+  } catch (err) {
+    const errCode = err.code || err.errno || '';
+    const errMsg = err.message || String(err);
+    console.error(`[Sync ${endpointName}] GREŠKA phase=%s code=%s batch≈%s message=%s`, lastPhase, errCode, batchCount, errMsg);
+    if (writtenSnapshotId != null) {
+      try {
+        const model = prisma[config.model];
+        if (model && typeof model.deleteMany === 'function') {
+          const rolled = await model.deleteMany({ where: { snapshotId: writtenSnapshotId } });
+          console.log(`[Sync ${endpointName}] Rollback: obrisano`, rolled?.count ?? 0, 'redaka za snapshot', String(writtenSnapshotId));
+        }
+      } catch (rollbackErr) {
+        console.error(`[Sync ${endpointName}] Rollback nije uspio:`, rollbackErr.message);
+      }
+    }
+    sendJson(502, {
+      error: 'sync_failed',
+      message: errMsg,
+      errorCode: errCode,
+      phase: lastPhase,
+      hint: lastPhase === 'fetch' ? 'Prekid vjerojatno od strane Sudreg API-ja ili mreže.' : (lastPhase === 'write' ? 'Prekid tijekom upisa (možda Render timeout).' : 'Prekid pri dohvatu tokena.'),
+    });
+  }
+}
+
 /** Sync metode promjene: dohvaća cijeli popis (offset/limit), sprema stavke. requestedSnapshotId = opcionalno. Na početku briše postojeće redove za taj snapshot. Pri grešci: rollback. Faza (phase) u logu/odgovoru: token|fetch|write – za dijagnostiku tko prekida (Render vs Sudreg API). */
 async function runSyncPromjene(sendJson, requestedSnapshotId = null) {
   const BATCH_SIZE = 500;
@@ -309,9 +447,13 @@ async function runSync(sendJson, endpointName, config) {
   }
 }
 
+/** Sudreg API prema specu prima snapshot_id isključivo u queryju, ne u headeru. */
 async function proxyWithToken(endpoint, queryString, snapshotId, token) {
   return new Promise((resolve, reject) => {
-    const path = queryString ? `${endpoint}?${queryString}` : endpoint;
+    const params = new URLSearchParams(queryString || '');
+    if (snapshotId != null && String(snapshotId).trim() !== '') params.set('snapshot_id', String(snapshotId).trim());
+    const qs = params.toString();
+    const path = qs ? `${endpoint}?${qs}` : endpoint;
     const target = new URL(SUDREG_API_BASE.replace(/\/$/, '') + '/' + path.replace(/^\//, ''));
     const options = {
       hostname: target.hostname,
@@ -324,7 +466,6 @@ async function proxyWithToken(endpoint, queryString, snapshotId, token) {
         'Authorization': `Bearer ${token}`,
       },
     };
-    if (snapshotId) options.headers['X-Snapshot-Id'] = String(snapshotId);
     const req = https.request(options, (res) => {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
@@ -370,7 +511,7 @@ const server = http.createServer(async (req, res) => {
       endpoints: {
         token: 'GET|POST /api/token',
         sudreg: 'GET /api/sudreg_<endpoint> (npr. /api/sudreg_sudovi, /api/sudreg_detalji_subjekta)',
-        sync: 'POST /api/sudreg_sync_<endpoint> (prvo promjene, zatim sudovi, drzave, valute, ...)',
+        sync: 'POST /api/sudreg_sync_<endpoint> (promjene, subjekti, tvrtke, sjedista=po snapshot_id+rollback; sudovi, drzave, valute, ...=šifrarnici)',
         promjeneRazlike: 'GET /api/sudreg_promjene_razlike?stari_snapshot=&novi_snapshot= (usporedba SCN, promijenjeni subjekti)',
       },
     });
@@ -405,10 +546,18 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // POST /api/sudreg_sync_<endpoint> – paginirani dohvat s Sudreg API-ja i upis u bazu (batch, upsert po id)
+  // POST /api/sudreg_sync_<endpoint> – šifrarnici (upsert po id) ili tablice po snapshotu (delete + insert + rollback)
   const syncMatch = path.match(/^\/api\/sudreg_sync_(.+)$/);
   if (method === 'POST' && syncMatch) {
     const endpointName = syncMatch[1].replace(/\/$/, '');
+    const snapshotParam = url.searchParams.get('snapshot_id');
+    const snapshotHeader = req.headers['x-snapshot-id'];
+    const requestedSnapshotId = snapshotParam != null && snapshotParam !== '' ? snapshotParam : (snapshotHeader != null && snapshotHeader !== '' ? snapshotHeader : null);
+    const snapshotConfig = SYNC_SNAPSHOT_CONFIG[endpointName];
+    if (snapshotConfig) {
+      await runSyncWithSnapshot(sendJson, endpointName, requestedSnapshotId, snapshotConfig);
+      return;
+    }
     const config = SYNC_CONFIG[endpointName];
     if (config) {
       await runSync(sendJson, endpointName, config);
@@ -482,7 +631,7 @@ const server = http.createServer(async (req, res) => {
     const endpointSuffix = sudregMatch[1].replace(/\/$/, ''); // npr. sudovi, detalji_subjekta
     const endpointForLog = 'sudreg_' + endpointSuffix;        // u log: sudreg_sudovi
     const queryString = url.search ? url.search.slice(1) : '';
-    const snapshotId = url.searchParams.get('X-Snapshot-Id') || req.headers['x-snapshot-id'];
+    const snapshotId = url.searchParams.get('snapshot_id') || url.searchParams.get('X-Snapshot-Id') || req.headers['x-snapshot-id'];
     const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.headers['x-real-ip'] || null;
     const userAgent = req.headers['user-agent'] || null;
     const startMs = Date.now();
