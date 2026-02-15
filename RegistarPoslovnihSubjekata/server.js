@@ -89,6 +89,130 @@ function extractSudregHeaders(res) {
   };
 }
 
+/** Konfiguracija sync endpointa: API path -> mapRow + Prisma model. idField = ključ za upsert (npr. 'id' ili 'postupak'). */
+const SYNC_CONFIG = {
+  sudovi: {
+    apiPath: 'sudovi',
+    model: 'sudovi',
+    idField: 'id',
+    mapRow: (r) => ({
+      id: BigInt(r.id),
+      sifra: String(r.sifra ?? ''),
+      naziv: String(r.naziv ?? ''),
+      sifraZupanije: r.sifra_zupanije != null ? parseInt(r.sifra_zupanije, 10) : null,
+      nazivZupanije: r.naziv_zupanije != null ? String(r.naziv_zupanije) : null,
+    }),
+  },
+  drzave: {
+    apiPath: 'drzave',
+    model: 'drzave',
+    idField: 'id',
+    mapRow: (r) => ({
+      id: BigInt(r.id),
+      sifra: String(r.sifra ?? ''),
+      naziv: String(r.naziv ?? ''),
+      oznaka2: r.oznaka_2 != null ? String(r.oznaka_2) : null,
+      oznaka3: r.oznaka_3 != null ? String(r.oznaka_3) : null,
+    }),
+  },
+  valute: {
+    apiPath: 'valute',
+    model: 'valute',
+    idField: 'id',
+    mapRow: (r) => ({
+      id: BigInt(r.id),
+      sifra: String(r.sifra ?? ''),
+      naziv: String(r.naziv ?? ''),
+      drzavaId: r.drzava_id != null ? BigInt(r.drzava_id) : null,
+    }),
+  },
+  nacionalna_klasifikacija_djelatnosti: {
+    apiPath: 'nacionalna_klasifikacija_djelatnosti',
+    model: 'nacionalnaKlasifikacijaDjelatnosti',
+    idField: 'id',
+    mapRow: (r) => ({
+      id: BigInt(r.id),
+      sifra: String(r.sifra ?? ''),
+      puniNaziv: r.puni_naziv != null ? String(r.puni_naziv) : null,
+      verzija: r.verzija != null ? String(r.verzija) : null,
+    }),
+  },
+  vrste_pravnih_oblika: {
+    apiPath: 'vrste_pravnih_oblika',
+    model: 'vrstePravnihOblika',
+    idField: 'id',
+    mapRow: (r) => ({
+      id: BigInt(r.id),
+      sifra: String(r.sifra ?? ''),
+      naziv: String(r.naziv ?? ''),
+      kratica: r.kratica != null ? String(r.kratica) : null,
+    }),
+  },
+  vrste_postupaka: {
+    apiPath: 'vrste_postupaka',
+    model: 'vrstePostupaka',
+    idField: 'postupak',
+    mapRow: (r) => ({
+      postupak: parseInt(r.postupak ?? r.id ?? 0, 10),
+      znacenje: String(r.znacenje ?? ''),
+    }),
+  },
+};
+
+async function runSync(sendJson, endpointName, config) {
+  const BATCH_SIZE = 500;
+  const startMs = Date.now();
+  try {
+    const token = await getSudregToken();
+    const model = prisma[config.model];
+    if (!model || typeof model.upsert !== 'function') {
+      sendJson(500, { error: 'sync_failed', message: `Model ${config.model} not found` });
+      return;
+    }
+    let offset = 0;
+    let totalSynced = 0;
+    let snapshotId = null;
+    let batchCount = 0;
+    let rows;
+    do {
+      const queryString = `offset=${offset}&limit=${BATCH_SIZE}`;
+      const result = await proxyWithToken(config.apiPath, queryString, null, token);
+      if (result.statusCode !== 200 || !Array.isArray(result.body)) {
+        sendJson(result.statusCode || 500, result.body || { error: 'sync_failed' });
+        return;
+      }
+      rows = result.body;
+      if (result.headers && result.headers.xSnapshotId != null) snapshotId = result.headers.xSnapshotId;
+      if (rows.length === 0) break;
+      const toUpsert = rows.map((r) => config.mapRow(r)).filter(Boolean);
+      const idField = config.idField;
+      await prisma.$transaction(
+        toUpsert.map((row) => {
+          const where = { [idField]: row[idField] };
+          const create = row;
+          const update = { ...row };
+          delete update[idField];
+          return model.upsert({ where, create, update });
+        })
+      );
+      totalSynced += toUpsert.length;
+      batchCount += 1;
+      offset += BATCH_SIZE;
+    } while (rows.length === BATCH_SIZE);
+    const durationMs = Date.now() - startMs;
+    sendJson(200, {
+      ok: true,
+      endpoint: endpointName,
+      synced: totalSynced,
+      batches: batchCount,
+      snapshotId: snapshotId != null ? String(snapshotId) : null,
+      durationMs,
+    });
+  } catch (err) {
+    sendJson(502, { error: 'sync_failed', message: err.message });
+  }
+}
+
 async function proxyWithToken(endpoint, queryString, snapshotId, token) {
   return new Promise((resolve, reject) => {
     const path = queryString ? `${endpoint}?${queryString}` : endpoint;
@@ -150,6 +274,7 @@ const server = http.createServer(async (req, res) => {
       endpoints: {
         token: 'GET|POST /api/token',
         sudreg: 'GET /api/sudreg_<endpoint> (npr. /api/sudreg_sudovi, /api/sudreg_detalji_subjekta)',
+        sync: 'POST /api/sudreg_sync_<endpoint> (sudovi, drzave, valute, nacionalna_klasifikacija_djelatnosti, vrste_pravnih_oblika, vrste_postupaka)',
       },
     });
     return;
@@ -165,6 +290,17 @@ const server = http.createServer(async (req, res) => {
       sendJson(status, { error: 'token_failed', message: err.message });
     }
     return;
+  }
+
+  // POST /api/sudreg_sync_<endpoint> – paginirani dohvat s Sudreg API-ja i upis u bazu (batch, upsert po id)
+  const syncMatch = path.match(/^\/api\/sudreg_sync_(.+)$/);
+  if (method === 'POST' && syncMatch) {
+    const endpointName = syncMatch[1].replace(/\/$/, '');
+    const config = SYNC_CONFIG[endpointName];
+    if (config) {
+      await runSync(sendJson, endpointName, config);
+      return;
+    }
   }
 
   // GET /api/sudreg_:endpoint – proxy (samo dohvat) + zapis u sudreg_proxy_log; u logu endpoint = sudreg_*
