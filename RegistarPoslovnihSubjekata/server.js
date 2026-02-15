@@ -159,11 +159,17 @@ const SYNC_CONFIG = {
   },
 };
 
-/** Sync metode promjene: dohvaća cijeli popis (offset/limit), sprema stavke s snapshotId iz headera. requestedSnapshotId = opcionalno za dohvat određenog snapshota (šalje se kao X-Snapshot-Id). */
+/** Sync metode promjene: dohvaća cijeli popis (offset/limit), sprema stavke s snapshotId iz headera. requestedSnapshotId = opcionalno. Na početku briše postojeće redove za taj snapshot (čisto snimanje). Pri grešci: rollback – briše sve upisane redove za taj snapshot. */
 async function runSyncPromjene(sendJson, requestedSnapshotId = null) {
   const BATCH_SIZE = 500;
   const startMs = Date.now();
+  let writtenSnapshotId = null; // za rollback ako se prekine
   try {
+    if (requestedSnapshotId != null && requestedSnapshotId !== '') {
+      const sid = BigInt(Number(requestedSnapshotId));
+      const deleted = await prisma.promjeneStavka.deleteMany({ where: { snapshotId: sid } });
+      if (deleted?.count > 0) console.log('[Sync promjene] Na početku obrisano', deleted.count, 'redaka za snapshot', requestedSnapshotId);
+    }
     const token = await getSudregToken();
     let offset = 0;
     let totalSynced = 0;
@@ -180,7 +186,6 @@ async function runSyncPromjene(sendJson, requestedSnapshotId = null) {
       rows = result.body;
       if (result.headers && result.headers.xSnapshotId != null) snapshotId = result.headers.xSnapshotId;
       if (rows.length === 0) break;
-      // Ako je korisnik zatražio određeni snapshot (query/header), spremamo pod tim ID-om. Inače koristimo vrijednost iz odgovora API-ja.
       const snapshotIdBig = requestedSnapshotId != null && requestedSnapshotId !== ''
         ? BigInt(Number(requestedSnapshotId))
         : (snapshotId != null ? BigInt(Number(snapshotId)) : null);
@@ -188,6 +193,7 @@ async function runSyncPromjene(sendJson, requestedSnapshotId = null) {
         sendJson(500, { error: 'sync_failed', message: 'X-Snapshot-Id missing in response; navedi snapshot_id u queryu ili X-Snapshot-Id u headeru' });
         return;
       }
+      writtenSnapshotId = snapshotIdBig;
       const toUpsert = rows.map((r) => {
         const mbs = r.mbs != null && r.mbs !== '' ? BigInt(r.mbs) : null;
         const scn = BigInt(r.scn ?? 0);
@@ -224,6 +230,14 @@ async function runSyncPromjene(sendJson, requestedSnapshotId = null) {
       durationMs,
     });
   } catch (err) {
+    if (writtenSnapshotId != null) {
+      try {
+        const rolled = await prisma.promjeneStavka.deleteMany({ where: { snapshotId: writtenSnapshotId } });
+        console.log('[Sync promjene] Rollback: obrisano', rolled?.count ?? 0, 'redaka za snapshot', String(writtenSnapshotId));
+      } catch (rollbackErr) {
+        console.error('[Sync promjene] Rollback nije uspio:', rollbackErr.message);
+      }
+    }
     sendJson(502, { error: 'sync_failed', message: err.message });
   }
 }
@@ -362,11 +376,18 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // POST /api/sudreg_sync_promjene – dohvat popisa promjena i upis. Opcionalno: ?snapshot_id=1090 ili header X-Snapshot-Id: 1090 za određeni snapshot.
+  // POST /api/sudreg_sync_promjene – dohvat popisa promjena i upis. ?snapshot_id=1090 | X-Snapshot-Id. ?background=1 = 202 odmah, sync u pozadini (za izbjegavanje timeouta).
   if (path === '/api/sudreg_sync_promjene' && method === 'POST') {
     const snapshotParam = url.searchParams.get('snapshot_id');
     const snapshotHeader = req.headers['x-snapshot-id'];
     const requestedSnapshotId = snapshotParam != null && snapshotParam !== '' ? snapshotParam : (snapshotHeader != null && snapshotHeader !== '' ? snapshotHeader : null);
+    const background = url.searchParams.get('background') === '1' || url.searchParams.get('async') === '1';
+    if (background) {
+      sendJson(202, { ok: true, message: 'Sync promjene pokrenut u pozadini. Može trajati 10+ min.', snapshot_id: requestedSnapshotId || 'zadnji (iz API-ja)' });
+      const logOnly = (status, obj) => console.log('[Sync promjene background done]', status, obj?.synced ?? obj?.error);
+      runSyncPromjene(logOnly, requestedSnapshotId).catch((e) => console.error('[Sync promjene background]', e.message));
+      return;
+    }
     await runSyncPromjene(sendJson, requestedSnapshotId);
     return;
   }
