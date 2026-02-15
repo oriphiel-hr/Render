@@ -846,8 +846,8 @@ r.post('/run-single', async (req, res, next) => {
               userId: null,
               ipAddress: null,
               userAgent: null,
-              requestBody: null,
-              responseBody: null,
+              requestBody: c.requestBody ?? null,
+              responseBody: c.responseBody ?? null,
               responseTime: 0,
               errorMessage: null
             }

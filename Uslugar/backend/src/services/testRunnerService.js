@@ -266,20 +266,45 @@ class TestRunnerService {
       const page = await context.newPage();
       logs.push('✓ Nova stranica kreirana');
 
-      // Network monitoring – prati sve API zahtjeve iz Playwrighta
+      // Network monitoring – prati API zahtjeve i odgovore (method, url, status, requestBody, responseBody)
       const networkApiCalls = [];
+      const _redactBody = (obj) => {
+        if (obj == null || typeof obj !== 'object') return obj;
+        const out = Array.isArray(obj) ? [...obj] : { ...obj };
+        for (const k of ['password', 'token', 'accessToken', 'refreshToken']) {
+          if (out[k] !== undefined) out[k] = '***REDACTED***';
+        }
+        return out;
+      };
       page.on('request', req => {
         const u = req.url();
         if (u.includes('/api/') && !u.includes('/test-screenshots/')) {
-          networkApiCalls.push({ method: req.method(), url: u });
+          let requestBody = null;
+          try {
+            const postData = req.postData();
+            if (postData && (postData.trim().startsWith('{') || postData.trim().startsWith('['))) {
+              requestBody = _redactBody(JSON.parse(postData));
+            }
+          } catch (_) {}
+          networkApiCalls.push({ method: req.method(), url: u, requestBody });
         }
       });
-      page.on('response', resp => {
+      page.on('response', async resp => {
         const u = resp.url();
-        if (u.includes('/api/') && !u.includes('/test-screenshots/')) {
-          const entry = networkApiCalls.find(c => c.url === u && !c.status);
-          if (entry) entry.status = resp.status();
-        }
+        if (!u.includes('/api/') || u.includes('/test-screenshots/')) return;
+        const entry = networkApiCalls.find(c => c.url === u && (c.status === undefined || c.status === null));
+        if (!entry) return;
+        entry.status = resp.status();
+        try {
+          const ct = (resp.headers()['content-type'] || '').toLowerCase();
+          if (ct.includes('application/json')) {
+            const json = await resp.json().catch(() => null);
+            entry.responseBody = json != null ? _redactBody(json) : null;
+          } else {
+            const buf = await resp.body();
+            entry.responseBody = buf.length > 5000 ? '[truncated]' : buf.toString('utf8').slice(0, 5000);
+          }
+        } catch (_) {}
       });
 
       // 1. Otiđi na stranicu
