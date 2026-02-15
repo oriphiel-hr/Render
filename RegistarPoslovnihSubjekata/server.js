@@ -180,32 +180,33 @@ async function runSyncPromjene(sendJson, requestedSnapshotId = null) {
       rows = result.body;
       if (result.headers && result.headers.xSnapshotId != null) snapshotId = result.headers.xSnapshotId;
       if (rows.length === 0) break;
-      const snapshotIdBig = snapshotId != null ? BigInt(Number(snapshotId)) : (requestedSnapshotId != null ? BigInt(Number(requestedSnapshotId)) : null);
+      // Ako je korisnik zatražio određeni snapshot (query/header), spremamo pod tim ID-om. Inače koristimo vrijednost iz odgovora API-ja.
+      const snapshotIdBig = requestedSnapshotId != null && requestedSnapshotId !== ''
+        ? BigInt(Number(requestedSnapshotId))
+        : (snapshotId != null ? BigInt(Number(snapshotId)) : null);
       if (snapshotIdBig == null) {
-        sendJson(500, { error: 'sync_failed', message: 'X-Snapshot-Id missing in response' });
+        sendJson(500, { error: 'sync_failed', message: 'X-Snapshot-Id missing in response; navedi snapshot_id u queryu ili X-Snapshot-Id u headeru' });
         return;
       }
       const toUpsert = rows.map((r) => {
-        const subjektId = BigInt(r.id ?? 0);
         const mbs = r.mbs != null && r.mbs !== '' ? BigInt(r.mbs) : null;
         const scn = BigInt(r.scn ?? 0);
         const vrijeme = r.vrijeme != null && r.vrijeme !== '' ? new Date(r.vrijeme) : null;
         return {
           snapshotId: snapshotIdBig,
-          subjektId,
           mbs,
           scn,
           vrijeme,
         };
-      }).filter((r) => r.subjektId !== BigInt(0));
+      }).filter((r) => r.mbs != null);
       await prisma.$transaction(
         toUpsert.map((row) =>
           prisma.promjeneStavka.upsert({
             where: {
-              snapshotId_subjektId: { snapshotId: row.snapshotId, subjektId: row.subjektId },
+              snapshotId_mbs: { snapshotId: row.snapshotId, mbs: row.mbs },
             },
             create: row,
-            update: { mbs: row.mbs, scn: row.scn, vrijeme: row.vrijeme },
+            update: { scn: row.scn, vrijeme: row.vrijeme },
           })
         )
       );
@@ -401,7 +402,7 @@ const server = http.createServer(async (req, res) => {
             ok: true,
             message: 'Potrebna su najmanje dva snapshota za usporedbu. Pokreni sync promjene dva puta (u razmaku).',
             snapshots: snapshots.length,
-            promijenjeniSubjektIds: [],
+            promijenjeniMbs: [],
             ukupnoPromijenjeno: 0,
           });
           return;
@@ -410,13 +411,13 @@ const server = http.createServer(async (req, res) => {
         stariSnapshotId = Number(snapshots[1].snapshot_id);
       }
       const promijenjeni = await prisma.$queryRaw`
-        SELECT n.subjekt_id AS "subjektId"
+        SELECT n.mbs AS "mbs"
         FROM sudreg_promjene_stavke n
         LEFT JOIN sudreg_promjene_stavke s
-          ON s.subjekt_id = n.subjekt_id AND s.snapshot_id = ${stariSnapshotId}
+          ON s.mbs = n.mbs AND s.snapshot_id = ${stariSnapshotId}
         WHERE n.snapshot_id = ${noviSnapshotId}
-          AND (s.subjekt_id IS NULL OR n.scn > s.scn)
-        ORDER BY n.subjekt_id
+          AND (s.mbs IS NULL OR n.scn > s.scn)
+        ORDER BY n.mbs
       `;
       const maxScn = await prisma.$queryRaw`
         SELECT snapshot_id AS "snapshotId", MAX(scn) AS "maxScn"
@@ -424,14 +425,14 @@ const server = http.createServer(async (req, res) => {
         WHERE snapshot_id IN (${stariSnapshotId}, ${noviSnapshotId})
         GROUP BY snapshot_id
       `;
-      const subjektIds = (promijenjeni || []).map((r) => String(r.subjektId));
+      const promijenjeniMbs = (promijenjeni || []).map((r) => String(r.mbs));
       const maxScnMap = Object.fromEntries((maxScn || []).map((r) => [String(r.snapshotId), String(r.maxScn)]));
       sendJson(200, {
         ok: true,
         stariSnapshotId: String(stariSnapshotId),
         noviSnapshotId: String(noviSnapshotId),
-        promijenjeniSubjektIds: subjektIds,
-        ukupnoPromijenjeno: subjektIds.length,
+        promijenjeniMbs: promijenjeniMbs,
+        ukupnoPromijenjeno: promijenjeniMbs.length,
         maxScnStari: maxScnMap[String(stariSnapshotId)] ?? null,
         maxScnNovi: maxScnMap[String(noviSnapshotId)] ?? null,
       });

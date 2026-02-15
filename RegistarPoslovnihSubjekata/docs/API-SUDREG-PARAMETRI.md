@@ -76,7 +76,7 @@ Prema dokumentaciji [data.gov.hr – Sudski registar](https://data.gov.hr/ckan/d
 
 Metoda **promjene** vraća za svaki subjekt **SCN** (System Change Number) i datum/vrijeme zadnje promjene. Služi za detekciju *koji* su subjekti se promijenili od prošlog preuzimanja.
 
-- **POST** `/api/sudreg_sync_promjene` – dohvaća cijeli popis (paginirano), sprema u tablicu **sudreg_promjene_stavke**. Polja prema API-ju: snapshot_id (iz headera), subjekt_id (iz `id`), mbs, scn, vrijeme (iz stringa `vrijeme`).
+- **POST** `/api/sudreg_sync_promjene` – dohvaća cijeli popis (paginirano), sprema u tablicu **sudreg_promjene_stavke**. Primarni ključ: (snapshot_id, mbs). Polja: snapshot_id, mbs, scn, vrijeme.
 - **Detekcija promjena:** usporedi s prethodnim snapshotom (vidi dolje **Provjera razlika**).
 - Nakon detekcije promijenjenih subjekata možeš za njih dohvatiti detalje putem **detalji_subjekta** (primjereno za manji broj subjekata).
 
@@ -87,7 +87,7 @@ Metoda **promjene** vraća za svaki subjekt **SCN** (System Change Number) i dat
 - Bez parametara: uspoređuju se **zadnja dva** snapshota u bazi.
 - S parametrima: `?stari_snapshot=123&novi_snapshot=456`.
 
-Odgovor: `stariSnapshotId`, `noviSnapshotId`, `promijenjeniSubjektIds` (lista subjekt_id), `ukupnoPromijenjeno`, `maxScnStari`, `maxScnNovi`.
+Odgovor: `stariSnapshotId`, `noviSnapshotId`, `promijenjeniMbs` (lista MBS-ova koji su se promijenili), `ukupnoPromijenjeno`, `maxScnStari`, `maxScnNovi`. Usporedba: JOIN po **mbs**, uvjet **n.scn > s.scn**.
 
 **Primjer curl:**
 ```bash
@@ -106,15 +106,15 @@ ORDER BY snapshot_id DESC
 LIMIT 10;
 ```
 
-- Subjekti koji su se promijenili između snapshota 100 (stari) i 101 (novi): novi SCN veći od starog, ili subjekt postoji samo u novijem.
+- Subjekti (MBS) koji su se promijenili između snapshota 100 (stari) i 101 (novi): JOIN po mbs, novi SCN veći od starog ili MBS samo u novijem.
 ```sql
-SELECT n.subjekt_id
+SELECT n.mbs
 FROM sudreg_promjene_stavke n
 LEFT JOIN sudreg_promjene_stavke s
-  ON s.subjekt_id = n.subjekt_id AND s.snapshot_id = 100
+  ON s.mbs = n.mbs AND s.snapshot_id = 100
 WHERE n.snapshot_id = 101
-  AND (s.subjekt_id IS NULL OR n.scn > s.scn)
-ORDER BY n.subjekt_id;
+  AND (s.mbs IS NULL OR n.scn > s.scn)
+ORDER BY n.mbs;
 ```
 
 - Samo brza provjera: je li uopće bilo promjena? (usporedi MAX(scn) zadnja dva snapshota.)

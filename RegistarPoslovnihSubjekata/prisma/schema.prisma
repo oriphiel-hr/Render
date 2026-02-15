@@ -87,16 +87,15 @@ model Promjene {
   @@map("sudreg_promjene")
 }
 
-/// Jedna stavka popisa promjena po snapshotu. Polja prema API /promjene: id, mbs, vrijeme, scn.
+/// Jedna stavka popisa promjena po snapshotu. Primarni ključ (snapshot_id, mbs). Usporedba razlika: JOIN po mbs, usporedba SCN.
 model PromjeneStavka {
   snapshotId BigInt    @map("snapshot_id")
-  subjektId  BigInt    @map("subjekt_id")  // iz API polja "id"
-  mbs        BigInt?   @map("mbs")         // iz API polja "mbs"
+  mbs        BigInt    @map("mbs")
   scn        BigInt    @map("scn")
-  vrijeme    DateTime? @map("vrijeme")     @db.Timestamptz(6)  // iz API polja "vrijeme" (string)
+  vrijeme    DateTime? @map("vrijeme")     @db.Timestamptz(6)
   createdAt  DateTime  @default(now()) @map("created_at")
 
-  @@id([snapshotId, subjektId])
+  @@id([snapshotId, mbs])
   @@index([snapshotId])
   @@index([scn])
   @@map("sudreg_promjene_stavke")
