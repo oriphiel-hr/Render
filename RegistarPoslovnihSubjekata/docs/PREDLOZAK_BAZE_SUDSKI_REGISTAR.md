@@ -4,7 +4,66 @@ Struktura i tipovi izvučeni iz [Open API dokumentacije](https://sudreg-data.gov
 
 **Runnable shema:** Prisma shema je u `prisma/schema.prisma` (PostgreSQL). Nakon postavljanja `DATABASE_URL` pokreni `npx prisma generate` i `npx prisma db push` (ili `migrate dev`).
 
-## Načelo
+## API – token (ovaj servis)
+
+Ovaj projekt izlaže endpoint za dohvat OAuth tokena za Sudski registar (da ga klijenti ne moraju sami dohvaćati s vlastitim credentials).
+
+| Metoda | Putanja | Opis |
+|--------|---------|------|
+| GET ili POST | `/api/token` | Vraća OAuth token od `https://sudreg-data.gov.hr/api/oauth/token` (client_credentials). Token vrijedi 6 sati. |
+
+**Varijable okruženja:** `SUDREG_CLIENT_ID`, `SUDREG_CLIENT_SECRET` (opcionalno `SUDREG_TOKEN_URL`). Credentials se dobiju registracijom na [data.gov.hr – Sudski registar](https://data.gov.hr/ckan/dataset/sudski-registar).
+
+**Primjer odgovora:** `{ "access_token": "...", "token_type": "Bearer", "expires_in": 21600 }`
+
+## Tablice u bazi (prema API-ju Sudskog registra)
+
+Baza sadrži sljedećih **38 tablica** (raw struktura API-ja):
+
+| # | Tablica |
+|---|---------|
+| 1 | bris_pravni_oblici |
+| 2 | bris_registri |
+| 3 | counts |
+| 4 | detalji_subjekta |
+| 5 | drzave |
+| 6 | jezici |
+| 7 | last_response |
+| 8 | last_response_audit |
+| 9 | nacionalna_klasifikacija_djelatnosti |
+| 10 | promjene |
+| 11 | statusi |
+| 12 | subjekti |
+| 13 | djelatnosti_podruznica |
+| 14 | email_adrese |
+| 15 | email_adrese_podruznica |
+| 16 | evidencijske_djelatnosti |
+| 17 | gfi |
+| 18 | inozemni_registri |
+| 19 | nazivi_podruznica |
+| 20 | objave_priopcenja |
+| 21 | postupci |
+| 22 | pravni_oblici |
+| 23 | predmeti_poslovanja |
+| 24 | pretezite_djelatnosti |
+| 25 | prijevodi_skracenih_tvrtki |
+| 26 | prijevodi_tvrtki |
+| 27 | sjedista |
+| 28 | sjedista_podruznica |
+| 29 | skracene_tvrtke |
+| 30 | skraceni_nazivi_podruznica |
+| 31 | temeljni_kapitali |
+| 32 | tvrtke |
+| 33 | sudovi |
+| 34 | sudovi_deleted |
+| 35 | valute |
+| 36 | vrste_gfi_dokumenata |
+| 37 | vrste_postupaka |
+| 38 | vrste_pravnih_oblika |
+
+---
+
+## Načelo (agregirani model – opcionalno za pretragu)
 
 - **Jedan agregirani model**: jedna tablica `Subjekt` (ili slično) za pretragu, s poljima iz više izvora (Sudski registar, FINA, obrtni, OPG). Ovdje je fokus na **podacima iz Sudskog registra**.
 - **Detalji u normaliziranim tablicama**: adrese, emailovi, djelatnosti, kapital – po jedna tablica s `subjekt_id` (ili ekvivalentom).
