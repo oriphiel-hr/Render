@@ -1,0 +1,195 @@
+# Runbook: Sync podataka iz Sudreg API-ja
+
+Redoslijed koraka za uspješan sync po snapshotu i provjeru valjanosti.
+
+## 1. Upis očekivanih brojeva (expected counts)
+
+Prije bilo kojeg synca po snapshotu mora postojati redak u `sudreg_expected_counts` za svaki endpoint i taj snapshot.
+
+```bash
+# Jedan snapshot (npr. 1090)
+curl -X POST "https://<APP_URL>/api/sudreg_expected_counts?snapshot_id=1090"
+```
+
+- Ako **ne** navedeš `snapshot_id`, API vraća 400.
+- Ovo dohvaća X-Total-Count s Sudreg API-ja za sve endpointe i upisuje u bazu.
+
+## 2. Sync promjena (popis promjena + expected counts)
+
+Ovo dohvaća popis promjena (MBS + SCN) i upisuje u `sudreg_promjene_stavke`. Također ponovno upisuje expected counts (korak 1 je moguće preskočiti ako odmah pokreneš ovaj korak).
+
+```bash
+# Sync za snapshot 1090 (može trajati 10+ min)
+curl -X POST "https://<APP_URL>/api/sudreg_sync_promjene?snapshot_id=1090"
+
+# Opcija: pokreni u pozadini (202 Accepted, sync nastavlja na serveru)
+curl -X POST "https://<APP_URL>/api/sudreg_sync_promjene?snapshot_id=1090&background=1"
+```
+
+- **Lock:** samo jedan sync odjednom (promjene ili po tablici). Ako je sync već u tijeku, vraća se 409. Lock isteče nakon 2 sata.
+
+## 3. Sync po tablicama (subjekti, tvrtke, itd.)
+
+Nakon koraka 1 i 2 možeš syncati pojedine tablice za isti snapshot. Za tablice s MBO prvo moraju postojati redovi u `sudreg_promjene_stavke` za taj snapshot.
+
+```bash
+# Primjer: sync subjekata za snapshot 1090
+curl -X POST "https://<APP_URL>/api/sudreg_sync_subjekti?snapshot_id=1090"
+```
+
+- Uvjeti (inače 409):
+  - Red u `sudreg_expected_counts` za (endpoint, snapshot_id).
+  - Za tablice s MBO: redovi u `sudreg_promjene_stavke` za taj snapshot.
+  - Ciljana tablica **ne smije** već imati podatke za taj snapshot_id (unos samo jednom po snapshotu). Kod **chunked synca** (nastavak s `start_offset`) tablica smije imati podatke.
+
+### Chunked sync (velike tablice, izbjegavanje timeouta)
+
+Za tablice s puno redaka (npr. predmeti_poslovanja) jedan poziv može trajati sat vremena i premašiti limit zahtjeva. Koristi **max_batches** ili **max_rows** da jedan HTTP poziv obradi samo dio; odgovor sadrži `has_more` i `next_start_offset` za nastavak.
+
+| Parametar       | Značenje |
+|-----------------|----------|
+| `max_batches`   | Maksimalan broj batch-eva (po 500 redaka) u ovom pozivu. |
+| `max_rows`      | Maksimalan broj redaka za upis u ovom pozivu. |
+| `start_offset`  | Nastavak: od kojeg offseta (list) odnosno indeksa (detalji) nastaviti. Prvi poziv bez ovoga; sljedeći s vrijednošću iz `next_start_offset`. |
+
+- Prvi poziv: bez `start_offset` (na početku se brišu postojeći redovi za snapshot, zatim upis do `max_batches`/`max_rows`).
+- Ako odgovor ima `has_more: true`, ponovi poziv s `start_offset=<next_start_offset>` (i istim `max_batches`/`max_rows`) dok `has_more` ne nestane.
+
+```bash
+# Primjer: sync predmeti_poslovanja po 100 batch-eva (50 000 redaka) po pozivu
+curl -X POST "https://<APP_URL>/api/sudreg_sync_predmeti_poslovanja?snapshot_id=1090&max_batches=100"
+# Ako odgovor: "has_more": true, "next_start_offset": 50000
+curl -X POST "https://<APP_URL>/api/sudreg_sync_predmeti_poslovanja?snapshot_id=1090&max_batches=100&start_offset=50000"
+# Ponavljaj s novim next_start_offset dok has_more nije false
+```
+
+## 4. Provjera grešaka (validacija)
+
+Provjeri slaže li se broj upisanih redaka s očekivanim.
+
+```bash
+# Greške za trenutni snapshot (iz sudreg_sync_state)
+curl "https://<APP_URL>/api/sudreg_sync_greske"
+
+# Greške za određeni snapshot
+curl "https://<APP_URL>/api/sudreg_sync_greske?snapshot_id=1090"
+```
+
+- Ako je `summary.sGreskama > 0`, neki endpointi imaju neslaganje (očekivano vs stvarno). Popraviti sync ili ponoviti za dotične tablice.
+
+## 5. Ostalo
+
+- **Trenutno stanje (snapshot + redni broj):**  
+  `GET /api/sudreg_sync_state`
+- **Razlike između dva snapshota (tko se promijenio):**  
+  `GET /api/sudreg_promjene_razlike?stari_snapshot=1090&novi_snapshot=1091`
+- **Čišćenje audit tablice (stari UPDATE log):**  
+  `POST /api/sudreg_audit_promjene_cleanup?days=90`
+- **Cron za greške + webhook:**  
+  `GET /api/sudreg_sync_check_webhook` (ako je postavljen `SUDREG_WEBHOOK_URL`, šalje POST s greškama).
+
+## 6. Primjeri curl za sve endpointe
+
+Zamijeni `<APP_URL>` s bazom aplikacije (npr. `registar-poslovnih-subjekata.onrender.com`). Na Windows PowerShellu koristi `Invoke-WebRequest` ili `curl.exe` umjesto `curl`.
+
+### Health i stanje
+
+```bash
+# Health (s provjerom baze; 503 ako DB ne odgovara)
+curl "https://<APP_URL>/health"
+
+# Trenutni snapshot i redni broj synca
+curl "https://<APP_URL>/api/sudreg_sync_state"
+```
+
+### Expected counts
+
+```bash
+# Očekivani vs stvarni brojevi (svi za snapshot 1090)
+curl "https://<APP_URL>/api/sudreg_expected_counts?snapshot_id=1090"
+
+# S paginacijom (npr. prvih 50, preskoči 0)
+curl "https://<APP_URL>/api/sudreg_expected_counts?snapshot_id=1090&limit=50&offset=0"
+
+# Upis expected counts u bazu (obavezan snapshot_id)
+curl -X POST "https://<APP_URL>/api/sudreg_expected_counts?snapshot_id=1090"
+```
+
+### Greške i validacija
+
+```bash
+# Greške za trenutni snapshot (default)
+curl "https://<APP_URL>/api/sudreg_sync_greske"
+
+# Greške za određeni snapshot
+curl "https://<APP_URL>/api/sudreg_sync_greske?snapshot_id=1090"
+
+# Cron: provjera grešaka + slanje na webhook ako ima (env SUDREG_WEBHOOK_URL)
+curl "https://<APP_URL>/api/sudreg_sync_check_webhook"
+curl "https://<APP_URL>/api/sudreg_sync_check_webhook?snapshot_id=1090"
+```
+
+### Sync (lock: samo jedan odjednom)
+
+```bash
+# Sync promjena (može trajati 10+ min)
+curl -X POST "https://<APP_URL>/api/sudreg_sync_promjene?snapshot_id=1090"
+
+# Sync u pozadini (202 odmah)
+curl -X POST "https://<APP_URL>/api/sudreg_sync_promjene?snapshot_id=1090&background=1"
+
+# Sync po tablici
+curl -X POST "https://<APP_URL>/api/sudreg_sync_subjekti?snapshot_id=1090"
+```
+
+### Razlike i audit
+
+```bash
+# Tko se promijenio između dva snapshota
+curl "https://<APP_URL>/api/sudreg_promjene_razlike?stari_snapshot=1090&novi_snapshot=1091"
+
+# Briši audit redove starije od 90 dana (default)
+curl -X POST "https://<APP_URL>/api/sudreg_audit_promjene_cleanup?days=90"
+```
+
+### PowerShell (Windows)
+
+```powershell
+# GET
+Invoke-WebRequest -Uri "https://<APP_URL>/api/sudreg_sync_greske" -Method GET
+
+# POST
+Invoke-WebRequest -Uri "https://<APP_URL>/api/sudreg_expected_counts?snapshot_id=1090" -Method POST
+```
+
+## Sažetak redoslijeda
+
+1. `POST /api/sudreg_expected_counts?snapshot_id=<X>` (ili preskoči ako odmah radiš korak 2)
+2. `POST /api/sudreg_sync_promjene?snapshot_id=<X>`
+3. `POST /api/sudreg_sync_<tablica>?snapshot_id=<X>` za svaku tablicu koju trebaš
+4. `GET /api/sudreg_sync_greske` – provjera jesu li sve brojke u redu
+
+## Job: sve tablice za jedan snapshot (npr. 1090)
+
+### API metoda (Render cron)
+
+Jedan HTTP poziv pokreće cijeli job na serveru: prvo `sync_promjene`, zatim za svaku tablicu chunked sync dok ne završi. Cron na Renderu može pozivati ovaj URL.
+
+```bash
+# Obavezno: snapshot_id. Opcionalno: max_batches (default 100) – batch-eva po chunku po tablici
+curl -X POST "https://<APP_URL>/api/sudreg_sync_run_job?snapshot_id=1090"
+curl -X POST "https://<APP_URL>/api/sudreg_sync_run_job?snapshot_id=1090&max_batches=50"
+```
+
+- Odgovor 200: `{ ok: true, snapshotId, durationMs, maxBatchesPerChunk, endpoints: [ { endpoint, synced, batches }, ... ] }`. Ako neka tablica već ima podatke ili nema expected count, u `endpoints` će biti `skipped: true, reason: '...'`.
+- Za drugi snapshot promijeni samo `snapshot_id=1091` u URL-u.
+
+### PowerShell skripta (ručno)
+
+Skripta `scripts/sync-snapshot-1090.ps1` radi isto kao API job, ali izvana (klijent poziva sync endpoint po endpointu). Korisno za ručno pokretanje s lokalnog računala.
+
+```powershell
+$env:SUDREG_APP_URL = "https://your-app.onrender.com"
+.\scripts\sync-snapshot-1090.ps1
+.\scripts\sync-snapshot-1090.ps1 -SnapshotId 1091 -BaseUrl "https://your-app.onrender.com"
+```
