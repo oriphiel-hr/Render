@@ -874,6 +874,25 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // POST /api/sudreg_expected_counts – direktno upisuje očekivane brojeve u tablicu (dohvat X-Total-Count za sve endpointe, parametar snapshot_id obavezan).
+  if (path === '/api/sudreg_expected_counts' && method === 'POST') {
+    const snapshotParam = url.searchParams.get('snapshot_id');
+    if (snapshotParam == null || snapshotParam === '') {
+      sendJson(400, { error: 'snapshot_required', message: 'Obavezan parametar: snapshot_id (npr. ?snapshot_id=1090).' });
+      return;
+    }
+    try {
+      const token = await getSudregToken();
+      await saveAllExpectedCountsForSnapshot(snapshotParam, token);
+      const sid = BigInt(Number(snapshotParam));
+      const count = await prisma.sudregExpectedCount.count({ where: { snapshotId: sid } });
+      sendJson(200, { ok: true, snapshotId: snapshotParam, written: count, message: `Upisano ${count} redaka u sudreg_expected_counts.` });
+    } catch (err) {
+      sendJson(500, { error: 'expected_counts_write_failed', message: err.message || String(err) });
+    }
+    return;
+  }
+
   // GET /api/sudreg_expected_counts – očekivani broj redova po endpointu + snapshot (X-Total-Count s offset=0&limit=0). Query: snapshot_id (opcionalno).
   if (path === '/api/sudreg_expected_counts' && method === 'GET') {
     try {
