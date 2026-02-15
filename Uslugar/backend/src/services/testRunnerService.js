@@ -2444,7 +2444,7 @@ class TestRunnerService {
 
   // ─── Blokovski orkestrator ─────────────────────────────────────────────────
 
-  /** Mapiranje blokId → testType kad je blok = cijeli test (npr. register-user → registration) */
+  /** Mapiranje blokId → testType (blok iz manifesta → handler u runGenericTest) */
   static BLOCK_TO_TEST = {
     'register-user': 'registration',
     'register-provider': 'registration',
@@ -2460,31 +2460,69 @@ class TestRunnerService {
     'job-status-flow': 'job-status',
     'job-budget': 'job-budget',
     'create-job-with-budget': 'job-budget',
+    'map-picker': 'map-picker',
+    'address-autocomplete': 'map-picker',
+    'send-offer': 'offer-send',
+    'offer-status': 'offer-status',
+    'accept-reject-offer': 'offer-accept',
     'verify-registar': 'verify-registar',
     'matchmaking': 'matchmaking',
     'provider-profile': 'provider-profile',
     'provider-bio-update': 'provider-bio',
     'provider-categories': 'provider-categories',
+    'team-locations': 'team-locations',
+    'stripe-checkout': 'stripe-checkout',
+    'stripe-payment-intent': 'stripe-payment',
+    'stripe-webhook': 'stripe-webhook',
+    'stripe-refund': 'stripe-refund',
+    'director-dashboard': 'director-dashboard',
+    'lead-distribution': 'lead-distribution',
+    'chat-public': 'chat-public',
+    'chat-internal': 'chat-internal',
+    'sms-verify': 'sms-verify',
+    'sms-offer': 'sms-offer',
+    'sms-job': 'sms-job',
+    'sms-error-handling': 'sms-error',
+    'kyc-upload': 'kyc-upload',
+    'kyc-verify-oib': 'kyc-verify-oib',
+    'kyc-status': 'kyc-status',
+    'kyc-reject': 'kyc-reject',
+    'portfolio-upload': 'portfolio-upload',
+    'license-upload': 'license-upload',
+    'portfolio-display': 'portfolio-display',
+    'gallery-preview': 'gallery-preview',
+    'email-offer': 'email-offer',
+    'email-job': 'email-job',
+    'email-trial-expiry': 'email-trial',
+    'email-inactivity': 'email-inactivity',
+    'saved-search': 'saved-search',
+    'job-alert-create': 'job-alert-create',
+    'job-alert-freq': 'job-alert-freq',
+    'job-alert-notify': 'job-alert-notify',
+    'admin-approve-provider': 'admin-approve-provider',
+    'admin-reject-provider': 'admin-reject-provider',
+    'admin-ban': 'admin-ban',
     'admin-kyc-metrics': 'admin-kyc-metrics',
     'wizard-categories': 'wizard-categories',
     'wizard-regions': 'wizard-regions',
     'wizard-status': 'wizard-status',
-    'credit-history': 'credit-history',
-    'cors-check': 'cors',
-    'csrf-check': 'csrf',
-    'rate-limiting': 'rate-limiting',
-    'sql-injection': 'sql-injection',
-    'kyc-verify-oib': 'kyc-verify-oib',
-    'kyc-status': 'kyc-status',
-    'sms-error-handling': 'sms-error',
-    'stripe-webhook': 'stripe-webhook',
-    'director-dashboard': 'director-dashboard',
-    'lead-distribution': 'lead-distribution',
-    'job-alert-freq': 'job-alert-freq',
+    'wizard-complete': 'wizard-complete',
+    'subscription-upgrade': 'subscription-upgrade',
+    'subscription-downgrade': 'subscription-downgrade',
+    'subscription-cancel': 'subscription-cancel',
+    'trial-activate': 'trial-activate',
     'roi-dashboard': 'roi-dashboard',
     'roi-charts': 'roi-charts',
     'roi-conversion': 'roi-conversion',
-    'roi-reports': 'roi-reports'
+    'roi-reports': 'roi-reports',
+    'credit-buy': 'credit-buy',
+    'credit-spend': 'credit-spend',
+    'credit-history': 'credit-history',
+    'credit-refund': 'credit-refund',
+    'cors-check': 'cors',
+    'csrf-check': 'csrf',
+    'rate-limiting': 'rate-limiting',
+    'sql-injection': 'sql-injection'
   };
 
   /** Izvršava jedan blok s kontekstom. Vraća { success, context, logs, screenshots }. */
@@ -2615,8 +2653,8 @@ class TestRunnerService {
       };
     }
 
-    // Nema handlera – pokreni kao stub
-    logs.push(`⚠ [${blockId}] Nema blok handlera – delegiram na runGenericTest`);
+    // Nema u BLOCK_TO_TEST (npr. email-verify za test 1.4 – nema runEmailVerifyTest) → stub
+    logs.push(`⚠ [${blockId}] Nema blok handlera – delegiram na _stubTest`);
     const fallback = await this._stubTest(blockId);
     return { success: fallback.success, context, logs: [...logs, ...fallback.logs], screenshots };
   }

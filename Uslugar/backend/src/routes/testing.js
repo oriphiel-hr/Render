@@ -641,6 +641,8 @@ r.post('/run-single', async (req, res, next) => {
       }
       // Za forgot-password uvijek admin - frontend može slati client ako admin nije u testData
       if (testType === 'forgot-password') testData = { ...testData, email: 'admin@uslugar.hr' };
+      // Test 1.2 = Registracija pružatelja – da Playwright klikne "Pružatelj" i frontend pošalje role: 'PROVIDER'
+      if (testId === '1.2') testData = { ...testData, role: 'PROVIDER' };
 
       // Prikupljaj API pozive (spec 8.2 – ulazni parametri i rezultati)
       testRunnerService.startCollectingApiCalls?.();
