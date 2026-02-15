@@ -607,14 +607,25 @@ r.post('/run-single', async (req, res, next) => {
     const host = forwardedHost || req.get('host');
     const protocol = (forwardedProto && forwardedProto !== '') ? forwardedProto : req.protocol;
     const requestOrigin = host ? `${protocol}://${host}`.replace(/\/+$/, '') : null;
-    const apiBaseUrl = (
-      (req.body.apiBaseUrl && String(req.body.apiBaseUrl).trim()) ||
-      process.env.RUN_SINGLE_API_BASE_URL ||
-      requestOrigin ||
-      process.env.API_BASE_URL ||
-      process.env.BACKEND_URL
-    );
+    const bodyUrl = req.body.apiBaseUrl && String(req.body.apiBaseUrl).trim();
+    let apiBaseUrl;
+    let apiBaseUrlSource;
+    if (bodyUrl) {
+      apiBaseUrl = bodyUrl;
+      apiBaseUrlSource = 'body';
+    } else if (process.env.RUN_SINGLE_API_BASE_URL) {
+      apiBaseUrl = process.env.RUN_SINGLE_API_BASE_URL;
+      apiBaseUrlSource = 'RUN_SINGLE_API_BASE_URL';
+    } else if (requestOrigin) {
+      apiBaseUrl = requestOrigin;
+      apiBaseUrlSource = 'requestOrigin';
+    } else {
+      apiBaseUrl = process.env.API_BASE_URL || process.env.BACKEND_URL;
+      apiBaseUrlSource = 'env';
+    }
     testRunnerService.setApiBaseUrl?.(apiBaseUrl);
+    results._apiBaseUrlSource = apiBaseUrlSource;
+    results._requestHost = requestOrigin || null;
 
     try {
 
@@ -854,7 +865,16 @@ r.post('/run-single', async (req, res, next) => {
             })
           };
           if (addedApi === 0 && afterApi > 0) {
-            checkpointDelta.apiRequestLog._note = 'Zahtjevi iz testa nisu prošli ovim backendom (0 novih). Pokreni test s istog backenda na kojem želiš API log (run-single i zahtjevi iz preglednika moraju ići na isti server).';
+            const injected = apiBaseUrl;
+            const received = results._requestHost || '';
+            let originInjected = '';
+            let originReceived = '';
+            try { originInjected = new URL(injected).origin; } catch (_) {}
+            try { originReceived = received ? new URL(received).origin : ''; } catch (_) {}
+            const sameOrigin = originInjected && originReceived && originInjected === originReceived;
+            checkpointDelta.apiRequestLog._note = sameOrigin
+              ? 'Zahtjevi iz testa nisu prošli ovim backendom (0 novih). Isti origin – provjeri je li apiRequestLogger aktivan ili druga instanca/load balancer.'
+              : `Zahtjevi iz testa idu na drugi server: test šalje na ${injected} (izvor: ${results._apiBaseUrlSource}), run-single primljen na ${received}. Da bi added > 0, otvori Admin na ${received} i pokreni test, ili postavi apiBaseUrl na ${received}.`;
           }
 
           // Ako je test uspješan - kreiraj "after" savepoint (stanje baze nakon testa, prije rollbacka)
@@ -934,6 +954,8 @@ r.post('/run-single', async (req, res, next) => {
       assert: blocksInfo.assert,
       blockStatuses,
       apiBaseUrlInjected: apiBaseUrl,
+      apiBaseUrlSource: results._apiBaseUrlSource,
+      requestHost: results._requestHost,
       message: testResult?.success 
         ? `✅ Test '${testName}' uspješno prošao (${duration}ms)`
         : `❌ Test '${testName}' nije prošao`
