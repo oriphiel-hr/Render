@@ -3,7 +3,7 @@
  * Kontejner = test slučaj. Test je uspješan ako svaki blok uspio.
  */
 import React, { useEffect, useState } from 'react'
-import api from '../api'
+import api, { getApiBaseUrlForTest } from '../api'
 
 const SECTORS = [
   { num: 1, title: 'Registracija i Autentifikacija', tests: [
@@ -177,7 +177,7 @@ export default function AdminTestingBlocks() {
       ) : null
 
       const mailpitBaseUrl = testData?.email?.testService?.baseUrl
-      const reqApiBase = api?.defaults?.baseURL ? new URL(api.defaults.baseURL.replace(/\/api\/?$/, '')).origin : undefined
+      const reqApiBase = getApiBaseUrlForTest()
 
       const res = await api.post('/testing/run-single', {
         testId: test.id,

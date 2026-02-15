@@ -29,6 +29,12 @@ function getApiBase() {
   return import.meta.env.VITE_API_URL || 'https://api.uslugar.oriph.io';
 }
 
+/** Trenutni API base (origin bez /api) – koristi za run-single apiBaseUrl da test koristi isti backend kao Admin. */
+export function getApiBaseUrlForTest() {
+  const base = getApiBase().replace(/\/$/, '').replace(/\/api\/?$/, '');
+  return base || (typeof window !== 'undefined' && window.location.origin);
+}
+
 let baseURL = getApiBase().replace(/\/$/, '');
 if (!baseURL.endsWith('/api')) {
   baseURL += '/api';

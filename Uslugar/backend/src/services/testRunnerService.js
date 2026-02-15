@@ -57,7 +57,7 @@ class TestRunnerService {
     return `${url}${sep}apiUrl=${encodeURIComponent(apiBase)}`;
   }
 
-  /** Injektira window.__USLUGAR_API_URL__ prije učitavanja stranice – frontend ga koristi u getApiBase(). */
+  /** Injektira window.__USLUGAR_API_URL__ prije učitavanja stranice – frontend ga koristi u getApiBase(). Zahtjevi se zapisuju u apiRequestLog, rollback na kraju testa vrati stanje. */
   async _injectApiUrl(pageOrContext) {
     const apiBase = this._getApiBaseUrl();
     const escaped = apiBase.replace(/\\/g, '\\\\').replace(/"/g, '\\"');

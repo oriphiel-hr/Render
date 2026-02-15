@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import api from '../api'
+import api, { getApiBaseUrlForTest } from '../api'
 
 // Helper funkcija za screenshot URL - prependira API URL ako je relativan
 const getScreenshotUrl = (url) => {
@@ -2639,7 +2639,7 @@ export default function AdminTesting(){
                                     ) : null
 
                                     const mailpitBaseUrl = testData?.email?.testService?.baseUrl
-                                    const reqApiBase = api?.defaults?.baseURL ? new URL(api.defaults.baseURL.replace(/\/api\/?$/, '')).origin : undefined
+                                    const reqApiBase = getApiBaseUrlForTest()
 
                                     console.log(`[TEST] Pokrenuo automatski test: ${test.id}`, { userDataForTest, mailpitBaseUrl })
 

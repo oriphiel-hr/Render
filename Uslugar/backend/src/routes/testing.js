@@ -598,12 +598,22 @@ r.post('/run-single', async (req, res, next) => {
     console.log(`[TEST] Korak 1: Pokrećem ${isApiOnlyTest ? 'API' : 'Playwright'} test...`);
     let testResult;
     let apiCalls = [];
-    // Da apiRequestLog na ovom backendu bilježi zahtjeve, zahtjevi iz testa moraju ići na ISTI backend
-    // koji prima ovaj run-single. Zato koristimo request host (server koji nas je pozvao), ne env.
-    // Env (RUN_SINGLE_API_BASE_URL / API_BASE_URL) samo ako je request host krivi (npr. iza proxyja).
-    const host = req.get('host');
-    const requestOrigin = host ? `${req.protocol}://${host}` : null;
-    const apiBaseUrl = process.env.RUN_SINGLE_API_BASE_URL || requestOrigin || process.env.API_BASE_URL || process.env.BACKEND_URL;
+    // apiRequestLog se puni samo ako zahtjevi iz testa dođu na OVAJ backend. Koristimo redom:
+    // 1) body.apiBaseUrl – frontend šalje URL koji već koristi za API; isti URL u testu = isti backend = added > 0.
+    // 2) javni URL requesta (X-Forwarded-* ako proxy, inače protocol+host).
+    // 3) env za posebne slučajeve.
+    const forwardedProto = req.get('x-forwarded-proto');
+    const forwardedHost = req.get('x-forwarded-host');
+    const host = forwardedHost || req.get('host');
+    const protocol = (forwardedProto && forwardedProto !== '') ? forwardedProto : req.protocol;
+    const requestOrigin = host ? `${protocol}://${host}`.replace(/\/+$/, '') : null;
+    const apiBaseUrl = (
+      (req.body.apiBaseUrl && String(req.body.apiBaseUrl).trim()) ||
+      process.env.RUN_SINGLE_API_BASE_URL ||
+      requestOrigin ||
+      process.env.API_BASE_URL ||
+      process.env.BACKEND_URL
+    );
     testRunnerService.setApiBaseUrl?.(apiBaseUrl);
 
     try {
