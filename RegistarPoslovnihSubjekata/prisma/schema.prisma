@@ -12,24 +12,45 @@ datasource db {
 
 // --- Tablice prema listi API-ja (38 tablica) ---
 
+/// Prema OpenAPI: bris_kod, kratica, naziv, drzava_id, vrsta_pravnog_oblika_id, status.
 model BrisPravniOblici {
-  id         BigInt   @id @default(autoincrement())
-  snapshotId BigInt?  @map("snapshot_id")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  snapshotId             BigInt   @map("snapshot_id")
+  brisKod                String   @map("bris_kod") @db.VarChar(9)
+  kratica                String?  @map("kratica") @db.VarChar(130)
+  naziv                  String   @map("naziv") @db.VarChar(1024)
+  drzavaId               BigInt   @map("drzava_id")
+  vrstaPravnogOblikaId   BigInt?  @map("vrsta_pravnog_oblika_id")
+  status                 Int      @map("status")
+  createdAt              DateTime @default(now()) @map("created_at")
+
+  @@id([snapshotId, brisKod])
+  @@index([snapshotId])
   @@map("sudreg_bris_pravni_oblici")
 }
 
+/// Prema OpenAPI: identifikator, naziv, drzava_id, status.
 model BrisRegistri {
-  id         BigInt   @id @default(autoincrement())
-  snapshotId BigInt?  @map("snapshot_id")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  snapshotId   BigInt  @map("snapshot_id")
+  identifikator String @map("identifikator") @db.VarChar(15)
+  naziv        String  @map("naziv") @db.VarChar(256)
+  drzavaId     BigInt  @map("drzava_id")
+  status       Int     @map("status")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@id([snapshotId, identifikator])
+  @@index([snapshotId])
   @@map("sudreg_bris_registri")
 }
 
+/// Prema OpenAPI: table_name, count_aktivni.
 model Counts {
-  id         BigInt   @id @default(autoincrement())
-  snapshotId BigInt?  @map("snapshot_id")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  snapshotId   BigInt  @map("snapshot_id")
+  tableName    String  @map("table_name") @db.VarChar(128)
+  countAktivni BigInt  @map("count_aktivni")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@id([snapshotId, tableName])
+  @@index([snapshotId])
   @@map("sudreg_counts")
 }
 
@@ -108,47 +129,75 @@ model Statusi {
   @@map("sudreg_statusi")
 }
 
+/// Prema OpenAPI: subjekti (mbs, status, sud_id_nadlezan, sud_id_sluzba, postupak, oib, mb, ino_podruznica, stecajna_masa, likvidacijska_masa, …).
 model Subjekti {
-  id             BigInt    @id @default(autoincrement())
-  mbs            BigInt?   @map("mbs")
-  oib            String?   @db.VarChar(11)
-  status         Int?      @default(1)
-  inoPodruznica  Int?      @map("ino_podruznica") @default(0)
-  postupak       Int?
-  datumOsnivanja DateTime? @map("datum_osnivanja") @db.Date
-  datumBrisanja  DateTime? @map("datum_brisanja") @db.Date
-  snapshotId     BigInt?   @map("snapshot_id")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
+  id                   BigInt    @id @default(autoincrement())
+  mbs                  BigInt?   @map("mbs")
+  oib                  String?   @db.VarChar(11)
+  status               Int?      @default(1)
+  inoPodruznica        Int?      @map("ino_podruznica") @default(0)
+  postupak             Int?
+  datumOsnivanja       DateTime? @map("datum_osnivanja") @db.Date
+  datumBrisanja        DateTime? @map("datum_brisanja") @db.Date
+  sudIdNadlezan        BigInt?   @map("sud_id_nadlezan")
+  sudIdSluzba          BigInt?   @map("sud_id_sluzba")
+  mb                   Int?      @map("mb")
+  stecajnaMasa         Int?      @map("stecajna_masa")
+  likvidacijskaMasa     Int?      @map("likvidacijska_masa")
+  mbsBrisanogSubjekta  BigInt?   @map("mbs_brisanog_subjekta")
+  glavnaDjelatnost     Int?      @map("glavna_djelatnost")
+  glavnaPodruznicaRbr  Int?      @map("glavna_podruznica_rbr")
+  sudIdBrisanja        BigInt?   @map("sud_id_brisanja")
+  tvrtkaKodBrisanja    String?   @map("tvrtka_kod_brisanja") @db.VarChar(1024)
+  poslovniBrojBrisanja String?   @map("poslovni_broj_brisanja") @db.VarChar(17)
+  snapshotId           BigInt?   @map("snapshot_id")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
   @@map("sudreg_subjekti")
 }
 
+/// Prema OpenAPI: mbs, podruznica_rbr, djelatnost_rbr, nacionalna_klasifikacija_djelatnosti_id, djelatnost_tekst.
 model DjelatnostiPodruznica {
-  id         BigInt   @id @default(autoincrement())
-  snapshotId BigInt?  @map("snapshot_id")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  snapshotId     BigInt    @map("snapshot_id")
+  mbs            BigInt    @map("mbs")
+  podruznicaRbr  Int       @map("podruznica_rbr")
+  djelatnostRbr  Int       @map("djelatnost_rbr")
+  nacionalnaKlasifikacijaDjelatnostiId BigInt? @map("nacionalna_klasifikacija_djelatnosti_id")
+  djelatnostTekst String?  @map("djelatnost_tekst") @db.VarChar(4000)
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  @@id([snapshotId, mbs, podruznicaRbr, djelatnostRbr])
+  @@index([snapshotId])
   @@map("sudreg_djelatnosti_podruznica")
 }
 
+/// Prema OpenAPI: mbs, email_adresa_rbr, adresa.
 model EmailAdrese {
-  id         BigInt   @id @default(autoincrement())
-  subjektId  BigInt?  @map("subjekt_id")
-  redniBroj  Int?     @map("redni_broj")
-  adresa     String?  @db.VarChar(256)
-  snapshotId BigInt?  @map("snapshot_id")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id            BigInt   @id @default(autoincrement())
+  mbo           BigInt?  @map("mbo")
+  emailAdresaRbr Int?    @map("email_adresa_rbr")
+  adresa        String?  @db.VarChar(256)
+  snapshotId    BigInt?  @map("snapshot_id")
+  updatedAt     DateTime @updatedAt @map("updated_at")
   @@map("sudreg_email_adrese")
 }
 
+/// Prema OpenAPI: mbs, podruznica_rbr, email_adresa_rbr, adresa.
 model EmailAdresePodruznica {
-  id         BigInt   @id @default(autoincrement())
-  snapshotId BigInt?  @map("snapshot_id")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  snapshotId     BigInt  @map("snapshot_id")
+  mbs           BigInt  @map("mbs")
+  podruznicaRbr Int     @map("podruznica_rbr")
+  emailAdresaRbr Int    @map("email_adresa_rbr")
+  adresa        String  @map("adresa") @db.VarChar(256)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@id([snapshotId, mbs, podruznicaRbr, emailAdresaRbr])
+  @@index([snapshotId])
   @@map("sudreg_email_adrese_podruznica")
 }
 
 model EvidencijskeDjelatnosti {
   id                              BigInt   @id @default(autoincrement())
-  subjektId                       BigInt?  @map("subjekt_id")
+  mbo                             BigInt?  @map("mbo")
   redniBroj                       Int?     @map("redni_broj")
   nacionalnaKlasifikacijaDjelatnostiId BigInt? @map("nacionalna_klasifikacija_djelatnosti_id")
   djelatnostTekst                 String?  @map("djelatnost_tekst") @db.VarChar(4000)
@@ -157,37 +206,74 @@ model EvidencijskeDjelatnosti {
   @@map("sudreg_evidencijske_djelatnosti")
 }
 
+/// Prema OpenAPI: mbs, gfi_rbr, vrsta_dokumenta, oznaka_konsolidacije, godina_izvjestaja, datum_dostave, datum_od, datum_do.
 model Gfi {
-  id         BigInt   @id @default(autoincrement())
-  snapshotId BigInt?  @map("snapshot_id")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  snapshotId           BigInt    @map("snapshot_id")
+  mbs                  BigInt    @map("mbs")
+  gfiRbr               BigInt    @map("gfi_rbr")
+  vrstaDokumenta       Int       @map("vrsta_dokumenta")
+  oznakaKonsolidacije   Int       @map("oznaka_konsolidacije")
+  godinaIzvjestaja      Int       @map("godina_izvjestaja")
+  datumDostave          DateTime  @map("datum_dostave") @db.Date
+  datumOd               DateTime  @map("datum_od") @db.Date
+  datumDo               DateTime  @map("datum_do") @db.Date
+  createdAt            DateTime  @default(now()) @map("created_at")
+
+  @@id([snapshotId, mbs, gfiRbr])
+  @@index([snapshotId])
   @@map("sudreg_gfi")
 }
 
+/// Prema OpenAPI: mbs, drzava_id, naziv_registra, registarsko_tijelo, broj_iz_registra, pravni_oblik, bris_registar_identifikator, euid, bris_pravni_oblik_kod.
 model InozemniRegistri {
-  id         BigInt   @id @default(autoincrement())
-  snapshotId BigInt?  @map("snapshot_id")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  snapshotId              BigInt   @map("snapshot_id")
+  mbs                     BigInt   @map("mbs")
+  drzavaId                BigInt   @map("drzava_id")
+  nazivRegistra           String?  @map("naziv_registra") @db.VarChar(128)
+  registarskoTijelo       String?  @map("registarsko_tijelo") @db.VarChar(128)
+  brojIzRegistra          String?  @map("broj_iz_registra") @db.VarChar(128)
+  pravniOblik             String?  @map("pravni_oblik") @db.VarChar(200)
+  brisRegistarIdentifikator String? @map("bris_registar_identifikator") @db.VarChar(15)
+  euid                    String?  @map("euid") @db.VarChar(54)
+  brisPravniOblikKod      String?  @map("bris_pravni_oblik_kod") @db.VarChar(9)
+  createdAt               DateTime @default(now()) @map("created_at")
+
+  @@id([snapshotId, mbs, drzavaId])
+  @@index([snapshotId])
   @@map("sudreg_inozemni_registri")
 }
 
+/// Prema OpenAPI: mbs, podruznica_rbr, ime, naznaka_imena, postupak, glavna_podruznica.
 model NaziviPodruznica {
-  id         BigInt   @id @default(autoincrement())
-  snapshotId BigInt?  @map("snapshot_id")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  snapshotId     BigInt   @map("snapshot_id")
+  mbs            BigInt   @map("mbs")
+  podruznicaRbr  Int      @map("podruznica_rbr")
+  ime            String   @map("ime") @db.VarChar(1024)
+  naznakaImena   String?  @map("naznaka_imena") @db.VarChar(128)
+  postupak       Int      @map("postupak")
+  glavnaPodruznica Int    @map("glavna_podruznica")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@id([snapshotId, mbs, podruznicaRbr])
+  @@index([snapshotId])
   @@map("sudreg_nazivi_podruznica")
 }
 
+/// Prema OpenAPI: mbs, tekst.
 model ObjavePriopcenja {
-  id         BigInt   @id @default(autoincrement())
-  snapshotId BigInt?  @map("snapshot_id")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  snapshotId BigInt   @map("snapshot_id")
+  mbs        BigInt   @map("mbs")
+  tekst      String   @map("tekst") @db.VarChar(2000)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@id([snapshotId, mbs, tekst])
+  @@index([snapshotId])
   @@map("sudreg_objave_priopcenja")
 }
 
 model Postupci {
   id           BigInt   @id @default(autoincrement())
-  subjektId    BigInt?  @map("subjekt_id")
+  mbo          BigInt?  @map("mbo")
   postupak     Int?
   datumStecaja DateTime? @map("datum_stecaja") @db.Date
   snapshotId   BigInt?  @map("snapshot_id")
@@ -197,7 +283,7 @@ model Postupci {
 
 model PravniOblici {
   id                    BigInt   @id @default(autoincrement())
-  subjektId             BigInt?  @map("subjekt_id")
+  mbo                   BigInt?  @map("mbo")
   vrstaPravnogOblikaId  BigInt?  @map("vrsta_pravnog_oblika_id")
   snapshotId            BigInt?  @map("snapshot_id")
   updatedAt             DateTime @updatedAt @map("updated_at")
@@ -206,7 +292,7 @@ model PravniOblici {
 
 model PredmetiPoslovanja {
   id                              BigInt   @id @default(autoincrement())
-  subjektId                       BigInt?  @map("subjekt_id")
+  mbo                             BigInt?  @map("mbo")
   redniBroj                       Int?     @map("redni_broj")
   nacionalnaKlasifikacijaDjelatnostiId BigInt? @map("nacionalna_klasifikacija_djelatnosti_id")
   djelatnostTekst                 String?  @map("djelatnost_tekst") @db.VarChar(4000)
@@ -217,7 +303,7 @@ model PredmetiPoslovanja {
 
 model PreteziteDjelatnosti {
   id                              BigInt   @id @default(autoincrement())
-  subjektId                       BigInt?  @map("subjekt_id")
+  mbo                             BigInt?  @map("mbo")
   redniBroj                       Int?     @map("redni_broj")
   nacionalnaKlasifikacijaDjelatnostiId BigInt? @map("nacionalna_klasifikacija_djelatnosti_id")
   djelatnostTekst                 String?  @map("djelatnost_tekst") @db.VarChar(4000)
@@ -226,23 +312,37 @@ model PreteziteDjelatnosti {
   @@map("sudreg_pretezite_djelatnosti")
 }
 
+/// Prema OpenAPI: mbs, prijevod_skracene_tvrtke_rbr, ime, jezik_id.
 model PrijevodiSkracenihTvrtki {
-  id         BigInt   @id @default(autoincrement())
-  snapshotId BigInt?  @map("snapshot_id")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  snapshotId                BigInt  @map("snapshot_id")
+  mbs                       BigInt  @map("mbs")
+  prijevodSkraceneTvrtkeRbr Int     @map("prijevod_skracene_tvrtke_rbr")
+  ime                       String  @map("ime") @db.VarChar(512)
+  jezikId                   BigInt  @map("jezik_id")
+  createdAt                 DateTime @default(now()) @map("created_at")
+
+  @@id([snapshotId, mbs, prijevodSkraceneTvrtkeRbr])
+  @@index([snapshotId])
   @@map("sudreg_prijevodi_skracenih_tvrtki")
 }
 
+/// Prema OpenAPI: mbs, prijevod_tvrtke_rbr, ime, jezik_id.
 model PrijevodiTvrtki {
-  id         BigInt   @id @default(autoincrement())
-  snapshotId BigInt?  @map("snapshot_id")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  snapshotId        BigInt   @map("snapshot_id")
+  mbs               BigInt   @map("mbs")
+  prijevodTvrtkeRbr Int      @map("prijevod_tvrtke_rbr")
+  ime               String   @map("ime") @db.VarChar(1024)
+  jezikId           BigInt   @map("jezik_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  @@id([snapshotId, mbs, prijevodTvrtkeRbr])
+  @@index([snapshotId])
   @@map("sudreg_prijevodi_tvrtki")
 }
 
 model Sjedista {
   id                 BigInt   @id @default(autoincrement())
-  subjektId          BigInt?  @map("subjekt_id")
+  mbo                BigInt?  @map("mbo")
   redniBroj          Int?     @default(1) @map("redni_broj")
   drzavaId           BigInt?  @map("drzava_id")
   sifraZupanije      Int?     @map("sifra_zupanije")
@@ -262,32 +362,53 @@ model Sjedista {
   @@map("sudreg_sjedista")
 }
 
+/// Prema OpenAPI: mbs, podruznica_rbr, sifra_zupanije, naziv_zupanije, sifra_opcine, naziv_opcine, sifra_naselja, naziv_naselja, sifra_ulice, ulica, kucni_broj, kucni_podbroj.
 model SjedistaPodruznica {
-  id         BigInt   @id @default(autoincrement())
-  snapshotId BigInt?  @map("snapshot_id")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  snapshotId    BigInt   @map("snapshot_id")
+  mbs           BigInt   @map("mbs")
+  podruznicaRbr Int      @map("podruznica_rbr")
+  sifraZupanije Int      @map("sifra_zupanije")
+  nazivZupanije String   @map("naziv_zupanije") @db.VarChar(128)
+  sifraOpcine   Int      @map("sifra_opcine")
+  nazivOpcine   String   @map("naziv_opcine") @db.VarChar(128)
+  sifraNaselja  BigInt   @map("sifra_naselja")
+  nazivNaselja  String   @map("naziv_naselja") @db.VarChar(128)
+  sifraUlice    BigInt?  @map("sifra_ulice")
+  ulica         String?  @db.VarChar(512)
+  kucniBroj     Int?     @map("kucni_broj")
+  kucniPodbroj  String?  @map("kucni_podbroj") @db.VarChar(10)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@id([snapshotId, mbs, podruznicaRbr])
+  @@index([snapshotId])
   @@map("sudreg_sjedista_podruznica")
 }
 
 model SkraceneTvrtke {
   id         BigInt   @id @default(autoincrement())
-  subjektId  BigInt?  @map("subjekt_id")
+  mbo        BigInt?  @map("mbo")
   ime        String?  @db.VarChar(512)
   snapshotId BigInt?  @map("snapshot_id")
   updatedAt  DateTime @updatedAt @map("updated_at")
   @@map("sudreg_skracene_tvrtke")
 }
 
+/// Prema OpenAPI: mbs, podruznica_rbr, ime.
 model SkraceniNaziviPodruznica {
-  id         BigInt   @id @default(autoincrement())
-  snapshotId BigInt?  @map("snapshot_id")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  snapshotId    BigInt   @map("snapshot_id")
+  mbs           BigInt   @map("mbs")
+  podruznicaRbr Int      @map("podruznica_rbr")
+  ime           String   @map("ime") @db.VarChar(512)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@id([snapshotId, mbs, podruznicaRbr])
+  @@index([snapshotId])
   @@map("sudreg_skraceni_nazivi_podruznica")
 }
 
 model TemeljniKapitali {
   id                 BigInt   @id @default(autoincrement())
-  subjektId          BigInt?  @map("subjekt_id")
+  mbo                BigInt?  @map("mbo")
   temeljniKapitalRbr Int?     @map("temeljni_kapital_rbr")
   valutaId           BigInt?  @map("valuta_id")
   iznos              Decimal? @db.Decimal(22, 2)
@@ -298,7 +419,7 @@ model TemeljniKapitali {
 
 model Tvrtke {
   id          BigInt   @id @default(autoincrement())
-  subjektId   BigInt?  @map("subjekt_id")
+  mbo         BigInt?  @map("mbo")
   ime         String?  @db.VarChar(1024)
   naznakaImena String? @map("naznaka_imena") @db.VarChar(512)
   snapshotId  BigInt?  @map("snapshot_id")
@@ -374,4 +495,16 @@ model SudregProxyLog {
   @@index([endpoint])
   @@index([createdAt])
   @@map("sudreg_proxy_log")
+}
+
+/// Očekivani broj redova po endpointu + snapshot (iz X-Total-Count; dohvat s offset=0&limit=0).
+model SudregExpectedCount {
+  endpoint   String   @db.VarChar(64)
+  snapshotId BigInt   @map("snapshot_id")
+  totalCount BigInt   @map("total_count")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@id([endpoint, snapshotId])
+  @@index([snapshotId])
+  @@map("sudreg_expected_counts")
 }

@@ -68,6 +68,14 @@ Prema dokumentaciji [data.gov.hr – Sudski registar](https://data.gov.hr/ckan/d
 
 ---
 
+## Uskladivanje tablica s OpenAPI shemom
+
+Izvor: datoteka **`open_api (1)`** u korijenu projekta (Sudski registar API v3.0.4). Detaljna usporedba: **`docs/OPENAPI-VS-PRISMA.md`**.
+
+Tablice u `prisma/schema.prisma` usklađene su s OpenAPI za: **subjekti** (dodani sud_id_nadlezan, sud_id_sluzba, mb, stecajna_masa, likvidacijska_masa, mbs_brisanog_subjekta, glavna_djelatnost, glavna_podruznica_rbr, sud_id_brisanja, tvrtka_kod_brisanja, poslovni_broj_brisanja), **email_adrese** (stupac `email_adresa_rbr` umjesto redni_broj), **djelatnosti_podruznica** (puna shema). **Stub** tablice (gfi, objave_priopcenja, nazivi_podruznica, itd.) mogu se dopuniti prema `OPENAPI-VS-PRISMA.md` kada zatreba.
+
+---
+
 ## Sync u bazu (upis) i detekcija promjena
 
 **Redoslijed preporučen za puni sync:** prvo **promjene**, zatim šifrarnici (sudovi, drzave, valute, …), zatim ostale tablice po potrebi.

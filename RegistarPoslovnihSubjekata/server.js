@@ -162,18 +162,39 @@ const SYNC_CONFIG = {
 /** Tablice koje se syncaju po snapshot_id: na početku brišu sve redove za taj snapshot, zatim batch upis. Pri grešci rollback (brišu se upisani redovi za taj snapshot). mapRow(r, snapshotIdBig) vraća objekt za createMany. */
 const toBigInt = (v) => (v != null && v !== '' ? BigInt(Number(v)) : null);
 const toDate = (v) => (v != null && v !== '' ? new Date(v) : null);
+
+/** Endpointi čije tablice imaju MBS/mbo (povezani na subjekt). Za njih se za sync zahtijeva da postoji snapshot u sudreg_promjene_stavke. Ostale tablice sa snapshot_id: dovoljno da snapshot postoji (npr. u expected_counts ili promjene_stavke). */
+const SNAPSHOT_ENDPOINTS_WITH_MBO = new Set([
+  'subjekti', 'tvrtke', 'sjedista', 'email_adrese', 'evidencijske_djelatnosti', 'postupci', 'pravni_oblici',
+  'predmeti_poslovanja', 'pretezite_djelatnosti', 'temeljni_kapitali', 'skracene_tvrtke',
+  'gfi', 'objave_priopcenja', 'nazivi_podruznica', 'skraceni_nazivi_podruznica', 'sjedista_podruznica',
+  'email_adrese_podruznica', 'inozemni_registri', 'prijevodi_tvrtki', 'prijevodi_skracenih_tvrtki',
+  'djelatnosti_podruznica',
+]);
+
 const SYNC_SNAPSHOT_CONFIG = {
   subjekti: {
     apiPath: 'subjekti',
     model: 'subjekti',
     mapRow: (r, sid) => ({
       mbs: toBigInt(r.mbs),
-      oib: r.oib ?? null,
+      oib: r.oib != null ? String(r.oib) : null,
       status: r.status != null ? Number(r.status) : 1,
       inoPodruznica: r.ino_podruznica != null ? Number(r.ino_podruznica) : 0,
       postupak: r.postupak != null ? Number(r.postupak) : null,
       datumOsnivanja: toDate(r.datum_osnivanja),
       datumBrisanja: toDate(r.datum_brisanja),
+      sudIdNadlezan: toBigInt(r.sud_id_nadlezan),
+      sudIdSluzba: toBigInt(r.sud_id_sluzba),
+      mb: r.mb != null ? Number(r.mb) : null,
+      stecajnaMasa: r.stecajna_masa != null ? Number(r.stecajna_masa) : null,
+      likvidacijskaMasa: r.likvidacijska_masa != null ? Number(r.likvidacijska_masa) : null,
+      mbsBrisanogSubjekta: toBigInt(r.mbs_brisanog_subjekta),
+      glavnaDjelatnost: r.glavna_djelatnost != null ? Number(r.glavna_djelatnost) : null,
+      glavnaPodruznicaRbr: r.glavna_podruznica_rbr != null ? Number(r.glavna_podruznica_rbr) : null,
+      sudIdBrisanja: toBigInt(r.sud_id_brisanja),
+      tvrtkaKodBrisanja: r.tvrtka_kod_brisanja ?? null,
+      poslovniBrojBrisanja: r.poslovni_broj_brisanja ?? null,
       snapshotId: sid,
     }),
   },
@@ -181,7 +202,7 @@ const SYNC_SNAPSHOT_CONFIG = {
     apiPath: 'tvrtke',
     model: 'tvrtke',
     mapRow: (r, sid) => ({
-      subjektId: toBigInt(r.subjekt_id),
+      mbo: toBigInt(r.mbs ?? r.subjekt_id),
       ime: r.ime ?? null,
       naznakaImena: r.naznaka_imena ?? null,
       snapshotId: sid,
@@ -191,7 +212,7 @@ const SYNC_SNAPSHOT_CONFIG = {
     apiPath: 'sjedista',
     model: 'sjedista',
     mapRow: (r, sid) => ({
-      subjektId: toBigInt(r.subjekt_id),
+      mbo: toBigInt(r.mbs ?? r.subjekt_id),
       redniBroj: r.redni_broj != null ? Number(r.redni_broj) : 1,
       drzavaId: toBigInt(r.drzava_id),
       sifraZupanije: r.sifra_zupanije != null ? Number(r.sifra_zupanije) : null,
@@ -207,6 +228,154 @@ const SYNC_SNAPSHOT_CONFIG = {
       kucniPodbroj: r.kucni_podbroj ?? null,
       postanskiBroj: r.postanski_broj != null ? Number(r.postanski_broj) : null,
       snapshotId: sid,
+    }),
+  },
+  gfi: {
+    apiPath: 'gfi',
+    model: 'gfi',
+    mapRow: (r, sid) => ({
+      snapshotId: sid,
+      mbs: toBigInt(r.mbs),
+      gfiRbr: BigInt(Number(r.gfi_rbr ?? 0)),
+      vrstaDokumenta: r.vrsta_dokumenta != null ? Number(r.vrsta_dokumenta) : 0,
+      oznakaKonsolidacije: r.oznaka_konsolidacije != null ? Number(r.oznaka_konsolidacije) : 0,
+      godinaIzvjestaja: r.godina_izvjestaja != null ? Number(r.godina_izvjestaja) : 0,
+      datumDostave: toDate(r.datum_dostave) ?? new Date(),
+      datumOd: toDate(r.datum_od) ?? new Date(),
+      datumDo: toDate(r.datum_do) ?? new Date(),
+    }),
+  },
+  objave_priopcenja: {
+    apiPath: 'objave_priopcenja',
+    model: 'objavePriopcenja',
+    mapRow: (r, sid) => ({
+      snapshotId: sid,
+      mbs: toBigInt(r.mbs),
+      tekst: r.tekst != null && r.tekst !== '' ? String(r.tekst) : '',
+    }),
+  },
+  nazivi_podruznica: {
+    apiPath: 'nazivi_podruznica',
+    model: 'naziviPodruznica',
+    mapRow: (r, sid) => ({
+      snapshotId: sid,
+      mbs: toBigInt(r.mbs),
+      podruznicaRbr: r.podruznica_rbr != null ? Number(r.podruznica_rbr) : 0,
+      ime: r.ime ?? '',
+      naznakaImena: r.naznaka_imena ?? null,
+      postupak: r.postupak != null ? Number(r.postupak) : 0,
+      glavnaPodruznica: r.glavna_podruznica != null ? Number(r.glavna_podruznica) : 0,
+    }),
+  },
+  skraceni_nazivi_podruznica: {
+    apiPath: 'skraceni_nazivi_podruznica',
+    model: 'skraceniNaziviPodruznica',
+    mapRow: (r, sid) => ({
+      snapshotId: sid,
+      mbs: toBigInt(r.mbs),
+      podruznicaRbr: r.podruznica_rbr != null ? Number(r.podruznica_rbr) : 0,
+      ime: r.ime ?? '',
+    }),
+  },
+  sjedista_podruznica: {
+    apiPath: 'sjedista_podruznica',
+    model: 'sjedistaPodruznica',
+    mapRow: (r, sid) => ({
+      snapshotId: sid,
+      mbs: toBigInt(r.mbs),
+      podruznicaRbr: r.podruznica_rbr != null ? Number(r.podruznica_rbr) : 0,
+      sifraZupanije: r.sifra_zupanije != null ? Number(r.sifra_zupanije) : 0,
+      nazivZupanije: r.naziv_zupanije ?? '',
+      sifraOpcine: r.sifra_opcine != null ? Number(r.sifra_opcine) : 0,
+      nazivOpcine: r.naziv_opcine ?? '',
+      sifraNaselja: toBigInt(r.sifra_naselja) ?? BigInt(0),
+      nazivNaselja: r.naziv_naselja ?? '',
+      sifraUlice: toBigInt(r.sifra_ulice),
+      ulica: r.ulica ?? null,
+      kucniBroj: r.kucni_broj != null ? Number(r.kucni_broj) : null,
+      kucniPodbroj: r.kucni_podbroj ?? null,
+    }),
+  },
+  email_adrese_podruznica: {
+    apiPath: 'email_adrese_podruznica',
+    model: 'emailAdresePodruznica',
+    mapRow: (r, sid) => ({
+      snapshotId: sid,
+      mbs: toBigInt(r.mbs),
+      podruznicaRbr: r.podruznica_rbr != null ? Number(r.podruznica_rbr) : 0,
+      emailAdresaRbr: r.email_adresa_rbr != null ? Number(r.email_adresa_rbr) : 0,
+      adresa: r.adresa ?? '',
+    }),
+  },
+  inozemni_registri: {
+    apiPath: 'inozemni_registri',
+    model: 'inozemniRegistri',
+    mapRow: (r, sid) => ({
+      snapshotId: sid,
+      mbs: toBigInt(r.mbs),
+      drzavaId: toBigInt(r.drzava_id) ?? BigInt(0),
+      nazivRegistra: r.naziv_registra ?? null,
+      registarskoTijelo: r.registarsko_tijelo ?? null,
+      brojIzRegistra: r.broj_iz_registra ?? null,
+      pravniOblik: r.pravni_oblik ?? null,
+      brisRegistarIdentifikator: r.bris_registar_identifikator ?? null,
+      euid: r.euid ?? null,
+      brisPravniOblikKod: r.bris_pravni_oblik_kod ?? null,
+    }),
+  },
+  counts: {
+    apiPath: 'counts',
+    model: 'counts',
+    mapRow: (r, sid) => ({
+      snapshotId: sid,
+      tableName: r.table_name ?? '',
+      countAktivni: toBigInt(r.count_aktivni) ?? BigInt(0),
+    }),
+  },
+  bris_pravni_oblici: {
+    apiPath: 'bris_pravni_oblici',
+    model: 'brisPravniOblici',
+    mapRow: (r, sid) => ({
+      snapshotId: sid,
+      brisKod: r.bris_kod ?? '',
+      kratica: r.kratica ?? null,
+      naziv: r.naziv ?? '',
+      drzavaId: toBigInt(r.drzava_id) ?? BigInt(0),
+      vrstaPravnogOblikaId: toBigInt(r.vrsta_pravnog_oblika_id),
+      status: r.status != null ? Number(r.status) : 0,
+    }),
+  },
+  bris_registri: {
+    apiPath: 'bris_registri',
+    model: 'brisRegistri',
+    mapRow: (r, sid) => ({
+      snapshotId: sid,
+      identifikator: r.identifikator ?? '',
+      naziv: r.naziv ?? '',
+      drzavaId: toBigInt(r.drzava_id) ?? BigInt(0),
+      status: r.status != null ? Number(r.status) : 0,
+    }),
+  },
+  prijevodi_tvrtki: {
+    apiPath: 'prijevodi_tvrtki',
+    model: 'prijevodiTvrtki',
+    mapRow: (r, sid) => ({
+      snapshotId: sid,
+      mbs: toBigInt(r.mbs),
+      prijevodTvrtkeRbr: r.prijevod_tvrtke_rbr != null ? Number(r.prijevod_tvrtke_rbr) : 0,
+      ime: r.ime ?? '',
+      jezikId: toBigInt(r.jezik_id) ?? BigInt(0),
+    }),
+  },
+  prijevodi_skracenih_tvrtki: {
+    apiPath: 'prijevodi_skracenih_tvrtki',
+    model: 'prijevodiSkracenihTvrtki',
+    mapRow: (r, sid) => ({
+      snapshotId: sid,
+      mbs: toBigInt(r.mbs),
+      prijevodSkraceneTvrtkeRbr: r.prijevod_skracene_tvrtke_rbr != null ? Number(r.prijevod_skracene_tvrtke_rbr) : 0,
+      ime: r.ime ?? '',
+      jezikId: toBigInt(r.jezik_id) ?? BigInt(0),
     }),
   },
 };
@@ -297,6 +466,61 @@ async function runSyncWithSnapshot(sendJson, endpointName, requestedSnapshotId, 
   }
 }
 
+/** Dohvat offset=0&limit=0 i spremanje X-Total-Count u sudreg_expected_counts (jedan endpoint). */
+async function saveExpectedCountForEndpoint(endpoint, requestedSnapshotId, token) {
+  try {
+    const result = await proxyWithToken(endpoint, 'offset=0&limit=0', requestedSnapshotId, token);
+    if (result.statusCode !== 200) return;
+    const h = result.headers || {};
+    const totalCount = h.xTotalCount;
+    const snapshotId = h.xSnapshotId != null ? h.xSnapshotId : (requestedSnapshotId != null && requestedSnapshotId !== '' ? BigInt(Number(requestedSnapshotId)) : null);
+    if (totalCount != null && snapshotId != null) {
+      await prisma.sudregExpectedCount.upsert({
+        where: { endpoint_snapshotId: { endpoint, snapshotId } },
+        create: { endpoint, snapshotId, totalCount },
+        update: { totalCount },
+      });
+      console.log('[Expected count]', endpoint, 'snapshot', String(snapshotId), 'total', String(totalCount));
+    }
+  } catch (e) {
+    console.warn('[Expected count]', endpoint, e.message || e);
+  }
+}
+
+/** Svi API endpointi koji podržavaju snapshot_id i listu (offset/limit, X-Total-Count). Očekivani brojeve dohvaćamo odjednom kad se pokrene sync_promjene. */
+const SNAPSHOT_ENDPOINTS = [
+  'promjene',
+  'subjekti',
+  'tvrtke',
+  'sjedista',
+  'skracene_tvrtke',
+  'email_adrese',
+  'pravni_oblici',
+  'pretezite_djelatnosti',
+  'predmeti_poslovanja',
+  'evidencijske_djelatnosti',
+  'temeljni_kapitali',
+  'postupci',
+  'djelatnosti_podruznica',
+  'gfi',
+  'objave_priopcenja',
+  'nazivi_podruznica',
+  'skraceni_nazivi_podruznica',
+  'sjedista_podruznica',
+  'email_adrese_podruznica',
+  'inozemni_registri',
+  'counts',
+  'bris_pravni_oblici',
+  'bris_registri',
+  'prijevodi_tvrtki',
+  'prijevodi_skracenih_tvrtki',
+];
+
+/** Dohvat X-Total-Count (offset=0&limit=0) za sve tablice sa snapshot_id i upis u sudreg_expected_counts. Pokreće se pri pokretanju sudreg_sync_promjene. */
+async function saveAllExpectedCountsForSnapshot(requestedSnapshotId, token) {
+  await Promise.all(SNAPSHOT_ENDPOINTS.map((endpoint) => saveExpectedCountForEndpoint(endpoint, requestedSnapshotId, token)));
+}
+
 /** Sync metode promjene: dohvaća cijeli popis (offset/limit), sprema stavke. requestedSnapshotId = opcionalno. Na početku briše postojeće redove za taj snapshot. Pri grešci: rollback. Faza (phase) u logu/odgovoru: token|fetch|write – za dijagnostiku tko prekida (Render vs Sudreg API). */
 async function runSyncPromjene(sendJson, requestedSnapshotId = null) {
   const BATCH_SIZE = 500;
@@ -311,6 +535,7 @@ async function runSyncPromjene(sendJson, requestedSnapshotId = null) {
     }
     lastPhase = 'token';
     const token = await getSudregToken();
+    await saveAllExpectedCountsForSnapshot(requestedSnapshotId, token);
     let offset = 0;
     let totalSynced = 0;
     let snapshotId = null;
@@ -555,6 +780,49 @@ const server = http.createServer(async (req, res) => {
     const requestedSnapshotId = snapshotParam != null && snapshotParam !== '' ? snapshotParam : (snapshotHeader != null && snapshotHeader !== '' ? snapshotHeader : null);
     const snapshotConfig = SYNC_SNAPSHOT_CONFIG[endpointName];
     if (snapshotConfig) {
+      if (requestedSnapshotId == null || requestedSnapshotId === '') {
+        sendJson(400, { error: 'snapshot_required', message: 'Za sync po snapshotu obavezan je snapshot_id (npr. ?snapshot_id=1090).' });
+        return;
+      }
+      const sid = BigInt(Number(requestedSnapshotId));
+
+      const expectedRow = await prisma.sudregExpectedCount.findUnique({
+        where: { endpoint_snapshotId: { endpoint: endpointName, snapshotId: sid } },
+      });
+      if (!expectedRow) {
+        sendJson(409, {
+          error: 'expected_count_required',
+          message: 'Prije unosa u bilo koju tablicu mora postojati odgovarajući redak u sudreg_expected_counts. Pokreni POST /api/sudreg_sync_promjene za taj snapshot_id.',
+          hint: `POST /api/sudreg_sync_promjene?snapshot_id=${requestedSnapshotId}`,
+        });
+        return;
+      }
+
+      if (SNAPSHOT_ENDPOINTS_WITH_MBO.has(endpointName)) {
+        const promjeneCount = await prisma.promjeneStavka.count({ where: { snapshotId: sid } });
+        if (promjeneCount === 0) {
+          sendJson(409, {
+            error: 'sync_promjene_required',
+            message: 'Tablice s MBO: moraju postojati odgovarajući retci u sudreg_promjene_stavke za taj snapshot_id.',
+            hint: `POST /api/sudreg_sync_promjene?snapshot_id=${requestedSnapshotId}`,
+          });
+          return;
+        }
+      }
+
+      const model = prisma[snapshotConfig.model];
+      const existingInTable = model && typeof model.count === 'function'
+        ? await model.count({ where: { snapshotId: sid } })
+        : 0;
+      if (existingInTable > 0) {
+        sendJson(409, {
+          error: 'snapshot_already_in_table',
+          message: 'Unos samo ako tablica nema upisan snapshot koji se upisuje. Tablica već sadrži podatke za taj snapshot_id.',
+          hint: `Tablica ${snapshotConfig.model} već ima ${existingInTable} redaka za snapshot ${requestedSnapshotId}.`,
+        });
+        return;
+      }
+
       await runSyncWithSnapshot(sendJson, endpointName, requestedSnapshotId, snapshotConfig);
       return;
     }
@@ -563,6 +831,66 @@ const server = http.createServer(async (req, res) => {
       await runSync(sendJson, endpointName, config);
       return;
     }
+  }
+
+  // GET /api/sudreg_expected_counts – očekivani broj redova po endpointu + snapshot (X-Total-Count s offset=0&limit=0). Query: snapshot_id (opcionalno).
+  if (path === '/api/sudreg_expected_counts' && method === 'GET') {
+    try {
+      const snapshotParam = url.searchParams.get('snapshot_id');
+      const where = snapshotParam != null && snapshotParam !== '' ? { snapshotId: BigInt(Number(snapshotParam)) } : {};
+      const rows = await prisma.sudregExpectedCount.findMany({ where, orderBy: [{ snapshotId: 'desc' }, { endpoint: 'asc' }] });
+      const endpointToModel = {
+        promjene: 'promjeneStavka',
+        subjekti: 'subjekti',
+        tvrtke: 'tvrtke',
+        sjedista: 'sjedista',
+        skracene_tvrtke: 'skraceneTvrtke',
+        email_adrese: 'emailAdrese',
+        pravni_oblici: 'pravniOblici',
+        pretezite_djelatnosti: 'preteziteDjelatnosti',
+        predmeti_poslovanja: 'predmetiPoslovanja',
+        evidencijske_djelatnosti: 'evidencijskeDjelatnosti',
+        temeljni_kapitali: 'temeljniKapitali',
+        postupci: 'postupci',
+        djelatnosti_podruznica: 'djelatnostiPodruznica',
+        gfi: 'gfi',
+        objave_priopcenja: 'objavePriopcenja',
+        nazivi_podruznica: 'naziviPodruznica',
+        skraceni_nazivi_podruznica: 'skraceniNaziviPodruznica',
+        sjedista_podruznica: 'sjedistaPodruznica',
+        email_adrese_podruznica: 'emailAdresePodruznica',
+        inozemni_registri: 'inozemniRegistri',
+        counts: 'counts',
+        bris_pravni_oblici: 'brisPravniOblici',
+        bris_registri: 'brisRegistri',
+        prijevodi_tvrtki: 'prijevodiTvrtki',
+        prijevodi_skracenih_tvrtki: 'prijevodiSkracenihTvrtki',
+      };
+      const withActual = await Promise.all(
+        rows.map(async (r) => {
+          const modelName = endpointToModel[r.endpoint];
+          let actualCount = null;
+          if (modelName) {
+            const model = prisma[modelName];
+            if (model && typeof model.count === 'function') {
+              actualCount = await model.count({ where: { snapshotId: r.snapshotId } });
+            }
+          }
+          return {
+            endpoint: r.endpoint,
+            snapshotId: String(r.snapshotId),
+            totalCount: String(r.totalCount),
+            actualCount: actualCount != null ? actualCount : null,
+            ok: actualCount != null ? Number(r.totalCount) === actualCount : null,
+            createdAt: r.createdAt.toISOString(),
+          };
+        })
+      );
+      sendJson(200, { ok: true, expectedCounts: withActual });
+    } catch (err) {
+      sendJson(500, { error: 'expected_counts_failed', message: err.message });
+    }
+    return;
   }
 
   // GET /api/sudreg_promjene_razlike – usporedba dva snapshota: subjekti kod kojih je SCN veći u novijem (ili samo u novijem)
