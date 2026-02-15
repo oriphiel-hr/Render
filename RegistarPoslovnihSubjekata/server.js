@@ -556,6 +556,20 @@ async function saveAllExpectedCountsForSnapshot(requestedSnapshotId, token) {
   await Promise.all(SNAPSHOT_ENDPOINTS.map((endpoint) => saveExpectedCountForEndpoint(endpoint, requestedSnapshotId, token)));
 }
 
+/** Ažurira sudreg_sync_state kad zbilja prođe upis: postavlja snapshot_id i povećava redni_broj. Ne baca ako tablica ne postoji (migracija nije pokrenuta). */
+async function updateSyncState(snapshotId) {
+  try {
+    const sid = BigInt(Number(snapshotId));
+    await prisma.sudregSyncState.upsert({
+      where: { id: 'default' },
+      create: { id: 'default', snapshotId: sid, redniBroj: 1 },
+      update: { snapshotId: sid, redniBroj: { increment: 1 } },
+    });
+  } catch (e) {
+    console.warn('[Sync state] Ažuriranje preskočeno:', e.message || e);
+  }
+}
+
 /** Sync metode promjene: dohvaća cijeli popis (offset/limit), sprema stavke. requestedSnapshotId = opcionalno. Na početku briše postojeće redove za taj snapshot. Pri grešci: rollback. Faza (phase) u logu/odgovoru: token|fetch|write – za dijagnostiku tko prekida (Render vs Sudreg API). */
 async function runSyncPromjene(sendJson, requestedSnapshotId = null) {
   const BATCH_SIZE = 500;
@@ -607,22 +621,25 @@ async function runSyncPromjene(sendJson, requestedSnapshotId = null) {
         };
       }).filter((r) => r.mbs != null);
       lastPhase = 'write';
-      await prisma.$transaction(
-        toUpsert.map((row) =>
-          prisma.promjeneStavka.upsert({
+      await prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT set_config('app.audit_context', 'sync_promjene', true)`;
+        for (const row of toUpsert) {
+          await tx.promjeneStavka.upsert({
             where: {
               snapshotId_mbs: { snapshotId: row.snapshotId, mbs: row.mbs },
             },
             create: row,
             update: { scn: row.scn, vrijeme: row.vrijeme },
-          })
-        )
-      );
+          });
+        }
+      });
       totalSynced += toUpsert.length;
       batchCount += 1;
       offset += BATCH_SIZE;
     } while (rows.length === BATCH_SIZE);
     const durationMs = Date.now() - startMs;
+    const resolvedSnapshotId = requestedSnapshotId != null && requestedSnapshotId !== '' ? requestedSnapshotId : (snapshotId != null ? String(snapshotId) : null);
+    if (resolvedSnapshotId != null) await updateSyncState(resolvedSnapshotId);
     sendJson(200, {
       ok: true,
       endpoint: 'promjene',
@@ -772,6 +789,8 @@ const server = http.createServer(async (req, res) => {
         token: 'GET|POST /api/token',
         sudreg: 'GET /api/sudreg_<endpoint> (npr. /api/sudreg_sudovi, /api/sudreg_detalji_subjekta)',
         sync: 'POST /api/sudreg_sync_<endpoint> (promjene, subjekti, tvrtke, sjedista=po snapshot_id+rollback; sudovi, drzave, valute, ...=šifrarnici)',
+        expectedCounts: 'GET /api/sudreg_expected_counts?snapshot_id= (očekivani vs stvarni brojevi); POST = upis expected counts',
+        syncGreske: 'GET /api/sudreg_sync_greske?snapshot_id= (greške: gdje se broj upisanih ne slaže s očekivanim)',
         promjeneRazlike: 'GET /api/sudreg_promjene_razlike?stari_snapshot=&novi_snapshot= (usporedba SCN, promijenjeni subjekti)',
       },
     });
@@ -886,9 +905,98 @@ const server = http.createServer(async (req, res) => {
       await saveAllExpectedCountsForSnapshot(snapshotParam, token);
       const sid = BigInt(Number(snapshotParam));
       const count = await prisma.sudregExpectedCount.count({ where: { snapshotId: sid } });
+      await updateSyncState(snapshotParam);
       sendJson(200, { ok: true, snapshotId: snapshotParam, written: count, message: `Upisano ${count} redaka u sudreg_expected_counts.` });
     } catch (err) {
       sendJson(500, { error: 'expected_counts_write_failed', message: err.message || String(err) });
+    }
+    return;
+  }
+
+  // GET /api/sudreg_sync_state – trenutni snapshot_id i redni_broj (ažuriraju se nakon POST expected_counts ili sync_promjene).
+  if (path === '/api/sudreg_sync_state' && method === 'GET') {
+    try {
+      const row = await prisma.sudregSyncState.findUnique({ where: { id: 'default' } });
+      if (!row) {
+        sendJson(200, { ok: true, snapshotId: null, redniBroj: null, message: 'Još nema upisanog stanja. Pokreni POST /api/sudreg_expected_counts?snapshot_id=... ili sync_promjene.' });
+        return;
+      }
+      sendJson(200, { ok: true, snapshotId: String(row.snapshotId), redniBroj: row.redniBroj, updatedAt: row.updatedAt.toISOString() });
+    } catch (e) {
+      sendJson(500, { error: 'sync_state_failed', message: e.message || String(e) });
+    }
+    return;
+  }
+
+  // GET /api/sudreg_sync_greske – greške validacije: gdje se broj upisanih ne slaže s očekivanim (i sl.). Query: snapshot_id (opcionalno; bez njega provjeri sve snapshote iz expected_counts).
+  if (path === '/api/sudreg_sync_greske' && method === 'GET') {
+    try {
+      const snapshotParam = url.searchParams.get('snapshot_id');
+      const where = snapshotParam != null && snapshotParam !== '' ? { snapshotId: BigInt(Number(snapshotParam)) } : {};
+      const rows = await prisma.sudregExpectedCount.findMany({ where, orderBy: [{ snapshotId: 'desc' }, { endpoint: 'asc' }] });
+      const endpointToModel = {
+        promjene: 'promjeneStavka',
+        subjekti: 'subjekti',
+        tvrtke: 'tvrtke',
+        sjedista: 'sjedista',
+        skracene_tvrtke: 'skraceneTvrtke',
+        email_adrese: 'emailAdrese',
+        pravni_oblici: 'pravniOblici',
+        pretezite_djelatnosti: 'preteziteDjelatnosti',
+        predmeti_poslovanja: 'predmetiPoslovanja',
+        evidencijske_djelatnosti: 'evidencijskeDjelatnosti',
+        temeljni_kapitali: 'temeljniKapitali',
+        postupci: 'postupci',
+        djelatnosti_podruznica: 'djelatnostiPodruznica',
+        gfi: 'gfi',
+        objave_priopcenja: 'objavePriopcenja',
+        nazivi_podruznica: 'naziviPodruznica',
+        skraceni_nazivi_podruznica: 'skraceniNaziviPodruznica',
+        sjedista_podruznica: 'sjedistaPodruznica',
+        email_adrese_podruznica: 'emailAdresePodruznica',
+        inozemni_registri: 'inozemniRegistri',
+        counts: 'counts',
+        bris_pravni_oblici: 'brisPravniOblici',
+        bris_registri: 'brisRegistri',
+        prijevodi_tvrtki: 'prijevodiTvrtki',
+        prijevodi_skracenih_tvrtki: 'prijevodiSkracenihTvrtki',
+      };
+      const greske = [];
+      for (const r of rows) {
+        const modelName = endpointToModel[r.endpoint];
+        let actualCount = null;
+        if (modelName) {
+          const model = prisma[modelName];
+          if (model && typeof model.count === 'function') {
+            actualCount = await model.count({ where: { snapshotId: r.snapshotId } });
+          }
+        }
+        const ocekivano = Number(r.totalCount);
+        const stvarno = actualCount != null ? actualCount : null;
+        const slazeSe = stvarno !== null && stvarno === ocekivano;
+        if (!slazeSe) {
+          greske.push({
+            endpoint: r.endpoint,
+            snapshotId: String(r.snapshotId),
+            ocekivano,
+            stvarno,
+            poruka: stvarno === null
+              ? 'Nema podataka u tablici za ovaj endpoint (tablica ne postoji ili nema snapshot_id).'
+              : `Broj se ne slaže: očekivano ${ocekivano}, upisano ${stvarno}, razlika ${stvarno - ocekivano}.`,
+          });
+        }
+      }
+      sendJson(200, {
+        ok: true,
+        greske,
+        summary: {
+          ukupnoProvjereno: rows.length,
+          sGreskama: greske.length,
+          uRedu: rows.length - greske.length,
+        },
+      });
+    } catch (err) {
+      sendJson(500, { error: 'sync_greske_failed', message: err.message || String(err) });
     }
     return;
   }

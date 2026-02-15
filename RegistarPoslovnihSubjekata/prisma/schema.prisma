@@ -508,3 +508,32 @@ model SudregExpectedCount {
   @@index([snapshotId])
   @@map("sudreg_expected_counts")
 }
+
+/// Jedan red: trenutni snapshot_id i redni broj synca. Ažurira se kad zbilja prođe upis (expected_counts ili sync_promjene).
+model SudregSyncState {
+  id         String   @id @default("default") @db.VarChar(32)
+  snapshotId BigInt   @map("snapshot_id")
+  redniBroj  Int      @map("redni_broj")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("sudreg_sync_state")
+}
+
+/// Audit: što se promijenilo kod UPDATE-a (stupac, stara/nova vrijednost). Punjeni iz DB triggera. snapshot_id iz retka ako postoji; izvor = tko/što je napravio promjenu (iz session app.audit_context).
+model SudregAuditPromjene {
+  id              BigInt   @id @default(autoincrement())
+  tablica         String   @db.VarChar(128)
+  redKljuc        String?  @map("red_kljuc") @db.VarChar(1024)
+  stupac          String   @db.VarChar(128)
+  staraVrijednost String?  @map("stara_vrijednost") @db.Text
+  novaVrijednost  String?  @map("nova_vrijednost") @db.Text
+  changedAt       DateTime @default(now()) @map("changed_at")
+  snapshotId      BigInt?  @map("snapshot_id")
+  izvor           String?  @db.VarChar(256)
+
+  @@index([tablica])
+  @@index([changedAt])
+  @@index([snapshotId])
+  @@index([izvor])
+  @@map("sudreg_audit_promjene")
+}
