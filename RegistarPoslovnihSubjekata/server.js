@@ -380,9 +380,34 @@ const SYNC_SNAPSHOT_CONFIG = {
   },
 };
 
-/** Sync tablice s snapshot_id: delete za snapshot na početku, batch createMany, rollback pri grešci. */
-async function runSyncWithSnapshot(sendJson, endpointName, requestedSnapshotId, config) {
+/** Za tablice s MBO: vraća Set(BigInt) MBS koji su se promijenili (stari snapshot -> novi). Ako nema prethodnog snapshota, null = puni unos. */
+async function getPromijenjeniMbsSet(noviSnapshotId) {
+  const sid = BigInt(Number(noviSnapshotId));
+  const stariRow = await prisma.$queryRaw`
+    SELECT snapshot_id AS "snapshotId"
+    FROM sudreg_promjene_stavke
+    WHERE snapshot_id < ${sid}
+    ORDER BY snapshot_id DESC
+    LIMIT 1
+  `;
+  if (!stariRow || stariRow.length === 0) return null;
+  const stariSnapshotId = Number(stariRow[0].snapshotId);
+  const promijenjeni = await prisma.$queryRaw`
+    SELECT n.mbs AS "mbs"
+    FROM sudreg_promjene_stavke n
+    LEFT JOIN sudreg_promjene_stavke s
+      ON s.mbs = n.mbs AND s.snapshot_id = ${stariSnapshotId}
+    WHERE n.snapshot_id = ${sid}
+      AND (s.mbs IS NULL OR n.scn > s.scn)
+  `;
+  const set = new Set((promijenjeni || []).map((r) => BigInt(r.mbs)));
+  return set;
+}
+
+/** Sync tablice s snapshot_id: delete za snapshot na početku, batch createMany, rollback pri grešci. Za tablice s MBO može options.diffOnlyMbsSet: tada se upisuju samo redovi čiji mbs je u tom skupu; ako je Set prazan ili null, puni unos. */
+async function runSyncWithSnapshot(sendJson, endpointName, requestedSnapshotId, config, options = {}) {
   const BATCH_SIZE = 500;
+  const diffOnlyMbsSet = options.diffOnlyMbsSet ?? null;
   const startMs = Date.now();
   let writtenSnapshotId = null;
   let lastPhase = 'token';
@@ -424,7 +449,14 @@ async function runSyncWithSnapshot(sendJson, endpointName, requestedSnapshotId, 
     }
     writtenSnapshotId = snapshotIdBig;
     lastPhase = 'write';
-    const toInsert = rows.map((r) => config.mapRow(r, snapshotIdBig)).filter((row) => row != null);
+    let toProcess = rows;
+    if (diffOnlyMbsSet != null) {
+      toProcess = rows.filter((r) => {
+        const mbsVal = toBigInt(r.mbs ?? r.subjekt_id);
+        return mbsVal != null && diffOnlyMbsSet.has(mbsVal);
+      });
+    }
+    const toInsert = toProcess.map((r) => config.mapRow(r, snapshotIdBig)).filter((row) => row != null);
     if (toInsert.length > 0) {
       await model.createMany({ data: toInsert, skipDuplicates: true });
     }
@@ -440,6 +472,7 @@ async function runSyncWithSnapshot(sendJson, endpointName, requestedSnapshotId, 
     batches: batchCount,
     snapshotId: snapshotId != null ? String(snapshotId) : null,
     durationMs,
+    diffOnly: diffOnlyMbsSet != null,
   });
   } catch (err) {
     const errCode = err.code || err.errno || '';
@@ -466,10 +499,10 @@ async function runSyncWithSnapshot(sendJson, endpointName, requestedSnapshotId, 
   }
 }
 
-/** Dohvat offset=0&limit=0 i spremanje X-Total-Count u sudreg_expected_counts (jedan endpoint). */
+/** Dohvat offset=0&limit=0 i spremanje X-Total-Count u sudreg_expected_counts (jedan endpoint). no_data_error=0 da API vrati 200 i header i kad nema redaka. */
 async function saveExpectedCountForEndpoint(endpoint, requestedSnapshotId, token) {
   try {
-    const result = await proxyWithToken(endpoint, 'offset=0&limit=0', requestedSnapshotId, token);
+    const result = await proxyWithToken(endpoint, 'offset=0&limit=0&no_data_error=0', requestedSnapshotId, token);
     if (result.statusCode !== 200) return;
     const h = result.headers || {};
     const totalCount = h.xTotalCount;
@@ -487,7 +520,7 @@ async function saveExpectedCountForEndpoint(endpoint, requestedSnapshotId, token
   }
 }
 
-/** Svi API endpointi koji podržavaju snapshot_id i listu (offset/limit, X-Total-Count). Očekivani brojeve dohvaćamo odjednom kad se pokrene sync_promjene. */
+/** Svi API endpointi iz Sudreg dokumentacije koji podržavaju snapshot_id i listu (offset/limit, X-Total-Count). Očekivani brojeve dohvaćamo odjednom kad se pokrene sync_promjene. */
 const SNAPSHOT_ENDPOINTS = [
   'promjene',
   'subjekti',
@@ -514,6 +547,8 @@ const SNAPSHOT_ENDPOINTS = [
   'bris_registri',
   'prijevodi_tvrtki',
   'prijevodi_skracenih_tvrtki',
+  'statusni_postupci',
+  'partneri_statusnih_postupaka',
 ];
 
 /** Dohvat X-Total-Count (offset=0&limit=0) za sve tablice sa snapshot_id i upis u sudreg_expected_counts. Pokreće se pri pokretanju sudreg_sync_promjene. */
@@ -823,7 +858,13 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
-      await runSyncWithSnapshot(sendJson, endpointName, requestedSnapshotId, snapshotConfig);
+      let diffOnlyMbsSet = null;
+      if (SNAPSHOT_ENDPOINTS_WITH_MBO.has(endpointName)) {
+        diffOnlyMbsSet = await getPromijenjeniMbsSet(requestedSnapshotId);
+        // null = nema prethodnog snapshota → puni unos; Set = samo redovi čiji mbs je u razlikama
+      }
+
+      await runSyncWithSnapshot(sendJson, endpointName, requestedSnapshotId, snapshotConfig, { diffOnlyMbsSet });
       return;
     }
     const config = SYNC_CONFIG[endpointName];
