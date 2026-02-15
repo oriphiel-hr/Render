@@ -1074,6 +1074,7 @@ const server = http.createServer(async (req, res) => {
         sudreg: 'GET /api/sudreg_<endpoint> (npr. /api/sudreg_sudovi, /api/sudreg_detalji_subjekta)',
         sync: 'POST /api/sudreg_sync_<endpoint> (promjene, subjekti, tvrtke, ... snapshot_id; opcionalno max_batches, max_rows, start_offset za chunked sync)',
         syncRunJob: 'POST /api/sudreg_sync_run_job?snapshot_id=&max_batches= (sync_promjene + sve tablice u chunkovima; za Render cron)',
+        syncStatus: 'GET /api/sudreg_sync_status (koja sync metoda se trenutno izvršava: lockedBy)',
         expectedCounts: 'GET /api/sudreg_expected_counts?snapshot_id=&limit=&offset=; POST = upis expected counts',
         syncGreske: 'GET /api/sudreg_sync_greske?snapshot_id= (greške; bez snapshot_id = trenutni iz sync_state)',
         syncCheckWebhook: 'GET /api/sudreg_sync_check_webhook (cron: greške + POST na SUDREG_WEBHOOK_URL ako ima)',
@@ -1319,6 +1320,26 @@ const server = http.createServer(async (req, res) => {
       sendJson(200, { ok: true, snapshotId: snapshotParam, written: count, message: `Upisano ${count} redaka u sudreg_expected_counts.` });
     } catch (err) {
       sendJson(500, { error: 'expected_counts_write_failed', message: err.message || String(err) });
+    }
+    return;
+  }
+
+  // GET /api/sudreg_sync_status – koja sync metoda se trenutno izvršava (lock: locked_by = npr. sync_promjene, sync_subjekti).
+  if (path === '/api/sudreg_sync_status' && method === 'GET') {
+    try {
+      const row = await prisma.sudregSyncLock.findUnique({ where: { id: 'default' } });
+      if (!row || !row.lockedBy) {
+        sendJson(200, { locked: false, lockedBy: null, lockedAt: null, message: 'Nijedan sync se ne izvršava.' });
+        return;
+      }
+      sendJson(200, {
+        locked: true,
+        lockedBy: row.lockedBy,
+        lockedAt: row.lockedAt != null ? row.lockedAt.toISOString() : null,
+        message: `Trenutno se izvršava: ${row.lockedBy} (lock isteče nakon 2 h).`,
+      });
+    } catch (e) {
+      sendJson(500, { error: 'sync_status_failed', message: e.message || String(e) });
     }
     return;
   }
