@@ -65,6 +65,17 @@ const KEY_FIELDS = {
   testRun: ['id', 'testId', 'status', 'createdAt']
 };
 
+/**
+ * Tablice koje mogu imati jako puno redaka – u checkpointu i getCurrentStateSummary
+ * dohvaćamo samo zadnjih BIG_TABLE_ROW_LIMIT redaka (po id desc) da ne pucamo memoriju i disk.
+ * Rollback za te tablice vraća samo taj ograničeni set (ostalo se briše).
+ */
+const BIG_TABLES = new Set(['apiRequestLog', 'errorLog', 'smsLog', 'auditLog', 'chatMessage', 'notification']);
+const BIG_TABLE_ROW_LIMIT = 5000;
+
+/** Broj redaka po batch-u kod upisa (createMany); smanjuje veličinu transakcije i timeout rizik. */
+const INSERT_BATCH_SIZE = 500;
+
 class TestCheckpointService {
   constructor() {
     this.prisma = new PrismaClient();
@@ -136,21 +147,26 @@ class TestCheckpointService {
         console.log(`   Pronađeno ${tables.length} tablica`);
       }
 
-      // Preuzmи podatke iz svake tablice
+      // Preuzmi podatke iz svake tablice (velike tablice: samo zadnjih BIG_TABLE_ROW_LIMIT redaka)
       const data = {};
-      for (const table of tables) {
+      const totalTables = tables.length;
+      const startCreate = Date.now();
+      for (let i = 0; i < tables.length; i++) {
+        const table = tables[i];
         try {
           const model = this.prisma[this._camelCase(table)];
           if (!model) {
             console.warn(`   ⚠️  Tablica ${table} nije pronađena u Prisma modelu, preskačem...`);
             continue;
           }
-          data[table] = await model.findMany();
-          console.log(`   ✓ Preuzeo ${data[table].length} redaka iz ${table}`);
+          data[table] = await this._fetchTableData(model, table);
+          const limitNote = BIG_TABLES.has(table) ? ` (limit ${data[table].length})` : '';
+          console.log(`   ✓ [${i + 1}/${totalTables}] ${table}: ${data[table].length} redaka${limitNote}`);
         } catch (err) {
           console.warn(`   ⚠️  Greška pri preuzimanju ${table}: ${err.message}`);
         }
       }
+      console.log(`   ⏱️  Checkpoint create: ${((Date.now() - startCreate) / 1000).toFixed(1)}s`);
 
       // Spremi checkpoint u memory i datoteku
       const checkpoint = {
@@ -228,27 +244,40 @@ class TestCheckpointService {
       const { tables, data } = checkpoint;
       const deleteOrder = [...this._getRollbackOrder(tables)].reverse();
       const insertOrder = this._getRollbackOrder(tables);
+      const startRollback = Date.now();
+      const totalSteps = deleteOrder.length + insertOrder.length;
+      let step = 0;
 
       await this.prisma.$transaction(async (tx) => {
         for (const table of deleteOrder) {
+          step++;
           const model = tx[this._camelCase(table)];
           if (!model) continue;
           const deleted = await model.deleteMany({});
           if (deleted?.count > 0) {
-            console.log(`   ✓ Obrisano ${deleted.count} redaka iz ${table}`);
+            console.log(`   ✓ [${step}/${totalSteps}] Obrisano ${deleted.count} redaka iz ${table}`);
           }
         }
         for (const table of insertOrder) {
+          step++;
           const rows = data[table];
           if (!rows || rows.length === 0) continue;
           const model = tx[this._camelCase(table)];
           if (!model) continue;
           const parsed = rows.map(r => this._parseRowForPrisma(r));
-          await model.createMany({ data: parsed, skipDuplicates: true });
-          console.log(`   ✓ Vraćeno ${parsed.length} redaka u ${table}`);
+          const batches = this._chunk(parsed, INSERT_BATCH_SIZE);
+          for (let b = 0; b < batches.length; b++) {
+            await model.createMany({ data: batches[b], skipDuplicates: true });
+            if (batches.length > 1) {
+              const soFar = (b + 1) * batches[b].length;
+              console.log(`   ✓ [${step}/${totalSteps}] ${table}: batch ${b + 1}/${batches.length} (${soFar}/${parsed.length} redaka)`);
+            } else {
+              console.log(`   ✓ [${step}/${totalSteps}] Vraćeno ${parsed.length} redaka u ${table}`);
+            }
+          }
         }
       });
-      console.log(`✅ Rollback ${checkpointId} uspješan`);
+      console.log(`✅ Rollback ${checkpointId} uspješan (${((Date.now() - startRollback) / 1000).toFixed(1)}s)`);
     } catch (err) {
       console.error(`❌ Greška pri rollback-u: ${err.message}`);
       throw err;
@@ -310,8 +339,7 @@ class TestCheckpointService {
         try {
           const model = this.prisma[this._camelCase(table)];
           if (!model) continue;
-          const rows = await model.findMany();
-          data[table] = rows;
+          data[table] = await this._fetchTableData(model, table);
         } catch (err) {
           console.warn(`[CHECKPOINT] getCurrentState ${table}: ${err.message}`);
         }
@@ -410,6 +438,33 @@ class TestCheckpointService {
   }
 
   // --- PRIVATNE METODE ---
+
+  /**
+   * Podijeli niz u podnizove veličine size (za batch upis).
+   */
+  _chunk(arr, size) {
+    const out = [];
+    for (let i = 0; i < arr.length; i += size) {
+      out.push(arr.slice(i, i + size));
+    }
+    return out;
+  }
+
+  /**
+   * Dohvati podatke tablice. Za velike tablice (BIG_TABLES) vraća samo zadnjih BIG_TABLE_ROW_LIMIT redaka.
+   * @param {object} model - Prisma model
+   * @param {string} tableName - Naziv tablice (PascalCase npr. apiRequestLog)
+   */
+  async _fetchTableData(model, tableName) {
+    const camel = this._camelCase(tableName);
+    if (BIG_TABLES.has(camel)) {
+      return model.findMany({
+        orderBy: { id: 'desc' },
+        take: BIG_TABLE_ROW_LIMIT
+      });
+    }
+    return model.findMany();
+  }
 
   /**
    * Preuzmi sve tablice iz baze
