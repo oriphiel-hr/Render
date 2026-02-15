@@ -186,14 +186,16 @@ async function runSyncPromjene(sendJson) {
         return;
       }
       const toUpsert = rows.map((r) => {
-        const subjektId = BigInt(r.subjekt_id ?? r.id ?? 0);
+        const subjektId = BigInt(r.id ?? 0);
+        const mbs = r.mbs != null && r.mbs !== '' ? BigInt(r.mbs) : null;
         const scn = BigInt(r.scn ?? 0);
-        const changedAt = r.datum_vrijeme ?? r.zadnja_promjena ?? r.changed_at ?? null;
+        const vrijeme = r.vrijeme != null && r.vrijeme !== '' ? new Date(r.vrijeme) : null;
         return {
           snapshotId: snapshotIdBig,
           subjektId,
+          mbs,
           scn,
-          changedAt: changedAt ? new Date(changedAt) : null,
+          vrijeme,
         };
       }).filter((r) => r.subjektId !== BigInt(0));
       await prisma.$transaction(
@@ -203,7 +205,7 @@ async function runSyncPromjene(sendJson) {
               snapshotId_subjektId: { snapshotId: row.snapshotId, subjektId: row.subjektId },
             },
             create: row,
-            update: { scn: row.scn, changedAt: row.changedAt },
+            update: { mbs: row.mbs, scn: row.scn, vrijeme: row.vrijeme },
           })
         )
       );
@@ -341,6 +343,7 @@ const server = http.createServer(async (req, res) => {
         token: 'GET|POST /api/token',
         sudreg: 'GET /api/sudreg_<endpoint> (npr. /api/sudreg_sudovi, /api/sudreg_detalji_subjekta)',
         sync: 'POST /api/sudreg_sync_<endpoint> (prvo promjene, zatim sudovi, drzave, valute, ...)',
+        promjeneRazlike: 'GET /api/sudreg_promjene_razlike?stari_snapshot=&novi_snapshot= (usporedba SCN, promijenjeni subjekti)',
       },
     });
     return;
@@ -373,6 +376,66 @@ const server = http.createServer(async (req, res) => {
       await runSync(sendJson, endpointName, config);
       return;
     }
+  }
+
+  // GET /api/sudreg_promjene_razlike – usporedba dva snapshota: subjekti kod kojih je SCN veći u novijem (ili samo u novijem)
+  // Query: stari_snapshot, novi_snapshot (ako izostave, koriste se zadnja dva snapshota u bazi)
+  if (path === '/api/sudreg_promjene_razlike' && method === 'GET') {
+    try {
+      const stariParam = url.searchParams.get('stari_snapshot');
+      const noviParam = url.searchParams.get('novi_snapshot');
+      let stariSnapshotId = stariParam != null ? Number(stariParam) : null;
+      let noviSnapshotId = noviParam != null ? Number(noviParam) : null;
+      if (stariSnapshotId == null || noviSnapshotId == null || isNaN(stariSnapshotId) || isNaN(noviSnapshotId)) {
+        const snapshots = await prisma.$queryRaw`
+          SELECT DISTINCT snapshot_id AS snapshot_id
+          FROM sudreg_promjene_stavke
+          ORDER BY snapshot_id DESC
+          LIMIT 2
+        `;
+        if (snapshots.length < 2) {
+          sendJson(200, {
+            ok: true,
+            message: 'Potrebna su najmanje dva snapshota za usporedbu. Pokreni sync promjene dva puta (u razmaku).',
+            snapshots: snapshots.length,
+            promijenjeniSubjektIds: [],
+            ukupnoPromijenjeno: 0,
+          });
+          return;
+        }
+        noviSnapshotId = Number(snapshots[0].snapshot_id);
+        stariSnapshotId = Number(snapshots[1].snapshot_id);
+      }
+      const promijenjeni = await prisma.$queryRaw`
+        SELECT n.subjekt_id AS "subjektId"
+        FROM sudreg_promjene_stavke n
+        LEFT JOIN sudreg_promjene_stavke s
+          ON s.subjekt_id = n.subjekt_id AND s.snapshot_id = ${stariSnapshotId}
+        WHERE n.snapshot_id = ${noviSnapshotId}
+          AND (s.subjekt_id IS NULL OR n.scn > s.scn)
+        ORDER BY n.subjekt_id
+      `;
+      const maxScn = await prisma.$queryRaw`
+        SELECT snapshot_id AS "snapshotId", MAX(scn) AS "maxScn"
+        FROM sudreg_promjene_stavke
+        WHERE snapshot_id IN (${stariSnapshotId}, ${noviSnapshotId})
+        GROUP BY snapshot_id
+      `;
+      const subjektIds = (promijenjeni || []).map((r) => String(r.subjektId));
+      const maxScnMap = Object.fromEntries((maxScn || []).map((r) => [String(r.snapshotId), String(r.maxScn)]));
+      sendJson(200, {
+        ok: true,
+        stariSnapshotId: String(stariSnapshotId),
+        noviSnapshotId: String(noviSnapshotId),
+        promijenjeniSubjektIds: subjektIds,
+        ukupnoPromijenjeno: subjektIds.length,
+        maxScnStari: maxScnMap[String(stariSnapshotId)] ?? null,
+        maxScnNovi: maxScnMap[String(noviSnapshotId)] ?? null,
+      });
+    } catch (err) {
+      sendJson(500, { error: 'razlike_failed', message: err.message });
+    }
+    return;
   }
 
   // GET /api/sudreg_:endpoint – proxy (samo dohvat) + zapis u sudreg_proxy_log; u logu endpoint = sudreg_*

@@ -76,11 +76,58 @@ Prema dokumentaciji [data.gov.hr – Sudski registar](https://data.gov.hr/ckan/d
 
 Metoda **promjene** vraća za svaki subjekt **SCN** (System Change Number) i datum/vrijeme zadnje promjene. Služi za detekciju *koji* su subjekti se promijenili od prošlog preuzimanja.
 
-- **POST** `/api/sudreg_sync_promjene` – dohvaća cijeli popis (paginirano), sprema u tablicu **sudreg_promjene_stavke** (snapshot_id, subjekt_id, scn, changed_at).
-- **Detekcija promjena:** usporedi s prethodnim snapshotom:
-  - **MAX(SCN):** ako je `MAX(scn)` u novom snapshotu veći od `MAX(scn)` u prethodnom snapshotu u bazi, došlo je do promjena. Za pojedinačne subjekte: ako za subjekt X vrijedi `novi_scn > stari_scn`, subjekt X je promijenjen.
-  - U SQL: npr. `SELECT MAX(scn) FROM sudreg_promjene_stavke WHERE snapshot_id = :zadnji_snapshot`; nakon novog synca usporedi s `MAX(scn)` iz prethodnog snapshota.
+- **POST** `/api/sudreg_sync_promjene` – dohvaća cijeli popis (paginirano), sprema u tablicu **sudreg_promjene_stavke**. Polja prema API-ju: snapshot_id (iz headera), subjekt_id (iz `id`), mbs, scn, vrijeme (iz stringa `vrijeme`).
+- **Detekcija promjena:** usporedi s prethodnim snapshotom (vidi dolje **Provjera razlika**).
 - Nakon detekcije promijenjenih subjekata možeš za njih dohvatiti detalje putem **detalji_subjekta** (primjereno za manji broj subjekata).
+
+### Provjera razlika (tko se promijenio)
+
+**GET** `/api/sudreg_promjene_razlike` – vraća subjekte koji su se promijenili između dva snapshota (novi SCN > stari SCN, ili subjekt postoji samo u novijem).
+
+- Bez parametara: uspoređuju se **zadnja dva** snapshota u bazi.
+- S parametrima: `?stari_snapshot=123&novi_snapshot=456`.
+
+Odgovor: `stariSnapshotId`, `noviSnapshotId`, `promijenjeniSubjektIds` (lista subjekt_id), `ukupnoPromijenjeno`, `maxScnStari`, `maxScnNovi`.
+
+**Primjer curl:**
+```bash
+curl "https://registar-poslovnih-subjekata.onrender.com/api/sudreg_promjene_razlike"
+curl "https://registar-poslovnih-subjekata.onrender.com/api/sudreg_promjene_razlike?stari_snapshot=100&novi_snapshot=101"
+```
+
+**SQL primjeri (izravno u bazi):**
+
+- Zadnja dva snapshota i MAX(SCN) po snapshotu:
+```sql
+SELECT snapshot_id, MAX(scn) AS max_scn, COUNT(*) AS broj_subjekata
+FROM sudreg_promjene_stavke
+GROUP BY snapshot_id
+ORDER BY snapshot_id DESC
+LIMIT 10;
+```
+
+- Subjekti koji su se promijenili između snapshota 100 (stari) i 101 (novi): novi SCN veći od starog, ili subjekt postoji samo u novijem.
+```sql
+SELECT n.subjekt_id
+FROM sudreg_promjene_stavke n
+LEFT JOIN sudreg_promjene_stavke s
+  ON s.subjekt_id = n.subjekt_id AND s.snapshot_id = 100
+WHERE n.snapshot_id = 101
+  AND (s.subjekt_id IS NULL OR n.scn > s.scn)
+ORDER BY n.subjekt_id;
+```
+
+- Samo brza provjera: je li uopće bilo promjena? (usporedi MAX(scn) zadnja dva snapshota.)
+```sql
+WITH last_two AS (
+  SELECT DISTINCT snapshot_id FROM sudreg_promjene_stavke
+  ORDER BY snapshot_id DESC LIMIT 2
+)
+SELECT p.snapshot_id, MAX(p.scn) AS max_scn
+FROM sudreg_promjene_stavke p
+JOIN last_two l ON l.snapshot_id = p.snapshot_id
+GROUP BY p.snapshot_id;
+```
 
 ### Ostali sync endpointi (šifrarnici)
 
