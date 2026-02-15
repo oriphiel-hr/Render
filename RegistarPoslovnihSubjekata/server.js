@@ -159,8 +159,8 @@ const SYNC_CONFIG = {
   },
 };
 
-/** Sync metode promjene: dohvaća cijeli popis (offset/limit), sprema stavke s snapshotId iz headera. Za detekciju promjena usporedi MAX(scn) s prethodnim snapshotom. */
-async function runSyncPromjene(sendJson) {
+/** Sync metode promjene: dohvaća cijeli popis (offset/limit), sprema stavke s snapshotId iz headera. requestedSnapshotId = opcionalno za dohvat određenog snapshota (šalje se kao X-Snapshot-Id). */
+async function runSyncPromjene(sendJson, requestedSnapshotId = null) {
   const BATCH_SIZE = 500;
   const startMs = Date.now();
   try {
@@ -172,7 +172,7 @@ async function runSyncPromjene(sendJson) {
     let rows;
     do {
       const queryString = `offset=${offset}&limit=${BATCH_SIZE}`;
-      const result = await proxyWithToken('promjene', queryString, null, token);
+      const result = await proxyWithToken('promjene', queryString, requestedSnapshotId, token);
       if (result.statusCode !== 200 || !Array.isArray(result.body)) {
         sendJson(result.statusCode || 500, result.body || { error: 'sync_failed' });
         return;
@@ -180,7 +180,7 @@ async function runSyncPromjene(sendJson) {
       rows = result.body;
       if (result.headers && result.headers.xSnapshotId != null) snapshotId = result.headers.xSnapshotId;
       if (rows.length === 0) break;
-      const snapshotIdBig = snapshotId != null ? BigInt(Number(snapshotId)) : null;
+      const snapshotIdBig = snapshotId != null ? BigInt(Number(snapshotId)) : (requestedSnapshotId != null ? BigInt(Number(requestedSnapshotId)) : null);
       if (snapshotIdBig == null) {
         sendJson(500, { error: 'sync_failed', message: 'X-Snapshot-Id missing in response' });
         return;
@@ -361,9 +361,12 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // POST /api/sudreg_sync_promjene – prvi korak: dohvat popisa promjena (subjekt + SCN), spremanje za detekciju promjena
+  // POST /api/sudreg_sync_promjene – dohvat popisa promjena i upis. Opcionalno: ?snapshot_id=1090 ili header X-Snapshot-Id: 1090 za određeni snapshot.
   if (path === '/api/sudreg_sync_promjene' && method === 'POST') {
-    await runSyncPromjene(sendJson);
+    const snapshotParam = url.searchParams.get('snapshot_id');
+    const snapshotHeader = req.headers['x-snapshot-id'];
+    const requestedSnapshotId = snapshotParam != null && snapshotParam !== '' ? snapshotParam : (snapshotHeader != null && snapshotHeader !== '' ? snapshotHeader : null);
+    await runSyncPromjene(sendJson, requestedSnapshotId);
     return;
   }
 
