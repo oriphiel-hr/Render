@@ -73,6 +73,22 @@ async function getSudregToken() {
   return tokenCache.access_token;
 }
 
+/** Iz odgovora Sudreg API-ja izvlači standardne headere (X-Snapshot-Id, X-Timestamp, itd.) */
+function extractSudregHeaders(res) {
+  const h = res.headers;
+  const parseBigInt = (v) => (v != null && v !== '' ? BigInt(parseInt(String(v), 10)) : null);
+  const parseIntSafe = (v) => (v != null && v !== '' ? parseInt(String(v), 10) : null);
+  const parseDecimal = (v) => (v != null && v !== '' ? parseFloat(String(v)) : null);
+  return {
+    xSnapshotId: parseBigInt(h['x-snapshot-id']),
+    xTimestamp: h['x-timestamp'] ? String(h['x-timestamp']).slice(0, 64) : null,
+    xTotalCount: parseBigInt(h['x-total-count']),
+    xSecondsElapsed: parseDecimal(h['x-seconds-elapsed']),
+    xRowsReturned: parseIntSafe(h['x-rows-returned']),
+    xLogId: parseBigInt(h['x-log-id']),
+  };
+}
+
 async function proxyWithToken(endpoint, queryString, snapshotId, token) {
   return new Promise((resolve, reject) => {
     const path = queryString ? `${endpoint}?${queryString}` : endpoint;
@@ -99,9 +115,14 @@ async function proxyWithToken(endpoint, queryString, snapshotId, token) {
             reject({ statusCode: res.statusCode, body: err });
             return;
           }
-          resolve({ statusCode: res.statusCode, body: data ? JSON.parse(data) : null });
+          const headers = extractSudregHeaders(res);
+          resolve({
+            statusCode: res.statusCode,
+            body: data ? JSON.parse(data) : null,
+            headers,
+          });
         } catch (e) {
-          resolve({ statusCode: res.statusCode, body: data });
+          resolve({ statusCode: res.statusCode, body: data, headers: {} });
         }
       });
     });
@@ -115,8 +136,9 @@ const server = http.createServer(async (req, res) => {
   const path = url.pathname;
   const method = req.method;
 
-  const sendJson = (status, obj) => {
-    res.writeHead(status, { 'Content-Type': 'application/json' });
+  const sendJson = (status, obj, extraHeaders = {}) => {
+    const headers = { 'Content-Type': 'application/json', ...extraHeaders };
+    res.writeHead(status, headers);
     res.end(JSON.stringify(obj));
   };
 
@@ -159,7 +181,15 @@ const server = http.createServer(async (req, res) => {
       const token = await getSudregToken();
       const result = await proxyWithToken(endpointSuffix, queryString, snapshotId, token);
       const durationMs = Date.now() - startMs;
-      sendJson(result.statusCode, result.body);
+      const h = result.headers || {};
+      const outHeaders = {};
+      if (h.xSnapshotId != null) outHeaders['X-Snapshot-Id'] = String(h.xSnapshotId);
+      if (h.xTimestamp != null) outHeaders['X-Timestamp'] = h.xTimestamp;
+      if (h.xTotalCount != null) outHeaders['X-Total-Count'] = String(h.xTotalCount);
+      if (h.xSecondsElapsed != null) outHeaders['X-Seconds-Elapsed'] = String(h.xSecondsElapsed);
+      if (h.xRowsReturned != null) outHeaders['X-Rows-Returned'] = String(h.xRowsReturned);
+      if (h.xLogId != null) outHeaders['X-Log-Id'] = String(h.xLogId);
+      sendJson(result.statusCode, result.body, outHeaders);
       prisma.sudregProxyLog.create({
         data: {
           endpoint: endpointForLog,
@@ -168,6 +198,12 @@ const server = http.createServer(async (req, res) => {
           durationMs,
           clientIp: clientIp || null,
           userAgent: userAgent || null,
+          xSnapshotId: h.xSnapshotId ?? null,
+          xTimestamp: h.xTimestamp ?? null,
+          xTotalCount: h.xTotalCount ?? null,
+          xSecondsElapsed: h.xSecondsElapsed != null ? h.xSecondsElapsed : null,
+          xRowsReturned: h.xRowsReturned ?? null,
+          xLogId: h.xLogId ?? null,
         },
       }).catch((e) => console.error('SudregProxyLog create error:', e.message));
     } catch (err) {

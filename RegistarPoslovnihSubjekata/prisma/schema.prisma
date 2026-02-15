@@ -341,16 +341,22 @@ model VrstePravnihOblika {
   @@map("sudreg_vrste_pravnih_oblika")
 }
 
-// --- Log poziva proxy API-ja (koja metoda, s kojim parametrima, status, trajanje) ---
+// --- Log poziva proxy API-ja (metoda, parametri, status, trajanje, Sudreg response headers) ---
 model SudregProxyLog {
-  id              BigInt   @id @default(autoincrement())
-  endpoint        String   @db.VarChar(256)
-  queryString     String?  @map("query_string") @db.VarChar(2048)
-  responseStatus  Int?     @map("response_status")
-  durationMs      Int?     @map("duration_ms")
-  clientIp        String?  @map("client_ip") @db.VarChar(64)
-  userAgent       String?  @map("user_agent") @db.VarChar(512)
-  createdAt       DateTime @default(now()) @map("created_at")
+  id                BigInt   @id @default(autoincrement())
+  endpoint          String   @db.VarChar(256)
+  queryString       String?  @map("query_string") @db.VarChar(2048)
+  responseStatus    Int?     @map("response_status")
+  durationMs        Int?     @map("duration_ms")
+  clientIp          String?  @map("client_ip") @db.VarChar(64)
+  userAgent         String?  @map("user_agent") @db.VarChar(512)
+  xSnapshotId       BigInt?  @map("x_snapshot_id")
+  xTimestamp        String?  @map("x_timestamp") @db.VarChar(64)
+  xTotalCount       BigInt?  @map("x_total_count")
+  xSecondsElapsed   Decimal? @map("x_seconds_elapsed") @db.Decimal(12, 4)
+  xRowsReturned     Int?     @map("x_rows_returned")
+  xLogId            BigInt?  @map("x_log_id")
+  createdAt         DateTime @default(now()) @map("created_at")
   @@index([endpoint])
   @@index([createdAt])
   @@map("sudreg_proxy_log")
