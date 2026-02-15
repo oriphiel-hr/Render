@@ -114,8 +114,6 @@ async function logRequest(data) {
     if (pathBase === '/health' || pathBase === '/api/health') return;
     if (!(data.path || '').startsWith('/api')) return;
 
-    if (data.responseTime < 10) return;
-
     await prisma.apiRequestLog.create({
       data: {
         method: data.method,
