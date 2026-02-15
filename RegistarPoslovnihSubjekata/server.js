@@ -159,6 +159,72 @@ const SYNC_CONFIG = {
   },
 };
 
+/** Sync metode promjene: dohvaća cijeli popis (offset/limit), sprema stavke s snapshotId iz headera. Za detekciju promjena usporedi MAX(scn) s prethodnim snapshotom. */
+async function runSyncPromjene(sendJson) {
+  const BATCH_SIZE = 500;
+  const startMs = Date.now();
+  try {
+    const token = await getSudregToken();
+    let offset = 0;
+    let totalSynced = 0;
+    let snapshotId = null;
+    let batchCount = 0;
+    let rows;
+    do {
+      const queryString = `offset=${offset}&limit=${BATCH_SIZE}`;
+      const result = await proxyWithToken('promjene', queryString, null, token);
+      if (result.statusCode !== 200 || !Array.isArray(result.body)) {
+        sendJson(result.statusCode || 500, result.body || { error: 'sync_failed' });
+        return;
+      }
+      rows = result.body;
+      if (result.headers && result.headers.xSnapshotId != null) snapshotId = result.headers.xSnapshotId;
+      if (rows.length === 0) break;
+      const snapshotIdBig = snapshotId != null ? BigInt(Number(snapshotId)) : null;
+      if (snapshotIdBig == null) {
+        sendJson(500, { error: 'sync_failed', message: 'X-Snapshot-Id missing in response' });
+        return;
+      }
+      const toUpsert = rows.map((r) => {
+        const subjektId = BigInt(r.subjekt_id ?? r.id ?? 0);
+        const scn = BigInt(r.scn ?? 0);
+        const changedAt = r.datum_vrijeme ?? r.zadnja_promjena ?? r.changed_at ?? null;
+        return {
+          snapshotId: snapshotIdBig,
+          subjektId,
+          scn,
+          changedAt: changedAt ? new Date(changedAt) : null,
+        };
+      }).filter((r) => r.subjektId !== BigInt(0));
+      await prisma.$transaction(
+        toUpsert.map((row) =>
+          prisma.promjeneStavka.upsert({
+            where: {
+              snapshotId_subjektId: { snapshotId: row.snapshotId, subjektId: row.subjektId },
+            },
+            create: row,
+            update: { scn: row.scn, changedAt: row.changedAt },
+          })
+        )
+      );
+      totalSynced += toUpsert.length;
+      batchCount += 1;
+      offset += BATCH_SIZE;
+    } while (rows.length === BATCH_SIZE);
+    const durationMs = Date.now() - startMs;
+    sendJson(200, {
+      ok: true,
+      endpoint: 'promjene',
+      synced: totalSynced,
+      batches: batchCount,
+      snapshotId: snapshotId != null ? String(snapshotId) : null,
+      durationMs,
+    });
+  } catch (err) {
+    sendJson(502, { error: 'sync_failed', message: err.message });
+  }
+}
+
 async function runSync(sendJson, endpointName, config) {
   const BATCH_SIZE = 500;
   const startMs = Date.now();
@@ -274,7 +340,7 @@ const server = http.createServer(async (req, res) => {
       endpoints: {
         token: 'GET|POST /api/token',
         sudreg: 'GET /api/sudreg_<endpoint> (npr. /api/sudreg_sudovi, /api/sudreg_detalji_subjekta)',
-        sync: 'POST /api/sudreg_sync_<endpoint> (sudovi, drzave, valute, nacionalna_klasifikacija_djelatnosti, vrste_pravnih_oblika, vrste_postupaka)',
+        sync: 'POST /api/sudreg_sync_<endpoint> (prvo promjene, zatim sudovi, drzave, valute, ...)',
       },
     });
     return;
@@ -289,6 +355,12 @@ const server = http.createServer(async (req, res) => {
       const status = err.message.includes('SUDREG_CLIENT') ? 503 : 502;
       sendJson(status, { error: 'token_failed', message: err.message });
     }
+    return;
+  }
+
+  // POST /api/sudreg_sync_promjene – prvi korak: dohvat popisa promjena (subjekt + SCN), spremanje za detekciju promjena
+  if (path === '/api/sudreg_sync_promjene' && method === 'POST') {
+    await runSyncPromjene(sendJson);
     return;
   }
 

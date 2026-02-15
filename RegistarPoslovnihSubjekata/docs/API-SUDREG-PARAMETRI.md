@@ -68,6 +68,26 @@ Prema dokumentaciji [data.gov.hr – Sudski registar](https://data.gov.hr/ckan/d
 
 ---
 
+## Sync u bazu (upis) i detekcija promjena
+
+**Redoslijed preporučen za puni sync:** prvo **promjene**, zatim šifrarnici (sudovi, drzave, valute, …), zatim ostale tablice po potrebi.
+
+### Promjene (prvi korak)
+
+Metoda **promjene** vraća za svaki subjekt **SCN** (System Change Number) i datum/vrijeme zadnje promjene. Služi za detekciju *koji* su subjekti se promijenili od prošlog preuzimanja.
+
+- **POST** `/api/sudreg_sync_promjene` – dohvaća cijeli popis (paginirano), sprema u tablicu **sudreg_promjene_stavke** (snapshot_id, subjekt_id, scn, changed_at).
+- **Detekcija promjena:** usporedi s prethodnim snapshotom:
+  - **MAX(SCN):** ako je `MAX(scn)` u novom snapshotu veći od `MAX(scn)` u prethodnom snapshotu u bazi, došlo je do promjena. Za pojedinačne subjekte: ako za subjekt X vrijedi `novi_scn > stari_scn`, subjekt X je promijenjen.
+  - U SQL: npr. `SELECT MAX(scn) FROM sudreg_promjene_stavke WHERE snapshot_id = :zadnji_snapshot`; nakon novog synca usporedi s `MAX(scn)` iz prethodnog snapshota.
+- Nakon detekcije promijenjenih subjekata možeš za njih dohvatiti detalje putem **detalji_subjekta** (primjereno za manji broj subjekata).
+
+### Ostali sync endpointi (šifrarnici)
+
+- **POST** `/api/sudreg_sync_sudovi`, `/api/sudreg_sync_drzave`, `/api/sudreg_sync_valute`, `/api/sudreg_sync_nacionalna_klasifikacija_djelatnosti`, `/api/sudreg_sync_vrste_pravnih_oblika`, `/api/sudreg_sync_vrste_postupaka` – paginirani dohvat i upsert u odgovarajuće tablice (bez duplikata po id).
+
+---
+
 ## Primjeri curl
 
 **Token (ako treba ručno):**
@@ -98,4 +118,14 @@ curl "https://registar-poslovnih-subjekata.onrender.com/api/sudreg_snapshots"
 **S konzistentnim snapshotom (header):**
 ```bash
 curl -H "X-Snapshot-Id: 12345" "https://registar-poslovnih-subjekata.onrender.com/api/sudreg_subjekti?page=1&limit=10"
+```
+
+**Sync promjene (prvi korak – upis u bazu za detekciju promjena):**
+```bash
+curl -X POST "https://registar-poslovnih-subjekata.onrender.com/api/sudreg_sync_promjene"
+```
+
+**Sync šifrarnik sudova:**
+```bash
+curl -X POST "https://registar-poslovnih-subjekata.onrender.com/api/sudreg_sync_sudovi"
 ```

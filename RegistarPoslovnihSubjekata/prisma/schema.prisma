@@ -87,6 +87,20 @@ model Promjene {
   @@map("sudreg_promjene")
 }
 
+/// Jedna stavka popisa promjena po snapshotu: subjekt + SCN + datum. Za detekciju promjena usporedi SCN s prethodnim snapshotom.
+model PromjeneStavka {
+  snapshotId BigInt    @map("snapshot_id")
+  subjektId  BigInt    @map("subjekt_id")
+  scn        BigInt    @map("scn")
+  changedAt  DateTime? @map("changed_at") @db.Timestamptz(6)
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@id([snapshotId, subjektId])
+  @@index([snapshotId])
+  @@index([scn])
+  @@map("sudreg_promjene_stavke")
+}
+
 model Statusi {
   id         BigInt   @id @default(autoincrement())
   snapshotId BigInt?  @map("snapshot_id")
