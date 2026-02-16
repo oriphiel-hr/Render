@@ -10,7 +10,7 @@ Ovaj projekt izlaže endpoint za dohvat OAuth tokena za Sudski registar (da ga k
 
 | Metoda | Putanja | Opis |
 |--------|---------|------|
-| GET ili POST | `/api/token` | Vraća OAuth token od `https://sudreg-data.gov.hr/api/oauth/token` (client_credentials). Token vrijedi 6 sati. |
+| GET ili POST | `/api/sudreg_token` | Vraća OAuth token od `https://sudreg-data.gov.hr/api/oauth/token` (client_credentials). Token vrijedi 6 sati. |
 
 **Varijable okruženja:** `SUDREG_CLIENT_ID`, `SUDREG_CLIENT_SECRET` (opcionalno `SUDREG_TOKEN_URL`). Credentials se dobiju registracijom na [data.gov.hr – Sudski registar](https://data.gov.hr/ckan/dataset/sudski-registar).
 

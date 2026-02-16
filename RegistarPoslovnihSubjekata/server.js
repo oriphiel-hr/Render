@@ -1,8 +1,9 @@
 /**
  * HTTP server za Registar poslovnih subjekata.
- * - GET/POST /api/token – OAuth token za Sudski registar.
+ * - GET/POST /api/sudreg_token – OAuth token za Sudski registar.
  * - GET /api/sudreg_:endpoint – proxy prema sudreg-data.gov.hr (npr. /api/sudreg_sudovi, /api/sudreg_detalji_subjekta).
  * - Svaki proxy poziv zapisuje se u sudreg_proxy_log (endpoint, parametri, status, trajanje, headeri).
+ * - Svi dolazni API pozivi zapisuju se u api_request_log (method, path, query, status, duration_ms, client_ip; response skraćen na 1000 znakova).
  */
 const http = require('http');
 const https = require('https');
@@ -738,21 +739,28 @@ function runSyncWithSnapshotReturn(endpointName, requestedSnapshotId, config, op
   });
 }
 
-/** Dohvat offset=0&limit=0 i spremanje X-Total-Count u sudreg_expected_counts (jedan endpoint). no_data_error=0 da API vrati 200 i header i kad nema redaka. */
+/** Dohvat offset=0&limit=0 i spremanje X-Total-Count u sudreg_expected_counts. Parametri prema OpenAPI: offset, limit, no_data_error (0 = ne vraćaj grešku kad nema redaka), snapshot_id (opcionalno). Ako Sudreg vrati 505 (nijedan redak), upisujemo totalCount=-1 da označimo „nepoznato / greška“, ne 0 koji bi izgledao kao stvarno nula redaka. */
 async function saveExpectedCountForEndpoint(endpoint, requestedSnapshotId, token) {
   try {
     const result = await proxyWithToken(endpoint, 'offset=0&limit=0&no_data_error=0', requestedSnapshotId, token);
-    if (result.statusCode !== 200) return;
+    const snapshotId = requestedSnapshotId != null && requestedSnapshotId !== '' ? BigInt(Number(requestedSnapshotId)) : null;
+    if (snapshotId == null) return;
     const h = result.headers || {};
-    const totalCount = h.xTotalCount;
-    const snapshotId = h.xSnapshotId != null ? h.xSnapshotId : (requestedSnapshotId != null && requestedSnapshotId !== '' ? BigInt(Number(requestedSnapshotId)) : null);
-    if (totalCount != null && snapshotId != null) {
+    let totalCount = h.xTotalCount;
+    const snapshotIdFromHeader = h.xSnapshotId != null ? BigInt(Number(h.xSnapshotId)) : snapshotId;
+    if (result.statusCode === 400 && result.body && Number(result.body.error_code) === 505) {
+      totalCount = BigInt(-1);
+      console.log('[Expected count]', endpoint, 'snapshot', String(snapshotId), 'totalCount=-1 (API 505 – provjeri parametre: snapshot_id, no_data_error=0 prema OpenAPI)');
+    } else if (result.statusCode !== 200) {
+      return;
+    }
+    if (totalCount != null) {
       await prisma.sudregExpectedCount.upsert({
-        where: { endpoint_snapshotId: { endpoint, snapshotId } },
-        create: { endpoint, snapshotId, totalCount },
+        where: { endpoint_snapshotId: { endpoint, snapshotId: snapshotIdFromHeader } },
+        create: { endpoint, snapshotId: snapshotIdFromHeader, totalCount },
         update: { totalCount },
       });
-      console.log('[Expected count]', endpoint, 'snapshot', String(snapshotId), 'total', String(totalCount));
+      if (result.statusCode === 200) console.log('[Expected count]', endpoint, 'snapshot', String(snapshotIdFromHeader), 'total', String(totalCount));
     }
   } catch (e) {
     console.warn('[Expected count]', endpoint, e.message || e);
@@ -1041,16 +1049,332 @@ async function proxyWithToken(endpoint, queryString, snapshotId, token) {
   });
 }
 
+const API_REQUEST_LOG_PREVIEW_MAX = 1000;
+
+/** Vraća dokumentaciju svih endpointa s objašnjenjima i primjerima (PowerShell, curl). baseUrl = npr. https://registar-poslovnih-subjekata.onrender.com */
+function buildApiDocs(baseUrl) {
+  const B = baseUrl || 'https://registar-poslovnih-subjekata.onrender.com';
+  return {
+    title: 'Registar poslovnih subjekata – API dokumentacija',
+    baseUrl: B,
+    description: 'HTTP API za dohvat podataka iz Sudskog registra (proxy), sync u bazu, expected counts, greške i audit.',
+    endpoints: [
+      {
+        name: 'health',
+        method: 'GET',
+        path: '/health',
+        summary: 'Zdravstvena provjera i pregled endpointa',
+        description: 'Vraća status servisa i baze. Ako baza ne odgovara, status 503 (da Render može reagirati). U odgovoru je i kratki popis endpointa.',
+        parameters: [],
+        response: '200: { service, status, db, endpoints }. 503 ako DB nije dostupna.',
+        examples: {
+          powershell: [`Invoke-WebRequest -Uri "${B}/health" -Method GET`],
+          curl: [`curl "${B}/health"`],
+        },
+      },
+      {
+        name: 'sudreg_token',
+        method: 'GET ili POST',
+        path: '/api/sudreg_token',
+        summary: 'OAuth token za Sudski registar',
+        description: 'Dohvaća access_token za Sudreg API (client_credentials). Token se cacheira ~6 h. Klijent ne šalje credentials – server koristi SUDREG_CLIENT_ID i SUDREG_CLIENT_SECRET iz okruženja.',
+        parameters: [],
+        response: '200: { access_token, token_type, expires_in, ... }. 502/503 pri grešci.',
+        examples: {
+          powershell: [`Invoke-WebRequest -Uri "${B}/api/sudreg_token" -Method GET`, `Invoke-WebRequest -Uri "${B}/api/sudreg_token" -Method POST`],
+          curl: [`curl "${B}/api/sudreg_token"`, `curl -X POST "${B}/api/sudreg_token"`],
+        },
+      },
+      {
+        name: 'sudreg_proxy',
+        method: 'GET',
+        path: '/api/sudreg_<endpoint>',
+        summary: 'Proxy prema Sudreg API-ju (samo dohvat)',
+        description: 'Prosljeđuje zahtjev Sudreg API-ju. Endpoint je npr. sudovi, drzave, subjekti, detalji_subjekta, promjene. Query parametri (npr. snapshot_id, offset, limit, no_data_error) i header X-Snapshot-Id prosljeđuju se API-ju. Svaki poziv zapisuje se u sudreg_proxy_log.',
+        parameters: [
+          { name: 'endpoint', in: 'path', required: true, description: 'Npr. sudovi, drzave, valute, subjekti, tvrtke, promjene, detalji_subjekta' },
+          { name: 'snapshot_id', in: 'query', required: false, description: 'Set podataka (ako se ne zada, najnoviji)' },
+          { name: 'offset', in: 'query', required: false, description: 'Paginacija (0-based)' },
+          { name: 'limit', in: 'query', required: false, description: 'Veličina stranice' },
+          { name: 'no_data_error', in: 'query', required: false, description: '0 = ne vraćaj grešku kad nema redaka (za list endpointe)' },
+        ],
+        response: 'JSON odgovor Sudreg API-ja; status i headeri (X-Total-Count, X-Snapshot-Id, itd.) proslijeđeni klijentu.',
+        examples: {
+          powershell: [
+            `Invoke-WebRequest -Uri "${B}/api/sudreg_sudovi" -Method GET`,
+            `Invoke-WebRequest -Uri "${B}/api/sudreg_subjekti?offset=0&limit=10&snapshot_id=1090" -Method GET`,
+            `Invoke-WebRequest -Uri "${B}/api/sudreg_detalji_subjekta?tip_identifikatora=mbs&identifikator=080229250" -Method GET`,
+          ],
+          curl: [
+            `curl "${B}/api/sudreg_sudovi"`,
+            `curl "${B}/api/sudreg_subjekti?offset=0&limit=10&snapshot_id=1090"`,
+            `curl "${B}/api/sudreg_detalji_subjekta?tip_identifikatora=mbs&identifikator=080229250"`,
+          ],
+        },
+      },
+      {
+        name: 'sync_promjene',
+        method: 'POST',
+        path: '/api/sudreg_sync_promjene',
+        summary: 'Sync popisa promjena i expected counts',
+        description: 'Dohvaća cijeli popis promjena (MBS, SCN) za navedeni snapshot i upisuje u sudreg_promjene_stavke. Također dohvaća X-Total-Count za sve endpointe i upisuje u sudreg_expected_counts. Obavezno pokrenuti prije synca po tablicama. Lock: samo jedan sync odjednom (2 h istek).',
+        parameters: [
+          { name: 'snapshot_id', in: 'query', required: true, description: 'Npr. 1090' },
+          { name: 'background', in: 'query', required: false, description: '1 = vrati 202 odmah, sync u pozadini (za izbjegavanje timeouta)' },
+        ],
+        response: '200: { ok, endpoint: "promjene", synced, batches, snapshotId, durationMs }. 409 ako je sync već u tijeku.',
+        examples: {
+          powershell: [
+            `Invoke-WebRequest -Uri "${B}/api/sudreg_sync_promjene?snapshot_id=1090" -Method POST`,
+            `Invoke-WebRequest -Uri "${B}/api/sudreg_sync_promjene?snapshot_id=1090&background=1" -Method POST`,
+          ],
+          curl: [
+            `curl -X POST "${B}/api/sudreg_sync_promjene?snapshot_id=1090"`,
+            `curl -X POST "${B}/api/sudreg_sync_promjene?snapshot_id=1090&background=1"`,
+          ],
+        },
+      },
+      {
+        name: 'sync_run_job',
+        method: 'POST',
+        path: '/api/sudreg_sync_run_job',
+        summary: 'Jedan poziv: sync promjena + sve tablice (chunked)',
+        description: 'Interno pokreće sync_promjene, zatim za svaku tablicu iz SYNC_SNAPSHOT_CONFIG chunked sync (max_batches po pozivu) dok ne završi. Pogodno za Render cron ili ručni jedan poziv. Tablice koje već imaju podatke za snapshot preskaču se (skipped).',
+        parameters: [
+          { name: 'snapshot_id', in: 'query', required: true, description: 'Npr. 1090' },
+          { name: 'max_batches', in: 'query', required: false, description: 'Broj batch-eva (po 500 redaka) po chunku; default 100' },
+        ],
+        response: '200: { ok, snapshotId, durationMs, maxBatchesPerChunk, endpoints: [ { endpoint, synced, batches } ili { skipped, reason } ] }. 502 ako sync_promjene ne uspije.',
+        examples: {
+          powershell: [`Invoke-WebRequest -Uri "${B}/api/sudreg_sync_run_job?snapshot_id=1090" -Method POST`, `Invoke-WebRequest -Uri "${B}/api/sudreg_sync_run_job?snapshot_id=1090&max_batches=50" -Method POST`],
+          curl: [`curl -X POST "${B}/api/sudreg_sync_run_job?snapshot_id=1090"`, `curl -X POST "${B}/api/sudreg_sync_run_job?snapshot_id=1090&max_batches=50"`],
+        },
+      },
+      {
+        name: 'sync_endpoint',
+        method: 'POST',
+        path: '/api/sudreg_sync_<endpoint>',
+        summary: 'Sync pojedine tablice po snapshotu',
+        description: 'Endpoint je npr. subjekti, tvrtke, sjedista, predmeti_poslovanja. Na početku briše postojeće redove za taj snapshot, zatim batch upis. Za tablice s MBO prvo moraju postojati redovi u sudreg_promjene_stavke. Chunked: max_batches, max_rows, start_offset (nastavak).',
+        parameters: [
+          { name: 'endpoint', in: 'path', required: true, description: 'subjekti, tvrtke, sjedista, gfi, predmeti_poslovanja, itd.' },
+          { name: 'snapshot_id', in: 'query', required: true, description: 'Obavezan' },
+          { name: 'max_batches', in: 'query', required: false, description: 'Ograniči broj batch-eva u ovom pozivu; odgovor sadrži has_more, next_start_offset' },
+          { name: 'max_rows', in: 'query', required: false, description: 'Ograniči broj redaka u ovom pozivu' },
+          { name: 'start_offset', in: 'query', required: false, description: 'Nastavak chunked synca (vrijednost iz prethodnog next_start_offset)' },
+        ],
+        response: '200: { ok, endpoint, synced, batches, snapshotId, durationMs, method, has_more?, next_start_offset? }. 409 ako tablica već ima snapshot ili sync locked.',
+        examples: {
+          powershell: [
+            `Invoke-WebRequest -Uri "${B}/api/sudreg_sync_subjekti?snapshot_id=1090" -Method POST`,
+            `Invoke-WebRequest -Uri "${B}/api/sudreg_sync_predmeti_poslovanja?snapshot_id=1090&max_batches=100" -Method POST`,
+          ],
+          curl: [
+            `curl -X POST "${B}/api/sudreg_sync_subjekti?snapshot_id=1090"`,
+            `curl -X POST "${B}/api/sudreg_sync_predmeti_poslovanja?snapshot_id=1090&max_batches=100"`,
+          ],
+        },
+      },
+      {
+        name: 'sync_status',
+        method: 'GET',
+        path: '/api/sudreg_sync_status',
+        summary: 'Koja sync metoda se trenutno izvršava',
+        description: 'Čita sudreg_sync_lock. Vraća lockedBy (npr. sync_promjene, sync_subjekti) i lockedAt. Lock isteče nakon 2 sata.',
+        parameters: [],
+        response: '200: { locked: true|false, lockedBy, lockedAt, message }.',
+        examples: {
+          powershell: [`Invoke-WebRequest -Uri "${B}/api/sudreg_sync_status" -Method GET`],
+          curl: [`curl "${B}/api/sudreg_sync_status"`],
+        },
+      },
+      {
+        name: 'sync_state',
+        method: 'GET',
+        path: '/api/sudreg_sync_state',
+        summary: 'Trenutni snapshot_id i redni_broj',
+        description: 'Vraća zadnji upisani snapshot i redni broj (ažuriraju se nakon POST expected_counts ili sync_promjene).',
+        parameters: [],
+        response: '200: { ok, snapshotId, redniBroj, updatedAt }.',
+        examples: {
+          powershell: [`Invoke-WebRequest -Uri "${B}/api/sudreg_sync_state" -Method GET`],
+          curl: [`curl "${B}/api/sudreg_sync_state"`],
+        },
+      },
+      {
+        name: 'expected_counts_get',
+        method: 'GET',
+        path: '/api/sudreg_expected_counts',
+        summary: 'Očekivani brojevi redaka po endpointu (paginirano)',
+        description: 'Vraća redove iz sudreg_expected_counts za navedeni snapshot_id. Paginacija: limit, offset.',
+        parameters: [
+          { name: 'snapshot_id', in: 'query', required: false, description: 'Filter po snapshotu' },
+          { name: 'limit', in: 'query', required: false, description: 'Max redaka; default 50, max 500' },
+          { name: 'offset', in: 'query', required: false, description: 'Preskoči redaka' },
+        ],
+        response: '200: { rows: [ { endpoint, snapshotId, totalCount } ], total? }.',
+        examples: {
+          powershell: [`Invoke-WebRequest -Uri "${B}/api/sudreg_expected_counts?snapshot_id=1090" -Method GET`, `Invoke-WebRequest -Uri "${B}/api/sudreg_expected_counts?snapshot_id=1090&limit=50&offset=0" -Method GET`],
+          curl: [`curl "${B}/api/sudreg_expected_counts?snapshot_id=1090"`, `curl "${B}/api/sudreg_expected_counts?snapshot_id=1090&limit=50&offset=0"`],
+        },
+      },
+      {
+        name: 'expected_counts_post',
+        method: 'POST',
+        path: '/api/sudreg_expected_counts',
+        summary: 'Upis očekivanih brojeva (X-Total-Count za sve endpointe)',
+        description: 'Dohvaća offset=0&limit=0&no_data_error=0 za sve endpointe i upisuje totalCount u sudreg_expected_counts. Obavezno prije synca po tablicama (ili pokreni sync_promjene koji to radi).',
+        parameters: [{ name: 'snapshot_id', in: 'query', required: true, description: 'Npr. 1090' }],
+        response: '200: { ok, snapshotId, written, message }. 400 ako nema snapshot_id.',
+        examples: {
+          powershell: [`Invoke-WebRequest -Uri "${B}/api/sudreg_expected_counts?snapshot_id=1090" -Method POST`],
+          curl: [`curl -X POST "${B}/api/sudreg_expected_counts?snapshot_id=1090"`],
+        },
+      },
+      {
+        name: 'sync_greske',
+        method: 'GET',
+        path: '/api/sudreg_sync_greske',
+        summary: 'Greške validacije: očekivano vs stvarno',
+        description: 'Uspoređuje broj redaka u tablicama s očekivanim (sudreg_expected_counts). Bez snapshot_id koristi trenutni snapshot iz sudreg_sync_state.',
+        parameters: [{ name: 'snapshot_id', in: 'query', required: false, description: 'Filter; inače trenutni iz sync_state' }],
+        response: '200: { rows: [ { endpoint, expected, actual, diff } ], summary: { ukupno, sGreskama } }.',
+        examples: {
+          powershell: [`Invoke-WebRequest -Uri "${B}/api/sudreg_sync_greske" -Method GET`, `Invoke-WebRequest -Uri "${B}/api/sudreg_sync_greske?snapshot_id=1090" -Method GET`],
+          curl: [`curl "${B}/api/sudreg_sync_greske"`, `curl "${B}/api/sudreg_sync_greske?snapshot_id=1090"`],
+        },
+      },
+      {
+        name: 'promjene_razlike',
+        method: 'GET',
+        path: '/api/sudreg_promjene_razlike',
+        summary: 'Promijenjeni subjekti između dva snapshota',
+        description: 'Vraća MBS-ove koji su se promijenili (novi SCN > stari ili subjekt samo u novijem). Bez parametara: zadnja dva snapshota u bazi.',
+        parameters: [
+          { name: 'stari_snapshot', in: 'query', required: false, description: 'Stari snapshot_id' },
+          { name: 'novi_snapshot', in: 'query', required: false, description: 'Novi snapshot_id' },
+        ],
+        response: '200: { stariSnapshotId, noviSnapshotId, promijenjeniMbs, ukupnoPromijenjeno, maxScnStari, maxScnNovi }.',
+        examples: {
+          powershell: [`Invoke-WebRequest -Uri "${B}/api/sudreg_promjene_razlike" -Method GET`, `Invoke-WebRequest -Uri "${B}/api/sudreg_promjene_razlike?stari_snapshot=1090&novi_snapshot=1091" -Method GET`],
+          curl: [`curl "${B}/api/sudreg_promjene_razlike"`, `curl "${B}/api/sudreg_promjene_razlike?stari_snapshot=1090&novi_snapshot=1091"`],
+        },
+      },
+      {
+        name: 'sync_check_webhook',
+        method: 'GET',
+        path: '/api/sudreg_sync_check_webhook',
+        summary: 'Cron: provjera grešaka + POST na webhook',
+        description: 'Dohvaća greške (sync_greske). Ako ima grešaka i postavljen je SUDREG_WEBHOOK_URL, šalje POST s tijelom grešaka na taj URL. Za cron koji alarmira.',
+        parameters: [{ name: 'snapshot_id', in: 'query', required: false, description: 'Opcionalno' }],
+        response: '200: { ok, greskeCount, webhookSent? }.',
+        examples: {
+          powershell: [`Invoke-WebRequest -Uri "${B}/api/sudreg_sync_check_webhook" -Method GET`],
+          curl: [`curl "${B}/api/sudreg_sync_check_webhook"`],
+        },
+      },
+      {
+        name: 'audit_cleanup',
+        method: 'POST',
+        path: '/api/sudreg_audit_promjene_cleanup',
+        summary: 'Brisanje starih audit zapisa',
+        description: 'Briše redove iz sudreg_audit_promjene starije od navedenog broja dana.',
+        parameters: [{ name: 'days', in: 'query', required: false, description: 'Briši redove starije od toliko dana; default 90' }],
+        response: '200: { ok, deleted?, message }.',
+        examples: {
+          powershell: [`Invoke-WebRequest -Uri "${B}/api/sudreg_audit_promjene_cleanup?days=90" -Method POST`],
+          curl: [`curl -X POST "${B}/api/sudreg_audit_promjene_cleanup?days=90"`],
+        },
+      },
+      {
+        name: 'clear_all',
+        method: 'POST',
+        path: '/api/sudreg_clear_all',
+        summary: 'Brisanje svih zapisa iz Sudreg tablica',
+        description: 'Briše sve redove iz sudreg_* tablica (proxy log, expected counts, sync state/lock, audit, promjene_stavke, sve data tablice). Zaštita: obavezan confirm=clear_all_sudreg. Sync lock se nakon brisanja resetira.',
+        parameters: [{ name: 'confirm', in: 'query', required: true, description: 'Mora biti clear_all_sudreg' }],
+        response: '200: { ok, message, total, deleted }. 400 ako nema confirm.',
+        examples: {
+          powershell: [`Invoke-WebRequest -Uri "${B}/api/sudreg_clear_all?confirm=clear_all_sudreg" -Method POST`],
+          curl: [`curl -X POST "${B}/api/sudreg_clear_all?confirm=clear_all_sudreg"`],
+        },
+      },
+      {
+        name: 'sudreg_request_log',
+        method: 'GET',
+        path: '/api/sudreg_request_log',
+        summary: 'Log dolaznih API poziva',
+        description: 'Vraća zadnje zapise iz api_request_log (method, path, status_code, duration_ms, response_preview skraćen).',
+        parameters: [
+          { name: 'limit', in: 'query', required: false, description: 'Broj redaka; default 20, max 100' },
+          { name: 'offset', in: 'query', required: false, description: 'Preskoči redaka' },
+        ],
+        response: '200: { total, limit, offset, rows }.',
+        examples: {
+          powershell: [`Invoke-WebRequest -Uri "${B}/api/sudreg_request_log" -Method GET`, `Invoke-WebRequest -Uri "${B}/api/sudreg_request_log?limit=50&offset=0" -Method GET`],
+          curl: [`curl "${B}/api/sudreg_request_log"`, `curl "${B}/api/sudreg_request_log?limit=50&offset=0"`],
+        },
+      },
+      {
+        name: 'sudreg_docs',
+        method: 'GET',
+        path: '/api/sudreg_docs',
+        summary: 'Ova dokumentacija (svi endpointi, primjeri)',
+        description: 'Vraća JSON s popisom svih endpointa, parametrima, objašnjenjima i primjerima u PowerShellu i curl.',
+        parameters: [{ name: 'base_url', in: 'query', required: false, description: 'Ako želiš drugačiji baseUrl u primjerima' }],
+        response: '200: { title, baseUrl, description, endpoints: [ ... ] }.',
+        examples: {
+          powershell: [`Invoke-WebRequest -Uri "${B}/api/sudreg_docs" -Method GET`],
+          curl: [`curl "${B}/api/sudreg_docs"`],
+        },
+      },
+    ],
+  };
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || '/', `http://localhost:${PORT}`);
   const path = url.pathname;
   const method = req.method;
+  const startMs = Date.now();
+  const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.headers['x-real-ip'] || req.socket?.remoteAddress || null;
+  const userAgent = req.headers['user-agent'] || null;
+  const queryString = url.search ? url.search.slice(1) : null;
 
   const sendJson = (status, obj, extraHeaders = {}) => {
     const headers = { 'Content-Type': 'application/json', ...extraHeaders };
+    const bodyStr = JSON.stringify(obj);
     res.writeHead(status, headers);
-    res.end(JSON.stringify(obj));
+    res.end(bodyStr);
+    const durationMs = Date.now() - startMs;
+    const preview = bodyStr.length > API_REQUEST_LOG_PREVIEW_MAX
+      ? bodyStr.slice(0, API_REQUEST_LOG_PREVIEW_MAX) + '...[+' + (bodyStr.length - API_REQUEST_LOG_PREVIEW_MAX) + ']'
+      : bodyStr;
+    prisma.apiRequestLog.create({
+      data: {
+        method,
+        path,
+        queryString: queryString && queryString.length <= 2048 ? queryString : queryString?.slice(0, 2045) + '...',
+        statusCode: status,
+        durationMs,
+        clientIp: clientIp && clientIp.length <= 64 ? clientIp : clientIp?.slice(0, 61) + '...',
+        userAgent: userAgent && userAgent.length <= 512 ? userAgent : userAgent?.slice(0, 509) + '...',
+        responsePreview: preview.length <= 1024 ? preview : preview.slice(0, 1021) + '...',
+      },
+    }).catch((e) => console.error('[ApiRequestLog]', e.message));
   };
+
+  // GET /api/sudreg_docs – dokumentacija svih endpointa s objašnjenjima i primjerima (PowerShell, curl).
+  if (path === '/api/sudreg_docs' && method === 'GET') {
+    const explicitBase = url.searchParams.get('base_url') || url.searchParams.get('baseUrl');
+    const protocol = req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+    const host = req.headers.host || ('localhost:' + PORT);
+    const baseUrl = explicitBase
+      ? (explicitBase.startsWith('http') ? explicitBase : `${protocol}://${explicitBase}`)
+      : `${protocol}://${host}`;
+    sendJson(200, buildApiDocs(baseUrl));
+    return;
+  }
 
   // Health / root – s provjerom baze (ako DB ne odgovara, 503 da Render može reagirati).
   if (path === '/' || path === '/health') {
@@ -1070,23 +1394,26 @@ const server = http.createServer(async (req, res) => {
       status: 'ok',
       db: 'ok',
       endpoints: {
-        token: 'GET|POST /api/token',
+        sudreg_token: 'GET|POST /api/sudreg_token',
         sudreg: 'GET /api/sudreg_<endpoint> (npr. /api/sudreg_sudovi, /api/sudreg_detalji_subjekta)',
         sync: 'POST /api/sudreg_sync_<endpoint> (promjene, subjekti, tvrtke, ... snapshot_id; opcionalno max_batches, max_rows, start_offset za chunked sync)',
         syncRunJob: 'POST /api/sudreg_sync_run_job?snapshot_id=&max_batches= (sync_promjene + sve tablice u chunkovima; za Render cron)',
         syncStatus: 'GET /api/sudreg_sync_status (koja sync metoda se trenutno izvršava: lockedBy)',
+        clearAll: 'POST /api/sudreg_clear_all?confirm=clear_all_sudreg (briše sve zapise iz Sudreg tablica)',
+        sudreg_request_log: 'GET /api/sudreg_request_log?limit=&offset= (zadnji logovi dolaznih API poziva; response skraćen)',
         expectedCounts: 'GET /api/sudreg_expected_counts?snapshot_id=&limit=&offset=; POST = upis expected counts',
         syncGreske: 'GET /api/sudreg_sync_greske?snapshot_id= (greške; bez snapshot_id = trenutni iz sync_state)',
         syncCheckWebhook: 'GET /api/sudreg_sync_check_webhook (cron: greške + POST na SUDREG_WEBHOOK_URL ako ima)',
         auditCleanup: 'POST /api/sudreg_audit_promjene_cleanup?days=90 (briše stari audit)',
         promjeneRazlike: 'GET /api/sudreg_promjene_razlike?stari_snapshot=&novi_snapshot= (usporedba SCN, promijenjeni subjekti)',
+        sudreg_docs: 'GET /api/sudreg_docs (dokumentacija svih endpointa s primjerima PowerShell i curl)',
       },
     });
     return;
   }
 
-  // GET ili POST /api/token
-  if (path === '/api/token' && (method === 'GET' || method === 'POST')) {
+  // GET ili POST /api/sudreg_token
+  if (path === '/api/sudreg_token' && (method === 'GET' || method === 'POST')) {
     try {
       const tokenResponse = await fetchSudregToken();
       sendJson(200, tokenResponse);
@@ -1304,6 +1631,56 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // POST /api/sudreg_clear_all – briše sve zapise iz Sudreg tablica (proxy log, expected counts, sync state/lock, audit, promjene_stavke, sve data tablice). Zaštita: ?confirm=clear_all_sudreg
+  if (path === '/api/sudreg_clear_all' && method === 'POST') {
+    const confirm = url.searchParams.get('confirm');
+    if (confirm !== 'clear_all_sudreg') {
+      sendJson(400, {
+        error: 'confirmation_required',
+        message: 'Za brisanje svih zapisa obavezan je parametar: confirm=clear_all_sudreg',
+        hint: 'POST /api/sudreg_clear_all?confirm=clear_all_sudreg',
+      });
+      return;
+    }
+    const modelsOrder = [
+      'apiRequestLog', 'sudregAuditPromjene', 'sudregProxyLog', 'sudregExpectedCount', 'sudregSyncState', 'sudregSyncLock',
+      'promjeneStavka',
+      'brisPravniOblici', 'brisRegistri', 'counts', 'subjekti', 'tvrtke', 'sjedista', 'skraceneTvrtke', 'emailAdrese',
+      'pravniOblici', 'preteziteDjelatnosti', 'predmetiPoslovanja', 'evidencijskeDjelatnosti', 'temeljniKapitali', 'postupci',
+      'djelatnostiPodruznica', 'gfi', 'objavePriopcenja', 'naziviPodruznica', 'skraceniNaziviPodruznica', 'sjedistaPodruznica',
+      'emailAdresePodruznica', 'inozemniRegistri', 'prijevodiTvrtki', 'prijevodiSkracenihTvrtki',
+      'sudovi', 'drzave', 'valute', 'nacionalnaKlasifikacijaDjelatnosti', 'vrstePravnihOblika', 'vrstePostupaka',
+    ];
+    const deleted = {};
+    let failed = null;
+    for (const name of modelsOrder) {
+      const model = prisma[name];
+      if (!model || typeof model.deleteMany !== 'function') continue;
+      try {
+        const r = await model.deleteMany({});
+        deleted[name] = r?.count ?? 0;
+      } catch (e) {
+        failed = failed || { model: name, message: e.message || String(e) };
+      }
+    }
+    if (failed) {
+      sendJson(500, { error: 'clear_partial', message: failed.message, model: failed.model, deleted });
+      return;
+    }
+    try {
+      await prisma.sudregSyncLock.upsert({
+        where: { id: 'default' },
+        create: { id: 'default' },
+        update: { lockedAt: null, lockedBy: null },
+      });
+    } catch (e) {
+      console.warn('[clear_all] sync_lock reset:', e.message);
+    }
+    const total = Object.values(deleted).reduce((a, b) => a + b, 0);
+    sendJson(200, { ok: true, message: 'Svi zapisi iz Sudreg tablica obrisani. Sync lock resetiran.', total, deleted });
+    return;
+  }
+
   // POST /api/sudreg_expected_counts – direktno upisuje očekivane brojeve u tablicu (dohvat X-Total-Count za sve endpointe, parametar snapshot_id obavezan).
   if (path === '/api/sudreg_expected_counts' && method === 'POST') {
     const snapshotParam = url.searchParams.get('snapshot_id');
@@ -1340,6 +1717,26 @@ const server = http.createServer(async (req, res) => {
       });
     } catch (e) {
       sendJson(500, { error: 'sync_status_failed', message: e.message || String(e) });
+    }
+    return;
+  }
+
+  // GET /api/sudreg_request_log – zadnji logovi dolaznih API poziva (limit, offset).
+  if (path === '/api/sudreg_request_log' && method === 'GET') {
+    try {
+      const limitParam = url.searchParams.get('limit');
+      const offsetParam = url.searchParams.get('offset');
+      const take = limitParam != null && limitParam !== '' ? Math.min(100, Math.max(1, parseInt(limitParam, 10) || 20)) : 20;
+      const skip = offsetParam != null && offsetParam !== '' ? Math.max(0, parseInt(offsetParam, 10) || 0) : 0;
+      const rows = await prisma.apiRequestLog.findMany({
+        orderBy: { createdAt: 'desc' },
+        take,
+        skip,
+      });
+      const total = await prisma.apiRequestLog.count();
+      sendJson(200, { total, limit: take, offset: skip, rows });
+    } catch (e) {
+      sendJson(500, { error: 'api_request_log_failed', message: e.message || String(e) });
     }
     return;
   }

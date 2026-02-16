@@ -87,6 +87,12 @@ curl "https://<APP_URL>/api/sudreg_sync_greske?snapshot_id=1090"
   `POST /api/sudreg_audit_promjene_cleanup?days=90`
 - **Cron za greške + webhook:**  
   `GET /api/sudreg_sync_check_webhook` (ako je postavljen `SUDREG_WEBHOOK_URL`, šalje POST s greškama).
+- **Dokumentacija svih endpointa (primjeri PowerShell i curl):**  
+  `GET /api/sudreg_docs`
+- **Log dolaznih API poziva:**  
+  `GET /api/sudreg_request_log?limit=20&offset=0`
+- **OAuth token za Sudreg:**  
+  `GET` ili `POST /api/sudreg_token`
 
 ## 6. Primjeri curl za sve endpointe
 
@@ -161,6 +167,12 @@ Invoke-WebRequest -Uri "https://<APP_URL>/api/sudreg_sync_greske" -Method GET
 # POST
 Invoke-WebRequest -Uri "https://<APP_URL>/api/sudreg_expected_counts?snapshot_id=1090" -Method POST
 ```
+
+## Troubleshooting (Render / logovi)
+
+- **`Environment variable not found: DATABASE_URL`** – Ako koristiš Render **Cron Job** koji poziva ovu aplikaciju, tom Cron Jobu mora biti postavljena varijabla **DATABASE_URL** (isti connection string kao Web Service). U Renderu: Cron Job → Environment → dodaj DATABASE_URL ili ga naslijedi iz Environment Group.
+- **`Application exited early`** – Često uzrok: nedostaje DATABASE_URL u okruženju koji pokreće proces (npr. build ili Cron bez env).
+- **Sudreg API 505 „Vaš zahtjev nije vratio ni jedan redak“** – Prema OpenAPI parametri za list/expected count su: **offset**, **limit**, **no_data_error** (0 = ne vraćaj grešku kad nema redaka), **snapshot_id** (opcionalno). Aplikacija šalje `offset=0&limit=0&no_data_error=0` i `snapshot_id` iz zahtjeva. Ako API ipak vrati 505, vjerojatno je problem u parametrima ili snapshot nije dostupan; aplikacija upisuje **totalCount=-1** („nepoznato“, ne 0 da ne bi izgledalo kao stvarno nula redaka). Provjeri OpenAPI spec (datoteka `open_api (1)`) za točan naziv i vrijednosti parametara po endpointu.
 
 ## Sažetak redoslijeda
 

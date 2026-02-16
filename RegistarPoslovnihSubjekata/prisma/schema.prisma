@@ -476,6 +476,23 @@ model VrstePravnihOblika {
   @@map("sudreg_vrste_pravnih_oblika")
 }
 
+// --- Log svih dolaznih API poziva (method, path, status, trajanje; response skraćen) ---
+model ApiRequestLog {
+  id             BigInt   @id @default(autoincrement())
+  method         String   @db.VarChar(16)
+  path           String   @db.VarChar(512)
+  queryString    String?  @map("query_string") @db.VarChar(2048)
+  statusCode     Int      @map("status_code")
+  durationMs     Int      @map("duration_ms")
+  clientIp       String?  @map("client_ip") @db.VarChar(64)
+  userAgent      String?  @map("user_agent") @db.VarChar(512)
+  responsePreview String? @map("response_preview") @db.VarChar(1024)
+  createdAt      DateTime @default(now()) @map("created_at")
+  @@index([path])
+  @@index([createdAt])
+  @@map("api_request_log")
+}
+
 // --- Log poziva proxy API-ja (metoda, parametri, status, trajanje, Sudreg response headers) ---
 model SudregProxyLog {
   id                BigInt   @id @default(autoincrement())

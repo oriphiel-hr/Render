@@ -8,6 +8,8 @@ Ovaj servis izlaže **samo dohvat** (proxy) prema [sudreg-data.gov.hr](https://s
 
 **Base URL:** `https://registar-poslovnih-subjekata.onrender.com` (ili lokalno `http://localhost:PORT`)
 
+**Dokumentacija svih endpointa (uključujući sync, expected counts, log):** `GET /api/sudreg_docs` – vraća JSON s objašnjenjima i primjerima u PowerShellu i curl.
+
 ---
 
 ## Format poziva
@@ -65,6 +67,19 @@ Prema dokumentaciji [data.gov.hr – Sudski registar](https://data.gov.hr/ckan/d
 | **vrste_gfi_dokumenata** | Vrste GFI dokumenata | Prema OpenAPI |
 
 *Točan popis parametara za svaki endpoint nalazi se u službenoj OpenAPI dokumentaciji na [sudreg-data.gov.hr](https://sudreg-data.gov.hr) (nakon registracije).*
+
+### List / expected count (offset, limit, no_data_error, snapshot_id)
+
+Za list endpointe (subjekti, tvrtke, promjene, itd.) OpenAPI navodi:
+
+| Parametar      | Obavezan | Opis |
+|----------------|----------|------|
+| **snapshot_id** | Ne       | Set podataka (ako se ne zada, vraća se najnoviji set). |
+| **offset**      | Ne       | Redni broj (0-based) prvog retka kod paginga; default od prvog. |
+| **limit**      | Ne       | Veličina stranice; ako se ne navede, vraća se 1000 redaka. |
+| **no_data_error** | Ne    | `1` = vraćaj grešku kad nema redaka, `0` = vraćaj prazan odgovor (i header X-Total-Count). **Ako se ne navede, API vraća grešku** (npr. 505 „Vaš zahtjev nije vratio ni jedan redak“). |
+
+Za dohvat samo X-Total-Count (expected count) šalje se `offset=0&limit=0&no_data_error=0` i, ako želiš određeni snapshot, `snapshot_id=<id>`. Ako API ipak vrati 505, provjeri da su parametri točno prema OpenAPI (naziv i vrijednost, npr. string `"0"` za no_data_error).
 
 ---
 
@@ -147,7 +162,7 @@ GROUP BY p.snapshot_id;
 
 **Token (ako treba ručno):**
 ```bash
-curl "https://registar-poslovnih-subjekata.onrender.com/api/token"
+curl "https://registar-poslovnih-subjekata.onrender.com/api/sudreg_token"
 ```
 
 **Detalji subjekta po OIB-u:**
