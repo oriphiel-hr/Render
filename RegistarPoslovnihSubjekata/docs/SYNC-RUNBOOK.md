@@ -199,6 +199,31 @@ curl -X POST "https://<APP_URL>/api/sudreg_sync_run_job?snapshot_id=1090&max_bat
 - Odgovor 200: `{ ok: true, snapshotId, durationMs, maxBatchesPerChunk, endpoints: [ { endpoint, synced, batches }, ... ] }`. Ako neka tablica već ima podatke ili nema expected count, u `endpoints` će biti `skipped: true, reason: '...'`.
 - Za drugi snapshot promijeni samo `snapshot_id=1091` u URL-u.
 
+### Postavljanje Cron Joba na Renderu
+
+Cron Job samo **poziva** Web Service (HTTP). Ne treba mu DATABASE_URL.
+
+U formi za Cron Job **nema** polja „Command” ni „Start Command” – naredba je u **Dockerfileu** (CMD). Koristi se **Language = Docker** i **Dockerfile.cron**.
+
+**Točne korake (samo polja koja postoje):**
+
+| Polje | Vrijednost |
+|--------|------------|
+| **Name** | `sudreg-sync-daily` (ili kako želiš) |
+| **Project** | po želji |
+| **Language** | **Docker** |
+| **Branch** | `main` (ili branch gdje je `Dockerfile.cron`) |
+| **Region** | npr. Frankfurt (EU Central) |
+| **Root Directory** | prazno, ili podfolder ako je `Dockerfile.cron` u njemu (npr. `RegistarPoslovnihSubjekata`) |
+| **Dockerfile Path** | **`Dockerfile.cron`** |
+| **Schedule** | `0 3 * * *` (jednom dnevno u 3:00 UTC) |
+| **Instance type** | po želji (npr. Starter) |
+| **Environment Variables** | opcionalno: `SUDREG_APP_URL`, `SUDREG_SNAPSHOT_ID` |
+
+Naredba se **ne upisuje** u formu. U repou mora biti datoteka **`Dockerfile.cron`** – u njoj je CMD koji pokreće `curl -X POST "..."`. Render pri svakom runu gradi tu sliku i izvršava njen CMD.
+
+Ako sync traje predugo i dobiješ 502: u **Advanced** → **Docker Command** možeš nadjačati, npr. dodati `&max_batches=30` u URL.
+
 ### PowerShell skripta (ručno)
 
 Skripta `scripts/sync-snapshot-1090.ps1` radi isto kao API job, ali izvana (klijent poziva sync endpoint po endpointu). Korisno za ručno pokretanje s lokalnog računala.

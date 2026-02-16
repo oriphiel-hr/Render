@@ -1,0 +1,9 @@
+# Cron job: samo poziva POST /api/sudreg_sync_run_job na Web Service.
+# U Renderu: Cron Job → Dockerfile Path = Dockerfile.cron
+# Env SUDREG_APP_URL i SUDREG_SNAPSHOT_ID opcionalno (default snapshot_id=1090).
+FROM curlimages/curl:latest
+
+ENV SUDREG_APP_URL="https://registar-poslovnih-subjekata.onrender.com" \
+    SUDREG_SNAPSHOT_ID="1090"
+
+CMD sh -c "curl -sf -X POST \"${SUDREG_APP_URL}/api/sudreg_sync_run_job?snapshot_id=${SUDREG_SNAPSHOT_ID}\""
