@@ -739,18 +739,43 @@ function runSyncWithSnapshotReturn(endpointName, requestedSnapshotId, config, op
   });
 }
 
-/** Dohvat offset=0&limit=0 i spremanje X-Total-Count u sudreg_expected_counts. Parametri prema OpenAPI: offset, limit, no_data_error (0 = ne vraćaj grešku kad nema redaka), snapshot_id (opcionalno). Ako Sudreg vrati 505 (nijedan redak), upisujemo totalCount=-1 da označimo „nepoznato / greška“, ne 0 koji bi izgledao kao stvarno nula redaka. */
+/** Dohvat offset=0&limit=0 i spremanje X-Total-Count u sudreg_expected_counts. Parametri prema OpenAPI: offset, limit, no_data_error (0), snapshot_id. Pri 505 jedan retry nakon 2 s; ako i dalje 505, totalCount=-1. Svaki poziv (uključujući interne) upisuje se u sudreg_proxy_log s točnim query_string da se vidi s čim je API pozvan. */
 async function saveExpectedCountForEndpoint(endpoint, requestedSnapshotId, token) {
+  const startMs = Date.now();
+  const queryForLog = 'offset=0&limit=0&no_data_error=0' + (requestedSnapshotId != null && String(requestedSnapshotId).trim() !== '' ? '&snapshot_id=' + String(requestedSnapshotId).trim() : '');
+  const endpointForLog = 'sudreg_' + endpoint;
+  const writeProxyLog = (result, durationMs) => {
+    const h = result?.headers || {};
+    prisma.sudregProxyLog.create({
+      data: {
+        endpoint: endpointForLog,
+        queryString: queryForLog,
+        responseStatus: result?.statusCode ?? null,
+        durationMs,
+        clientIp: null,
+        userAgent: null,
+        xSnapshotId: h.xSnapshotId ?? null,
+        xTotalCount: h.xTotalCount ?? null,
+      },
+    }).catch((e) => console.error('SudregProxyLog (expected count)', e.message));
+  };
   try {
-    const result = await proxyWithToken(endpoint, 'offset=0&limit=0&no_data_error=0', requestedSnapshotId, token);
     const snapshotId = requestedSnapshotId != null && requestedSnapshotId !== '' ? BigInt(Number(requestedSnapshotId)) : null;
     if (snapshotId == null) return;
+    let result = await proxyWithToken(endpoint, 'offset=0&limit=0&no_data_error=0', requestedSnapshotId, token);
+    const is505 = result.statusCode === 400 && result.body && Number(result.body.error_code) === 505;
+    if (is505) {
+      await new Promise((r) => setTimeout(r, 2000));
+      result = await proxyWithToken(endpoint, 'offset=0&limit=0&no_data_error=0', requestedSnapshotId, token);
+    }
+    writeProxyLog(result, Date.now() - startMs);
     const h = result.headers || {};
     let totalCount = h.xTotalCount;
     const snapshotIdFromHeader = h.xSnapshotId != null ? BigInt(Number(h.xSnapshotId)) : snapshotId;
-    if (result.statusCode === 400 && result.body && Number(result.body.error_code) === 505) {
+    const still505 = result.statusCode === 400 && result.body && Number(result.body.error_code) === 505;
+    if (still505) {
       totalCount = BigInt(-1);
-      console.log('[Expected count]', endpoint, 'snapshot', String(snapshotId), 'totalCount=-1 (API 505 – provjeri parametre: snapshot_id, no_data_error=0 prema OpenAPI)');
+      console.log('[Expected count]', endpoint, 'snapshot', String(snapshotId), 'totalCount=-1 (API 505 i nakon retrya)');
     } else if (result.statusCode !== 200) {
       return;
     }
@@ -763,6 +788,7 @@ async function saveExpectedCountForEndpoint(endpoint, requestedSnapshotId, token
       if (result.statusCode === 200) console.log('[Expected count]', endpoint, 'snapshot', String(snapshotIdFromHeader), 'total', String(totalCount));
     }
   } catch (e) {
+    writeProxyLog({ statusCode: null, headers: {} }, Date.now() - startMs);
     console.warn('[Expected count]', endpoint, e.message || e);
   }
 }
@@ -1304,7 +1330,7 @@ function buildApiDocs(baseUrl) {
         method: 'GET',
         path: '/api/sudreg_request_log',
         summary: 'Log dolaznih API poziva',
-        description: 'Vraća zadnje zapise iz api_request_log (method, path, status_code, duration_ms, response_preview skraćen).',
+        description: 'Vraća zapise iz api_request_log: method, path, queryString (parametri zahtjeva), status_code, duration_ms, response_preview. Samo pozivi koji stignu HTTP-om na ovaj server.',
         parameters: [
           { name: 'limit', in: 'query', required: false, description: 'Broj redaka; default 20, max 100' },
           { name: 'offset', in: 'query', required: false, description: 'Preskoči redaka' },
@@ -1313,6 +1339,24 @@ function buildApiDocs(baseUrl) {
         examples: {
           powershell: [`Invoke-WebRequest -Uri "${B}/api/sudreg_request_log" -Method GET`, `Invoke-WebRequest -Uri "${B}/api/sudreg_request_log?limit=50&offset=0" -Method GET`],
           curl: [`curl "${B}/api/sudreg_request_log"`, `curl "${B}/api/sudreg_request_log?limit=50&offset=0"`],
+        },
+      },
+      {
+        name: 'sudreg_proxy_log',
+        method: 'GET',
+        path: '/api/sudreg_proxy_log',
+        summary: 'Log poziva prema Sudreg API-ju (parametri svakog poziva)',
+        description: 'Svi pozivi prema Sudreg API-ju: i preko GET /api/sudreg_* i iznutra (expected count, sync). U svakom redu: endpoint, queryString (točni parametri), responseStatus, durationMs, xTotalCount, createdAt. Za 505 filtriraj response_status=400.',
+        parameters: [
+          { name: 'limit', in: 'query', required: false, description: 'Broj redaka; default 50, max 200' },
+          { name: 'offset', in: 'query', required: false, description: 'Preskoči redaka' },
+          { name: 'response_status', in: 'query', required: false, description: 'Filtriraj po statusu odgovora (npr. 400 za 505)' },
+          { name: 'endpoint', in: 'query', required: false, description: 'Filtriraj po endpointu (npr. sudreg_evidencijske_djelatnosti)' },
+        ],
+        response: '200: { total, limit, offset, rows }.',
+        examples: {
+          powershell: [`Invoke-WebRequest -Uri "${B}/api/sudreg_proxy_log" -Method GET`, `Invoke-WebRequest -Uri "${B}/api/sudreg_proxy_log?response_status=400&limit=20" -Method GET`],
+          curl: [`curl "${B}/api/sudreg_proxy_log"`, `curl "${B}/api/sudreg_proxy_log?response_status=400&limit=20"`],
         },
       },
       {
@@ -1400,7 +1444,8 @@ const server = http.createServer(async (req, res) => {
         syncRunJob: 'POST /api/sudreg_sync_run_job?snapshot_id=&max_batches= (sync_promjene + sve tablice u chunkovima; za Render cron)',
         syncStatus: 'GET /api/sudreg_sync_status (koja sync metoda se trenutno izvršava: lockedBy)',
         clearAll: 'POST /api/sudreg_clear_all?confirm=clear_all_sudreg (briše sve zapise iz Sudreg tablica)',
-        sudreg_request_log: 'GET /api/sudreg_request_log?limit=&offset= (zadnji logovi dolaznih API poziva; response skraćen)',
+        sudreg_request_log: 'GET /api/sudreg_request_log?limit=&offset= (dolazni zahtjevi: method, path, queryString)',
+        sudreg_proxy_log: 'GET /api/sudreg_proxy_log?limit=&offset=&response_status=&endpoint= (svi Sudreg pozivi s parametrima)',
         expectedCounts: 'GET /api/sudreg_expected_counts?snapshot_id=&limit=&offset=; POST = upis expected counts',
         syncGreske: 'GET /api/sudreg_sync_greske?snapshot_id= (greške; bez snapshot_id = trenutni iz sync_state)',
         syncCheckWebhook: 'GET /api/sudreg_sync_check_webhook (cron: greške + POST na SUDREG_WEBHOOK_URL ako ima)',
@@ -1721,7 +1766,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // GET /api/sudreg_request_log – zadnji logovi dolaznih API poziva (limit, offset).
+  // GET /api/sudreg_request_log – zadnji logovi dolaznih API poziva (limit, offset). U svakom redu: method, path, queryString, status_code, response_preview.
   if (path === '/api/sudreg_request_log' && method === 'GET') {
     try {
       const limitParam = url.searchParams.get('limit');
@@ -1737,6 +1782,35 @@ const server = http.createServer(async (req, res) => {
       sendJson(200, { total, limit: take, offset: skip, rows });
     } catch (e) {
       sendJson(500, { error: 'api_request_log_failed', message: e.message || String(e) });
+    }
+    return;
+  }
+
+  // GET /api/sudreg_proxy_log – svi pozivi prema Sudreg API-ju (i preko proxy rute i iznutra: expected count, sync). Parametri: limit, offset, response_status (npr. 400), endpoint (npr. sudreg_evidencijske_djelatnosti). U svakom redu: endpoint, queryString, responseStatus, durationMs, xTotalCount, createdAt.
+  if (path === '/api/sudreg_proxy_log' && method === 'GET') {
+    try {
+      const limitParam = url.searchParams.get('limit');
+      const offsetParam = url.searchParams.get('offset');
+      const responseStatusParam = url.searchParams.get('response_status');
+      const endpointParam = url.searchParams.get('endpoint');
+      const take = limitParam != null && limitParam !== '' ? Math.min(200, Math.max(1, parseInt(limitParam, 10) || 50)) : 50;
+      const skip = offsetParam != null && offsetParam !== '' ? Math.max(0, parseInt(offsetParam, 10) || 0) : 0;
+      const where = {};
+      if (responseStatusParam != null && responseStatusParam !== '') {
+        const status = parseInt(responseStatusParam, 10);
+        if (!Number.isNaN(status)) where.responseStatus = status;
+      }
+      if (endpointParam != null && endpointParam !== '') where.endpoint = endpointParam;
+      const rows = await prisma.sudregProxyLog.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take,
+        skip,
+      });
+      const total = await prisma.sudregProxyLog.count({ where });
+      sendJson(200, { total, limit: take, offset: skip, rows });
+    } catch (e) {
+      sendJson(500, { error: 'proxy_log_failed', message: e.message || String(e) });
     }
     return;
   }
