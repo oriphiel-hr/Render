@@ -224,6 +224,8 @@ Naredba se **ne upisuje** u formu. U repou mora biti datoteka **`Dockerfile.cron
 
 Ako sync traje predugo i dobiješ 502: u **Advanced** → **Docker Command** možeš nadjačati, npr. dodati `&max_batches=30` u URL.
 
+**Kad Render prikaže „There’s an error above”:** Render često ne prikaže točan razlog. Prođi cijelu formu i provjeri: (1) ima li neko polje crveno označeno ili s crvenim tekstom ispod; (2) u browseru otvori Developer Tools (F12) → Console, pa vidi javlja li se neka greška; (3) probaj **Dockerfile Path** prvo `Dockerfile.cron`, pa ako ne prolazi `RegistarPoslovnihSubjekata/Dockerfile.cron`. Ako nađeš točan tekst greške, zapiši ga – korisno je za daljnji troubleshooting. Bilo bi dobro da Render prikazuje konkretnu poruku (npr. „Dockerfile not found” ili „Invalid path”) umjesto samo „error above”.
+
 ### PowerShell skripta (ručno)
 
 Skripta `scripts/sync-snapshot-1090.ps1` radi isto kao API job, ali izvana (klijent poziva sync endpoint po endpointu). Korisno za ručno pokretanje s lokalnog računala.
