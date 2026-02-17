@@ -1786,7 +1786,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // GET /api/sudreg_proxy_log – svi pozivi prema Sudreg API-ju (i preko proxy rute i iznutra: expected count, sync). Parametri: limit, offset, response_status (npr. 400), endpoint (npr. sudreg_evidencijske_djelatnosti). U svakom redu: endpoint, queryString, responseStatus, durationMs, xTotalCount, createdAt.
+  // GET /api/sudreg_proxy_log – svi pozivi prema Sudreg API-ju (i preko proxy rute i iznutra: expected count, sync). Parametri: limit, offset, response_status (npr. 400), endpoint (npr. sudreg_evidencijske_djelatnosti). BigInt/Decimal u redovima pretvaramo u string da JSON ne pukne.
   if (path === '/api/sudreg_proxy_log' && method === 'GET') {
     try {
       const limitParam = url.searchParams.get('limit');
@@ -1808,7 +1808,23 @@ const server = http.createServer(async (req, res) => {
         skip,
       });
       const total = await prisma.sudregProxyLog.count({ where });
-      sendJson(200, { total, limit: take, offset: skip, rows });
+      const serializableRows = rows.map((r) => ({
+        id: r.id != null ? String(r.id) : null,
+        endpoint: r.endpoint,
+        queryString: r.queryString,
+        responseStatus: r.responseStatus,
+        durationMs: r.durationMs,
+        clientIp: r.clientIp,
+        userAgent: r.userAgent,
+        xSnapshotId: r.xSnapshotId != null ? String(r.xSnapshotId) : null,
+        xTimestamp: r.xTimestamp,
+        xTotalCount: r.xTotalCount != null ? String(r.xTotalCount) : null,
+        xSecondsElapsed: r.xSecondsElapsed != null ? String(r.xSecondsElapsed) : null,
+        xRowsReturned: r.xRowsReturned,
+        xLogId: r.xLogId != null ? String(r.xLogId) : null,
+        createdAt: r.createdAt != null ? r.createdAt.toISOString() : null,
+      }));
+      sendJson(200, { total, limit: take, offset: skip, rows: serializableRows });
     } catch (e) {
       sendJson(500, { error: 'proxy_log_failed', message: e.message || String(e) });
     }
