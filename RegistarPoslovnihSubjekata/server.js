@@ -228,7 +228,6 @@ const server = http.createServer(async (req, res) => {
               items: rows.map((r) => ({
                 endpoint: r.endpoint,
                 total_count: Number(r.totalCount),
-                created_at: r.createdAt.toISOString(),
               })),
               total,
             });
