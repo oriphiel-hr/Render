@@ -3,9 +3,14 @@
  * - GET/POST /api/sudreg_token – OAuth token za Sudski registar.
  * - GET /api/sudreg?endpoint=<name>&... – jedan proxy prema Sudreg API-ju; endpoint = naziv resursa (npr. subjekti, detalji_subjekta, sudovi). Svi ostali query parametri (snapshot_id, limit, offset, no_data_error, omit_nulls, expand_relations, history_columns, tip_identifikatora, identifikator, only_active, tvrtka_naziv) prosljeđuju se API-ju.
  *   Dokumentacija: https://sudreg-data.gov.hr/api/javni/dokumentacija/open_api
+ * - GET /api/sudreg_expected_counts?snapshot_id=<id> – čitanje iz baze (public.sudreg_expected_counts). Opcionalno: endpoint (naziv metode; ako nema, vraća sve), limit, offset.
+ * - POST /api/sudreg_expected_counts?snapshot_id=<id> – dohvat X-Total-Count s Sudreg API-ja za sve list-endpointe i upis u sudreg_expected_counts.
  */
 const http = require('http');
 const https = require('https');
+const { PrismaClient } = require('@prisma/client');
+
+const prisma = new PrismaClient();
 
 const PORT = process.env.PORT || 3000;
 const SUDREG_API_BASE = process.env.SUDREG_API_BASE || 'https://sudreg-data.gov.hr/api/javni';
@@ -23,6 +28,9 @@ const SUDREG_ALLOWED_ENDPOINTS = new Set([
   'nacionalna_klasifikacija_djelatnosti', 'statusi', 'sudovi', 'valute', 'vrste_gfi_dokumenata', 'vrste_postupaka',
   'vrste_pravnih_oblika', 'vrste_statusnih_postupaka', 'detalji_subjekta',
 ]);
+
+/** Endpointi za koje se dohvaća expected count (list-endpointi; isključen detalji_subjekta). */
+const SUDREG_EXPECTED_COUNT_ENDPOINTS = [...SUDREG_ALLOWED_ENDPOINTS].filter((e) => e !== 'detalji_subjekta').sort();
 
 let tokenCache = { access_token: null, expiresAt: 0 };
 
@@ -182,6 +190,94 @@ const server = http.createServer(async (req, res) => {
       sendJson(status, { error: 'proxy_failed', message: err.message });
     }
     return;
+  }
+
+  if (path === '/api/sudreg_expected_counts') {
+    const snapshotIdParam = url.searchParams.get('snapshot_id');
+    const snapshotId = snapshotIdParam ? parseInt(snapshotIdParam, 10) : NaN;
+    if (method === 'GET') {
+      if (!snapshotIdParam || !Number.isInteger(snapshotId) || snapshotId < 0) {
+        sendJson(400, { error: 'snapshot_id_required', message: 'Obavezan parametar snapshot_id (cijeli broj >= 0).' });
+        return;
+      }
+      const endpointParam = url.searchParams.get('endpoint');
+      const limitParam = url.searchParams.get('limit');
+      const offsetParam = url.searchParams.get('offset');
+      const take = limitParam != null ? Math.min(parseInt(limitParam, 10) || 50, 500) : undefined;
+      const skip = offsetParam != null ? Math.max(0, parseInt(offsetParam, 10) || 0) : undefined;
+      const where = { snapshotId: BigInt(snapshotId) };
+      if (endpointParam != null && endpointParam !== '') {
+        where.endpoint = endpointParam;
+      }
+      prisma.sudregExpectedCount
+        .findMany({
+          where,
+          orderBy: { endpoint: 'asc' },
+          take,
+          skip,
+        })
+        .then((rows) => {
+          const countWhere = { snapshotId: BigInt(snapshotId) };
+          if (endpointParam != null && endpointParam !== '') countWhere.endpoint = endpointParam;
+          const totalPromise = take != null || skip != null
+            ? prisma.sudregExpectedCount.count({ where: countWhere })
+            : Promise.resolve(rows.length);
+          return totalPromise.then((total) => {
+            sendJson(200, {
+              snapshot_id: snapshotId,
+              items: rows.map((r) => ({
+                endpoint: r.endpoint,
+                total_count: Number(r.totalCount),
+                created_at: r.createdAt.toISOString(),
+              })),
+              total,
+            });
+          });
+        })
+        .catch((err) => {
+          console.error('GET sudreg_expected_counts', err);
+          sendJson(500, { error: 'db_error', message: err.message });
+        });
+      return;
+    }
+    if (method === 'POST') {
+      if (!snapshotIdParam || !Number.isInteger(snapshotId) || snapshotId < 0) {
+        sendJson(400, { error: 'snapshot_id_required', message: 'Obavezan parametar snapshot_id (cijeli broj >= 0).' });
+        return;
+      }
+      /* Dohvat samo X-Total-Count: offset=0, limit=0 – minimalan promet, bez podataka u tijelu. */
+      const queryForCount = `snapshot_id=${snapshotId}&offset=0&limit=0&no_data_error=0`;
+      (async () => {
+        try {
+          const token = await getSudregToken();
+          const results = [];
+          for (const ep of SUDREG_EXPECTED_COUNT_ENDPOINTS) {
+            let totalCount = -1;
+            try {
+              const result = await proxySudregGet(ep, queryForCount, token);
+              const h = result.headers['X-Total-Count'];
+              if (result.statusCode === 200 && h != null) {
+                const n = parseInt(h, 10);
+                if (!Number.isNaN(n) && n >= 0) totalCount = n;
+              }
+            } catch (_) {
+              /* ostavi -1 */
+            }
+            await prisma.sudregExpectedCount.upsert({
+              where: { endpoint_snapshotId: { endpoint: ep, snapshotId: BigInt(snapshotId) } },
+              create: { endpoint: ep, snapshotId: BigInt(snapshotId), totalCount: BigInt(totalCount) },
+              update: { totalCount: BigInt(totalCount) },
+            });
+            results.push({ endpoint: ep, total_count: totalCount });
+          }
+          sendJson(200, { snapshot_id: snapshotId, updated: results.length, items: results });
+        } catch (err) {
+          console.error('POST sudreg_expected_counts', err);
+          sendJson(err.message.includes('SUDREG_CLIENT') ? 503 : 502, { error: 'failed', message: err.message });
+        }
+      })();
+      return;
+    }
   }
 
   sendJson(404, { error: 'not_found', path });
