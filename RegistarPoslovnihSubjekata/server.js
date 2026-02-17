@@ -174,7 +174,7 @@ const server = http.createServer(async (req, res) => {
     try {
       const token = await getSudregToken();
       const result = await proxySudregGet(endpoint, queryString, token);
-      const headers = { 'Content-Type': 'application/json', ...result.headers };
+      const headers = { 'Content-Type': 'application/json; charset=utf-8', ...result.headers };
       res.writeHead(result.statusCode, headers);
       res.end(typeof result.body === 'string' ? result.body : JSON.stringify(result.body));
     } catch (err) {
