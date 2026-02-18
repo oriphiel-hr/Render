@@ -1,0 +1,95 @@
+name: Registar – Prisma build i migracije
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - "RegistarPoslovnihSubjekata/package.json"
+      - "RegistarPoslovnihSubjekata/prisma/**"
+      - ".github/workflows/registar-prisma.yml"
+
+permissions:
+  contents: read
+
+env:
+  PROJECT_DIR: RegistarPoslovnihSubjekata
+  NODE_VERSION: "20"
+
+jobs:
+  build:
+    name: npm install + Prisma generate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.PROJECT_DIR }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: ${{ env.PROJECT_DIR }}/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Prisma generate
+        env:
+          DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
+        run: |
+          npx prisma generate
+          echo "Prisma client generated"
+
+  migrate:
+    name: Primjena migracija na bazu
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
+    defaults:
+      run:
+        working-directory: ${{ env.PROJECT_DIR }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: ${{ env.PROJECT_DIR }}/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Provjera DATABASE_URL
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "DATABASE_URL nije postavljen u GitHub Secrets – migracije se preskaču."
+            echo "Za primjenu migracija dodaj DATABASE_URL u Settings > Secrets and variables > Actions."
+            exit 0
+          fi
+          echo "DATABASE_URL je postavljen"
+
+      - name: Prisma generate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx prisma generate
+
+      - name: Primjena migracija
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            exit 0
+          fi
+          npx prisma migrate deploy
+          echo "Migracije primijenjene."
