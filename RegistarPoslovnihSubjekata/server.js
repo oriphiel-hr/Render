@@ -4,7 +4,8 @@
  * - GET /api/sudreg?endpoint=<name>&... – jedan proxy prema Sudreg API-ju; endpoint = naziv resursa (npr. subjekti, detalji_subjekta, sudovi). Svi ostali query parametri (snapshot_id, limit, offset, no_data_error, omit_nulls, expand_relations, history_columns, tip_identifikatora, identifikator, only_active, tvrtka_naziv) prosljeđuju se API-ju.
  *   Dokumentacija: https://sudreg-data.gov.hr/api/javni/dokumentacija/open_api
  * - GET /api/sudreg_expected_counts?snapshot_id=<id> – čitanje iz baze (public.sudreg_expected_counts). Opcionalno: endpoint (naziv metode; ako nema, vraća sve), limit, offset.
- * - POST /api/sudreg_expected_counts?snapshot_id=<id> – dohvat X-Total-Count s Sudreg API-ja za sve list-endpointe i upis u sudreg_expected_counts.
+ * - POST /api/sudreg_expected_counts?snapshot_id=<id> – dohvat X-Total-Count s Sudreg API-ja za sve list-endpointe i upis u sudreg_expected_counts. Zahtijeva API ključ (header X-API-Key ili Authorization: Bearer <key>).
+ * - POST /api/sudreg_sync_promjene?snapshot_id=<id> – poziv Sudreg /promjene, upis u sudreg_promjene_stavke. snapshot_id opcionalno (ako nema, koristi se zadnji snapshot koji ima expected_count za promjene). Zahtijeva API ključ. Upis samo ako postoji expected_count za taj snapshot.
  */
 const http = require('http');
 const https = require('https');
@@ -13,6 +14,8 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 const PORT = process.env.PORT || 3000;
+/** API ključ za upis u bazu (POST expected_counts, budući sync). Ako nije postavljen, upis je onemogućen. */
+const SUDREG_WRITE_API_KEY = process.env.SUDREG_WRITE_API_KEY || '';
 const SUDREG_API_BASE = process.env.SUDREG_API_BASE || 'https://sudreg-data.gov.hr/api/javni';
 const SUDREG_TOKEN_URL = process.env.SUDREG_TOKEN_URL || 'https://sudreg-data.gov.hr/api/oauth/token';
 const SUDREG_CLIENT_ID = process.env.SUDREG_CLIENT_ID || '';
@@ -135,6 +138,25 @@ function proxySudregGet(path, queryString, token) {
   });
 }
 
+/**
+ * Provjera API ključa za endpointe koji pišu u bazu.
+ * Ključ u headeru: X-API-Key: <key> ili Authorization: Bearer <key>.
+ * Vraća { allowed, status, message }.
+ */
+function checkWriteApiKey(req) {
+  if (!SUDREG_WRITE_API_KEY) {
+    return { allowed: false, status: 503, message: 'Write API key not configured (SUDREG_WRITE_API_KEY).' };
+  }
+  const h = req.headers || {};
+  const key = h['x-api-key'] || (typeof h.authorization === 'string' && h.authorization.startsWith('Bearer ')
+    ? h.authorization.slice(7).trim()
+    : '');
+  if (!key || key !== SUDREG_WRITE_API_KEY) {
+    return { allowed: false, status: 401, message: 'Missing or invalid API key for write operations.' };
+  }
+  return { allowed: true };
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || '/', `http://localhost:${PORT}`);
   const path = url.pathname;
@@ -240,6 +262,11 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (method === 'POST') {
+      const writeCheck = checkWriteApiKey(req);
+      if (!writeCheck.allowed) {
+        sendJson(writeCheck.status, { error: 'write_forbidden', message: writeCheck.message });
+        return;
+      }
       if (!snapshotIdParam || !Number.isInteger(snapshotId) || snapshotId < 0) {
         sendJson(400, { error: 'snapshot_id_required', message: 'Obavezan parametar snapshot_id (cijeli broj >= 0).' });
         return;
@@ -277,6 +304,140 @@ const server = http.createServer(async (req, res) => {
       })();
       return;
     }
+  }
+
+  if (path === '/api/sudreg_sync_promjene' && method === 'POST') {
+    const writeCheck = checkWriteApiKey(req);
+    if (!writeCheck.allowed) {
+      sendJson(writeCheck.status, { error: 'write_forbidden', message: writeCheck.message });
+      return;
+    }
+    const snapshotIdParam = url.searchParams.get('snapshot_id');
+    (async () => {
+      const errors = [];
+      try {
+        let snapshotId;
+        if (snapshotIdParam != null && snapshotIdParam !== '') {
+          snapshotId = parseInt(snapshotIdParam, 10);
+          if (!Number.isInteger(snapshotId) || snapshotId < 0) {
+            sendJson(400, { error: 'invalid_snapshot_id', message: 'snapshot_id mora biti cijeli broj >= 0.' });
+            return;
+          }
+        } else {
+          const latest = await prisma.sudregExpectedCount.findFirst({
+            where: { endpoint: 'promjene' },
+            orderBy: { snapshotId: 'desc' },
+            select: { snapshotId: true },
+          });
+          if (!latest) {
+            sendJson(400, {
+              error: 'no_snapshot',
+              message: 'Nema snapshot_id s expected_count za promjene. Prvo pokreni POST /api/sudreg_expected_counts?snapshot_id=<id>.',
+            });
+            return;
+          }
+          snapshotId = Number(latest.snapshotId);
+        }
+
+        const expectedRow = await prisma.sudregExpectedCount.findUnique({
+          where: { endpoint_snapshotId: { endpoint: 'promjene', snapshotId: BigInt(snapshotId) } },
+        });
+        if (!expectedRow) {
+          sendJson(409, {
+            error: 'expected_count_missing',
+            message: `Expected count za endpoint 'promjene' i snapshot_id=${snapshotId} nije pronađen. Prvo pokreni POST /api/sudreg_expected_counts?snapshot_id=${snapshotId}.`,
+          });
+          return;
+        }
+        const totalExpected = Number(expectedRow.totalCount) < 0 ? null : Number(expectedRow.totalCount);
+
+        const token = await getSudregToken();
+        const PAGE_SIZE = 1000;
+        let offset = 0;
+        let totalFromHeader = null;
+        const allItems = [];
+
+        while (true) {
+          const qs = `snapshot_id=${snapshotId}&offset=${offset}&limit=${PAGE_SIZE}&no_data_error=0`;
+          const result = await proxySudregGet('promjene', qs, token);
+          if (result.statusCode !== 200) {
+            errors.push(`Sudreg API vratio ${result.statusCode} za offset=${offset}.`);
+            break;
+          }
+          const h = result.headers['X-Total-Count'];
+          if (totalFromHeader == null && h != null) totalFromHeader = parseInt(h, 10);
+          const page = Array.isArray(result.body) ? result.body : [];
+          for (const row of page) {
+            if (row != null && (row.mbs != null || row.mbs === 0)) {
+              allItems.push({
+                snapshotId: BigInt(snapshotId),
+                mbs: BigInt(row.mbs),
+                scn: BigInt(row.scn != null ? row.scn : 0),
+                vrijeme: row.vrijeme != null ? new Date(row.vrijeme) : null,
+              });
+            }
+          }
+          if (page.length === 0) break;
+          offset += page.length;
+          if (totalFromHeader != null && offset >= totalFromHeader) break;
+        }
+
+        await prisma.promjene.upsert({
+          where: { snapshotId: BigInt(snapshotId) },
+          create: { snapshotId: BigInt(snapshotId) },
+          update: {},
+        });
+
+        await prisma.promjeneStavka.deleteMany({ where: { snapshotId: BigInt(snapshotId) } });
+
+        let totalWritten = 0;
+        if (allItems.length > 0) {
+          for (let i = 0; i < allItems.length; i += 5000) {
+            const chunk = allItems.slice(i, i + 5000);
+            const created = await prisma.promjeneStavka.createMany({
+              data: chunk,
+              skipDuplicates: true,
+            });
+            totalWritten += created.count;
+          }
+        }
+
+        await prisma.promjene.update({
+          where: { snapshotId: BigInt(snapshotId) },
+          data: {
+            expectedCount: totalExpected != null ? BigInt(totalExpected) : null,
+            totalLoaded: BigInt(totalWritten),
+          },
+        });
+
+        const totalFetched = allItems.length;
+        const allWritten =
+          (totalExpected == null || totalFetched >= totalExpected) &&
+          totalWritten === totalFetched &&
+          errors.length === 0;
+        const hasErrors = errors.length > 0;
+
+        sendJson(200, {
+          snapshot_id: snapshotId,
+          total_expected: totalExpected,
+          total_fetched: totalFetched,
+          total_written: totalWritten,
+          all_written: allWritten,
+          has_errors: hasErrors,
+          errors: errors.length > 0 ? errors : undefined,
+        });
+      } catch (err) {
+        console.error('POST sudreg_sync_promjene', err);
+        sendJson(500, {
+          error: 'sync_failed',
+          message: err.message,
+          all_written: false,
+          has_errors: true,
+          errors: [err.message],
+        });
+      }
+    })();
+    return;
   }
 
   sendJson(404, { error: 'not_found', path });

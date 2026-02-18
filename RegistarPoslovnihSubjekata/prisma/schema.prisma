@@ -101,20 +101,25 @@ model NacionalnaKlasifikacijaDjelatnosti {
   @@map("sudreg_nacionalna_klasifikacija_djelatnosti")
 }
 
+/// Jedan red po snapshotu; stavke referenciraju ovaj red. expected_count/total_loaded = audit synca (koliko je trebalo biti učitano, koliko je učitano).
 model Promjene {
-  id         BigInt   @id @default(autoincrement())
-  snapshotId BigInt?  @map("snapshot_id")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id             BigInt           @id @default(autoincrement())
+  snapshotId     BigInt?          @unique @map("snapshot_id")
+  expectedCount  BigInt?          @map("expected_count")
+  totalLoaded    BigInt?          @map("total_loaded")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  stavke         PromjeneStavka[]
   @@map("sudreg_promjene")
 }
 
-/// Jedna stavka popisa promjena po snapshotu. Primarni ključ (snapshot_id, mbs). Usporedba razlika: JOIN po mbs, usporedba SCN.
+/// Jedna stavka popisa promjena po snapshotu. Primarni ključ (snapshot_id, mbs). Strani ključ na sudreg_promjene(snapshot_id).
 model PromjeneStavka {
   snapshotId BigInt    @map("snapshot_id")
   mbs        BigInt    @map("mbs")
   scn        BigInt    @map("scn")
   vrijeme    DateTime? @map("vrijeme")     @db.Timestamptz(6)
   createdAt  DateTime  @default(now()) @map("created_at")
+  promjene   Promjene? @relation(fields: [snapshotId], references: [snapshotId])
 
   @@id([snapshotId, mbs])
   @@index([snapshotId])
