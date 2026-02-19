@@ -293,8 +293,10 @@ const server = http.createServer(async (req, res) => {
               } catch (_) {}
               results.push({ endpoint: ep, total_count: totalCount });
             }
-            const allZero = results.length > 0 && results.every((r) => r.total_count === 0);
-            if (allZero) return { results, saved: false };
+            const allZeroOrMinusOne =
+              results.length > 0 &&
+              (results.every((r) => r.total_count === 0) || results.every((r) => r.total_count === -1));
+            if (allZeroOrMinusOne) return { results, saved: false };
             for (const r of results) {
               await prisma.sudregExpectedCount.upsert({
                 where: { endpoint_snapshotId: { endpoint: r.endpoint, snapshotId: BigInt(sid) } },
