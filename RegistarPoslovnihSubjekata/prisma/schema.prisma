@@ -101,14 +101,15 @@ model NacionalnaKlasifikacijaDjelatnosti {
   @@map("sudreg_nacionalna_klasifikacija_djelatnosti")
 }
 
-/// Jedan red po snapshotu; stavke referenciraju ovaj red. expected_count/total_loaded = audit synca (koliko je trebalo biti učitano, koliko je učitano).
+/// Jedan red po snapshotu; stavke referenciraju ovaj red. next_offset_to_fetch = sljedeći offset za chunked sync (null = nije pokrenuto ili gotovo).
 model Promjene {
-  id             BigInt           @id @default(autoincrement())
-  snapshotId     BigInt?          @unique @map("snapshot_id")
-  expectedCount  BigInt?          @map("expected_count")
-  totalLoaded    BigInt?          @map("total_loaded")
-  updatedAt      DateTime         @updatedAt @map("updated_at")
-  stavke         PromjeneStavka[]
+  id                  BigInt           @id @default(autoincrement())
+  snapshotId          BigInt?          @unique @map("snapshot_id")
+  expectedCount       BigInt?          @map("expected_count")
+  totalLoaded         BigInt?          @map("total_loaded")
+  nextOffsetToFetch   BigInt?          @map("next_offset_to_fetch")
+  updatedAt           DateTime         @updatedAt @map("updated_at")
+  stavke              PromjeneStavka[]
   @@map("sudreg_promjene")
 }
 

@@ -32,8 +32,10 @@ const SUDREG_ALLOWED_ENDPOINTS = new Set([
   'vrste_pravnih_oblika', 'vrste_statusnih_postupaka', 'detalji_subjekta',
 ]);
 
-/** Endpointi za koje se dohvaća expected count (list-endpointi; isključen detalji_subjekta). */
-const SUDREG_EXPECTED_COUNT_ENDPOINTS = [...SUDREG_ALLOWED_ENDPOINTS].filter((e) => e !== 'detalji_subjekta').sort();
+/** Endpointi za koje se dohvaća expected count (list-endpointi; isključeni detalji_subjekta, snapshots). */
+const SUDREG_EXPECTED_COUNT_ENDPOINTS = [...SUDREG_ALLOWED_ENDPOINTS]
+  .filter((e) => e !== 'detalji_subjekta' && e !== 'snapshots')
+  .sort();
 
 let tokenCache = { access_token: null, expiresAt: 0 };
 
@@ -267,36 +269,83 @@ const server = http.createServer(async (req, res) => {
         sendJson(writeCheck.status, { error: 'write_forbidden', message: writeCheck.message });
         return;
       }
-      if (!snapshotIdParam || !Number.isInteger(snapshotId) || snapshotId < 0) {
-        sendJson(400, { error: 'snapshot_id_required', message: 'Obavezan parametar snapshot_id (cijeli broj >= 0).' });
-        return;
-      }
-      /* Dohvat samo X-Total-Count: offset=0, limit=0 – minimalan promet, bez podataka u tijelu. */
-      const queryForCount = `snapshot_id=${snapshotId}&offset=0&limit=0&no_data_error=0`;
       (async () => {
         try {
           const token = await getSudregToken();
-          const results = [];
-          for (const ep of SUDREG_EXPECTED_COUNT_ENDPOINTS) {
-            let totalCount = -1;
-            try {
-              const result = await proxySudregGet(ep, queryForCount, token);
-              const h = result.headers['X-Total-Count'];
-              if (result.statusCode === 200 && h != null) {
-                const n = parseInt(h, 10);
-                if (!Number.isNaN(n) && n >= 0) totalCount = n;
-              }
-            } catch (_) {
-              /* ostavi -1 */
+          const snapshotsResult = await proxySudregGet('snapshots', '', token);
+          const snapshotsList = Array.isArray(snapshotsResult.body) ? snapshotsResult.body : [];
+          const maxSnapshotFromApi = snapshotsList.length > 0
+            ? Math.max(...snapshotsList.map((s) => (s != null && (s.id != null || s.snapshot_id != null)) ? Number(s.id ?? s.snapshot_id) : -1).filter((n) => n >= 0))
+            : -1;
+
+          const runOneSnapshot = async (sid) => {
+            const queryForCount = `snapshot_id=${sid}&offset=0&limit=0&no_data_error=0`;
+            const results = [];
+            for (const ep of SUDREG_EXPECTED_COUNT_ENDPOINTS) {
+              let totalCount = -1;
+              try {
+                const result = await proxySudregGet(ep, queryForCount, token);
+                const h = result.headers['X-Total-Count'];
+                if (result.statusCode === 200 && h != null) {
+                  const n = parseInt(h, 10);
+                  if (!Number.isNaN(n) && n >= 0) totalCount = n;
+                }
+              } catch (_) {}
+              results.push({ endpoint: ep, total_count: totalCount });
             }
-            await prisma.sudregExpectedCount.upsert({
-              where: { endpoint_snapshotId: { endpoint: ep, snapshotId: BigInt(snapshotId) } },
-              create: { endpoint: ep, snapshotId: BigInt(snapshotId), totalCount: BigInt(totalCount) },
-              update: { totalCount: BigInt(totalCount) },
-            });
-            results.push({ endpoint: ep, total_count: totalCount });
+            const allZero = results.length > 0 && results.every((r) => r.total_count === 0);
+            if (allZero) return { results, saved: false };
+            for (const r of results) {
+              await prisma.sudregExpectedCount.upsert({
+                where: { endpoint_snapshotId: { endpoint: r.endpoint, snapshotId: BigInt(sid) } },
+                create: { endpoint: r.endpoint, snapshotId: BigInt(sid), totalCount: BigInt(r.total_count) },
+                update: { totalCount: BigInt(r.total_count) },
+              });
+            }
+            return { results, saved: true };
+          };
+
+          if (snapshotIdParam != null && snapshotIdParam !== '') {
+            const snapshotId = parseInt(snapshotIdParam, 10);
+            if (!Number.isInteger(snapshotId) || snapshotId < 0) {
+              sendJson(400, { error: 'invalid_snapshot_id', message: 'snapshot_id mora biti cijeli broj >= 0.' });
+              return;
+            }
+            if (maxSnapshotFromApi >= 0 && snapshotId > maxSnapshotFromApi) {
+              sendJson(400, {
+                error: 'snapshot_id_exceeds_max',
+                message: `snapshot_id (${snapshotId}) ne smije biti veći od max snapshot_id iz API-ja (${maxSnapshotFromApi}).`,
+                max_snapshot_from_api: maxSnapshotFromApi,
+              });
+              return;
+            }
+            const { results, saved } = await runOneSnapshot(snapshotId);
+            sendJson(200, { snapshot_id: snapshotId, updated: saved ? results.length : 0, saved, items: results });
+            return;
           }
-          sendJson(200, { snapshot_id: snapshotId, updated: results.length, items: results });
+
+          const maxInDb = await prisma.sudregExpectedCount.aggregate({
+            _max: { snapshotId: true },
+          }).then((r) => r._max.snapshotId != null ? Number(r._max.snapshotId) : null);
+          const startFrom = (maxInDb != null ? maxInDb + 1 : 0);
+          const snapshotIdsToFill = maxSnapshotFromApi < 0
+            ? []
+            : snapshotsList
+                .map((s) => (s != null && (s.id != null || s.snapshot_id != null)) ? Number(s.id ?? s.snapshot_id) : null)
+                .filter((n) => n != null && n >= startFrom && n <= maxSnapshotFromApi)
+                .sort((a, b) => a - b)
+                .filter((v, i, arr) => i === 0 || arr[i - 1] !== v);
+
+          const summary = [];
+          for (const sid of snapshotIdsToFill) {
+            const { saved } = await runOneSnapshot(sid);
+            if (saved) summary.push(sid);
+          }
+          sendJson(200, {
+            range: { from: startFrom, to: maxSnapshotFromApi },
+            snapshots_updated: summary.length,
+            snapshot_ids: summary,
+          });
         } catch (err) {
           console.error('POST sudreg_expected_counts', err);
           sendJson(err.message.includes('SUDREG_CLIENT') ? 503 : 502, { error: 'failed', message: err.message });
@@ -313,6 +362,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     const snapshotIdParam = url.searchParams.get('snapshot_id');
+    const startOffsetParam = url.searchParams.get('start_offset');
     (async () => {
       const errors = [];
       try {
@@ -351,87 +401,100 @@ const server = http.createServer(async (req, res) => {
         }
         const totalExpected = Number(expectedRow.totalCount) < 0 ? null : Number(expectedRow.totalCount);
 
-        const token = await getSudregToken();
         const PAGE_SIZE = 1000;
-        let offset = 0;
-        let totalFromHeader = null;
-        const allItems = [];
-
-        while (true) {
-          const qs = `snapshot_id=${snapshotId}&offset=${offset}&limit=${PAGE_SIZE}&no_data_error=0`;
-          const result = await proxySudregGet('promjene', qs, token);
-          if (result.statusCode !== 200) {
-            errors.push(`Sudreg API vratio ${result.statusCode} za offset=${offset}.`);
-            break;
+        let startOffset = 0;
+        if (startOffsetParam != null && startOffsetParam !== '') {
+          const parsed = parseInt(startOffsetParam, 10);
+          if (Number.isInteger(parsed) && parsed >= 0) startOffset = parsed;
+        } else {
+          const existing = await prisma.promjene.findUnique({
+            where: { snapshotId: BigInt(snapshotId) },
+            select: { nextOffsetToFetch: true, totalLoaded: true },
+          });
+          if (existing != null && existing.nextOffsetToFetch != null && existing.nextOffsetToFetch >= 0) {
+            startOffset = Number(existing.nextOffsetToFetch);
           }
-          const h = result.headers['X-Total-Count'];
-          if (totalFromHeader == null && h != null) totalFromHeader = parseInt(h, 10);
-          const page = Array.isArray(result.body) ? result.body : [];
-          for (const row of page) {
-            if (row != null && (row.mbs != null || row.mbs === 0)) {
-              allItems.push({
-                snapshotId: BigInt(snapshotId),
-                mbs: BigInt(row.mbs),
-                scn: BigInt(row.scn != null ? row.scn : 0),
-                vrijeme: row.vrijeme != null ? new Date(row.vrijeme) : null,
-              });
-            }
-          }
-          if (page.length === 0) break;
-          offset += page.length;
-          if (totalFromHeader != null && offset >= totalFromHeader) break;
         }
 
         await prisma.promjene.upsert({
           where: { snapshotId: BigInt(snapshotId) },
-          create: { snapshotId: BigInt(snapshotId) },
-          update: {},
+          create: { snapshotId: BigInt(snapshotId), expectedCount: totalExpected != null ? BigInt(totalExpected) : null },
+          update: { expectedCount: totalExpected != null ? BigInt(totalExpected) : null },
         });
 
-        await prisma.promjeneStavka.deleteMany({ where: { snapshotId: BigInt(snapshotId) } });
+        if (startOffset === 0) {
+          await prisma.promjeneStavka.deleteMany({ where: { snapshotId: BigInt(snapshotId) } });
+        }
 
-        let totalWritten = 0;
-        if (allItems.length > 0) {
-          for (let i = 0; i < allItems.length; i += 5000) {
-            const chunk = allItems.slice(i, i + 5000);
-            const created = await prisma.promjeneStavka.createMany({
-              data: chunk,
-              skipDuplicates: true,
+        const token = await getSudregToken();
+        const qs = `snapshot_id=${snapshotId}&offset=${startOffset}&limit=${PAGE_SIZE}&no_data_error=0`;
+        const result = await proxySudregGet('promjene', qs, token);
+        if (result.statusCode !== 200) {
+          sendJson(502, {
+            error: 'sudreg_error',
+            message: `Sudreg API vratio ${result.statusCode} za offset=${startOffset}.`,
+            snapshot_id: snapshotId,
+            start_offset: startOffset,
+          });
+          return;
+        }
+        const totalFromHeader = result.headers['X-Total-Count'] != null ? parseInt(result.headers['X-Total-Count'], 10) : null;
+        const page = Array.isArray(result.body) ? result.body : [];
+        const allItems = [];
+        for (const row of page) {
+          if (row != null && (row.mbs != null || row.mbs === 0)) {
+            allItems.push({
+              snapshotId: BigInt(snapshotId),
+              mbs: BigInt(row.mbs),
+              scn: BigInt(row.scn != null ? row.scn : 0),
+              vrijeme: row.vrijeme != null ? new Date(row.vrijeme) : null,
             });
-            totalWritten += created.count;
           }
         }
 
-        await prisma.promjene.update({
-          where: { snapshotId: BigInt(snapshotId) },
-          data: {
-            expectedCount: totalExpected != null ? BigInt(totalExpected) : null,
-            totalLoaded: BigInt(totalWritten),
-          },
+        const nextOffset = startOffset + page.length;
+        const hasMore = page.length === PAGE_SIZE && (totalFromHeader == null || nextOffset < totalFromHeader);
+
+        let writtenThisRequest = 0;
+        let totalLoadedSoFar = 0;
+        await prisma.$transaction(async (tx) => {
+          if (allItems.length > 0) {
+            const created = await tx.promjeneStavka.createMany({
+              data: allItems,
+              skipDuplicates: true,
+            });
+            writtenThisRequest = created.count;
+          }
+          totalLoadedSoFar = await tx.promjeneStavka.count({ where: { snapshotId: BigInt(snapshotId) } });
+          await tx.promjene.update({
+            where: { snapshotId: BigInt(snapshotId) },
+            data: {
+              totalLoaded: BigInt(totalLoadedSoFar),
+              nextOffsetToFetch: hasMore ? BigInt(nextOffset) : null,
+            },
+          });
         });
 
-        const totalFetched = allItems.length;
-        const allWritten =
-          (totalExpected == null || totalFetched >= totalExpected) &&
-          totalWritten === totalFetched &&
-          errors.length === 0;
-        const hasErrors = errors.length > 0;
+        const allWrittenThisChunk = writtenThisRequest === allItems.length;
+        const verified = !hasMore && totalExpected != null && totalLoadedSoFar === totalExpected;
 
         sendJson(200, {
           snapshot_id: snapshotId,
           total_expected: totalExpected,
-          total_fetched: totalFetched,
-          total_written: totalWritten,
-          all_written: allWritten,
-          has_errors: hasErrors,
-          errors: errors.length > 0 ? errors : undefined,
+          start_offset: startOffset,
+          next_offset: hasMore ? nextOffset : null,
+          has_more: hasMore,
+          total_written_this_request: writtenThisRequest,
+          total_written_so_far: totalLoadedSoFar,
+          page_size: page.length,
+          all_written_this_chunk: allWrittenThisChunk,
+          verified: hasMore ? undefined : verified,
         });
       } catch (err) {
         console.error('POST sudreg_sync_promjene', err);
         sendJson(500, {
           error: 'sync_failed',
           message: err.message,
-          all_written: false,
           has_errors: true,
           errors: [err.message],
         });
