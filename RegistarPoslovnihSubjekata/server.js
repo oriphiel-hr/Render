@@ -6,7 +6,8 @@
  * - GET /api/sudreg_expected_counts?snapshot_id=<id> – čitanje iz baze (rps_sudreg_expected_counts). Opcionalno: endpoint, limit, offset.
  * - POST /api/sudreg_expected_counts?snapshot_id=<id> – dohvat X-Total-Count s Sudreg API-ja i upis u rps_sudreg_expected_counts. Zahtijeva API ključ.
  * - POST /api/sudreg_sync_promjene?snapshot_id=<id> – poziv Sudreg /promjene; stanje synca u rps_sudreg_sync_glava. Zahtijeva API ključ.
- * - POST /api/sudreg_cron_daily – prvo sync šifrarnika, zatim expected_counts, pa sync_promjene. Za vanjski cron. 202 u pozadini; ?wait=1 čeka rezultat.
+ * - POST /api/sudreg_sync_entiteti?snapshot_id=<id> – sync entitetskih tablica (subjekti, tvrtke, …) za zadani snapshot. Zahtijeva API ključ.
+ * - POST /api/sudreg_cron_daily – prvo expected_counts, zatim sync šifrarnika, pa sync entiteti. Za vanjski cron. 202 u pozadini; ?wait=1 čeka rezultat.
  */
 const http = require('http');
 const https = require('https');
@@ -260,10 +261,11 @@ async function runSyncSifrarnici(snapshotId) {
       const page = Array.isArray(result.body) ? result.body : [];
       let written = 0;
 
+      await prisma.$transaction(async (tx) => {
       if (endpoint === 'drzave') {
         for (const row of page) {
           if (row == null || row.id == null) continue;
-          await prisma.drzave.upsert({
+          await tx.drzave.upsert({
             where: { id: BigInt(row.id) },
             create: {
               id: BigInt(row.id),
@@ -286,7 +288,7 @@ async function runSyncSifrarnici(snapshotId) {
       } else if (endpoint === 'sudovi') {
         for (const row of page) {
           if (row == null || row.id == null) continue;
-          await prisma.sudovi.upsert({
+          await tx.sudovi.upsert({
             where: { id: BigInt(row.id) },
             create: {
               id: BigInt(row.id),
@@ -309,7 +311,7 @@ async function runSyncSifrarnici(snapshotId) {
       } else if (endpoint === 'valute') {
         for (const row of page) {
           if (row == null || row.id == null) continue;
-          await prisma.valute.upsert({
+          await tx.valute.upsert({
             where: { id: BigInt(row.id) },
             create: {
               id: BigInt(row.id),
@@ -330,7 +332,7 @@ async function runSyncSifrarnici(snapshotId) {
       } else if (endpoint === 'vrste_pravnih_oblika') {
         for (const row of page) {
           if (row == null || row.id == null) continue;
-          await prisma.vrstePravnihOblika.upsert({
+          await tx.vrstePravnihOblika.upsert({
             where: { id: BigInt(row.id) },
             create: {
               id: BigInt(row.id),
@@ -351,7 +353,7 @@ async function runSyncSifrarnici(snapshotId) {
       } else if (endpoint === 'nacionalna_klasifikacija_djelatnosti') {
         for (const row of page) {
           if (row == null || row.id == null) continue;
-          await prisma.nacionalnaKlasifikacijaDjelatnosti.upsert({
+          await tx.nacionalnaKlasifikacijaDjelatnosti.upsert({
             where: { id: BigInt(row.id) },
             create: {
               id: BigInt(row.id),
@@ -374,7 +376,7 @@ async function runSyncSifrarnici(snapshotId) {
           if (row == null || (row.postupak == null && row.id == null)) continue;
           const postupak = row.postupak != null ? row.postupak : row.id;
           if (postupak == null) continue;
-          await prisma.vrstePostupaka.upsert({
+          await tx.vrstePostupaka.upsert({
             where: { postupak: Number(postupak) },
             create: {
               postupak: Number(postupak),
@@ -389,7 +391,7 @@ async function runSyncSifrarnici(snapshotId) {
         const sid = BigInt(snapshotId);
         for (const row of page) {
           if (row == null || row.bris_kod == null) continue;
-          await prisma.brisPravniOblici.upsert({
+          await tx.brisPravniOblici.upsert({
             where: { snapshotId_brisKod: { snapshotId: sid, brisKod: String(row.bris_kod) } },
             create: {
               snapshotId: sid,
@@ -416,7 +418,7 @@ async function runSyncSifrarnici(snapshotId) {
         const sid = BigInt(snapshotId);
         for (const row of page) {
           if (row == null || row.identifikator == null) continue;
-          await prisma.brisRegistri.upsert({
+          await tx.brisRegistri.upsert({
             where: { snapshotId_identifikator: { snapshotId: sid, identifikator: String(row.identifikator) } },
             create: {
               snapshotId: sid,
@@ -437,9 +439,10 @@ async function runSyncSifrarnici(snapshotId) {
         }
       }
 
-      await prisma.sudregSyncGlava.update({
+      await tx.sudregSyncGlava.update({
         where: { id: glavaId },
         data: { status: 'ok', actualCount: BigInt(written), vrijemeZavrsetka: new Date() },
+      });
       });
       results[endpoint] = { rows: written };
     } catch (err) {
@@ -502,6 +505,7 @@ async function runSyncEntiteti(snapshotId) {
         const page = Array.isArray(result.body) ? result.body : [];
         const dataSnapGlavaBase = { snapshotId: sid, glavaId };
 
+        await prisma.$transaction(async (tx) => {
         if (endpoint === 'subjekti') {
           for (let i = 0; i < page.length; i++) {
             const row = page[i];
@@ -528,8 +532,8 @@ async function runSyncEntiteti(snapshotId) {
               tvrtkaKodBrisanja: row.tvrtka_kod_brisanja != null ? String(row.tvrtka_kod_brisanja) : null,
               poslovniBrojBrisanja: row.poslovni_broj_brisanja != null ? String(row.poslovni_broj_brisanja) : null,
             };
-            const r = await prisma.subjekti.updateMany({ where: { mbs }, data: upd });
-            if (r.count === 0) await prisma.subjekti.create({ data: { mbs, ...upd } });
+            const r = await tx.subjekti.updateMany({ where: { mbs }, data: upd });
+            if (r.count === 0) await tx.subjekti.create({ data: { mbs, ...upd } });
             totalWritten++;
           }
         } else if (endpoint === 'tvrtke') {
@@ -544,8 +548,8 @@ async function runSyncEntiteti(snapshotId) {
               ime: row.ime != null ? String(row.ime) : null,
               naznakaImena: row.naznaka_imena != null ? String(row.naznaka_imena) : null,
             };
-            const r = await prisma.tvrtke.updateMany({ where: { mbo }, data: upd });
-            if (r.count === 0) await prisma.tvrtke.create({ data: { mbo, ...upd } });
+            const r = await tx.tvrtke.updateMany({ where: { mbo }, data: upd });
+            if (r.count === 0) await tx.tvrtke.create({ data: { mbo, ...upd } });
             totalWritten++;
           }
         } else if (endpoint === 'skracene_tvrtke') {
@@ -555,8 +559,8 @@ async function runSyncEntiteti(snapshotId) {
             const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
             if (mbo == null) continue;
             const upd = { ...dataSnapGlavaBase, redniBrojUSetu: BigInt(offset + i), ime: row.ime != null ? String(row.ime) : null };
-            const r = await prisma.skraceneTvrtke.updateMany({ where: { mbo }, data: upd });
-            if (r.count === 0) await prisma.skraceneTvrtke.create({ data: { mbo, ...upd } });
+            const r = await tx.skraceneTvrtke.updateMany({ where: { mbo }, data: upd });
+            if (r.count === 0) await tx.skraceneTvrtke.create({ data: { mbo, ...upd } });
             totalWritten++;
           }
         } else if (endpoint === 'sjedista') {
@@ -583,8 +587,8 @@ async function runSyncEntiteti(snapshotId) {
               kucniPodbroj: row.kucni_podbroj != null ? String(row.kucni_podbroj) : null,
               postanskiBroj: row.postanski_broj != null ? Number(row.postanski_broj) : null,
             };
-            const r = await prisma.sjedista.updateMany({ where: { mbo, redniBroj }, data: upd });
-            if (r.count === 0) await prisma.sjedista.create({ data: { mbo, redniBroj, ...upd } });
+            const r = await tx.sjedista.updateMany({ where: { mbo, redniBroj }, data: upd });
+            if (r.count === 0) await tx.sjedista.create({ data: { mbo, redniBroj, ...upd } });
             totalWritten++;
           }
         } else if (endpoint === 'email_adrese') {
@@ -600,8 +604,8 @@ async function runSyncEntiteti(snapshotId) {
               emailAdresaRbr: emailRbr,
               adresa: row.adresa != null ? String(row.adresa) : null,
             };
-            const r = await prisma.emailAdrese.updateMany({ where: { mbo, emailAdresaRbr: emailRbr }, data: upd });
-            if (r.count === 0) await prisma.emailAdrese.create({ data: { mbo, ...upd } });
+            const r = await tx.emailAdrese.updateMany({ where: { mbo, emailAdresaRbr: emailRbr }, data: upd });
+            if (r.count === 0) await tx.emailAdrese.create({ data: { mbo, ...upd } });
             totalWritten++;
           }
         } else if (endpoint === 'postupci') {
@@ -617,8 +621,8 @@ async function runSyncEntiteti(snapshotId) {
               postupak,
               datumStecaja: row.datum_stecaja != null ? new Date(row.datum_stecaja) : null,
             };
-            const r = await prisma.postupci.updateMany({ where: { mbo, postupak }, data: upd });
-            if (r.count === 0) await prisma.postupci.create({ data: { mbo, ...upd } });
+            const r = await tx.postupci.updateMany({ where: { mbo, postupak }, data: upd });
+            if (r.count === 0) await tx.postupci.create({ data: { mbo, ...upd } });
             totalWritten++;
           }
         } else if (endpoint === 'pravni_oblici') {
@@ -632,8 +636,8 @@ async function runSyncEntiteti(snapshotId) {
               redniBrojUSetu: BigInt(offset + i),
               vrstaPravnogOblikaId: row.vrsta_pravnog_oblika_id != null ? BigInt(row.vrsta_pravnog_oblika_id) : null,
             };
-            const r = await prisma.pravniOblici.updateMany({ where: { mbo }, data: upd });
-            if (r.count === 0) await prisma.pravniOblici.create({ data: { mbo, ...upd } });
+            const r = await tx.pravniOblici.updateMany({ where: { mbo }, data: upd });
+            if (r.count === 0) await tx.pravniOblici.create({ data: { mbo, ...upd } });
             totalWritten++;
           }
         } else if (endpoint === 'pretezite_djelatnosti') {
@@ -650,8 +654,8 @@ async function runSyncEntiteti(snapshotId) {
               nacionalnaKlasifikacijaDjelatnostiId: row.nacionalna_klasifikacija_djelatnosti_id != null ? BigInt(row.nacionalna_klasifikacija_djelatnosti_id) : null,
               djelatnostTekst: row.djelatnost_tekst != null ? String(row.djelatnost_tekst) : null,
             };
-            const r = await prisma.preteziteDjelatnosti.updateMany({ where: { mbo, redniBroj }, data: upd });
-            if (r.count === 0) await prisma.preteziteDjelatnosti.create({ data: { mbo, ...upd } });
+            const r = await tx.preteziteDjelatnosti.updateMany({ where: { mbo, redniBroj }, data: upd });
+            if (r.count === 0) await tx.preteziteDjelatnosti.create({ data: { mbo, ...upd } });
             totalWritten++;
           }
         } else if (endpoint === 'predmeti_poslovanja') {
@@ -668,8 +672,8 @@ async function runSyncEntiteti(snapshotId) {
               nacionalnaKlasifikacijaDjelatnostiId: row.nacionalna_klasifikacija_djelatnosti_id != null ? BigInt(row.nacionalna_klasifikacija_djelatnosti_id) : null,
               djelatnostTekst: row.djelatnost_tekst != null ? String(row.djelatnost_tekst) : null,
             };
-            const r = await prisma.predmetiPoslovanja.updateMany({ where: { mbo, redniBroj }, data: upd });
-            if (r.count === 0) await prisma.predmetiPoslovanja.create({ data: { mbo, ...upd } });
+            const r = await tx.predmetiPoslovanja.updateMany({ where: { mbo, redniBroj }, data: upd });
+            if (r.count === 0) await tx.predmetiPoslovanja.create({ data: { mbo, ...upd } });
             totalWritten++;
           }
         } else if (endpoint === 'evidencijske_djelatnosti') {
@@ -686,8 +690,8 @@ async function runSyncEntiteti(snapshotId) {
               nacionalnaKlasifikacijaDjelatnostiId: row.nacionalna_klasifikacija_djelatnosti_id != null ? BigInt(row.nacionalna_klasifikacija_djelatnosti_id) : null,
               djelatnostTekst: row.djelatnost_tekst != null ? String(row.djelatnost_tekst) : null,
             };
-            const r = await prisma.evidencijskeDjelatnosti.updateMany({ where: { mbo, redniBroj }, data: upd });
-            if (r.count === 0) await prisma.evidencijskeDjelatnosti.create({ data: { mbo, ...upd } });
+            const r = await tx.evidencijskeDjelatnosti.updateMany({ where: { mbo, redniBroj }, data: upd });
+            if (r.count === 0) await tx.evidencijskeDjelatnosti.create({ data: { mbo, ...upd } });
             totalWritten++;
           }
         } else if (endpoint === 'temeljni_kapitali') {
@@ -704,8 +708,8 @@ async function runSyncEntiteti(snapshotId) {
               valutaId: row.valuta_id != null ? BigInt(row.valuta_id) : null,
               iznos: row.iznos != null ? Number(row.iznos) : null,
             };
-            const r = await prisma.temeljniKapitali.updateMany({ where: { mbo, temeljniKapitalRbr }, data: upd });
-            if (r.count === 0) await prisma.temeljniKapitali.create({ data: { mbo, ...upd } });
+            const r = await tx.temeljniKapitali.updateMany({ where: { mbo, temeljniKapitalRbr }, data: upd });
+            if (r.count === 0) await tx.temeljniKapitali.create({ data: { mbo, ...upd } });
             totalWritten++;
           }
         }
@@ -714,13 +718,14 @@ async function runSyncEntiteti(snapshotId) {
         hasMore = page.length === ENTITY_PAGE_SIZE;
         offset = nextOffset;
 
-        await prisma.sudregSyncGlava.update({
+        await tx.sudregSyncGlava.update({
           where: { id: glavaId },
           data: {
             nextOffsetToFetch: hasMore ? BigInt(nextOffset) : null,
             actualCount: BigInt(totalWritten),
             ...(hasMore ? {} : { status: 'ok', vrijemeZavrsetka: new Date() }),
           },
+        });
         });
       }
 
@@ -743,21 +748,28 @@ async function runSyncEntiteti(snapshotId) {
 }
 
 /**
- * Logika cron_daily: prvo sync_sifrarnici, zatim expected_counts, pa sync_promjene (stanje u rps_sudreg_sync_glava).
- * Sync za snapshote gdje nema reda u rps_sudreg_sync_glava ili next_offset_to_fetch != null.
+ * Logika cron_daily: prvo expected_counts (POST /api/sudreg_expected_counts), zatim sync_sifrarnici, pa sync_entiteti.
  * @returns {Promise<object>}
  */
 async function runCronDailyWork() {
   const summary = {
+    expected_counts: null,
     sync_sifrarnici: null,
     sync_entiteti: null,
-    expected_counts: null,
-    sync_promjene_chunks: 0,
-    snapshot_ids_synced: [],
-    snapshot_ids_skipped: [],
     error: null,
-    sync_promjene_last_response: null,
   };
+
+  const ec = await internalPost('/api/sudreg_expected_counts');
+  summary.expected_counts = {
+    status: ec.statusCode,
+    ok: ec.statusCode >= 200 && ec.statusCode < 400,
+    snapshots_updated: ec.body?.snapshots_updated,
+    snapshot_ids: ec.body?.snapshot_ids,
+  };
+  if (ec.statusCode >= 400) {
+    summary.error = ec.body?.message || ec.body?.error;
+    return summary;
+  }
 
   try {
     const token = await getSudregToken();
@@ -783,59 +795,12 @@ async function runCronDailyWork() {
     summary.sync_sifrarnici = { ok: false, endpoints: {}, error: err.message };
   }
 
-  const ec = await internalPost('/api/sudreg_expected_counts');
-  summary.expected_counts = {
-    status: ec.statusCode,
-    ok: ec.statusCode >= 200 && ec.statusCode < 400,
-    snapshots_updated: ec.body?.snapshots_updated,
-    snapshot_ids: ec.body?.snapshot_ids,
-  };
-  if (ec.statusCode >= 400) {
-    summary.error = ec.body?.message || ec.body?.error;
-    return summary;
-  }
-  const expectedRows = await prisma.sudregExpectedCount.findMany({
-    where: { endpoint: 'promjene' },
-    select: { snapshotId: true },
-    orderBy: { snapshotId: 'asc' },
-  });
-  const snapshotIdsToSync = [];
-  for (const r of expectedRows) {
-    const sid = Number(r.snapshotId);
-    const glava = await prisma.sudregSyncGlava.findUnique({
-      where: { snapshotId_tipEntiteta: { snapshotId: BigInt(sid), tipEntiteta: 'promjene' } },
-      select: { nextOffsetToFetch: true },
-    });
-    if (glava == null || glava.nextOffsetToFetch != null) {
-      snapshotIdsToSync.push(sid);
-    } else {
-      summary.snapshot_ids_skipped.push(sid);
-    }
-  }
-  const MAX_CHUNKS_PER_SNAPSHOT = 500;
-  for (const sid of snapshotIdsToSync) {
-    for (let i = 0; i < MAX_CHUNKS_PER_SNAPSHOT; i++) {
-      const sp = await internalPost(`/api/sudreg_sync_promjene?snapshot_id=${sid}`);
-      summary.sync_promjene_chunks += 1;
-      if (sp.statusCode >= 400) {
-        summary.error = sp.body?.message || sp.body?.error || `HTTP ${sp.statusCode}`;
-        summary.sync_promjene_last_response = sp.body;
-        summary.snapshot_ids_synced.push(sid);
-        return summary;
-      }
-      const hasMore = sp.body && sp.body.has_more === true;
-      if (!hasMore) {
-        summary.snapshot_ids_synced.push(sid);
-        break;
-      }
-    }
-  }
   return summary;
 }
 
 /**
- * Interni POST na ovaj server (loopback). Za cron_daily koristi ovo da pozove expected_counts pa sync_promjene.
- * @param {string} path - npr. '/api/sudreg_expected_counts' ili '/api/sudreg_sync_promjene'
+ * Interni POST na ovaj server (loopback). Za cron_daily koristi ovo da pozove expected_counts.
+ * @param {string} path - npr. '/api/sudreg_expected_counts'
  * @returns {Promise<{ statusCode: number, body: any }>}
  */
 function internalPost(path) {
@@ -1065,6 +1030,57 @@ const server = http.createServer(async (req, res) => {
       })();
       return;
     }
+  }
+
+  if (path === '/api/sudreg_sync_entiteti' && method === 'POST') {
+    const writeCheck = checkWriteApiKey(req);
+    if (!writeCheck.allowed) {
+      sendJson(writeCheck.status, { error: 'write_forbidden', message: writeCheck.message });
+      return;
+    }
+    const snapshotIdParam = url.searchParams.get('snapshot_id');
+    (async () => {
+      try {
+        let snapshotId;
+        if (snapshotIdParam != null && snapshotIdParam !== '') {
+          snapshotId = parseInt(snapshotIdParam, 10);
+          if (!Number.isInteger(snapshotId) || snapshotId < 0) {
+            sendJson(400, { error: 'invalid_snapshot_id', message: 'snapshot_id mora biti cijeli broj >= 0.' });
+            return;
+          }
+        } else {
+          const token = await getSudregToken();
+          const snapshotsResult = await proxySudregGet('snapshots', '', token);
+          const snapshotsList = Array.isArray(snapshotsResult.body) ? snapshotsResult.body : [];
+          const latestFromApi = snapshotsList.length > 0
+            ? Math.max(...snapshotsList.map((s) => (s != null && (s.id != null || s.snapshot_id != null)) ? Number(s.id ?? s.snapshot_id) : -1).filter((n) => n >= 0))
+            : null;
+          if (latestFromApi != null) {
+            snapshotId = latestFromApi;
+          } else {
+            const latest = await prisma.sudregExpectedCount.findFirst({
+              where: { endpoint: 'subjekti' },
+              orderBy: { snapshotId: 'desc' },
+              select: { snapshotId: true },
+            });
+            if (!latest) {
+              sendJson(400, {
+                error: 'no_snapshot',
+                message: 'Nema snapshot_id. Navedi ?snapshot_id=<id> ili pokreni POST /api/sudreg_expected_counts.',
+              });
+              return;
+            }
+            snapshotId = Number(latest.snapshotId);
+          }
+        }
+        const result = await runSyncEntiteti(snapshotId);
+        sendJson(200, { snapshot_id: snapshotId, ok: result.ok, endpoints: result.endpoints });
+      } catch (err) {
+        console.error('POST sudreg_sync_entiteti', err);
+        sendJson(500, { error: 'sync_failed', message: err.message });
+      }
+    })();
+    return;
   }
 
   if (path === '/api/sudreg_sync_promjene' && method === 'POST') {
