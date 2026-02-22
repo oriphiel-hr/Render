@@ -6,6 +6,7 @@
  * - GET /api/sudreg_expected_counts?snapshot_id=<id> – čitanje iz baze (public.sudreg_expected_counts). Opcionalno: endpoint (naziv metode; ako nema, vraća sve), limit, offset.
  * - POST /api/sudreg_expected_counts?snapshot_id=<id> – dohvat X-Total-Count s Sudreg API-ja za sve list-endpointe i upis u sudreg_expected_counts. Zahtijeva API ključ (header X-API-Key ili Authorization: Bearer <key>).
  * - POST /api/sudreg_sync_promjene?snapshot_id=<id> – poziv Sudreg /promjene, upis u sudreg_promjene_stavke. snapshot_id opcionalno (ako nema, koristi se zadnji snapshot koji ima expected_count za promjene). Zahtijeva API ključ. Upis samo ako postoji expected_count za taj snapshot.
+ * - POST /api/sudreg_cron_daily – jedan poziv: prvo expected_counts (bez parametra), zatim sync_promjene u petlji dok ne završi. Za vanjski cron (npr. cron-job.org). Zahtijeva API ključ.
  */
 const http = require('http');
 const https = require('https');
@@ -157,6 +158,36 @@ function checkWriteApiKey(req) {
     return { allowed: false, status: 401, message: 'Missing or invalid API key for write operations.' };
   }
   return { allowed: true };
+}
+
+/**
+ * Interni POST na ovaj server (loopback). Za cron_daily koristi ovo da pozove expected_counts pa sync_promjene.
+ * @param {string} path - npr. '/api/sudreg_expected_counts' ili '/api/sudreg_sync_promjene'
+ * @returns {Promise<{ statusCode: number, body: any }>}
+ */
+function internalPost(path) {
+  return new Promise((resolve, reject) => {
+    const opts = {
+      hostname: '127.0.0.1',
+      port: PORT,
+      path: path || '/',
+      method: 'POST',
+      headers: { 'X-API-Key': SUDREG_WRITE_API_KEY, 'Content-Length': 0 },
+    };
+    const req = http.request(opts, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        let body = data;
+        try {
+          body = JSON.parse(data);
+        } catch (_) {}
+        resolve({ statusCode: res.statusCode, body });
+      });
+    });
+    req.on('error', reject);
+    req.end();
+  });
 }
 
 const server = http.createServer(async (req, res) => {
@@ -500,6 +531,48 @@ const server = http.createServer(async (req, res) => {
           has_errors: true,
           errors: [err.message],
         });
+      }
+    })();
+    return;
+  }
+
+  if (path === '/api/sudreg_cron_daily' && method === 'POST') {
+    const writeCheck = checkWriteApiKey(req);
+    if (!writeCheck.allowed) {
+      sendJson(writeCheck.status, { error: 'write_forbidden', message: writeCheck.message });
+      return;
+    }
+    (async () => {
+      const summary = { expected_counts: null, sync_promjene_chunks: 0, sync_promjene_done: false, error: null };
+      try {
+        const ec = await internalPost('/api/sudreg_expected_counts');
+        summary.expected_counts = { status: ec.statusCode, ok: ec.statusCode >= 200 && ec.statusCode < 400 };
+        if (ec.statusCode >= 400) {
+          sendJson(200, { message: 'expected_counts failed', ...summary });
+          return;
+        }
+        const MAX_SYNC_CHUNKS = 500;
+        for (let i = 0; i < MAX_SYNC_CHUNKS; i++) {
+          const sp = await internalPost('/api/sudreg_sync_promjene');
+          summary.sync_promjene_chunks += 1;
+          if (sp.statusCode >= 400) {
+            summary.error = sp.body?.message || sp.body?.error || `HTTP ${sp.statusCode}`;
+            sendJson(200, { message: 'sync_promjene error', ...summary });
+            return;
+          }
+          const hasMore = sp.body && sp.body.has_more === true;
+          if (!hasMore) {
+            summary.sync_promjene_done = true;
+            summary.snapshot_id = sp.body?.snapshot_id;
+            summary.verified = sp.body?.verified;
+            break;
+          }
+        }
+        sendJson(200, { message: 'ok', ...summary });
+      } catch (err) {
+        console.error('POST sudreg_cron_daily', err);
+        summary.error = err.message;
+        sendJson(500, { message: 'cron_daily_failed', ...summary });
       }
     })();
     return;
