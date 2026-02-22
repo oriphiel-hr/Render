@@ -22,9 +22,13 @@ model BrisPravniOblici {
   vrstaPravnogOblikaId   BigInt?  @map("vrsta_pravnog_oblika_id")
   status                 Int      @map("status")
   createdAt              DateTime @default(now()) @map("created_at")
+  modifiedAt             DateTime? @updatedAt @map("modified_at")
+  glavaId                BigInt?  @map("glava_id")
+  glava                  SudregSyncGlava? @relation(fields: [glavaId], references: [id])
 
   @@id([snapshotId, brisKod])
   @@index([snapshotId])
+  @@index([glavaId])
   @@map("sudreg_sifrarnik_bris_pravni_oblici")
 }
 
@@ -36,9 +40,13 @@ model BrisRegistri {
   drzavaId     BigInt  @map("drzava_id")
   status       Int     @map("status")
   createdAt    DateTime @default(now()) @map("created_at")
+  modifiedAt   DateTime? @updatedAt @map("modified_at")
+  glavaId      BigInt?  @map("glava_id")
+  glava        SudregSyncGlava? @relation(fields: [glavaId], references: [id])
 
   @@id([snapshotId, identifikator])
   @@index([snapshotId])
+  @@index([glavaId])
   @@map("sudreg_sifrarnik_bris_registri")
 }
 
@@ -48,9 +56,13 @@ model Counts {
   tableName    String  @map("table_name") @db.VarChar(128)
   countAktivni BigInt  @map("count_aktivni")
   createdAt    DateTime @default(now()) @map("created_at")
+  modifiedAt   DateTime? @updatedAt @map("modified_at")
+  glavaId      BigInt?  @map("glava_id")
+  glava        SudregSyncGlava? @relation(fields: [glavaId], references: [id])
 
   @@id([snapshotId, tableName])
   @@index([snapshotId])
+  @@index([glavaId])
   @@map("sudreg_entitet_counts")
 }
 
@@ -58,6 +70,9 @@ model DetaljiSubjekta {
   id         BigInt   @id @default(autoincrement())
   snapshotId BigInt?  @map("snapshot_id")
   updatedAt  DateTime @updatedAt @map("updated_at")
+  glavaId    BigInt?  @map("glava_id")
+  glava      SudregSyncGlava? @relation(fields: [glavaId], references: [id])
+  @@index([glavaId])
   @@map("sudreg_entitet_detalji_subjekta")
 }
 
@@ -68,6 +83,9 @@ model Drzave {
   oznaka2 String?  @map("oznaka_2") @db.VarChar(4)
   oznaka3 String?  @map("oznaka_3") @db.VarChar(4)
   updatedAt DateTime @updatedAt @map("updated_at")
+  glavaId  BigInt?  @map("glava_id")
+  glava    SudregSyncGlava? @relation(fields: [glavaId], references: [id])
+  @@index([glavaId])
   @@map("sudreg_sifrarnik_drzave")
 }
 
@@ -75,6 +93,9 @@ model Jezici {
   id         BigInt   @id @default(autoincrement())
   snapshotId BigInt?  @map("snapshot_id")
   updatedAt  DateTime @updatedAt @map("updated_at")
+  glavaId    BigInt?  @map("glava_id")
+  glava      SudregSyncGlava? @relation(fields: [glavaId], references: [id])
+  @@index([glavaId])
   @@map("sudreg_sifrarnik_jezici")
 }
 
@@ -84,6 +105,9 @@ model NacionalnaKlasifikacijaDjelatnosti {
   puniNaziv String?  @map("puni_naziv") @db.VarChar(512)
   verzija   String?  @db.VarChar(32)
   updatedAt DateTime @updatedAt @map("updated_at")
+  glavaId   BigInt?  @map("glava_id")
+  glava     SudregSyncGlava? @relation(fields: [glavaId], references: [id])
+  @@index([glavaId])
   @@map("sudreg_sifrarnik_nacionalna_klasifikacija_djelatnosti")
 }
 
@@ -103,6 +127,42 @@ model SudregSyncGlava {
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
 
+  brisPravniOblici   BrisPravniOblici[]
+  brisRegistri       BrisRegistri[]
+  counts             Counts[]
+  detaljiSubjekta    DetaljiSubjekta[]
+  djelatnostiPodruznica DjelatnostiPodruznica[]
+  drzave             Drzave[]
+  emailAdrese        EmailAdrese[]
+  emailAdresePodruznica EmailAdresePodruznica[]
+  evidencijskeDjelatnosti EvidencijskeDjelatnosti[]
+  gfi                Gfi[]
+  inozemniRegistri   InozemniRegistri[]
+  jezici             Jezici[]
+  nacionalnaKlasifikacijaDjelatnosti NacionalnaKlasifikacijaDjelatnosti[]
+  naziviPodruznica   NaziviPodruznica[]
+  objavePriopcenja   ObjavePriopcenja[]
+  postupci           Postupci[]
+  pravniOblici       PravniOblici[]
+  predmetiPoslovanja PredmetiPoslovanja[]
+  preteziteDjelatnosti PreteziteDjelatnosti[]
+  prijevodiSkracenihTvrtki PrijevodiSkracenihTvrtki[]
+  prijevodiTvrtki    PrijevodiTvrtki[]
+  sjedista           Sjedista[]
+  sjedistaPodruznica  SjedistaPodruznica[]
+  skraceneTvrtke      SkraceneTvrtke[]
+  skraceniNaziviPodruznica SkraceniNaziviPodruznica[]
+  statusi             Statusi[]
+  subjekti           Subjekti[]
+  sudovi             Sudovi[]
+  sudoviDeleted      SudoviDeleted[]
+  temeljniKapitali   TemeljniKapitali[]
+  tvrtke             Tvrtke[]
+  valute             Valute[]
+  vrsteGfiDokumenata VrsteGfiDokumenata[]
+  vrstePostupaka     VrstePostupaka[]
+  vrstePravnihOblika VrstePravnihOblika[]
+
   @@unique([snapshotId, tipEntiteta])
   @@index([snapshotId])
   @@map("rps_sudreg_sync_glava")
@@ -112,6 +172,9 @@ model Statusi {
   id         BigInt   @id @default(autoincrement())
   snapshotId BigInt?  @map("snapshot_id")
   updatedAt  DateTime @updatedAt @map("updated_at")
+  glavaId    BigInt?  @map("glava_id")
+  glava      SudregSyncGlava? @relation(fields: [glavaId], references: [id])
+  @@index([glavaId])
   @@map("sudreg_sifrarnik_statusi")
 }
 
@@ -138,6 +201,9 @@ model Subjekti {
   poslovniBrojBrisanja String?   @map("poslovni_broj_brisanja") @db.VarChar(17)
   snapshotId           BigInt?   @map("snapshot_id")
   updatedAt            DateTime  @updatedAt @map("updated_at")
+  glavaId              BigInt?   @map("glava_id")
+  glava                SudregSyncGlava? @relation(fields: [glavaId], references: [id])
+  @@index([glavaId])
   @@map("sudreg_entitet_subjekti")
 }
 
@@ -150,9 +216,13 @@ model DjelatnostiPodruznica {
   nacionalnaKlasifikacijaDjelatnostiId BigInt? @map("nacionalna_klasifikacija_djelatnosti_id")
   djelatnostTekst String?  @map("djelatnost_tekst") @db.VarChar(4000)
   createdAt      DateTime  @default(now()) @map("created_at")
+  modifiedAt     DateTime? @updatedAt @map("modified_at")
+  glavaId        BigInt?   @map("glava_id")
+  glava          SudregSyncGlava? @relation(fields: [glavaId], references: [id])
 
   @@id([snapshotId, mbs, podruznicaRbr, djelatnostRbr])
   @@index([snapshotId])
+  @@index([glavaId])
   @@map("sudreg_entitet_djelatnosti_podruznica")
 }
 
@@ -164,6 +234,9 @@ model EmailAdrese {
   adresa        String?  @db.VarChar(256)
   snapshotId    BigInt?  @map("snapshot_id")
   updatedAt     DateTime @updatedAt @map("updated_at")
+  glavaId       BigInt?  @map("glava_id")
+  glava         SudregSyncGlava? @relation(fields: [glavaId], references: [id])
+  @@index([glavaId])
   @@map("sudreg_entitet_email_adrese")
 }
 
@@ -175,9 +248,13 @@ model EmailAdresePodruznica {
   emailAdresaRbr Int    @map("email_adresa_rbr")
   adresa        String  @map("adresa") @db.VarChar(256)
   createdAt     DateTime @default(now()) @map("created_at")
+  modifiedAt    DateTime? @updatedAt @map("modified_at")
+  glavaId       BigInt?  @map("glava_id")
+  glava         SudregSyncGlava? @relation(fields: [glavaId], references: [id])
 
   @@id([snapshotId, mbs, podruznicaRbr, emailAdresaRbr])
   @@index([snapshotId])
+  @@index([glavaId])
   @@map("sudreg_entitet_email_adrese_podruznica")
 }
 
@@ -189,6 +266,9 @@ model EvidencijskeDjelatnosti {
   djelatnostTekst                 String?  @map("djelatnost_tekst") @db.VarChar(4000)
   snapshotId                      BigInt?  @map("snapshot_id")
   updatedAt                       DateTime @updatedAt @map("updated_at")
+  glavaId                         BigInt?  @map("glava_id")
+  glava                           SudregSyncGlava? @relation(fields: [glavaId], references: [id])
+  @@index([glavaId])
   @@map("sudreg_entitet_evidencijske_djelatnosti")
 }
 
@@ -204,9 +284,13 @@ model Gfi {
   datumOd               DateTime  @map("datum_od") @db.Date
   datumDo               DateTime  @map("datum_do") @db.Date
   createdAt            DateTime  @default(now()) @map("created_at")
+  modifiedAt            DateTime? @updatedAt @map("modified_at")
+  glavaId              BigInt?   @map("glava_id")
+  glava                SudregSyncGlava? @relation(fields: [glavaId], references: [id])
 
   @@id([snapshotId, mbs, gfiRbr])
   @@index([snapshotId])
+  @@index([glavaId])
   @@map("sudreg_entitet_gfi")
 }
 
@@ -223,9 +307,13 @@ model InozemniRegistri {
   euid                    String?  @map("euid") @db.VarChar(54)
   brisPravniOblikKod      String?  @map("bris_pravni_oblik_kod") @db.VarChar(9)
   createdAt               DateTime @default(now()) @map("created_at")
+  modifiedAt              DateTime? @updatedAt @map("modified_at")
+  glavaId                 BigInt?  @map("glava_id")
+  glava                   SudregSyncGlava? @relation(fields: [glavaId], references: [id])
 
   @@id([snapshotId, mbs, drzavaId])
   @@index([snapshotId])
+  @@index([glavaId])
   @@map("sudreg_entitet_inozemni_registri")
 }
 
@@ -239,9 +327,13 @@ model NaziviPodruznica {
   postupak       Int      @map("postupak")
   glavnaPodruznica Int    @map("glavna_podruznica")
   createdAt      DateTime @default(now()) @map("created_at")
+  modifiedAt     DateTime? @updatedAt @map("modified_at")
+  glavaId        BigInt?  @map("glava_id")
+  glava          SudregSyncGlava? @relation(fields: [glavaId], references: [id])
 
   @@id([snapshotId, mbs, podruznicaRbr])
   @@index([snapshotId])
+  @@index([glavaId])
   @@map("sudreg_entitet_nazivi_podruznica")
 }
 
@@ -251,9 +343,13 @@ model ObjavePriopcenja {
   mbs        BigInt   @map("mbs")
   tekst      String   @map("tekst") @db.VarChar(2000)
   createdAt  DateTime @default(now()) @map("created_at")
+  modifiedAt DateTime? @updatedAt @map("modified_at")
+  glavaId    BigInt?  @map("glava_id")
+  glava      SudregSyncGlava? @relation(fields: [glavaId], references: [id])
 
   @@id([snapshotId, mbs, tekst])
   @@index([snapshotId])
+  @@index([glavaId])
   @@map("sudreg_entitet_objave_priopcenja")
 }
 
@@ -264,6 +360,9 @@ model Postupci {
   datumStecaja DateTime? @map("datum_stecaja") @db.Date
   snapshotId   BigInt?  @map("snapshot_id")
   updatedAt    DateTime @updatedAt @map("updated_at")
+  glavaId      BigInt?  @map("glava_id")
+  glava        SudregSyncGlava? @relation(fields: [glavaId], references: [id])
+  @@index([glavaId])
   @@map("sudreg_entitet_postupci")
 }
 
@@ -273,6 +372,9 @@ model PravniOblici {
   vrstaPravnogOblikaId  BigInt?  @map("vrsta_pravnog_oblika_id")
   snapshotId            BigInt?  @map("snapshot_id")
   updatedAt             DateTime @updatedAt @map("updated_at")
+  glavaId               BigInt?  @map("glava_id")
+  glava                 SudregSyncGlava? @relation(fields: [glavaId], references: [id])
+  @@index([glavaId])
   @@map("sudreg_sifrarnik_pravni_oblici")
 }
 
@@ -284,6 +386,9 @@ model PredmetiPoslovanja {
   djelatnostTekst                 String?  @map("djelatnost_tekst") @db.VarChar(4000)
   snapshotId                      BigInt?  @map("snapshot_id")
   updatedAt                       DateTime @updatedAt @map("updated_at")
+  glavaId                         BigInt?  @map("glava_id")
+  glava                           SudregSyncGlava? @relation(fields: [glavaId], references: [id])
+  @@index([glavaId])
   @@map("sudreg_entitet_predmeti_poslovanja")
 }
 
@@ -295,6 +400,9 @@ model PreteziteDjelatnosti {
   djelatnostTekst                 String?  @map("djelatnost_tekst") @db.VarChar(4000)
   snapshotId                      BigInt?  @map("snapshot_id")
   updatedAt                       DateTime @updatedAt @map("updated_at")
+  glavaId                         BigInt?  @map("glava_id")
+  glava                           SudregSyncGlava? @relation(fields: [glavaId], references: [id])
+  @@index([glavaId])
   @@map("sudreg_entitet_pretezite_djelatnosti")
 }
 
@@ -306,9 +414,13 @@ model PrijevodiSkracenihTvrtki {
   ime                       String  @map("ime") @db.VarChar(512)
   jezikId                   BigInt  @map("jezik_id")
   createdAt                 DateTime @default(now()) @map("created_at")
+  modifiedAt                DateTime? @updatedAt @map("modified_at")
+  glavaId                   BigInt?  @map("glava_id")
+  glava                     SudregSyncGlava? @relation(fields: [glavaId], references: [id])
 
   @@id([snapshotId, mbs, prijevodSkraceneTvrtkeRbr])
   @@index([snapshotId])
+  @@index([glavaId])
   @@map("sudreg_entitet_prijevodi_skracenih_tvrtki")
 }
 
@@ -320,9 +432,13 @@ model PrijevodiTvrtki {
   ime               String   @map("ime") @db.VarChar(1024)
   jezikId           BigInt   @map("jezik_id")
   createdAt         DateTime @default(now()) @map("created_at")
+  modifiedAt        DateTime? @updatedAt @map("modified_at")
+  glavaId           BigInt?  @map("glava_id")
+  glava             SudregSyncGlava? @relation(fields: [glavaId], references: [id])
 
   @@id([snapshotId, mbs, prijevodTvrtkeRbr])
   @@index([snapshotId])
+  @@index([glavaId])
   @@map("sudreg_entitet_prijevodi_tvrtki")
 }
 
@@ -345,6 +461,9 @@ model Sjedista {
   postanskiBroj      Int?     @map("postanski_broj")
   snapshotId         BigInt?  @map("snapshot_id")
   updatedAt          DateTime @updatedAt @map("updated_at")
+  glavaId            BigInt?  @map("glava_id")
+  glava              SudregSyncGlava? @relation(fields: [glavaId], references: [id])
+  @@index([glavaId])
   @@map("sudreg_entitet_sjedista")
 }
 
@@ -364,9 +483,13 @@ model SjedistaPodruznica {
   kucniBroj     Int?     @map("kucni_broj")
   kucniPodbroj  String?  @map("kucni_podbroj") @db.VarChar(10)
   createdAt     DateTime @default(now()) @map("created_at")
+  modifiedAt    DateTime? @updatedAt @map("modified_at")
+  glavaId       BigInt?  @map("glava_id")
+  glava         SudregSyncGlava? @relation(fields: [glavaId], references: [id])
 
   @@id([snapshotId, mbs, podruznicaRbr])
   @@index([snapshotId])
+  @@index([glavaId])
   @@map("sudreg_entitet_sjedista_podruznica")
 }
 
@@ -376,6 +499,9 @@ model SkraceneTvrtke {
   ime        String?  @db.VarChar(512)
   snapshotId BigInt?  @map("snapshot_id")
   updatedAt  DateTime @updatedAt @map("updated_at")
+  glavaId    BigInt?  @map("glava_id")
+  glava      SudregSyncGlava? @relation(fields: [glavaId], references: [id])
+  @@index([glavaId])
   @@map("sudreg_entitet_skracene_tvrtke")
 }
 
@@ -386,9 +512,13 @@ model SkraceniNaziviPodruznica {
   podruznicaRbr Int      @map("podruznica_rbr")
   ime           String   @map("ime") @db.VarChar(512)
   createdAt     DateTime @default(now()) @map("created_at")
+  modifiedAt    DateTime? @updatedAt @map("modified_at")
+  glavaId       BigInt?  @map("glava_id")
+  glava         SudregSyncGlava? @relation(fields: [glavaId], references: [id])
 
   @@id([snapshotId, mbs, podruznicaRbr])
   @@index([snapshotId])
+  @@index([glavaId])
   @@map("sudreg_entitet_skraceni_nazivi_podruznica")
 }
 
@@ -400,6 +530,9 @@ model TemeljniKapitali {
   iznos              Decimal? @db.Decimal(22, 2)
   snapshotId         BigInt?  @map("snapshot_id")
   updatedAt          DateTime @updatedAt @map("updated_at")
+  glavaId            BigInt?  @map("glava_id")
+  glava              SudregSyncGlava? @relation(fields: [glavaId], references: [id])
+  @@index([glavaId])
   @@map("sudreg_entitet_temeljni_kapitali")
 }
 
@@ -410,6 +543,9 @@ model Tvrtke {
   naznakaImena String? @map("naznaka_imena") @db.VarChar(512)
   snapshotId  BigInt?  @map("snapshot_id")
   updatedAt   DateTime @updatedAt @map("updated_at")
+  glavaId     BigInt?  @map("glava_id")
+  glava       SudregSyncGlava? @relation(fields: [glavaId], references: [id])
+  @@index([glavaId])
   @@map("sudreg_entitet_tvrtke")
 }
 
@@ -420,6 +556,9 @@ model Sudovi {
   sifraZupanije Int?     @map("sifra_zupanije")
   nazivZupanije String?  @map("naziv_zupanije") @db.VarChar(128)
   updatedAt     DateTime @updatedAt @map("updated_at")
+  glavaId       BigInt?  @map("glava_id")
+  glava         SudregSyncGlava? @relation(fields: [glavaId], references: [id])
+  @@index([glavaId])
   @@map("sudreg_sifrarnik_sudovi")
 }
 
@@ -427,6 +566,9 @@ model SudoviDeleted {
   id         BigInt   @id @default(autoincrement())
   snapshotId BigInt?  @map("snapshot_id")
   updatedAt  DateTime @updatedAt @map("updated_at")
+  glavaId    BigInt?  @map("glava_id")
+  glava      SudregSyncGlava? @relation(fields: [glavaId], references: [id])
+  @@index([glavaId])
   @@map("sudreg_sifrarnik_sudovi_deleted")
 }
 
@@ -436,6 +578,9 @@ model Valute {
   naziv     String   @db.VarChar(128)
   drzavaId  BigInt?  @map("drzava_id")
   updatedAt DateTime @updatedAt @map("updated_at")
+  glavaId   BigInt?  @map("glava_id")
+  glava     SudregSyncGlava? @relation(fields: [glavaId], references: [id])
+  @@index([glavaId])
   @@map("sudreg_sifrarnik_valute")
 }
 
@@ -443,6 +588,9 @@ model VrsteGfiDokumenata {
   id         BigInt   @id @default(autoincrement())
   snapshotId BigInt?  @map("snapshot_id")
   updatedAt  DateTime @updatedAt @map("updated_at")
+  glavaId    BigInt?  @map("glava_id")
+  glava      SudregSyncGlava? @relation(fields: [glavaId], references: [id])
+  @@index([glavaId])
   @@map("sudreg_sifrarnik_vrste_gfi_dokumenata")
 }
 
@@ -450,6 +598,9 @@ model VrstePostupaka {
   postupak  Int      @id
   znacenje  String   @db.VarChar(256)
   updatedAt DateTime @updatedAt @map("updated_at")
+  glavaId   BigInt?  @map("glava_id")
+  glava     SudregSyncGlava? @relation(fields: [glavaId], references: [id])
+  @@index([glavaId])
   @@map("sudreg_sifrarnik_vrste_postupaka")
 }
 
@@ -459,6 +610,9 @@ model VrstePravnihOblika {
   naziv     String   @db.VarChar(256)
   kratica   String?  @db.VarChar(32)
   updatedAt DateTime @updatedAt @map("updated_at")
+  glavaId   BigInt?  @map("glava_id")
+  glava     SudregSyncGlava? @relation(fields: [glavaId], references: [id])
+  @@index([glavaId])
   @@map("sudreg_sifrarnik_vrste_pravnih_oblika")
 }
 
@@ -474,6 +628,7 @@ model ApiRequestLog {
   userAgent      String?  @map("user_agent") @db.VarChar(512)
   responsePreview String? @map("response_preview") @db.VarChar(1024)
   createdAt      DateTime @default(now()) @map("created_at")
+  modifiedAt     DateTime? @updatedAt @map("modified_at")
   @@index([path])
   @@index([createdAt])
   @@map("rps_sudreg_api_request_log")
@@ -495,6 +650,7 @@ model SudregProxyLog {
   xRowsReturned     Int?     @map("x_rows_returned")
   xLogId            BigInt?  @map("x_log_id")
   createdAt         DateTime @default(now()) @map("created_at")
+  modifiedAt        DateTime? @updatedAt @map("modified_at")
   @@index([endpoint])
   @@index([createdAt])
   @@map("rps_sudreg_proxy_log")
@@ -506,6 +662,7 @@ model SudregExpectedCount {
   snapshotId BigInt   @map("snapshot_id")
   totalCount BigInt   @map("total_count")
   createdAt  DateTime @default(now()) @map("created_at")
+  modifiedAt DateTime? @updatedAt @map("modified_at")
 
   @@id([endpoint, snapshotId])
   @@index([snapshotId])

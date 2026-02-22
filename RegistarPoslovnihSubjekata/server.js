@@ -180,9 +180,26 @@ async function runSyncSifrarnici(snapshotId) {
   const results = {};
 
   for (const endpoint of SIFRARNIK_ENDPOINTS) {
+    let glavaId = null;
     try {
+      const glava = await prisma.sudregSyncGlava.upsert({
+        where: { snapshotId_tipEntiteta: { snapshotId: BigInt(snapshotId), tipEntiteta: endpoint } },
+        create: {
+          snapshotId: BigInt(snapshotId),
+          tipEntiteta: endpoint,
+          status: 'u_tijeku',
+          vrijemePocetka: new Date(),
+        },
+        update: { status: 'u_tijeku', vrijemePocetka: new Date() },
+      });
+      glavaId = glava.id;
+
       const result = await proxySudregGet(endpoint, qs, token);
       if (result.statusCode !== 200) {
+        await prisma.sudregSyncGlava.update({
+          where: { id: glavaId },
+          data: { status: 'greska', greska: `HTTP ${result.statusCode}` },
+        });
         results[endpoint] = { rows: 0, error: `HTTP ${result.statusCode}` };
         continue;
       }
@@ -200,12 +217,14 @@ async function runSyncSifrarnici(snapshotId) {
               naziv: String(row.naziv ?? ''),
               oznaka2: row.oznaka_2 != null ? String(row.oznaka_2) : null,
               oznaka3: row.oznaka_3 != null ? String(row.oznaka_3) : null,
+              glavaId,
             },
             update: {
               sifra: String(row.sifra ?? ''),
               naziv: String(row.naziv ?? ''),
               oznaka2: row.oznaka_2 != null ? String(row.oznaka_2) : null,
               oznaka3: row.oznaka_3 != null ? String(row.oznaka_3) : null,
+              glavaId,
             },
           });
           written++;
@@ -221,12 +240,14 @@ async function runSyncSifrarnici(snapshotId) {
               naziv: String(row.naziv ?? ''),
               sifraZupanije: row.sifra_zupanije != null ? row.sifra_zupanije : null,
               nazivZupanije: row.naziv_zupanije != null ? String(row.naziv_zupanije) : null,
+              glavaId,
             },
             update: {
               sifra: String(row.sifra ?? ''),
               naziv: String(row.naziv ?? ''),
               sifraZupanije: row.sifra_zupanije != null ? row.sifra_zupanije : null,
               nazivZupanije: row.naziv_zupanije != null ? String(row.naziv_zupanije) : null,
+              glavaId,
             },
           });
           written++;
@@ -241,11 +262,13 @@ async function runSyncSifrarnici(snapshotId) {
               sifra: String(row.sifra ?? ''),
               naziv: String(row.naziv ?? ''),
               drzavaId: row.drzava_id != null ? BigInt(row.drzava_id) : null,
+              glavaId,
             },
             update: {
               sifra: String(row.sifra ?? ''),
               naziv: String(row.naziv ?? ''),
               drzavaId: row.drzava_id != null ? BigInt(row.drzava_id) : null,
+              glavaId,
             },
           });
           written++;
@@ -260,11 +283,13 @@ async function runSyncSifrarnici(snapshotId) {
               sifra: String(row.sifra ?? ''),
               naziv: String(row.naziv ?? ''),
               kratica: row.kratica != null ? String(row.kratica) : null,
+              glavaId,
             },
             update: {
               sifra: String(row.sifra ?? ''),
               naziv: String(row.naziv ?? ''),
               kratica: row.kratica != null ? String(row.kratica) : null,
+              glavaId,
             },
           });
           written++;
@@ -279,11 +304,13 @@ async function runSyncSifrarnici(snapshotId) {
               sifra: String(row.sifra ?? ''),
               puniNaziv: row.puni_naziv != null ? String(row.puni_naziv) : null,
               verzija: row.verzija != null ? String(row.verzija) : null,
+              glavaId,
             },
             update: {
               sifra: String(row.sifra ?? ''),
               puniNaziv: row.puni_naziv != null ? String(row.puni_naziv) : null,
               verzija: row.verzija != null ? String(row.verzija) : null,
+              glavaId,
             },
           });
           written++;
@@ -298,8 +325,9 @@ async function runSyncSifrarnici(snapshotId) {
             create: {
               postupak: Number(postupak),
               znacenje: String(row.znacenje ?? ''),
+              glavaId,
             },
-            update: { znacenje: String(row.znacenje ?? '') },
+            update: { znacenje: String(row.znacenje ?? ''), glavaId },
           });
           written++;
         }
@@ -317,6 +345,7 @@ async function runSyncSifrarnici(snapshotId) {
               drzavaId: BigInt(row.drzava_id ?? 0),
               vrstaPravnogOblikaId: row.vrsta_pravnog_oblika_id != null ? BigInt(row.vrsta_pravnog_oblika_id) : null,
               status: Number(row.status ?? 0),
+              glavaId,
             },
             update: {
               kratica: row.kratica != null ? String(row.kratica) : null,
@@ -324,6 +353,7 @@ async function runSyncSifrarnici(snapshotId) {
               drzavaId: BigInt(row.drzava_id ?? 0),
               vrstaPravnogOblikaId: row.vrsta_pravnog_oblika_id != null ? BigInt(row.vrsta_pravnog_oblika_id) : null,
               status: Number(row.status ?? 0),
+              glavaId,
             },
           });
           written++;
@@ -340,20 +370,32 @@ async function runSyncSifrarnici(snapshotId) {
               naziv: String(row.naziv ?? ''),
               drzavaId: BigInt(row.drzava_id ?? 0),
               status: Number(row.status ?? 0),
+              glavaId,
             },
             update: {
               naziv: String(row.naziv ?? ''),
               drzavaId: BigInt(row.drzava_id ?? 0),
               status: Number(row.status ?? 0),
+              glavaId,
             },
           });
           written++;
         }
       }
 
+      await prisma.sudregSyncGlava.update({
+        where: { id: glavaId },
+        data: { status: 'ok', actualCount: BigInt(written), vrijemeZavrsetka: new Date() },
+      });
       results[endpoint] = { rows: written };
     } catch (err) {
       console.error(`sync_sifrarnici ${endpoint}`, err);
+      if (glavaId != null) {
+        await prisma.sudregSyncGlava.update({
+          where: { id: glavaId },
+          data: { status: 'greska', greska: err.message },
+        }).catch(() => {});
+      }
       results[endpoint] = { rows: 0, error: err.message };
     }
   }
