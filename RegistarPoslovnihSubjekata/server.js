@@ -83,6 +83,8 @@ let lastCronDailyRun = {
   finishedAt: null,
   status: 'idle', // idle | running | ok | error
   summary: null,
+  currentPhase: null,   // 'expected_counts' | 'sync_sifrarnici' | 'sync_entiteti'
+  currentEndpoint: null, // točan endpoint iz dokumentacije (npr. 'subjekti', 'drzave')
 };
 
 function fetchSudregToken() {
@@ -262,6 +264,7 @@ async function runSyncSifrarnici(snapshotId) {
   const results = {};
 
   for (const endpoint of SIFRARNIK_ENDPOINTS) {
+    lastCronDailyRun.currentEndpoint = endpoint;
     let glavaId = null;
     try {
       const glava = await prisma.sudregSyncGlava.upsert({
@@ -499,6 +502,7 @@ async function runSyncEntiteti(snapshotId) {
   const results = {};
 
   for (const endpoint of ENTITY_ENDPOINTS) {
+    lastCronDailyRun.currentEndpoint = endpoint;
     let glavaId = null;
     let lastError = null;
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -804,12 +808,16 @@ async function runCronDailyWork() {
     error: null,
   };
 
+  lastCronDailyRun.currentPhase = 'expected_counts';
+  lastCronDailyRun.currentEndpoint = null;
   let ec;
   try {
     ec = await internalPost('/api/sudreg_expected_counts');
   } catch (err) {
     console.error('cron_daily: internalPost expected_counts failed', err.message);
     summary.error = err.message;
+    lastCronDailyRun.currentPhase = null;
+    lastCronDailyRun.currentEndpoint = null;
     return summary;
   }
   summary.expected_counts = {
@@ -822,11 +830,15 @@ async function runCronDailyWork() {
   if (ec.statusCode >= 400) {
     summary.error = ec.body?.message || ec.body?.error;
     console.error('cron_daily: expected_counts error', summary.error);
+    lastCronDailyRun.currentPhase = null;
+    lastCronDailyRun.currentEndpoint = null;
     return summary;
   }
 
   try {
     const token = await getSudregToken();
+    lastCronDailyRun.currentPhase = 'sync_sifrarnici';
+    lastCronDailyRun.currentEndpoint = null;
     const snapshotsResult = await proxySudregGet('snapshots', '', token);
     const snapshotsList = Array.isArray(snapshotsResult.body) ? snapshotsResult.body : [];
     const latestSnapshotId = snapshotsList.length > 0
@@ -838,6 +850,8 @@ async function runCronDailyWork() {
       summary.sync_sifrarnici = await runSyncSifrarnici(latestSnapshotId);
       console.log('cron_daily: sync_sifrarnici', summary.sync_sifrarnici?.ok ? 'ok' : 'fail', summary.sync_sifrarnici?.error ?? '');
       await ensureDbConnection();
+      lastCronDailyRun.currentPhase = 'sync_entiteti';
+      lastCronDailyRun.currentEndpoint = null;
       try {
         summary.sync_entiteti = await runSyncEntiteti(latestSnapshotId);
         console.log('cron_daily: sync_entiteti', summary.sync_entiteti?.ok ? 'ok' : 'fail', summary.sync_entiteti?.error ?? '');
@@ -855,6 +869,8 @@ async function runCronDailyWork() {
   }
 
   console.log('cron_daily: done', JSON.stringify(summary));
+  lastCronDailyRun.currentPhase = null;
+  lastCronDailyRun.currentEndpoint = null;
   lastCronDailyRun.finishedAt = new Date().toISOString();
   lastCronDailyRun.status = summary.error ? 'error' : 'ok';
   lastCronDailyRun.summary = summary;
@@ -1353,6 +1369,17 @@ const server = http.createServer(async (req, res) => {
       startedAt: lastCronDailyRun.startedAt,
       finishedAt: lastCronDailyRun.finishedAt,
       summary: lastCronDailyRun.summary,
+      currentPhase: lastCronDailyRun.currentPhase,
+      currentEndpoint: lastCronDailyRun.currentEndpoint,
+      sudregApi: {
+        base: SUDREG_API_BASE,
+        tokenUrl: SUDREG_TOKEN_URL,
+      },
+      sudregApiEndpoints: {
+        expected_counts: ['snapshots', ...SUDREG_EXPECTED_COUNT_ENDPOINTS],
+        sync_sifrarnici: SIFRARNIK_ENDPOINTS,
+        sync_entiteti: ENTITY_ENDPOINTS,
+      },
       note: lastCronDailyRun.status === 'running'
         ? 'Job je u tijeku. Osvježi stranicu ili pollaj ovaj URL.'
         : lastCronDailyRun.status === 'idle'
@@ -1375,6 +1402,8 @@ const server = http.createServer(async (req, res) => {
     lastCronDailyRun.finishedAt = null;
     lastCronDailyRun.status = 'running';
     lastCronDailyRun.summary = null;
+    lastCronDailyRun.currentPhase = null;
+    lastCronDailyRun.currentEndpoint = null;
     if (!wait) {
       sendJson(202, {
         message: 'started',
@@ -1387,6 +1416,8 @@ const server = http.createServer(async (req, res) => {
           console.log('cron_daily background done', JSON.stringify(summary));
         }).catch((err) => {
           console.error('cron_daily background failed', err);
+          lastCronDailyRun.currentPhase = null;
+          lastCronDailyRun.currentEndpoint = null;
           lastCronDailyRun.finishedAt = new Date().toISOString();
           lastCronDailyRun.status = 'error';
           lastCronDailyRun.summary = { error: err.message };
@@ -1400,6 +1431,8 @@ const server = http.createServer(async (req, res) => {
         sendJson(200, { message: 'ok', ...summary });
       } catch (err) {
         console.error('POST sudreg_cron_daily', err);
+        lastCronDailyRun.currentPhase = null;
+        lastCronDailyRun.currentEndpoint = null;
         lastCronDailyRun.finishedAt = new Date().toISOString();
         lastCronDailyRun.status = 'error';
         lastCronDailyRun.summary = { error: err.message };
