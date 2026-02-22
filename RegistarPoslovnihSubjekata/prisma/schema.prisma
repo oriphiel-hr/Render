@@ -101,26 +101,34 @@ model NacionalnaKlasifikacijaDjelatnosti {
   @@map("sudreg_nacionalna_klasifikacija_djelatnosti")
 }
 
-/// Jedan red po snapshotu; stavke referenciraju ovaj red. next_offset_to_fetch = sljedeći offset za chunked sync (null = nije pokrenuto ili gotovo).
-model Promjene {
-  id                  BigInt           @id @default(autoincrement())
-  snapshotId          BigInt?          @unique @map("snapshot_id")
-  expectedCount       BigInt?          @map("expected_count")
-  totalLoaded         BigInt?          @map("total_loaded")
-  nextOffsetToFetch   BigInt?          @map("next_offset_to_fetch")
-  updatedAt           DateTime         @updatedAt @map("updated_at")
-  stavke              PromjeneStavka[]
-  @@map("sudreg_promjene")
+/// Generička glava za sync po snapshotu i tipu entiteta (subjekti, promjene, …). Jedan red = jedan snapshot + jedan tip.
+/// Za chunked sync (npr. promjene): next_offset_to_fetch = sljedeći offset (null = gotovo ili nije pokrenuto).
+model SudregSyncGlava {
+  id                 BigInt    @id @default(autoincrement())
+  snapshotId         BigInt    @map("snapshot_id")
+  tipEntiteta        String    @map("tip_entiteta") @db.VarChar(64)  // subjekti | promjene | ...
+  status             String    @default("u_tijeku") @map("status") @db.VarChar(32)  // u_tijeku | ok | greska
+  expectedCount      BigInt?   @map("expected_count")
+  actualCount        BigInt?   @map("actual_count")
+  nextOffsetToFetch  BigInt?   @map("next_offset_to_fetch")
+  vrijemePocetka     DateTime? @map("vrijeme_pocetka") @db.Timestamptz(6)
+  vrijemeZavrsetka   DateTime? @map("vrijeme_zavrsetka") @db.Timestamptz(6)
+  greska             String?   @map("greska") @db.Text
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  @@unique([snapshotId, tipEntiteta])
+  @@index([snapshotId])
+  @@map("sudreg_sync_glava")
 }
 
-/// Jedna stavka popisa promjena po snapshotu. Primarni ključ (snapshot_id, mbs). Strani ključ na sudreg_promjene(snapshot_id).
+/// Jedna stavka popisa promjena po snapshotu. Primarni ključ (snapshot_id, mbs). Bez FK na glavu – stanje synca u sudreg_sync_glava.
 model PromjeneStavka {
   snapshotId BigInt    @map("snapshot_id")
   mbs        BigInt    @map("mbs")
   scn        BigInt    @map("scn")
   vrijeme    DateTime? @map("vrijeme")     @db.Timestamptz(6)
   createdAt  DateTime  @default(now()) @map("created_at")
-  promjene   Promjene? @relation(fields: [snapshotId], references: [snapshotId])
 
   @@id([snapshotId, mbs])
   @@index([snapshotId])

@@ -3,12 +3,12 @@
 Render **Cron Job** radi u minimalnom okruženju (nema `node`, `wget` nema HTTPS).  
 Koristi **jedan** vanjski cron poziv na **cron_daily**.
 
-## Jedan job: expected counts + upis u promjene
+## Jedan job: expected counts + sync promjena (stavke + glava)
 
 Endpoint **POST /api/sudreg_cron_daily** u jednom pozivu:
 
 1. **odmah vraća 202 Accepted** (da cron-job.org ne prekine zbog timeouta od ~30 s),
-2. u **pozadini** pokreće expected counts pa sync_promjene u petlji.
+2. u **pozadini** pokreće expected counts pa sync_promjene: upis u **sudreg_promjene_stavke**, stanje u **sudreg_sync_glava** (bez tablice sudreg_promjene).
 
 Test run na cron-job.org treba pokazati **Successful** s HTTP 202; posao se nastavlja na serveru (rezultat u Render Logs).
 
@@ -29,7 +29,7 @@ Za čekanje rezultata u odgovoru (duže od 30 s) pozovi s **?wait=1** (npr. ruč
      - **Value:** `<tvoja SUDREG_WRITE_API_KEY>` (isti ključ kao u Renderu)
 4. Spremi.
 
-Jedan poziv = prvo expected counts, pa automatski cijeli sync promjena (više chunkova u jednoj petlji na serveru).  
+Jedan poziv = prvo expected counts, pa automatski cijeli sync promjena (stavke + glava; više chunkova u petlji na serveru).  
 *(Uptime Robot besplatno ne podržava POST s custom headerima – to je Pro značajka.)*
 
 ---

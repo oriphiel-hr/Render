@@ -5,8 +5,8 @@
  *   Dokumentacija: https://sudreg-data.gov.hr/api/javni/dokumentacija/open_api
  * - GET /api/sudreg_expected_counts?snapshot_id=<id> – čitanje iz baze (public.sudreg_expected_counts). Opcionalno: endpoint (naziv metode; ako nema, vraća sve), limit, offset.
  * - POST /api/sudreg_expected_counts?snapshot_id=<id> – dohvat X-Total-Count s Sudreg API-ja za sve list-endpointe i upis u sudreg_expected_counts. Zahtijeva API ključ (header X-API-Key ili Authorization: Bearer <key>).
- * - POST /api/sudreg_sync_promjene?snapshot_id=<id> – poziv Sudreg /promjene, upis u sudreg_promjene_stavke. snapshot_id opcionalno (ako nema, koristi se zadnji snapshot koji ima expected_count za promjene). Zahtijeva API ključ. Upis samo ako postoji expected_count za taj snapshot.
- * - POST /api/sudreg_cron_daily – prvo expected_counts (bez parametra), zatim sync_promjene za sve snapshote koji imaju expected count za 'promjene' a još nisu potpuno usyncani. Za vanjski cron (npr. cron-job.org). Zahtijeva API ključ. Odmah vraća 202 (posao u pozadini); ?wait=1 čeka rezultat.
+ * - POST /api/sudreg_sync_promjene?snapshot_id=<id> – poziv Sudreg /promjene; upis u sudreg_promjene_stavke, stanje synca u sudreg_sync_glava (tip_entiteta='promjene'). snapshot_id opcionalno. Zahtijeva API ključ.
+ * - POST /api/sudreg_cron_daily – prvo expected_counts, zatim sync_promjene za snapshote koji još nisu gotovi (sudreg_sync_glava). Za vanjski cron. Zahtijeva API ključ. 202 u pozadini; ?wait=1 čeka rezultat.
  */
 const http = require('http');
 const https = require('https');
@@ -161,8 +161,8 @@ function checkWriteApiKey(req) {
 }
 
 /**
- * Logika cron_daily: expected_counts pa sync_promjene za sve snapshote koji imaju expected count za
- * 'promjene' a još nisu potpuno usyncani (nema reda u sudreg_promjene ili next_offset_to_fetch != null).
+ * Logika cron_daily: expected_counts pa sync_promjene. Upis samo u sudreg_promjene_stavke i sudreg_sync_glava (bez tablice sudreg_promjene).
+ * Sync za snapshote gdje nema reda u sudreg_sync_glava ili next_offset_to_fetch != null.
  * @returns {Promise<object>}
  */
 async function runCronDailyWork() {
@@ -193,11 +193,11 @@ async function runCronDailyWork() {
   const snapshotIdsToSync = [];
   for (const r of expectedRows) {
     const sid = Number(r.snapshotId);
-    const existing = await prisma.promjene.findUnique({
-      where: { snapshotId: BigInt(sid) },
+    const glava = await prisma.sudregSyncGlava.findUnique({
+      where: { snapshotId_tipEntiteta: { snapshotId: BigInt(sid), tipEntiteta: 'promjene' } },
       select: { nextOffsetToFetch: true },
     });
-    if (existing == null || existing.nextOffsetToFetch != null) {
+    if (glava == null || glava.nextOffsetToFetch != null) {
       snapshotIdsToSync.push(sid);
     } else {
       summary.snapshot_ids_skipped.push(sid);
@@ -508,19 +508,34 @@ const server = http.createServer(async (req, res) => {
           const parsed = parseInt(startOffsetParam, 10);
           if (Number.isInteger(parsed) && parsed >= 0) startOffset = parsed;
         } else {
-          const existing = await prisma.promjene.findUnique({
-            where: { snapshotId: BigInt(snapshotId) },
-            select: { nextOffsetToFetch: true, totalLoaded: true },
+          const glava = await prisma.sudregSyncGlava.findUnique({
+            where: { snapshotId_tipEntiteta: { snapshotId: BigInt(snapshotId), tipEntiteta: 'promjene' } },
+            select: { nextOffsetToFetch: true },
           });
-          if (existing != null && existing.nextOffsetToFetch != null && existing.nextOffsetToFetch >= 0) {
-            startOffset = Number(existing.nextOffsetToFetch);
+          if (glava != null && glava.nextOffsetToFetch != null && glava.nextOffsetToFetch >= 0) {
+            startOffset = Number(glava.nextOffsetToFetch);
           }
         }
 
-        await prisma.promjene.upsert({
-          where: { snapshotId: BigInt(snapshotId) },
-          create: { snapshotId: BigInt(snapshotId), expectedCount: totalExpected != null ? BigInt(totalExpected) : null },
-          update: { expectedCount: totalExpected != null ? BigInt(totalExpected) : null },
+        const now = new Date();
+        await prisma.sudregSyncGlava.upsert({
+          where: {
+            snapshotId_tipEntiteta: { snapshotId: BigInt(snapshotId), tipEntiteta: 'promjene' },
+          },
+          create: {
+            snapshotId: BigInt(snapshotId),
+            tipEntiteta: 'promjene',
+            status: 'u_tijeku',
+            expectedCount: totalExpected != null ? BigInt(totalExpected) : null,
+            vrijemePocetka: startOffset === 0 ? now : undefined,
+            updatedAt: now,
+          },
+          update: {
+            status: 'u_tijeku',
+            expectedCount: totalExpected != null ? BigInt(totalExpected) : null,
+            ...(startOffset === 0 && { vrijemePocetka: now }),
+            updatedAt: now,
+          },
         });
 
         if (startOffset === 0) {
@@ -531,9 +546,30 @@ const server = http.createServer(async (req, res) => {
         const qs = `snapshot_id=${snapshotId}&offset=${startOffset}&limit=${PAGE_SIZE}&no_data_error=0`;
         const result = await proxySudregGet('promjene', qs, token);
         if (result.statusCode !== 200) {
+          const errMsg = `Sudreg API vratio ${result.statusCode} za offset=${startOffset}.`;
+          const errNow = new Date();
+          await prisma.sudregSyncGlava.upsert({
+            where: {
+              snapshotId_tipEntiteta: { snapshotId: BigInt(snapshotId), tipEntiteta: 'promjene' },
+            },
+            create: {
+              snapshotId: BigInt(snapshotId),
+              tipEntiteta: 'promjene',
+              status: 'greska',
+              vrijemeZavrsetka: errNow,
+              greska: errMsg,
+              updatedAt: errNow,
+            },
+            update: {
+              status: 'greska',
+              vrijemeZavrsetka: errNow,
+              greska: errMsg,
+              updatedAt: errNow,
+            },
+          });
           sendJson(502, {
             error: 'sudreg_error',
-            message: `Sudreg API vratio ${result.statusCode} za offset=${startOffset}.`,
+            message: errMsg,
             snapshot_id: snapshotId,
             start_offset: startOffset,
           });
@@ -558,6 +594,7 @@ const server = http.createServer(async (req, res) => {
 
         let writtenThisRequest = 0;
         let totalLoadedSoFar = 0;
+        const finishNow = new Date();
         await prisma.$transaction(async (tx) => {
           if (allItems.length > 0) {
             const created = await tx.promjeneStavka.createMany({
@@ -567,11 +604,26 @@ const server = http.createServer(async (req, res) => {
             writtenThisRequest = created.count;
           }
           totalLoadedSoFar = await tx.promjeneStavka.count({ where: { snapshotId: BigInt(snapshotId) } });
-          await tx.promjene.update({
-            where: { snapshotId: BigInt(snapshotId) },
-            data: {
-              totalLoaded: BigInt(totalLoadedSoFar),
+          await tx.sudregSyncGlava.upsert({
+            where: {
+              snapshotId_tipEntiteta: { snapshotId: BigInt(snapshotId), tipEntiteta: 'promjene' },
+            },
+            create: {
+              snapshotId: BigInt(snapshotId),
+              tipEntiteta: 'promjene',
+              status: hasMore ? 'u_tijeku' : 'ok',
+              expectedCount: totalExpected != null ? BigInt(totalExpected) : null,
+              actualCount: BigInt(totalLoadedSoFar),
               nextOffsetToFetch: hasMore ? BigInt(nextOffset) : null,
+              vrijemeZavrsetka: hasMore ? undefined : finishNow,
+              updatedAt: finishNow,
+            },
+            update: {
+              actualCount: BigInt(totalLoadedSoFar),
+              nextOffsetToFetch: hasMore ? BigInt(nextOffset) : null,
+              status: hasMore ? 'u_tijeku' : 'ok',
+              ...(hasMore ? {} : { vrijemeZavrsetka: finishNow, greska: null }),
+              updatedAt: finishNow,
             },
           });
         });
@@ -593,6 +645,33 @@ const server = http.createServer(async (req, res) => {
         });
       } catch (err) {
         console.error('POST sudreg_sync_promjene', err);
+        const errNow = new Date();
+        const snapshotIdNum = snapshotIdParam != null && snapshotIdParam !== '' ? parseInt(snapshotIdParam, 10) : null;
+        if (Number.isInteger(snapshotIdNum) && snapshotIdNum >= 0) {
+          try {
+            await prisma.sudregSyncGlava.upsert({
+              where: {
+                snapshotId_tipEntiteta: { snapshotId: BigInt(snapshotIdNum), tipEntiteta: 'promjene' },
+              },
+              create: {
+                snapshotId: BigInt(snapshotIdNum),
+                tipEntiteta: 'promjene',
+                status: 'greska',
+                vrijemeZavrsetka: errNow,
+                greska: err.message,
+                updatedAt: errNow,
+              },
+              update: {
+                status: 'greska',
+                vrijemeZavrsetka: errNow,
+                greska: err.message,
+                updatedAt: errNow,
+              },
+            });
+          } catch (e) {
+            console.error('Ažuriranje glave pri grešci', e);
+          }
+        }
         sendJson(500, {
           error: 'sync_failed',
           message: err.message,
