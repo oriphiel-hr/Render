@@ -14,5 +14,4 @@ ALTER TABLE sudreg_entitet_prijevodi_tvrtki ADD COLUMN IF NOT EXISTS modified_at
 ALTER TABLE sudreg_entitet_sjedista_podruznica ADD COLUMN IF NOT EXISTS modified_at TIMESTAMPTZ(6);
 ALTER TABLE sudreg_entitet_skraceni_nazivi_podruznica ADD COLUMN IF NOT EXISTS modified_at TIMESTAMPTZ(6);
 ALTER TABLE rps_sudreg_api_request_log ADD COLUMN IF NOT EXISTS modified_at TIMESTAMPTZ(6);
-ALTER TABLE rps_sudreg_proxy_log ADD COLUMN IF NOT EXISTS modified_at TIMESTAMPTZ(6);
 ALTER TABLE rps_sudreg_expected_counts ADD COLUMN IF NOT EXISTS modified_at TIMESTAMPTZ(6);

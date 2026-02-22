@@ -58,7 +58,6 @@ Baza sadrži **sudreg_entitet_*** (entiteti iz API-ja), **sudreg_sifrarnik_*** (
 | 34 | sudreg_sifrarnik_vrste_gfi_dokumenata |
 | 35 | sudreg_sifrarnik_vrste_postupaka |
 | 36 | sudreg_sifrarnik_vrste_pravnih_oblika |
-| 37 | rps_sudreg_proxy_log |
 
 ---
 

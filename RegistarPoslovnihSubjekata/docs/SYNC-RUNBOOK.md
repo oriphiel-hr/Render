@@ -89,11 +89,7 @@ curl "https://<APP_URL>/api/sudreg_sync_greske?snapshot_id=1090"
   `GET /api/sudreg_sync_check_webhook` (ako je postavljen `SUDREG_WEBHOOK_URL`, šalje POST s greškama).
 - **Dokumentacija svih endpointa (primjeri PowerShell i curl):**  
   `GET /api/sudreg_docs`
-- **Log dolaznih API poziva (path + queryString):**  
-  `GET /api/sudreg_request_log?limit=20&offset=0`
-- **Log svih poziva prema Sudreg API-ju (s točnim parametrima):**  
-  `GET /api/sudreg_proxy_log?limit=50&offset=0`  
-  Opcionalno: `?response_status=400` za greške (npr. 505), `?endpoint=sudreg_evidencijske_djelatnosti` za jedan endpoint. Uključuje i interne pozive (expected count, sync).
+- **Log poziva prema Sudreg API-ju** (path, query_string, status, trajanje, client_ip, response_preview): podaci u tablici **rps_sudreg_api_request_log**. Za čitanje koristi se endpoint (ako postoji): `GET /api/sudreg_request_log?limit=20&offset=0`.
 - **OAuth token za Sudreg:**  
   `GET` ili `POST /api/sudreg_token`
 
