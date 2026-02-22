@@ -752,6 +752,7 @@ async function runSyncEntiteti(snapshotId) {
  * @returns {Promise<object>}
  */
 async function runCronDailyWork() {
+  console.log('cron_daily: start');
   const summary = {
     expected_counts: null,
     sync_sifrarnici: null,
@@ -759,15 +760,24 @@ async function runCronDailyWork() {
     error: null,
   };
 
-  const ec = await internalPost('/api/sudreg_expected_counts');
+  let ec;
+  try {
+    ec = await internalPost('/api/sudreg_expected_counts');
+  } catch (err) {
+    console.error('cron_daily: internalPost expected_counts failed', err.message);
+    summary.error = err.message;
+    return summary;
+  }
   summary.expected_counts = {
     status: ec.statusCode,
     ok: ec.statusCode >= 200 && ec.statusCode < 400,
     snapshots_updated: ec.body?.snapshots_updated,
     snapshot_ids: ec.body?.snapshot_ids,
   };
+  console.log('cron_daily: expected_counts', ec.statusCode, 'snapshots_updated=', ec.body?.snapshots_updated, 'ids=', ec.body?.snapshot_ids?.length ?? 0);
   if (ec.statusCode >= 400) {
     summary.error = ec.body?.message || ec.body?.error;
+    console.error('cron_daily: expected_counts error', summary.error);
     return summary;
   }
 
@@ -778,16 +788,20 @@ async function runCronDailyWork() {
     const latestSnapshotId = snapshotsList.length > 0
       ? Math.max(...snapshotsList.map((s) => (s != null && (s.id != null || s.snapshot_id != null)) ? Number(s.id ?? s.snapshot_id) : -1).filter((n) => n >= 0))
       : null;
+    console.log('cron_daily: snapshots from API', snapshotsList.length, 'latestSnapshotId=', latestSnapshotId);
 
     if (latestSnapshotId != null) {
       summary.sync_sifrarnici = await runSyncSifrarnici(latestSnapshotId);
+      console.log('cron_daily: sync_sifrarnici', summary.sync_sifrarnici?.ok ? 'ok' : 'fail', summary.sync_sifrarnici?.error ?? '');
       try {
         summary.sync_entiteti = await runSyncEntiteti(latestSnapshotId);
+        console.log('cron_daily: sync_entiteti', summary.sync_entiteti?.ok ? 'ok' : 'fail', summary.sync_entiteti?.error ?? '');
       } catch (err) {
         console.error('runCronDailyWork sync_entiteti', err);
         summary.sync_entiteti = { ok: false, endpoints: {}, error: err.message };
       }
     } else {
+      console.warn('cron_daily: nema snapshot_id iz API-ja, preskacem sync');
       summary.sync_sifrarnici = { ok: false, endpoints: {}, error: 'Nema snapshot_id iz API-ja' };
     }
   } catch (err) {
@@ -795,6 +809,7 @@ async function runCronDailyWork() {
     summary.sync_sifrarnici = { ok: false, endpoints: {}, error: err.message };
   }
 
+  console.log('cron_daily: done', JSON.stringify(summary));
   return summary;
 }
 
@@ -948,6 +963,9 @@ const server = http.createServer(async (req, res) => {
           const maxSnapshotFromApi = snapshotsList.length > 0
             ? Math.max(...snapshotsList.map((s) => (s != null && (s.id != null || s.snapshot_id != null)) ? Number(s.id ?? s.snapshot_id) : -1).filter((n) => n >= 0))
             : -1;
+          if (snapshotsList.length === 0) {
+            console.warn('POST sudreg_expected_counts: API vratio praznu listu snapshots');
+          }
 
           const runOneSnapshot = async (sid, forceSave = false) => {
             const queryForCount = `snapshot_id=${sid}&offset=0&limit=0&no_data_error=0`;
@@ -1009,6 +1027,7 @@ const server = http.createServer(async (req, res) => {
                 .sort((a, b) => a - b)
                 .filter((v, i, arr) => i === 0 || arr[i - 1] !== v);
 
+          console.log('POST sudreg_expected_counts: maxInDb=', maxInDb, 'maxSnapshotFromApi=', maxSnapshotFromApi, 'snapshotIdsToFill.length=', snapshotIdsToFill.length);
           const summary = [];
           for (const sid of snapshotIdsToFill) {
             const { saved } = await runOneSnapshot(sid);
@@ -1283,10 +1302,12 @@ const server = http.createServer(async (req, res) => {
   if (path === '/api/sudreg_cron_daily' && method === 'POST') {
     const writeCheck = checkWriteApiKey(req);
     if (!writeCheck.allowed) {
+      console.warn('sudreg_cron_daily: odbijen (API ključ)', writeCheck.status, writeCheck.message);
       sendJson(writeCheck.status, { error: 'write_forbidden', message: writeCheck.message });
       return;
     }
     const wait = url.searchParams.get('wait') === '1' || url.searchParams.get('wait') === 'true';
+    console.log('sudreg_cron_daily: poziv', wait ? '?wait=1' : 'background');
     if (!wait) {
       sendJson(202, {
         message: 'started',
