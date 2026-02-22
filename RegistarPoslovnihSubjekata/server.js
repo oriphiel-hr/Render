@@ -105,25 +105,39 @@ async function getSudregToken() {
 }
 
 /**
- * GET zahtjev prema Sudreg API-ju. path = npr. 'subjekti' ili 'detalji_subjekta', queryString = ostali parametri (snapshot_id, limit, offset, ...).
+ * Skraćuje string na maxLen znakova za response_preview.
  */
-function proxySudregGet(path, queryString, token) {
+function truncatePreview(value, maxLen = 1024) {
+  if (value == null) return null;
+  const s = typeof value === 'string' ? value : JSON.stringify(value);
+  return s.length <= maxLen ? s : s.slice(0, maxLen - 3) + '...';
+}
+
+/**
+ * GET zahtjev prema Sudreg API-ju. path = npr. 'subjekti' ili 'detalji_subjekta', queryString = ostali parametri.
+ * opts = { clientIp, userAgent } za logiranje u rps_sudreg_api_request_log (opcionalno).
+ */
+function proxySudregGet(path, queryString, token, opts = {}) {
+  const startMs = Date.now();
+  const logMeta = { clientIp: opts.clientIp ?? null, userAgent: opts.userAgent ?? null };
+
   return new Promise((resolve, reject) => {
     const base = SUDREG_API_BASE.replace(/\/$/, '');
     const qs = queryString ? `?${queryString}` : '';
     const targetPath = `${base}/${path}${qs}`;
     const u = new URL(targetPath);
-    const opts = {
+    const reqOpts = {
       hostname: u.hostname,
       port: u.port || 443,
       path: u.pathname + u.search,
       method: 'GET',
       headers: { Authorization: `Bearer ${token}` },
     };
-    const req = https.request(opts, (res) => {
+    const req = https.request(reqOpts, (res) => {
       let body = '';
       res.on('data', (chunk) => { body += chunk; });
       res.on('end', () => {
+        const durationMs = Date.now() - startMs;
         const h = res.headers;
         const outHeaders = {};
         if (h['x-snapshot-id'] != null) outHeaders['X-Snapshot-Id'] = h['x-snapshot-id'];
@@ -138,6 +152,21 @@ function proxySudregGet(path, queryString, token) {
         } catch (_) {
           parsed = body;
         }
+        const responsePreview = truncatePreview(parsed);
+        prisma.apiRequestLog
+          .create({
+            data: {
+              method: 'GET',
+              path: path,
+              queryString: queryString || null,
+              statusCode: res.statusCode,
+              durationMs,
+              clientIp: logMeta.clientIp,
+              userAgent: logMeta.userAgent,
+              responsePreview,
+            },
+          })
+          .catch((err) => console.error('rps_sudreg_api_request_log create', err));
         resolve({
           statusCode: res.statusCode,
           body: parsed,
@@ -145,7 +174,24 @@ function proxySudregGet(path, queryString, token) {
         });
       });
     });
-    req.on('error', reject);
+    req.on('error', (err) => {
+      const durationMs = Date.now() - startMs;
+      prisma.apiRequestLog
+        .create({
+          data: {
+            method: 'GET',
+            path: path,
+            queryString: queryString || null,
+            statusCode: 0,
+            durationMs,
+            clientIp: logMeta.clientIp,
+            userAgent: logMeta.userAgent,
+            responsePreview: truncatePreview(err.message),
+          },
+        })
+        .catch((e) => console.error('rps_sudreg_api_request_log create', e));
+      reject(err);
+    });
     req.end();
   });
 }
@@ -561,9 +607,11 @@ const server = http.createServer(async (req, res) => {
       if (key !== 'endpoint' && value !== '') queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
     }
     const queryString = queryParams.join('&');
+    const clientIp = (req.headers['x-forwarded-for'] && req.headers['x-forwarded-for'].split(',')[0].trim()) || req.socket?.remoteAddress || null;
+    const userAgent = req.headers['user-agent'] || null;
     try {
       const token = await getSudregToken();
-      const result = await proxySudregGet(endpoint, queryString, token);
+      const result = await proxySudregGet(endpoint, queryString, token, { clientIp, userAgent });
       const headers = { 'Content-Type': 'application/json; charset=utf-8', ...result.headers };
       res.writeHead(result.statusCode, headers);
       res.end(typeof result.body === 'string' ? result.body : JSON.stringify(result.body));
