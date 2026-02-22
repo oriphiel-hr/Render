@@ -47,6 +47,14 @@ const SIFRARNIK_ENDPOINTS = [
 
 const SIFRARNIK_PAGE_SIZE = 5000;
 
+/** Entitetski endpointi za sync (punjenje s glava_id i snapshot_id). Redoslijed: subjekti prvo (ostalo ovisi o mbs). */
+const ENTITY_ENDPOINTS = [
+  'subjekti', 'tvrtke', 'skracene_tvrtke', 'sjedista', 'email_adrese',
+  'postupci', 'pravni_oblici', 'pretezite_djelatnosti', 'predmeti_poslovanja',
+  'evidencijske_djelatnosti', 'temeljni_kapitali',
+];
+const ENTITY_PAGE_SIZE = 1000;
+
 let tokenCache = { access_token: null, expiresAt: 0 };
 
 function fetchSudregToken() {
@@ -450,6 +458,291 @@ async function runSyncSifrarnici(snapshotId) {
 }
 
 /**
+ * Punjenje entitetskih tablica za zadani snapshot_id. Za svaki ENTITY_ENDPOINTS dohvaća podatke i upsert u tablicu
+ * s postavljenim glava_id i snapshot_id (te updated_at/modified_at preko Prisma @updatedAt).
+ * @param {number} snapshotId
+ * @returns {Promise<{ ok: boolean, endpoints: Record<string, { rows: number, error?: string }> }>}
+ */
+async function runSyncEntiteti(snapshotId) {
+  const token = await getSudregToken();
+  const sid = BigInt(snapshotId);
+  const results = {};
+
+  for (const endpoint of ENTITY_ENDPOINTS) {
+    let glavaId = null;
+    try {
+      const glava = await prisma.sudregSyncGlava.upsert({
+        where: { snapshotId_tipEntiteta: { snapshotId: sid, tipEntiteta: endpoint } },
+        create: {
+          snapshotId: sid,
+          tipEntiteta: endpoint,
+          status: 'u_tijeku',
+          vrijemePocetka: new Date(),
+        },
+        update: { status: 'u_tijeku', vrijemePocetka: new Date() },
+      });
+      glavaId = glava.id;
+
+      let totalWritten = glava.actualCount != null ? Number(glava.actualCount) : 0;
+      let offset = glava.nextOffsetToFetch != null && glava.nextOffsetToFetch >= 0
+        ? Number(glava.nextOffsetToFetch)
+        : 0;
+      let hasMore = true;
+      while (hasMore) {
+        const qs = `snapshot_id=${snapshotId}&offset=${offset}&limit=${ENTITY_PAGE_SIZE}&no_data_error=0`;
+        const result = await proxySudregGet(endpoint, qs, token);
+        if (result.statusCode !== 200) {
+          await prisma.sudregSyncGlava.update({
+            where: { id: glavaId },
+            data: { status: 'greska', greska: `HTTP ${result.statusCode}` },
+          });
+          results[endpoint] = { rows: totalWritten, error: `HTTP ${result.statusCode}` };
+          break;
+        }
+        const page = Array.isArray(result.body) ? result.body : [];
+        const dataSnapGlavaBase = { snapshotId: sid, glavaId };
+
+        if (endpoint === 'subjekti') {
+          for (let i = 0; i < page.length; i++) {
+            const row = page[i];
+            if (row == null || (row.mbs == null && row.id == null)) continue;
+            const mbs = row.mbs != null ? BigInt(row.mbs) : BigInt(row.id);
+            const upd = {
+              ...dataSnapGlavaBase,
+              redniBrojUSetu: BigInt(offset + i),
+              oib: row.oib != null ? String(row.oib) : null,
+              status: row.status != null ? Number(row.status) : null,
+              inoPodruznica: row.ino_podruznica != null ? Number(row.ino_podruznica) : null,
+              postupak: row.postupak != null ? Number(row.postupak) : null,
+              datumOsnivanja: row.datum_osnivanja != null ? new Date(row.datum_osnivanja) : null,
+              datumBrisanja: row.datum_brisanja != null ? new Date(row.datum_brisanja) : null,
+              sudIdNadlezan: row.sud_id_nadlezan != null ? BigInt(row.sud_id_nadlezan) : null,
+              sudIdSluzba: row.sud_id_sluzba != null ? BigInt(row.sud_id_sluzba) : null,
+              mb: row.mb != null ? Number(row.mb) : null,
+              stecajnaMasa: row.stecajna_masa != null ? Number(row.stecajna_masa) : null,
+              likvidacijskaMasa: row.likvidacijska_masa != null ? Number(row.likvidacijska_masa) : null,
+              mbsBrisanogSubjekta: row.mbs_brisanog_subjekta != null ? BigInt(row.mbs_brisanog_subjekta) : null,
+              glavnaDjelatnost: row.glavna_djelatnost != null ? Number(row.glavna_djelatnost) : null,
+              glavnaPodruznicaRbr: row.glavna_podruznica_rbr != null ? Number(row.glavna_podruznica_rbr) : null,
+              sudIdBrisanja: row.sud_id_brisanja != null ? BigInt(row.sud_id_brisanja) : null,
+              tvrtkaKodBrisanja: row.tvrtka_kod_brisanja != null ? String(row.tvrtka_kod_brisanja) : null,
+              poslovniBrojBrisanja: row.poslovni_broj_brisanja != null ? String(row.poslovni_broj_brisanja) : null,
+            };
+            const r = await prisma.subjekti.updateMany({ where: { mbs }, data: upd });
+            if (r.count === 0) await prisma.subjekti.create({ data: { mbs, ...upd } });
+            totalWritten++;
+          }
+        } else if (endpoint === 'tvrtke') {
+          for (let i = 0; i < page.length; i++) {
+            const row = page[i];
+            if (row == null) continue;
+            const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
+            if (mbo == null) continue;
+            const upd = {
+              ...dataSnapGlavaBase,
+              redniBrojUSetu: BigInt(offset + i),
+              ime: row.ime != null ? String(row.ime) : null,
+              naznakaImena: row.naznaka_imena != null ? String(row.naznaka_imena) : null,
+            };
+            const r = await prisma.tvrtke.updateMany({ where: { mbo }, data: upd });
+            if (r.count === 0) await prisma.tvrtke.create({ data: { mbo, ...upd } });
+            totalWritten++;
+          }
+        } else if (endpoint === 'skracene_tvrtke') {
+          for (let i = 0; i < page.length; i++) {
+            const row = page[i];
+            if (row == null) continue;
+            const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
+            if (mbo == null) continue;
+            const upd = { ...dataSnapGlavaBase, redniBrojUSetu: BigInt(offset + i), ime: row.ime != null ? String(row.ime) : null };
+            const r = await prisma.skraceneTvrtke.updateMany({ where: { mbo }, data: upd });
+            if (r.count === 0) await prisma.skraceneTvrtke.create({ data: { mbo, ...upd } });
+            totalWritten++;
+          }
+        } else if (endpoint === 'sjedista') {
+          for (let i = 0; i < page.length; i++) {
+            const row = page[i];
+            if (row == null) continue;
+            const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
+            const redniBroj = row.redni_broj != null ? Number(row.redni_broj) : 1;
+            if (mbo == null) continue;
+            const upd = {
+              ...dataSnapGlavaBase,
+              redniBrojUSetu: BigInt(offset + i),
+              drzavaId: row.drzava_id != null ? BigInt(row.drzava_id) : null,
+              sifraZupanije: row.sifra_zupanije != null ? Number(row.sifra_zupanije) : null,
+              nazivZupanije: row.naziv_zupanije != null ? String(row.naziv_zupanije) : null,
+              sifraOpcine: row.sifra_opcine != null ? Number(row.sifra_opcine) : null,
+              nazivOpcine: row.naziv_opcine != null ? String(row.naziv_opcine) : null,
+              sifraNaselja: row.sifra_naselja != null ? BigInt(row.sifra_naselja) : null,
+              nazivNaselja: row.naziv_naselja != null ? String(row.naziv_naselja) : null,
+              naseljeVanSifrarnika: row.naselje_van_sifrarnika != null ? String(row.naselje_van_sifrarnika) : null,
+              sifraUlice: row.sifra_ulice != null ? BigInt(row.sifra_ulice) : null,
+              ulica: row.ulica != null ? String(row.ulica) : null,
+              kucniBroj: row.kucni_broj != null ? Number(row.kucni_broj) : null,
+              kucniPodbroj: row.kucni_podbroj != null ? String(row.kucni_podbroj) : null,
+              postanskiBroj: row.postanski_broj != null ? Number(row.postanski_broj) : null,
+            };
+            const r = await prisma.sjedista.updateMany({ where: { mbo, redniBroj }, data: upd });
+            if (r.count === 0) await prisma.sjedista.create({ data: { mbo, redniBroj, ...upd } });
+            totalWritten++;
+          }
+        } else if (endpoint === 'email_adrese') {
+          for (let i = 0; i < page.length; i++) {
+            const row = page[i];
+            if (row == null) continue;
+            const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
+            const emailRbr = row.email_adresa_rbr != null ? Number(row.email_adresa_rbr) : null;
+            if (mbo == null) continue;
+            const upd = {
+              ...dataSnapGlavaBase,
+              redniBrojUSetu: BigInt(offset + i),
+              emailAdresaRbr: emailRbr,
+              adresa: row.adresa != null ? String(row.adresa) : null,
+            };
+            const r = await prisma.emailAdrese.updateMany({ where: { mbo, emailAdresaRbr: emailRbr }, data: upd });
+            if (r.count === 0) await prisma.emailAdrese.create({ data: { mbo, ...upd } });
+            totalWritten++;
+          }
+        } else if (endpoint === 'postupci') {
+          for (let i = 0; i < page.length; i++) {
+            const row = page[i];
+            if (row == null) continue;
+            const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
+            const postupak = row.postupak != null ? Number(row.postupak) : null;
+            if (mbo == null) continue;
+            const upd = {
+              ...dataSnapGlavaBase,
+              redniBrojUSetu: BigInt(offset + i),
+              postupak,
+              datumStecaja: row.datum_stecaja != null ? new Date(row.datum_stecaja) : null,
+            };
+            const r = await prisma.postupci.updateMany({ where: { mbo, postupak }, data: upd });
+            if (r.count === 0) await prisma.postupci.create({ data: { mbo, ...upd } });
+            totalWritten++;
+          }
+        } else if (endpoint === 'pravni_oblici') {
+          for (let i = 0; i < page.length; i++) {
+            const row = page[i];
+            if (row == null) continue;
+            const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
+            if (mbo == null) continue;
+            const upd = {
+              ...dataSnapGlavaBase,
+              redniBrojUSetu: BigInt(offset + i),
+              vrstaPravnogOblikaId: row.vrsta_pravnog_oblika_id != null ? BigInt(row.vrsta_pravnog_oblika_id) : null,
+            };
+            const r = await prisma.pravniOblici.updateMany({ where: { mbo }, data: upd });
+            if (r.count === 0) await prisma.pravniOblici.create({ data: { mbo, ...upd } });
+            totalWritten++;
+          }
+        } else if (endpoint === 'pretezite_djelatnosti') {
+          for (let i = 0; i < page.length; i++) {
+            const row = page[i];
+            if (row == null) continue;
+            const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
+            const redniBroj = row.redni_broj != null ? Number(row.redni_broj) : (row.djelatnost_rbr != null ? Number(row.djelatnost_rbr) : null);
+            if (mbo == null) continue;
+            const upd = {
+              ...dataSnapGlavaBase,
+              redniBrojUSetu: BigInt(offset + i),
+              redniBroj,
+              nacionalnaKlasifikacijaDjelatnostiId: row.nacionalna_klasifikacija_djelatnosti_id != null ? BigInt(row.nacionalna_klasifikacija_djelatnosti_id) : null,
+              djelatnostTekst: row.djelatnost_tekst != null ? String(row.djelatnost_tekst) : null,
+            };
+            const r = await prisma.preteziteDjelatnosti.updateMany({ where: { mbo, redniBroj }, data: upd });
+            if (r.count === 0) await prisma.preteziteDjelatnosti.create({ data: { mbo, ...upd } });
+            totalWritten++;
+          }
+        } else if (endpoint === 'predmeti_poslovanja') {
+          for (let i = 0; i < page.length; i++) {
+            const row = page[i];
+            if (row == null) continue;
+            const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
+            const redniBroj = row.redni_broj != null ? Number(row.redni_broj) : (row.djelatnost_rbr != null ? Number(row.djelatnost_rbr) : null);
+            if (mbo == null) continue;
+            const upd = {
+              ...dataSnapGlavaBase,
+              redniBrojUSetu: BigInt(offset + i),
+              redniBroj,
+              nacionalnaKlasifikacijaDjelatnostiId: row.nacionalna_klasifikacija_djelatnosti_id != null ? BigInt(row.nacionalna_klasifikacija_djelatnosti_id) : null,
+              djelatnostTekst: row.djelatnost_tekst != null ? String(row.djelatnost_tekst) : null,
+            };
+            const r = await prisma.predmetiPoslovanja.updateMany({ where: { mbo, redniBroj }, data: upd });
+            if (r.count === 0) await prisma.predmetiPoslovanja.create({ data: { mbo, ...upd } });
+            totalWritten++;
+          }
+        } else if (endpoint === 'evidencijske_djelatnosti') {
+          for (let i = 0; i < page.length; i++) {
+            const row = page[i];
+            if (row == null) continue;
+            const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
+            const redniBroj = row.redni_broj != null ? Number(row.redni_broj) : (row.djelatnost_rbr != null ? Number(row.djelatnost_rbr) : null);
+            if (mbo == null) continue;
+            const upd = {
+              ...dataSnapGlavaBase,
+              redniBrojUSetu: BigInt(offset + i),
+              redniBroj,
+              nacionalnaKlasifikacijaDjelatnostiId: row.nacionalna_klasifikacija_djelatnosti_id != null ? BigInt(row.nacionalna_klasifikacija_djelatnosti_id) : null,
+              djelatnostTekst: row.djelatnost_tekst != null ? String(row.djelatnost_tekst) : null,
+            };
+            const r = await prisma.evidencijskeDjelatnosti.updateMany({ where: { mbo, redniBroj }, data: upd });
+            if (r.count === 0) await prisma.evidencijskeDjelatnosti.create({ data: { mbo, ...upd } });
+            totalWritten++;
+          }
+        } else if (endpoint === 'temeljni_kapitali') {
+          for (let i = 0; i < page.length; i++) {
+            const row = page[i];
+            if (row == null) continue;
+            const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
+            const temeljniKapitalRbr = row.temeljni_kapital_rbr != null ? Number(row.temeljni_kapital_rbr) : null;
+            if (mbo == null) continue;
+            const upd = {
+              ...dataSnapGlavaBase,
+              redniBrojUSetu: BigInt(offset + i),
+              temeljniKapitalRbr,
+              valutaId: row.valuta_id != null ? BigInt(row.valuta_id) : null,
+              iznos: row.iznos != null ? Number(row.iznos) : null,
+            };
+            const r = await prisma.temeljniKapitali.updateMany({ where: { mbo, temeljniKapitalRbr }, data: upd });
+            if (r.count === 0) await prisma.temeljniKapitali.create({ data: { mbo, ...upd } });
+            totalWritten++;
+          }
+        }
+
+        const nextOffset = offset + page.length;
+        hasMore = page.length === ENTITY_PAGE_SIZE;
+        offset = nextOffset;
+
+        await prisma.sudregSyncGlava.update({
+          where: { id: glavaId },
+          data: {
+            nextOffsetToFetch: hasMore ? BigInt(nextOffset) : null,
+            actualCount: BigInt(totalWritten),
+            ...(hasMore ? {} : { status: 'ok', vrijemeZavrsetka: new Date() }),
+          },
+        });
+      }
+
+      if (results[endpoint] == null) {
+        results[endpoint] = { rows: totalWritten };
+      }
+    } catch (err) {
+      console.error(`sync_entiteti ${endpoint}`, err);
+      if (glavaId != null) {
+        await prisma.sudregSyncGlava.update({
+          where: { id: glavaId },
+          data: { status: 'greska', greska: err.message },
+        }).catch(() => {});
+      }
+      results[endpoint] = { rows: 0, error: err.message };
+    }
+  }
+
+  return { ok: true, endpoints: results };
+}
+
+/**
  * Logika cron_daily: prvo sync_sifrarnici, zatim expected_counts, pa sync_promjene (stanje u rps_sudreg_sync_glava).
  * Sync za snapshote gdje nema reda u rps_sudreg_sync_glava ili next_offset_to_fetch != null.
  * @returns {Promise<object>}
@@ -457,6 +750,7 @@ async function runSyncSifrarnici(snapshotId) {
 async function runCronDailyWork() {
   const summary = {
     sync_sifrarnici: null,
+    sync_entiteti: null,
     expected_counts: null,
     sync_promjene_chunks: 0,
     snapshot_ids_synced: [],
@@ -475,6 +769,12 @@ async function runCronDailyWork() {
 
     if (latestSnapshotId != null) {
       summary.sync_sifrarnici = await runSyncSifrarnici(latestSnapshotId);
+      try {
+        summary.sync_entiteti = await runSyncEntiteti(latestSnapshotId);
+      } catch (err) {
+        console.error('runCronDailyWork sync_entiteti', err);
+        summary.sync_entiteti = { ok: false, endpoints: {}, error: err.message };
+      }
     } else {
       summary.sync_sifrarnici = { ok: false, endpoints: {}, error: 'Nema snapshot_id iz API-ja' };
     }
