@@ -59,6 +59,24 @@ const ENTITY_PAGE_SIZE = 1000;
 
 let tokenCache = { access_token: null, expiresAt: 0 };
 
+/** Je li greška zbog prekinute veze / nedostupne baze (retry ima smisla). */
+function isConnectionError(err) {
+  const msg = (err && err.message) ? String(err.message) : '';
+  return /closed the connection|Can't reach database server|ECONNRESET|ECONNREFUSED|connection.*closed/i.test(msg)
+    || (err && (err.code === 'P1001' || err.code === 'P1017' || err.code === 'P2028'));
+}
+
+/** Osiguraj živu vezu prema bazi (nakon dugog joba Render/DB može prekinuti vezu). */
+async function ensureDbConnection() {
+  try {
+    await prisma.$connect();
+  } catch (e) {
+    await prisma.$disconnect().catch(() => {});
+    await new Promise((r) => setTimeout(r, 2000));
+    await prisma.$connect();
+  }
+}
+
 /** Zadnje pokretanje cron_daily (da se zna je li gotov i koji je rezultat). */
 let lastCronDailyRun = {
   startedAt: null,
@@ -482,8 +500,17 @@ async function runSyncEntiteti(snapshotId) {
 
   for (const endpoint of ENTITY_ENDPOINTS) {
     let glavaId = null;
-    try {
-      const glava = await prisma.sudregSyncGlava.upsert({
+    let lastError = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        if (attempt > 0) {
+          await ensureDbConnection();
+          await new Promise((r) => setTimeout(r, 2000));
+          console.log('sync_entiteti retry', endpoint);
+        } else {
+          await ensureDbConnection();
+        }
+        const glava = await prisma.sudregSyncGlava.upsert({
         where: { snapshotId_tipEntiteta: { snapshotId: sid, tipEntiteta: endpoint } },
         create: {
           snapshotId: sid,
@@ -741,7 +768,10 @@ async function runSyncEntiteti(snapshotId) {
       if (results[endpoint] == null) {
         results[endpoint] = { rows: totalWritten };
       }
+        break;
     } catch (err) {
+      lastError = err;
+      if (attempt < 1 && isConnectionError(err)) continue;
       console.error(`sync_entiteti ${endpoint}`, err);
       if (glavaId != null) {
         await prisma.sudregSyncGlava.update({
@@ -750,6 +780,11 @@ async function runSyncEntiteti(snapshotId) {
         }).catch(() => {});
       }
       results[endpoint] = { rows: 0, error: err.message };
+      break;
+    }
+    }
+    if (lastError != null && results[endpoint] == null) {
+      results[endpoint] = { rows: 0, error: lastError.message };
     }
   }
 
@@ -802,6 +837,7 @@ async function runCronDailyWork() {
     if (latestSnapshotId != null) {
       summary.sync_sifrarnici = await runSyncSifrarnici(latestSnapshotId);
       console.log('cron_daily: sync_sifrarnici', summary.sync_sifrarnici?.ok ? 'ok' : 'fail', summary.sync_sifrarnici?.error ?? '');
+      await ensureDbConnection();
       try {
         summary.sync_entiteti = await runSyncEntiteti(latestSnapshotId);
         console.log('cron_daily: sync_entiteti', summary.sync_entiteti?.ok ? 'ok' : 'fail', summary.sync_entiteti?.error ?? '');
