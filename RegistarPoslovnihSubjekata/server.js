@@ -6,7 +6,7 @@
  * - GET /api/sudreg_expected_counts?snapshot_id=<id> – čitanje iz baze (public.sudreg_expected_counts). Opcionalno: endpoint (naziv metode; ako nema, vraća sve), limit, offset.
  * - POST /api/sudreg_expected_counts?snapshot_id=<id> – dohvat X-Total-Count s Sudreg API-ja za sve list-endpointe i upis u sudreg_expected_counts. Zahtijeva API ključ (header X-API-Key ili Authorization: Bearer <key>).
  * - POST /api/sudreg_sync_promjene?snapshot_id=<id> – poziv Sudreg /promjene, upis u sudreg_promjene_stavke. snapshot_id opcionalno (ako nema, koristi se zadnji snapshot koji ima expected_count za promjene). Zahtijeva API ključ. Upis samo ako postoji expected_count za taj snapshot.
- * - POST /api/sudreg_cron_daily – jedan poziv: prvo expected_counts (bez parametra), zatim sync_promjene u petlji dok ne završi. Za vanjski cron (npr. cron-job.org). Zahtijeva API ključ.
+ * - POST /api/sudreg_cron_daily – prvo expected_counts (bez parametra), zatim sync_promjene za sve snapshote koji imaju expected count za 'promjene' a još nisu potpuno usyncani. Za vanjski cron (npr. cron-job.org). Zahtijeva API ključ. Odmah vraća 202 (posao u pozadini); ?wait=1 čeka rezultat.
  */
 const http = require('http');
 const https = require('https');
@@ -161,14 +161,16 @@ function checkWriteApiKey(req) {
 }
 
 /**
- * Logika cron_daily: expected_counts pa sync_promjene u petlji. Vraća summary (bez slanja odgovora).
+ * Logika cron_daily: expected_counts pa sync_promjene za sve snapshote koji imaju expected count za
+ * 'promjene' a još nisu potpuno usyncani (nema reda u sudreg_promjene ili next_offset_to_fetch != null).
  * @returns {Promise<object>}
  */
 async function runCronDailyWork() {
   const summary = {
     expected_counts: null,
     sync_promjene_chunks: 0,
-    sync_promjene_done: false,
+    snapshot_ids_synced: [],
+    snapshot_ids_skipped: [],
     error: null,
     sync_promjene_last_response: null,
   };
@@ -183,22 +185,40 @@ async function runCronDailyWork() {
     summary.error = ec.body?.message || ec.body?.error;
     return summary;
   }
-  const MAX_SYNC_CHUNKS = 500;
-  for (let i = 0; i < MAX_SYNC_CHUNKS; i++) {
-    const sp = await internalPost('/api/sudreg_sync_promjene');
-    summary.sync_promjene_chunks += 1;
-    if (sp.statusCode >= 400) {
-      summary.error = sp.body?.message || sp.body?.error || `HTTP ${sp.statusCode}`;
-      summary.sync_promjene_last_response = sp.body;
-      return summary;
+  const expectedRows = await prisma.sudregExpectedCount.findMany({
+    where: { endpoint: 'promjene' },
+    select: { snapshotId: true },
+    orderBy: { snapshotId: 'asc' },
+  });
+  const snapshotIdsToSync = [];
+  for (const r of expectedRows) {
+    const sid = Number(r.snapshotId);
+    const existing = await prisma.promjene.findUnique({
+      where: { snapshotId: BigInt(sid) },
+      select: { nextOffsetToFetch: true },
+    });
+    if (existing == null || existing.nextOffsetToFetch != null) {
+      snapshotIdsToSync.push(sid);
+    } else {
+      summary.snapshot_ids_skipped.push(sid);
     }
-    const hasMore = sp.body && sp.body.has_more === true;
-    if (!hasMore) {
-      summary.sync_promjene_done = true;
-      summary.snapshot_id = sp.body?.snapshot_id;
-      summary.verified = sp.body?.verified;
-      summary.total_written_so_far = sp.body?.total_written_so_far;
-      return summary;
+  }
+  const MAX_CHUNKS_PER_SNAPSHOT = 500;
+  for (const sid of snapshotIdsToSync) {
+    for (let i = 0; i < MAX_CHUNKS_PER_SNAPSHOT; i++) {
+      const sp = await internalPost(`/api/sudreg_sync_promjene?snapshot_id=${sid}`);
+      summary.sync_promjene_chunks += 1;
+      if (sp.statusCode >= 400) {
+        summary.error = sp.body?.message || sp.body?.error || `HTTP ${sp.statusCode}`;
+        summary.sync_promjene_last_response = sp.body;
+        summary.snapshot_ids_synced.push(sid);
+        return summary;
+      }
+      const hasMore = sp.body && sp.body.has_more === true;
+      if (!hasMore) {
+        summary.snapshot_ids_synced.push(sid);
+        break;
+      }
     }
   }
   return summary;
