@@ -31,8 +31,9 @@ BEGIN
     RETURN;
   END IF;
 
-  -- Topološki poredak: ponavljamo dok ima tablica; u svakom koraku uzmemo tablicu
-  -- čije sve "roditeljske" tablice (one na koje referencira FK) su već u delete_order
+  -- Topološki poredak: prvo brišemo tablice koje NE REFERENCIRAJU drugu tablicu u setu (djeca),
+  -- na kraju one na koje drugi referenciraju (roditelji). Tablicu "picked" smijemo uzeti ako
+  -- je NITKO iz remaining ne referencira (nema FK child -> picked gdje je child u remaining).
   WHILE array_length(remaining, 1) > 0 LOOP
     done := false;
     FOR i IN 1 .. array_length(remaining, 1) LOOP
@@ -45,9 +46,9 @@ BEGIN
         JOIN pg_namespace n ON n.oid = child.relnamespace
         WHERE c.contype = 'f'
           AND n.nspname = p_schema
-          AND child.relname = picked
-          AND parent.relname = ANY(remaining)
-          AND parent.relname <> picked
+          AND parent.relname = picked
+          AND child.relname = ANY(remaining)
+          AND child.relname <> picked
       ) THEN
         delete_order := array_append(delete_order, picked);
         remaining := array_remove(remaining, picked);

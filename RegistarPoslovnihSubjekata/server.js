@@ -8,6 +8,7 @@
  * - POST /api/sudreg_sync_promjene?snapshot_id=<id> – poziv Sudreg /promjene; stanje synca u rps_sudreg_sync_glava. Zahtijeva API ključ.
  * - POST /api/sudreg_sync_entiteti?snapshot_id=<id> – sync entitetskih tablica (subjekti, tvrtke, …) za zadani snapshot. Zahtijeva API ključ.
  * - POST /api/sudreg_cron_daily – prvo expected_counts, zatim sync šifrarnika, pa sync entiteti. Za vanjski cron. 202 u pozadini; ?wait=1 čeka rezultat.
+ * - GET /api/sudreg_cron_daily/status – status zadnjeg pokretanja (startedAt, finishedAt, status: idle|running|ok|error, summary).
  */
 const http = require('http');
 const https = require('https');
@@ -57,6 +58,14 @@ const ENTITY_ENDPOINTS = [
 const ENTITY_PAGE_SIZE = 1000;
 
 let tokenCache = { access_token: null, expiresAt: 0 };
+
+/** Zadnje pokretanje cron_daily (da se zna je li gotov i koji je rezultat). */
+let lastCronDailyRun = {
+  startedAt: null,
+  finishedAt: null,
+  status: 'idle', // idle | running | ok | error
+  summary: null,
+};
 
 function fetchSudregToken() {
   return new Promise((resolve, reject) => {
@@ -443,7 +452,7 @@ async function runSyncSifrarnici(snapshotId) {
         where: { id: glavaId },
         data: { status: 'ok', actualCount: BigInt(written), vrijemeZavrsetka: new Date() },
       });
-      });
+      }, { timeout: 120000 });
       results[endpoint] = { rows: written };
     } catch (err) {
       console.error(`sync_sifrarnici ${endpoint}`, err);
@@ -726,7 +735,7 @@ async function runSyncEntiteti(snapshotId) {
             ...(hasMore ? {} : { status: 'ok', vrijemeZavrsetka: new Date() }),
           },
         });
-        });
+        }, { timeout: 120000 });
       }
 
       if (results[endpoint] == null) {
@@ -810,6 +819,9 @@ async function runCronDailyWork() {
   }
 
   console.log('cron_daily: done', JSON.stringify(summary));
+  lastCronDailyRun.finishedAt = new Date().toISOString();
+  lastCronDailyRun.status = summary.error ? 'error' : 'ok';
+  lastCronDailyRun.summary = summary;
   return summary;
 }
 
@@ -1299,6 +1311,21 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  if (path === '/api/sudreg_cron_daily/status' && method === 'GET') {
+    sendJson(200, {
+      status: lastCronDailyRun.status,
+      startedAt: lastCronDailyRun.startedAt,
+      finishedAt: lastCronDailyRun.finishedAt,
+      summary: lastCronDailyRun.summary,
+      note: lastCronDailyRun.status === 'running'
+        ? 'Job je u tijeku. Osvježi stranicu ili pollaj ovaj URL.'
+        : lastCronDailyRun.status === 'idle'
+          ? 'Job još nije pokrenut ili je server restartan.'
+          : undefined,
+    });
+    return;
+  }
+
   if (path === '/api/sudreg_cron_daily' && method === 'POST') {
     const writeCheck = checkWriteApiKey(req);
     if (!writeCheck.allowed) {
@@ -1308,17 +1335,25 @@ const server = http.createServer(async (req, res) => {
     }
     const wait = url.searchParams.get('wait') === '1' || url.searchParams.get('wait') === 'true';
     console.log('sudreg_cron_daily: poziv', wait ? '?wait=1' : 'background');
+    lastCronDailyRun.startedAt = new Date().toISOString();
+    lastCronDailyRun.finishedAt = null;
+    lastCronDailyRun.status = 'running';
+    lastCronDailyRun.summary = null;
     if (!wait) {
       sendJson(202, {
         message: 'started',
         background: true,
-        note: 'Work runs in background (cron-job.org timeout 30s). Add ?wait=1 to wait for result. Check server logs for result.',
+        statusUrl: '/api/sudreg_cron_daily/status',
+        note: 'Work runs in background. GET ' + '/api/sudreg_cron_daily/status' + ' to see when it finishes.',
       });
       setImmediate(() => {
         runCronDailyWork().then((summary) => {
           console.log('cron_daily background done', JSON.stringify(summary));
         }).catch((err) => {
           console.error('cron_daily background failed', err);
+          lastCronDailyRun.finishedAt = new Date().toISOString();
+          lastCronDailyRun.status = 'error';
+          lastCronDailyRun.summary = { error: err.message };
         });
       });
       return;
@@ -1329,6 +1364,9 @@ const server = http.createServer(async (req, res) => {
         sendJson(200, { message: 'ok', ...summary });
       } catch (err) {
         console.error('POST sudreg_cron_daily', err);
+        lastCronDailyRun.finishedAt = new Date().toISOString();
+        lastCronDailyRun.status = 'error';
+        lastCronDailyRun.summary = { error: err.message };
         sendJson(500, { message: 'cron_daily_failed', error: err.message });
       }
     })();
