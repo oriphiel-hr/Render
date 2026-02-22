@@ -8,7 +8,7 @@ Koristi **jedan** vanjski cron poziv na **cron_daily**.
 Endpoint **POST /api/sudreg_cron_daily** u jednom pozivu:
 
 1. **odmah vraća 202 Accepted** (da cron-job.org ne prekine zbog timeouta od ~30 s),
-2. u **pozadini** pokreće expected counts pa sync_promjene: upis u **sudreg_promjene_stavke**, stanje u **sudreg_sync_glava** (bez tablice sudreg_promjene).
+2. u **pozadini** pokreće: prvo **sync šifrarnika** (drzave, sudovi, valute, …), zatim expected counts, pa sync_promjene (stanje u rps_sudreg_sync_glava).
 
 Test run na cron-job.org treba pokazati **Successful** s HTTP 202; posao se nastavlja na serveru (rezultat u Render Logs).
 

@@ -3,10 +3,10 @@
  * - GET/POST /api/sudreg_token – OAuth token za Sudski registar.
  * - GET /api/sudreg?endpoint=<name>&... – jedan proxy prema Sudreg API-ju; endpoint = naziv resursa (npr. subjekti, detalji_subjekta, sudovi). Svi ostali query parametri (snapshot_id, limit, offset, no_data_error, omit_nulls, expand_relations, history_columns, tip_identifikatora, identifikator, only_active, tvrtka_naziv) prosljeđuju se API-ju.
  *   Dokumentacija: https://sudreg-data.gov.hr/api/javni/dokumentacija/open_api
- * - GET /api/sudreg_expected_counts?snapshot_id=<id> – čitanje iz baze (public.sudreg_expected_counts). Opcionalno: endpoint (naziv metode; ako nema, vraća sve), limit, offset.
- * - POST /api/sudreg_expected_counts?snapshot_id=<id> – dohvat X-Total-Count s Sudreg API-ja za sve list-endpointe i upis u sudreg_expected_counts. Zahtijeva API ključ (header X-API-Key ili Authorization: Bearer <key>).
- * - POST /api/sudreg_sync_promjene?snapshot_id=<id> – poziv Sudreg /promjene; upis u sudreg_promjene_stavke, stanje synca u sudreg_sync_glava (tip_entiteta='promjene'). snapshot_id opcionalno. Zahtijeva API ključ.
- * - POST /api/sudreg_cron_daily – prvo expected_counts, zatim sync_promjene za snapshote koji još nisu gotovi (sudreg_sync_glava). Za vanjski cron. Zahtijeva API ključ. 202 u pozadini; ?wait=1 čeka rezultat.
+ * - GET /api/sudreg_expected_counts?snapshot_id=<id> – čitanje iz baze (rps_sudreg_expected_counts). Opcionalno: endpoint, limit, offset.
+ * - POST /api/sudreg_expected_counts?snapshot_id=<id> – dohvat X-Total-Count s Sudreg API-ja i upis u rps_sudreg_expected_counts. Zahtijeva API ključ.
+ * - POST /api/sudreg_sync_promjene?snapshot_id=<id> – poziv Sudreg /promjene; stanje synca u rps_sudreg_sync_glava. Zahtijeva API ključ.
+ * - POST /api/sudreg_cron_daily – prvo sync šifrarnika, zatim expected_counts, pa sync_promjene. Za vanjski cron. 202 u pozadini; ?wait=1 čeka rezultat.
  */
 const http = require('http');
 const https = require('https');
@@ -37,6 +37,15 @@ const SUDREG_ALLOWED_ENDPOINTS = new Set([
 const SUDREG_EXPECTED_COUNT_ENDPOINTS = [...SUDREG_ALLOWED_ENDPOINTS]
   .filter((e) => e !== 'detalji_subjekta' && e !== 'snapshots')
   .sort();
+
+/** Šifrarnici koje punimo na početku cron joba (redoslijed: prvo neovisni, zatim ovisni). */
+const SIFRARNIK_ENDPOINTS = [
+  'drzave', 'vrste_pravnih_oblika', 'nacionalna_klasifikacija_djelatnosti',
+  'sudovi', 'valute', 'vrste_postupaka',
+  'bris_pravni_oblici', 'bris_registri',
+];
+
+const SIFRARNIK_PAGE_SIZE = 5000;
 
 let tokenCache = { access_token: null, expiresAt: 0 };
 
@@ -161,12 +170,205 @@ function checkWriteApiKey(req) {
 }
 
 /**
- * Logika cron_daily: expected_counts pa sync_promjene. Upis samo u sudreg_promjene_stavke i sudreg_sync_glava (bez tablice sudreg_promjene).
- * Sync za snapshote gdje nema reda u sudreg_sync_glava ili next_offset_to_fetch != null.
+ * Punjenje šifrarnika za zadani snapshot_id. Dohvaća svaki SIFRARNIK_ENDPOINTS i upsert u odgovarajuću tablicu.
+ * @param {number} snapshotId
+ * @returns {Promise<{ ok: boolean, endpoints: Record<string, { rows: number, error?: string }> }>}
+ */
+async function runSyncSifrarnici(snapshotId) {
+  const token = await getSudregToken();
+  const qs = `snapshot_id=${snapshotId}&limit=${SIFRARNIK_PAGE_SIZE}&no_data_error=0`;
+  const results = {};
+
+  for (const endpoint of SIFRARNIK_ENDPOINTS) {
+    try {
+      const result = await proxySudregGet(endpoint, qs, token);
+      if (result.statusCode !== 200) {
+        results[endpoint] = { rows: 0, error: `HTTP ${result.statusCode}` };
+        continue;
+      }
+      const page = Array.isArray(result.body) ? result.body : [];
+      let written = 0;
+
+      if (endpoint === 'drzave') {
+        for (const row of page) {
+          if (row == null || row.id == null) continue;
+          await prisma.drzave.upsert({
+            where: { id: BigInt(row.id) },
+            create: {
+              id: BigInt(row.id),
+              sifra: String(row.sifra ?? ''),
+              naziv: String(row.naziv ?? ''),
+              oznaka2: row.oznaka_2 != null ? String(row.oznaka_2) : null,
+              oznaka3: row.oznaka_3 != null ? String(row.oznaka_3) : null,
+            },
+            update: {
+              sifra: String(row.sifra ?? ''),
+              naziv: String(row.naziv ?? ''),
+              oznaka2: row.oznaka_2 != null ? String(row.oznaka_2) : null,
+              oznaka3: row.oznaka_3 != null ? String(row.oznaka_3) : null,
+            },
+          });
+          written++;
+        }
+      } else if (endpoint === 'sudovi') {
+        for (const row of page) {
+          if (row == null || row.id == null) continue;
+          await prisma.sudovi.upsert({
+            where: { id: BigInt(row.id) },
+            create: {
+              id: BigInt(row.id),
+              sifra: String(row.sifra ?? ''),
+              naziv: String(row.naziv ?? ''),
+              sifraZupanije: row.sifra_zupanije != null ? row.sifra_zupanije : null,
+              nazivZupanije: row.naziv_zupanije != null ? String(row.naziv_zupanije) : null,
+            },
+            update: {
+              sifra: String(row.sifra ?? ''),
+              naziv: String(row.naziv ?? ''),
+              sifraZupanije: row.sifra_zupanije != null ? row.sifra_zupanije : null,
+              nazivZupanije: row.naziv_zupanije != null ? String(row.naziv_zupanije) : null,
+            },
+          });
+          written++;
+        }
+      } else if (endpoint === 'valute') {
+        for (const row of page) {
+          if (row == null || row.id == null) continue;
+          await prisma.valute.upsert({
+            where: { id: BigInt(row.id) },
+            create: {
+              id: BigInt(row.id),
+              sifra: String(row.sifra ?? ''),
+              naziv: String(row.naziv ?? ''),
+              drzavaId: row.drzava_id != null ? BigInt(row.drzava_id) : null,
+            },
+            update: {
+              sifra: String(row.sifra ?? ''),
+              naziv: String(row.naziv ?? ''),
+              drzavaId: row.drzava_id != null ? BigInt(row.drzava_id) : null,
+            },
+          });
+          written++;
+        }
+      } else if (endpoint === 'vrste_pravnih_oblika') {
+        for (const row of page) {
+          if (row == null || row.id == null) continue;
+          await prisma.vrstePravnihOblika.upsert({
+            where: { id: BigInt(row.id) },
+            create: {
+              id: BigInt(row.id),
+              sifra: String(row.sifra ?? ''),
+              naziv: String(row.naziv ?? ''),
+              kratica: row.kratica != null ? String(row.kratica) : null,
+            },
+            update: {
+              sifra: String(row.sifra ?? ''),
+              naziv: String(row.naziv ?? ''),
+              kratica: row.kratica != null ? String(row.kratica) : null,
+            },
+          });
+          written++;
+        }
+      } else if (endpoint === 'nacionalna_klasifikacija_djelatnosti') {
+        for (const row of page) {
+          if (row == null || row.id == null) continue;
+          await prisma.nacionalnaKlasifikacijaDjelatnosti.upsert({
+            where: { id: BigInt(row.id) },
+            create: {
+              id: BigInt(row.id),
+              sifra: String(row.sifra ?? ''),
+              puniNaziv: row.puni_naziv != null ? String(row.puni_naziv) : null,
+              verzija: row.verzija != null ? String(row.verzija) : null,
+            },
+            update: {
+              sifra: String(row.sifra ?? ''),
+              puniNaziv: row.puni_naziv != null ? String(row.puni_naziv) : null,
+              verzija: row.verzija != null ? String(row.verzija) : null,
+            },
+          });
+          written++;
+        }
+      } else if (endpoint === 'vrste_postupaka') {
+        for (const row of page) {
+          if (row == null || (row.postupak == null && row.id == null)) continue;
+          const postupak = row.postupak != null ? row.postupak : row.id;
+          if (postupak == null) continue;
+          await prisma.vrstePostupaka.upsert({
+            where: { postupak: Number(postupak) },
+            create: {
+              postupak: Number(postupak),
+              znacenje: String(row.znacenje ?? ''),
+            },
+            update: { znacenje: String(row.znacenje ?? '') },
+          });
+          written++;
+        }
+      } else if (endpoint === 'bris_pravni_oblici') {
+        const sid = BigInt(snapshotId);
+        for (const row of page) {
+          if (row == null || row.bris_kod == null) continue;
+          await prisma.brisPravniOblici.upsert({
+            where: { snapshotId_brisKod: { snapshotId: sid, brisKod: String(row.bris_kod) } },
+            create: {
+              snapshotId: sid,
+              brisKod: String(row.bris_kod),
+              kratica: row.kratica != null ? String(row.kratica) : null,
+              naziv: String(row.naziv ?? ''),
+              drzavaId: BigInt(row.drzava_id ?? 0),
+              vrstaPravnogOblikaId: row.vrsta_pravnog_oblika_id != null ? BigInt(row.vrsta_pravnog_oblika_id) : null,
+              status: Number(row.status ?? 0),
+            },
+            update: {
+              kratica: row.kratica != null ? String(row.kratica) : null,
+              naziv: String(row.naziv ?? ''),
+              drzavaId: BigInt(row.drzava_id ?? 0),
+              vrstaPravnogOblikaId: row.vrsta_pravnog_oblika_id != null ? BigInt(row.vrsta_pravnog_oblika_id) : null,
+              status: Number(row.status ?? 0),
+            },
+          });
+          written++;
+        }
+      } else if (endpoint === 'bris_registri') {
+        const sid = BigInt(snapshotId);
+        for (const row of page) {
+          if (row == null || row.identifikator == null) continue;
+          await prisma.brisRegistri.upsert({
+            where: { snapshotId_identifikator: { snapshotId: sid, identifikator: String(row.identifikator) } },
+            create: {
+              snapshotId: sid,
+              identifikator: String(row.identifikator),
+              naziv: String(row.naziv ?? ''),
+              drzavaId: BigInt(row.drzava_id ?? 0),
+              status: Number(row.status ?? 0),
+            },
+            update: {
+              naziv: String(row.naziv ?? ''),
+              drzavaId: BigInt(row.drzava_id ?? 0),
+              status: Number(row.status ?? 0),
+            },
+          });
+          written++;
+        }
+      }
+
+      results[endpoint] = { rows: written };
+    } catch (err) {
+      console.error(`sync_sifrarnici ${endpoint}`, err);
+      results[endpoint] = { rows: 0, error: err.message };
+    }
+  }
+
+  return { ok: true, endpoints: results };
+}
+
+/**
+ * Logika cron_daily: prvo sync_sifrarnici, zatim expected_counts, pa sync_promjene (stanje u rps_sudreg_sync_glava).
+ * Sync za snapshote gdje nema reda u rps_sudreg_sync_glava ili next_offset_to_fetch != null.
  * @returns {Promise<object>}
  */
 async function runCronDailyWork() {
   const summary = {
+    sync_sifrarnici: null,
     expected_counts: null,
     sync_promjene_chunks: 0,
     snapshot_ids_synced: [],
@@ -174,6 +376,25 @@ async function runCronDailyWork() {
     error: null,
     sync_promjene_last_response: null,
   };
+
+  try {
+    const token = await getSudregToken();
+    const snapshotsResult = await proxySudregGet('snapshots', '', token);
+    const snapshotsList = Array.isArray(snapshotsResult.body) ? snapshotsResult.body : [];
+    const latestSnapshotId = snapshotsList.length > 0
+      ? Math.max(...snapshotsList.map((s) => (s != null && (s.id != null || s.snapshot_id != null)) ? Number(s.id ?? s.snapshot_id) : -1).filter((n) => n >= 0))
+      : null;
+
+    if (latestSnapshotId != null) {
+      summary.sync_sifrarnici = await runSyncSifrarnici(latestSnapshotId);
+    } else {
+      summary.sync_sifrarnici = { ok: false, endpoints: {}, error: 'Nema snapshot_id iz API-ja' };
+    }
+  } catch (err) {
+    console.error('runCronDailyWork sync_sifrarnici', err);
+    summary.sync_sifrarnici = { ok: false, endpoints: {}, error: err.message };
+  }
+
   const ec = await internalPost('/api/sudreg_expected_counts');
   summary.expected_counts = {
     status: ec.statusCode,
@@ -538,10 +759,6 @@ const server = http.createServer(async (req, res) => {
           },
         });
 
-        if (startOffset === 0) {
-          await prisma.promjeneStavka.deleteMany({ where: { snapshotId: BigInt(snapshotId) } });
-        }
-
         const token = await getSudregToken();
         const qs = `snapshot_id=${snapshotId}&offset=${startOffset}&limit=${PAGE_SIZE}&no_data_error=0`;
         const result = await proxySudregGet('promjene', qs, token);
@@ -577,58 +794,34 @@ const server = http.createServer(async (req, res) => {
         }
         const totalFromHeader = result.headers['X-Total-Count'] != null ? parseInt(result.headers['X-Total-Count'], 10) : null;
         const page = Array.isArray(result.body) ? result.body : [];
-        const allItems = [];
-        for (const row of page) {
-          if (row != null && (row.mbs != null || row.mbs === 0)) {
-            allItems.push({
-              snapshotId: BigInt(snapshotId),
-              mbs: BigInt(row.mbs),
-              scn: BigInt(row.scn != null ? row.scn : 0),
-              vrijeme: row.vrijeme != null ? new Date(row.vrijeme) : null,
-            });
-          }
-        }
-
         const nextOffset = startOffset + page.length;
         const hasMore = page.length === PAGE_SIZE && (totalFromHeader == null || nextOffset < totalFromHeader);
-
-        let writtenThisRequest = 0;
-        let totalLoadedSoFar = 0;
+        const totalLoadedSoFar = nextOffset;
         const finishNow = new Date();
-        await prisma.$transaction(async (tx) => {
-          if (allItems.length > 0) {
-            const created = await tx.promjeneStavka.createMany({
-              data: allItems,
-              skipDuplicates: true,
-            });
-            writtenThisRequest = created.count;
-          }
-          totalLoadedSoFar = await tx.promjeneStavka.count({ where: { snapshotId: BigInt(snapshotId) } });
-          await tx.sudregSyncGlava.upsert({
-            where: {
-              snapshotId_tipEntiteta: { snapshotId: BigInt(snapshotId), tipEntiteta: 'promjene' },
-            },
-            create: {
-              snapshotId: BigInt(snapshotId),
-              tipEntiteta: 'promjene',
-              status: hasMore ? 'u_tijeku' : 'ok',
-              expectedCount: totalExpected != null ? BigInt(totalExpected) : null,
-              actualCount: BigInt(totalLoadedSoFar),
-              nextOffsetToFetch: hasMore ? BigInt(nextOffset) : null,
-              vrijemeZavrsetka: hasMore ? undefined : finishNow,
-              updatedAt: finishNow,
-            },
-            update: {
-              actualCount: BigInt(totalLoadedSoFar),
-              nextOffsetToFetch: hasMore ? BigInt(nextOffset) : null,
-              status: hasMore ? 'u_tijeku' : 'ok',
-              ...(hasMore ? {} : { vrijemeZavrsetka: finishNow, greska: null }),
-              updatedAt: finishNow,
-            },
-          });
+
+        await prisma.sudregSyncGlava.upsert({
+          where: {
+            snapshotId_tipEntiteta: { snapshotId: BigInt(snapshotId), tipEntiteta: 'promjene' },
+          },
+          create: {
+            snapshotId: BigInt(snapshotId),
+            tipEntiteta: 'promjene',
+            status: hasMore ? 'u_tijeku' : 'ok',
+            expectedCount: totalExpected != null ? BigInt(totalExpected) : null,
+            actualCount: BigInt(totalLoadedSoFar),
+            nextOffsetToFetch: hasMore ? BigInt(nextOffset) : null,
+            vrijemeZavrsetka: hasMore ? undefined : finishNow,
+            updatedAt: finishNow,
+          },
+          update: {
+            actualCount: BigInt(totalLoadedSoFar),
+            nextOffsetToFetch: hasMore ? BigInt(nextOffset) : null,
+            status: hasMore ? 'u_tijeku' : 'ok',
+            ...(hasMore ? {} : { vrijemeZavrsetka: finishNow, greska: null }),
+            updatedAt: finishNow,
+          },
         });
 
-        const allWrittenThisChunk = writtenThisRequest === allItems.length;
         const verified = !hasMore && totalExpected != null && totalLoadedSoFar === totalExpected;
 
         sendJson(200, {
@@ -637,10 +830,8 @@ const server = http.createServer(async (req, res) => {
           start_offset: startOffset,
           next_offset: hasMore ? nextOffset : null,
           has_more: hasMore,
-          total_written_this_request: writtenThisRequest,
-          total_written_so_far: totalLoadedSoFar,
           page_size: page.length,
-          all_written_this_chunk: allWrittenThisChunk,
+          total_so_far: totalLoadedSoFar,
           verified: hasMore ? undefined : verified,
         });
       } catch (err) {

@@ -25,7 +25,7 @@ model BrisPravniOblici {
 
   @@id([snapshotId, brisKod])
   @@index([snapshotId])
-  @@map("sudreg_bris_pravni_oblici")
+  @@map("sudreg_sifrarnik_bris_pravni_oblici")
 }
 
 /// Prema OpenAPI: identifikator, naziv, drzava_id, status.
@@ -39,7 +39,7 @@ model BrisRegistri {
 
   @@id([snapshotId, identifikator])
   @@index([snapshotId])
-  @@map("sudreg_bris_registri")
+  @@map("sudreg_sifrarnik_bris_registri")
 }
 
 /// Prema OpenAPI: table_name, count_aktivni.
@@ -51,14 +51,14 @@ model Counts {
 
   @@id([snapshotId, tableName])
   @@index([snapshotId])
-  @@map("sudreg_counts")
+  @@map("sudreg_entitet_counts")
 }
 
 model DetaljiSubjekta {
   id         BigInt   @id @default(autoincrement())
   snapshotId BigInt?  @map("snapshot_id")
   updatedAt  DateTime @updatedAt @map("updated_at")
-  @@map("sudreg_detalji_subjekta")
+  @@map("sudreg_entitet_detalji_subjekta")
 }
 
 model Drzave {
@@ -68,28 +68,14 @@ model Drzave {
   oznaka2 String?  @map("oznaka_2") @db.VarChar(4)
   oznaka3 String?  @map("oznaka_3") @db.VarChar(4)
   updatedAt DateTime @updatedAt @map("updated_at")
-  @@map("sudreg_drzave")
+  @@map("sudreg_sifrarnik_drzave")
 }
 
 model Jezici {
   id         BigInt   @id @default(autoincrement())
   snapshotId BigInt?  @map("snapshot_id")
   updatedAt  DateTime @updatedAt @map("updated_at")
-  @@map("sudreg_jezici")
-}
-
-model LastResponse {
-  id         BigInt   @id @default(autoincrement())
-  snapshotId BigInt?  @map("snapshot_id")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-  @@map("sudreg_last_response")
-}
-
-model LastResponseAudit {
-  id         BigInt   @id @default(autoincrement())
-  snapshotId BigInt?  @map("snapshot_id")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-  @@map("sudreg_last_response_audit")
+  @@map("sudreg_sifrarnik_jezici")
 }
 
 model NacionalnaKlasifikacijaDjelatnosti {
@@ -98,13 +84,13 @@ model NacionalnaKlasifikacijaDjelatnosti {
   puniNaziv String?  @map("puni_naziv") @db.VarChar(512)
   verzija   String?  @db.VarChar(32)
   updatedAt DateTime @updatedAt @map("updated_at")
-  @@map("sudreg_nacionalna_klasifikacija_djelatnosti")
+  @@map("sudreg_sifrarnik_nacionalna_klasifikacija_djelatnosti")
 }
 
 /// Generička glava za sync po snapshotu i tipu entiteta (subjekti, promjene, …). Jedan red = jedan snapshot + jedan tip.
 /// Za chunked sync (npr. promjene): next_offset_to_fetch = sljedeći offset (null = gotovo ili nije pokrenuto).
 model SudregSyncGlava {
-  id                 BigInt    @id @default(autoincrement())
+  id                 BigInt    @id @default(autoincrement()) @map("rps_sudreg_sync_glava_id")
   snapshotId         BigInt    @map("snapshot_id")
   tipEntiteta        String    @map("tip_entiteta") @db.VarChar(64)  // subjekti | promjene | ...
   status             String    @default("u_tijeku") @map("status") @db.VarChar(32)  // u_tijeku | ok | greska
@@ -119,28 +105,14 @@ model SudregSyncGlava {
 
   @@unique([snapshotId, tipEntiteta])
   @@index([snapshotId])
-  @@map("sudreg_sync_glava")
-}
-
-/// Jedna stavka popisa promjena po snapshotu. Primarni ključ (snapshot_id, mbs). Bez FK na glavu – stanje synca u sudreg_sync_glava.
-model PromjeneStavka {
-  snapshotId BigInt    @map("snapshot_id")
-  mbs        BigInt    @map("mbs")
-  scn        BigInt    @map("scn")
-  vrijeme    DateTime? @map("vrijeme")     @db.Timestamptz(6)
-  createdAt  DateTime  @default(now()) @map("created_at")
-
-  @@id([snapshotId, mbs])
-  @@index([snapshotId])
-  @@index([scn])
-  @@map("sudreg_promjene_stavke")
+  @@map("rps_sudreg_sync_glava")
 }
 
 model Statusi {
   id         BigInt   @id @default(autoincrement())
   snapshotId BigInt?  @map("snapshot_id")
   updatedAt  DateTime @updatedAt @map("updated_at")
-  @@map("sudreg_statusi")
+  @@map("sudreg_sifrarnik_statusi")
 }
 
 /// Prema OpenAPI: subjekti (mbs, status, sud_id_nadlezan, sud_id_sluzba, postupak, oib, mb, ino_podruznica, stecajna_masa, likvidacijska_masa, …).
@@ -166,7 +138,7 @@ model Subjekti {
   poslovniBrojBrisanja String?   @map("poslovni_broj_brisanja") @db.VarChar(17)
   snapshotId           BigInt?   @map("snapshot_id")
   updatedAt            DateTime  @updatedAt @map("updated_at")
-  @@map("sudreg_subjekti")
+  @@map("sudreg_entitet_subjekti")
 }
 
 /// Prema OpenAPI: mbs, podruznica_rbr, djelatnost_rbr, nacionalna_klasifikacija_djelatnosti_id, djelatnost_tekst.
@@ -181,7 +153,7 @@ model DjelatnostiPodruznica {
 
   @@id([snapshotId, mbs, podruznicaRbr, djelatnostRbr])
   @@index([snapshotId])
-  @@map("sudreg_djelatnosti_podruznica")
+  @@map("sudreg_entitet_djelatnosti_podruznica")
 }
 
 /// Prema OpenAPI: mbs, email_adresa_rbr, adresa.
@@ -192,7 +164,7 @@ model EmailAdrese {
   adresa        String?  @db.VarChar(256)
   snapshotId    BigInt?  @map("snapshot_id")
   updatedAt     DateTime @updatedAt @map("updated_at")
-  @@map("sudreg_email_adrese")
+  @@map("sudreg_entitet_email_adrese")
 }
 
 /// Prema OpenAPI: mbs, podruznica_rbr, email_adresa_rbr, adresa.
@@ -206,7 +178,7 @@ model EmailAdresePodruznica {
 
   @@id([snapshotId, mbs, podruznicaRbr, emailAdresaRbr])
   @@index([snapshotId])
-  @@map("sudreg_email_adrese_podruznica")
+  @@map("sudreg_entitet_email_adrese_podruznica")
 }
 
 model EvidencijskeDjelatnosti {
@@ -217,7 +189,7 @@ model EvidencijskeDjelatnosti {
   djelatnostTekst                 String?  @map("djelatnost_tekst") @db.VarChar(4000)
   snapshotId                      BigInt?  @map("snapshot_id")
   updatedAt                       DateTime @updatedAt @map("updated_at")
-  @@map("sudreg_evidencijske_djelatnosti")
+  @@map("sudreg_entitet_evidencijske_djelatnosti")
 }
 
 /// Prema OpenAPI: mbs, gfi_rbr, vrsta_dokumenta, oznaka_konsolidacije, godina_izvjestaja, datum_dostave, datum_od, datum_do.
@@ -235,7 +207,7 @@ model Gfi {
 
   @@id([snapshotId, mbs, gfiRbr])
   @@index([snapshotId])
-  @@map("sudreg_gfi")
+  @@map("sudreg_entitet_gfi")
 }
 
 /// Prema OpenAPI: mbs, drzava_id, naziv_registra, registarsko_tijelo, broj_iz_registra, pravni_oblik, bris_registar_identifikator, euid, bris_pravni_oblik_kod.
@@ -254,7 +226,7 @@ model InozemniRegistri {
 
   @@id([snapshotId, mbs, drzavaId])
   @@index([snapshotId])
-  @@map("sudreg_inozemni_registri")
+  @@map("sudreg_entitet_inozemni_registri")
 }
 
 /// Prema OpenAPI: mbs, podruznica_rbr, ime, naznaka_imena, postupak, glavna_podruznica.
@@ -270,7 +242,7 @@ model NaziviPodruznica {
 
   @@id([snapshotId, mbs, podruznicaRbr])
   @@index([snapshotId])
-  @@map("sudreg_nazivi_podruznica")
+  @@map("sudreg_entitet_nazivi_podruznica")
 }
 
 /// Prema OpenAPI: mbs, tekst.
@@ -282,7 +254,7 @@ model ObjavePriopcenja {
 
   @@id([snapshotId, mbs, tekst])
   @@index([snapshotId])
-  @@map("sudreg_objave_priopcenja")
+  @@map("sudreg_entitet_objave_priopcenja")
 }
 
 model Postupci {
@@ -292,7 +264,7 @@ model Postupci {
   datumStecaja DateTime? @map("datum_stecaja") @db.Date
   snapshotId   BigInt?  @map("snapshot_id")
   updatedAt    DateTime @updatedAt @map("updated_at")
-  @@map("sudreg_postupci")
+  @@map("sudreg_entitet_postupci")
 }
 
 model PravniOblici {
@@ -301,7 +273,7 @@ model PravniOblici {
   vrstaPravnogOblikaId  BigInt?  @map("vrsta_pravnog_oblika_id")
   snapshotId            BigInt?  @map("snapshot_id")
   updatedAt             DateTime @updatedAt @map("updated_at")
-  @@map("sudreg_pravni_oblici")
+  @@map("sudreg_sifrarnik_pravni_oblici")
 }
 
 model PredmetiPoslovanja {
@@ -312,7 +284,7 @@ model PredmetiPoslovanja {
   djelatnostTekst                 String?  @map("djelatnost_tekst") @db.VarChar(4000)
   snapshotId                      BigInt?  @map("snapshot_id")
   updatedAt                       DateTime @updatedAt @map("updated_at")
-  @@map("sudreg_predmeti_poslovanja")
+  @@map("sudreg_entitet_predmeti_poslovanja")
 }
 
 model PreteziteDjelatnosti {
@@ -323,7 +295,7 @@ model PreteziteDjelatnosti {
   djelatnostTekst                 String?  @map("djelatnost_tekst") @db.VarChar(4000)
   snapshotId                      BigInt?  @map("snapshot_id")
   updatedAt                       DateTime @updatedAt @map("updated_at")
-  @@map("sudreg_pretezite_djelatnosti")
+  @@map("sudreg_entitet_pretezite_djelatnosti")
 }
 
 /// Prema OpenAPI: mbs, prijevod_skracene_tvrtke_rbr, ime, jezik_id.
@@ -337,7 +309,7 @@ model PrijevodiSkracenihTvrtki {
 
   @@id([snapshotId, mbs, prijevodSkraceneTvrtkeRbr])
   @@index([snapshotId])
-  @@map("sudreg_prijevodi_skracenih_tvrtki")
+  @@map("sudreg_entitet_prijevodi_skracenih_tvrtki")
 }
 
 /// Prema OpenAPI: mbs, prijevod_tvrtke_rbr, ime, jezik_id.
@@ -351,7 +323,7 @@ model PrijevodiTvrtki {
 
   @@id([snapshotId, mbs, prijevodTvrtkeRbr])
   @@index([snapshotId])
-  @@map("sudreg_prijevodi_tvrtki")
+  @@map("sudreg_entitet_prijevodi_tvrtki")
 }
 
 model Sjedista {
@@ -373,7 +345,7 @@ model Sjedista {
   postanskiBroj      Int?     @map("postanski_broj")
   snapshotId         BigInt?  @map("snapshot_id")
   updatedAt          DateTime @updatedAt @map("updated_at")
-  @@map("sudreg_sjedista")
+  @@map("sudreg_entitet_sjedista")
 }
 
 /// Prema OpenAPI: mbs, podruznica_rbr, sifra_zupanije, naziv_zupanije, sifra_opcine, naziv_opcine, sifra_naselja, naziv_naselja, sifra_ulice, ulica, kucni_broj, kucni_podbroj.
@@ -395,7 +367,7 @@ model SjedistaPodruznica {
 
   @@id([snapshotId, mbs, podruznicaRbr])
   @@index([snapshotId])
-  @@map("sudreg_sjedista_podruznica")
+  @@map("sudreg_entitet_sjedista_podruznica")
 }
 
 model SkraceneTvrtke {
@@ -404,7 +376,7 @@ model SkraceneTvrtke {
   ime        String?  @db.VarChar(512)
   snapshotId BigInt?  @map("snapshot_id")
   updatedAt  DateTime @updatedAt @map("updated_at")
-  @@map("sudreg_skracene_tvrtke")
+  @@map("sudreg_entitet_skracene_tvrtke")
 }
 
 /// Prema OpenAPI: mbs, podruznica_rbr, ime.
@@ -417,7 +389,7 @@ model SkraceniNaziviPodruznica {
 
   @@id([snapshotId, mbs, podruznicaRbr])
   @@index([snapshotId])
-  @@map("sudreg_skraceni_nazivi_podruznica")
+  @@map("sudreg_entitet_skraceni_nazivi_podruznica")
 }
 
 model TemeljniKapitali {
@@ -428,7 +400,7 @@ model TemeljniKapitali {
   iznos              Decimal? @db.Decimal(22, 2)
   snapshotId         BigInt?  @map("snapshot_id")
   updatedAt          DateTime @updatedAt @map("updated_at")
-  @@map("sudreg_temeljni_kapitali")
+  @@map("sudreg_entitet_temeljni_kapitali")
 }
 
 model Tvrtke {
@@ -438,7 +410,7 @@ model Tvrtke {
   naznakaImena String? @map("naznaka_imena") @db.VarChar(512)
   snapshotId  BigInt?  @map("snapshot_id")
   updatedAt   DateTime @updatedAt @map("updated_at")
-  @@map("sudreg_tvrtke")
+  @@map("sudreg_entitet_tvrtke")
 }
 
 model Sudovi {
@@ -448,14 +420,14 @@ model Sudovi {
   sifraZupanije Int?     @map("sifra_zupanije")
   nazivZupanije String?  @map("naziv_zupanije") @db.VarChar(128)
   updatedAt     DateTime @updatedAt @map("updated_at")
-  @@map("sudreg_sudovi")
+  @@map("sudreg_sifrarnik_sudovi")
 }
 
 model SudoviDeleted {
   id         BigInt   @id @default(autoincrement())
   snapshotId BigInt?  @map("snapshot_id")
   updatedAt  DateTime @updatedAt @map("updated_at")
-  @@map("sudreg_sudovi_deleted")
+  @@map("sudreg_sifrarnik_sudovi_deleted")
 }
 
 model Valute {
@@ -464,21 +436,21 @@ model Valute {
   naziv     String   @db.VarChar(128)
   drzavaId  BigInt?  @map("drzava_id")
   updatedAt DateTime @updatedAt @map("updated_at")
-  @@map("sudreg_valute")
+  @@map("sudreg_sifrarnik_valute")
 }
 
 model VrsteGfiDokumenata {
   id         BigInt   @id @default(autoincrement())
   snapshotId BigInt?  @map("snapshot_id")
   updatedAt  DateTime @updatedAt @map("updated_at")
-  @@map("sudreg_vrste_gfi_dokumenata")
+  @@map("sudreg_sifrarnik_vrste_gfi_dokumenata")
 }
 
 model VrstePostupaka {
   postupak  Int      @id
   znacenje  String   @db.VarChar(256)
   updatedAt DateTime @updatedAt @map("updated_at")
-  @@map("sudreg_vrste_postupaka")
+  @@map("sudreg_sifrarnik_vrste_postupaka")
 }
 
 model VrstePravnihOblika {
@@ -487,7 +459,7 @@ model VrstePravnihOblika {
   naziv     String   @db.VarChar(256)
   kratica   String?  @db.VarChar(32)
   updatedAt DateTime @updatedAt @map("updated_at")
-  @@map("sudreg_vrste_pravnih_oblika")
+  @@map("sudreg_sifrarnik_vrste_pravnih_oblika")
 }
 
 // --- Log svih dolaznih API poziva (method, path, status, trajanje; response skraćen) ---
@@ -504,12 +476,12 @@ model ApiRequestLog {
   createdAt      DateTime @default(now()) @map("created_at")
   @@index([path])
   @@index([createdAt])
-  @@map("api_request_log")
+  @@map("rps_sudreg_api_request_log")
 }
 
 // --- Log poziva proxy API-ja (metoda, parametri, status, trajanje, Sudreg response headers) ---
 model SudregProxyLog {
-  id                BigInt   @id @default(autoincrement())
+  id                BigInt   @id @default(autoincrement()) @map("rps_sudreg_proxy_log_id")
   endpoint          String   @db.VarChar(256)
   queryString       String?  @map("query_string") @db.VarChar(2048)
   responseStatus    Int?     @map("response_status")
@@ -525,7 +497,7 @@ model SudregProxyLog {
   createdAt         DateTime @default(now()) @map("created_at")
   @@index([endpoint])
   @@index([createdAt])
-  @@map("sudreg_proxy_log")
+  @@map("rps_sudreg_proxy_log")
 }
 
 /// Očekivani broj redova po endpointu + snapshot (iz X-Total-Count; dohvat s offset=0&limit=0).
@@ -537,31 +509,12 @@ model SudregExpectedCount {
 
   @@id([endpoint, snapshotId])
   @@index([snapshotId])
-  @@map("sudreg_expected_counts")
-}
-
-/// Jedan red: trenutni snapshot_id i redni broj synca. Ažurira se kad zbilja prođe upis (expected_counts ili sync_promjene).
-model SudregSyncState {
-  id         String   @id @default("default") @db.VarChar(32)
-  snapshotId BigInt   @map("snapshot_id")
-  redniBroj  Int      @map("redni_broj")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-
-  @@map("sudreg_sync_state")
-}
-
-/// Jedan red: zaključaj za sync (samo jedan sync odjednom; isteče nakon 2 sata).
-model SudregSyncLock {
-  id        String    @id @default("default") @db.VarChar(32)
-  lockedAt  DateTime? @map("locked_at")
-  lockedBy  String?   @map("locked_by") @db.VarChar(128)
-
-  @@map("sudreg_sync_lock")
+  @@map("rps_sudreg_expected_counts")
 }
 
 /// Audit: što se promijenilo kod UPDATE-a (stupac, stara/nova vrijednost). Punjeni iz DB triggera. snapshot_id iz retka ako postoji; izvor = tko/što je napravio promjenu (iz session app.audit_context).
 model SudregAuditPromjene {
-  id              BigInt   @id @default(autoincrement())
+  id              BigInt   @id @default(autoincrement()) @map("rps_sudreg_audit_promjene_id")
   tablica         String   @db.VarChar(128)
   redKljuc        String?  @map("red_kljuc") @db.VarChar(1024)
   stupac          String   @db.VarChar(128)
@@ -575,5 +528,5 @@ model SudregAuditPromjene {
   @@index([changedAt])
   @@index([snapshotId])
   @@index([izvor])
-  @@map("sudreg_audit_promjene")
+  @@map("rps_sudreg_audit_promjene")
 }

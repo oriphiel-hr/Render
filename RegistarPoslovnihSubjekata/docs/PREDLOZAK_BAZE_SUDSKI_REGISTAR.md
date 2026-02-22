@@ -18,50 +18,47 @@ Ovaj projekt izlaže endpoint za dohvat OAuth tokena za Sudski registar (da ga k
 
 ## Tablice u bazi (prema API-ju Sudskog registra)
 
-Baza sadrži sljedeće tablice s prefiksom **sudreg_** (raw struktura API-ja) + **sudreg_proxy_log** za log poziva:
+Baza sadrži **sudreg_entitet_*** (entiteti iz API-ja), **sudreg_sifrarnik_*** (šifrarnici), **rps_sudreg_*** (naše: sync, audit, logovi).
 
 | # | Tablica |
 |---|---------|
-| 1 | sudreg_bris_pravni_oblici |
-| 2 | sudreg_bris_registri |
-| 3 | sudreg_counts |
-| 4 | sudreg_detalji_subjekta |
-| 5 | sudreg_drzave |
-| 6 | sudreg_jezici |
-| 7 | sudreg_last_response |
-| 8 | sudreg_last_response_audit |
-| 9 | sudreg_nacionalna_klasifikacija_djelatnosti |
-| 10 | sudreg_sync_glava |
-| 11 | sudreg_promjene_stavke |
-| 12 | sudreg_statusi |
-| 13 | sudreg_subjekti |
-| 14 | sudreg_djelatnosti_podruznica |
-| 15 | sudreg_email_adrese |
-| 16 | sudreg_email_adrese_podruznica |
-| 17 | sudreg_evidencijske_djelatnosti |
-| 18 | sudreg_gfi |
-| 19 | sudreg_inozemni_registri |
-| 20 | sudreg_nazivi_podruznica |
-| 21 | sudreg_objave_priopcenja |
-| 22 | sudreg_postupci |
-| 23 | sudreg_pravni_oblici |
-| 24 | sudreg_predmeti_poslovanja |
-| 25 | sudreg_pretezite_djelatnosti |
-| 26 | sudreg_prijevodi_skracenih_tvrtki |
-| 27 | sudreg_prijevodi_tvrtki |
-| 28 | sudreg_sjedista |
-| 29 | sudreg_sjedista_podruznica |
-| 30 | sudreg_skracene_tvrtke |
-| 31 | sudreg_skraceni_nazivi_podruznica |
-| 32 | sudreg_temeljni_kapitali |
-| 33 | sudreg_tvrtke |
-| 34 | sudreg_sudovi |
-| 35 | sudreg_sudovi_deleted |
-| 36 | sudreg_valute |
-| 37 | sudreg_vrste_gfi_dokumenata |
-| 38 | sudreg_vrste_postupaka |
-| 39 | sudreg_vrste_pravnih_oblika |
-| 40 | sudreg_proxy_log |
+| 1 | sudreg_sifrarnik_bris_pravni_oblici |
+| 2 | sudreg_sifrarnik_bris_registri |
+| 3 | sudreg_entitet_counts |
+| 4 | sudreg_entitet_detalji_subjekta |
+| 5 | sudreg_sifrarnik_drzave |
+| 6 | sudreg_sifrarnik_jezici |
+| 7 | sudreg_sifrarnik_nacionalna_klasifikacija_djelatnosti |
+| 8 | rps_sudreg_sync_glava |
+| 9 | sudreg_sifrarnik_statusi |
+| 10 | sudreg_entitet_subjekti |
+| 11 | sudreg_entitet_djelatnosti_podruznica |
+| 12 | sudreg_entitet_email_adrese |
+| 13 | sudreg_entitet_email_adrese_podruznica |
+| 14 | sudreg_entitet_evidencijske_djelatnosti |
+| 15 | sudreg_entitet_gfi |
+| 16 | sudreg_entitet_inozemni_registri |
+| 17 | sudreg_entitet_nazivi_podruznica |
+| 18 | sudreg_entitet_objave_priopcenja |
+| 19 | sudreg_entitet_postupci |
+| 20 | sudreg_sifrarnik_pravni_oblici |
+| 21 | sudreg_entitet_predmeti_poslovanja |
+| 22 | sudreg_entitet_pretezite_djelatnosti |
+| 23 | sudreg_entitet_prijevodi_skracenih_tvrtki |
+| 24 | sudreg_entitet_prijevodi_tvrtki |
+| 25 | sudreg_entitet_sjedista |
+| 26 | sudreg_entitet_sjedista_podruznica |
+| 27 | sudreg_entitet_skracene_tvrtke |
+| 28 | sudreg_entitet_skraceni_nazivi_podruznica |
+| 29 | sudreg_entitet_temeljni_kapitali |
+| 30 | sudreg_entitet_tvrtke |
+| 31 | sudreg_sifrarnik_sudovi |
+| 32 | sudreg_sifrarnik_sudovi_deleted |
+| 33 | sudreg_sifrarnik_valute |
+| 34 | sudreg_sifrarnik_vrste_gfi_dokumenata |
+| 35 | sudreg_sifrarnik_vrste_postupaka |
+| 36 | sudreg_sifrarnik_vrste_pravnih_oblika |
+| 37 | rps_sudreg_proxy_log |
 
 ---
 
