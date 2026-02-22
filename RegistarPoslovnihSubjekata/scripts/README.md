@@ -7,10 +7,12 @@ Koristi **jedan** vanjski cron poziv na **cron_daily**.
 
 Endpoint **POST /api/sudreg_cron_daily** u jednom pozivu:
 
-1. pokreće **expected counts** (kao POST bez parametra),
-2. zatim **sync_promjene** u petlji dok sve stavke nisu učitane.
+1. **odmah vraća 202 Accepted** (da cron-job.org ne prekine zbog timeouta od ~30 s),
+2. u **pozadini** pokreće expected counts pa sync_promjene u petlji.
 
-Na **cron-job.org** stavi **jedan** cron job koji poziva taj URL.
+Test run na cron-job.org treba pokazati **Successful** s HTTP 202; posao se nastavlja na serveru (rezultat u Render Logs).
+
+Za čekanje rezultata u odgovoru (duže od 30 s) pozovi s **?wait=1** (npr. ručno iz preglednika).
 
 ### Korak po korak (cron-job.org)
 

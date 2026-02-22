@@ -161,6 +161,50 @@ function checkWriteApiKey(req) {
 }
 
 /**
+ * Logika cron_daily: expected_counts pa sync_promjene u petlji. Vraća summary (bez slanja odgovora).
+ * @returns {Promise<object>}
+ */
+async function runCronDailyWork() {
+  const summary = {
+    expected_counts: null,
+    sync_promjene_chunks: 0,
+    sync_promjene_done: false,
+    error: null,
+    sync_promjene_last_response: null,
+  };
+  const ec = await internalPost('/api/sudreg_expected_counts');
+  summary.expected_counts = {
+    status: ec.statusCode,
+    ok: ec.statusCode >= 200 && ec.statusCode < 400,
+    snapshots_updated: ec.body?.snapshots_updated,
+    snapshot_ids: ec.body?.snapshot_ids,
+  };
+  if (ec.statusCode >= 400) {
+    summary.error = ec.body?.message || ec.body?.error;
+    return summary;
+  }
+  const MAX_SYNC_CHUNKS = 500;
+  for (let i = 0; i < MAX_SYNC_CHUNKS; i++) {
+    const sp = await internalPost('/api/sudreg_sync_promjene');
+    summary.sync_promjene_chunks += 1;
+    if (sp.statusCode >= 400) {
+      summary.error = sp.body?.message || sp.body?.error || `HTTP ${sp.statusCode}`;
+      summary.sync_promjene_last_response = sp.body;
+      return summary;
+    }
+    const hasMore = sp.body && sp.body.has_more === true;
+    if (!hasMore) {
+      summary.sync_promjene_done = true;
+      summary.snapshot_id = sp.body?.snapshot_id;
+      summary.verified = sp.body?.verified;
+      summary.total_written_so_far = sp.body?.total_written_so_far;
+      return summary;
+    }
+  }
+  return summary;
+}
+
+/**
  * Interni POST na ovaj server (loopback). Za cron_daily koristi ovo da pozove expected_counts pa sync_promjene.
  * @param {string} path - npr. '/api/sudreg_expected_counts' ili '/api/sudreg_sync_promjene'
  * @returns {Promise<{ statusCode: number, body: any }>}
@@ -309,7 +353,7 @@ const server = http.createServer(async (req, res) => {
             ? Math.max(...snapshotsList.map((s) => (s != null && (s.id != null || s.snapshot_id != null)) ? Number(s.id ?? s.snapshot_id) : -1).filter((n) => n >= 0))
             : -1;
 
-          const runOneSnapshot = async (sid) => {
+          const runOneSnapshot = async (sid, forceSave = false) => {
             const queryForCount = `snapshot_id=${sid}&offset=0&limit=0&no_data_error=0`;
             const results = [];
             for (const ep of SUDREG_EXPECTED_COUNT_ENDPOINTS) {
@@ -327,7 +371,7 @@ const server = http.createServer(async (req, res) => {
             const allZeroOrMinusOne =
               results.length > 0 &&
               (results.every((r) => r.total_count === 0) || results.every((r) => r.total_count === -1));
-            if (allZeroOrMinusOne) return { results, saved: false };
+            if (!forceSave && allZeroOrMinusOne) return { results, saved: false };
             for (const r of results) {
               await prisma.sudregExpectedCount.upsert({
                 where: { endpoint_snapshotId: { endpoint: r.endpoint, snapshotId: BigInt(sid) } },
@@ -373,6 +417,10 @@ const server = http.createServer(async (req, res) => {
           for (const sid of snapshotIdsToFill) {
             const { saved } = await runOneSnapshot(sid);
             if (saved) summary.push(sid);
+          }
+          if (summary.length === 0 && maxSnapshotFromApi >= 0) {
+            const { saved } = await runOneSnapshot(maxSnapshotFromApi, true);
+            if (saved) summary.push(maxSnapshotFromApi);
           }
           sendJson(200, {
             range: { from: startFrom, to: maxSnapshotFromApi },
@@ -542,37 +590,29 @@ const server = http.createServer(async (req, res) => {
       sendJson(writeCheck.status, { error: 'write_forbidden', message: writeCheck.message });
       return;
     }
+    const wait = url.searchParams.get('wait') === '1' || url.searchParams.get('wait') === 'true';
+    if (!wait) {
+      sendJson(202, {
+        message: 'started',
+        background: true,
+        note: 'Work runs in background (cron-job.org timeout 30s). Add ?wait=1 to wait for result. Check server logs for result.',
+      });
+      setImmediate(() => {
+        runCronDailyWork().then((summary) => {
+          console.log('cron_daily background done', JSON.stringify(summary));
+        }).catch((err) => {
+          console.error('cron_daily background failed', err);
+        });
+      });
+      return;
+    }
     (async () => {
-      const summary = { expected_counts: null, sync_promjene_chunks: 0, sync_promjene_done: false, error: null };
       try {
-        const ec = await internalPost('/api/sudreg_expected_counts');
-        summary.expected_counts = { status: ec.statusCode, ok: ec.statusCode >= 200 && ec.statusCode < 400 };
-        if (ec.statusCode >= 400) {
-          sendJson(200, { message: 'expected_counts failed', ...summary });
-          return;
-        }
-        const MAX_SYNC_CHUNKS = 500;
-        for (let i = 0; i < MAX_SYNC_CHUNKS; i++) {
-          const sp = await internalPost('/api/sudreg_sync_promjene');
-          summary.sync_promjene_chunks += 1;
-          if (sp.statusCode >= 400) {
-            summary.error = sp.body?.message || sp.body?.error || `HTTP ${sp.statusCode}`;
-            sendJson(200, { message: 'sync_promjene error', ...summary });
-            return;
-          }
-          const hasMore = sp.body && sp.body.has_more === true;
-          if (!hasMore) {
-            summary.sync_promjene_done = true;
-            summary.snapshot_id = sp.body?.snapshot_id;
-            summary.verified = sp.body?.verified;
-            break;
-          }
-        }
+        const summary = await runCronDailyWork();
         sendJson(200, { message: 'ok', ...summary });
       } catch (err) {
         console.error('POST sudreg_cron_daily', err);
-        summary.error = err.message;
-        sendJson(500, { message: 'cron_daily_failed', ...summary });
+        sendJson(500, { message: 'cron_daily_failed', error: err.message });
       }
     })();
     return;
