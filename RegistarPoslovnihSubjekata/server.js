@@ -8,7 +8,9 @@
  * - POST /api/sudreg_sync_promjene?snapshot_id=<id> – poziv Sudreg /promjene; stanje synca u rps_sudreg_sync_glava. Zahtijeva API ključ.
  * - POST /api/sudreg_sync_entiteti?snapshot_id=<id> – sync entitetskih tablica (subjekti, tvrtke, …) za zadani snapshot. Zahtijeva API ključ.
  * - POST /api/sudreg_cron_daily – prvo expected_counts, zatim sync šifrarnika, pa sync entiteti. Za vanjski cron. 202 u pozadini; ?wait=1 čeka rezultat.
- * - GET /api/sudreg_cron_daily/status – status zadnjeg pokretanja (startedAt, finishedAt, status: idle|running|ok|error, summary).
+ * - GET /api/sudreg_cron_daily/status – status zadnjeg pokretanja (startedAt, finishedAt, status, summary, currentPhase, currentEndpoint).
+ * - POST /api/sudreg_cron_daily/stop – zaustavi tekući sync (API ključ). Tekući job prekida na sljedećem provjerom.
+ * - POST /api/sudreg_cron_daily/rollback – zaustavi sync i obriši sve podatke iz sudreg_% i rps_sudreg_% tablica (API ključ).
  */
 const http = require('http');
 const https = require('https');
@@ -86,6 +88,9 @@ let lastCronDailyRun = {
   currentPhase: null,   // 'expected_counts' | 'sync_sifrarnici' | 'sync_entiteti'
   currentEndpoint: null, // točan endpoint iz dokumentacije (npr. 'subjekti', 'drzave')
 };
+
+/** Postavi na true da tekući sync job prekine što prije (na sljedećem provjerom). */
+let cronDailyShouldStop = false;
 
 function fetchSudregToken() {
   return new Promise((resolve, reject) => {
@@ -264,6 +269,7 @@ async function runSyncSifrarnici(snapshotId) {
   const results = {};
 
   for (const endpoint of SIFRARNIK_ENDPOINTS) {
+    if (cronDailyShouldStop) return { ok: true, endpoints: results, stopped: true };
     lastCronDailyRun.currentEndpoint = endpoint;
     let glavaId = null;
     try {
@@ -278,6 +284,15 @@ async function runSyncSifrarnici(snapshotId) {
         update: { status: 'u_tijeku', vrijemePocetka: new Date() },
       });
       glavaId = glava.id;
+      const expectedRow = await prisma.sudregExpectedCount.findUnique({
+        where: { endpoint_snapshotId: { endpoint, snapshotId: BigInt(snapshotId) } },
+      });
+      if (expectedRow != null && glava.expectedCount === null) {
+        await prisma.sudregSyncGlava.update({
+          where: { id: glavaId },
+          data: { expectedCount: expectedRow.totalCount },
+        });
+      }
 
       const result = await proxySudregGet(endpoint, qs, token);
       if (result.statusCode !== 200) {
@@ -502,6 +517,7 @@ async function runSyncEntiteti(snapshotId) {
   const results = {};
 
   for (const endpoint of ENTITY_ENDPOINTS) {
+    if (cronDailyShouldStop) return { ok: true, endpoints: results, stopped: true };
     lastCronDailyRun.currentEndpoint = endpoint;
     let glavaId = null;
     let lastError = null;
@@ -525,6 +541,15 @@ async function runSyncEntiteti(snapshotId) {
         update: { status: 'u_tijeku', vrijemePocetka: new Date() },
       });
       glavaId = glava.id;
+      const expectedRow = await prisma.sudregExpectedCount.findUnique({
+        where: { endpoint_snapshotId: { endpoint, snapshotId: sid } },
+      });
+      if (expectedRow != null && glava.expectedCount === null) {
+        await prisma.sudregSyncGlava.update({
+          where: { id: glavaId },
+          data: { expectedCount: expectedRow.totalCount },
+        });
+      }
 
       let totalWritten = glava.actualCount != null ? Number(glava.actualCount) : 0;
       let offset = glava.nextOffsetToFetch != null && glava.nextOffsetToFetch >= 0
@@ -532,7 +557,17 @@ async function runSyncEntiteti(snapshotId) {
         : 0;
       let hasMore = true;
       while (hasMore) {
-        const qs = `snapshot_id=${snapshotId}&offset=${offset}&limit=${ENTITY_PAGE_SIZE}&no_data_error=0`;
+        if (cronDailyShouldStop) {
+          await prisma.sudregSyncGlava.update({
+            where: { id: glavaId },
+            data: { status: 'greska', greska: 'stopped' },
+          }).catch(() => {});
+          results[endpoint] = { rows: totalWritten, stopped: true };
+          return { ok: true, endpoints: results, stopped: true };
+        }
+        const qs = endpoint === 'subjekti'
+          ? `snapshot_id=${snapshotId}&offset=${offset}&limit=${ENTITY_PAGE_SIZE}&no_data_error=0&only_active=false`
+          : `snapshot_id=${snapshotId}&offset=${offset}&limit=${ENTITY_PAGE_SIZE}&no_data_error=0`;
         const result = await proxySudregGet(endpoint, qs, token);
         if (result.statusCode !== 200) {
           await prisma.sudregSyncGlava.update({
@@ -801,6 +836,7 @@ async function runSyncEntiteti(snapshotId) {
  */
 async function runCronDailyWork() {
   console.log('cron_daily: start');
+  cronDailyShouldStop = false;
   const summary = {
     expected_counts: null,
     sync_sifrarnici: null,
@@ -834,6 +870,13 @@ async function runCronDailyWork() {
     lastCronDailyRun.currentEndpoint = null;
     return summary;
   }
+  if (cronDailyShouldStop) {
+    console.log('cron_daily: stopped by user (after expected_counts)');
+    summary.error = 'stopped';
+    lastCronDailyRun.currentPhase = null;
+    lastCronDailyRun.currentEndpoint = null;
+    return summary;
+  }
 
   try {
     const token = await getSudregToken();
@@ -841,6 +884,8 @@ async function runCronDailyWork() {
     lastCronDailyRun.currentEndpoint = null;
     const snapshotsResult = await proxySudregGet('snapshots', '', token);
     const snapshotsList = Array.isArray(snapshotsResult.body) ? snapshotsResult.body : [];
+    // Samo zadnji (najveći) snapshot: to je trenutno stanje registra. Stariji snapshoti su povijesni;
+    // punjenje svih snapshotova bi trajalo puno duže i zahtijevalo više resursa.
     const latestSnapshotId = snapshotsList.length > 0
       ? Math.max(...snapshotsList.map((s) => (s != null && (s.id != null || s.snapshot_id != null)) ? Number(s.id ?? s.snapshot_id) : -1).filter((n) => n >= 0))
       : null;
@@ -848,13 +893,20 @@ async function runCronDailyWork() {
 
     if (latestSnapshotId != null) {
       summary.sync_sifrarnici = await runSyncSifrarnici(latestSnapshotId);
-      console.log('cron_daily: sync_sifrarnici', summary.sync_sifrarnici?.ok ? 'ok' : 'fail', summary.sync_sifrarnici?.error ?? '');
+      console.log('cron_daily: sync_sifrarnici', summary.sync_sifrarnici?.ok ? 'ok' : 'fail', summary.sync_sifrarnici?.stopped ? 'stopped' : '', summary.sync_sifrarnici?.error ?? '');
+      if (cronDailyShouldStop) {
+        summary.error = 'stopped';
+        lastCronDailyRun.currentPhase = null;
+        lastCronDailyRun.currentEndpoint = null;
+        return summary;
+      }
       await ensureDbConnection();
       lastCronDailyRun.currentPhase = 'sync_entiteti';
       lastCronDailyRun.currentEndpoint = null;
       try {
         summary.sync_entiteti = await runSyncEntiteti(latestSnapshotId);
-        console.log('cron_daily: sync_entiteti', summary.sync_entiteti?.ok ? 'ok' : 'fail', summary.sync_entiteti?.error ?? '');
+        console.log('cron_daily: sync_entiteti', summary.sync_entiteti?.ok ? 'ok' : 'fail', summary.sync_entiteti?.stopped ? 'stopped' : '', summary.sync_entiteti?.error ?? '');
+        if (summary.sync_entiteti?.stopped) summary.error = 'stopped';
       } catch (err) {
         console.error('runCronDailyWork sync_entiteti', err);
         summary.sync_entiteti = { ok: false, endpoints: {}, error: err.message };
@@ -1032,9 +1084,11 @@ const server = http.createServer(async (req, res) => {
           }
 
           const runOneSnapshot = async (sid, forceSave = false) => {
-            const queryForCount = `snapshot_id=${sid}&offset=0&limit=0&no_data_error=0`;
             const results = [];
             for (const ep of SUDREG_EXPECTED_COUNT_ENDPOINTS) {
+              const queryForCount = ep === 'subjekti'
+                ? `snapshot_id=${sid}&offset=0&limit=0&no_data_error=0&only_active=false`
+                : `snapshot_id=${sid}&offset=0&limit=0&no_data_error=0`;
               let totalCount = -1;
               try {
                 const result = await proxySudregGet(ep, queryForCount, token);
@@ -1386,6 +1440,40 @@ const server = http.createServer(async (req, res) => {
           ? 'Job još nije pokrenut ili je server restartan.'
           : undefined,
     });
+    return;
+  }
+
+  if (path === '/api/sudreg_cron_daily/stop' && method === 'POST') {
+    const writeCheck = checkWriteApiKey(req);
+    if (!writeCheck.allowed) {
+      sendJson(writeCheck.status, { error: 'write_forbidden', message: writeCheck.message });
+      return;
+    }
+    cronDailyShouldStop = true;
+    sendJson(200, { message: 'stop_requested', note: 'Tekući sync će prekinuti na sljedećem provjerom. Pollaj GET /api/sudreg_cron_daily/status.' });
+    return;
+  }
+
+  if (path === '/api/sudreg_cron_daily/rollback' && method === 'POST') {
+    const writeCheck = checkWriteApiKey(req);
+    if (!writeCheck.allowed) {
+      sendJson(writeCheck.status, { error: 'write_forbidden', message: writeCheck.message });
+      return;
+    }
+    cronDailyShouldStop = true;
+    (async () => {
+      try {
+        const sudregDeleted = await prisma.$queryRawUnsafe("SELECT * FROM public.delete_all_data_respecting_fk('public', 'sudreg_%')");
+        const rpsDeleted = await prisma.$queryRawUnsafe("SELECT * FROM public.delete_all_data_respecting_fk('public', 'rps_sudreg_%')");
+        sendJson(200, {
+          message: 'rollback_done',
+          deleted: { sudreg: sudregDeleted, rps_sudreg: rpsDeleted },
+        });
+      } catch (err) {
+        console.error('POST sudreg_cron_daily/rollback', err);
+        sendJson(500, { error: 'rollback_failed', message: err.message });
+      }
+    })();
     return;
   }
 
