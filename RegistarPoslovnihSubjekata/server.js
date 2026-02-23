@@ -59,6 +59,12 @@ const ENTITY_ENDPOINTS = [
 ];
 const ENTITY_PAGE_SIZE = 1000;
 
+/** Broj redaka po transakciji (manje = manji timeout rizik, više = manje round-tripova). */
+const SYNC_CHUNK_SIZE = 500;
+
+/** Timeout jedne transakcije u syncu (ms). Mora biti dovoljno za chunk od SYNC_CHUNK_SIZE redaka. */
+const SYNC_TX_TIMEOUT_MS = 300000;
+
 let tokenCache = { access_token: null, expiresAt: 0 };
 
 /** Je li greška zbog prekinute veze / nedostupne baze (retry ima smisla). */
@@ -145,6 +151,11 @@ async function getSudregToken() {
     expiresAt: Date.now() + (Number(json.expires_in) || 21600) * 1000,
   };
   return tokenCache.access_token;
+}
+
+/** Nakon 401 od API-ja pozovi prije ponovnog dohvata tokena. */
+function invalidateSudregToken() {
+  tokenCache = { access_token: null, expiresAt: 0 };
 }
 
 /**
@@ -264,7 +275,7 @@ function checkWriteApiKey(req) {
  * @returns {Promise<{ ok: boolean, endpoints: Record<string, { rows: number, error?: string }> }>}
  */
 async function runSyncSifrarnici(snapshotId) {
-  const token = await getSudregToken();
+  let token = await getSudregToken();
   const qs = `snapshot_id=${snapshotId}&limit=${SIFRARNIK_PAGE_SIZE}&no_data_error=0`;
   const results = {};
 
@@ -294,7 +305,12 @@ async function runSyncSifrarnici(snapshotId) {
         });
       }
 
-      const result = await proxySudregGet(endpoint, qs, token);
+      let result = await proxySudregGet(endpoint, qs, token);
+      if (result.statusCode === 401) {
+        invalidateSudregToken();
+        token = await getSudregToken();
+        result = await proxySudregGet(endpoint, qs, token);
+      }
       if (result.statusCode !== 200) {
         await prisma.sudregSyncGlava.update({
           where: { id: glavaId },
@@ -305,10 +321,12 @@ async function runSyncSifrarnici(snapshotId) {
       }
       const page = Array.isArray(result.body) ? result.body : [];
       let written = 0;
-
-      await prisma.$transaction(async (tx) => {
+      for (let start = 0; start < page.length; start += SYNC_CHUNK_SIZE) {
+        const chunk = page.slice(start, start + SYNC_CHUNK_SIZE);
+        const chunkWritten = await prisma.$transaction(async (tx) => {
+          let n = 0;
       if (endpoint === 'drzave') {
-        for (const row of page) {
+        for (const row of chunk) {
           if (row == null || row.id == null) continue;
           await tx.drzave.upsert({
             where: { id: BigInt(row.id) },
@@ -328,10 +346,10 @@ async function runSyncSifrarnici(snapshotId) {
               glavaId,
             },
           });
-          written++;
+          n++;
         }
       } else if (endpoint === 'sudovi') {
-        for (const row of page) {
+        for (const row of chunk) {
           if (row == null || row.id == null) continue;
           await tx.sudovi.upsert({
             where: { id: BigInt(row.id) },
@@ -351,10 +369,10 @@ async function runSyncSifrarnici(snapshotId) {
               glavaId,
             },
           });
-          written++;
+          n++;
         }
       } else if (endpoint === 'valute') {
-        for (const row of page) {
+        for (const row of chunk) {
           if (row == null || row.id == null) continue;
           await tx.valute.upsert({
             where: { id: BigInt(row.id) },
@@ -372,10 +390,10 @@ async function runSyncSifrarnici(snapshotId) {
               glavaId,
             },
           });
-          written++;
+          n++;
         }
       } else if (endpoint === 'vrste_pravnih_oblika') {
-        for (const row of page) {
+        for (const row of chunk) {
           if (row == null || row.id == null) continue;
           await tx.vrstePravnihOblika.upsert({
             where: { id: BigInt(row.id) },
@@ -393,10 +411,10 @@ async function runSyncSifrarnici(snapshotId) {
               glavaId,
             },
           });
-          written++;
+          n++;
         }
       } else if (endpoint === 'nacionalna_klasifikacija_djelatnosti') {
-        for (const row of page) {
+        for (const row of chunk) {
           if (row == null || row.id == null) continue;
           await tx.nacionalnaKlasifikacijaDjelatnosti.upsert({
             where: { id: BigInt(row.id) },
@@ -414,10 +432,10 @@ async function runSyncSifrarnici(snapshotId) {
               glavaId,
             },
           });
-          written++;
+          n++;
         }
       } else if (endpoint === 'vrste_postupaka') {
-        for (const row of page) {
+        for (const row of chunk) {
           if (row == null || (row.postupak == null && row.id == null)) continue;
           const postupak = row.postupak != null ? row.postupak : row.id;
           if (postupak == null) continue;
@@ -430,11 +448,11 @@ async function runSyncSifrarnici(snapshotId) {
             },
             update: { znacenje: String(row.znacenje ?? ''), glavaId },
           });
-          written++;
+          n++;
         }
       } else if (endpoint === 'bris_pravni_oblici') {
         const sid = BigInt(snapshotId);
-        for (const row of page) {
+        for (const row of chunk) {
           if (row == null || row.bris_kod == null) continue;
           await tx.brisPravniOblici.upsert({
             where: { snapshotId_brisKod: { snapshotId: sid, brisKod: String(row.bris_kod) } },
@@ -457,11 +475,11 @@ async function runSyncSifrarnici(snapshotId) {
               glavaId,
             },
           });
-          written++;
+          n++;
         }
       } else if (endpoint === 'bris_registri') {
         const sid = BigInt(snapshotId);
-        for (const row of page) {
+        for (const row of chunk) {
           if (row == null || row.identifikator == null) continue;
           await tx.brisRegistri.upsert({
             where: { snapshotId_identifikator: { snapshotId: sid, identifikator: String(row.identifikator) } },
@@ -480,15 +498,17 @@ async function runSyncSifrarnici(snapshotId) {
               glavaId,
             },
           });
-          written++;
+          n++;
         }
       }
-
-      await tx.sudregSyncGlava.update({
+          return n;
+        }, { timeout: SYNC_TX_TIMEOUT_MS });
+        written += chunkWritten;
+      }
+      await prisma.sudregSyncGlava.update({
         where: { id: glavaId },
         data: { status: 'ok', actualCount: BigInt(written), vrijemeZavrsetka: new Date() },
       });
-      }, { timeout: 120000 });
       results[endpoint] = { rows: written };
     } catch (err) {
       console.error(`sync_sifrarnici ${endpoint}`, err);
@@ -512,7 +532,7 @@ async function runSyncSifrarnici(snapshotId) {
  * @returns {Promise<{ ok: boolean, endpoints: Record<string, { rows: number, error?: string }> }>}
  */
 async function runSyncEntiteti(snapshotId) {
-  const token = await getSudregToken();
+  let token = await getSudregToken();
   const sid = BigInt(snapshotId);
   const results = {};
 
@@ -568,7 +588,12 @@ async function runSyncEntiteti(snapshotId) {
         const qs = endpoint === 'subjekti'
           ? `snapshot_id=${snapshotId}&offset=${offset}&limit=${ENTITY_PAGE_SIZE}&no_data_error=0&only_active=false`
           : `snapshot_id=${snapshotId}&offset=${offset}&limit=${ENTITY_PAGE_SIZE}&no_data_error=0`;
-        const result = await proxySudregGet(endpoint, qs, token);
+        let result = await proxySudregGet(endpoint, qs, token);
+        if (result.statusCode === 401) {
+          invalidateSudregToken();
+          token = await getSudregToken();
+          result = await proxySudregGet(endpoint, qs, token);
+        }
         if (result.statusCode !== 200) {
           await prisma.sudregSyncGlava.update({
             where: { id: glavaId },
@@ -579,16 +604,18 @@ async function runSyncEntiteti(snapshotId) {
         }
         const page = Array.isArray(result.body) ? result.body : [];
         const dataSnapGlavaBase = { snapshotId: sid, glavaId };
-
-        await prisma.$transaction(async (tx) => {
+        for (let chunkStart = 0; chunkStart < page.length; chunkStart += SYNC_CHUNK_SIZE) {
+          const chunk = page.slice(chunkStart, chunkStart + SYNC_CHUNK_SIZE);
+          const chunkWritten = await prisma.$transaction(async (tx) => {
+            let n = 0;
         if (endpoint === 'subjekti') {
-          for (let i = 0; i < page.length; i++) {
-            const row = page[i];
+          for (let i = 0; i < chunk.length; i++) {
+            const row = chunk[i];
             if (row == null || (row.mbs == null && row.id == null)) continue;
             const mbs = row.mbs != null ? BigInt(row.mbs) : BigInt(row.id);
             const upd = {
               ...dataSnapGlavaBase,
-              redniBrojUSetu: BigInt(offset + i),
+              redniBrojUSetu: BigInt(offset + chunkStart + i),
               oib: row.oib != null ? String(row.oib) : null,
               status: row.status != null ? Number(row.status) : null,
               inoPodruznica: row.ino_podruznica != null ? Number(row.ino_podruznica) : null,
@@ -609,45 +636,45 @@ async function runSyncEntiteti(snapshotId) {
             };
             const r = await tx.subjekti.updateMany({ where: { mbs }, data: upd });
             if (r.count === 0) await tx.subjekti.create({ data: { mbs, ...upd } });
-            totalWritten++;
+            n++;
           }
         } else if (endpoint === 'tvrtke') {
-          for (let i = 0; i < page.length; i++) {
-            const row = page[i];
+          for (let i = 0; i < chunk.length; i++) {
+            const row = chunk[i];
             if (row == null) continue;
             const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
             if (mbo == null) continue;
             const upd = {
               ...dataSnapGlavaBase,
-              redniBrojUSetu: BigInt(offset + i),
+              redniBrojUSetu: BigInt(offset + chunkStart + i),
               ime: row.ime != null ? String(row.ime) : null,
               naznakaImena: row.naznaka_imena != null ? String(row.naznaka_imena) : null,
             };
             const r = await tx.tvrtke.updateMany({ where: { mbo }, data: upd });
             if (r.count === 0) await tx.tvrtke.create({ data: { mbo, ...upd } });
-            totalWritten++;
+            n++;
           }
         } else if (endpoint === 'skracene_tvrtke') {
-          for (let i = 0; i < page.length; i++) {
-            const row = page[i];
+          for (let i = 0; i < chunk.length; i++) {
+            const row = chunk[i];
             if (row == null) continue;
             const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
             if (mbo == null) continue;
-            const upd = { ...dataSnapGlavaBase, redniBrojUSetu: BigInt(offset + i), ime: row.ime != null ? String(row.ime) : null };
+            const upd = { ...dataSnapGlavaBase, redniBrojUSetu: BigInt(offset + chunkStart + i), ime: row.ime != null ? String(row.ime) : null };
             const r = await tx.skraceneTvrtke.updateMany({ where: { mbo }, data: upd });
             if (r.count === 0) await tx.skraceneTvrtke.create({ data: { mbo, ...upd } });
-            totalWritten++;
+            n++;
           }
         } else if (endpoint === 'sjedista') {
-          for (let i = 0; i < page.length; i++) {
-            const row = page[i];
+          for (let i = 0; i < chunk.length; i++) {
+            const row = chunk[i];
             if (row == null) continue;
             const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
             const redniBroj = row.redni_broj != null ? Number(row.redni_broj) : 1;
             if (mbo == null) continue;
             const upd = {
               ...dataSnapGlavaBase,
-              redniBrojUSetu: BigInt(offset + i),
+              redniBrojUSetu: BigInt(offset + chunkStart + i),
               drzavaId: row.drzava_id != null ? BigInt(row.drzava_id) : null,
               sifraZupanije: row.sifra_zupanije != null ? Number(row.sifra_zupanije) : null,
               nazivZupanije: row.naziv_zupanije != null ? String(row.naziv_zupanije) : null,
@@ -664,136 +691,141 @@ async function runSyncEntiteti(snapshotId) {
             };
             const r = await tx.sjedista.updateMany({ where: { mbo, redniBroj }, data: upd });
             if (r.count === 0) await tx.sjedista.create({ data: { mbo, redniBroj, ...upd } });
-            totalWritten++;
+            n++;
           }
         } else if (endpoint === 'email_adrese') {
-          for (let i = 0; i < page.length; i++) {
-            const row = page[i];
+          for (let i = 0; i < chunk.length; i++) {
+            const row = chunk[i];
             if (row == null) continue;
             const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
             const emailRbr = row.email_adresa_rbr != null ? Number(row.email_adresa_rbr) : null;
             if (mbo == null) continue;
             const upd = {
               ...dataSnapGlavaBase,
-              redniBrojUSetu: BigInt(offset + i),
+              redniBrojUSetu: BigInt(offset + chunkStart + i),
               emailAdresaRbr: emailRbr,
               adresa: row.adresa != null ? String(row.adresa) : null,
             };
             const r = await tx.emailAdrese.updateMany({ where: { mbo, emailAdresaRbr: emailRbr }, data: upd });
             if (r.count === 0) await tx.emailAdrese.create({ data: { mbo, ...upd } });
-            totalWritten++;
+            n++;
           }
         } else if (endpoint === 'postupci') {
-          for (let i = 0; i < page.length; i++) {
-            const row = page[i];
+          for (let i = 0; i < chunk.length; i++) {
+            const row = chunk[i];
             if (row == null) continue;
             const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
             const postupak = row.postupak != null ? Number(row.postupak) : null;
             if (mbo == null) continue;
             const upd = {
               ...dataSnapGlavaBase,
-              redniBrojUSetu: BigInt(offset + i),
+              redniBrojUSetu: BigInt(offset + chunkStart + i),
               postupak,
               datumStecaja: row.datum_stecaja != null ? new Date(row.datum_stecaja) : null,
             };
             const r = await tx.postupci.updateMany({ where: { mbo, postupak }, data: upd });
             if (r.count === 0) await tx.postupci.create({ data: { mbo, ...upd } });
-            totalWritten++;
+            n++;
           }
         } else if (endpoint === 'pravni_oblici') {
-          for (let i = 0; i < page.length; i++) {
-            const row = page[i];
+          for (let i = 0; i < chunk.length; i++) {
+            const row = chunk[i];
             if (row == null) continue;
             const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
             if (mbo == null) continue;
             const upd = {
               ...dataSnapGlavaBase,
-              redniBrojUSetu: BigInt(offset + i),
+              redniBrojUSetu: BigInt(offset + chunkStart + i),
               vrstaPravnogOblikaId: row.vrsta_pravnog_oblika_id != null ? BigInt(row.vrsta_pravnog_oblika_id) : null,
             };
             const r = await tx.pravniOblici.updateMany({ where: { mbo }, data: upd });
             if (r.count === 0) await tx.pravniOblici.create({ data: { mbo, ...upd } });
-            totalWritten++;
+            n++;
           }
         } else if (endpoint === 'pretezite_djelatnosti') {
-          for (let i = 0; i < page.length; i++) {
-            const row = page[i];
+          for (let i = 0; i < chunk.length; i++) {
+            const row = chunk[i];
             if (row == null) continue;
             const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
             const redniBroj = row.redni_broj != null ? Number(row.redni_broj) : (row.djelatnost_rbr != null ? Number(row.djelatnost_rbr) : null);
             if (mbo == null) continue;
             const upd = {
               ...dataSnapGlavaBase,
-              redniBrojUSetu: BigInt(offset + i),
+              redniBrojUSetu: BigInt(offset + chunkStart + i),
               redniBroj,
               nacionalnaKlasifikacijaDjelatnostiId: row.nacionalna_klasifikacija_djelatnosti_id != null ? BigInt(row.nacionalna_klasifikacija_djelatnosti_id) : null,
               djelatnostTekst: row.djelatnost_tekst != null ? String(row.djelatnost_tekst) : null,
             };
             const r = await tx.preteziteDjelatnosti.updateMany({ where: { mbo, redniBroj }, data: upd });
             if (r.count === 0) await tx.preteziteDjelatnosti.create({ data: { mbo, ...upd } });
-            totalWritten++;
+            n++;
           }
         } else if (endpoint === 'predmeti_poslovanja') {
-          for (let i = 0; i < page.length; i++) {
-            const row = page[i];
+          for (let i = 0; i < chunk.length; i++) {
+            const row = chunk[i];
             if (row == null) continue;
             const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
             const redniBroj = row.redni_broj != null ? Number(row.redni_broj) : (row.djelatnost_rbr != null ? Number(row.djelatnost_rbr) : null);
             if (mbo == null) continue;
             const upd = {
               ...dataSnapGlavaBase,
-              redniBrojUSetu: BigInt(offset + i),
+              redniBrojUSetu: BigInt(offset + chunkStart + i),
               redniBroj,
               nacionalnaKlasifikacijaDjelatnostiId: row.nacionalna_klasifikacija_djelatnosti_id != null ? BigInt(row.nacionalna_klasifikacija_djelatnosti_id) : null,
               djelatnostTekst: row.djelatnost_tekst != null ? String(row.djelatnost_tekst) : null,
             };
             const r = await tx.predmetiPoslovanja.updateMany({ where: { mbo, redniBroj }, data: upd });
             if (r.count === 0) await tx.predmetiPoslovanja.create({ data: { mbo, ...upd } });
-            totalWritten++;
+            n++;
           }
         } else if (endpoint === 'evidencijske_djelatnosti') {
-          for (let i = 0; i < page.length; i++) {
-            const row = page[i];
+          for (let i = 0; i < chunk.length; i++) {
+            const row = chunk[i];
             if (row == null) continue;
             const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
             const redniBroj = row.redni_broj != null ? Number(row.redni_broj) : (row.djelatnost_rbr != null ? Number(row.djelatnost_rbr) : null);
             if (mbo == null) continue;
             const upd = {
               ...dataSnapGlavaBase,
-              redniBrojUSetu: BigInt(offset + i),
+              redniBrojUSetu: BigInt(offset + chunkStart + i),
               redniBroj,
               nacionalnaKlasifikacijaDjelatnostiId: row.nacionalna_klasifikacija_djelatnosti_id != null ? BigInt(row.nacionalna_klasifikacija_djelatnosti_id) : null,
               djelatnostTekst: row.djelatnost_tekst != null ? String(row.djelatnost_tekst) : null,
             };
             const r = await tx.evidencijskeDjelatnosti.updateMany({ where: { mbo, redniBroj }, data: upd });
             if (r.count === 0) await tx.evidencijskeDjelatnosti.create({ data: { mbo, ...upd } });
-            totalWritten++;
+            n++;
           }
         } else if (endpoint === 'temeljni_kapitali') {
-          for (let i = 0; i < page.length; i++) {
-            const row = page[i];
+          for (let i = 0; i < chunk.length; i++) {
+            const row = chunk[i];
             if (row == null) continue;
             const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
             const temeljniKapitalRbr = row.temeljni_kapital_rbr != null ? Number(row.temeljni_kapital_rbr) : null;
             if (mbo == null) continue;
             const upd = {
               ...dataSnapGlavaBase,
-              redniBrojUSetu: BigInt(offset + i),
+              redniBrojUSetu: BigInt(offset + chunkStart + i),
               temeljniKapitalRbr,
               valutaId: row.valuta_id != null ? BigInt(row.valuta_id) : null,
               iznos: row.iznos != null ? Number(row.iznos) : null,
             };
             const r = await tx.temeljniKapitali.updateMany({ where: { mbo, temeljniKapitalRbr }, data: upd });
             if (r.count === 0) await tx.temeljniKapitali.create({ data: { mbo, ...upd } });
-            totalWritten++;
+            n++;
           }
+        }
+
+            return n;
+          }, { timeout: SYNC_TX_TIMEOUT_MS });
+          totalWritten += chunkWritten;
         }
 
         const nextOffset = offset + page.length;
         hasMore = page.length === ENTITY_PAGE_SIZE;
         offset = nextOffset;
 
-        await tx.sudregSyncGlava.update({
+        await prisma.sudregSyncGlava.update({
           where: { id: glavaId },
           data: {
             nextOffsetToFetch: hasMore ? BigInt(nextOffset) : null,
@@ -801,7 +833,6 @@ async function runSyncEntiteti(snapshotId) {
             ...(hasMore ? {} : { status: 'ok', vrijemeZavrsetka: new Date() }),
           },
         });
-        }, { timeout: 120000 });
       }
 
       if (results[endpoint] == null) {
