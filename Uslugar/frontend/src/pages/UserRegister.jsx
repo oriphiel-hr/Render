@@ -303,7 +303,7 @@ export default function UserRegister({ onSuccess }) {
         userData.companyName = formData.companyName || undefined;
       }
 
-      const response = await api.post('/auth/register', userData);
+      const response = await api.post('/auth/register', userData, { timeout: 45000 });
       const { token, user } = response.data;
       
       // Za PROVIDER-e i USER-e koji su pravne osobe, ažuriraj ProviderProfile

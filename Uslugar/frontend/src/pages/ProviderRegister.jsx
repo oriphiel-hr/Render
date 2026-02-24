@@ -277,7 +277,7 @@ export default function ProviderRegister({ onSuccess }) {
         companyName: formData.companyName || undefined
       };
 
-      const response = await api.post('/auth/register', userData);
+      const response = await api.post('/auth/register', userData, { timeout: 45000 });
       const { token, user } = response.data;
       
       // Ažuriraj provider profil
