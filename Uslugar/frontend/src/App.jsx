@@ -431,7 +431,7 @@ export default function App(){
         </div>
         {/* Desktop Navigation */}
         <nav
-          className="hidden flex-1 items-center justify-between gap-8 lg:flex"
+          className="hidden flex-1 items-center justify-between gap-8 px-2 lg:flex"
           role="navigation"
           aria-label="Glavna navigacija"
         >
