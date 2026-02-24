@@ -606,218 +606,214 @@ async function runSyncEntiteti(snapshotId) {
         const dataSnapGlavaBase = { snapshotId: sid, glavaId };
         for (let chunkStart = 0; chunkStart < page.length; chunkStart += SYNC_CHUNK_SIZE) {
           const chunk = page.slice(chunkStart, chunkStart + SYNC_CHUNK_SIZE);
-          const chunkWritten = await prisma.$transaction(async (tx) => {
-            let n = 0;
-        if (endpoint === 'subjekti') {
-          for (let i = 0; i < chunk.length; i++) {
-            const row = chunk[i];
-            if (row == null || (row.mbs == null && row.id == null)) continue;
-            const mbs = row.mbs != null ? BigInt(row.mbs) : BigInt(row.id);
-            const upd = {
-              ...dataSnapGlavaBase,
-              redniBrojUSetu: BigInt(offset + chunkStart + i),
-              oib: row.oib != null ? String(row.oib) : null,
-              status: row.status != null ? Number(row.status) : null,
-              inoPodruznica: row.ino_podruznica != null ? Number(row.ino_podruznica) : null,
-              postupak: row.postupak != null ? Number(row.postupak) : null,
-              datumOsnivanja: row.datum_osnivanja != null ? new Date(row.datum_osnivanja) : null,
-              datumBrisanja: row.datum_brisanja != null ? new Date(row.datum_brisanja) : null,
-              sudIdNadlezan: row.sud_id_nadlezan != null ? BigInt(row.sud_id_nadlezan) : null,
-              sudIdSluzba: row.sud_id_sluzba != null ? BigInt(row.sud_id_sluzba) : null,
-              mb: row.mb != null ? Number(row.mb) : null,
-              stecajnaMasa: row.stecajna_masa != null ? Number(row.stecajna_masa) : null,
-              likvidacijskaMasa: row.likvidacijska_masa != null ? Number(row.likvidacijska_masa) : null,
-              mbsBrisanogSubjekta: row.mbs_brisanog_subjekta != null ? BigInt(row.mbs_brisanog_subjekta) : null,
-              glavnaDjelatnost: row.glavna_djelatnost != null ? Number(row.glavna_djelatnost) : null,
-              glavnaPodruznicaRbr: row.glavna_podruznica_rbr != null ? Number(row.glavna_podruznica_rbr) : null,
-              sudIdBrisanja: row.sud_id_brisanja != null ? BigInt(row.sud_id_brisanja) : null,
-              tvrtkaKodBrisanja: row.tvrtka_kod_brisanja != null ? String(row.tvrtka_kod_brisanja) : null,
-              poslovniBrojBrisanja: row.poslovni_broj_brisanja != null ? String(row.poslovni_broj_brisanja) : null,
-            };
-            const r = await tx.subjekti.updateMany({ where: { mbs }, data: upd });
-            if (r.count === 0) await tx.subjekti.create({ data: { mbs, ...upd } });
-            n++;
+          let chunkWritten = 0;
+          if (endpoint === 'subjekti') {
+            for (let i = 0; i < chunk.length; i++) {
+              const row = chunk[i];
+              if (row == null || (row.mbs == null && row.id == null)) continue;
+              const mbs = row.mbs != null ? BigInt(row.mbs) : BigInt(row.id);
+              const upd = {
+                ...dataSnapGlavaBase,
+                redniBrojUSetu: BigInt(offset + chunkStart + i),
+                oib: row.oib != null ? String(row.oib) : null,
+                status: row.status != null ? Number(row.status) : null,
+                inoPodruznica: row.ino_podruznica != null ? Number(row.ino_podruznica) : null,
+                postupak: row.postupak != null ? Number(row.postupak) : null,
+                datumOsnivanja: row.datum_osnivanja != null ? new Date(row.datum_osnivanja) : null,
+                datumBrisanja: row.datum_brisanja != null ? new Date(row.datum_brisanja) : null,
+                sudIdNadlezan: row.sud_id_nadlezan != null ? BigInt(row.sud_id_nadlezan) : null,
+                sudIdSluzba: row.sud_id_sluzba != null ? BigInt(row.sud_id_sluzba) : null,
+                mb: row.mb != null ? Number(row.mb) : null,
+                stecajnaMasa: row.stecajna_masa != null ? Number(row.stecajna_masa) : null,
+                likvidacijskaMasa: row.likvidacijska_masa != null ? Number(row.likvidacijska_masa) : null,
+                mbsBrisanogSubjekta: row.mbs_brisanog_subjekta != null ? BigInt(row.mbs_brisanog_subjekta) : null,
+                glavnaDjelatnost: row.glavna_djelatnost != null ? Number(row.glavna_djelatnost) : null,
+                glavnaPodruznicaRbr: row.glavna_podruznica_rbr != null ? Number(row.glavna_podruznica_rbr) : null,
+                sudIdBrisanja: row.sud_id_brisanja != null ? BigInt(row.sud_id_brisanja) : null,
+                tvrtkaKodBrisanja: row.tvrtka_kod_brisanja != null ? String(row.tvrtka_kod_brisanja) : null,
+                poslovniBrojBrisanja: row.poslovni_broj_brisanja != null ? String(row.poslovni_broj_brisanja) : null,
+              };
+              const r = await prisma.subjekti.updateMany({ where: { mbs }, data: upd });
+              if (r.count === 0) await prisma.subjekti.create({ data: { mbs, ...upd } });
+              chunkWritten++;
+            }
+          } else if (endpoint === 'tvrtke') {
+            for (let i = 0; i < chunk.length; i++) {
+              const row = chunk[i];
+              if (row == null) continue;
+              const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
+              if (mbo == null) continue;
+              const upd = {
+                ...dataSnapGlavaBase,
+                redniBrojUSetu: BigInt(offset + chunkStart + i),
+                ime: row.ime != null ? String(row.ime) : null,
+                naznakaImena: row.naznaka_imena != null ? String(row.naznaka_imena) : null,
+              };
+              const r = await prisma.tvrtke.updateMany({ where: { mbo }, data: upd });
+              if (r.count === 0) await prisma.tvrtke.create({ data: { mbo, ...upd } });
+              chunkWritten++;
+            }
+          } else if (endpoint === 'skracene_tvrtke') {
+            for (let i = 0; i < chunk.length; i++) {
+              const row = chunk[i];
+              if (row == null) continue;
+              const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
+              if (mbo == null) continue;
+              const upd = { ...dataSnapGlavaBase, redniBrojUSetu: BigInt(offset + chunkStart + i), ime: row.ime != null ? String(row.ime) : null };
+              const r = await prisma.skraceneTvrtke.updateMany({ where: { mbo }, data: upd });
+              if (r.count === 0) await prisma.skraceneTvrtke.create({ data: { mbo, ...upd } });
+              chunkWritten++;
+            }
+          } else if (endpoint === 'sjedista') {
+            for (let i = 0; i < chunk.length; i++) {
+              const row = chunk[i];
+              if (row == null) continue;
+              const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
+              const redniBroj = row.redni_broj != null ? Number(row.redni_broj) : 1;
+              if (mbo == null) continue;
+              const upd = {
+                ...dataSnapGlavaBase,
+                redniBrojUSetu: BigInt(offset + chunkStart + i),
+                drzavaId: row.drzava_id != null ? BigInt(row.drzava_id) : null,
+                sifraZupanije: row.sifra_zupanije != null ? Number(row.sifra_zupanije) : null,
+                nazivZupanije: row.naziv_zupanije != null ? String(row.naziv_zupanije) : null,
+                sifraOpcine: row.sifra_opcine != null ? Number(row.sifra_opcine) : null,
+                nazivOpcine: row.naziv_opcine != null ? String(row.naziv_opcine) : null,
+                sifraNaselja: row.sifra_naselja != null ? BigInt(row.sifra_naselja) : null,
+                nazivNaselja: row.naziv_naselja != null ? String(row.naziv_naselja) : null,
+                naseljeVanSifrarnika: row.naselje_van_sifrarnika != null ? String(row.naselje_van_sifrarnika) : null,
+                sifraUlice: row.sifra_ulice != null ? BigInt(row.sifra_ulice) : null,
+                ulica: row.ulica != null ? String(row.ulica) : null,
+                kucniBroj: row.kucni_broj != null ? Number(row.kucni_broj) : null,
+                kucniPodbroj: row.kucni_podbroj != null ? String(row.kucni_podbroj) : null,
+                postanskiBroj: row.postanski_broj != null ? Number(row.postanski_broj) : null,
+              };
+              const r = await prisma.sjedista.updateMany({ where: { mbo, redniBroj }, data: upd });
+              if (r.count === 0) await prisma.sjedista.create({ data: { mbo, redniBroj, ...upd } });
+              chunkWritten++;
+            }
+          } else if (endpoint === 'email_adrese') {
+            for (let i = 0; i < chunk.length; i++) {
+              const row = chunk[i];
+              if (row == null) continue;
+              const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
+              const emailRbr = row.email_adresa_rbr != null ? Number(row.email_adresa_rbr) : null;
+              if (mbo == null) continue;
+              const upd = {
+                ...dataSnapGlavaBase,
+                redniBrojUSetu: BigInt(offset + chunkStart + i),
+                emailAdresaRbr: emailRbr,
+                adresa: row.adresa != null ? String(row.adresa) : null,
+              };
+              const r = await prisma.emailAdrese.updateMany({ where: { mbo, emailAdresaRbr: emailRbr }, data: upd });
+              if (r.count === 0) await prisma.emailAdrese.create({ data: { mbo, ...upd } });
+              chunkWritten++;
+            }
+          } else if (endpoint === 'postupci') {
+            for (let i = 0; i < chunk.length; i++) {
+              const row = chunk[i];
+              if (row == null) continue;
+              const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
+              const postupak = row.postupak != null ? Number(row.postupak) : null;
+              if (mbo == null) continue;
+              const upd = {
+                ...dataSnapGlavaBase,
+                redniBrojUSetu: BigInt(offset + chunkStart + i),
+                postupak,
+                datumStecaja: row.datum_stecaja != null ? new Date(row.datum_stecaja) : null,
+              };
+              const r = await prisma.postupci.updateMany({ where: { mbo, postupak }, data: upd });
+              if (r.count === 0) await prisma.postupci.create({ data: { mbo, ...upd } });
+              chunkWritten++;
+            }
+          } else if (endpoint === 'pravni_oblici') {
+            for (let i = 0; i < chunk.length; i++) {
+              const row = chunk[i];
+              if (row == null) continue;
+              const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
+              if (mbo == null) continue;
+              const upd = {
+                ...dataSnapGlavaBase,
+                redniBrojUSetu: BigInt(offset + chunkStart + i),
+                vrstaPravnogOblikaId: row.vrsta_pravnog_oblika_id != null ? BigInt(row.vrsta_pravnog_oblika_id) : null,
+              };
+              const r = await prisma.pravniOblici.updateMany({ where: { mbo }, data: upd });
+              if (r.count === 0) await prisma.pravniOblici.create({ data: { mbo, ...upd } });
+              chunkWritten++;
+            }
+          } else if (endpoint === 'pretezite_djelatnosti') {
+            for (let i = 0; i < chunk.length; i++) {
+              const row = chunk[i];
+              if (row == null) continue;
+              const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
+              const redniBroj = row.redni_broj != null ? Number(row.redni_broj) : (row.djelatnost_rbr != null ? Number(row.djelatnost_rbr) : null);
+              if (mbo == null) continue;
+              const upd = {
+                ...dataSnapGlavaBase,
+                redniBrojUSetu: BigInt(offset + chunkStart + i),
+                redniBroj,
+                nacionalnaKlasifikacijaDjelatnostiId: row.nacionalna_klasifikacija_djelatnosti_id != null ? BigInt(row.nacionalna_klasifikacija_djelatnosti_id) : null,
+                djelatnostTekst: row.djelatnost_tekst != null ? String(row.djelatnost_tekst) : null,
+              };
+              const r = await prisma.preteziteDjelatnosti.updateMany({ where: { mbo, redniBroj }, data: upd });
+              if (r.count === 0) await prisma.preteziteDjelatnosti.create({ data: { mbo, ...upd } });
+              chunkWritten++;
+            }
+          } else if (endpoint === 'predmeti_poslovanja') {
+            for (let i = 0; i < chunk.length; i++) {
+              const row = chunk[i];
+              if (row == null) continue;
+              const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
+              const redniBroj = row.redni_broj != null ? Number(row.redni_broj) : (row.djelatnost_rbr != null ? Number(row.djelatnost_rbr) : null);
+              if (mbo == null) continue;
+              const upd = {
+                ...dataSnapGlavaBase,
+                redniBrojUSetu: BigInt(offset + chunkStart + i),
+                redniBroj,
+                nacionalnaKlasifikacijaDjelatnostiId: row.nacionalna_klasifikacija_djelatnosti_id != null ? BigInt(row.nacionalna_klasifikacija_djelatnosti_id) : null,
+                djelatnostTekst: row.djelatnost_tekst != null ? String(row.djelatnost_tekst) : null,
+              };
+              const r = await prisma.predmetiPoslovanja.updateMany({ where: { mbo, redniBroj }, data: upd });
+              if (r.count === 0) await prisma.predmetiPoslovanja.create({ data: { mbo, ...upd } });
+              chunkWritten++;
+            }
+          } else if (endpoint === 'evidencijske_djelatnosti') {
+            for (let i = 0; i < chunk.length; i++) {
+              const row = chunk[i];
+              if (row == null) continue;
+              const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
+              const redniBroj = row.redni_broj != null ? Number(row.redni_broj) : (row.djelatnost_rbr != null ? Number(row.djelatnost_rbr) : null);
+              if (mbo == null) continue;
+              const upd = {
+                ...dataSnapGlavaBase,
+                redniBrojUSetu: BigInt(offset + chunkStart + i),
+                redniBroj,
+                nacionalnaKlasifikacijaDjelatnostiId: row.nacionalna_klasifikacija_djelatnosti_id != null ? BigInt(row.nacionalna_klasifikacija_djelatnosti_id) : null,
+                djelatnostTekst: row.djelatnost_tekst != null ? String(row.djelatnost_tekst) : null,
+              };
+              const r = await prisma.evidencijskeDjelatnosti.updateMany({ where: { mbo, redniBroj }, data: upd });
+              if (r.count === 0) await prisma.evidencijskeDjelatnosti.create({ data: { mbo, ...upd } });
+              chunkWritten++;
+            }
+          } else if (endpoint === 'temeljni_kapitali') {
+            for (let i = 0; i < chunk.length; i++) {
+              const row = chunk[i];
+              if (row == null) continue;
+              const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
+              const temeljniKapitalRbr = row.temeljni_kapital_rbr != null ? Number(row.temeljni_kapital_rbr) : null;
+              if (mbo == null) continue;
+              const upd = {
+                ...dataSnapGlavaBase,
+                redniBrojUSetu: BigInt(offset + chunkStart + i),
+                temeljniKapitalRbr,
+                valutaId: row.valuta_id != null ? BigInt(row.valuta_id) : null,
+                iznos: row.iznos != null ? Number(row.iznos) : null,
+              };
+              const r = await prisma.temeljniKapitali.updateMany({ where: { mbo, temeljniKapitalRbr }, data: upd });
+              if (r.count === 0) await prisma.temeljniKapitali.create({ data: { mbo, ...upd } });
+              chunkWritten++;
+            }
           }
-        } else if (endpoint === 'tvrtke') {
-          for (let i = 0; i < chunk.length; i++) {
-            const row = chunk[i];
-            if (row == null) continue;
-            const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
-            if (mbo == null) continue;
-            const upd = {
-              ...dataSnapGlavaBase,
-              redniBrojUSetu: BigInt(offset + chunkStart + i),
-              ime: row.ime != null ? String(row.ime) : null,
-              naznakaImena: row.naznaka_imena != null ? String(row.naznaka_imena) : null,
-            };
-            const r = await tx.tvrtke.updateMany({ where: { mbo }, data: upd });
-            if (r.count === 0) await tx.tvrtke.create({ data: { mbo, ...upd } });
-            n++;
-          }
-        } else if (endpoint === 'skracene_tvrtke') {
-          for (let i = 0; i < chunk.length; i++) {
-            const row = chunk[i];
-            if (row == null) continue;
-            const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
-            if (mbo == null) continue;
-            const upd = { ...dataSnapGlavaBase, redniBrojUSetu: BigInt(offset + chunkStart + i), ime: row.ime != null ? String(row.ime) : null };
-            const r = await tx.skraceneTvrtke.updateMany({ where: { mbo }, data: upd });
-            if (r.count === 0) await tx.skraceneTvrtke.create({ data: { mbo, ...upd } });
-            n++;
-          }
-        } else if (endpoint === 'sjedista') {
-          for (let i = 0; i < chunk.length; i++) {
-            const row = chunk[i];
-            if (row == null) continue;
-            const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
-            const redniBroj = row.redni_broj != null ? Number(row.redni_broj) : 1;
-            if (mbo == null) continue;
-            const upd = {
-              ...dataSnapGlavaBase,
-              redniBrojUSetu: BigInt(offset + chunkStart + i),
-              drzavaId: row.drzava_id != null ? BigInt(row.drzava_id) : null,
-              sifraZupanije: row.sifra_zupanije != null ? Number(row.sifra_zupanije) : null,
-              nazivZupanije: row.naziv_zupanije != null ? String(row.naziv_zupanije) : null,
-              sifraOpcine: row.sifra_opcine != null ? Number(row.sifra_opcine) : null,
-              nazivOpcine: row.naziv_opcine != null ? String(row.naziv_opcine) : null,
-              sifraNaselja: row.sifra_naselja != null ? BigInt(row.sifra_naselja) : null,
-              nazivNaselja: row.naziv_naselja != null ? String(row.naziv_naselja) : null,
-              naseljeVanSifrarnika: row.naselje_van_sifrarnika != null ? String(row.naselje_van_sifrarnika) : null,
-              sifraUlice: row.sifra_ulice != null ? BigInt(row.sifra_ulice) : null,
-              ulica: row.ulica != null ? String(row.ulica) : null,
-              kucniBroj: row.kucni_broj != null ? Number(row.kucni_broj) : null,
-              kucniPodbroj: row.kucni_podbroj != null ? String(row.kucni_podbroj) : null,
-              postanskiBroj: row.postanski_broj != null ? Number(row.postanski_broj) : null,
-            };
-            const r = await tx.sjedista.updateMany({ where: { mbo, redniBroj }, data: upd });
-            if (r.count === 0) await tx.sjedista.create({ data: { mbo, redniBroj, ...upd } });
-            n++;
-          }
-        } else if (endpoint === 'email_adrese') {
-          for (let i = 0; i < chunk.length; i++) {
-            const row = chunk[i];
-            if (row == null) continue;
-            const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
-            const emailRbr = row.email_adresa_rbr != null ? Number(row.email_adresa_rbr) : null;
-            if (mbo == null) continue;
-            const upd = {
-              ...dataSnapGlavaBase,
-              redniBrojUSetu: BigInt(offset + chunkStart + i),
-              emailAdresaRbr: emailRbr,
-              adresa: row.adresa != null ? String(row.adresa) : null,
-            };
-            const r = await tx.emailAdrese.updateMany({ where: { mbo, emailAdresaRbr: emailRbr }, data: upd });
-            if (r.count === 0) await tx.emailAdrese.create({ data: { mbo, ...upd } });
-            n++;
-          }
-        } else if (endpoint === 'postupci') {
-          for (let i = 0; i < chunk.length; i++) {
-            const row = chunk[i];
-            if (row == null) continue;
-            const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
-            const postupak = row.postupak != null ? Number(row.postupak) : null;
-            if (mbo == null) continue;
-            const upd = {
-              ...dataSnapGlavaBase,
-              redniBrojUSetu: BigInt(offset + chunkStart + i),
-              postupak,
-              datumStecaja: row.datum_stecaja != null ? new Date(row.datum_stecaja) : null,
-            };
-            const r = await tx.postupci.updateMany({ where: { mbo, postupak }, data: upd });
-            if (r.count === 0) await tx.postupci.create({ data: { mbo, ...upd } });
-            n++;
-          }
-        } else if (endpoint === 'pravni_oblici') {
-          for (let i = 0; i < chunk.length; i++) {
-            const row = chunk[i];
-            if (row == null) continue;
-            const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
-            if (mbo == null) continue;
-            const upd = {
-              ...dataSnapGlavaBase,
-              redniBrojUSetu: BigInt(offset + chunkStart + i),
-              vrstaPravnogOblikaId: row.vrsta_pravnog_oblika_id != null ? BigInt(row.vrsta_pravnog_oblika_id) : null,
-            };
-            const r = await tx.pravniOblici.updateMany({ where: { mbo }, data: upd });
-            if (r.count === 0) await tx.pravniOblici.create({ data: { mbo, ...upd } });
-            n++;
-          }
-        } else if (endpoint === 'pretezite_djelatnosti') {
-          for (let i = 0; i < chunk.length; i++) {
-            const row = chunk[i];
-            if (row == null) continue;
-            const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
-            const redniBroj = row.redni_broj != null ? Number(row.redni_broj) : (row.djelatnost_rbr != null ? Number(row.djelatnost_rbr) : null);
-            if (mbo == null) continue;
-            const upd = {
-              ...dataSnapGlavaBase,
-              redniBrojUSetu: BigInt(offset + chunkStart + i),
-              redniBroj,
-              nacionalnaKlasifikacijaDjelatnostiId: row.nacionalna_klasifikacija_djelatnosti_id != null ? BigInt(row.nacionalna_klasifikacija_djelatnosti_id) : null,
-              djelatnostTekst: row.djelatnost_tekst != null ? String(row.djelatnost_tekst) : null,
-            };
-            const r = await tx.preteziteDjelatnosti.updateMany({ where: { mbo, redniBroj }, data: upd });
-            if (r.count === 0) await tx.preteziteDjelatnosti.create({ data: { mbo, ...upd } });
-            n++;
-          }
-        } else if (endpoint === 'predmeti_poslovanja') {
-          for (let i = 0; i < chunk.length; i++) {
-            const row = chunk[i];
-            if (row == null) continue;
-            const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
-            const redniBroj = row.redni_broj != null ? Number(row.redni_broj) : (row.djelatnost_rbr != null ? Number(row.djelatnost_rbr) : null);
-            if (mbo == null) continue;
-            const upd = {
-              ...dataSnapGlavaBase,
-              redniBrojUSetu: BigInt(offset + chunkStart + i),
-              redniBroj,
-              nacionalnaKlasifikacijaDjelatnostiId: row.nacionalna_klasifikacija_djelatnosti_id != null ? BigInt(row.nacionalna_klasifikacija_djelatnosti_id) : null,
-              djelatnostTekst: row.djelatnost_tekst != null ? String(row.djelatnost_tekst) : null,
-            };
-            const r = await tx.predmetiPoslovanja.updateMany({ where: { mbo, redniBroj }, data: upd });
-            if (r.count === 0) await tx.predmetiPoslovanja.create({ data: { mbo, ...upd } });
-            n++;
-          }
-        } else if (endpoint === 'evidencijske_djelatnosti') {
-          for (let i = 0; i < chunk.length; i++) {
-            const row = chunk[i];
-            if (row == null) continue;
-            const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
-            const redniBroj = row.redni_broj != null ? Number(row.redni_broj) : (row.djelatnost_rbr != null ? Number(row.djelatnost_rbr) : null);
-            if (mbo == null) continue;
-            const upd = {
-              ...dataSnapGlavaBase,
-              redniBrojUSetu: BigInt(offset + chunkStart + i),
-              redniBroj,
-              nacionalnaKlasifikacijaDjelatnostiId: row.nacionalna_klasifikacija_djelatnosti_id != null ? BigInt(row.nacionalna_klasifikacija_djelatnosti_id) : null,
-              djelatnostTekst: row.djelatnost_tekst != null ? String(row.djelatnost_tekst) : null,
-            };
-            const r = await tx.evidencijskeDjelatnosti.updateMany({ where: { mbo, redniBroj }, data: upd });
-            if (r.count === 0) await tx.evidencijskeDjelatnosti.create({ data: { mbo, ...upd } });
-            n++;
-          }
-        } else if (endpoint === 'temeljni_kapitali') {
-          for (let i = 0; i < chunk.length; i++) {
-            const row = chunk[i];
-            if (row == null) continue;
-            const mbo = row.mbs != null ? BigInt(row.mbs) : (row.mbo != null ? BigInt(row.mbo) : null);
-            const temeljniKapitalRbr = row.temeljni_kapital_rbr != null ? Number(row.temeljni_kapital_rbr) : null;
-            if (mbo == null) continue;
-            const upd = {
-              ...dataSnapGlavaBase,
-              redniBrojUSetu: BigInt(offset + chunkStart + i),
-              temeljniKapitalRbr,
-              valutaId: row.valuta_id != null ? BigInt(row.valuta_id) : null,
-              iznos: row.iznos != null ? Number(row.iznos) : null,
-            };
-            const r = await tx.temeljniKapitali.updateMany({ where: { mbo, temeljniKapitalRbr }, data: upd });
-            if (r.count === 0) await tx.temeljniKapitali.create({ data: { mbo, ...upd } });
-            n++;
-          }
-        }
-
-            return n;
-          }, { timeout: SYNC_TX_TIMEOUT_MS });
           totalWritten += chunkWritten;
         }
 
