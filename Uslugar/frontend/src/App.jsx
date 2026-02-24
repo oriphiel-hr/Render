@@ -394,12 +394,12 @@ export default function App(){
     };
   }, []);
 
-  const primaryNavBase =
-    'px-3 py-2 rounded-full text-sm font-medium transition-colors border';
-  const primaryNavActive =
-    'bg-gray-900 border-gray-900 text-white dark:bg-gray-100 dark:border-gray-100 dark:text-gray-900 shadow-sm';
-  const primaryNavInactive =
-    'border-transparent text-gray-700 hover:bg-gray-100 hover:border-gray-200 dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:border-gray-700';
+  const navLinkBase =
+    'relative px-2 py-1 text-sm font-medium transition-colors';
+  const navLinkActive =
+    'text-gray-900 dark:text-white after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:w-full after:rounded-full after:bg-emerald-500';
+  const navLinkInactive =
+    'text-gray-500 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white';
 
   return (
     <div className="p-6 max-w-5xl mx-auto min-h-screen bg-white dark:bg-gray-900 transition-colors">
@@ -412,7 +412,10 @@ export default function App(){
         Preskoči na glavni sadržaj
       </a>
 
-      <header className="flex items-center justify-between" role="banner">
+      <header
+        className="sticky top-4 z-30 mb-4 flex items-center justify-between rounded-2xl border border-gray-200 bg-white/80 px-4 py-3 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-900/80"
+        role="banner"
+      >
         <Logo size="md" />
         <div className="flex items-center gap-3">
           {token && isProviderOrBusinessUser() && <CreditsWidget />}
@@ -426,18 +429,18 @@ export default function App(){
             </button>
           ) : null}
         </div>
-      </header>
-
-      {/* NAVIGATION */}
-      <nav className="mt-6 mb-4" role="navigation" aria-label="Glavna navigacija">
         {/* Desktop Navigation */}
-        <div className="hidden lg:flex items-center gap-4">
+        <nav
+          className="hidden flex-1 items-center justify-center gap-8 lg:flex"
+          role="navigation"
+          aria-label="Glavna navigacija"
+        >
           {/* Main Navigation */}
           <button
             className={
-              primaryNavBase +
+              navLinkBase +
               ' ' +
-              (tab === 'user' ? primaryNavActive : primaryNavInactive)
+              (tab === 'user' ? navLinkActive : navLinkInactive)
             }
             onClick={() => {
               if (window.location.pathname.startsWith('/admin/')) {
@@ -449,13 +452,13 @@ export default function App(){
             aria-label="Početna stranica"
             aria-current={tab === 'user' ? 'page' : undefined}
           >
-            🏠 Početna
+            Početna
           </button>
           <button
             className={
-              primaryNavBase +
+              navLinkBase +
               ' ' +
-              (tab === 'pricing' ? primaryNavActive : primaryNavInactive)
+              (tab === 'pricing' ? navLinkActive : navLinkInactive)
             }
             onClick={() => {
               if (window.location.pathname.startsWith('/admin/')) {
@@ -467,13 +470,13 @@ export default function App(){
             aria-label="Cjenik"
             aria-current={tab === 'pricing' ? 'page' : undefined}
           >
-            💰 Cjenik
+            Cjenik
           </button>
           <button
             className={
-              primaryNavBase +
+              navLinkBase +
               ' ' +
-              (tab === 'faq' ? primaryNavActive : primaryNavInactive)
+              (tab === 'faq' ? navLinkActive : navLinkInactive)
             }
             onClick={() => {
               if (window.location.pathname.startsWith('/admin/')) {
@@ -485,13 +488,13 @@ export default function App(){
             aria-label="Često postavljana pitanja"
             aria-current={tab === 'faq' ? 'page' : undefined}
           >
-            ❓ FAQ
+            FAQ
           </button>
           <button
             className={
-              primaryNavBase +
+              navLinkBase +
               ' ' +
-              (tab === 'documentation' ? primaryNavActive : primaryNavInactive)
+              (tab === 'documentation' ? navLinkActive : navLinkInactive)
             }
             onClick={() => {
               if (window.location.pathname.startsWith('/admin/')) {
@@ -503,13 +506,13 @@ export default function App(){
             aria-label="Dokumentacija"
             aria-current={tab === 'documentation' ? 'page' : undefined}
           >
-            📚 Dokumentacija
+            Dokumentacija
           </button>
           <button
             className={
-              primaryNavBase +
+              navLinkBase +
               ' ' +
-              (tab === 'about' ? primaryNavActive : primaryNavInactive)
+              (tab === 'about' ? navLinkActive : navLinkInactive)
             }
             onClick={() => {
               if (window.location.pathname.startsWith('/admin/')) {
@@ -521,13 +524,13 @@ export default function App(){
             aria-label="O nama"
             aria-current={tab === 'about' ? 'page' : undefined}
           >
-            🏢 O nama
+            O nama
           </button>
           <button
             className={
-              primaryNavBase +
+              navLinkBase +
               ' ' +
-              (tab === 'contact' ? primaryNavActive : primaryNavInactive)
+              (tab === 'contact' ? navLinkActive : navLinkInactive)
             }
             onClick={() => {
               if (window.location.pathname.startsWith('/admin/')) {
@@ -539,13 +542,13 @@ export default function App(){
             aria-label="Kontakt"
             aria-current={tab === 'contact' ? 'page' : undefined}
           >
-            📞 Kontakt
+            Kontakt
           </button>
           <button
             className={
-              primaryNavBase +
+              navLinkBase +
               ' ' +
-              (tab === 'user-types' ? primaryNavActive : primaryNavInactive)
+              (tab === 'user-types' ? navLinkActive : navLinkInactive)
             }
             onClick={() => {
               if (window.location.pathname.startsWith('/admin/')) {
@@ -557,13 +560,13 @@ export default function App(){
             aria-label="Tipovi korisnika"
             aria-current={tab === 'user-types' ? 'page' : undefined}
           >
-            👥 Tipovi Korisnika
+            Tipovi korisnika
           </button>
           <button
             className={
-              primaryNavBase +
+              navLinkBase +
               ' ' +
-              (tab === 'user-types-flowcharts' ? primaryNavActive : primaryNavInactive)
+              (tab === 'user-types-flowcharts' ? navLinkActive : navLinkInactive)
             }
             onClick={() => {
               if (window.location.pathname.startsWith('/admin/')) {
@@ -575,7 +578,7 @@ export default function App(){
             aria-label="Dijagrami procesa"
             aria-current={tab === 'user-types-flowcharts' ? 'page' : undefined}
           >
-            📊 Dijagrami Procesa
+            Dijagrami procesa
           </button>
 
           {/* Dropdown Menus */}
@@ -828,8 +831,8 @@ export default function App(){
           >
             {isDarkMode ? '☀️' : '🌙'}
           </button>
-        </div>
-      </nav>
+        </nav>
+      </header>
 
       {/* Mobile Menu */}
       <MobileMenu 
