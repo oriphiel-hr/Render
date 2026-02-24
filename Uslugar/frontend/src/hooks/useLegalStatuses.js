@@ -12,7 +12,8 @@ export function useLegalStatuses() {
         const response = await api.get('/legal-statuses');
         setLegalStatuses(response.data);
       } catch (err) {
-        console.error('Failed to fetch legal statuses:', err);
+        const msg = err.response?.data?.message || err.response?.data?.error || err.message || String(err);
+        console.error('Failed to fetch legal statuses:', msg, err.response?.status, err.response?.data);
         setError(err);
       } finally {
         setLoading(false);

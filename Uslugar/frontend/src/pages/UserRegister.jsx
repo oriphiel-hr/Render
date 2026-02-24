@@ -109,7 +109,8 @@ export default function UserRegister({ onSuccess }) {
         const response = await api.get('/categories');
         setCategories(response.data);
       } catch (err) {
-        console.error('Error loading categories:', err);
+        const msg = err.response?.data?.message || err.response?.data?.error || err.message || String(err);
+        console.error('Error loading categories:', msg, err.response?.status);
         setError('Greška pri učitavanju kategorija');
       } finally {
         setLoadingCategories(false);
@@ -349,17 +350,22 @@ export default function UserRegister({ onSuccess }) {
       localStorage.setItem('pendingVerification', formData.email);
       
     } catch (err) {
-      console.error('Registration error:', err);
       const status = err.response?.status;
       const data = err.response?.data || {};
+      const isTimeout = err.code === 'ECONNABORTED' || err.message?.includes('timeout');
+      console.error('Registration error:', status, data, err.message || err.code);
 
       // Poseban slučaj: email već registriran (409)
       if (status === 409 && data.message) {
         setError(
           `${data.message}\n\nAko već imate račun, prijavite se ili zatražite reset lozinke.`
         );
+      } else if (isTimeout) {
+        setError(
+          'Zahtjev je istekao. Server možda nije dostupan ili je preopterećen. Pokušajte ponovno za nekoliko minuta.'
+        );
       } else {
-        const errorMsg = data.message || data.error || 'Greška pri registraciji';
+        const errorMsg = data.message || data.error || err.message || 'Greška pri registraciji';
         const errorDetails = data.details;
         setError(errorDetails ? `${errorMsg}\n\nDetalji: ${errorDetails}` : errorMsg);
       }
