@@ -44,6 +44,9 @@ export default function UserRegister({ onSuccess }) {
   const [verificationResult, setVerificationResult] = useState(null);
   const [kycDocument, setKycDocument] = useState(null);
   const [publicConsent, setPublicConsent] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState('');
+  const [resendError, setResendError] = useState('');
 
   const handleCategoryChange = (categoryId) => {
     setFormData(prev => ({
@@ -393,6 +396,36 @@ export default function UserRegister({ onSuccess }) {
                 <p className="text-xs text-gray-500 mt-2">
                   💡 Link će doći na vašu email adresu. Kopirajte cijeli link iz emaila ako button ne radi.
                 </p>
+              </div>
+
+              <div className="mt-4 flex flex-col items-center gap-2">
+                <button
+                  type="button"
+                  disabled={resendLoading}
+                  onClick={async () => {
+                    setResendError('');
+                    setResendMessage('');
+                    setResendLoading(true);
+                    try {
+                      await api.post('/auth/resend-verification', { email: formData.email });
+                      setResendMessage('Novi verifikacijski email je poslan. Provjerite inbox i spam mapu.');
+                    } catch (err) {
+                      const msg = err.response?.data?.error || 'Greška pri ponovnom slanju verifikacijskog emaila. Pokušajte ponovno.';
+                      setResendError(msg);
+                    } finally {
+                      setResendLoading(false);
+                    }
+                  }}
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {resendLoading ? 'Ponovno slanje u tijeku...' : 'Nisam dobio email – pošalji ponovo'}
+                </button>
+                {resendMessage && (
+                  <p className="text-xs text-green-700">{resendMessage}</p>
+                )}
+                {resendError && (
+                  <p className="text-xs text-red-600 whitespace-pre-line">{resendError}</p>
+                )}
               </div>
             </div>
           </div>
