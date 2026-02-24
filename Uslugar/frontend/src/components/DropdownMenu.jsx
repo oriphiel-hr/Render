@@ -26,7 +26,7 @@ const DropdownMenu = ({ title, icon, children, className = "" }) => {
         aria-haspopup="true"
         aria-label={`${title} - ${isOpen ? 'zatvori' : 'otvori'} izbornik`}
       >
-        <span className="text-base">{icon}</span>
+        {icon && <span className="text-base">{icon}</span>}
         <span>{title}</span>
         <span className={`transform transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
           ▼

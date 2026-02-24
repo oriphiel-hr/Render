@@ -584,7 +584,7 @@ export default function App(){
           {/* Dropdown Menus */}
           {!token && (
             <>
-              <DropdownMenu title="👤 Korisnik" icon="👤">
+              <DropdownMenu title="Korisnik">
                 <button
                   className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
                   onClick={() => {
@@ -611,7 +611,7 @@ export default function App(){
                 </button>
               </DropdownMenu>
 
-              <DropdownMenu title="🛠️ Usluge" icon="🛠️">
+              <DropdownMenu title="Usluge">
                 <button
                   className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
                   onClick={() => {
@@ -644,7 +644,7 @@ export default function App(){
             <>
               {/* Leadovi dropdown - samo za PROVIDER-e i USER-e koji su tvrtke/obrti */}
               {isProviderOrBusinessUser() && (
-                <DropdownMenu title="🛒 Leadovi" icon="🛒">
+                <DropdownMenu title="Leadovi">
                   <button
                     className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
                     onClick={() => { setTab('leads'); }}
