@@ -1,15 +1,29 @@
 import nodemailer from 'nodemailer';
 
-// Kreiraj transporter (koristimo Hostinger SMTP u produkciji, Mailpit za testiranje)
-// U produkciji koristite profesionalni SMTP servis (SendGrid, itd.)
-// Za testiranje koristi Mailpit varijable: MAILPIT_SMTP_HOST, MAILPIT_SMTP_PORT, MAILPIT_SMTP_USER
-// Ili standardne SMTP varijable: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS
+// Kreiraj transporter (koristimo produkcijski SMTP, Mailpit samo za lokalne/test instance)
+// Za testiranje lokalno koristi Mailpit varijable: MAILPIT_SMTP_HOST, MAILPIT_SMTP_PORT, MAILPIT_SMTP_USER
+// U produkciji (NODE_ENV === 'production') uvijek koristi standardne SMTP varijable: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS
 const createTransporter = () => {
-  // Provjeri prvo Mailpit varijable (za testiranje), pa onda standardne SMTP varijable (za produkciju)
-  const host = process.env.MAILPIT_SMTP_HOST || process.env.SMTP_HOST || 'smtp.gmail.com';
-  const port = parseInt(process.env.MAILPIT_SMTP_PORT || process.env.SMTP_PORT || '587');
-  const user = process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER;
-  const pass = process.env.MAILPIT_SMTP_PASS || process.env.SMTP_PASS;
+  const isProd = process.env.NODE_ENV === 'production';
+
+  // U produkciji ignoriraj Mailpit i koristi pravi SMTP
+  const host = isProd
+    ? (process.env.SMTP_HOST || 'smtp.gmail.com')
+    : (process.env.MAILPIT_SMTP_HOST || process.env.SMTP_HOST || 'smtp.gmail.com');
+
+  const port = parseInt(
+    isProd
+      ? (process.env.SMTP_PORT || '587')
+      : (process.env.MAILPIT_SMTP_PORT || process.env.SMTP_PORT || '587')
+  );
+
+  const user = isProd
+    ? process.env.SMTP_USER
+    : (process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER);
+
+  const pass = isProd
+    ? process.env.SMTP_PASS
+    : (process.env.MAILPIT_SMTP_PASS || process.env.SMTP_PASS);
   
   if (!user) {
     console.warn('SMTP not configured - email notifications disabled');
@@ -19,8 +33,8 @@ const createTransporter = () => {
   const isSSL = port === 465;
   
   // Mailpit ne zahtijeva autentifikaciju i koristi port 1025
-  // Detektiraj Mailpit po portu 1025 ili ako su postavljene MAILPIT_ varijable
-  const isMailpit = port === 1025 || !!process.env.MAILPIT_SMTP_HOST;
+  // Detektiraj Mailpit po portu 1025 ili ako su postavljene MAILPIT_ varijable (samo ako nismo u produkciji)
+  const isMailpit = !isProd && (port === 1025 || !!process.env.MAILPIT_SMTP_HOST);
   
   const transporterConfig = {
     host: host,
@@ -53,7 +67,7 @@ export const sendJobNotification = async (toEmail, jobTitle, jobUrl) => {
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${process.env.SMTP_USER || process.env.MAILPIT_SMTP_USER || user}>`,
       to: toEmail,
       subject: `Novi posao: ${jobTitle}`,
       html: `
@@ -77,7 +91,7 @@ export const sendOfferNotification = async (toEmail, jobTitle, providerName, off
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${process.env.SMTP_USER || process.env.MAILPIT_SMTP_USER || user}>`,
       to: toEmail,
       subject: `Nova ponuda za: ${jobTitle}`,
       html: `
@@ -101,7 +115,7 @@ export const sendOfferAcceptedNotification = async (toEmail, jobTitle, customerN
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${process.env.SMTP_USER || process.env.MAILPIT_SMTP_USER || user}>`,
       to: toEmail,
       subject: `Ponuda prihvaćena: ${jobTitle}`,
       html: `
@@ -121,7 +135,7 @@ export const sendJobCompletedEmail = async (toEmail, fullName, jobTitle) => {
   try {
     const jobsUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/#my-jobs`;
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${process.env.SMTP_USER || process.env.MAILPIT_SMTP_USER || user}>`,
       to: toEmail,
       subject: `Posao završen: ${jobTitle}`,
       html: `
