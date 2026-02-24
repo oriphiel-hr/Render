@@ -223,10 +223,29 @@ r.post('/register', async (req, res, next) => {
       });
     }
     
-    const token = signToken({ id: user.id, email: user.email, role: user.role, name: user.fullName });
+    // Izračunaj osnovne feature flagove za frontend
+    const activeSubscription = await prisma.subscription.findFirst({
+      where: { userId: user.id, status: 'ACTIVE' },
+      select: { plan: true }
+    }).catch(() => null);
+
+    const featureFlags = {
+      canUseLeads: user.role === 'PROVIDER' || !!user.legalStatusId,
+      hasActiveSubscription: !!activeSubscription,
+      subscriptionPlan: activeSubscription?.plan || null
+    };
+
+    const token = signToken({ id: user.id, email: user.email, role: user.role, name: user.fullName, ...featureFlags });
     res.json({ 
       token, 
-      user: { id: user.id, email: user.email, role: user.role, fullName: user.fullName, isVerified: user.isVerified },
+      user: { 
+        id: user.id, 
+        email: user.email, 
+        role: user.role, 
+        fullName: user.fullName, 
+        isVerified: user.isVerified,
+        ...featureFlags 
+      },
       message: 'Registracija uspješna! Provjerite email za aktivacijski link.'
     });
   } catch (e) { next(e); }
@@ -275,7 +294,18 @@ r.post('/login', async (req, res, next) => {
       }
       
       console.log('[LOGIN] Successful login for:', email, 'role:', userWithRole.role);
-      const token = signToken({ id: userWithRole.id, email: userWithRole.email, role: userWithRole.role, name: userWithRole.fullName });
+      const activeSubscription = await prisma.subscription.findFirst({
+        where: { userId: userWithRole.id, status: 'ACTIVE' },
+        select: { plan: true }
+      }).catch(() => null);
+
+      const featureFlags = {
+        canUseLeads: userWithRole.role === 'PROVIDER' || !!userWithRole.legalStatusId,
+        hasActiveSubscription: !!activeSubscription,
+        subscriptionPlan: activeSubscription?.plan || null
+      };
+
+      const token = signToken({ id: userWithRole.id, email: userWithRole.email, role: userWithRole.role, name: userWithRole.fullName, ...featureFlags });
       return res.json({ 
         token, 
         user: { 
@@ -283,7 +313,8 @@ r.post('/login', async (req, res, next) => {
           email: userWithRole.email, 
           role: userWithRole.role, 
           fullName: userWithRole.fullName, 
-          isVerified: userWithRole.isVerified 
+          isVerified: userWithRole.isVerified,
+          ...featureFlags
         } 
       });
     }
@@ -327,7 +358,18 @@ r.post('/login', async (req, res, next) => {
       // For now, we'll default to first user
       const user = validUsers[0];
       console.log('[LOGIN] Multiple users found, using first:', email, 'role:', user.role);
-      const token = signToken({ id: user.id, email: user.email, role: user.role, name: user.fullName });
+      const activeSubscription = await prisma.subscription.findFirst({
+        where: { userId: user.id, status: 'ACTIVE' },
+        select: { plan: true }
+      }).catch(() => null);
+
+      const featureFlags = {
+        canUseLeads: user.role === 'PROVIDER' || !!user.legalStatusId,
+        hasActiveSubscription: !!activeSubscription,
+        subscriptionPlan: activeSubscription?.plan || null
+      };
+
+      const token = signToken({ id: user.id, email: user.email, role: user.role, name: user.fullName, ...featureFlags });
       return res.json({ 
         token, 
         user: { 
@@ -335,7 +377,8 @@ r.post('/login', async (req, res, next) => {
           email: user.email, 
           role: user.role, 
           fullName: user.fullName, 
-          isVerified: user.isVerified 
+          isVerified: user.isVerified,
+          ...featureFlags
         } 
       });
     }
@@ -343,7 +386,19 @@ r.post('/login', async (req, res, next) => {
     // Single user, proceed with login
     const user = validUsers[0];
     console.log('[LOGIN] Successful login for:', email, 'role:', user.role);
-    const token = signToken({ id: user.id, email: user.email, role: user.role, name: user.fullName });
+
+    const activeSubscription = await prisma.subscription.findFirst({
+      where: { userId: user.id, status: 'ACTIVE' },
+      select: { plan: true }
+    }).catch(() => null);
+
+    const featureFlags = {
+      canUseLeads: user.role === 'PROVIDER' || !!user.legalStatusId,
+      hasActiveSubscription: !!activeSubscription,
+      subscriptionPlan: activeSubscription?.plan || null
+    };
+
+    const token = signToken({ id: user.id, email: user.email, role: user.role, name: user.fullName, ...featureFlags });
     
     // Track TRIAL engagement - login
     try {
@@ -360,8 +415,9 @@ r.post('/login', async (req, res, next) => {
         id: user.id, 
         email: user.email, 
         role: user.role, 
-        fullName: user.fullName, 
-        isVerified: user.isVerified 
+          fullName: user.fullName, 
+          isVerified: user.isVerified,
+          ...featureFlags
       } 
     });
   } catch (e) {

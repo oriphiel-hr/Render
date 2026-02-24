@@ -77,6 +77,22 @@ export default function App(){
     }
   };
 
+  const getUserFlags = () => {
+    if (!token) return { canUseLeads: false, hasActiveSubscription: false, subscriptionPlan: null };
+    const storedUser = localStorage.getItem('user');
+    if (!storedUser) return { canUseLeads: false, hasActiveSubscription: false, subscriptionPlan: null };
+    try {
+      const userData = JSON.parse(storedUser);
+      return {
+        canUseLeads: !!userData.canUseLeads,
+        hasActiveSubscription: !!userData.hasActiveSubscription,
+        subscriptionPlan: userData.subscriptionPlan || null
+      };
+    } catch {
+      return { canUseLeads: false, hasActiveSubscription: false, subscriptionPlan: null };
+    }
+  };
+
   // TAB: 'user' | 'admin' | 'login' | 'register-user' | 'upgrade-to-provider' | 'verify' | 'forgot-password' | 'reset-password' | 'leads' | 'my-leads' | 'roi' | 'subscription' | 'pricing' | 'providers' | 'documentation' | 'faq'
   // Note: 'register-provider' is kept in validTabs for backward compatibility but redirects to 'register-user'
   const [tab, setTab] = useState(() => {
@@ -879,12 +895,6 @@ export default function App(){
                   onClick={() => { setTab('categories'); setIsMobileMenuOpen(false); }}
                 >
                   🛠️ Kategorije ({categories.length})
-                </button>
-                <button
-                  className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300 transition-colors"
-                  onClick={() => { setTab('providers'); setIsMobileMenuOpen(false); }}
-                >
-                  👥 Pružatelji ({providers.length})
                 </button>
               </div>
             </div>
