@@ -350,10 +350,19 @@ export default function UserRegister({ onSuccess }) {
       
     } catch (err) {
       console.error('Registration error:', err);
-      const errorMsg = err.response?.data?.error || 'Greška pri registraciji';
-      const errorDetails = err.response?.data?.details;
-      
-      setError(errorDetails ? `${errorMsg}\n\nDetalji: ${errorDetails}` : errorMsg);
+      const status = err.response?.status;
+      const data = err.response?.data || {};
+
+      // Poseban slučaj: email već registriran (409)
+      if (status === 409 && data.message) {
+        setError(
+          `${data.message}\n\nAko već imate račun, prijavite se ili zatražite reset lozinke.`
+        );
+      } else {
+        const errorMsg = data.message || data.error || 'Greška pri registraciji';
+        const errorDetails = data.details;
+        setError(errorDetails ? `${errorMsg}\n\nDetalji: ${errorDetails}` : errorMsg);
+      }
     } finally {
       setLoading(false);
     }
