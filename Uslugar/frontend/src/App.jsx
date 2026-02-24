@@ -587,7 +587,7 @@ export default function App(){
             {/* Dropdown Menus */}
             {!token && (
               <>
-                <DropdownMenu title="Korisnik">
+                <DropdownMenu title="Korisnik" className={navLinkBase + ' ' + navLinkInactive}>
                   <button
                     className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
                     onClick={() => {
@@ -614,7 +614,7 @@ export default function App(){
                   </button>
                 </DropdownMenu>
 
-                <DropdownMenu title="Usluge">
+                <DropdownMenu title="Usluge" className={navLinkBase + ' ' + navLinkInactive}>
                   <button
                     className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
                     onClick={() => {
@@ -647,7 +647,7 @@ export default function App(){
               <>
                 {/* Leadovi dropdown - samo za PROVIDER-e i USER-e koji su tvrtke/obrti */}
                 {isProviderOrBusinessUser() && (
-                  <DropdownMenu title="Leadovi">
+                  <DropdownMenu title="Leadovi" className={navLinkBase + ' ' + navLinkInactive}>
                     <button
                       className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
                       onClick={() => { setTab('leads'); }}
@@ -768,7 +768,7 @@ export default function App(){
             {/* Dark Mode Toggle */}
             <button
               onClick={toggleDarkMode}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-sm text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 transition-colors"
+              className={navLinkBase + ' ' + navLinkInactive}
               title={isDarkMode ? 'Prebaci na svijetli način' : 'Prebaci na tamni način'}
               aria-label={isDarkMode ? 'Disable dark mode' : 'Enable dark mode'}
             >
