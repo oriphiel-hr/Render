@@ -350,6 +350,31 @@ class TestRunnerService {
       console.log('[TEST RUNNER] Unošu podatke...');
       logs.push('Unošenje podataka...');
 
+      // Odaberi tip korisnika (USER / PROVIDER) ako forma ima radio inpute za role
+      if (userData?.role) {
+        const roleValue = String(userData.role).toUpperCase();
+        const roleSelectors = [
+          `input[value="${roleValue}"]`,
+          `input[name="role"][value="${roleValue}"]`
+        ];
+        let roleSelected = false;
+        for (const selector of roleSelectors) {
+          try {
+            const locator = page.locator(selector).first();
+            await locator.waitFor({ state: 'visible', timeout: 3000 });
+            await locator.click();
+            logs.push(`✓ Tip korisnika odabran (${roleValue}) s selektorom: ${selector}`);
+            roleSelected = true;
+            break;
+          } catch (e) {
+            // Nastavi na sljedeći selektor
+          }
+        }
+        if (!roleSelected) {
+          logs.push(`⚠ Radio za tip korisnika (${roleValue}) nije pronađen – nastavljam bez eksplicitnog odabira`);
+        }
+      }
+
       // Generiraj jedinstven email za ovaj test (da izbjegnemo \"email already in use\")
       try {
         if (userData?.email) {
