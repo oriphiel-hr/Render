@@ -431,264 +431,267 @@ export default function App(){
         </div>
         {/* Desktop Navigation */}
         <nav
-          className="hidden flex-1 items-center justify-center gap-8 lg:flex"
+          className="hidden flex-1 items-center justify-between gap-8 lg:flex"
           role="navigation"
           aria-label="Glavna navigacija"
         >
-          {/* Main Navigation */}
-          <button
-            className={
-              navLinkBase +
-              ' ' +
-              (tab === 'user' ? navLinkActive : navLinkInactive)
-            }
-            onClick={() => {
-              if (window.location.pathname.startsWith('/admin/')) {
-                window.location.replace('/#user');
-              } else {
-                setTab('user');
+          <div className="flex items-center gap-6">
+            {/* Main Navigation */}
+            <button
+              className={
+                navLinkBase +
+                ' ' +
+                (tab === 'user' ? navLinkActive : navLinkInactive)
               }
-            }}
-            aria-label="Početna stranica"
-            aria-current={tab === 'user' ? 'page' : undefined}
-          >
-            Početna
-          </button>
-          <button
-            className={
-              navLinkBase +
-              ' ' +
-              (tab === 'pricing' ? navLinkActive : navLinkInactive)
-            }
-            onClick={() => {
-              if (window.location.pathname.startsWith('/admin/')) {
-                window.location.replace('/#pricing');
-              } else {
-                setTab('pricing');
+              onClick={() => {
+                if (window.location.pathname.startsWith('/admin/')) {
+                  window.location.replace('/#user');
+                } else {
+                  setTab('user');
+                }
+              }}
+              aria-label="Početna stranica"
+              aria-current={tab === 'user' ? 'page' : undefined}
+            >
+              Početna
+            </button>
+            <button
+              className={
+                navLinkBase +
+                ' ' +
+                (tab === 'pricing' ? navLinkActive : navLinkInactive)
               }
-            }}
-            aria-label="Cjenik"
-            aria-current={tab === 'pricing' ? 'page' : undefined}
-          >
-            Cjenik
-          </button>
-          <button
-            className={
-              navLinkBase +
-              ' ' +
-              (tab === 'faq' ? navLinkActive : navLinkInactive)
-            }
-            onClick={() => {
-              if (window.location.pathname.startsWith('/admin/')) {
-                window.location.replace('/#faq');
-              } else {
-                setTab('faq');
+              onClick={() => {
+                if (window.location.pathname.startsWith('/admin/')) {
+                  window.location.replace('/#pricing');
+                } else {
+                  setTab('pricing');
+                }
+              }}
+              aria-label="Cjenik"
+              aria-current={tab === 'pricing' ? 'page' : undefined}
+            >
+              Cjenik
+            </button>
+            <button
+              className={
+                navLinkBase +
+                ' ' +
+                (tab === 'faq' ? navLinkActive : navLinkInactive)
               }
-            }}
-            aria-label="Često postavljana pitanja"
-            aria-current={tab === 'faq' ? 'page' : undefined}
-          >
-            FAQ
-          </button>
-          <button
-            className={
-              navLinkBase +
-              ' ' +
-              (tab === 'documentation' ? navLinkActive : navLinkInactive)
-            }
-            onClick={() => {
-              if (window.location.pathname.startsWith('/admin/')) {
-                window.location.replace('/#documentation');
-              } else {
-                setTab('documentation');
+              onClick={() => {
+                if (window.location.pathname.startsWith('/admin/')) {
+                  window.location.replace('/#faq');
+                } else {
+                  setTab('faq');
+                }
+              }}
+              aria-label="Često postavljana pitanja"
+              aria-current={tab === 'faq' ? 'page' : undefined}
+            >
+              FAQ
+            </button>
+            <button
+              className={
+                navLinkBase +
+                ' ' +
+                (tab === 'documentation' ? navLinkActive : navLinkInactive)
               }
-            }}
-            aria-label="Dokumentacija"
-            aria-current={tab === 'documentation' ? 'page' : undefined}
-          >
-            Dokumentacija
-          </button>
-          <button
-            className={
-              navLinkBase +
-              ' ' +
-              (tab === 'about' ? navLinkActive : navLinkInactive)
-            }
-            onClick={() => {
-              if (window.location.pathname.startsWith('/admin/')) {
-                window.location.replace('/#about');
-              } else {
-                setTab('about');
+              onClick={() => {
+                if (window.location.pathname.startsWith('/admin/')) {
+                  window.location.replace('/#documentation');
+                } else {
+                  setTab('documentation');
+                }
+              }}
+              aria-label="Dokumentacija"
+              aria-current={tab === 'documentation' ? 'page' : undefined}
+            >
+              Dokumentacija
+            </button>
+            <button
+              className={
+                navLinkBase +
+                ' ' +
+                (tab === 'about' ? navLinkActive : navLinkInactive)
               }
-            }}
-            aria-label="O nama"
-            aria-current={tab === 'about' ? 'page' : undefined}
-          >
-            O nama
-          </button>
-          <button
-            className={
-              navLinkBase +
-              ' ' +
-              (tab === 'contact' ? navLinkActive : navLinkInactive)
-            }
-            onClick={() => {
-              if (window.location.pathname.startsWith('/admin/')) {
-                window.location.replace('/#contact');
-              } else {
-                setTab('contact');
+              onClick={() => {
+                if (window.location.pathname.startsWith('/admin/')) {
+                  window.location.replace('/#about');
+                } else {
+                  setTab('about');
+                }
+              }}
+              aria-label="O nama"
+              aria-current={tab === 'about' ? 'page' : undefined}
+            >
+              O nama
+            </button>
+            <button
+              className={
+                navLinkBase +
+                ' ' +
+                (tab === 'contact' ? navLinkActive : navLinkInactive)
               }
-            }}
-            aria-label="Kontakt"
-            aria-current={tab === 'contact' ? 'page' : undefined}
-          >
-            Kontakt
-          </button>
-          <button
-            className={
-              navLinkBase +
-              ' ' +
-              (tab === 'user-types' ? navLinkActive : navLinkInactive)
-            }
-            onClick={() => {
-              if (window.location.pathname.startsWith('/admin/')) {
-                window.location.replace('/#user-types');
-              } else {
-                setTab('user-types');
+              onClick={() => {
+                if (window.location.pathname.startsWith('/admin/')) {
+                  window.location.replace('/#contact');
+                } else {
+                  setTab('contact');
+                }
+              }}
+              aria-label="Kontakt"
+              aria-current={tab === 'contact' ? 'page' : undefined}
+            >
+              Kontakt
+            </button>
+            <button
+              className={
+                navLinkBase +
+                ' ' +
+                (tab === 'user-types' ? navLinkActive : navLinkInactive)
               }
-            }}
-            aria-label="Tipovi korisnika"
-            aria-current={tab === 'user-types' ? 'page' : undefined}
-          >
-            Tipovi korisnika
-          </button>
-          <button
-            className={
-              navLinkBase +
-              ' ' +
-              (tab === 'user-types-flowcharts' ? navLinkActive : navLinkInactive)
-            }
-            onClick={() => {
-              if (window.location.pathname.startsWith('/admin/')) {
-                window.location.replace('/#user-types-flowcharts');
-              } else {
-                setTab('user-types-flowcharts');
+              onClick={() => {
+                if (window.location.pathname.startsWith('/admin/')) {
+                  window.location.replace('/#user-types');
+                } else {
+                  setTab('user-types');
+                }
+              }}
+              aria-label="Tipovi korisnika"
+              aria-current={tab === 'user-types' ? 'page' : undefined}
+            >
+              Tipovi korisnika
+            </button>
+            <button
+              className={
+                navLinkBase +
+                ' ' +
+                (tab === 'user-types-flowcharts' ? navLinkActive : navLinkInactive)
               }
-            }}
-            aria-label="Dijagrami procesa"
-            aria-current={tab === 'user-types-flowcharts' ? 'page' : undefined}
-          >
-            Dijagrami procesa
-          </button>
+              onClick={() => {
+                if (window.location.pathname.startsWith('/admin/')) {
+                  window.location.replace('/#user-types-flowcharts');
+                } else {
+                  setTab('user-types-flowcharts');
+                }
+              }}
+              aria-label="Dijagrami procesa"
+              aria-current={tab === 'user-types-flowcharts' ? 'page' : undefined}
+            >
+              Dijagrami procesa
+            </button>
+          </div>
 
-          {/* Dropdown Menus */}
-          {!token && (
-            <>
-              <DropdownMenu title="Korisnik">
-                <button
-                  className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
-                  onClick={() => {
-                    if (window.location.pathname.startsWith('/admin/')) {
-                      window.location.replace('/#login');
-                    } else {
-                      setTab('login');
-                    }
-                  }}
-                >
-                  🔑 Prijava
-                </button>
-                <button
-                  className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
-                  onClick={() => {
-                    if (window.location.pathname.startsWith('/admin/')) {
-                      window.location.replace('/#register-user');
-                    } else {
-                      setTab('register-user');
-                    }
-                  }}
-                >
-                  👤 Registracija
-                </button>
-              </DropdownMenu>
-
-              <DropdownMenu title="Usluge">
-                <button
-                  className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
-                  onClick={() => {
-                    if (window.location.pathname.startsWith('/admin/')) {
-                      window.location.replace('/#categories');
-                    } else {
-                      setTab('categories');
-                    }
-                  }}
-                >
-                  🛠️ Kategorije ({categories.length})
-                </button>
-                <button
-                  className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
-                  onClick={() => {
-                    if (window.location.pathname.startsWith('/admin/')) {
-                      window.location.replace('/#providers');
-                    } else {
-                      setTab('providers');
-                    }
-                  }}
-                >
-                  👥 Pružatelji ({providers.length})
-                </button>
-              </DropdownMenu>
-            </>
-          )}
-
-          {token && (
-            <>
-              {/* Leadovi dropdown - samo za PROVIDER-e i USER-e koji su tvrtke/obrti */}
-              {isProviderOrBusinessUser() && (
-                <DropdownMenu title="Leadovi">
+          <div className="flex items-center gap-4">
+            {/* Dropdown Menus */}
+            {!token && (
+              <>
+                <DropdownMenu title="Korisnik">
                   <button
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
-                    onClick={() => { setTab('leads'); }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
+                    onClick={() => {
+                      if (window.location.pathname.startsWith('/admin/')) {
+                        window.location.replace('/#login');
+                      } else {
+                        setTab('login');
+                      }
+                    }}
                   >
-                    🛒 Leadovi
+                    🔑 Prijava
                   </button>
                   <button
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
-                    onClick={() => { setTab('my-leads'); }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
+                    onClick={() => {
+                      if (window.location.pathname.startsWith('/admin/')) {
+                        window.location.replace('/#register-user');
+                      } else {
+                        setTab('register-user');
+                      }
+                    }}
                   >
-                    📋 Moji Leadovi
-                  </button>
-                  <button
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
-                    onClick={() => { setTab('team-locations'); }}
-                  >
-                    📍 Tim Lokacije
-                  </button>
-                  <button
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
-                    onClick={() => { setTab('roi'); }}
-                  >
-                    📊 ROI
-                  </button>
-                  <button
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
-                    onClick={() => { setTab('subscription'); }}
-                  >
-                    💳 Pretplata
-                  </button>
-                  <button
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
-                    onClick={() => { setTab('invoices'); }}
-                  >
-                    📄 Fakture
-                  </button>
-                  <button
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
-                    onClick={() => { setTab('director'); }}
-                  >
-                    👔 Direktor Dashboard
+                    👤 Registracija
                   </button>
                 </DropdownMenu>
-              )}
+
+                <DropdownMenu title="Usluge">
+                  <button
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
+                    onClick={() => {
+                      if (window.location.pathname.startsWith('/admin/')) {
+                        window.location.replace('/#categories');
+                      } else {
+                        setTab('categories');
+                      }
+                    }}
+                  >
+                    🛠️ Kategorije ({categories.length})
+                  </button>
+                  <button
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
+                    onClick={() => {
+                      if (window.location.pathname.startsWith('/admin/')) {
+                        window.location.replace('/#providers');
+                      } else {
+                        setTab('providers');
+                      }
+                    }}
+                  >
+                    👥 Pružatelji ({providers.length})
+                  </button>
+                </DropdownMenu>
+              </>
+            )}
+
+            {token && (
+              <>
+                {/* Leadovi dropdown - samo za PROVIDER-e i USER-e koji su tvrtke/obrti */}
+                {isProviderOrBusinessUser() && (
+                  <DropdownMenu title="Leadovi">
+                    <button
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                      onClick={() => { setTab('leads'); }}
+                    >
+                      🛒 Leadovi
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                      onClick={() => { setTab('my-leads'); }}
+                    >
+                      📋 Moji Leadovi
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                      onClick={() => { setTab('team-locations'); }}
+                    >
+                      📍 Tim Lokacije
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                      onClick={() => { setTab('roi'); }}
+                    >
+                      📊 ROI
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                      onClick={() => { setTab('subscription'); }}
+                    >
+                      💳 Pretplata
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                      onClick={() => { setTab('invoices'); }}
+                    >
+                      📄 Fakture
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                      onClick={() => { setTab('director'); }}
+                    >
+                      👔 Direktor Dashboard
+                    </button>
+                  </DropdownMenu>
+                )}
 
               {/* Korisnik usluge linkovi - samo za USER-e bez legalStatusId */}
               {token && !isProviderOrBusinessUser() && (
@@ -760,17 +763,18 @@ export default function App(){
                 </button>
               )}
             </>
-          )}
+            )}
 
-          {/* Dark Mode Toggle */}
-          <button
-            onClick={toggleDarkMode}
-            className="ml-4 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-sm text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 transition-colors"
-            title={isDarkMode ? 'Prebaci na svijetli način' : 'Prebaci na tamni način'}
-            aria-label={isDarkMode ? 'Disable dark mode' : 'Enable dark mode'}
-          >
-            {isDarkMode ? '☀️' : '🌙'}
-          </button>
+            {/* Dark Mode Toggle */}
+            <button
+              onClick={toggleDarkMode}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-sm text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 transition-colors"
+              title={isDarkMode ? 'Prebaci na svijetli način' : 'Prebaci na tamni način'}
+              aria-label={isDarkMode ? 'Disable dark mode' : 'Enable dark mode'}
+            >
+              {isDarkMode ? '☀️' : '🌙'}
+            </button>
+          </div>
           
           {/* Admin Panel - skriven, pristup preko Ctrl+Shift+A ili #adm */}
         </nav>
