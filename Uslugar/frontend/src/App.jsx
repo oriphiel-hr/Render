@@ -41,6 +41,7 @@ import OfferForm from './components/OfferForm';
 // Navigation components
 import DropdownMenu from './components/DropdownMenu';
 import MobileMenu from './components/MobileMenu';
+import Logo from './components/Logo';
 import { useDarkMode } from './contexts/DarkModeContext.jsx';
 
 export function useAuth() {
@@ -393,6 +394,13 @@ export default function App(){
     };
   }, []);
 
+  const primaryNavBase =
+    'px-3 py-2 rounded-full text-sm font-medium transition-colors border';
+  const primaryNavActive =
+    'bg-gray-900 border-gray-900 text-white dark:bg-gray-100 dark:border-gray-100 dark:text-gray-900 shadow-sm';
+  const primaryNavInactive =
+    'border-transparent text-gray-700 hover:bg-gray-100 hover:border-gray-200 dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:border-gray-700';
+
   return (
     <div className="p-6 max-w-5xl mx-auto min-h-screen bg-white dark:bg-gray-900 transition-colors">
       {/* Skip to main content link for screen readers */}
@@ -405,9 +413,7 @@ export default function App(){
       </a>
 
       <header className="flex items-center justify-between" role="banner">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Uslugar <span className="text-green-600 dark:text-green-400">EXCLUSIVE</span>
-        </h1>
+        <Logo size="md" />
         <div className="flex items-center gap-3">
           {token && isProviderOrBusinessUser() && <CreditsWidget />}
           {token ? (
@@ -428,7 +434,11 @@ export default function App(){
         <div className="hidden lg:flex items-center gap-4">
           {/* Main Navigation */}
           <button
-            className={'px-3 py-2 border rounded transition-colors ' + (tab==='user' ? 'bg-gray-900 dark:bg-gray-700 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-800 dark:border-gray-600 dark:text-gray-300')}
+            className={
+              primaryNavBase +
+              ' ' +
+              (tab === 'user' ? primaryNavActive : primaryNavInactive)
+            }
             onClick={() => {
               if (window.location.pathname.startsWith('/admin/')) {
                 window.location.replace('/#user');
@@ -442,7 +452,11 @@ export default function App(){
             🏠 Početna
           </button>
           <button
-            className={'px-3 py-2 border rounded transition-colors ' + (tab==='pricing' ? 'bg-orange-600 text-white' : 'border-orange-600 text-orange-600 hover:bg-orange-50 dark:border-orange-500 dark:text-orange-400 dark:hover:bg-orange-900/20')}
+            className={
+              primaryNavBase +
+              ' ' +
+              (tab === 'pricing' ? primaryNavActive : primaryNavInactive)
+            }
             onClick={() => {
               if (window.location.pathname.startsWith('/admin/')) {
                 window.location.replace('/#pricing');
@@ -456,7 +470,11 @@ export default function App(){
             💰 Cjenik
           </button>
           <button
-            className={'px-3 py-2 border rounded transition-colors ' + (tab==='faq' ? 'bg-purple-600 text-white' : 'border-purple-600 text-purple-600 hover:bg-purple-50 dark:border-purple-500 dark:text-purple-400 dark:hover:bg-purple-900/20')}
+            className={
+              primaryNavBase +
+              ' ' +
+              (tab === 'faq' ? primaryNavActive : primaryNavInactive)
+            }
             onClick={() => {
               if (window.location.pathname.startsWith('/admin/')) {
                 window.location.replace('/#faq');
@@ -470,7 +488,11 @@ export default function App(){
             ❓ FAQ
           </button>
           <button
-            className={'px-3 py-2 border rounded transition-colors ' + (tab==='documentation' ? 'bg-indigo-600 text-white' : 'border-indigo-600 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-500 dark:text-indigo-400 dark:hover:bg-indigo-900/20')}
+            className={
+              primaryNavBase +
+              ' ' +
+              (tab === 'documentation' ? primaryNavActive : primaryNavInactive)
+            }
             onClick={() => {
               if (window.location.pathname.startsWith('/admin/')) {
                 window.location.replace('/#documentation');
@@ -484,7 +506,11 @@ export default function App(){
             📚 Dokumentacija
           </button>
           <button
-            className={'px-3 py-2 border rounded transition-colors ' + (tab==='about' ? 'bg-green-600 text-white' : 'border-green-600 text-green-600 hover:bg-green-50 dark:border-green-500 dark:text-green-400 dark:hover:bg-green-900/20')}
+            className={
+              primaryNavBase +
+              ' ' +
+              (tab === 'about' ? primaryNavActive : primaryNavInactive)
+            }
             onClick={() => {
               if (window.location.pathname.startsWith('/admin/')) {
                 window.location.replace('/#about');
@@ -498,7 +524,11 @@ export default function App(){
             🏢 O nama
           </button>
           <button
-            className={'px-3 py-2 border rounded transition-colors ' + (tab==='contact' ? 'bg-blue-600 text-white' : 'border-blue-600 text-blue-600 hover:bg-blue-50 dark:border-blue-500 dark:text-blue-400 dark:hover:bg-blue-900/20')}
+            className={
+              primaryNavBase +
+              ' ' +
+              (tab === 'contact' ? primaryNavActive : primaryNavInactive)
+            }
             onClick={() => {
               if (window.location.pathname.startsWith('/admin/')) {
                 window.location.replace('/#contact');
@@ -512,7 +542,11 @@ export default function App(){
             📞 Kontakt
           </button>
           <button
-            className={'px-3 py-2 border rounded transition-colors ' + (tab==='user-types' ? 'bg-teal-600 text-white' : 'border-teal-600 text-teal-600 hover:bg-teal-50 dark:border-teal-500 dark:text-teal-400 dark:hover:bg-teal-900/20')}
+            className={
+              primaryNavBase +
+              ' ' +
+              (tab === 'user-types' ? primaryNavActive : primaryNavInactive)
+            }
             onClick={() => {
               if (window.location.pathname.startsWith('/admin/')) {
                 window.location.replace('/#user-types');
@@ -526,7 +560,11 @@ export default function App(){
             👥 Tipovi Korisnika
           </button>
           <button
-            className={'px-3 py-2 border rounded transition-colors ' + (tab==='user-types-flowcharts' ? 'bg-indigo-600 text-white' : 'border-indigo-600 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-500 dark:text-indigo-400 dark:hover:bg-indigo-900/20')}
+            className={
+              primaryNavBase +
+              ' ' +
+              (tab === 'user-types-flowcharts' ? primaryNavActive : primaryNavInactive)
+            }
             onClick={() => {
               if (window.location.pathname.startsWith('/admin/')) {
                 window.location.replace('/#user-types-flowcharts');
