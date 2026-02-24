@@ -495,42 +495,6 @@ export default function App(){
               className={
                 navLinkBase +
                 ' ' +
-                (tab === 'documentation' ? navLinkActive : navLinkInactive)
-              }
-              onClick={() => {
-                if (window.location.pathname.startsWith('/admin/')) {
-                  window.location.replace('/#documentation');
-                } else {
-                  setTab('documentation');
-                }
-              }}
-              aria-label="Dokumentacija"
-              aria-current={tab === 'documentation' ? 'page' : undefined}
-            >
-              Dokumentacija
-            </button>
-            <button
-              className={
-                navLinkBase +
-                ' ' +
-                (tab === 'about' ? navLinkActive : navLinkInactive)
-              }
-              onClick={() => {
-                if (window.location.pathname.startsWith('/admin/')) {
-                  window.location.replace('/#about');
-                } else {
-                  setTab('about');
-                }
-              }}
-              aria-label="O nama"
-              aria-current={tab === 'about' ? 'page' : undefined}
-            >
-              O nama
-            </button>
-            <button
-              className={
-                navLinkBase +
-                ' ' +
                 (tab === 'contact' ? navLinkActive : navLinkInactive)
               }
               onClick={() => {
@@ -545,42 +509,57 @@ export default function App(){
             >
               Kontakt
             </button>
-            <button
-              className={
-                navLinkBase +
-                ' ' +
-                (tab === 'user-types' ? navLinkActive : navLinkInactive)
-              }
-              onClick={() => {
-                if (window.location.pathname.startsWith('/admin/')) {
-                  window.location.replace('/#user-types');
-                } else {
-                  setTab('user-types');
-                }
-              }}
-              aria-label="Tipovi korisnika"
-              aria-current={tab === 'user-types' ? 'page' : undefined}
-            >
-              Tipovi korisnika
-            </button>
-            <button
-              className={
-                navLinkBase +
-                ' ' +
-                (tab === 'user-types-flowcharts' ? navLinkActive : navLinkInactive)
-              }
-              onClick={() => {
-                if (window.location.pathname.startsWith('/admin/')) {
-                  window.location.replace('/#user-types-flowcharts');
-                } else {
-                  setTab('user-types-flowcharts');
-                }
-              }}
-              aria-label="Dijagrami procesa"
-              aria-current={tab === 'user-types-flowcharts' ? 'page' : undefined}
-            >
-              Dijagrami procesa
-            </button>
+            {/* Secondary pages grouped u dropdown */}
+            <DropdownMenu title="Više" className={navLinkBase + ' ' + navLinkInactive}>
+              <button
+                className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 transition-colors duration-150"
+                onClick={() => {
+                  if (window.location.pathname.startsWith('/admin/')) {
+                    window.location.replace('/#documentation');
+                  } else {
+                    setTab('documentation');
+                  }
+                }}
+              >
+                📚 Dokumentacija
+              </button>
+              <button
+                className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 transition-colors duration-150"
+                onClick={() => {
+                  if (window.location.pathname.startsWith('/admin/')) {
+                    window.location.replace('/#about');
+                  } else {
+                    setTab('about');
+                  }
+                }}
+              >
+                🏢 O nama
+              </button>
+              <button
+                className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 transition-colors duration-150"
+                onClick={() => {
+                  if (window.location.pathname.startsWith('/admin/')) {
+                    window.location.replace('/#user-types');
+                  } else {
+                    setTab('user-types');
+                  }
+                }}
+              >
+                👥 Tipovi korisnika
+              </button>
+              <button
+                className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 transition-colors duration-150"
+                onClick={() => {
+                  if (window.location.pathname.startsWith('/admin/')) {
+                    window.location.replace('/#user-types-flowcharts');
+                  } else {
+                    setTab('user-types-flowcharts');
+                  }
+                }}
+              >
+                📊 Dijagrami procesa
+              </button>
+            </DropdownMenu>
           </div>
 
           <div className="flex items-center gap-4">
