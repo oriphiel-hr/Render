@@ -765,7 +765,7 @@ export default function App(){
           {/* Dark Mode Toggle */}
           <button
             onClick={toggleDarkMode}
-            className="px-3 py-2 border rounded dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 hover:bg-gray-100 transition-colors"
+            className="ml-4 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-sm text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 transition-colors"
             title={isDarkMode ? 'Prebaci na svijetli način' : 'Prebaci na tamni način'}
             aria-label={isDarkMode ? 'Disable dark mode' : 'Enable dark mode'}
           >
@@ -825,7 +825,7 @@ export default function App(){
           {/* Dark Mode Toggle - Mobile */}
           <button
             onClick={toggleDarkMode}
-            className="px-3 py-2 border rounded dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 hover:bg-gray-100 transition-colors"
+            className="ml-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-sm text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 transition-colors"
             title={isDarkMode ? 'Prebaci na svijetli način' : 'Prebaci na tamni način'}
             aria-label={isDarkMode ? 'Disable dark mode' : 'Enable dark mode'}
           >

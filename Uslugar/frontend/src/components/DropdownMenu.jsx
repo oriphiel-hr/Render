@@ -21,12 +21,12 @@ const DropdownMenu = ({ title, icon, children, className = "" }) => {
     <div className={`relative ${className}`} ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 border rounded hover:bg-gray-100 dark:hover:bg-gray-800 dark:border-gray-600 dark:text-gray-300 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+        className="flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
         aria-expanded={isOpen}
         aria-haspopup="true"
         aria-label={`${title} - ${isOpen ? 'zatvori' : 'otvori'} izbornik`}
       >
-        <span>{icon}</span>
+        <span className="text-base">{icon}</span>
         <span>{title}</span>
         <span className={`transform transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
           ▼
