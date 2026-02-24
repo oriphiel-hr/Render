@@ -413,7 +413,7 @@ export default function App(){
       </a>
 
       <header
-        className="sticky top-4 z-30 mb-4 flex items-center justify-between rounded-2xl border border-gray-200 bg-white/80 px-4 py-3 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-900/80"
+        className="sticky top-4 z-30 mb-4 flex w-full items-center justify-between rounded-2xl border border-gray-200 bg-white/80 px-4 py-3 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-900/80"
         role="banner"
       >
         <Logo size="md" />
