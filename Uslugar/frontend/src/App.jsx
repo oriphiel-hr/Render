@@ -771,9 +771,9 @@ export default function App(){
           >
             {isDarkMode ? '☀️' : '🌙'}
           </button>
-
+          
           {/* Admin Panel - skriven, pristup preko Ctrl+Shift+A ili #adm */}
-        </div>
+        </nav>
 
         {/* Mobile Navigation */}
         <div className="lg:hidden flex items-center justify-between">
@@ -831,7 +831,7 @@ export default function App(){
           >
             {isDarkMode ? '☀️' : '🌙'}
           </button>
-        </nav>
+        </div>
       </header>
 
       {/* Mobile Menu */}
