@@ -227,15 +227,18 @@ export default function UserRegister({ onSuccess }) {
         return;
       }
 
+      // Ako tip korisnika nije eksplicitno odabran (npr. automatski test), pokušaj ga detektirati iz podataka
+      const effectiveUserType = userType || ((formData.legalStatusId || formData.taxId) ? 'PROVIDER' : 'USER');
+
       // VALIDACIJA: Za PROVIDER-e su kategorije OBAVEZNE
-      if (userType === 'PROVIDER' && formData.categoryIds.length === 0) {
+      if (effectiveUserType === 'PROVIDER' && formData.categoryIds.length === 0) {
         setError('Morate odabrati minimalno 1 kategoriju usluga kojima se bavite.');
         setLoading(false);
         return;
       }
 
       // VALIDACIJA: Pravni status je OBAVEZAN za PROVIDER-e i USER-e koji su pravne osobe
-      if (userType === 'PROVIDER' || (userType === 'USER' && isCompany)) {
+      if (effectiveUserType === 'PROVIDER' || (effectiveUserType === 'USER' && isCompany)) {
         if (!formData.legalStatusId) {
           setError('Pravni status je obavezan. Odaberite pravni oblik vašeg poslovanja.');
           setLoading(false);
@@ -273,7 +276,7 @@ export default function UserRegister({ onSuccess }) {
       }
       
       // VALIDACIJA: Za USER-e koji su pravne osobe - obavezna izjava
-      if (userType === 'USER' && isCompany && !publicConsent) {
+      if (effectiveUserType === 'USER' && isCompany && !publicConsent) {
         setError('Morate potvrditi izjavu o odgovornosti za točnost OIB-a i status poslovnog subjekta.');
         setLoading(false);
         return;
@@ -284,13 +287,13 @@ export default function UserRegister({ onSuccess }) {
         email: formData.email,
         password: formData.password,
         fullName: formData.fullName,
-        role: userType || 'USER', // Koristi odabrani userType
+        role: effectiveUserType, // Koristi odabrani ili detektirani tip
         phone: formData.phone,
         city: formData.city
       };
       
       // Dodaj legalStatusId, taxId, companyName samo ako je PROVIDER ili USER koji je pravna osoba
-      if (userType === 'PROVIDER' || (userType === 'USER' && isCompany)) {
+      if (effectiveUserType === 'PROVIDER' || (effectiveUserType === 'USER' && isCompany)) {
         userData.legalStatusId = formData.legalStatusId || undefined;
         userData.taxId = formData.taxId || undefined;
         userData.companyName = formData.companyName || undefined;
@@ -300,7 +303,7 @@ export default function UserRegister({ onSuccess }) {
       const { token, user } = response.data;
       
       // Za PROVIDER-e i USER-e koji su pravne osobe, ažuriraj ProviderProfile
-      if (userType === 'PROVIDER' || (userType === 'USER' && isCompany)) {
+      if (effectiveUserType === 'PROVIDER' || (effectiveUserType === 'USER' && isCompany)) {
         const profileData = {};
         if (formData.bio) profileData.bio = formData.bio;
         if (formData.specialties) profileData.specialties = formData.specialties.split(',').map(s => s.trim());
