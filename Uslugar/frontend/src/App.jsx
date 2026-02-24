@@ -606,18 +606,6 @@ export default function App(){
                   >
                     🛠️ Kategorije ({categories.length})
                   </button>
-                  <button
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
-                    onClick={() => {
-                      if (window.location.pathname.startsWith('/admin/')) {
-                        window.location.replace('/#providers');
-                      } else {
-                        setTab('providers');
-                      }
-                    }}
-                  >
-                    👥 Pružatelji ({providers.length})
-                  </button>
                 </DropdownMenu>
               </>
             )}
