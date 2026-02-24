@@ -28,25 +28,35 @@ export default function TimeLanding(){
             </div>
           </div>
           <div className="relative">
-            <div className="aspect-video rounded-xl bg-gradient-to-tr from-indigo-50 to-indigo-100 border border-indigo-200 flex items-center justify-center">
-              <div className="flex h-full w-full flex-col items-center justify-center p-6">
-                <div className="text-6xl mb-3">⏱️</div>
-                <div className="text-lg font-semibold text-gray-900">Vrijeme je tvoja valuta</div>
-                <div className="mt-3 text-sm text-gray-600 text-center max-w-xs">
+            <div className="aspect-video rounded-xl bg-gradient-to-tr from-indigo-50 to-indigo-100 border border-indigo-200 flex items-start justify-center">
+              <div className="flex h-full w-full flex-col items-center justify-start px-6 pt-6 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="text-5xl">⏱️</div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    Vrijeme je tvoja valuta
+                  </div>
+                </div>
+                <div className="mt-2 text-sm text-gray-600 text-center max-w-xs">
                   Svaka minuta manje traženja znači minuta više za posao, obitelj ili odmor.
                 </div>
-                <div className="mt-5 grid w-full max-w-sm grid-cols-2 gap-3 text-xs text-gray-600">
-                  <div className="rounded-lg bg-white/80 border border-indigo-100 px-3 py-2">
-                    <div className="text-sm font-semibold text-gray-900">1 majstor</div>
-                    <div className="mt-0.5 text-gray-500">po svakom upitu – bez natjecanja</div>
+                <div className="mt-4 grid w-full max-w-sm grid-cols-2 gap-3 text-xs text-indigo-900">
+                  <div className="col-span-2 rounded-lg bg-indigo-50/70 border border-indigo-100 px-3 py-2">
+                    <div className="text-sm font-semibold">1 majstor</div>
+                    <div className="mt-0.5 text-indigo-800/80">
+                      po svakom upitu – bez natjecanja
+                    </div>
                   </div>
-                  <div className="rounded-lg bg-white/80 border border-indigo-100 px-3 py-2">
-                    <div className="text-sm font-semibold text-gray-900">27 min</div>
-                    <div className="mt-0.5 text-gray-500">prosječni prvi odgovor</div>
+                  <div className="rounded-lg bg-indigo-50/70 border border-indigo-100 px-3 py-2">
+                    <div className="text-sm font-semibold">27 min</div>
+                    <div className="mt-0.5 text-indigo-800/80">
+                      prosječni prvi odgovor
+                    </div>
                   </div>
-                  <div className="rounded-lg bg-white/80 border border-indigo-100 px-3 py-2 col-span-2">
-                    <div className="text-sm font-semibold text-gray-900">0 spam poziva</div>
-                    <div className="mt-0.5 text-gray-500">tvoj broj ne dijelimo s više izvođača</div>
+                  <div className="rounded-lg bg-indigo-50/70 border border-indigo-100 px-3 py-2">
+                    <div className="text-sm font-semibold">0 spam poziva</div>
+                    <div className="mt-0.5 text-indigo-800/80">
+                      tvoj broj ne dijelimo s više izvođača
+                    </div>
                   </div>
                 </div>
               </div>
