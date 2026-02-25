@@ -1018,72 +1018,109 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (path === '/api/sudreg_docs' && method === 'GET') {
-    sendJson(200, {
-      service: 'registar-poslovnih-subjekata',
-      status: 'ok',
-      description: 'Backend servis za proxy i ETL nad Sudreg javnim API-jem.',
-      internal_endpoints: [
+    const proto = (req.headers['x-forwarded-proto'] && typeof req.headers['x-forwarded-proto'] === 'string')
+      ? req.headers['x-forwarded-proto'].split(',')[0].trim()
+      : 'http';
+    const host = req.headers.host || `localhost:${PORT}`;
+    const baseUrl = `${proto}://${host}`;
+
+    const endpointsGrouped = {
+      public: [
         {
           method: 'GET',
           path: '/health',
-          description: 'Health-check (isti odgovor i za /).',
+          summary: 'Health-check (isti odgovor i za /).',
         },
         {
           method: 'GET',
           path: '/api/sudreg_token',
-          description: 'Dohvat OAuth tokena za Sudreg (client_credentials).',
-        },
-        {
-          method: 'POST',
-          path: '/api/sudreg_token',
-          description: 'Dohvat OAuth tokena za Sudreg (client_credentials).',
+          summary: 'Dohvat OAuth tokena za Sudreg (client_credentials).',
         },
         {
           method: 'GET',
           path: '/api/sudreg',
-          description: 'Proxy prema Sudreg API-ju: endpoint=<naziv>, ostali query parametri se prosljeđuju.',
+          summary: 'Proxy prema Sudreg API-ju: endpoint=<naziv>, ostali query parametri se prosljeđuju.',
         },
         {
           method: 'GET',
           path: '/api/sudreg_expected_counts',
-          description: 'Čitanje očekivanih brojeva redaka po endpointu/snapshotu iz baze.',
-        },
-        {
-          method: 'POST',
-          path: '/api/sudreg_expected_counts',
-          description: 'Dohvat X-Total-Count sa Sudreg API-ja i upis u rps_sudreg_expected_counts (zahtijeva API ključ).',
-        },
-        {
-          method: 'POST',
-          path: '/api/sudreg_sync_entiteti',
-          description: 'Sync entitetskih tablica (subjekti, tvrtke, ...) za jedan snapshot (zahtijeva API ključ).',
-        },
-        {
-          method: 'POST',
-          path: '/api/sudreg_sync_promjene',
-          description: 'Sync promjena (Sudreg /promjene) u tablicu sudreg_promjene (zahtijeva API ključ).',
+          summary: 'Čitanje očekivanih brojeva redaka po endpointu/snapshotu iz baze.',
         },
         {
           method: 'GET',
           path: '/api/sudreg_cron_daily/status',
-          description: 'Status zadnjeg cron_daily joba (expected_counts + sync_sifrarnici + sync_entiteti).',
+          summary: 'Status zadnjeg cron_daily joba (expected_counts + sync_sifrarnici + sync_entiteti).',
+        },
+      ],
+      write: [
+        {
+          method: 'POST',
+          path: '/api/sudreg_token',
+          summary: 'Dohvat OAuth tokena za Sudreg (client_credentials).',
+          requires_api_key: false,
         },
         {
           method: 'POST',
+          path: '/api/sudreg_expected_counts',
+          summary: 'Dohvat X-Total-Count sa Sudreg API-ja i upis u rps_sudreg_expected_counts.',
+          requires_api_key: true,
+        },
+        {
+          method: 'POST',
+          path: '/api/sudreg_sync_entiteti',
+          summary: 'Sync entitetskih tablica (subjekti, tvrtke, ...) za jedan snapshot.',
+          requires_api_key: true,
+        },
+        {
+          method: 'POST',
+          path: '/api/sudreg_sync_promjene',
+          summary: 'Sync promjena (Sudreg /promjene) u tablicu sudreg_promjene.',
+          requires_api_key: true,
+        },
+      ],
+      cron: [
+        {
+          method: 'POST',
           path: '/api/sudreg_cron_daily',
-          description: 'Pokretanje cron_daily joba (background ili sync; zahtijeva API ključ).',
+          summary: 'Pokretanje cron_daily joba (background ili sync).',
+          requires_api_key: true,
         },
         {
           method: 'POST',
           path: '/api/sudreg_cron_daily/stop',
-          description: 'Zahtjev za zaustavljanje tekućeg cron_daily synca (zahtijeva API ključ).',
+          summary: 'Zaustavljanje tekućeg cron_daily synca.',
+          requires_api_key: true,
         },
         {
           method: 'POST',
           path: '/api/sudreg_cron_daily/rollback',
-          description: 'Rollback svih sudreg_% i rps_sudreg_% podataka u bazi (zahtijeva API ključ).',
+          summary: 'Rollback svih sudreg_% i rps_sudreg_% podataka u bazi.',
+          requires_api_key: true,
         },
       ],
+    };
+
+    const internalFlat = [
+      ...endpointsGrouped.public,
+      ...endpointsGrouped.write,
+      ...endpointsGrouped.cron,
+    ].map((e) => ({
+      method: e.method,
+      path: e.path,
+      description: e.summary,
+      ...(e.requires_api_key ? { requires_api_key: true } : {}),
+    }));
+
+    const body = {
+      service: 'registar-poslovnih-subjekata',
+      status: 'ok',
+      description: 'Backend servis za proxy i ETL nad Sudreg javnim API-jem.',
+      http: {
+        base_url: baseUrl,
+        docs_url: `${baseUrl}/api/sudreg_docs`,
+      },
+      endpoints: endpointsGrouped,
+      internal_endpoints: internalFlat,
       sudreg_api: {
         base: SUDREG_API_BASE,
         token_url: SUDREG_TOKEN_URL,
@@ -1092,7 +1129,10 @@ const server = http.createServer(async (req, res) => {
         sifrarnik_endpoints: SIFRARNIK_ENDPOINTS,
         entity_endpoints: ENTITY_ENDPOINTS,
       },
-    });
+    };
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(body, null, 2));
     return;
   }
 
