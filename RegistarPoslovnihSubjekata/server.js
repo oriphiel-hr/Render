@@ -918,20 +918,65 @@ async function runCronDailyWork() {
   }
 
   try {
-    const token = await getSudregToken();
     lastCronDailyRun.currentPhase = 'sync_sifrarnici';
     lastCronDailyRun.currentEndpoint = null;
-    const snapshotsResult = await proxySudregGet('snapshots', '', token);
-    const snapshotsList = Array.isArray(snapshotsResult.body) ? snapshotsResult.body : [];
-    // Samo zadnji (najveći) snapshot: to je trenutno stanje registra. Stariji snapshoti su povijesni;
-    // punjenje svih snapshotova bi trajalo puno duže i zahtijevalo više resursa.
-    const latestSnapshotId = snapshotsList.length > 0
-      ? Math.max(...snapshotsList.map((s) => (s != null && (s.id != null || s.snapshot_id != null)) ? Number(s.id ?? s.snapshot_id) : -1).filter((n) => n >= 0))
-      : null;
-    console.log('cron_daily: snapshots from API', snapshotsList.length, 'latestSnapshotId=', latestSnapshotId);
 
-    if (latestSnapshotId != null) {
-      summary.sync_sifrarnici = await runSyncSifrarnici(latestSnapshotId);
+    // Odaberi najmanji snapshot_id iz expected_counts koji nije u potpunosti obrađen (šifrarnici + entiteti).
+    const expectedSnapshots = await prisma.sudregExpectedCount.findMany({
+      where: { endpoint: 'subjekti' },
+      select: { snapshotId: true },
+      distinct: ['snapshotId'],
+      orderBy: { snapshotId: 'asc' },
+    });
+
+    if (!expectedSnapshots || expectedSnapshots.length === 0) {
+      console.warn('cron_daily: nema snapshot_id u rps_sudreg_expected_counts, preskacem sync');
+      summary.sync_sifrarnici = { ok: false, endpoints: {}, error: 'Nema snapshot_id u rps_sudreg_expected_counts' };
+      console.log('cron_daily: done', JSON.stringify(summary));
+      lastCronDailyRun.currentPhase = null;
+      lastCronDailyRun.currentEndpoint = null;
+      lastCronDailyRun.finishedAt = new Date().toISOString();
+      lastCronDailyRun.status = 'error';
+      lastCronDailyRun.summary = summary;
+      return summary;
+    }
+
+    let chosenSnapshotId = null;
+    const allEndpointsForSync = [...SIFRARNIK_ENDPOINTS, ...ENTITY_ENDPOINTS];
+    for (const row of expectedSnapshots) {
+      const sid = row.snapshotId;
+      const glave = await prisma.sudregSyncGlava.findMany({
+        where: { snapshotId: sid, tipEntiteta: { in: allEndpointsForSync } },
+        select: { tipEntiteta: true, status: true, nextOffsetToFetch: true },
+      });
+      let allDone = true;
+      for (const endpoint of allEndpointsForSync) {
+        const g = glave.find((x) => x.tipEntiteta === endpoint);
+        if (!g || g.status !== 'ok' || g.nextOffsetToFetch != null) {
+          allDone = false;
+          break;
+        }
+      }
+      if (!allDone) {
+        chosenSnapshotId = Number(sid);
+        break;
+      }
+    }
+
+    if (chosenSnapshotId == null) {
+      console.log('cron_daily: svi snapshot_id iz expected_counts su već potpuno obrađeni, nema posla');
+      console.log('cron_daily: done', JSON.stringify(summary));
+      lastCronDailyRun.currentPhase = null;
+      lastCronDailyRun.currentEndpoint = null;
+      lastCronDailyRun.finishedAt = new Date().toISOString();
+      lastCronDailyRun.status = 'ok';
+      lastCronDailyRun.summary = summary;
+      return summary;
+    }
+
+    console.log('cron_daily: odabrani snapshot_id za sync', chosenSnapshotId);
+
+    summary.sync_sifrarnici = await runSyncSifrarnici(chosenSnapshotId);
       console.log('cron_daily: sync_sifrarnici', summary.sync_sifrarnici?.ok ? 'ok' : 'fail', summary.sync_sifrarnici?.stopped ? 'stopped' : '', summary.sync_sifrarnici?.error ?? '');
       if (cronDailyShouldStop) {
         summary.error = 'stopped';
@@ -943,16 +988,12 @@ async function runCronDailyWork() {
       lastCronDailyRun.currentPhase = 'sync_entiteti';
       lastCronDailyRun.currentEndpoint = null;
       try {
-        summary.sync_entiteti = await runSyncEntiteti(latestSnapshotId);
+      summary.sync_entiteti = await runSyncEntiteti(chosenSnapshotId);
         console.log('cron_daily: sync_entiteti', summary.sync_entiteti?.ok ? 'ok' : 'fail', summary.sync_entiteti?.stopped ? 'stopped' : '', summary.sync_entiteti?.error ?? '');
         if (summary.sync_entiteti?.stopped) summary.error = 'stopped';
       } catch (err) {
         console.error('runCronDailyWork sync_entiteti', err);
         summary.sync_entiteti = { ok: false, endpoints: {}, error: err.message };
-      }
-    } else {
-      console.warn('cron_daily: nema snapshot_id iz API-ja, preskacem sync');
-      summary.sync_sifrarnici = { ok: false, endpoints: {}, error: 'Nema snapshot_id iz API-ja' };
     }
   } catch (err) {
     console.error('runCronDailyWork sync_sifrarnici', err);
@@ -1084,6 +1125,34 @@ const server = http.createServer(async (req, res) => {
           path: '/api/sudreg_cron_daily',
           summary: 'Pokretanje cron_daily joba (background ili sync).',
           requires_api_key: true,
+          flow: [
+            {
+              order: 1,
+              type: 'internal',
+              method: 'POST',
+              path: '/api/sudreg_expected_counts',
+              description: 'Popuni / osvježi rps_sudreg_expected_counts za sve dostupne snapshotove (ili raspon).',
+            },
+            {
+              order: 2,
+              type: 'internal',
+              method: 'SELECT',
+              path: 'rps_sudreg_expected_counts + rps_sudreg_sync_glava',
+              description: 'Odaberi najmanji snapshot_id koji još nije potpuno obrađen (šifrarnici + entiteti).',
+            },
+            {
+              order: 3,
+              type: 'internal',
+              fn: 'runSyncSifrarnici',
+              description: 'Za odabrani snapshot_id zove sve SIFRARNIK_ENDPOINTS prema Sudreg API-ju i puni šifrarnike u bazi.',
+            },
+            {
+              order: 4,
+              type: 'internal',
+              fn: 'runSyncEntiteti',
+              description: 'Za odabrani snapshot_id zove sve ENTITY_ENDPOINTS prema Sudreg API-ju i puni entitetske tablice u bazi.',
+            },
+          ],
         },
         {
           method: 'POST',
