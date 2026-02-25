@@ -1,6 +1,9 @@
 /**
  * Sadržaj vodiča po ulozi. Korisnik vidi samo vodič za svoju ulogu.
- * image: URL placeholdera ili putanja do pravog screenshot-a (npr. /docs/guide-korisnik-1.png).
+ * Slike: trenutno placeholder URL-ovi. Za prave screenshotove spremi slike u
+ * frontend/public/docs/ (npr. guide-korisnik-1.png ... guide-korisnik-6.png,
+ * guide-pružatelj-1.png ... guide-pružatelj-6.png) i zamijeni PLACEHOLDER() s
+ * putanjama npr. /docs/guide-korisnik-1.png.
  */
 
 const PLACEHOLDER = (text) =>

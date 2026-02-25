@@ -42,6 +42,7 @@ const Documentation = ({ setTab }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedGuideRole, setSelectedGuideRole] = useState(null);
+  const [failedGuideImages, setFailedGuideImages] = useState(() => new Set());
 
   const docRole = getDocumentationRole();
   const verificationInfo = getVerificationInfo();
@@ -91,6 +92,72 @@ const Documentation = ({ setTab }) => {
   const getStatusText = (implemented, deprecated) => {
     if (deprecated) return '⚠️ NE KORISTI SE';
     return implemented ? '✓ Implementirano' : '✗ Nije implementirano';
+  };
+
+  /** Puni opis kao tekstačke upute: manje naslova i listi, više tekućeg teksta */
+  const renderDetailsContent = (details) => {
+    if (!details || !details.trim()) return null;
+    return details.split('\n').map((line, idx) => {
+      if (line.startsWith('## ')) {
+        return (
+          <p key={idx} className="font-semibold text-gray-900 dark:text-white mt-4 mb-1 first:mt-0">
+            {line.replace('## ', '')}
+          </p>
+        );
+      }
+      if (line.startsWith('### ')) {
+        return (
+          <p key={idx} className="font-medium text-gray-800 dark:text-gray-200 mt-3 mb-1">
+            {line.replace('### ', '')}
+          </p>
+        );
+      }
+      if (line.trim().startsWith('- ')) {
+        return (
+          <p key={idx} className="mb-2 text-gray-700 dark:text-gray-300">
+            {line.trim().substring(2)}
+          </p>
+        );
+      }
+      if (line.includes('`')) {
+        const parts = line.split('`');
+        return (
+          <p key={idx} className="mb-2 text-gray-700 dark:text-gray-300">
+            {parts.map((part, partIdx) =>
+              partIdx % 2 === 0 ? (
+                <span key={partIdx}>{part}</span>
+              ) : (
+                <code key={partIdx} className="bg-gray-200 dark:bg-gray-700 px-1 rounded text-xs">
+                  {part}
+                </code>
+              )
+            )}
+          </p>
+        );
+      }
+      if (line.includes('**')) {
+        const parts = line.split('**');
+        return (
+          <p key={idx} className="mb-2 text-gray-700 dark:text-gray-300">
+            {parts.map((part, partIdx) =>
+              partIdx % 2 === 0 ? (
+                <span key={partIdx}>{part}</span>
+              ) : (
+                <strong key={partIdx} className="font-semibold">{part}</strong>
+              )
+            )}
+          </p>
+        );
+      }
+      if (line.trim()) {
+        return (
+          <p key={idx} className="mb-2 text-gray-700 dark:text-gray-300">
+            {line}
+          </p>
+        );
+      }
+      return <br key={idx} />;
+    });
   };
 
   const getImplementationStats = () => {
@@ -209,6 +276,9 @@ const Documentation = ({ setTab }) => {
 
         {guideSteps ? (
           <div className="space-y-10">
+            <p className="text-sm text-amber-700 dark:text-amber-400">
+              📷 Ilustracije (screenshotovi) u vodiču bit će dodane; trenutno se prikazuju placeholderi dok ne budu dostupne prave slike.
+            </p>
             {docRole && (
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Prijavljeni ste kao <strong>{effectiveGuideRole === 'korisnik' ? 'korisnik usluge' : 'pružatelj usluge'}</strong>. Prikazuje se odgovarajući vodič.
@@ -293,12 +363,21 @@ const Documentation = ({ setTab }) => {
                       </p>
                     </div>
                     <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900">
-                      <img
-                        src={item.image}
-                        alt={`Screenshot: ${item.title}`}
-                        className="w-full h-auto object-contain max-h-[420px]"
-                        loading="lazy"
-                      />
+                      {failedGuideImages.has(item.image) ? (
+                        <div className="w-full flex flex-col items-center justify-center py-16 px-4 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                          <span className="text-4xl mb-2" aria-hidden>📷</span>
+                          <p className="text-sm font-medium">Screenshot uskoro</p>
+                          <p className="text-xs mt-1">Zamijenit će se stvarnim snimkom zaslona</p>
+                        </div>
+                      ) : (
+                        <img
+                          src={item.image}
+                          alt={`Screenshot: ${item.title}`}
+                          className="w-full h-auto object-contain max-h-[420px]"
+                          loading="lazy"
+                          onError={() => setFailedGuideImages((prev) => new Set(prev).add(item.image))}
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -314,49 +393,68 @@ const Documentation = ({ setTab }) => {
             📋 Sve funkcionalnosti za {effectiveGuideRole === 'korisnik' ? 'korisnike' : 'pružatelje'}
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Detaljan pregled svega što je u dokumentaciji vezano uz tvoju ulogu – ništa ne nedostaje.
+            Detaljan pregled svega što je u dokumentaciji vezano uz tvoju ulogu – ista razina detalja kao u originalnoj dokumentaciji (status, opisi, expand za puni tekst).
           </p>
-          <div className="space-y-6">
+          <div className="space-y-8">
             {featuresForRole.map((category, categoryIndex) => (
-              <div key={categoryIndex} className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div className="bg-gray-50 dark:bg-gray-700/50 px-4 py-3 border-b border-gray-200 dark:border-gray-600">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{category.category}</h3>
+              <div key={categoryIndex} className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 border-b border-gray-200 dark:border-gray-600">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{category.category}</h3>
                 </div>
-                <div className="p-4">
-                  <ul className="space-y-2">
+                <div className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {category.items.map((item, itemIndex) => {
                       const itemKey = `role-${categoryIndex}-${itemIndex}`;
                       const isExpanded = expandedItem === itemKey;
                       const description = descriptionsToUse[item.name] || { summary: '', details: '' };
                       return (
-                        <li key={itemIndex} className="border-b border-gray-100 dark:border-gray-700 last:border-0 pb-2 last:pb-0">
-                          <button
-                            type="button"
-                            className="w-full flex items-start justify-between gap-2 text-left"
-                            onClick={() => setExpandedItem(isExpanded ? null : itemKey)}
-                          >
-                            <span className="flex items-center gap-1">
-                              <span className="text-gray-400 dark:text-gray-500 text-xs">{isExpanded ? '▼' : '▶'}</span>
-                              <span className={`font-medium ${item.deprecated ? 'line-through text-gray-500' : 'text-gray-800 dark:text-gray-200'}`}>
+                        <div
+                          key={itemIndex}
+                          className={`p-4 rounded-lg border-2 transition-all ${
+                            item.implemented
+                              ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800'
+                              : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                          } ${item.deprecated ? 'bg-yellow-50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-800' : ''}`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <span className={`font-medium ${item.deprecated ? 'line-through text-gray-500 dark:text-gray-500' : 'text-gray-800 dark:text-gray-300'}`}>
                                 {item.name}
                               </span>
-                            </span>
-                            <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(item.implemented, item.deprecated)}`}>
+                              {description.summary && (
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                  {description.summary}
+                                </p>
+                              )}
+                            </div>
+                            <span className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(item.implemented, item.deprecated)}`}>
                               {getStatusText(item.implemented, item.deprecated)}
                             </span>
-                          </button>
-                          {description.summary && !isExpanded && (
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 pl-0">{description.summary}</p>
-                          )}
+                          </div>
+                          {description.details ? (
+                            <div className="mt-3">
+                              <button
+                                type="button"
+                                onClick={() => setExpandedItem(isExpanded ? null : itemKey)}
+                                className="text-sm font-medium text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 hover:underline focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 rounded"
+                              >
+                                {isExpanded
+                                  ? 'Zatvori puni opis'
+                                  : 'Pročitaj puni opis: kako funkcionira, prednosti, kada koristiti i tehnički detalji'}
+                              </button>
+                            </div>
+                          ) : null}
                           {isExpanded && description.details && (
-                            <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">
-                              {description.details}
+                            <div className="mt-4 pt-4 border-t border-gray-300 dark:border-gray-600">
+                              <div className="prose dark:prose-invert max-w-none text-sm">
+                                {renderDetailsContent(description.details)}
+                              </div>
                             </div>
                           )}
-                        </li>
+                        </div>
                       );
                     })}
-                  </ul>
+                  </div>
                 </div>
               </div>
             ))}
@@ -431,102 +529,40 @@ const Documentation = ({ setTab }) => {
                           : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
                       } ${item.deprecated ? 'bg-yellow-50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-800' : ''}`}
                     >
-                      <div 
-                        className="flex items-start justify-between cursor-pointer"
-                        onClick={() => setExpandedItem(isExpanded ? null : itemKey)}
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className={`font-medium ${item.deprecated ? 'line-through text-gray-500 dark:text-gray-500' : 'text-gray-800 dark:text-gray-300'}`}>
-                              {item.name}
-                            </span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {isExpanded ? '▼' : '▶'}
-                            </span>
-                          </div>
-                          {description.summary && !isExpanded && (
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <span className={`font-medium ${item.deprecated ? 'line-through text-gray-500 dark:text-gray-500' : 'text-gray-800 dark:text-gray-300'}`}>
+                            {item.name}
+                          </span>
+                          {description.summary && (
                             <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                               {description.summary}
                             </p>
                           )}
                         </div>
-                        <span className={`ml-2 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(item.implemented, item.deprecated)}`}>
+                        <span className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(item.implemented, item.deprecated)}`}>
                           {getStatusText(item.implemented, item.deprecated)}
                         </span>
                       </div>
+                      {description.details ? (
+                        <div className="mt-3">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedItem(isExpanded ? null : itemKey)}
+                            className="text-sm font-medium text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 hover:underline focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 rounded"
+                          >
+                            {isExpanded
+                              ? 'Zatvori puni opis'
+                              : 'Pročitaj puni opis: kako funkcionira, prednosti, kada koristiti i tehnički detalji'}
+                          </button>
+                        </div>
+                      ) : null}
 
                       {/* Expanded details */}
                       {isExpanded && (
                         <div className="mt-4 pt-4 border-t border-gray-300 dark:border-gray-600">
                           <div className="prose dark:prose-invert max-w-none text-sm">
-                            <div className="whitespace-pre-line text-gray-700 dark:text-gray-300">
-                              {description.details.split('\n').map((line, idx) => {
-                                // Format markdown-style headers
-                                if (line.startsWith('## ')) {
-                                  return (
-                                    <h4 key={idx} className="text-lg font-bold mt-4 mb-2 text-gray-900 dark:text-white">
-                                      {line.replace('## ', '')}
-                                    </h4>
-                                  );
-                                }
-                                if (line.startsWith('### ')) {
-                                  return (
-                                    <h5 key={idx} className="text-base font-semibold mt-3 mb-2 text-gray-800 dark:text-gray-200">
-                                      {line.replace('### ', '')}
-                                    </h5>
-                                  );
-                                }
-                                // Format bullet points
-                                if (line.trim().startsWith('- ')) {
-                                  return (
-                                    <div key={idx} className="ml-4 mb-1 text-gray-700 dark:text-gray-300">
-                                      • {line.trim().substring(2)}
-                                    </div>
-                                  );
-                                }
-                                // Format code blocks (inline)
-                                if (line.includes('`')) {
-                                  const parts = line.split('`');
-                                  return (
-                                    <div key={idx} className="mb-2">
-                                      {parts.map((part, partIdx) => 
-                                        partIdx % 2 === 0 ? (
-                                          <span key={partIdx}>{part}</span>
-                                        ) : (
-                                          <code key={partIdx} className="bg-gray-200 dark:bg-gray-700 px-1 rounded text-xs">
-                                            {part}
-                                          </code>
-                                        )
-                                      )}
-                                    </div>
-                                  );
-                                }
-                                // Format bold text (**text**)
-                                if (line.includes('**')) {
-                                  const parts = line.split('**');
-                                  return (
-                                    <div key={idx} className="mb-2">
-                                      {parts.map((part, partIdx) => 
-                                        partIdx % 2 === 0 ? (
-                                          <span key={partIdx}>{part}</span>
-                                        ) : (
-                                          <strong key={partIdx} className="font-semibold">{part}</strong>
-                                        )
-                                      )}
-                                    </div>
-                                  );
-                                }
-                                // Regular paragraphs
-                                if (line.trim()) {
-                                  return (
-                                    <p key={idx} className="mb-2 text-gray-700 dark:text-gray-300">
-                                      {line}
-                                    </p>
-                                  );
-                                }
-                                return <br key={idx} />;
-                              })}
-                            </div>
+                            {renderDetailsContent(description.details)}
                           </div>
                         </div>
                       )}
