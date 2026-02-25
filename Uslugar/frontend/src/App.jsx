@@ -443,7 +443,7 @@ export default function App(){
       </a>
 
       <header
-        className="sticky top-4 z-30 mb-4 flex w-full items-center justify-between rounded-2xl border border-gray-200 bg-white/80 px-4 py-3 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-900/80 overflow-visible"
+        className="sticky top-4 z-30 mb-4 flex w-full items-center justify-between rounded-2xl border border-stone-200/90 bg-stone-50/95 px-4 py-3 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-900/80 overflow-visible"
         role="banner"
       >
         <Logo size="md" />
@@ -1334,7 +1334,7 @@ export default function App(){
           {token && (
             <div className="mb-8">
               {/* Hero Search Bar - sticky na vrhu */}
-              <div className="sticky top-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 pb-4 mb-6 -mx-6 px-6 pt-4">
+              <div className="sticky top-0 z-40 bg-stone-50/98 dark:bg-gray-900 border-b border-stone-200/80 dark:border-gray-700 pb-4 mb-6 -mx-6 px-6 pt-4">
                 <div className="max-w-7xl mx-auto">
                   <div className="flex items-center justify-between mb-4">
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
@@ -1358,7 +1358,7 @@ export default function App(){
                   </div>
 
                   {/* Glavna tražilica */}
-                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 mb-4">
+                  <div className="bg-white/95 dark:bg-gray-800 rounded-xl shadow-lg border border-stone-200/90 dark:border-gray-700 p-4 mb-4">
                     <div className="flex gap-3 items-center">
                       <div className="flex-1 relative">
                         <input
