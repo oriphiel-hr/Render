@@ -57,7 +57,7 @@ const ENTITY_ENDPOINTS = [
   'postupci', 'pravni_oblici', 'pretezite_djelatnosti', 'predmeti_poslovanja',
   'evidencijske_djelatnosti', 'temeljni_kapitali',
 ];
-const ENTITY_PAGE_SIZE = 1000;
+const ENTITY_PAGE_SIZE = 500;
 
 /** Broj redaka po transakciji (manje = manji timeout rizik, više = manje round-tripova). */
 const SYNC_CHUNK_SIZE = 500;
@@ -529,18 +529,24 @@ async function runSyncSifrarnici(snapshotId) {
  * Punjenje entitetskih tablica za zadani snapshot_id. Za svaki ENTITY_ENDPOINTS dohvaća podatke i upsert u tablicu
  * s postavljenim glava_id i snapshot_id (te updated_at/modified_at preko Prisma @updatedAt).
  * @param {number} snapshotId
- * @returns {Promise<{ ok: boolean, endpoints: Record<string, { rows: number, error?: string }> }>}
+ * @param {number | undefined} maxBatchesPerEndpoint - maksimalan broj batch-eva (poziva prema Sudreg API-ju) po endpointu u jednom pozivu; ako nije postavljen ili <= 0, nema ograničenja.
+ * @returns {Promise<{ ok: boolean, endpoints: Record<string, { rows: number, error?: string, partial?: boolean }> }>}
  */
-async function runSyncEntiteti(snapshotId) {
+async function runSyncEntiteti(snapshotId, maxBatchesPerEndpoint) {
   let token = await getSudregToken();
   const sid = BigInt(snapshotId);
   const results = {};
+  const maxBatches =
+    Number.isInteger(maxBatchesPerEndpoint) && maxBatchesPerEndpoint > 0
+      ? maxBatchesPerEndpoint
+      : null;
 
   for (const endpoint of ENTITY_ENDPOINTS) {
     if (cronDailyShouldStop) return { ok: true, endpoints: results, stopped: true };
     lastCronDailyRun.currentEndpoint = endpoint;
     let glavaId = null;
     let lastError = null;
+    let batchesForEndpoint = 0;
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         if (attempt > 0) {
@@ -829,6 +835,12 @@ async function runSyncEntiteti(snapshotId) {
             ...(hasMore ? {} : { status: 'ok', vrijemeZavrsetka: new Date() }),
           },
         });
+
+        batchesForEndpoint++;
+        if (maxBatches != null && batchesForEndpoint >= maxBatches && hasMore) {
+          results[endpoint] = { rows: totalWritten, partial: true };
+          break;
+        }
       }
 
       if (results[endpoint] == null) {
@@ -1000,6 +1012,86 @@ const server = http.createServer(async (req, res) => {
     sendJson(200, {
       service: 'registar-poslovnih-subjekata',
       status: 'ok',
+      docs: '/api/sudreg_docs',
+    });
+    return;
+  }
+
+  if (path === '/api/sudreg_docs' && method === 'GET') {
+    sendJson(200, {
+      service: 'registar-poslovnih-subjekata',
+      status: 'ok',
+      description: 'Backend servis za proxy i ETL nad Sudreg javnim API-jem.',
+      internal_endpoints: [
+        {
+          method: 'GET',
+          path: '/health',
+          description: 'Health-check (isti odgovor i za /).',
+        },
+        {
+          method: 'GET',
+          path: '/api/sudreg_token',
+          description: 'Dohvat OAuth tokena za Sudreg (client_credentials).',
+        },
+        {
+          method: 'POST',
+          path: '/api/sudreg_token',
+          description: 'Dohvat OAuth tokena za Sudreg (client_credentials).',
+        },
+        {
+          method: 'GET',
+          path: '/api/sudreg',
+          description: 'Proxy prema Sudreg API-ju: endpoint=<naziv>, ostali query parametri se prosljeđuju.',
+        },
+        {
+          method: 'GET',
+          path: '/api/sudreg_expected_counts',
+          description: 'Čitanje očekivanih brojeva redaka po endpointu/snapshotu iz baze.',
+        },
+        {
+          method: 'POST',
+          path: '/api/sudreg_expected_counts',
+          description: 'Dohvat X-Total-Count sa Sudreg API-ja i upis u rps_sudreg_expected_counts (zahtijeva API ključ).',
+        },
+        {
+          method: 'POST',
+          path: '/api/sudreg_sync_entiteti',
+          description: 'Sync entitetskih tablica (subjekti, tvrtke, ...) za jedan snapshot (zahtijeva API ključ).',
+        },
+        {
+          method: 'POST',
+          path: '/api/sudreg_sync_promjene',
+          description: 'Sync promjena (Sudreg /promjene) u tablicu sudreg_promjene (zahtijeva API ključ).',
+        },
+        {
+          method: 'GET',
+          path: '/api/sudreg_cron_daily/status',
+          description: 'Status zadnjeg cron_daily joba (expected_counts + sync_sifrarnici + sync_entiteti).',
+        },
+        {
+          method: 'POST',
+          path: '/api/sudreg_cron_daily',
+          description: 'Pokretanje cron_daily joba (background ili sync; zahtijeva API ključ).',
+        },
+        {
+          method: 'POST',
+          path: '/api/sudreg_cron_daily/stop',
+          description: 'Zahtjev za zaustavljanje tekućeg cron_daily synca (zahtijeva API ključ).',
+        },
+        {
+          method: 'POST',
+          path: '/api/sudreg_cron_daily/rollback',
+          description: 'Rollback svih sudreg_% i rps_sudreg_% podataka u bazi (zahtijeva API ključ).',
+        },
+      ],
+      sudreg_api: {
+        base: SUDREG_API_BASE,
+        token_url: SUDREG_TOKEN_URL,
+        allowed_endpoints: [...SUDREG_ALLOWED_ENDPOINTS].sort(),
+        expected_count_endpoints: SUDREG_EXPECTED_COUNT_ENDPOINTS,
+        sifrarnik_endpoints: SIFRARNIK_ENDPOINTS,
+        entity_endpoints: ENTITY_ENDPOINTS,
+      },
     });
     return;
   }
@@ -1203,6 +1295,10 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     const snapshotIdParam = url.searchParams.get('snapshot_id');
+    const maxBatchesParam = url.searchParams.get('max_batches');
+    const maxBatches = maxBatchesParam != null && maxBatchesParam !== ''
+      ? parseInt(maxBatchesParam, 10)
+      : null;
     (async () => {
       try {
         let snapshotId;
@@ -1213,32 +1309,63 @@ const server = http.createServer(async (req, res) => {
             return;
           }
         } else {
-          const token = await getSudregToken();
-          const snapshotsResult = await proxySudregGet('snapshots', '', token);
-          const snapshotsList = Array.isArray(snapshotsResult.body) ? snapshotsResult.body : [];
-          const latestFromApi = snapshotsList.length > 0
-            ? Math.max(...snapshotsList.map((s) => (s != null && (s.id != null || s.snapshot_id != null)) ? Number(s.id ?? s.snapshot_id) : -1).filter((n) => n >= 0))
-            : null;
-          if (latestFromApi != null) {
-            snapshotId = latestFromApi;
-          } else {
-            const latest = await prisma.sudregExpectedCount.findFirst({
-              where: { endpoint: 'subjekti' },
-              orderBy: { snapshotId: 'desc' },
-              select: { snapshotId: true },
+          // Ako snapshot_id nije zadan, uzmi prvi (najmanji) snapshot_id iz rps_sudreg_expected_counts
+          // i ne prelazi na sljedeći dok svi entitetski endpointi za taj snapshot nisu završeni.
+          const expectedSnapshots = await prisma.sudregExpectedCount.findMany({
+            where: { endpoint: 'subjekti' },
+            select: { snapshotId: true },
+            distinct: ['snapshotId'],
+            orderBy: { snapshotId: 'asc' },
+          });
+          if (!expectedSnapshots || expectedSnapshots.length === 0) {
+            sendJson(400, {
+              error: 'no_snapshot',
+              message: 'Nema snapshot_id u rps_sudreg_expected_counts. Prvo pokreni POST /api/sudreg_expected_counts.',
             });
-            if (!latest) {
-              sendJson(400, {
-                error: 'no_snapshot',
-                message: 'Nema snapshot_id. Navedi ?snapshot_id=<id> ili pokreni POST /api/sudreg_expected_counts.',
-              });
-              return;
-            }
-            snapshotId = Number(latest.snapshotId);
+            return;
           }
+
+          let chosenSnapshotId = null;
+          for (const row of expectedSnapshots) {
+            const sid = row.snapshotId;
+            // Dohvati postojeće glave sync-a za sve entitetske endpointe za ovaj snapshot.
+            const glave = await prisma.sudregSyncGlava.findMany({
+              where: { snapshotId: sid, tipEntiteta: { in: ENTITY_ENDPOINTS } },
+              select: { tipEntiteta: true, status: true, nextOffsetToFetch: true },
+            });
+            let allDone = true;
+            for (const endpoint of ENTITY_ENDPOINTS) {
+              const g = glave.find((x) => x.tipEntiteta === endpoint);
+              if (!g || g.status !== 'ok' || g.nextOffsetToFetch != null) {
+                allDone = false;
+                break;
+              }
+            }
+            if (!allDone) {
+              chosenSnapshotId = Number(sid);
+              break;
+            }
+          }
+
+          if (chosenSnapshotId == null) {
+            sendJson(400, {
+              error: 'no_pending_snapshot',
+              message: 'Svi snapshot_id u rps_sudreg_expected_counts imaju završen sync entiteta.',
+            });
+            return;
+          }
+
+          snapshotId = chosenSnapshotId;
         }
-        const result = await runSyncEntiteti(snapshotId);
-        sendJson(200, { snapshot_id: snapshotId, ok: result.ok, endpoints: result.endpoints });
+        const result = await runSyncEntiteti(snapshotId, maxBatches);
+        sendJson(200, {
+          snapshot_id: snapshotId,
+          ok: result.ok,
+          endpoints: result.endpoints,
+          ...(maxBatches != null && Number.isInteger(maxBatches) && maxBatches > 0
+            ? { max_batches_used: maxBatches }
+            : {}),
+        });
       } catch (err) {
         console.error('POST sudreg_sync_entiteti', err);
         sendJson(500, { error: 'sync_failed', message: err.message });
@@ -1364,6 +1491,47 @@ const server = http.createServer(async (req, res) => {
         }
         const totalFromHeader = result.headers['X-Total-Count'] != null ? parseInt(result.headers['X-Total-Count'], 10) : null;
         const page = Array.isArray(result.body) ? result.body : [];
+
+        // Spremi promjene u tablicu sudreg_promjene (SudregPromjene) za zadani snapshot.
+        const sidBig = BigInt(snapshotId);
+        if (page.length > 0) {
+          try {
+            await prisma.$transaction(async (tx) => {
+              for (const row of page) {
+                if (!row || row.mbs == null || row.id == null) continue;
+                const mbs = BigInt(row.mbs);
+                const promjenaId = BigInt(row.id);
+                const scn = row.scn != null ? BigInt(row.scn) : BigInt(0);
+                const vrijeme =
+                  row.vrijeme != null ? new Date(row.vrijeme) : new Date();
+                await tx.sudregPromjene.upsert({
+                  where: {
+                    snapshotId_mbs_promjenaId: {
+                      snapshotId: sidBig,
+                      mbs,
+                      promjenaId,
+                    },
+                  },
+                  create: {
+                    snapshotId: sidBig,
+                    mbs,
+                    promjenaId,
+                    vrijeme,
+                    scn,
+                  },
+                  update: {
+                    vrijeme,
+                    scn,
+                  },
+                });
+              }
+            });
+          } catch (e) {
+            console.error('Spremanje sudreg_promjene nije uspjelo', e);
+            errors.push(`db_save_failed: ${e.message}`);
+          }
+        }
+
         const nextOffset = startOffset + page.length;
         const hasMore = page.length === PAGE_SIZE && (totalFromHeader == null || nextOffset < totalFromHeader);
         const totalLoadedSoFar = nextOffset;

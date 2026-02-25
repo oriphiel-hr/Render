@@ -658,6 +658,22 @@ model SudregExpectedCount {
   @@map("rps_sudreg_expected_counts")
 }
 
+/// Promjene nad subjektima (mbs, id, vrijeme, scn) za zadani snapshot_id – iz Sudreg /promjene endpointa.
+model SudregPromjene {
+  snapshotId BigInt   @map("snapshot_id")
+  mbs        BigInt   @map("mbs")
+  promjenaId BigInt   @map("id")
+  vrijeme    DateTime @map("vrijeme")
+  scn        BigInt   @map("scn")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@id([snapshotId, mbs, promjenaId])
+  @@index([snapshotId])
+  @@index([mbs])
+  @@map("sudreg_promjene")
+}
+
 /// Audit: što se promijenilo kod UPDATE-a (stupac, stara/nova vrijednost). Punjeni iz DB triggera. snapshot_id iz retka ako postoji; izvor = tko/što je napravio promjenu (iz session app.audit_context).
 model SudregAuditPromjene {
   id              BigInt   @id @default(autoincrement()) @map("rps_sudreg_audit_promjene_id")
