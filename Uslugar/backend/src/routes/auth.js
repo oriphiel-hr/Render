@@ -3,7 +3,6 @@ import { randomBytes } from 'crypto';
 import { prisma } from '../lib/prisma.js';
 import { hashPassword, verifyPassword, signToken, auth } from '../lib/auth.js';
 import { sendVerificationEmail, sendPasswordResetEmail, sendVerificationConfirmationEmail } from '../lib/email.js';
-import { deleteUserWithRelations } from '../lib/delete-helpers.js';
 import axios from 'axios';
 import { validateOIB } from '../lib/kyc-verification.js';
 
@@ -205,24 +204,6 @@ r.post('/register', async (req, res, next) => {
       }
     }
     
-    // Pošalji verification email - OBAVEZNO
-    try {
-      await sendVerificationEmail(email, fullName, verificationToken);
-      console.log('[OK] Verification email sent to:', email);
-    } catch (emailError) {
-      console.error('Failed to send verification email:', emailError);
-      console.error('Email error details:', emailError.message);
-      
-      // Izbriši user-a ako email nije poslan (rollback)
-      // Koristimo helper jer može imati ProviderProfile
-      await deleteUserWithRelations(user.id);
-      
-      return res.status(500).json({ 
-        error: 'Greška pri slanju verifikacijskog email-a. Pokušajte ponovno.',
-        details: process.env.NODE_ENV === 'development' ? emailError.message : 'SMTP configuration error'
-      });
-    }
-    
     // Izračunaj osnovne feature flagove za frontend
     const activeSubscription = await prisma.subscription.findFirst({
       where: { userId: user.id, status: 'ACTIVE' },
@@ -236,18 +217,25 @@ r.post('/register', async (req, res, next) => {
     };
 
     const token = signToken({ id: user.id, email: user.email, role: user.role, name: user.fullName, ...featureFlags });
-    res.json({ 
-      token, 
-      user: { 
-        id: user.id, 
-        email: user.email, 
-        role: user.role, 
-        fullName: user.fullName, 
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        fullName: user.fullName,
         isVerified: user.isVerified,
-        ...featureFlags 
+        ...featureFlags
       },
-      message: 'Registracija uspješna! Provjerite email za aktivacijski link.'
+      message: 'Registracija uspješna! Provjerite email za aktivacijski link. Ako ne primate email u nekoliko minuta, koristite "Pošalji ponovo".'
     });
+
+    // Slanje verifikacijskog emaila u pozadini – ne blokira odgovor (izbjegava timeout kad SMTP spor/nedostupan)
+    sendVerificationEmail(email, fullName, verificationToken)
+      .then(() => console.log('[OK] Verification email sent to:', email))
+      .catch((emailError) => {
+        console.error('Background verification email failed:', emailError?.message || emailError);
+      });
   } catch (e) { next(e); }
 });
 
