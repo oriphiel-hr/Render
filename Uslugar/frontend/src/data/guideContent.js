@@ -175,7 +175,7 @@ export const GUIDE_TIM_CLAN = [
 
 **2.** Leadove ne kupujete sami – direktor ih kupuje za tvrtku i zatim vam ih dodjeljuje ručno ili automatski (prema kategoriji i dostupnosti). Primat ćete notifikaciju "Novi lead dodijeljen" s linkom na Moje leadove.
 
-**3.** U izborniku koristite "Moji leadovi" (Leadovi). Na toj stranici, ako ste član tima, prikazuje se posebna sekcija **Leadovi dodijeljeni meni** s listom leadova koje vam je direktor dodijelio.`,
+**3.** U izborniku koristite "Moji leadovi" (Leadovi). Na toj stranici: **glavna lista** prikazuje samo leadove koje je taj korisnik sam kupio – kod člana tima ta je lista obično **prazna**, jer leadove kupuje direktor. Leadovi koje vam direktor dodijeli prikazuju se u posebnoj sekciji **Leadovi dodijeljeni meni** na istoj stranici.`,
   },
   {
     step: 2,
@@ -223,7 +223,7 @@ export const GUIDE_TIM_CLAN = [
 
 **2.** Dodavanje i uklanjanje članova tima, ručna ili automatska dodjela leadova i odbijanje leadova u queueu – sve to radi isključivo direktor. Vi primate leadove koje vam on dodijeli i ažurirate status (Započni rad / Završeno).
 
-**3.** Ostale stvari kao pružatelj i dalje možete: Moj profil, kategorije, licence, Team locations, Chat (s klijentom i interni), te ako i sami kupite lead (kao solo), i dalje će vam se prikazivati u "Moji leadovi" u uobičajenoj listi kupljenih leadova.`,
+**3.** Ostale stvari kao pružatelj i dalje možete: Moj profil, kategorije, licence, Team locations, Chat (s klijentom i interni). Ako i sami kupite lead kao solo pružatelj (ne preko tvrtke), taj će se lead prikazati u glavnoj listi "Moji leadovi" (kupljeni leadovi) – kod člana tima je ta lista obično prazna jer kupuje direktor.`,
   },
 ];
 
