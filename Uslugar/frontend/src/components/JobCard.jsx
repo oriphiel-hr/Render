@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getCategoryIcon } from '../data/categoryIcons.js';
 
 const JobCard = ({ job, onViewDetails, onMakeOffer }) => {
   const [isProvider, setIsProvider] = useState(false);
@@ -64,7 +65,7 @@ const JobCard = ({ job, onViewDetails, onMakeOffer }) => {
 
       <div className="flex flex-wrap gap-2 mb-4">
         <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-          {job.category?.name}
+          {job.category ? `${getCategoryIcon(job.category)} ${job.category.name}` : null}
         </span>
         {job.city && (
           <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">

@@ -3,6 +3,7 @@ import api from '../api';
 import { useLegalStatuses } from '../hooks/useLegalStatuses';
 import { validateOIB, validateEmail } from '../utils/validators';
 import { buildCategoryTree } from '../utils/category-tree.js';
+import { getCategoryIcon } from '../data/categoryIcons.js';
 import MapPicker from '../components/MapPicker';
 import AddressAutocomplete from '../components/AddressAutocomplete';
 
@@ -617,7 +618,7 @@ export default function ProviderRegister({ onSuccess }) {
                             />
                             <div className="flex-1">
                               <div className="flex items-center space-x-2">
-                                <span className="text-lg">{node.icon || '🛠️'}</span>
+                                <span className="text-lg">{getCategoryIcon(node)}</span>
                                 <span className={`font-medium ${depth > 0 ? 'text-sm' : ''} ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
                                   {node.name}
                                 </span>

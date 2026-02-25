@@ -2,7 +2,7 @@ import React from 'react'
 
 export default function TimeLanding(){
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen">
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-4 py-16 md:py-24">
         <div className="grid md:grid-cols-2 gap-8 items-center">
@@ -10,13 +10,13 @@ export default function TimeLanding(){
             <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-gray-900">
               Štedi vrijeme, ne živce.
               <br />
-              <span className="text-indigo-600">Nađi provjerenog majstora u 60 sekundi.</span>
+              <span className="text-amber-700 dark:text-amber-400">Nađi provjerenog majstora u 60 sekundi.</span>
             </h1>
             <p className="mt-4 text-lg text-gray-600">
               Samo jedan majstor vidi tvoj upit. Nema poziva s nepoznatih brojeva. Nema gubljenja vremena.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <a href="#leads" className="inline-flex items-center px-5 py-3 bg-indigo-600 text-white rounded-md shadow hover:bg-indigo-700">
+              <a href="#leads" className="inline-flex items-center px-5 py-3 bg-amber-600 text-white rounded-md shadow hover:bg-amber-700">
                 📩 Pošalji brzi upit
               </a>
               <a href="#register-user" className="inline-flex items-center px-5 py-3 bg-gray-100 text-gray-900 rounded-md hover:bg-gray-200">
@@ -28,7 +28,7 @@ export default function TimeLanding(){
             </div>
           </div>
           <div className="relative">
-            <div className="rounded-xl bg-gradient-to-tr from-indigo-50 to-indigo-100 border border-indigo-200 flex items-start justify-center">
+            <div className="rounded-xl bg-gradient-to-tr from-amber-50 to-orange-50 border border-amber-200 flex items-start justify-center">
               <div className="flex h-full w-full flex-col items-center justify-start px-6 pt-6 pb-4">
                 <div className="flex items-center gap-3">
                   <div className="text-5xl">⏱️</div>
@@ -39,22 +39,22 @@ export default function TimeLanding(){
                 <div className="mt-2 text-sm text-gray-600 text-center max-w-xs">
                   Svaka minuta manje traženja znači minuta više za posao, obitelj ili odmor.
                 </div>
-                <div className="mt-4 grid w-full max-w-sm grid-cols-2 gap-3 text-xs text-indigo-900">
-                  <div className="col-span-2 rounded-lg border border-indigo-100 px-3 py-2">
+                <div className="mt-4 grid w-full max-w-sm grid-cols-2 gap-3 text-xs text-amber-900 dark:text-amber-200">
+                  <div className="col-span-2 rounded-lg border border-amber-200 dark:border-amber-700 px-3 py-2">
                     <div className="text-sm font-semibold">1 majstor</div>
-                    <div className="mt-0.5 text-indigo-800/80">
+                    <div className="mt-0.5 text-amber-800/90 dark:text-amber-300/90">
                       po svakom upitu – bez natjecanja
                     </div>
                   </div>
-                  <div className="rounded-lg border border-indigo-100 px-3 py-2">
+                  <div className="rounded-lg border border-amber-200 dark:border-amber-700 px-3 py-2">
                     <div className="text-sm font-semibold">27 min</div>
-                    <div className="mt-0.5 text-indigo-800/80">
+                    <div className="mt-0.5 text-amber-800/90 dark:text-amber-300/90">
                       prosječni prvi odgovor
                     </div>
                   </div>
-                  <div className="rounded-lg border border-indigo-100 px-3 py-2">
+                  <div className="rounded-lg border border-amber-200 dark:border-amber-700 px-3 py-2">
                     <div className="text-sm font-semibold">0 spam poziva</div>
-                    <div className="mt-0.5 text-indigo-800/80">
+                    <div className="mt-0.5 text-amber-800/90 dark:text-amber-300/90">
                       tvoj broj ne dijelimo s više izvođača
                     </div>
                   </div>
@@ -148,13 +148,13 @@ export default function TimeLanding(){
       </section>
 
       {/* CTA */}
-      <section className="bg-indigo-600">
+      <section className="bg-amber-600 dark:bg-amber-700">
         <div className="max-w-6xl mx-auto px-4 py-12 text-center">
           <h3 className="text-2xl font-bold text-white">Uštedimo vrijeme — već danas</h3>
-          <p className="mt-2 text-indigo-100">Pošalji brzi upit i dobij prvog provjerenog majstora u sat vremena.</p>
+          <p className="mt-2 text-amber-100">Pošalji brzi upit i dobij prvog provjerenog majstora u sat vremena.</p>
           <div className="mt-6 flex justify-center gap-3">
             <a href="#leads" className="inline-flex items-center px-5 py-3 bg-white text-gray-900 rounded-md shadow hover:bg-gray-100">Pošalji upit</a>
-            <a href="#register-user" className="inline-flex items-center px-5 py-3 bg-indigo-500 text-white rounded-md hover:bg-indigo-400">Postani majstor</a>
+            <a href="#register-user" className="inline-flex items-center px-5 py-3 bg-amber-500 text-white rounded-md hover:bg-amber-400">Postani majstor</a>
           </div>
         </div>
       </section>

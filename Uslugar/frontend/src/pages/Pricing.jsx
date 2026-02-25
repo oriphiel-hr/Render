@@ -90,17 +90,17 @@ export default function Pricing({ setTab }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-12 px-4">
+      <div className="min-h-screen py-12 px-4">
         <div className="max-w-7xl mx-auto text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Učitavanje cjenika...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Učitavanje cjenika...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-12 px-4">
+    <div className="min-h-screen py-12 px-4">
       <Toast
         message={toast.message}
         type={toast.type}

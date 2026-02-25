@@ -50,10 +50,10 @@ export default function PaymentSuccess({ setTab }) {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Provjerava se plaćanje...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Provjerava se plaćanje...</p>
         </div>
       </div>
     );
@@ -61,7 +61,7 @@ export default function PaymentSuccess({ setTab }) {
 
   if (status === 'error') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center px-4">
+      <div className="min-h-screen flex items-center justify-center px-4">
         <div className="max-w-md bg-white rounded-xl shadow-lg p-8 text-center">
           <div className="text-6xl mb-4">❌</div>
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
@@ -88,7 +88,7 @@ export default function PaymentSuccess({ setTab }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4">
       <div className="max-w-md bg-white rounded-xl shadow-lg p-8 text-center">
         <div className="text-6xl mb-4">✅</div>
         <h1 className="text-3xl font-bold text-gray-900 mb-4">

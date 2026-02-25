@@ -1,14 +1,55 @@
 import React, { useState, useEffect } from 'react';
 import { useDarkMode } from '../contexts/DarkModeContext.jsx';
 import api from '../api.js';
+import { GUIDE_KORISNIK, GUIDE_PRUVATELJ, DOC_CATEGORIES_FOR_KORISNIK, DOC_CATEGORIES_FOR_PRUVATELJ } from '../data/guideContent.js';
 
-const Documentation = () => {
+/** Vraća ulogu za dokumentaciju: 'korisnik' | 'pružatelj' | null (neprijavljen) */
+function getDocumentationRole() {
+  const storedUser = localStorage.getItem('user');
+  if (!storedUser) return null;
+  try {
+    const userData = JSON.parse(storedUser);
+    if (userData.role === 'PROVIDER' || userData.role === 'ADMIN') return 'pružatelj';
+    if (userData.role === 'USER' && userData.legalStatusId) return 'pružatelj';
+    if (userData.role === 'USER') return 'korisnik';
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/** Vraća info o potvrdi za prijavljenog korisnika (iz localStorage). */
+function getVerificationInfo() {
+  const storedUser = localStorage.getItem('user');
+  if (!storedUser) return { emailVerified: null, isProvider: false };
+  try {
+    const userData = JSON.parse(storedUser);
+    const isProvider = userData.role === 'PROVIDER' || userData.role === 'ADMIN' || (userData.role === 'USER' && !!userData.legalStatusId);
+    return {
+      emailVerified: userData.isVerified === true,
+      isProvider,
+    };
+  } catch {
+    return { emailVerified: null, isProvider: false };
+  }
+}
+
+const Documentation = ({ setTab }) => {
   const { isDarkMode } = useDarkMode();
-  const [expandedItem, setExpandedItem] = useState(null); // Track which item is expanded
+  const [expandedItem, setExpandedItem] = useState(null);
   const [features, setFeatures] = useState([]);
   const [featureDescriptions, setFeatureDescriptions] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedGuideRole, setSelectedGuideRole] = useState(null);
+
+  const docRole = getDocumentationRole();
+  const verificationInfo = getVerificationInfo();
+  const effectiveGuideRole = docRole ?? selectedGuideRole;
+  const guideSteps = effectiveGuideRole === 'pružatelj' ? GUIDE_PRUVATELJ : effectiveGuideRole === 'korisnik' ? GUIDE_KORISNIK : null;
+  const needsEmailVerification = docRole && verificationInfo.emailVerified === false;
+  const showBeforeYouStart = guideSteps && docRole && needsEmailVerification;
+  const showProviderProfileTip = guideSteps && effectiveGuideRole === 'pružatelj' && docRole && verificationInfo.emailVerified === true;
 
   // Učitaj podatke iz baze
   useEffect(() => {
@@ -67,6 +108,18 @@ const Documentation = () => {
 
   const stats = getImplementationStats();
 
+  const categoriesForRole = effectiveGuideRole === 'korisnik'
+    ? DOC_CATEGORIES_FOR_KORISNIK
+    : effectiveGuideRole === 'pružatelj'
+      ? null
+      : null;
+  const featuresForRole = effectiveGuideRole === 'korisnik' && categoriesForRole && features.length > 0
+    ? features.filter(cat => categoriesForRole.includes(cat.category))
+    : effectiveGuideRole === 'pružatelj' && features.length > 0
+      ? features
+      : [];
+  const hasRoleSpecificFeatures = featuresForRole.length > 0;
+
   // Koristi featureDescriptions iz state-a (iz baze preko API-ja)
   // Nema fallback na hardkodirane podatke - sve mora doći iz baze
   const descriptionsToUse = featureDescriptions;
@@ -122,17 +175,208 @@ const Documentation = () => {
 
   return (
     <div className={`max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ${isDarkMode ? 'dark' : ''}`}>
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-          📚 Uslugar - Dokumentacija Funkcionalnosti
+      {/* Vodiči – prikazuje se samo vodič za ulogu korisnika */}
+      <section className="mb-12" aria-labelledby="guide-heading">
+        <h1 id="guide-heading" className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          📖 Vodič
         </h1>
-        <p className="text-xl text-gray-600 dark:text-gray-400 mb-6">
-          Kompletna lista svih funkcionalnosti platforme za povezivanje korisnika i pružatelja usluga
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          Korak-po-korak upute za korištenje Uslugara. Prikazuje se samo vodič za tvoju ulogu.
+        </p>
+
+        {!effectiveGuideRole ? (
+          <div className="grid md:grid-cols-2 gap-4 mb-8">
+            <button
+              type="button"
+              onClick={() => setSelectedGuideRole('korisnik')}
+              className="p-6 rounded-xl border-2 border-amber-200 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/20 hover:border-amber-400 dark:hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/30 text-left transition-colors"
+            >
+              <span className="text-2xl block mb-2">👤</span>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">Ja sam korisnik</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Tražim majstora / želim objaviti posao</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedGuideRole('pružatelj')}
+              className="p-6 rounded-xl border-2 border-amber-200 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/20 hover:border-amber-400 dark:hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/30 text-left transition-colors"
+            >
+              <span className="text-2xl block mb-2">🔧</span>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">Ja sam pružatelj</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Majstor / želim primati leadove i slati ponude</p>
+            </button>
+          </div>
+        ) : null}
+
+        {guideSteps ? (
+          <div className="space-y-10">
+            {docRole && (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Prijavljeni ste kao <strong>{effectiveGuideRole === 'korisnik' ? 'korisnik usluge' : 'pružatelj usluge'}</strong>. Prikazuje se odgovarajući vodič.
+              </p>
+            )}
+            {!docRole && effectiveGuideRole && (
+              <button
+                type="button"
+                onClick={() => setSelectedGuideRole(null)}
+                className="text-sm text-amber-700 dark:text-amber-400 hover:underline"
+              >
+                ← Odaberi drugu ulogu
+              </button>
+            )}
+
+            {showBeforeYouStart && setTab && (
+              <div className="mb-8 p-6 rounded-xl border-2 border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20">
+                <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-200 mb-2">
+                  ⚠️ Prije nego nastaviš
+                </h3>
+                <p className="text-amber-800 dark:text-amber-300 mb-4">
+                  Tvoj email još nije potvrđen. Provjeri poštu i klikni na link u mailu koji smo ti poslali. Dok to ne napraviš, neke opcije možda neće biti dostupne.
+                </p>
+                <p className="text-sm text-amber-700 dark:text-amber-400 mb-4">
+                  Nisi primio mail? Možeš zatražiti novi link za potvrdu.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setTab('verify')}
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  Otvori stranicu za potvrdu emaila
+                </button>
+              </div>
+            )}
+
+            {showProviderProfileTip && setTab && (
+              <div className="mb-6 p-4 rounded-lg border border-stone-200 dark:border-stone-600 bg-stone-50 dark:bg-stone-800/50">
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  <span className="font-medium">Profil i dokumenti:</span> Ako još trebaš potvrditi profil ili predati dokumente za verifikaciju, otvori{' '}
+                  <button
+                    type="button"
+                    onClick={() => setTab('provider-profile')}
+                    className="text-amber-700 dark:text-amber-400 font-medium hover:underline"
+                  >
+                    Moj profil
+                  </button>
+                  {' '}u izborniku.
+                </p>
+              </div>
+            )}
+
+            {docRole && verificationInfo.emailVerified === true && !showBeforeYouStart && (
+              <div className="mb-6 p-4 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
+                <p className="text-sm text-green-800 dark:text-green-300">
+                  ✓ Tvoj email je potvrđen. Možeš koristiti vodič ispod.
+                </p>
+              </div>
+            )}
+
+            {guideSteps.map((item) => (
+              <article
+                key={item.step}
+                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm"
+              >
+                <div className="p-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-500 text-white text-sm font-bold">
+                      {item.step}
+                    </span>
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{item.title}</h2>
+                  </div>
+                  <div className="grid md:grid-cols-1 gap-4">
+                    <div className="space-y-3">
+                      <p className="text-gray-700 dark:text-gray-300">
+                        <span className="font-medium text-gray-900 dark:text-white">Što napraviš:</span>{' '}
+                        {item.userAction}
+                      </p>
+                      <p className="text-gray-700 dark:text-gray-300">
+                        <span className="font-medium text-gray-900 dark:text-white">Što se događa:</span>{' '}
+                        {item.appResult}
+                      </p>
+                    </div>
+                    <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900">
+                      <img
+                        src={item.image}
+                        alt={`Screenshot: ${item.title}`}
+                        className="w-full h-auto object-contain max-h-[420px]"
+                        loading="lazy"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : null}
+      </section>
+
+      {hasRoleSpecificFeatures && (
+        <section className="mb-12" aria-labelledby="features-for-role-heading">
+          <h2 id="features-for-role-heading" className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            📋 Sve funkcionalnosti za {effectiveGuideRole === 'korisnik' ? 'korisnike' : 'pružatelje'}
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            Detaljan pregled svega što je u dokumentaciji vezano uz tvoju ulogu – ništa ne nedostaje.
+          </p>
+          <div className="space-y-6">
+            {featuresForRole.map((category, categoryIndex) => (
+              <div key={categoryIndex} className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="bg-gray-50 dark:bg-gray-700/50 px-4 py-3 border-b border-gray-200 dark:border-gray-600">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{category.category}</h3>
+                </div>
+                <div className="p-4">
+                  <ul className="space-y-2">
+                    {category.items.map((item, itemIndex) => {
+                      const itemKey = `role-${categoryIndex}-${itemIndex}`;
+                      const isExpanded = expandedItem === itemKey;
+                      const description = descriptionsToUse[item.name] || { summary: '', details: '' };
+                      return (
+                        <li key={itemIndex} className="border-b border-gray-100 dark:border-gray-700 last:border-0 pb-2 last:pb-0">
+                          <button
+                            type="button"
+                            className="w-full flex items-start justify-between gap-2 text-left"
+                            onClick={() => setExpandedItem(isExpanded ? null : itemKey)}
+                          >
+                            <span className="flex items-center gap-1">
+                              <span className="text-gray-400 dark:text-gray-500 text-xs">{isExpanded ? '▼' : '▶'}</span>
+                              <span className={`font-medium ${item.deprecated ? 'line-through text-gray-500' : 'text-gray-800 dark:text-gray-200'}`}>
+                                {item.name}
+                              </span>
+                            </span>
+                            <span className={`shrink-0 px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(item.implemented, item.deprecated)}`}>
+                              {getStatusText(item.implemented, item.deprecated)}
+                            </span>
+                          </button>
+                          {description.summary && !isExpanded && (
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 pl-0">{description.summary}</p>
+                          )}
+                          {isExpanded && description.details && (
+                            <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">
+                              {description.details}
+                            </div>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <hr className="border-gray-200 dark:border-gray-700 my-10" />
+
+      <div className="text-center mb-12">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+          📚 Status funkcionalnosti
+        </h2>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          Pregled implementiranih i planiranih funkcionalnosti platforme
         </p>
         
         {/* Statistike implementacije */}
-        <div className="bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20 rounded-lg p-6 mb-8">
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Status Implementacije</h2>
+        <div className="bg-gradient-to-r from-stone-50 to-amber-50 dark:from-stone-900/50 dark:to-amber-900/20 rounded-lg p-6 mb-8">
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Status implementacije</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
               <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">{stats.implementedItems}</div>

@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import MapPicker from './MapPicker';
 import AddressAutocomplete from './AddressAutocomplete';
 import { buildCategoryTree } from '../utils/category-tree.js';
+import { getCategoryIcon } from '../data/categoryIcons.js';
 import api from '../api';
 
 // Konfiguracija vrsta projekata po kategorijama
@@ -422,11 +423,11 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
             function renderOptions(node, depth = 0) {
               const indent = '  '.repeat(depth);
               const prefix = depth > 0 ? '└─ ' : '';
-              const icon = node.icon ? `${node.icon} ` : '';
+              const icon = getCategoryIcon(node);
               
               return [
                 <option key={node.id} value={node.id}>
-                  {indent}{prefix}{icon}{node.name}
+                  {indent}{prefix}{icon} {node.name}
                 </option>,
                 ...(node.children || []).flatMap(child => renderOptions(child, depth + 1))
               ];

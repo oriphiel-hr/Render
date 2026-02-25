@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../api';
 import { useLegalStatuses } from '../hooks/useLegalStatuses';
 import { validateOIB, validateEmail } from '../utils/validators';
+import { getCategoryIcon } from '../data/categoryIcons.js';
 
 export default function UserRegister({ onSuccess }) {
   const { legalStatuses, loading: loadingStatuses } = useLegalStatuses();
@@ -820,7 +821,7 @@ export default function UserRegister({ onSuccess }) {
                           />
                           <div className="flex-1">
                             <div className="flex items-center space-x-2">
-                              <span className="text-lg">{category.icon || '🛠️'}</span>
+                              <span className="text-lg">{getCategoryIcon(category)}</span>
                               <span className="font-medium text-gray-900">{category.name}</span>
                             </div>
                             {category.description && (

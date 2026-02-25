@@ -373,7 +373,7 @@ export default function SubscriptionPlans() {
       </div>
 
       {/* FAQ + Quick Links */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8">
+      <div className="bg-gradient-to-r from-stone-50 to-amber-50 dark:from-stone-900/50 dark:to-amber-900/20 rounded-2xl p-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Često Postavljana Pitanja</h2>
         
         <div className="space-y-4">

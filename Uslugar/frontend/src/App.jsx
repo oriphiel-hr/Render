@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '@/api'
+import { getCategoryIcon } from './data/categoryIcons.js';
 import { AdminRouter } from './admin';
 import JobCard from './components/JobCard';
 import JobForm from './components/JobForm';
@@ -1167,7 +1168,7 @@ export default function App(){
                           }}
                           className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow text-center group"
                         >
-                          <div className="text-3xl mb-2">{category.icon || '🔧'}</div>
+                          <div className="text-3xl mb-2">{getCategoryIcon(category)}</div>
                           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                             {category.name}
                           </h3>
@@ -1202,7 +1203,7 @@ export default function App(){
                         >
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex items-center gap-2">
-                              <span className="text-2xl">{category?.icon || '🔧'}</span>
+                              <span className="text-2xl">{category ? getCategoryIcon(category) : '🔧'}</span>
                               <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
                                 {category?.name || 'Kategorija'}
                               </span>
@@ -1775,7 +1776,7 @@ export default function App(){
                       {/* Glavna kategorija */}
                       <div className="flex items-center gap-4 mb-4">
                         <div className="text-3xl">
-                          {parentCategory.icon || '🛠️'}
+                          {getCategoryIcon(parentCategory)}
                         </div>
                         <div className="flex-1">
                           <h2 className="text-xl font-bold text-gray-900 mb-1">
@@ -1820,7 +1821,7 @@ export default function App(){
                               >
                                 <div className="text-center">
                                   <div className="text-xl mb-1">
-                                    {subcategory.icon || '🔧'}
+                                    {getCategoryIcon(subcategory)}
                                   </div>
                                   <h4 className="font-semibold text-xs text-gray-800 mb-1">
                                     {subcategory.name}
@@ -1928,7 +1929,7 @@ export default function App(){
 
       {tab === 'documentation' && (
         <section id="documentation" className="tab-section">
-          <Documentation />
+          <Documentation setTab={setTab} />
         </section>
       )}
 

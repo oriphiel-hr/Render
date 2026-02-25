@@ -2,6 +2,8 @@
  * Frontend utility functions for category tree handling
  */
 
+import { getCategoryIcon } from '../data/categoryIcons.js';
+
 /**
  * Build a hierarchical tree structure from flat category list
  * @param {Array} categories - Flat array of categories
@@ -120,6 +122,7 @@ export function flattenCategoryTree(tree, result = []) {
  */
 export function formatCategoryName(category, depth = 0) {
   const indent = '  '.repeat(depth);
-  return `${indent}${category.icon || ''} ${category.name}`;
+  const icon = getCategoryIcon(category);
+  return `${indent}${icon} ${category.name}`;
 }
 
