@@ -325,6 +325,7 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
   };
 
   const onFormSubmit = (data) => {
+    const hasToken = typeof localStorage !== 'undefined' && !!localStorage.getItem('token');
     onSubmit({
       ...data,
       images,
@@ -334,11 +335,11 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
       deadline: data.deadline ? new Date(data.deadline).toISOString() : null,
       latitude: location.latitude || data.latitude || null,
       longitude: location.longitude || data.longitude || null,
-      // Add anonymous user fields if not authenticated
-      anonymous: isAnonymous,
-      contactName: isAnonymous ? data.contactName : undefined,
-      contactEmail: isAnonymous ? data.contactEmail : undefined,
-      contactPhone: isAnonymous ? data.contactPhone : undefined
+      // Ako je korisnik prijavljen, nikad ne šalji kao anoniman
+      anonymous: hasToken ? false : isAnonymous,
+      contactName: !hasToken && isAnonymous ? data.contactName : undefined,
+      contactEmail: !hasToken && isAnonymous ? data.contactEmail : undefined,
+      contactPhone: !hasToken && isAnonymous ? data.contactPhone : undefined
     });
   };
 

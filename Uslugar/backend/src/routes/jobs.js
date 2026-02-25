@@ -197,25 +197,34 @@ r.post('/', async (req, res, next) => {
     
     // For anonymous users, require contact info
     let userId = null;
+    let authHeaderPresent = false;
     
     // Check if user is authenticated
-    const authToken = req.headers.authorization?.replace('Bearer ', '');
+    const authToken = req.headers.authorization?.replace('Bearer ', '').trim();
     if (authToken) {
+      authHeaderPresent = true;
       try {
         const jwt = await import('jsonwebtoken');
         const SECRET = process.env.JWT_SECRET || 'dev-super-secret';
         const decoded = jwt.verify(authToken, SECRET);
         userId = decoded.id;
       } catch (e) {
-        // Token invalid or expired, continue as anonymous
+        // Token invalid or expired – vrati 401 da korisnik zna da treba ponovno prijavu
+        return res.status(401).json({
+          error: 'Session expired or invalid',
+          message: 'Sesija je istekla ili nije valjana. Prijavite se ponovno pa pokušajte objaviti posao.'
+        });
       }
     }
     
-    // If not authenticated and anonymous, require contact info
+    // Zahtjev bez tokena ili anonimni korisnik bez kontakt podataka
     if (!userId && (anonymous || !contactEmail || !contactPhone || !contactName)) {
-      return res.status(400).json({ 
-        error: 'Missing contact information',
-        message: 'Za anonimne korisnike morate unijeti email, telefon i ime'
+      const message = authHeaderPresent
+        ? 'Sesija je istekla ili nije valjana. Prijavite se ponovno.'
+        : 'Za anonimne korisnike morate unijeti email, telefon i ime. Ako ste prijavljeni, osvježite stranicu ili se ponovno prijavite.';
+      return res.status(authHeaderPresent ? 401 : 400).json({
+        error: authHeaderPresent ? 'Session expired or invalid' : 'Missing contact information',
+        message
       });
     }
     

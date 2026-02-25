@@ -432,7 +432,7 @@ export default function App(){
     'text-gray-500 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white';
 
   return (
-    <div className="p-6 max-w-5xl mx-auto min-h-screen bg-white dark:bg-gray-900 transition-colors">
+    <div className="relative p-6 max-w-5xl mx-auto min-h-screen transition-colors bg-gradient-to-b from-stone-50/95 via-amber-50/50 to-orange-50/70 dark:from-gray-900 dark:to-gray-900">
       {/* Skip to main content link for screen readers */}
       <a 
         href="#main-content" 
@@ -443,7 +443,7 @@ export default function App(){
       </a>
 
       <header
-        className="sticky top-4 z-30 mb-4 flex w-full items-center justify-between rounded-2xl border border-gray-200 bg-white/80 px-4 py-3 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-900/80"
+        className="sticky top-4 z-30 mb-4 flex w-full items-center justify-between rounded-2xl border border-gray-200 bg-white/80 px-4 py-3 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-900/80 overflow-visible"
         role="banner"
       >
         <Logo size="md" />
@@ -461,7 +461,7 @@ export default function App(){
         </div>
         {/* Desktop Navigation */}
         <nav
-          className="hidden flex-1 items-center justify-between gap-8 px-2 lg:flex"
+          className="hidden flex-1 items-center justify-between gap-8 px-2 lg:flex overflow-visible"
           role="navigation"
           aria-label="Glavna navigacija"
         >
@@ -592,7 +592,7 @@ export default function App(){
             </DropdownMenu>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 overflow-visible">
             {/* Dropdown Menus */}
             {!token && (
               <>
