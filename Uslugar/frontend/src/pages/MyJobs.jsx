@@ -13,6 +13,7 @@ export default function MyJobs({ onNavigate }) {
   const [offers, setOffers] = useState({});
   const [chatRoom, setChatRoom] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('ALL');
 
   useEffect(() => {
     if (!token) {
@@ -135,8 +136,7 @@ export default function MyJobs({ onNavigate }) {
 
   const handleOpenChat = async (job) => {
     try {
-      // Pronađi prihvaćenu ponudu
-      const jobOffers = offers[job.id] || [];
+      const jobOffers = offers[job.id] || job.offers || [];
       const acceptedOffer = jobOffers.find(o => o.status === 'ACCEPTED');
       
       if (!acceptedOffer) {
@@ -210,16 +210,129 @@ export default function MyJobs({ onNavigate }) {
 
   const isProvider = user?.role === 'PROVIDER';
 
+  // Za korisnike: statistika, filter i export
+  const getJobStatusLabel = (status) => {
+    const map = { OPEN: 'Otvoren', IN_PROGRESS: 'U tijeku', COMPLETED: 'Završen', CANCELLED: 'Otkazan' };
+    return map[status] || status;
+  };
+
+  const stats = !isProvider && jobs.length > 0 ? {
+    total: jobs.length,
+    open: jobs.filter(j => j.status === 'OPEN').length,
+    inProgress: jobs.filter(j => j.status === 'IN_PROGRESS').length,
+    completed: jobs.filter(j => j.status === 'COMPLETED').length,
+    cancelled: jobs.filter(j => j.status === 'CANCELLED').length,
+    totalOffers: jobs.reduce((acc, j) => acc + (j.offers?.length || 0), 0),
+  } : null;
+
+  const filteredJobs = !isProvider && statusFilter !== 'ALL'
+    ? jobs.filter(j => j.status === statusFilter)
+    : jobs;
+
+  const providersWorkedWith = !isProvider && jobs.length > 0
+    ? jobs
+        .filter(j => (j.status === 'IN_PROGRESS' || j.status === 'COMPLETED') && j.offers?.length)
+        .map(j => {
+          const accepted = j.offers.find(o => o.status === 'ACCEPTED');
+          return accepted?.user ? { jobId: j.id, jobTitle: j.title, providerName: accepted.user.fullName, providerId: accepted.user.id } : null;
+        })
+        .filter(Boolean)
+        .filter((v, i, a) => a.findIndex(x => x.providerId === v.providerId) === i)
+    : [];
+
+  const exportMyJobsCsv = () => {
+    const rows = filteredJobs.map(j => {
+      const accepted = j.offers?.find(o => o.status === 'ACCEPTED');
+      const providerName = accepted?.user?.fullName ?? '';
+      return [
+        j.title || '',
+        getJobStatusLabel(j.status),
+        j.category?.name || '',
+        j.city || '',
+        [j.budgetMin, j.budgetMax].filter(Boolean).length ? `${j.budgetMin || ''}-${j.budgetMax || ''} €` : 'Dogovor',
+        j.createdAt ? new Date(j.createdAt).toLocaleDateString('hr-HR') : '',
+        providerName,
+      ];
+    });
+    const header = ['Naslov', 'Status', 'Kategorija', 'Grad', 'Budžet', 'Datum objave', 'Pružatelj'];
+    const csv = [header, ...rows].map(row => row.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `moji-poslovi-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">📋 Moji Poslovi</h1>
-        <p className="text-gray-600">
+        <p className="text-gray-600 dark:text-gray-400">
           {isProvider 
             ? 'Pregledajte sve poslove na koje ste poslali ponudu ili koje ste prihvatili'
-            : 'Pregledajte sve poslove koje ste objavili i primljene ponude'}
+            : 'Pregledajte sve poslove koje ste objavili, primljene ponude, povijest suradnje s pružateljima i statistiku. Možete filtrirati po statusu i preuzeti listu u CSV.'}
         </p>
       </div>
+
+      {!isProvider && stats && (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Ukupno poslova</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Otvoreno</p>
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.open}</p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700">
+              <p className="text-sm text-gray-500 dark:text-gray-400">U tijeku</p>
+              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.inProgress}</p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Završeno</p>
+              <p className="text-2xl font-bold text-gray-700 dark:text-gray-300">{stats.completed}</p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Ukupno ponuda</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalOffers}</p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700 flex flex-col justify-center">
+              <button
+                onClick={exportMyJobsCsv}
+                className="px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+              >
+                📥 Preuzmi CSV
+              </button>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <span className="text-sm text-gray-600 dark:text-gray-400">Filter po statusu:</span>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-2"
+            >
+              <option value="ALL">Svi</option>
+              <option value="OPEN">Otvoreni</option>
+              <option value="IN_PROGRESS">U tijeku</option>
+              <option value="COMPLETED">Završeni</option>
+              <option value="CANCELLED">Otkazani</option>
+            </select>
+          </div>
+          {providersWorkedWith.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6 border border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">👥 Pružatelji s kojima ste surađivali</h2>
+              <ul className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                {providersWorkedWith.map(({ jobTitle, providerName }) => (
+                  <li key={`${jobTitle}-${providerName}`}>• <strong>{providerName}</strong> – {jobTitle}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
+      )}
 
       {jobs.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-8 text-center">
@@ -235,9 +348,15 @@ export default function MyJobs({ onNavigate }) {
             {isProvider ? 'Pretraži poslove' : 'Objavi novi posao'}
           </button>
         </div>
+      ) : !isProvider && filteredJobs.length === 0 ? (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center">
+          <p className="text-gray-600 dark:text-gray-400 mb-4">Nema poslova za odabrani filter. Promijenite filter ili objavite novi posao.</p>
+          <button onClick={() => setStatusFilter('ALL')} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 mr-2">Prikaži sve</button>
+          <button onClick={() => onNavigate && onNavigate('user')} className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">Objavi novi posao</button>
+        </div>
       ) : (
         <div className="space-y-4">
-          {jobs.map(job => (
+          {filteredJobs.map(job => (
             <div key={job.id} className="bg-white rounded-lg shadow p-6">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex-1">
@@ -248,11 +367,13 @@ export default function MyJobs({ onNavigate }) {
                     {job.category && <span>🏷️ {job.category.name}</span>}
                     <span>💰 {job.budgetMin && job.budgetMax ? `${job.budgetMin}-${job.budgetMax} €` : 'Dogovor'}</span>
                     <span className={`px-2 py-1 rounded ${
-                      job.status === 'OPEN' ? 'bg-green-100 text-green-800' :
-                      job.status === 'ACCEPTED' ? 'bg-blue-100 text-blue-800' :
+                      job.status === 'OPEN' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                      job.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                      job.status === 'COMPLETED' ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' :
+                      job.status === 'CANCELLED' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
                       'bg-gray-100 text-gray-800'
                     }`}>
-                      {job.status === 'OPEN' ? 'Otvoren' : job.status === 'ACCEPTED' ? 'Prihvaćen' : 'Završen'}
+                      {getJobStatusLabel(job.status)}
                     </span>
                     {isProvider && job.myOffer && (
                       <span className={`px-2 py-1 rounded ${
@@ -290,20 +411,20 @@ export default function MyJobs({ onNavigate }) {
 
               {!isProvider && selectedJob?.id === job.id && (
                 <div className="mt-4 border-t pt-4">
-                  <h4 className="font-semibold mb-3">Primljene ponude ({offers[job.id]?.length || 0})</h4>
-                  {offers[job.id] && offers[job.id].length > 0 ? (
+                  <h4 className="font-semibold mb-3">Primljene ponude ({offers[job.id]?.length ?? job.offers?.length ?? 0})</h4>
+                  {((offers[job.id] || job.offers) && (offers[job.id] || job.offers).length > 0) ? (
                     <div className="space-y-3">
-                      {offers[job.id].map(offer => (
-                        <div key={offer.id} className="bg-gray-50 rounded p-4">
+                      {(offers[job.id] || job.offers || []).map(offer => (
+                        <div key={offer.id} className="bg-gray-50 dark:bg-gray-700/50 rounded p-4">
                           <div className="flex justify-between items-start">
                             <div>
-                              <p className="font-medium">{offer.user.fullName}</p>
-                              <p className="text-sm text-gray-600">{offer.message}</p>
-                              <p className="text-sm font-semibold text-green-600 mt-1">
-                                {offer.price ? `${offer.price} €` : 'Cijena po dogovoru'}
+                              <p className="font-medium text-gray-900 dark:text-white">{offer.user?.fullName ?? 'Pružatelj'}</p>
+                              {offer.message != null && <p className="text-sm text-gray-600 dark:text-gray-400">{offer.message}</p>}
+                              <p className="text-sm font-semibold text-green-600 dark:text-green-400 mt-1">
+                                {offer.price != null ? `${offer.price} €` : offer.amount != null ? `${offer.amount} €` : 'Cijena po dogovoru'}
                               </p>
                             </div>
-                            {job.status === 'OPEN' && (
+                            {job.status === 'OPEN' && offers[job.id] && (
                               <div className="flex gap-2">
                                 <button
                                   onClick={() => acceptOffer(offer.id, job.id)}

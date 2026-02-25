@@ -127,7 +127,11 @@ export async function assignLeadToTeamMember(queueId, teamMemberId, directorId) 
   // Provjeri da li tim član pripada direktoru
   const teamMember = await prisma.providerProfile.findUnique({
     where: { id: teamMemberId },
-    select: { companyId: true }
+    select: {
+      companyId: true,
+      userId: true,
+      user: { select: { fullName: true } }
+    }
   });
 
   if (!teamMember || teamMember.companyId !== directorId) {

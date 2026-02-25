@@ -24,14 +24,16 @@ r.get('/', auth(false), async (req, res, next) => {
       ...(maxBudget ? { budgetMin: { lte: parseInt(maxBudget) } } : {}),
       ...(q ? { OR: [{ title: { contains: q, mode: 'insensitive' } }, { description: { contains: q, mode: 'insensitive' } }] } : {})
     };
+
+    const offersInclude = myJobs && userId
+      ? { include: { user: { select: { id: true, fullName: true } } } }
+      : { select: { id: true, userId: true, status: true } };
     
     let jobs = await prisma.job.findMany({
       where: whereClause,
       include: { 
         category: true, 
-        offers: {
-          select: { id: true, userId: true, status: true }
-        },
+        offers: offersInclude,
         user: {
           select: { id: true, fullName: true, email: true, phone: true }
         }

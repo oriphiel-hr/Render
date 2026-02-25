@@ -40,6 +40,16 @@ export const requestRefund = (purchaseId, reason) => {
   return api.post(`/exclusive/leads/purchases/${purchaseId}/refund`, { reason });
 };
 
+/** Leadovi dodijeljeni meni (član tima) */
+export const getAssignedLeads = () => {
+  return api.get('/director/lead-queue/my-assigned');
+};
+
+/** Ažuriraj status leada dodijeljenog tim članu: IN_PROGRESS | COMPLETED */
+export const updateAssignedLeadStatus = (queueId, status) => {
+  return api.patch(`/director/lead-queue/${queueId}/status`, { status });
+};
+
 // ============================================================
 // CREDITS
 // ============================================================

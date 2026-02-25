@@ -1,6 +1,6 @@
 // USLUGAR EXCLUSIVE - My Leads Page
 import React, { useState, useEffect } from 'react';
-import { getMyLeads, markLeadContacted, markLeadConverted, requestRefund, getCreditsBalance, exportMyLeadsCSV, exportCreditsHistoryCSV, unlockContact } from '../api/exclusive';
+import { getMyLeads, markLeadContacted, markLeadConverted, requestRefund, getCreditsBalance, exportMyLeadsCSV, exportCreditsHistoryCSV, unlockContact, getAssignedLeads, updateAssignedLeadStatus } from '../api/exclusive';
 
 export default function MyLeads() {
   const [leads, setLeads] = useState([]);
@@ -10,11 +10,26 @@ export default function MyLeads() {
   const [selectedLead, setSelectedLead] = useState(null);
   const [creditsBalance, setCreditsBalance] = useState(0);
   const [unlocking, setUnlocking] = useState(null);
+  const [assignedQueue, setAssignedQueue] = useState([]);
+  const [isTeamMember, setIsTeamMember] = useState(false);
+  const [updatingStatusId, setUpdatingStatusId] = useState(null);
 
   useEffect(() => {
     loadLeads();
     loadCredits();
+    loadAssignedLeads();
   }, [filter]);
+
+  const loadAssignedLeads = async () => {
+    try {
+      const res = await getAssignedLeads();
+      setAssignedQueue(res.data?.queue || []);
+      setIsTeamMember(res.data?.isTeamMember || false);
+    } catch (err) {
+      setAssignedQueue([]);
+      setIsTeamMember(false);
+    }
+  };
 
   const loadLeads = async () => {
     try {
@@ -35,6 +50,19 @@ export default function MyLeads() {
       setCreditsBalance(response.data.balance);
     } catch (err) {
       console.error('Error loading credits:', err);
+    }
+  };
+
+  const handleAssignedStatus = async (queueId, status) => {
+    try {
+      setUpdatingStatusId(queueId);
+      await updateAssignedLeadStatus(queueId, status);
+      await loadAssignedLeads();
+      alert(status === 'IN_PROGRESS' ? '✅ Lead označen kao "u tijeku".' : '✅ Lead označen kao završen.');
+    } catch (err) {
+      alert('Greška: ' + (err.response?.data?.error || err.message || 'Neuspjelo'));
+    } finally {
+      setUpdatingStatusId(null);
     }
   };
 
@@ -189,6 +217,74 @@ export default function MyLeads() {
           </div>
         </div>
       </div>
+
+      {/* Leadovi dodijeljeni meni (član tima) */}
+      {isTeamMember && (
+        <div className="mb-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="px-6 py-4 bg-indigo-50 dark:bg-indigo-900/20 border-b border-indigo-100 dark:border-indigo-800">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">👥 Leadovi dodijeljeni meni</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Leadovi koje vam je direktor dodijelio; možete označiti "Započinjem rad" ili "Završeno".</p>
+          </div>
+          <div className="p-6">
+            {assignedQueue.length === 0 ? (
+              <p className="text-gray-500 dark:text-gray-400">Trenutno nemate dodijeljenih leadova. Direktor vam ih dodjeljuje u internom queueu tvrtke.</p>
+            ) : (
+              <div className="space-y-4">
+                {assignedQueue.map((entry) => (
+                  <div key={entry.id} className="p-4 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50">
+                    <div className="flex flex-wrap justify-between items-start gap-2">
+                      <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-white">{entry.job?.title}</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                          📍 {entry.job?.user?.city} · 🏷️ {entry.job?.category?.name}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                          Klijent: {entry.job?.user?.fullName}
+                          {entry.director?.companyName && ` · Tvrtka: ${entry.director.companyName}`}
+                        </p>
+                        {entry.assignedAt && (
+                          <p className="text-xs text-gray-500 mt-1">Dodijeljeno: {new Date(entry.assignedAt).toLocaleString('hr-HR')}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-1 rounded text-sm font-medium ${
+                          entry.status === 'ASSIGNED' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' :
+                          entry.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' :
+                          'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
+                        }`}>
+                          {entry.status === 'ASSIGNED' ? 'Dodijeljeno' : entry.status === 'IN_PROGRESS' ? 'U tijeku' : 'Završeno'}
+                        </span>
+                        {entry.status === 'ASSIGNED' && (
+                          <button
+                            onClick={() => handleAssignedStatus(entry.id, 'IN_PROGRESS')}
+                            disabled={updatingStatusId === entry.id}
+                            className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                          >
+                            {updatingStatusId === entry.id ? '...' : 'Započni rad'}
+                          </button>
+                        )}
+                        {(entry.status === 'ASSIGNED' || entry.status === 'IN_PROGRESS') && (
+                          <button
+                            onClick={() => handleAssignedStatus(entry.id, 'COMPLETED')}
+                            disabled={updatingStatusId === entry.id}
+                            className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50"
+                          >
+                            {updatingStatusId === entry.id ? '...' : 'Završeno'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-2 flex gap-4 text-xs text-gray-500">
+                      {entry.startedAt && <span>Započeto: {new Date(entry.startedAt).toLocaleString('hr-HR')}</span>}
+                      {entry.completedAt && <span>Završeno: {new Date(entry.completedAt).toLocaleString('hr-HR')}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Filter Tabs */}
       <div className="mb-6 flex gap-2 border-b">

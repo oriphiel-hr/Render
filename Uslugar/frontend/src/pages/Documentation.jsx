@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDarkMode } from '../contexts/DarkModeContext.jsx';
 import api from '../api.js';
-import { GUIDE_KORISNIK, GUIDE_PRUVATELJ, DOC_CATEGORIES_FOR_KORISNIK, DOC_CATEGORIES_FOR_PRUVATELJ } from '../data/guideContent.js';
+import { GUIDE_KORISNIK, GUIDE_PRUVATELJ, GUIDE_TIM_CLAN, DOC_CATEGORIES_FOR_KORISNIK, DOC_CATEGORIES_FOR_PRUVATELJ } from '../data/guideContent.js';
 
 /** Vraća ulogu za dokumentaciju: 'korisnik' | 'pružatelj' | null (neprijavljen) */
 function getDocumentationRole() {
@@ -42,15 +42,35 @@ const Documentation = ({ setTab }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedGuideRole, setSelectedGuideRole] = useState(null);
+  const [isTeamMember, setIsTeamMember] = useState(false);
   const [failedGuideImages, setFailedGuideImages] = useState(() => new Set());
 
   const docRole = getDocumentationRole();
   const verificationInfo = getVerificationInfo();
-  const effectiveGuideRole = docRole ?? selectedGuideRole;
-  const guideSteps = effectiveGuideRole === 'pružatelj' ? GUIDE_PRUVATELJ : effectiveGuideRole === 'korisnik' ? GUIDE_KORISNIK : null;
+  const effectiveGuideRole = (docRole === 'pružatelj' && isTeamMember) ? 'tim_clan' : (docRole ?? selectedGuideRole);
+  const guideSteps = effectiveGuideRole === 'pružatelj' ? GUIDE_PRUVATELJ
+    : effectiveGuideRole === 'tim_clan' ? GUIDE_TIM_CLAN
+    : effectiveGuideRole === 'korisnik' ? GUIDE_KORISNIK
+    : null;
   const needsEmailVerification = docRole && verificationInfo.emailVerified === false;
   const showBeforeYouStart = guideSteps && docRole && needsEmailVerification;
   const showProviderProfileTip = guideSteps && effectiveGuideRole === 'pružatelj' && docRole && verificationInfo.emailVerified === true;
+
+  // Za pružatelje provjeri jesu li član tima (direktor ih je dodao) – prikaži vodič za član tima
+  useEffect(() => {
+    if (docRole !== 'pružatelj') return;
+    let cancelled = false;
+    api.get('/providers/me')
+      .then((res) => {
+        if (cancelled) return;
+        const p = res.data;
+        setIsTeamMember(!!p?.companyId && !p?.isDirector);
+      })
+      .catch(() => {
+        if (!cancelled) setIsTeamMember(false);
+      });
+    return () => { cancelled = true; };
+  }, [docRole]);
 
   // Učitaj podatke iz baze
   useEffect(() => {
@@ -248,11 +268,11 @@ const Documentation = ({ setTab }) => {
           📖 Vodič
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mb-6">
-          Korak-po-korak upute za korištenje Uslugara. Prikazuje se samo vodič za tvoju ulogu.
+          Korak-po-korak upute za korištenje Uslugara. Prikazuje se samo vodič za vašu ulogu.
         </p>
 
         {!effectiveGuideRole ? (
-          <div className="grid md:grid-cols-2 gap-4 mb-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
             <button
               type="button"
               onClick={() => setSelectedGuideRole('korisnik')}
@@ -271,6 +291,15 @@ const Documentation = ({ setTab }) => {
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">Ja sam pružatelj</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">Majstor / želim primati leadove i slati ponude</p>
             </button>
+            <button
+              type="button"
+              onClick={() => setSelectedGuideRole('tim_clan')}
+              className="p-6 rounded-xl border-2 border-amber-200 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/20 hover:border-amber-400 dark:hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/30 text-left transition-colors"
+            >
+              <span className="text-2xl block mb-2">👥</span>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">Ja sam član tima</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Radim za direktora / leadovi mi se dodjeljuju</p>
+            </button>
           </div>
         ) : null}
 
@@ -281,7 +310,7 @@ const Documentation = ({ setTab }) => {
             </p>
             {docRole && (
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Prijavljeni ste kao <strong>{effectiveGuideRole === 'korisnik' ? 'korisnik usluge' : 'pružatelj usluge'}</strong>. Prikazuje se odgovarajući vodič.
+                Prijavljeni ste kao <strong>{effectiveGuideRole === 'korisnik' ? 'korisnik usluge' : effectiveGuideRole === 'tim_clan' ? 'član tima' : 'pružatelj usluge'}</strong>. Prikazuje se odgovarajući vodič.
               </p>
             )}
             {!docRole && effectiveGuideRole && (
@@ -300,7 +329,7 @@ const Documentation = ({ setTab }) => {
                   ⚠️ Prije nego nastaviš
                 </h3>
                 <p className="text-amber-800 dark:text-amber-300 mb-4">
-                  Tvoj email još nije potvrđen. Provjeri poštu i klikni na link u mailu koji smo ti poslali. Dok to ne napraviš, neke opcije možda neće biti dostupne.
+                  Vaš email još nije potvrđen. Provjerite poštu i kliknite na link u mailu koji smo Vam poslali. Dok to ne napravite, neke opcije možda neće biti dostupne.
                 </p>
                 <p className="text-sm text-amber-700 dark:text-amber-400 mb-4">
                   Nisi primio mail? Možeš zatražiti novi link za potvrdu.
@@ -334,7 +363,7 @@ const Documentation = ({ setTab }) => {
             {docRole && verificationInfo.emailVerified === true && !showBeforeYouStart && (
               <div className="mb-6 p-4 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
                 <p className="text-sm text-green-800 dark:text-green-300">
-                  ✓ Tvoj email je potvrđen. Možeš koristiti vodič ispod.
+                  ✓ Vaš email je potvrđen. Možete koristiti vodič ispod.
                 </p>
               </div>
             )}
@@ -354,11 +383,11 @@ const Documentation = ({ setTab }) => {
                   <div className="grid md:grid-cols-1 gap-4">
                     <div className="space-y-3">
                       <p className="text-gray-700 dark:text-gray-300">
-                        <span className="font-medium text-gray-900 dark:text-white">Što napraviš:</span>{' '}
+                        <span className="font-medium text-gray-900 dark:text-white">Vaš korak:</span>{' '}
                         {item.userAction}
                       </p>
                       <p className="text-gray-700 dark:text-gray-300">
-                        <span className="font-medium text-gray-900 dark:text-white">Što se događa:</span>{' '}
+                        <span className="font-medium text-gray-900 dark:text-white">Rezultat:</span>{' '}
                         {item.appResult}
                       </p>
                     </div>
@@ -401,8 +430,13 @@ const Documentation = ({ setTab }) => {
             📋 Sve funkcionalnosti za {effectiveGuideRole === 'korisnik' ? 'korisnike' : 'pružatelje'}
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Detaljan pregled svega što je u dokumentaciji vezano uz tvoju ulogu – ista razina detalja kao u originalnoj dokumentaciji (status, opisi, expand za puni tekst).
+            Detaljan pregled svega što je u dokumentaciji vezano uz vašu ulogu – ista razina detalja kao u originalnoj dokumentaciji (status, opisi, expand za puni tekst).
           </p>
+          {effectiveGuideRole === 'korisnik' && (
+            <p className="text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3 mb-6">
+              <strong>Moji poslovi</strong> vam nude poboljšani pregled: statistiku (broj poslova po statusu, ukupno primljenih ponuda), filter po statusu (otvoreni, u tijeku, završeni, otkazani), povijest pružatelja s kojima ste surađivali i preuzimanje liste poslova u CSV.
+            </p>
+          )}
           <div className="space-y-8">
             {featuresForRole.map((category, categoryIndex) => (
               <div key={categoryIndex} className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">

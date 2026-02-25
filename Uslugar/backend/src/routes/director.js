@@ -478,6 +478,146 @@ r.post('/become-director', auth(true, ['PROVIDER']), async (req, res, next) => {
 });
 
 /**
+ * GET /api/director/lead-queue/my-assigned
+ * Dohvati leadove dodijeljene trenutnom korisniku (za članove tima)
+ */
+r.get('/lead-queue/my-assigned', auth(true, ['PROVIDER']), async (req, res, next) => {
+  try {
+    const profile = await prisma.providerProfile.findUnique({
+      where: { userId: req.user.id },
+      select: { id: true, isDirector: true, companyId: true }
+    });
+
+    if (!profile) {
+      return res.status(403).json({ error: 'Nemate Provider profil.' });
+    }
+
+    if (profile.isDirector || !profile.companyId) {
+      return res.json({ queue: [], isTeamMember: false });
+    }
+
+    const queue = await prisma.companyLeadQueue.findMany({
+      where: { assignedToId: profile.id },
+      include: {
+        job: {
+          include: {
+            category: true,
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                city: true
+              }
+            }
+          }
+        },
+        director: {
+          select: {
+            id: true,
+            companyName: true,
+            user: {
+              select: { fullName: true, email: true }
+            }
+          }
+        }
+      },
+      orderBy: { assignedAt: 'desc' }
+    });
+
+    res.json({
+      queue,
+      isTeamMember: true,
+      stats: {
+        assigned: queue.filter(q => q.status === 'ASSIGNED').length,
+        inProgress: queue.filter(q => q.status === 'IN_PROGRESS').length,
+        completed: queue.filter(q => q.status === 'COMPLETED').length
+      }
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * PATCH /api/director/lead-queue/:queueId/status
+ * Ažuriraj status leada dodijeljenog tim članu (Započinjem rad / Završeno)
+ */
+r.patch('/lead-queue/:queueId/status', auth(true, ['PROVIDER']), async (req, res, next) => {
+  try {
+    const { queueId } = req.params;
+    const { status } = req.body;
+
+    if (!['IN_PROGRESS', 'COMPLETED'].includes(status)) {
+      return res.status(400).json({
+        error: 'Nevažeći status',
+        message: 'Dopušteno: IN_PROGRESS (započinjem rad), COMPLETED (završeno).'
+      });
+    }
+
+    const profile = await prisma.providerProfile.findUnique({
+      where: { userId: req.user.id },
+      select: { id: true }
+    });
+
+    if (!profile) {
+      return res.status(403).json({ error: 'Nemate Provider profil.' });
+    }
+
+    const queueEntry = await prisma.companyLeadQueue.findUnique({
+      where: { id: queueId },
+      include: {
+        job: {
+          include: {
+            category: true,
+            user: { select: { fullName: true, email: true, city: true } }
+          }
+        }
+      }
+    });
+
+    if (!queueEntry) {
+      return res.status(404).json({ error: 'Stavka queuea nije pronađena.' });
+    }
+
+    if (queueEntry.assignedToId !== profile.id) {
+      return res.status(403).json({
+        error: 'Nemate ovlasti',
+        message: 'Samo tim član kojem je lead dodijeljen može mijenjati status.'
+      });
+    }
+
+    const updateData = { status };
+    if (status === 'IN_PROGRESS') {
+      updateData.startedAt = new Date();
+    } else if (status === 'COMPLETED') {
+      updateData.completedAt = new Date();
+    }
+
+    const updated = await prisma.companyLeadQueue.update({
+      where: { id: queueId },
+      data: updateData,
+      include: {
+        job: {
+          include: {
+            category: true,
+            user: { select: { fullName: true, email: true, city: true } }
+          }
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      message: status === 'IN_PROGRESS' ? 'Lead označen kao "u tijeku".' : 'Lead označen kao završen.',
+      queueEntry: updated
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
  * GET /api/director/lead-queue
  * Dohvati sve leadove u internom queueu tvrtke (samo za direktora)
  */
