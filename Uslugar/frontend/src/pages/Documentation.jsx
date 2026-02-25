@@ -381,7 +381,7 @@ const Documentation = ({ setTab }) => {
                     </div>
                     {item.puniOpis && (
                       <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Puni opis (što prvo, što zatim)</h3>
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Puni opis (korak po korak)</h3>
                         <div className="prose dark:prose-invert max-w-none text-sm text-gray-700 dark:text-gray-300">
                           {renderDetailsContent(item.puniOpis)}
                         </div>
