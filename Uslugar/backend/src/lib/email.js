@@ -33,13 +33,15 @@ const createTransporter = () => {
   const isSSL = port === 465;
   
   // Mailpit ne zahtijeva autentifikaciju i koristi port 1025
-  // Detektiraj Mailpit po portu 1025 ili ako su postavljene MAILPIT_ varijable (samo ako nismo u produkciji)
   const isMailpit = !isProd && (port === 1025 || !!process.env.MAILPIT_SMTP_HOST);
   
   const transporterConfig = {
     host: host,
     port: port,
-    secure: isSSL, // true for 465 (SSL), false for 587 (TLS), false for 1025 (Mailpit)
+    secure: isSSL, // true for 465 (SSL), false for 587 (STARTTLS)
+    connectionTimeout: 15000, // 15s – da ne visi beskonačno ako provider blokira
+    greetingTimeout: 10000,
+    ...(port === 587 ? { requireTLS: true } : {}), // eksplicitno STARTTLS za 587
     ...(isMailpit ? {} : {
       auth: {
         user: user,
@@ -47,6 +49,10 @@ const createTransporter = () => {
       }
     })
   };
+  
+  if (isProd && user) {
+    console.log('[SMTP] Production config:', host, 'port', port, 'secure', isSSL);
+  }
   
   if (isMailpit) {
     console.log('[SMTP] Using Mailpit for email testing (no auth required)');
@@ -58,6 +64,12 @@ const createTransporter = () => {
 
 const transporter = createTransporter();
 
+// U produkciji uvijek šalji s SMTP_USER (nikad MAILPIT_SMTP_USER), inače Hostinger odbija "Sender address rejected: Domain not found"
+const getFromEmail = () =>
+  process.env.NODE_ENV === 'production'
+    ? (process.env.SMTP_USER || 'uslugar@oriphiel.hr')
+    : (process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER);
+
 // Template funkcije za različite tipove emailova
 export const sendJobNotification = async (toEmail, jobTitle, jobUrl) => {
   if (!transporter) {
@@ -67,7 +79,7 @@ export const sendJobNotification = async (toEmail, jobTitle, jobUrl) => {
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.SMTP_USER || process.env.MAILPIT_SMTP_USER || user}>`,
+      from: `"Uslugar" <${getFromEmail()}>`,
       to: toEmail,
       subject: `Novi posao: ${jobTitle}`,
       html: `
@@ -91,7 +103,7 @@ export const sendOfferNotification = async (toEmail, jobTitle, providerName, off
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.SMTP_USER || process.env.MAILPIT_SMTP_USER || user}>`,
+      from: `"Uslugar" <${getFromEmail()}>`,
       to: toEmail,
       subject: `Nova ponuda za: ${jobTitle}`,
       html: `
@@ -115,7 +127,7 @@ export const sendOfferAcceptedNotification = async (toEmail, jobTitle, customerN
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.SMTP_USER || process.env.MAILPIT_SMTP_USER || user}>`,
+      from: `"Uslugar" <${getFromEmail()}>`,
       to: toEmail,
       subject: `Ponuda prihvaćena: ${jobTitle}`,
       html: `
@@ -135,7 +147,7 @@ export const sendJobCompletedEmail = async (toEmail, fullName, jobTitle) => {
   try {
     const jobsUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/#my-jobs`;
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.SMTP_USER || process.env.MAILPIT_SMTP_USER || user}>`,
+      from: `"Uslugar" <${getFromEmail()}>`,
       to: toEmail,
       subject: `Posao završen: ${jobTitle}`,
       html: `
@@ -156,7 +168,7 @@ export const sendJobCancelledEmail = async (toEmail, fullName, jobTitle, reason 
   try {
     const jobsUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/#my-jobs`;
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${getFromEmail()}>`,
       to: toEmail,
       subject: `Posao otkazan: ${jobTitle}`,
       html: `
@@ -188,7 +200,7 @@ export const sendJobAlertEmail = async (toEmail, fullName, alertName, jobs) => {
     const more = jobs.length > 10 ? `<p>... i još ${jobs.length - 10} poslova.</p>` : '';
 
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${getFromEmail()}>`,
       to: toEmail,
       subject: `Novi poslovi za "${alertName}" – Uslugar`,
       html: `
@@ -224,7 +236,7 @@ export const sendProviderRegistrationStatusEmail = async (toEmail, fullName, app
       ? 'Vaša registracija kao pružatelj usluga je odobrena! Sada možete koristiti platformu i prikazivati svoje usluge.'
       : `Vaša registracija je odbijena.${reason ? ` Razlog: ${reason}` : ''}`;
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${getFromEmail()}>`,
       to: toEmail,
       subject,
       html: `
@@ -250,7 +262,7 @@ export const sendInvoiceEmail = async (toEmail, fullName, invoice, pdfBuffer) =>
     const invoiceUrl = `${process.env.FRONTEND_URL || 'https://uslugar.oriph.io'}#invoices/${invoice.id}`;
 
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${getFromEmail()}>`,
       to: toEmail,
       subject: `Faktura ${invoice.invoiceNumber} - Uslugar`,
       html: `
@@ -309,7 +321,7 @@ export const sendReviewNotification = async (toEmail, rating, comment, reviewerN
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${getFromEmail()}>`,
       to: toEmail,
       subject: 'Primili ste novu recenziju',
       html: `
@@ -342,7 +354,7 @@ export const sendVerificationEmail = async (toEmail, fullName, verificationToken
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${getFromEmail()}>`,
       to: toEmail,
       subject: 'Potvrdite vašu email adresu - Uslugar',
       html: `
@@ -422,7 +434,7 @@ export const sendVerificationConfirmationEmail = async (toEmail, fullName) => {
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${getFromEmail()}>`,
       to: toEmail,
       subject: 'Članstvo aktivirano - Uslugar',
       html: `
@@ -493,7 +505,7 @@ export const sendCompanyEmailVerification = async (toEmail, fullName, verificati
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.SMTP_USER || 'uslugar@oriphiel.hr'}>`,
+      from: `"Uslugar" <${getFromEmail()}>`,
       to: toEmail,
       subject: 'Potvrdite email adresu na domeni tvrtke - Uslugar',
       html: `
@@ -573,7 +585,7 @@ export const sendPasswordResetEmail = async (toEmail, fullName, resetToken) => {
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${getFromEmail()}>`,
       to: toEmail,
       subject: 'Resetirajte vašu lozinku - Uslugar',
       html: `
@@ -652,7 +664,7 @@ export const sendLoggedInJobConfirmationEmail = async (toEmail, fullName, jobTit
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${getFromEmail()}>`,
       to: toEmail,
       subject: `Posao kreiran: ${jobTitle}`,
       html: `
@@ -722,7 +734,7 @@ export const sendAnonymousJobConfirmationEmail = async (toEmail, contactName, jo
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${getFromEmail()}>`,
       to: toEmail,
       subject: 'Hvala na upitu - Uslugar',
       html: `
@@ -845,7 +857,7 @@ export const sendPaymentConfirmationEmail = async (toEmail, fullName, planName, 
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${getFromEmail()}>`,
       to: toEmail,
       subject: `Potvrda plaćanja - ${planName} pretplata`,
       html: `
@@ -932,7 +944,7 @@ export const sendSubscriptionRefundEmail = async (toEmail, fullName, planName, r
 
   try {
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${getFromEmail()}>`,
       to: toEmail,
       subject: `Povrat novca za pretplatu ${planName} - Uslugar`,
       html: `
@@ -1055,7 +1067,7 @@ export const sendAddonUpsellEmail = async (
     }
 
     await transporter.sendMail({
-      from: `"Uslugar" <${process.env.MAILPIT_SMTP_USER || process.env.SMTP_USER}>`,
+      from: `"Uslugar" <${getFromEmail()}>`,
       to: toEmail,
       subject: subject,
       html: `

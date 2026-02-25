@@ -477,28 +477,27 @@ r.post('/resend-verification', async (req, res, next) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'Email required' });
-    
-    // Find user by email (can be multiple with different roles)
-    // For verification resend, we'll use the first user found
+
     const users = await prisma.user.findMany({ where: { email } });
     if (users.length === 0) return res.status(404).json({ error: 'User not found' });
-    
-    // Use first user (or could iterate through all if needed)
+
     const user = users[0];
     if (user.isVerified) return res.status(400).json({ error: 'Email already verified' });
-    
-    // Generiraj novi token
+
     const verificationToken = randomBytes(32).toString('hex');
     const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
-    
+
     await prisma.user.update({
       where: { id: user.id },
       data: { verificationToken, tokenExpiresAt }
     });
-    
-    await sendVerificationEmail(email, user.fullName, verificationToken);
-    
-    res.json({ message: 'Verification email resent' });
+
+    res.json({ message: 'Verification email resent. Check your inbox and spam folder.' });
+
+    // Slanje u pozadini – ne blokira odgovor (SMTP timeout više ne ruši zahtjev)
+    sendVerificationEmail(email, user.fullName, verificationToken)
+      .then(() => console.log('[OK] Resend verification email sent to:', email))
+      .catch((err) => console.error('Background resend verification email failed:', err?.message || err));
   } catch (e) { next(e); }
 });
 
