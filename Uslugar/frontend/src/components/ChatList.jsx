@@ -93,13 +93,22 @@ const ChatList = ({ currentUserId, onClose }) => {
             <div className="text-gray-500">Učitavanje...</div>
           </div>
         ) : rooms.length === 0 ? (
+          (() => {
+            const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+            const isProvider = storedUser?.role === 'PROVIDER' || !!storedUser?.legalStatusId;
+            const hint = isProvider
+              ? 'Chat sobe se automatski kreiraju kada naručitelj prihvati vašu ponudu za posao.'
+              : 'Chat sobe se automatski kreiraju kada prihvatite ponudu pružatelja za vaš posao (Moji poslovi → odabir ponude).';
+            return (
           <div className="flex flex-col items-center justify-center h-full text-center p-8">
             <div className="text-6xl mb-4">💬</div>
             <p className="text-gray-500 dark:text-gray-400 mb-2">Nemate aktivnih chat soba</p>
             <p className="text-sm text-gray-400 dark:text-gray-500">
-              Chat sobe se automatski kreiraju kada prihvatite ponudu ili kada vam se ponuda prihvati.
+              {hint}
             </p>
           </div>
+            );
+          })()
         ) : (
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {rooms.map((room) => {

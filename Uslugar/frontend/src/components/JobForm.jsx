@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import MapPicker from './MapPicker';
 import AddressAutocomplete from './AddressAutocomplete';
 import { buildCategoryTree } from '../utils/category-tree.js';
+import api from '../api';
 
 // Konfiguracija vrsta projekata po kategorijama
 const PROJECT_TYPES_BY_CATEGORY = {
@@ -200,7 +201,7 @@ const FIELD_CONFIGURATIONS = {
   }
 };
 
-const JobForm = ({ onSubmit, categories = [], initialData = null }) => {
+const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) => {
   const [images, setImages] = useState(initialData?.images || []);
   const [uploading, setUploading] = useState(false);
   const [customFields, setCustomFields] = useState({}); // State za custom polja
@@ -297,25 +298,21 @@ const JobForm = ({ onSubmit, categories = [], initialData = null }) => {
         formData.append('images', file);
       });
 
-      const response = await fetch('/api/upload/multiple', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: formData
-      });
+      const response = await api.post('/upload/multiple', formData);
 
-      if (response.ok) {
-        const data = await response.json();
-        const newImages = [...images, ...data.files.map(file => file.url)];
+      const data = response.data;
+      const newUrls = (data.images || data.files || []).map(f => f.url);
+      if (newUrls.length > 0) {
+        const newImages = [...images, ...newUrls];
         setImages(newImages);
         setValue('images', newImages);
       } else {
-        alert('Greška pri upload-u slika');
+        alert('Greška pri upload-u slika. Nije vraćena nijedna slika.');
       }
     } catch (error) {
-      console.error('Upload error:', error);
-      alert('Greška pri upload-u slika');
+      console.error('Upload error:', error?.response?.data || error);
+      const msg = error.response?.data?.error || error.response?.data?.message || error.message;
+      alert('Greška pri upload-u slika. ' + (msg ? String(msg) : 'Provjerite vezu i pokušajte ponovno.'));
     } finally {
       setUploading(false);
     }
@@ -576,25 +573,25 @@ const JobForm = ({ onSubmit, categories = [], initialData = null }) => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Minimalni budžet (HRK)
+            Minimalni budžet (EUR)
           </label>
           <input
             {...register('budgetMin')}
             type="number"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="1000"
+            placeholder="50"
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Maksimalni budžet (HRK)
+            Maksimalni budžet (EUR)
           </label>
           <input
             {...register('budgetMax')}
             type="number"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="5000"
+            placeholder="500"
           />
         </div>
 
@@ -753,6 +750,7 @@ const JobForm = ({ onSubmit, categories = [], initialData = null }) => {
       <div className="flex justify-end space-x-4">
         <button
           type="button"
+          onClick={() => onCancel?.()}
           className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
         >
           Odustani

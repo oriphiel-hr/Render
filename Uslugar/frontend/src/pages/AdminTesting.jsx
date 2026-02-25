@@ -2017,7 +2017,7 @@ export default function AdminTesting(){
                                       <li>1. Prijavi se kao klijent</li>
                                       <li>2. Otvori <strong>/jobs/create</strong> ili klikni "Objavi posao"</li>
                                       <li>3. Unesi: Naslov (npr. "Popravka kuca"), Opis, Odaberi Kategoriju (Električar)</li>
-                                      <li>4. Unesi budžet: Min: <strong>500</strong> kn, Max: <strong>2000</strong> kn</li>
+                                      <li>4. Unesi budžet: Min: <strong>50</strong> €, Max: <strong>500</strong> €</li>
                                       <li>5. Odaberi lokaciju s MapPicker-om (klikni na mapu ili unesi grad)</li>
                                       <li>6. (Opcionalno) Upload slike posla</li>
                                       <li>7. Klikni "Objavi posao" → ✅ Trebala bi poruka "Posao uspješno kreiran"</li>
@@ -2407,9 +2407,9 @@ export default function AdminTesting(){
                                       <li>2. Trebao bi vidjeti trenutni plan (npr. BASIC)</li>
                                       <li>3. Odaberi viši plan (npr. PREMIUM)</li>
                                       <li>4. Trebalo bi vidjeti "Prorated billing" obračun:</li>
-                                      <li>   - Preostali dio od trenutnog plana: -500 kn (BASIC za 15 dana)</li>
-                                      <li>   - Novi plan PREMIUM: +1500 kn</li>
-                                      <li>   - Ukupno za plaćanje: ~1000 kn</li>
+                                      <li>   - Preostali dio od trenutnog plana: -50 € (BASIC za 15 dana)</li>
+                                      <li>   - Novi plan PREMIUM: +200 €</li>
+                                      <li>   - Ukupno za plaćanje: ~150 €</li>
                                       <li>5. Klikni "Nadogradi" → Stripe Checkout → plaćanje</li>
                                     </>
                                   )}
@@ -2450,7 +2450,7 @@ export default function AdminTesting(){
                                       <li>   - Konverzija rate (%)</li>
                                       <li>   - Prosječna vrijednost leada</li>
                                       <li>   - Ukupno potrošenih kredita</li>
-                                      <li>3. Trebalo bi vidjeti trenutne brojeve (npr. 5000 kn, 25%, 500 kn, 150)</li>
+                                      <li>3. Trebalo bi vidjeti trenutne brojeve (npr. 500 €, 25%, 50 €, 150)</li>
                                     </>
                                   )}
                                   {test.id === '29.2' && (

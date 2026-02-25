@@ -77,6 +77,19 @@ export default function App(){
     }
   };
 
+  // "Postani pružatelj" samo za korisnike usluge koji su pravna osoba (imaju legalStatusId)
+  const canShowPostaniPružatelj = () => {
+    if (!token) return false;
+    const storedUser = localStorage.getItem('user');
+    if (!storedUser) return false;
+    try {
+      const userData = JSON.parse(storedUser);
+      return userData.role === 'USER' && !!userData.legalStatusId;
+    } catch {
+      return false;
+    }
+  };
+
   const getUserFlags = () => {
     if (!token) return { canUseLeads: false, hasActiveSubscription: false, subscriptionPlan: null };
     const storedUser = localStorage.getItem('user');
@@ -234,8 +247,9 @@ export default function App(){
       setShowJobForm(false);
       alert('Posao uspješno objavljen!');
     } catch (error) {
-      console.error('Error creating job:', error);
-      alert('Greška pri objavljivanju posla');
+      const msg = error.response?.data?.message || error.response?.data?.error || error.message || 'Greška pri objavljivanju posla';
+      console.error('Error creating job:', error.response?.status, error.response?.data, error.message);
+      alert(msg);
     }
   };
 
@@ -632,43 +646,43 @@ export default function App(){
                 {isProviderOrBusinessUser() && (
                   <DropdownMenu title="Leadovi" className={navLinkBase + ' ' + navLinkInactive}>
                     <button
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
                       onClick={() => { setTab('leads'); }}
                     >
                       🛒 Leadovi
                     </button>
                     <button
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
                       onClick={() => { setTab('my-leads'); }}
                     >
                       📋 Moji Leadovi
                     </button>
                     <button
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
                       onClick={() => { setTab('team-locations'); }}
                     >
                       📍 Tim Lokacije
                     </button>
                     <button
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
                       onClick={() => { setTab('roi'); }}
                     >
                       📊 ROI
                     </button>
                     <button
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
                       onClick={() => { setTab('subscription'); }}
                     >
                       💳 Pretplata
                     </button>
                     <button
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
                       onClick={() => { setTab('invoices'); }}
                     >
                       📄 Fakture
                     </button>
                     <button
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
                       onClick={() => { setTab('director'); }}
                     >
                       👔 Direktor Dashboard
@@ -676,76 +690,64 @@ export default function App(){
                   </DropdownMenu>
                 )}
 
-              {/* Korisnik usluge linkovi - samo za USER-e bez legalStatusId */}
-              {token && !isProviderOrBusinessUser() && (
-                <>
+                {/* Moj račun – Traži usluge, Moji poslovi, Pružatelji, Chat, Profil, Postani pružatelj */}
+                <DropdownMenu
+                  title="Moj račun"
+                  className={navLinkBase + ' ' + (['user', 'my-jobs', 'providers', 'chat', 'provider-profile', 'user-profile', 'upgrade-to-provider'].includes(tab) ? navLinkActive : navLinkInactive)}
+                >
                   <button
-                    className={'px-3 py-2 border rounded ' + (tab==='user' ? 'bg-green-600 text-white' : 'border-green-600 text-green-600 hover:bg-green-50')}
+                    className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'user' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
                     onClick={() => setTab('user')}
                   >
                     🏠 Traži usluge
                   </button>
                   <button
-                    className={'px-3 py-2 border rounded ' + (tab==='my-jobs' ? 'bg-blue-600 text-white' : 'border-blue-600 text-blue-600 hover:bg-blue-50')}
+                    className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'my-jobs' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
                     onClick={() => setTab('my-jobs')}
                   >
                     📋 Moji poslovi
                   </button>
                   <button
-                    className={'px-3 py-2 border rounded ' + (tab==='providers' ? 'bg-purple-600 text-white' : 'border-purple-600 text-purple-600 hover:bg-purple-50')}
+                    className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'providers' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
                     onClick={() => setTab('providers')}
                   >
                     👥 Pružatelji
                   </button>
-                </>
-              )}
-
-              {/* Chat gumb - za sve prijavljene korisnike */}
-              {token && (
-                <button
-                  className={'px-3 py-2 border rounded transition-colors ' + (tab==='chat' ? 'bg-indigo-600 text-white' : 'border-indigo-600 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-500 dark:text-indigo-400 dark:hover:bg-indigo-900/20')}
-                  onClick={() => setTab('chat')}
-                  aria-label="Chat"
-                >
-                  💬 Chat
-                </button>
-              )}
-
-              <button
-                className={'px-3 py-2 border rounded ' + ((tab==='provider-profile' || tab==='user-profile') ? 'bg-blue-600 text-white' : 'border-blue-600 text-blue-600 hover:bg-blue-50')}
-                onClick={() => {
-                  // Provjeri role iz localStorage
-                  const storedUser = localStorage.getItem('user');
-                  if (storedUser) {
-                    try {
-                      const userData = JSON.parse(storedUser);
-                      // Ako je PROVIDER ili USER sa legalStatusId, prikaži provider profile
-                      if (userData.role === 'PROVIDER' || (userData.role === 'USER' && userData.legalStatusId)) {
-                        setTab('provider-profile');
+                  <button
+                    className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'chat' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
+                    onClick={() => setTab('chat')}
+                    aria-label="Chat"
+                  >
+                    💬 Chat
+                  </button>
+                  <button
+                    className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + ((tab === 'provider-profile' || tab === 'user-profile') ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
+                    onClick={() => {
+                      const storedUser = localStorage.getItem('user');
+                      if (storedUser) {
+                        try {
+                          const userData = JSON.parse(storedUser);
+                          setTab((userData.role === 'PROVIDER' || (userData.role === 'USER' && userData.legalStatusId)) ? 'provider-profile' : 'user-profile');
+                        } catch {
+                          setTab('user-profile');
+                        }
                       } else {
                         setTab('user-profile');
                       }
-                    } catch {
-                      setTab('user-profile');
-                    }
-                  } else {
-                    setTab('user-profile');
-                  }
-                }}
-              >
-                👤 Moj profil
-              </button>
-              
-              {/* Postani pružatelj - samo za USER-e bez legalStatusId */}
-              {token && !isProviderOrBusinessUser() && (
-                <button
-                  className={'px-3 py-2 border rounded ' + (tab==='upgrade-to-provider' ? 'bg-purple-600 text-white' : 'border-purple-600 text-purple-600 hover:bg-purple-50')}
-                  onClick={() => setTab('upgrade-to-provider')}
-                >
-                  🏢 Postani pružatelj
-                </button>
-              )}
-            </>
+                    }}
+                  >
+                    👤 Moj profil
+                  </button>
+                  {canShowPostaniPružatelj() && (
+                    <button
+                      className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'upgrade-to-provider' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
+                      onClick={() => setTab('upgrade-to-provider')}
+                    >
+                      🏢 Postani pružatelj
+                    </button>
+                  )}
+                </DropdownMenu>
+              </>
             )}
 
             {/* Dark Mode Toggle */}
@@ -1029,8 +1031,8 @@ export default function App(){
                   👤 Moj profil
                 </button>
                 
-                {/* Postani pružatelj - samo za USER-e bez legalStatusId */}
-                {!isProviderOrBusinessUser() && (
+                {/* Postani pružatelj - samo za korisnike usluge koji su pravna osoba (imaju legalStatusId) */}
+                {canShowPostaniPružatelj() && (
                   <button
                     className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300 transition-colors"
                     onClick={() => { setTab('upgrade-to-provider'); setIsMobileMenuOpen(false); }}
@@ -1528,6 +1530,7 @@ export default function App(){
                 </div>
                 <JobForm
                   onSubmit={handleJobSubmit}
+                  onCancel={() => setShowJobForm(false)}
                   categories={categories}
                 />
               </div>

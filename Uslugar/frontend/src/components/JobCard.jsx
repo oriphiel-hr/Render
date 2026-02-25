@@ -18,7 +18,7 @@ const JobCard = ({ job, onViewDetails, onMakeOffer }) => {
   const formatPrice = (amount) => {
     return new Intl.NumberFormat('hr-HR', {
       style: 'currency',
-      currency: 'HRK'
+      currency: 'EUR'
     }).format(amount);
   };
 

@@ -189,7 +189,10 @@ r.post('/', async (req, res, next) => {
     const finalCategoryId = subcategoryId || categoryId;
     
     if (!title || !description || !finalCategoryId) {
-      return res.status(400).json({ error: 'Missing required fields' });
+      return res.status(400).json({
+        error: 'Missing required fields',
+        message: 'Nedostaju obavezna polja: naslov, opis ili kategorija. Provjerite da su sva polja označena s * ispunjena.'
+      });
     }
     
     // For anonymous users, require contact info
