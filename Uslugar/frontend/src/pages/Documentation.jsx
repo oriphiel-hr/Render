@@ -379,6 +379,14 @@ const Documentation = ({ setTab }) => {
                         />
                       )}
                     </div>
+                    {item.puniOpis && (
+                      <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Puni opis (što prvo, što zatim)</h3>
+                        <div className="prose dark:prose-invert max-w-none text-sm text-gray-700 dark:text-gray-300">
+                          {renderDetailsContent(item.puniOpis)}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </article>
@@ -470,6 +478,9 @@ const Documentation = ({ setTab }) => {
         </h2>
         <p className="text-gray-600 dark:text-gray-400 mb-6">
           Pregled implementiranih i planiranih funkcionalnosti platforme
+        </p>
+        <p className="text-sm text-amber-800 dark:text-amber-300 mb-6 max-w-2xl mx-auto">
+          Dolje je cijela lista kategorija – i za korisnike i za pružatelje. Stavke poput kredita, pretplate i refunda odnose se na pružatelje usluga; kao korisnik usluge (naručitelj) ne plaćate kredite – objavljivanje poslova je besplatno.
         </p>
         
         {/* Statistike implementacije */}

@@ -3,16 +3,24 @@ import React from 'react';
 const FAQ = () => {
   const faqs = [
     {
+      question: "Je li objavljivanje posla besplatno?",
+      answer: "Da. Kao korisnik usluge (naručitelj) ne plaćate kredite – objavljivanje poslova i korištenje platforme za vas je besplatno. Kredite plaćaju pružatelji usluga kada kupuju vaš upit (ekskluzivni lead)."
+    },
+    {
+      question: "Što ako pružatelj ne odgovori ili ne ispuni dogovor?",
+      answer: "Možete prijaviti problem u aplikaciji. Platforma rješava prijave prema pravilima (npr. pružatelj može dobiti povrat svog kredita – to je njegov proces, vas ne zanima iznos u kreditima)."
+    },
+    {
       question: "Što je ekskluzivan lead?",
-      answer: "Ekskluzivan lead znači da samo vi dobivate kontakt klijenta. Nema drugih izvođača koji konkuriraju za isti posao."
+      answer: "Ekskluzivan lead znači da samo vi (kao pružatelj) dobivate kontakt klijenta. Nema drugih izvođača koji konkuriraju za isti posao."
     },
     {
       question: "Što ako klijent ne odgovori?",
-      answer: "Ako klijent ne odgovori u roku od 48 sati, automatski dobivate refund kredita."
+      answer: "Ako klijent (naručitelj) ne odgovori u roku od 48 sati, automatski dobivate refund kredita kao pružatelj."
     },
     {
       question: "Koliko košta 1 kredit?",
-      answer: "1 kredit = 1 ekskluzivan lead. Cijena varira ovisno o planu koji odaberete."
+      answer: "1 kredit = 1 ekskluzivan lead. Cijena varira ovisno o planu koji odaberete. Odnosi se na pružatelje usluga – korisnici ne plaćaju kredite."
     },
     {
       question: "Što je AI quality score?",
@@ -60,11 +68,11 @@ const FAQ = () => {
     },
     {
       question: "Što je trial period?",
-      answer: "Novi korisnici dobivaju 7 dana besplatno s 5 kredita da probaju platformu."
+      answer: "Novi pružatelji dobivaju 7 dana besplatno s 5 kredita da probaju platformu. Korisnici koji objavljuju poslove ne troše kredite – platforma je za njih besplatna."
     },
     {
       question: "Kako se ažuriraju krediti?",
-      answer: "Krediti se dodaju mjesečno prema vašem planu ili možete kupiti dodatne."
+      answer: "Krediti se dodaju mjesečno prema vašem planu (za pružatelje) ili možete kupiti dodatne. Korisnici usluge ne koriste kredite."
     }
   ];
 
@@ -76,6 +84,9 @@ const FAQ = () => {
         </h1>
         <p className="text-xl text-gray-600 mb-8">
           Pronađite odgovore na najčešća pitanja o Uslugar platformi
+        </p>
+        <p className="text-sm text-gray-500 mb-8 max-w-2xl mx-auto">
+          Prva pitanja odnose se na korisnike (naručitelje koji objavljuju poslove) i pružatelje (izvođače koji primaju leadove). Kao korisnik ne plaćate kredite – platforma je besplatna za objavljivanje poslova. Kredite plaćaju pružatelji kada kupuju vaš upit.
         </p>
       </div>
 
