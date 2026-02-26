@@ -207,7 +207,8 @@ r.post('/', async (req, res, next) => {
     if (authToken) {
       authHeaderPresent = true;
       try {
-        const jwt = await import('jsonwebtoken');
+        const jwtModule = await import('jsonwebtoken');
+        const jwt = jwtModule.default || jwtModule;
         const SECRET = process.env.JWT_SECRET || 'dev-super-secret';
         const decoded = jwt.verify(authToken, SECRET);
         userId = decoded.id;
