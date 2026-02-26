@@ -202,7 +202,8 @@ r.post('/', async (req, res, next) => {
     let authHeaderPresent = false;
     
     // Check if user is authenticated
-    const authToken = req.headers.authorization?.replace('Bearer ', '').trim();
+    const authHeader = req.headers.authorization;
+    const authToken = authHeader?.replace('Bearer ', '').trim();
     if (authToken) {
       authHeaderPresent = true;
       try {
@@ -211,12 +212,19 @@ r.post('/', async (req, res, next) => {
         const decoded = jwt.verify(authToken, SECRET);
         userId = decoded.id;
       } catch (e) {
-        // Token invalid or expired – vrati 401 da korisnik zna da treba ponovno prijavu
+        // Token invalid or expired – logaj detalje i vrati 401 da korisnik zna da treba ponovno prijavu
+        console.error('[JOBS] JWT verify failed for POST /api/jobs:', e.message, {
+          hasAuthHeader: !!authHeader,
+          tokenSnippet: authToken ? authToken.slice(0, 20) + '...' : null
+        });
         return res.status(401).json({
           error: 'Session expired or invalid',
           message: 'Sesija je istekla ili nije valjana. Prijavite se ponovno pa pokušajte objaviti posao.'
         });
       }
+    } else if (authHeader) {
+      // Authorization header postoji, ali nije u očekivanom "Bearer <token>" formatu
+      console.warn('[JOBS] Authorization header present but no Bearer token parsed for POST /api/jobs:', authHeader);
     }
     
     // Zahtjev bez tokena ili anonimni korisnik bez kontakt podataka
