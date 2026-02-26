@@ -1511,6 +1511,8 @@ export default function App(){
                   )}
                 </div>
               </div>
+            </div>
+          )}
 
               {/* Nema "Pronađeno" ovdje - ide u Rezultati ispod */}
 
