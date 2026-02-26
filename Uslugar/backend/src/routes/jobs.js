@@ -332,6 +332,85 @@ r.post('/', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// Ažuriraj posao – samo ako je status OPEN (vlasnik može mijenjati podatke dok nema prihvaćene ponude)
+r.patch('/:jobId', auth(true), async (req, res, next) => {
+  try {
+    const { jobId } = req.params;
+    const {
+      title,
+      description,
+      categoryId,
+      subcategoryId,
+      projectType,
+      customFields,
+      budgetMin,
+      budgetMax,
+      city,
+      latitude,
+      longitude,
+      urgency = 'NORMAL',
+      jobSize,
+      deadline,
+      images = []
+    } = req.body;
+
+    const job = await prisma.job.findUnique({
+      where: { id: jobId },
+      include: { offers: { where: { status: 'ACCEPTED' }, select: { id: true } } }
+    });
+
+    if (!job) {
+      return res.status(404).json({ error: 'Posao nije pronađen.' });
+    }
+    if (job.userId !== req.user.id) {
+      return res.status(403).json({ error: 'Samo vlasnik posla može uređivati podatke.' });
+    }
+    if (job.status !== 'OPEN') {
+      return res.status(403).json({
+        error: 'Uređivanje nije moguće.',
+        message: 'Posao se može uređivati samo dok je u statusu Otvoren. Kad prihvatite ponudu, podatke nije moguće mijenjati.'
+      });
+    }
+    if (job.offers?.length > 0) {
+      return res.status(403).json({
+        error: 'Uređivanje nije moguće.',
+        message: 'Posao koji ima prihvaćenu ponudu nije moguće uređivati.'
+      });
+    }
+
+    const finalCategoryId = subcategoryId || categoryId || job.categoryId;
+    if (!title || !description || !finalCategoryId) {
+      return res.status(400).json({
+        error: 'Nedostaju obavezna polja',
+        message: 'Naslov, opis i kategorija su obavezni.'
+      });
+    }
+
+    const updated = await prisma.job.update({
+      where: { id: jobId },
+      data: {
+        title,
+        description,
+        categoryId: finalCategoryId,
+        projectType: projectType ?? job.projectType,
+        customFields: customFields ?? job.customFields,
+        budgetMin: budgetMin != null ? parseInt(budgetMin) : job.budgetMin,
+        budgetMax: budgetMax != null ? parseInt(budgetMax) : job.budgetMax,
+        city: city ?? job.city,
+        latitude: latitude != null ? parseFloat(latitude) : job.latitude,
+        longitude: longitude != null ? parseFloat(longitude) : job.longitude,
+        urgency: urgency || job.urgency,
+        jobSize: jobSize ?? job.jobSize,
+        deadline: deadline ? new Date(deadline) : job.deadline,
+        images: Array.isArray(images) ? images : (job.images || [])
+      },
+      include: { category: true }
+    });
+
+    res.json(updated);
+  } catch (e) { next(e); }
+});
+
 // accept offer (USER or PROVIDER can accept offers on their jobs)
 r.post('/:jobId/accept/:offerId', auth(true, ['USER', 'PROVIDER']), async (req, res, next) => {
   try {

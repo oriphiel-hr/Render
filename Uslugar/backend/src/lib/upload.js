@@ -5,9 +5,12 @@ import fs from 'fs';
 
 // Kreiraj 'uploads' direktorij ako ne postoji
 const uploadDir = './uploads';
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+const uploadDirResolved = path.resolve(uploadDir);
+if (!fs.existsSync(uploadDirResolved)) {
+  fs.mkdirSync(uploadDirResolved, { recursive: true });
 }
+/** Apsolutna putanja do mape uploads – koristi za čitanje u API ruti */
+export const getUploadsPath = () => uploadDirResolved;
 
 // Storage konfiguracija
 const storage = multer.diskStorage({
@@ -69,7 +72,7 @@ export const uploadDocument = multer({
 
 // Helper za brisanje fajlova
 export const deleteFile = (filename) => {
-  const filePath = path.join(uploadDir, filename);
+  const filePath = path.join(uploadDirResolved, filename);
   if (fs.existsSync(filePath)) {
     fs.unlinkSync(filePath);
   }

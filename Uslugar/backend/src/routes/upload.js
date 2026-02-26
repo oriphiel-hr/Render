@@ -1,20 +1,19 @@
 import { Router } from 'express';
 import path from 'path';
 import fs from 'fs';
-import { upload, getImageUrl, deleteFile } from '../lib/upload.js';
+import { upload, getImageUrl, deleteFile, getUploadsPath } from '../lib/upload.js';
 import { auth } from '../lib/auth.js';
 
 const r = Router();
 
-// Posluži uploadanu sliku (GET) – koristi se za prikaz slika poslova
+// Posluži uploadanu sliku (GET) – koristi istu putanju kao multer
 r.get('/:filename', (req, res) => {
   try {
     const { filename } = req.params;
     if (!filename || filename.includes('..')) {
       return res.status(400).json({ error: 'Invalid filename' });
     }
-    const uploadDir = path.join(process.cwd(), 'uploads');
-    const filePath = path.join(uploadDir, filename);
+    const filePath = path.join(getUploadsPath(), filename);
     if (!fs.existsSync(filePath)) {
       return res.status(404).send('Not found');
     }

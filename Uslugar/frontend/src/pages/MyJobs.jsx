@@ -3,13 +3,15 @@ import api from '../api';
 import { useAuth } from '../App.jsx';
 import { createChatRoom } from '../api/chat';
 import ChatRoom from '../components/ChatRoom';
+import JobForm from '../components/JobForm';
 
-export default function MyJobs({ onNavigate }) {
+export default function MyJobs({ onNavigate, categories = [] }) {
   const { token } = useAuth();
   const [user, setUser] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState(null);
+  const [editingJob, setEditingJob] = useState(null);
   const [offers, setOffers] = useState({});
   const [chatRoom, setChatRoom] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
@@ -131,6 +133,19 @@ export default function MyJobs({ onNavigate }) {
     setSelectedJob(job);
     if (!offers[job.id]) {
       loadOffers(job.id);
+    }
+  };
+
+  const handleUpdateJob = async (jobData) => {
+    if (!editingJob?.id) return;
+    try {
+      await api.patch(`/jobs/${editingJob.id}`, jobData);
+      await loadMyJobs();
+      setEditingJob(null);
+      alert('Posao je ažuriran.');
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Greška pri ažuriranju';
+      alert(msg);
     }
   };
 
@@ -465,12 +480,22 @@ export default function MyJobs({ onNavigate }) {
                       </span>
                     )}
                     {!isProvider && (
-                      <button
-                        onClick={() => handleViewJobDetails(job)}
-                        className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm"
-                      >
-                        {selectedJob?.id === job.id ? 'Sakrij detalje' : 'Prikaži detalje'}
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleViewJobDetails(job)}
+                          className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm"
+                        >
+                          {selectedJob?.id === job.id ? 'Sakrij detalje' : 'Prikaži detalje'}
+                        </button>
+                        {job.status === 'OPEN' && (
+                          <button
+                            onClick={() => setEditingJob(job)}
+                            className="px-5 py-2.5 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-lg shadow-sm"
+                          >
+                            Uredi posao
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -542,6 +567,34 @@ export default function MyJobs({ onNavigate }) {
               </div>
             </div>
           ))}
+        </div>
+      )}
+      {/* Modal za uređivanje posla – samo za otvorene poslove */}
+      {editingJob && categories.length > 0 && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Uredi posao</h3>
+              <button
+                type="button"
+                onClick={() => setEditingJob(null)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="px-4 pt-3 pb-1 text-sm text-gray-600 dark:text-gray-400">
+              Posao se može uređivati samo dok je otvoren. Kad prihvatite ponudu, podatke nije moguće mijenjati.
+            </p>
+            <div className="p-4">
+              <JobForm
+                initialData={editingJob}
+                categories={categories}
+                onSubmit={handleUpdateJob}
+                onCancel={() => setEditingJob(null)}
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>
