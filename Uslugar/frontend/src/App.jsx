@@ -1539,10 +1539,16 @@ export default function App(){
                   )}
 
                   {/* Rezultati pretrage */}
-                  <div className="mb-4 flex items-center justify-between mt-4">
-                    <p className="text-gray-600 dark:text-gray-400">
-                      Pronađeno: <strong className="text-gray-900 dark:text-gray-100">{jobs.length}</strong> poslova
-                    </p>
+                  <div className="mt-6 mb-5 flex items-center gap-3">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-sm">
+                      <span className="text-gray-600 dark:text-gray-400 text-sm">Pronađeno:</span>
+                      <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-lg bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-semibold text-sm">
+                        {jobs.length}
+                      </span>
+                      <span className="text-gray-600 dark:text-gray-400 text-sm">
+                        {jobs.length === 1 ? 'posao' : 'poslova'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1575,7 +1581,7 @@ export default function App(){
           {token && (
             <>
               {viewMode === 'grid' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-2">
                   {jobs.map(job => (
                     <JobCard
                       key={job.id}
@@ -1586,7 +1592,7 @@ export default function App(){
                   ))}
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-4 mt-2">
                   {jobs.map(job => (
                     <div key={job.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
                       <div className="flex justify-between items-start">
