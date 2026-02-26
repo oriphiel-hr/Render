@@ -1367,82 +1367,59 @@ export default function App(){
           {/* Moderna tražilica - glavni fokus za prijavljene korisnike */}
           {token && (
             <div className="mb-8">
-              {/* Hero Search Bar - sticky na vrhu */}
-              <div className="sticky top-0 z-40 bg-stone-50/98 dark:bg-gray-900 border-b border-stone-200/80 dark:border-gray-700 pb-4 mb-6 -mx-6 px-6 pt-4">
-                <div className="max-w-7xl mx-auto">
-                  <div className="flex items-center justify-between mb-4">
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                      🔍 Pretraži poslove
-                    </h1>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-                        className="px-3 py-2 border dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                        title={viewMode === 'grid' ? 'Lista' : 'Grid'}
-                      >
-                        {viewMode === 'grid' ? '📋' : '🔲'}
-                      </button>
-                      <button
-                        onClick={() => setShowJobForm(true)}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-semibold"
-                      >
-                        + Objavi posao
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Glavna tražilica */}
-                  <div className="bg-white/95 dark:bg-gray-800 rounded-xl shadow-lg border border-stone-200/90 dark:border-gray-700 p-4 mb-4">
+              {/* Pretraga - jedan jasan blok */}
+              <div className="sticky top-0 z-40 bg-stone-50/98 dark:bg-gray-900 border-b border-stone-200/80 dark:border-gray-700 pb-6 mb-8 -mx-6 px-6 pt-5">
+                <div className="max-w-4xl">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Pretraži poslove</h2>
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
                     <div className="flex gap-3 items-center">
                       <div className="flex-1 relative">
                         <input
                           type="text"
-                          className="w-full px-4 py-3 pl-12 border dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-                          placeholder="Pretraži poslove po naslovu, opisu, kategoriji..."
+                          className="w-full px-4 py-3 pl-11 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                          placeholder="Naslov, opis ili kategorija..."
                           value={q}
                           onChange={e => setQ(e.target.value)}
                         />
-                        <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl">🔍</span>
+                        <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                       </div>
                       <button
                         onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                        className="px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium"
+                        className="px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
                       >
-                        {showAdvancedFilters ? '✕ Zatvori' : '⚙️ Filteri'}
+                        {showAdvancedFilters ? 'Zatvori' : 'Filteri'}
                       </button>
                     </div>
-
-                    {/* Quick filters */}
-                    <div className="mt-3 flex flex-wrap gap-2">
+                    <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex flex-wrap items-center gap-2">
                       <select
-                        className="px-3 py-2 border dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
                         value={filters.categoryId || ''}
                         onChange={e => setFilters(prev => ({ ...prev, categoryId: e.target.value || '' }))}
                       >
-                        <option value="">🏷️ Sve kategorije</option>
+                        <option value="">Sve kategorije</option>
                         {categories.filter(cat => cat.isActive && !cat.parentId).map(cat => (
                           <option key={cat.id} value={String(cat.id)}>{getCategoryIcon(cat)} {cat.name}</option>
                         ))}
                       </select>
                       <input
-                        className="px-3 py-2 border dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm"
-                        placeholder="📍 Grad"
+                        className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm w-40"
+                        placeholder="Grad"
                         value={filters.city}
                         onChange={e => setFilters(prev => ({ ...prev, city: e.target.value }))}
                       />
                       <select
-                        className="px-3 py-2 border dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm"
+                        className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
                         value={filters.sortBy}
                         onChange={e => setFilters(prev => ({ ...prev, sortBy: e.target.value }))}
                       >
-                        <option value="newest">🕐 Najnoviji</option>
-                        <option value="oldest">📅 Najstariji</option>
-                        <option value="budgetHigh">💰 Budžet: Visok → Nizak</option>
-                        <option value="budgetLow">💰 Budžet: Nizak → Visok</option>
+                        <option value="newest">Najnoviji</option>
+                        <option value="oldest">Najstariji</option>
+                        <option value="budgetHigh">Budžet: visok → nizak</option>
+                        <option value="budgetLow">Budžet: nizak → visok</option>
                       </select>
                       {savedSearches.length > 0 && (
                         <select
-                          className="px-3 py-2 border dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm"
+                          className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
                           onChange={e => {
                             if (e.target.value) {
                               const search = savedSearches.find(s => s.id === e.target.value);
@@ -1455,7 +1432,7 @@ export default function App(){
                             e.target.value = '';
                           }}
                         >
-                          <option value="">💾 Spremljene pretrage</option>
+                          <option value="">Spremljene pretrage</option>
                           {savedSearches.map(search => (
                             <option key={search.id} value={search.id}>{search.name}</option>
                           ))}
@@ -1466,11 +1443,7 @@ export default function App(){
                           const name = prompt('Naziv pretrage:');
                           if (name) {
                             try {
-                              await api.post('/saved-searches', {
-                                name,
-                                searchQuery: q,
-                                filters
-                              });
+                              await api.post('/saved-searches', { name, searchQuery: q, filters });
                               alert('Pretraga spremljena!');
                               const response = await api.get('/saved-searches');
                               setSavedSearches(response.data);
@@ -1479,57 +1452,56 @@ export default function App(){
                             }
                           }
                         }}
-                        className="px-3 py-2 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-800 transition-colors text-sm font-medium"
-                        title="Spremi trenutnu pretragu"
+                        className="px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors"
                       >
-                        💾 Spremi pretragu
+                        Spremi pretragu
                       </button>
                     </div>
                   </div>
 
                   {/* Napredni filteri */}
                   {showAdvancedFilters && (
-                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Napredni filteri</h3>
+                    <div className="mt-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4">
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Napredni filteri</h3>
                       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Min budžet (€)</label>
+                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Min budžet (€)</label>
                           <input
                             type="number"
-                            className="w-full px-3 py-2 border dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg"
+                            className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm"
                             placeholder="0"
                             value={filters.budgetMin}
                             onChange={e => setFilters(prev => ({ ...prev, budgetMin: e.target.value }))}
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max budžet (€)</label>
+                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Max budžet (€)</label>
                           <input
                             type="number"
-                            className="w-full px-3 py-2 border dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg"
+                            className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm"
                             placeholder="∞"
                             value={filters.budgetMax}
                             onChange={e => setFilters(prev => ({ ...prev, budgetMax: e.target.value }))}
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Status</label>
                           <select
-                            className="w-full px-3 py-2 border dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg"
+                            className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm"
                             value={filters.status}
                             onChange={e => setFilters(prev => ({ ...prev, status: e.target.value }))}
                           >
                             <option value="">Svi statusi</option>
-                            <option value="OPEN">🟢 Otvoren</option>
-                            <option value="IN_PROGRESS">🟡 U tijeku</option>
-                            <option value="COMPLETED">✅ Završen</option>
+                            <option value="OPEN">Otvoren</option>
+                            <option value="IN_PROGRESS">U tijeku</option>
+                            <option value="COMPLETED">Završen</option>
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Datum od</label>
+                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Datum od</label>
                           <input
                             type="date"
-                            className="w-full px-3 py-2 border dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg"
+                            className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm"
                             value={filters.dateFrom}
                             onChange={e => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
                           />
@@ -1537,23 +1509,10 @@ export default function App(){
                       </div>
                     </div>
                   )}
-
-                  {/* Rezultati pretrage */}
-                  <div className="mt-6 mb-5 flex items-center gap-3">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-sm">
-                      <span className="text-gray-600 dark:text-gray-400 text-sm">Pronađeno:</span>
-                      <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-lg bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-semibold text-sm">
-                        {jobs.length}
-                      </span>
-                      <span className="text-gray-600 dark:text-gray-400 text-sm">
-                        {jobs.length === 1 ? 'posao' : 'poslova'}
-                      </span>
-                    </div>
-                  </div>
                 </div>
               </div>
-            </div>
-          )}
+
+              {/* Nema "Pronađeno" ovdje - ide u Rezultati ispod */}
 
           {/* Job form modal - samo za prijavljene korisnike */}
           {token && showJobForm && (
@@ -1580,8 +1539,39 @@ export default function App(){
           {/* Jobs grid/list - samo za prijavljene korisnike */}
           {token && (
             <>
+              {/* Rezultati - jasna sekcija s headerom */}
+              <section className="mt-2">
+                <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Rezultati</h3>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-sm font-medium">
+                      <span className="font-semibold">{jobs.length}</span>
+                      <span>{jobs.length === 1 ? 'posao' : 'poslova'}</span>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                      className="p-2 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      title={viewMode === 'grid' ? 'Prikaži kao listu' : 'Prikaži kao mrežu'}
+                    >
+                      {viewMode === 'grid' ? (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setShowJobForm(true)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
+                    >
+                      Objavi posao
+                    </button>
+                  </div>
+                </div>
+
               {viewMode === 'grid' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {jobs.map(job => (
                     <JobCard
                       key={job.id}
@@ -1592,59 +1582,42 @@ export default function App(){
                   ))}
                 </div>
               ) : (
-                <div className="space-y-4 mt-2">
+                <div className="space-y-4">
                   {jobs.map(job => (
-                    <div key={job.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">{job.title}</h3>
-                          <p className="text-gray-600 dark:text-gray-300 mb-3 line-clamp-2">{job.description}</p>
-                          <div className="flex flex-wrap gap-2 text-sm text-gray-500 dark:text-gray-400">
-                            {job.city && <span>📍 {job.city}</span>}
-                            {job.category && <span>🏷️ {job.category.name}</span>}
-                            {job.budgetMin && job.budgetMax && (
-                              <span>💰 {job.budgetMin}-{job.budgetMax} €</span>
-                            )}
-                            <span>📅 {new Date(job.createdAt).toLocaleDateString('hr-HR')}</span>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleViewJobDetails(job)}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                          >
-                            Detalji
-                          </button>
-                          {isProviderOrBusinessUser() && job.status === 'OPEN' && (
-                            <button
-                              onClick={() => handleMakeOffer(job)}
-                              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                            >
-                              Pošalji ponudu
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                    <JobCard
+                      key={job.id}
+                      job={job}
+                      onViewDetails={handleViewJobDetails}
+                      onMakeOffer={handleMakeOffer}
+                    />
                   ))}
                 </div>
               )}
 
               {jobs.length === 0 && (
-                <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
-                  <p className="text-gray-500 dark:text-gray-400 text-lg mb-2">Nema pronađenih poslova</p>
-                  <p className="text-gray-400 dark:text-gray-500 mb-4">Pokušajte promijeniti filtere ili objavite novi posao</p>
-                  <button
-                    onClick={() => {
-                      setQ('');
-                      setFilters({ categoryId: '', city: '', budgetMin: '', budgetMax: '', status: '', sortBy: 'newest', dateFrom: '', dateTo: '' });
-                    }}
-                    className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                  >
-                    Očisti filtere
-                  </button>
+                <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
+                  <p className="text-gray-500 dark:text-gray-400 text-lg font-medium mb-2">Nema pronađenih poslova</p>
+                  <p className="text-gray-400 dark:text-gray-500 text-sm mb-6">Promijenite filtere ili objavite novi posao</p>
+                  <div className="flex flex-wrap justify-center gap-3">
+                    <button
+                      onClick={() => {
+                        setQ('');
+                        setFilters({ categoryId: '', city: '', budgetMin: '', budgetMax: '', status: '', sortBy: 'newest', dateFrom: '', dateTo: '' });
+                      }}
+                      className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      Očisti filtere
+                    </button>
+                    <button
+                      onClick={() => setShowJobForm(true)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Objavi posao
+                    </button>
+                  </div>
                 </div>
               )}
+              </section>
             </>
           )}
         </section>
