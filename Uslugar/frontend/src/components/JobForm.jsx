@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import MapPicker from './MapPicker';
 import AddressAutocomplete from './AddressAutocomplete';
 import { buildCategoryTree } from '../utils/category-tree.js';
@@ -92,6 +92,54 @@ const PROJECT_TYPES_BY_CATEGORY = {
     'Namirnice',
     'Povratna pošiljka',
     'Dokumenti'
+  ],
+  'Čišćenje i održavanje': [
+    'Stanovanje',
+    'Poslovni prostor',
+    'Nakon gradnje',
+    'Kancelarija',
+    'Deep clean'
+  ],
+  'Vrtni radovi': [
+    'Uređivanje vrta',
+    'Sadnja i održavanje',
+    'Održavanje travnjaka',
+    'Sustavi zalijevanja'
+  ],
+  'IT usluge': [
+    'Popravak računala',
+    'Mrežne instalacije',
+    'Software podrška',
+    'Konzulting'
+  ],
+  'IT podrška': [
+    'Popravak računala',
+    'Mrežne instalacije',
+    'Sigurnosni sustavi',
+    'Software podrška'
+  ],
+  'Prijevoz': [
+    'Selidba',
+    'Prijevoz namještaja',
+    'Prijevoz materijala',
+    'Prijevoz otpada'
+  ],
+  'Usluge prijevoza': [
+    'Selidba',
+    'Prijevoz namještaja',
+    'Prijevoz materijala',
+    'Prijevoz otpada'
+  ],
+  'Prijevoz robe': [
+    'Selidba',
+    'Prijevoz namještaja',
+    'Prijevoz materijala',
+    'Prijevoz otpada'
+  ],
+  'Selidbe': [
+    'Selidba stana',
+    'Selidba ureda',
+    'Prijevoz namještaja'
   ]
 };
 
@@ -266,7 +314,7 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
     }
   }, [initialData]);
   
-  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm({
+  const { register, handleSubmit, formState: { errors }, setValue, watch, control } = useForm({
     defaultValues: initialData || {
       title: '',
       description: '',
@@ -288,7 +336,7 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
     }
   });
 
-  // Watch selected category and project type
+  // Watch selected category and project type (categoryId iz Controllera)
   const selectedCategoryId = watch('categoryId');
   const categoryTree = buildCategoryTree(categories);
   const selectedProjectType = watch('projectType');
@@ -475,27 +523,32 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
         <label htmlFor="job-category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Kategorija <span className="text-red-600" aria-label="obavezno polje">*</span>
         </label>
+        <Controller
+          name="categoryId"
+          control={control}
+          rules={{ required: 'Kategorija je obavezna' }}
+          defaultValue={initialData?.categoryId ?? ''}
+          render={({ field }) => (
         <div className="relative" ref={categoryDropdownRef}>
-          <input type="hidden" {...register('categoryId', { required: 'Kategorija je obavezna' })} />
           <input
             id="job-category"
             type="text"
-            value={categoryDropdownOpen || categorySearchQuery ? categorySearchQuery : (categories.find(c => c.id === selectedCategoryId)?.name ?? '')}
+            value={categoryDropdownOpen || categorySearchQuery ? categorySearchQuery : (categories.find(c => c.id === field.value)?.name ?? '')}
             onChange={(e) => {
               setCategorySearchQuery(e.target.value);
               setCategoryDropdownOpen(true);
             }}
             onFocus={() => setCategoryDropdownOpen(true)}
             placeholder="Tipkajte za pretragu ili odaberite kategoriju..."
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
             aria-describedby={errors.categoryId ? 'category-error' : undefined}
             aria-invalid={!!errors.categoryId}
             autoComplete="off"
           />
-          {selectedCategoryId && !categoryDropdownOpen && (
+          {field.value && !categoryDropdownOpen && (
             <button
               type="button"
-              onClick={() => { setValue('categoryId', ''); setCategorySearchQuery(''); }}
+              onClick={() => { field.onChange(''); setCategorySearchQuery(''); }}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               aria-label="Očisti kategoriju"
             >
@@ -504,7 +557,7 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
           )}
           {categoryDropdownOpen && (
             <ul
-              className="absolute z-10 mt-1 w-full max-h-60 overflow-auto rounded-lg border border-gray-200 dark:border-gray-600 dark:bg-gray-700 shadow-lg py-1"
+              className="absolute z-10 mt-1 w-full max-h-60 overflow-auto rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 shadow-lg py-1 text-gray-900 dark:text-gray-100"
               role="listbox"
             >
               {(() => {
@@ -518,23 +571,23 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
                 const q = categorySearchQuery.trim().toLowerCase();
                 const filtered = q ? flat.filter(({ node }) => node.name && node.name.toLowerCase().includes(q)) : flat;
                 return filtered.length === 0 ? (
-                  <li className="px-3 py-2 text-gray-500 dark:text-gray-400 text-sm">Nema rezultata</li>
+                  <li className="px-3 py-2 text-gray-500 dark:text-gray-400 text-sm bg-white dark:bg-gray-700">Nema rezultata</li>
                 ) : (
                   filtered.map(({ node, depth }) => (
                     <li
                       key={node.id}
                       role="option"
-                      aria-selected={selectedCategoryId === node.id}
+                      aria-selected={field.value === node.id}
                       onClick={() => {
-                        setValue('categoryId', node.id);
+                        field.onChange(node.id);
                         setCategorySearchQuery('');
                         setCategoryDropdownOpen(false);
                       }}
-                      className={`px-3 py-2 cursor-pointer flex items-center gap-2 text-sm ${selectedCategoryId === node.id ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200' : 'hover:bg-gray-100 dark:hover:bg-gray-600'} ${depth > 0 ? 'pl-3' : ''}`}
+                      className={`px-3 py-2 cursor-pointer flex items-center gap-2 text-sm bg-white dark:bg-gray-700 ${field.value === node.id ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-900 dark:text-blue-100' : 'hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100'} ${depth > 0 ? 'pl-3' : ''}`}
                       style={{ paddingLeft: `${12 + depth * 16}px` }}
                     >
                       <span className="flex-shrink-0">{getCategoryIcon(node)}</span>
-                      <span>{highlightMatch(node.name, categorySearchQuery)}</span>
+                      <span className="text-gray-900 dark:text-gray-100">{highlightMatch(node.name, categorySearchQuery)}</span>
                     </li>
                   ))
                 );
@@ -542,6 +595,8 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
             </ul>
           )}
         </div>
+          )}
+        />
         {errors.categoryId && (
           <p id="category-error" className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">
             {errors.categoryId.message}
@@ -550,12 +605,13 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Vrsta projekta {selectedCategoryId && <span className="text-blue-600 text-xs">(mijenja se s kategorijom)</span>}
         </label>
         <select
+          key={selectedCategoryId || 'no-category'}
           {...register('projectType')}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
           disabled={!selectedCategoryId}
         >
           <option value="">{selectedCategoryId ? 'Odaberite vrstu projekta' : 'Najprije odaberite kategoriju'}</option>
