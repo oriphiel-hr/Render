@@ -75,10 +75,10 @@ export const deleteFile = (filename) => {
   }
 };
 
-// Helper za dobivanje URL-a slike
+// Helper za dobivanje URL-a slike – koristi /api/upload/ da slike uvijek idu kroz API (radi i iza reverse proxyja)
 export const getImageUrl = (req, filename) => {
   if (!filename) return null;
   const protocol = req.protocol;
   const host = req.get('host');
-  return `${protocol}://${host}/uploads/${filename}`;
+  return `${protocol}://${host}/api/upload/${filename}`;
 };

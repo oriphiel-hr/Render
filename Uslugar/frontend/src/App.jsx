@@ -2088,7 +2088,11 @@ export default function App(){
                   {(Array.isArray(selectedJob.images) ? selectedJob.images : [])
                     .map((img) => (typeof img === 'string' ? img : img && img.url))
                     .filter(Boolean)
-                    .map((url) => (url.startsWith('http') ? url : (api.defaults?.baseURL || '').replace(/\/api\/?$/, '') + (url.startsWith('/') ? url : '/' + url)))
+                    .map((url) => {
+                      let src = url.startsWith('http') ? url : (api.defaults?.baseURL || '').replace(/\/api\/?$/, '') + (url.startsWith('/') ? url : '/' + url);
+                      if (src.includes('/uploads/')) src = src.replace(/\/uploads\/([^/?#]+)/, '/api/upload/$1');
+                      return src;
+                    })
                     .map((src, i) => (
                       <img key={i} src={src} alt="" className="w-24 h-24 object-cover rounded-lg" />
                     ))}

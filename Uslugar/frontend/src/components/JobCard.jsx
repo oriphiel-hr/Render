@@ -45,14 +45,19 @@ const JobCard = ({ job, onViewDetails, onMakeOffer }) => {
   const sizeLabels = { SMALL: 'Mali', MEDIUM: 'Srednji', LARGE: 'Veliki', EXTRA_LARGE: 'Vrlo velik' };
 
   // Normaliziraj URL slike (string ili objekt s .url); relativne putanje pretvori u apsolutne
+  // Stari URL-ovi koriste /uploads/ – prepisujemo u /api/upload/ jer backend služi slike preko API rute
   const toAbsoluteUrl = (url) => {
     if (!url || typeof url !== 'string') return null;
-    if (url.startsWith('http')) return url;
-    if (url.startsWith('/')) {
+    let u = url;
+    if (!u.startsWith('http')) {
       const base = (api.defaults && api.defaults.baseURL) ? api.defaults.baseURL.replace(/\/api\/?$/, '') : '';
-      return base ? `${base}${url}` : url;
+      u = base ? `${base}${u.startsWith('/') ? u : '/' + u}` : u;
     }
-    return url;
+    // Ako je stari format .../uploads/filename, prepiši u .../api/upload/filename
+    if (u.includes('/uploads/')) {
+      u = u.replace(/\/uploads\/([^/?#]+)/, '/api/upload/$1');
+    }
+    return u;
   };
   const imageList = Array.isArray(job.images) ? job.images : [];
   const imageUrls = imageList
@@ -104,7 +109,17 @@ const JobCard = ({ job, onViewDetails, onMakeOffer }) => {
           <div className="mb-4">
             <div className="flex gap-2 overflow-x-auto pb-1">
               {imageUrls.slice(0, 3).map((src, index) => (
-                <img key={index} src={src} alt="" className="w-16 h-16 object-cover rounded-lg flex-shrink-0" loading="lazy" />
+                <img
+                  key={index}
+                  src={src}
+                  alt=""
+                  className="w-16 h-16 object-cover rounded-lg flex-shrink-0 bg-gray-100 dark:bg-gray-700"
+                  loading="lazy"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="%239ca3af" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>');
+                  }}
+                />
               ))}
               {imageUrls.length > 3 && (
                 <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-gray-500 dark:text-gray-400 text-xs flex-shrink-0">

@@ -1,8 +1,29 @@
 import { Router } from 'express';
+import path from 'path';
+import fs from 'fs';
 import { upload, getImageUrl, deleteFile } from '../lib/upload.js';
 import { auth } from '../lib/auth.js';
 
 const r = Router();
+
+// Posluži uploadanu sliku (GET) – koristi se za prikaz slika poslova
+r.get('/:filename', (req, res) => {
+  try {
+    const { filename } = req.params;
+    if (!filename || filename.includes('..')) {
+      return res.status(400).json({ error: 'Invalid filename' });
+    }
+    const uploadDir = path.join(process.cwd(), 'uploads');
+    const filePath = path.join(uploadDir, filename);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).send('Not found');
+    }
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.sendFile(path.resolve(filePath));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
 // Upload single image
 r.post('/single', auth(true), upload.single('image'), (req, res) => {
