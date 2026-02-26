@@ -448,7 +448,6 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
       deadline: data.deadline ? new Date(data.deadline).toISOString() : null,
       latitude: location.latitude || data.latitude || null,
       longitude: location.longitude || data.longitude || null,
-      // Ako je korisnik prijavljen, nikad ne šalji kao anoniman
       anonymous: hasToken ? false : isAnonymous,
       contactName: !hasToken && isAnonymous ? data.contactName : undefined,
       contactEmail: !hasToken && isAnonymous ? data.contactEmail : undefined,
@@ -456,8 +455,21 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
     });
   };
 
+  const watchedTitle = watch('title');
+  const watchedDescription = watch('description');
+  const watchedBudgetMin = watch('budgetMin');
+  const watchedBudgetMax = watch('budgetMax');
+  const watchedUrgency = watch('urgency');
+  const previewCategory = selectedCategoryId ? categories.find(c => c.id === selectedCategoryId) : null;
+
   return (
-    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(onFormSubmit)} className="block">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr,320px] gap-8 items-start">
+        {/* Lijevo: Unos podataka za oglas */}
+        <div className="space-y-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 pb-2">
+            Unos podataka za oglas
+          </h2>
       {/* Anonymous user option - show only if not authenticated */}
       {!localStorage.getItem('token') && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -925,6 +937,49 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
         >
           {initialData ? 'Ažuriraj posao' : 'Objavi posao'}
         </button>
+      </div>
+        </div>
+
+        {/* Desno: Pregled oglasa */}
+        <div className="lg:sticky lg:top-4 space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-600 pb-2">
+            Pregled oglasa
+          </h2>
+          <div className="rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
+            <div className="aspect-video bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+              {images[0]?.preview ? (
+                <img src={images[0].preview} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <svg className="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" /></svg>
+              )}
+            </div>
+            <div className="p-4 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-2">
+                  {watchedTitle || 'Naslov posla'}
+                </h3>
+                {watchedUrgency === 'URGENT' && (
+                  <span className="shrink-0 text-xs font-medium px-2 py-0.5 rounded bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200">Hitno</span>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600 dark:text-gray-400">
+                {previewCategory && (
+                  <span className="flex items-center gap-1">
+                    {getCategoryIcon(previewCategory)}
+                    <span>{previewCategory.name}</span>
+                  </span>
+                )}
+                {location?.city && <span className="flex items-center gap-1"><svg className="w-4 h-4 shrink-0 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" /></svg>{location.city}</span>}
+                {([watchedBudgetMin, watchedBudgetMax].some(v => v != null && v !== '')) && (
+                  <span>{[watchedBudgetMin, watchedBudgetMax].filter(v => v != null && v !== '').join(' - ')} €</span>
+                )}
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">
+                {watchedDescription || 'Opis posla će se prikazati ovdje.'}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </form>
   );

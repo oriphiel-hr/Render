@@ -267,7 +267,12 @@ export default function MyJobs({ onNavigate }) {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">📋 Moji Poslovi</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-3">
+          <span className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+          </span>
+          Moji Poslovi
+        </h1>
         <p className="text-gray-600 dark:text-gray-400">
           {isProvider 
             ? 'Pregledajte sve poslove na koje ste poslali ponudu ili koje ste prihvatili'
@@ -278,136 +283,196 @@ export default function MyJobs({ onNavigate }) {
       {!isProvider && stats && (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700">
-              <p className="text-sm text-gray-500 dark:text-gray-400">Ukupno poslova</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0">
+                <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Ukupno poslova</p>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
+              </div>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700">
-              <p className="text-sm text-gray-500 dark:text-gray-400">Otvoreno</p>
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.open}</p>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center shrink-0">
+                <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Otvoreno</p>
+                <p className="text-xl font-bold text-green-600 dark:text-green-400">{stats.open}</p>
+              </div>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700">
-              <p className="text-sm text-gray-500 dark:text-gray-400">U tijeku</p>
-              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.inProgress}</p>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
+                <svg className="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">U tijeku</p>
+                <p className="text-xl font-bold text-amber-600 dark:text-amber-400">{stats.inProgress}</p>
+              </div>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700">
-              <p className="text-sm text-gray-500 dark:text-gray-400">Završeno</p>
-              <p className="text-2xl font-bold text-gray-700 dark:text-gray-300">{stats.completed}</p>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center shrink-0">
+                <svg className="w-5 h-5 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Završeno</p>
+                <p className="text-xl font-bold text-teal-600 dark:text-teal-400">{stats.completed}</p>
+              </div>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700">
-              <p className="text-sm text-gray-500 dark:text-gray-400">Ukupno ponuda</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalOffers}</p>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/40 flex items-center justify-center shrink-0">
+                <svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Otkazano</p>
+                <p className="text-xl font-bold text-red-600 dark:text-red-400">{stats.cancelled}</p>
+              </div>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700 flex flex-col justify-center">
-              <button
-                onClick={exportMyJobsCsv}
-                className="px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center shrink-0">
+                <svg className="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Ukupne ponude</p>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">{stats.totalOffers}</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row sm:items-start gap-4 mb-6">
+            <div className="flex items-center gap-2">
+              <label htmlFor="status-filter" className="text-sm font-medium text-gray-700 dark:text-gray-300">Filter po statusu</label>
+              <select
+                id="status-filter"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                📥 Preuzmi CSV
-              </button>
+                <option value="ALL">Svi</option>
+                <option value="OPEN">Otvoreni</option>
+                <option value="IN_PROGRESS">U tijeku</option>
+                <option value="COMPLETED">Završeni</option>
+                <option value="CANCELLED">Otkazani</option>
+              </select>
             </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <span className="text-sm text-gray-600 dark:text-gray-400">Filter po statusu:</span>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-2"
+            <button
+              onClick={exportMyJobsCsv}
+              className="px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
             >
-              <option value="ALL">Svi</option>
-              <option value="OPEN">Otvoreni</option>
-              <option value="IN_PROGRESS">U tijeku</option>
-              <option value="COMPLETED">Završeni</option>
-              <option value="CANCELLED">Otkazani</option>
-            </select>
+              📥 Preuzmi CSV
+            </button>
+            {providersWorkedWith.length > 0 && (
+              <div className="sm:ml-auto flex-1 sm:max-w-md w-full rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-4">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                  Pružatelji s kojima ste surađivali
+                </h3>
+                <ul className="space-y-1.5 text-sm text-gray-700 dark:text-gray-300">
+                  {providersWorkedWith.map(({ jobTitle, providerName }) => (
+                    <li key={`${jobTitle}-${providerName}`} className="flex items-baseline gap-1.5">
+                      <span className="font-medium text-gray-900 dark:text-white">{providerName}</span>
+                      <span>–</span>
+                      <span>{jobTitle}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
-          {providersWorkedWith.length > 0 && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6 border border-gray-200 dark:border-gray-700">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">👥 Pružatelji s kojima ste surađivali</h2>
-              <ul className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
-                {providersWorkedWith.map(({ jobTitle, providerName }) => (
-                  <li key={`${jobTitle}-${providerName}`}>• <strong>{providerName}</strong> – {jobTitle}</li>
-                ))}
-              </ul>
-            </div>
-          )}
         </>
       )}
 
       {jobs.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-8 text-center">
-          <p className="text-gray-600 mb-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 text-center">
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
             {isProvider 
               ? 'Nemate još poslova na koje ste poslali ponudu.'
               : 'Nemate još objavljenih poslova.'}
           </p>
           <button
             onClick={() => onNavigate && onNavigate(isProvider ? 'providers' : 'user')}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             {isProvider ? 'Pretraži poslove' : 'Objavi novi posao'}
           </button>
         </div>
       ) : !isProvider && filteredJobs.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 text-center">
           <p className="text-gray-600 dark:text-gray-400 mb-4">Nema poslova za odabrani filter. Promijenite filter ili objavite novi posao.</p>
-          <button onClick={() => setStatusFilter('ALL')} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 mr-2">Prikaži sve</button>
-          <button onClick={() => onNavigate && onNavigate('user')} className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">Objavi novi posao</button>
+          <button onClick={() => setStatusFilter('ALL')} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 mr-2">Prikaži sve</button>
+          <button onClick={() => onNavigate && onNavigate('user')} className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">Objavi novi posao</button>
         </div>
       ) : (
         <div className="space-y-4">
           {filteredJobs.map(job => (
-            <div key={job.id} className="bg-white rounded-lg shadow p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">{job.title}</h3>
-                  <p className="text-gray-600 mb-2">{job.description}</p>
-                  <div className="flex flex-wrap gap-2 text-sm text-gray-500">
-                    <span>📍 {job.city}</span>
-                    {job.category && <span>🏷️ {job.category.name}</span>}
-                    <span>💰 {job.budgetMin && job.budgetMax ? `${job.budgetMin}-${job.budgetMax} €` : 'Dogovor'}</span>
-                    <span className={`px-2 py-1 rounded ${
-                      job.status === 'OPEN' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                      job.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
-                      job.status === 'COMPLETED' ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' :
-                      job.status === 'CANCELLED' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {getJobStatusLabel(job.status)}
-                    </span>
-                    {isProvider && job.myOffer && (
-                      <span className={`px-2 py-1 rounded ${
-                        job.myOffer.status === 'ACCEPTED' ? 'bg-green-100 text-green-800' :
-                        job.myOffer.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {job.myOffer.status === 'ACCEPTED' ? '✓ Ponuda prihvaćena' :
-                         job.myOffer.status === 'REJECTED' ? '✗ Ponuda odbijena' :
-                         '⏳ Čeka odgovor'}
+            <div key={job.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="p-5">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">{job.title}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">{job.description}</p>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500 dark:text-gray-400">
+                      {job.city && (
+                        <span className="flex items-center gap-1">
+                          <svg className="w-4 h-4 shrink-0 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" /></svg>
+                          {job.city}{job.address ? `, ${job.address}` : ''}
+                        </span>
+                      )}
+                      {job.category && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 text-xs font-medium">
+                          {job.category.name}
+                        </span>
+                      )}
+                      <span className="flex items-center gap-1">
+                        <svg className="w-4 h-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        {job.budgetMin != null && job.budgetMax != null ? `${job.budgetMin} - ${job.budgetMax} €` : 'Dogovor'}
                       </span>
+                    </div>
+                    {isProvider && job.myOffer && (
+                      <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">Vaša ponuda:</p>
+                        <p className="text-sm text-blue-700 dark:text-blue-300">{job.myOffer.message}</p>
+                        {job.myOffer.price != null && (
+                          <p className="text-sm font-semibold text-blue-900 dark:text-blue-200 mt-1">Cijena: {job.myOffer.price} €</p>
+                        )}
+                      </div>
                     )}
                   </div>
-                  {isProvider && job.myOffer && (
-                    <div className="mt-2 p-3 bg-blue-50 rounded">
-                      <p className="text-sm font-semibold text-blue-900">Vaša ponuda:</p>
-                      <p className="text-sm text-blue-700">{job.myOffer.message}</p>
-                      {job.myOffer.price && (
-                        <p className="text-sm font-semibold text-blue-900 mt-1">
-                          Cijena: {job.myOffer.price} €
-                        </p>
+                  <div className="flex flex-col sm:items-end gap-2 shrink-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${
+                        job.status === 'OPEN' ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' :
+                        job.status === 'IN_PROGRESS' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' :
+                        job.status === 'COMPLETED' ? 'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300' :
+                        job.status === 'CANCELLED' ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' :
+                        'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                      }`}>
+                        {getJobStatusLabel(job.status)}
+                      </span>
+                      {job.createdAt && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {new Date(job.createdAt).toLocaleDateString('hr-HR', { day: '2-digit', month: '2-digit', year: 'numeric' })}.
+                        </span>
                       )}
                     </div>
-                  )}
+                    {isProvider && job.myOffer && (
+                      <span className={`text-xs font-medium px-2.5 py-1 rounded-md ${
+                        job.myOffer.status === 'ACCEPTED' ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' :
+                        job.myOffer.status === 'REJECTED' ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' :
+                        'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
+                      }`}>
+                        {job.myOffer.status === 'ACCEPTED' ? '✓ Ponuda prihvaćena' : job.myOffer.status === 'REJECTED' ? '✗ Odbijeno' : '⏳ Čeka odgovor'}
+                      </span>
+                    )}
+                    {!isProvider && (
+                      <button
+                        onClick={() => handleViewJobDetails(job)}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg"
+                      >
+                        {selectedJob?.id === job.id ? 'Sakrij detalje' : 'Prikaži detalje'}
+                      </button>
+                    )}
+                  </div>
                 </div>
-                {!isProvider && (
-                  <button
-                    onClick={() => handleViewJobDetails(job)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                  >
-                    {selectedJob?.id === job.id ? 'Sakrij detalje' : 'Prikaži detalje'}
-                  </button>
-                )}
-              </div>
 
               {!isProvider && selectedJob?.id === job.id && (
                 <div className="mt-4 border-t pt-4">
@@ -464,15 +529,16 @@ export default function MyJobs({ onNavigate }) {
 
               {/* Chat gumb za providera - ako je ponuda prihvaćena */}
               {isProvider && job.myOffer?.status === 'ACCEPTED' && (
-                <div className="mt-4 pt-4 border-t">
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
                   <button
                     onClick={() => handleOpenChat(job)}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
                   >
                     💬 Otvori Chat
                   </button>
                 </div>
               )}
+              </div>
             </div>
           ))}
         </div>

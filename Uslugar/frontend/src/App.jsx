@@ -478,15 +478,6 @@ export default function App(){
         <Logo size="md" />
         <div className="flex items-center gap-3">
           {token && isProviderOrBusinessUser() && <CreditsWidget />}
-          {token ? (
-            <button 
-              className="px-4 py-2 border rounded hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors" 
-              onClick={logout}
-              aria-label="Odjavi se"
-            >
-              Logout
-            </button>
-          ) : null}
         </div>
         {/* Desktop Navigation */}
         <nav
@@ -775,6 +766,13 @@ export default function App(){
                       🏢 Postani pružatelj
                     </button>
                   )}
+                  <button
+                    className="w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-700 dark:text-red-300 border-t border-gray-200 dark:border-gray-600 mt-1 pt-2"
+                    onClick={() => logout()}
+                    aria-label="Odjavi se"
+                  >
+                    🚪 Odjava
+                  </button>
                 </DropdownMenu>
               </>
             )}
@@ -1069,6 +1067,13 @@ export default function App(){
                     🏢 Postani pružatelj
                   </button>
                 )}
+                <button
+                  className="w-full text-left px-3 py-2 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-red-700 dark:text-red-300 transition-colors border-t border-gray-200 dark:border-gray-600 mt-1 pt-2"
+                  onClick={() => { logout(); setIsMobileMenuOpen(false); }}
+                  aria-label="Odjavi se"
+                >
+                  🚪 Odjava
+                </button>
               </div>
             </div>
           )}
