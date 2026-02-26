@@ -42,7 +42,7 @@ export const GUIDE_KORISNIK = [
     title: 'Pregled ponuda',
     userAction: 'U "Moji poslovi" otvorite svoj posao i vidite ponudu (ili poruku) od pružatelja.',
     appResult: 'Aplikacija prikazuje detalje ponude. Možete prihvatiti ponudu ili nastaviti razgovor u chatu.',
-    image: PLACEHOLDER('Korak 3: Moji poslovi – ponude'),
+    image: '/docs/moji-poslovi-mock.png',
     puniOpis: `**1.** U "Moji poslovi" otvorite svoj posao. Za svaki posao vidite status: OTVOREN (čekate ponude), U TIJEKU (odabrali ste pružatelja), ZAVRŠEN ili OTKAZAN.
 
 **2.** Kad pružatelj pošalje ponudu, prikazuje se iznos, poruka uz ponudu, procijenjeni broj dana i može li se pregovarati o cijeni. Status ponude: NA ČEKANJU, PRIHVAĆENA ili ODBIJENA. Možete pregledati sve ponude za taj posao.
@@ -130,7 +130,7 @@ export const GUIDE_PRUVATELJ = [
     title: 'Chat i krediti',
     userAction: 'U "Chat" dopisujete se s klijentom. Jedan potrošeni kredit = jedan ekskluzivni lead.',
     appResult: 'Sve razgovore vodite u jednoj sobi. Kredite vidite u widgetu u headeru; dopuna preko "Cjenik" / pretplata.',
-    image: PLACEHOLDER('Korak 4: Chat i krediti'),
+    image: '/docs/moji-leadovi-direktor-mock.png',
     puniOpis: `**1.** U izborniku odaberete "Chat". Za svaki posao s prihvaćenom ponudom imate jednu chat sobu s naručiteljem. Povijest poruka je spremljena; možete slati i slike. Status poruke (poslana, pročitana) vidljiv je oboma stranama.
 
 **2.** Real-time chat; notifikacije za nove poruke stižu putem emaila, SMS-a, in-app ili push obavijesti. Brojač nepročitanih pokazuje koliko poruka još niste pročitali. Sve ostaje u jednoj sobi.
@@ -182,7 +182,7 @@ export const GUIDE_TIM_CLAN = [
     title: 'Leadovi dodijeljeni meni',
     userAction: 'U "Moji leadovi" pregledavate listu dodijeljenih leadova. Za svaki lead vidite posao, klijenta, status (Dodijeljeno / U tijeku / Završeno).',
     appResult: 'Jedna jasna lista svih leadova koji su vam dodijeljeni; možete ih označiti kao "Započinjem rad" ili "Završeno".',
-    image: PLACEHOLDER('Korak 2: Leadovi dodijeljeni meni'),
+    image: '/docs/moji-leadovi-team-member-mock.png',
     puniOpis: `**1.** U "Moji leadovi" (npr. izbornik → Leadovi) otvorite stranicu. Na vrhu, ako ste član tima, vidite blok **Leadovi dodijeljeni meni**. U njemu su svi leadovi koje vam je direktor dodijelio iz internog queuea tvrtke.
 
 **2.** Za svaki lead prikazuju se: naslov posla, kategorija, grad, ime klijenta, tvrtka (direktor), datum dodjele i status: DODIJELJENO (tek ste ga dobili), U TIJEKU (započeli ste rad), ZAVRŠENO (završeni posao).
@@ -218,7 +218,7 @@ export const GUIDE_TIM_CLAN = [
     title: 'Što ne možete – samo direktor',
     userAction: 'Vi ne dodajete članove tima, ne dodjeljujete leadove i ne pristupate Director Dashboardu (tim, financije, odluke).',
     appResult: 'Jasna podjela: vi radite na dodijeljenim leadovima; direktor upravlja timom i queueom.',
-    image: PLACEHOLDER('Korak 5: Uloge'),
+    image: '/docs/director-dashboard-lead-queue-mock.png',
     puniOpis: `**1.** **Director Dashboard** (Tim, Lead queue, Financije, Odluke) dostupan je samo direktoru. Kao član tima ne možete pristupiti tom izborniku – dobit ćete poruku da samo direktor može.
 
 **2.** Dodavanje i uklanjanje članova tima, ručna ili automatska dodjela leadova i odbijanje leadova u queueu – sve to radi isključivo direktor. Vi primate leadove koje vam on dodijeli i ažurirate status (Započni rad / Završeno).
