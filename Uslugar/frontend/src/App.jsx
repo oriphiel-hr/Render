@@ -163,6 +163,24 @@ export default function App(){
   // Mobile menu state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Globalni listener za istek sesije (401 iz api.js)
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      // Resetiraj flag da se ponovno može okinuti nakon nove prijave
+      try {
+        delete window.__USLUGAR_SESSION_EXPIRED_HANDLED__;
+      } catch (_) {}
+      logout();
+      alert('Vaša prijava je istekla. Radi sigurnosti se morate ponovno prijaviti prije nastavka.');
+      setTab('login');
+    };
+
+    window.addEventListener('uslugar:session-expired', handleSessionExpired);
+    return () => {
+      window.removeEventListener('uslugar:session-expired', handleSessionExpired);
+    };
+  }, [logout]);
+
   useEffect(() => {
     if (tab !== 'user') return;
     

@@ -66,4 +66,32 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Globalni handler za 401 – istekla / nevažeća sesija
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error?.response?.status;
+    if (status === 401 && typeof window !== 'undefined') {
+      // Izbjegni petlju i višestruke poruke
+      const cfg = error.config || {};
+      const url = typeof cfg.url === 'string' ? cfg.url : '';
+      const isAuthEndpoint =
+        url.startsWith('/auth/login') ||
+        url.startsWith('/auth/register') ||
+        url.startsWith('/auth/refresh');
+
+      if (!isAuthEndpoint && !window.__USLUGAR_SESSION_EXPIRED_HANDLED__) {
+        window.__USLUGAR_SESSION_EXPIRED_HANDLED__ = true;
+        try {
+          // Očisti lokalnu sesiju; App će odraditi ostatak
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        } catch (_) {}
+        window.dispatchEvent(new CustomEvent('uslugar:session-expired'));
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;
