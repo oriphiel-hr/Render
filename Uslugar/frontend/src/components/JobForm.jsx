@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import MapPicker from './MapPicker';
 import AddressAutocomplete from './AddressAutocomplete';
 import { buildCategoryTree } from '../utils/category-tree.js';
 import { getCategoryIcon } from '../data/categoryIcons.js';
+import { highlightMatch } from '../utils/highlightMatch.jsx';
 import api from '../api';
 
 // Konfiguracija vrsta projekata po kategorijama
@@ -37,6 +38,20 @@ const PROJECT_TYPES_BY_CATEGORY = {
     'Dogradnja'
   ],
   'Soboslikarstvo': [
+    'Farbanje',
+    'Tapaciranje',
+    'Dekorativna boja',
+    'Glazura',
+    'Premazivanje'
+  ],
+  'Soboslikarski radovi': [
+    'Farbanje',
+    'Tapaciranje',
+    'Dekorativna boja',
+    'Glazura',
+    'Premazivanje'
+  ],
+  'Moler-Slikar': [
     'Farbanje',
     'Tapaciranje',
     'Dekorativna boja',
@@ -147,6 +162,28 @@ const FIELD_CONFIGURATIONS = {
       { key: 'wallpaperType', label: 'Tip tapeta', type: 'select', options: ['Vinilne', 'Tekstilne', 'Fototapete'], required: false }
     ]
   },
+  'Soboslikarski radovi': {
+    'Farbanje': [
+      { key: 'rooms', label: 'Broj prostorija', type: 'number', required: false },
+      { key: 'surface', label: 'Ukupna površina (m²)', type: 'number', required: false },
+      { key: 'paintType', label: 'Tip boje', type: 'select', options: ['Dispersija', 'Lateks', 'Akril', 'Mineralna'], required: false }
+    ],
+    'Tapaciranje': [
+      { key: 'walls', label: 'Broj zidova za tapaciranje', type: 'number', required: false },
+      { key: 'wallpaperType', label: 'Tip tapeta', type: 'select', options: ['Vinilne', 'Tekstilne', 'Fototapete'], required: false }
+    ]
+  },
+  'Moler-Slikar': {
+    'Farbanje': [
+      { key: 'rooms', label: 'Broj prostorija', type: 'number', required: false },
+      { key: 'surface', label: 'Ukupna površina (m²)', type: 'number', required: false },
+      { key: 'paintType', label: 'Tip boje', type: 'select', options: ['Dispersija', 'Lateks', 'Akril', 'Mineralna'], required: false }
+    ],
+    'Tapaciranje': [
+      { key: 'walls', label: 'Broj zidova za tapaciranje', type: 'number', required: false },
+      { key: 'wallpaperType', label: 'Tip tapeta', type: 'select', options: ['Vinilne', 'Tekstilne', 'Fototapete'], required: false }
+    ]
+  },
   'Keramičar': {
     'Položba pločica': [
       { key: 'rooms', label: 'Broj prostorija', type: 'number', required: false },
@@ -207,6 +244,9 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
   const [uploading, setUploading] = useState(false);
   const [customFields, setCustomFields] = useState({}); // State za custom polja
   const [isAnonymous, setIsAnonymous] = useState(false); // State za anonimne korisnike
+  const [categorySearchQuery, setCategorySearchQuery] = useState('');
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  const categoryDropdownRef = useRef(null);
   const [location, setLocation] = useState({
     city: initialData?.city || '',
     latitude: initialData?.latitude || null,
@@ -253,24 +293,37 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
   const categoryTree = buildCategoryTree(categories);
   const selectedProjectType = watch('projectType');
   
-  // Get project types for selected category
+  // Get project types for selected category (fallback to parent category for subcategories)
   const getProjectTypes = () => {
     if (!selectedCategoryId) return DEFAULT_PROJECT_TYPES;
     
     const selectedCategory = categories.find(cat => cat.id === selectedCategoryId);
     if (!selectedCategory) return DEFAULT_PROJECT_TYPES;
     
-    return PROJECT_TYPES_BY_CATEGORY[selectedCategory.name] || DEFAULT_PROJECT_TYPES;
+    const direct = PROJECT_TYPES_BY_CATEGORY[selectedCategory.name];
+    if (direct) return direct;
+    
+    // Ako je podkategorija, koristi vrste roditeljske kategorije
+    if (selectedCategory.parentId) {
+      const parent = categories.find(cat => cat.id === selectedCategory.parentId);
+      if (parent && PROJECT_TYPES_BY_CATEGORY[parent.name]) return PROJECT_TYPES_BY_CATEGORY[parent.name];
+    }
+    
+    return DEFAULT_PROJECT_TYPES;
   };
 
-  // Get custom fields for selected category and project type
+  // Get custom fields for selected category and project type (fallback to parent category)
   const getCustomFields = () => {
     if (!selectedCategoryId || !selectedProjectType) return [];
     
     const selectedCategory = categories.find(cat => cat.id === selectedCategoryId);
     if (!selectedCategory) return [];
     
-    const categoryConfig = FIELD_CONFIGURATIONS[selectedCategory.name];
+    let categoryConfig = FIELD_CONFIGURATIONS[selectedCategory.name];
+    if (!categoryConfig && selectedCategory.parentId) {
+      const parent = categories.find(cat => cat.id === selectedCategory.parentId);
+      if (parent) categoryConfig = FIELD_CONFIGURATIONS[parent.name];
+    }
     if (!categoryConfig) return [];
     
     return categoryConfig[selectedProjectType] || [];
@@ -287,6 +340,17 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
   useEffect(() => {
     setCustomFields({});
   }, [selectedProjectType]);
+
+  // Zatvori dropdown kategorija pri kliku izvan
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(e.target)) {
+        setCategoryDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleImageUpload = async (event) => {
     const files = Array.from(event.target.files);
@@ -411,31 +475,73 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
         <label htmlFor="job-category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Kategorija <span className="text-red-600" aria-label="obavezno polje">*</span>
         </label>
-        <select
-          id="job-category"
-          {...register('categoryId', { required: 'Kategorija je obavezna' })}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          aria-describedby={errors.categoryId ? 'category-error' : undefined}
-          aria-invalid={!!errors.categoryId}
-        >
-          <option value="">Odaberite kategoriju</option>
-          {(() => {
-            function renderOptions(node, depth = 0) {
-              const indent = '  '.repeat(depth);
-              const prefix = depth > 0 ? '└─ ' : '';
-              const icon = getCategoryIcon(node);
-              
-              return [
-                <option key={node.id} value={node.id}>
-                  {indent}{prefix}{icon} {node.name}
-                </option>,
-                ...(node.children || []).flatMap(child => renderOptions(child, depth + 1))
-              ];
-            }
-            
-            return categoryTree.flatMap(root => renderOptions(root)) || [];
-          })()}
-        </select>
+        <div className="relative" ref={categoryDropdownRef}>
+          <input type="hidden" {...register('categoryId', { required: 'Kategorija je obavezna' })} />
+          <input
+            id="job-category"
+            type="text"
+            value={categoryDropdownOpen || categorySearchQuery ? categorySearchQuery : (categories.find(c => c.id === selectedCategoryId)?.name ?? '')}
+            onChange={(e) => {
+              setCategorySearchQuery(e.target.value);
+              setCategoryDropdownOpen(true);
+            }}
+            onFocus={() => setCategoryDropdownOpen(true)}
+            placeholder="Tipkajte za pretragu ili odaberite kategoriju..."
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            aria-describedby={errors.categoryId ? 'category-error' : undefined}
+            aria-invalid={!!errors.categoryId}
+            autoComplete="off"
+          />
+          {selectedCategoryId && !categoryDropdownOpen && (
+            <button
+              type="button"
+              onClick={() => { setValue('categoryId', ''); setCategorySearchQuery(''); }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              aria-label="Očisti kategoriju"
+            >
+              ✕
+            </button>
+          )}
+          {categoryDropdownOpen && (
+            <ul
+              className="absolute z-10 mt-1 w-full max-h-60 overflow-auto rounded-lg border border-gray-200 dark:border-gray-600 dark:bg-gray-700 shadow-lg py-1"
+              role="listbox"
+            >
+              {(() => {
+                function flatten(nodes, depth = 0) {
+                  return nodes.flatMap(node => [
+                    { node, depth },
+                    ...flatten(node.children || [], depth + 1)
+                  ]);
+                }
+                const flat = flatten(categoryTree);
+                const q = categorySearchQuery.trim().toLowerCase();
+                const filtered = q ? flat.filter(({ node }) => node.name && node.name.toLowerCase().includes(q)) : flat;
+                return filtered.length === 0 ? (
+                  <li className="px-3 py-2 text-gray-500 dark:text-gray-400 text-sm">Nema rezultata</li>
+                ) : (
+                  filtered.map(({ node, depth }) => (
+                    <li
+                      key={node.id}
+                      role="option"
+                      aria-selected={selectedCategoryId === node.id}
+                      onClick={() => {
+                        setValue('categoryId', node.id);
+                        setCategorySearchQuery('');
+                        setCategoryDropdownOpen(false);
+                      }}
+                      className={`px-3 py-2 cursor-pointer flex items-center gap-2 text-sm ${selectedCategoryId === node.id ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200' : 'hover:bg-gray-100 dark:hover:bg-gray-600'} ${depth > 0 ? 'pl-3' : ''}`}
+                      style={{ paddingLeft: `${12 + depth * 16}px` }}
+                    >
+                      <span className="flex-shrink-0">{getCategoryIcon(node)}</span>
+                      <span>{highlightMatch(node.name, categorySearchQuery)}</span>
+                    </li>
+                  ))
+                );
+              })()}
+            </ul>
+          )}
+        </div>
         {errors.categoryId && (
           <p id="category-error" className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">
             {errors.categoryId.message}

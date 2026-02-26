@@ -10,13 +10,14 @@ const categoriesWithNKD = require('./categories-nkd.cjs')
 
 const prisma = new PrismaClient()
 
-// Mapiranje starih naziva na nove (za preimenovanje u duhu hrvatskog jezika)
+// Mapiranje starih naziva na nove (za preimenovanje u duhu hrvatskog jezika ili spajanje duplikata)
 const RENAME_MAP = {
   'Baštanski radovi': 'Vrtni radovi',
   'Čistoća i održavanje': 'Čišćenje i održavanje',
   'Transport robe': 'Prijevoz robe',
   'Prijevoz': 'Usluge prijevoza',
-  'IT podrška': 'IT usluge'
+  'IT podrška': 'IT usluge',
+  'Soboslikarski radovi': 'Soboslikarstvo'  // isto kao Soboslikarstvo – jedna kategorija
 }
 
 async function seedCategories() {

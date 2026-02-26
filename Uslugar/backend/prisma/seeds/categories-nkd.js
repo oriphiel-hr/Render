@@ -380,8 +380,8 @@ const categoriesWithNKD = [
     isActive: true
   },
   {
-    name: 'Soboslikarski radovi',
-    description: 'Tapetiranje, dekorativne tehnike',
+    name: 'Soboslikarstvo',
+    description: 'Soboslikarski radovi: bojanje zidova, tapetiranje, gletovanje, dekorativne tehnike',
     icon: '🖌️',
     nkdCode: '43.34',
     requiresLicense: false,

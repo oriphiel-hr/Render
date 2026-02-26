@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '@/api'
 import { getCategoryIcon } from './data/categoryIcons.js';
+import { highlightMatch } from './utils/highlightMatch.jsx';
 import { AdminRouter } from './admin';
 import JobCard from './components/JobCard';
 import JobForm from './components/JobForm';
@@ -144,6 +145,7 @@ export default function App(){
     dateTo: ''
   });
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [categorySearchQuery, setCategorySearchQuery] = useState('');
   const [savedSearches, setSavedSearches] = useState([]);
   const [viewMode, setViewMode] = useState('grid'); // grid, list
   const [showOfferForm, setShowOfferForm] = useState(false);
@@ -1781,13 +1783,38 @@ export default function App(){
                 Kliknite na kategoriju da vidite detalje ili filtrirate poslove
               </p>
             </div>
+
+            {/* Pretraga kategorija s označavanjem */}
+            <div className="mb-6">
+              <label htmlFor="category-search" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Pretraži kategorije
+              </label>
+              <input
+                id="category-search"
+                type="text"
+                value={categorySearchQuery}
+                onChange={(e) => setCategorySearchQuery(e.target.value)}
+                placeholder="Tipkajte za pretragu kategorija..."
+                className="w-full max-w-md mx-auto block px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
             
             {/* Glavne kategorije (bez parentId) */}
             <div className="space-y-8">
               {categories
                 .filter(category => !category.parentId)
+                .filter(parentCategory => {
+                  if (!categorySearchQuery.trim()) return true;
+                  const q = categorySearchQuery.trim().toLowerCase();
+                  const nameMatch = parentCategory.name && parentCategory.name.toLowerCase().includes(q);
+                  const descMatch = parentCategory.description && parentCategory.description.toLowerCase().includes(q);
+                  const subMatch = categories.some(cat => cat.parentId === parentCategory.id && (cat.name?.toLowerCase().includes(q) || cat.description?.toLowerCase().includes(q)));
+                  return nameMatch || descMatch || subMatch;
+                })
                 .map(parentCategory => {
                   const subcategories = categories.filter(cat => cat.parentId === parentCategory.id);
+                  const q = categorySearchQuery.trim().toLowerCase();
+                  const filteredSub = q ? subcategories.filter(sub => sub.name?.toLowerCase().includes(q) || sub.description?.toLowerCase().includes(q)) : subcategories;
                   
                   return (
                     <div key={parentCategory.id} className="bg-white border border-gray-200 rounded-lg p-6">
@@ -1798,10 +1825,10 @@ export default function App(){
                         </div>
                         <div className="flex-1">
                           <h2 className="text-xl font-bold text-gray-900 mb-1">
-                            {parentCategory.name}
+                            {highlightMatch(parentCategory.name, categorySearchQuery)}
                           </h2>
                           <p className="text-gray-600 mb-2">
-                            {parentCategory.description}
+                            {parentCategory.description ? highlightMatch(parentCategory.description, categorySearchQuery) : ''}
                           </p>
                           {parentCategory.requiresLicense && (
                             <div className="flex gap-2">
@@ -1825,13 +1852,13 @@ export default function App(){
                       </div>
                       
                       {/* Podkategorije */}
-                      {subcategories.length > 0 && (
+                      {filteredSub.length > 0 && (
                         <div className="border-t pt-4">
                           <h3 className="text-sm font-semibold text-gray-700 mb-3">
-                            📂 Podkategorije ({subcategories.length})
+                            📂 Podkategorije ({filteredSub.length})
                           </h3>
                           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                            {subcategories.map(subcategory => (
+                            {filteredSub.map(subcategory => (
                               <div 
                                 key={subcategory.id} 
                                 className="bg-gray-50 border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer"
@@ -1842,14 +1869,14 @@ export default function App(){
                                     {getCategoryIcon(subcategory)}
                                   </div>
                                   <h4 className="font-semibold text-xs text-gray-800 mb-1">
-                                    {subcategory.name}
+                                    {highlightMatch(subcategory.name, categorySearchQuery)}
                                   </h4>
                                   <p className="text-xs text-gray-600 overflow-hidden" style={{
                                     display: '-webkit-box',
                                     WebkitLineClamp: 2,
                                     WebkitBoxOrient: 'vertical'
                                   }}>
-                                    {subcategory.description}
+                                    {subcategory.description ? highlightMatch(subcategory.description, categorySearchQuery) : ''}
                                   </p>
                                   {subcategory.requiresLicense && (
                                     <div className="mt-1">
@@ -2009,6 +2036,91 @@ export default function App(){
         </section>
       )}
       </main>
+
+      {/* Job Detail Modal - otvara se kad korisnik klikne "Pregledaj detalje" */}
+      {selectedJob && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedJob(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="job-detail-title"
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-start p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 id="job-detail-title" className="text-xl font-semibold text-gray-900 dark:text-white pr-4">{selectedJob.title}</h2>
+              <button
+                type="button"
+                onClick={() => setSelectedJob(null)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded"
+                aria-label="Zatvori"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              {selectedJob.category && (
+                <p className="text-gray-600 dark:text-gray-300">
+                  <span className="font-medium">Kategorija:</span>{' '}
+                  <span>{getCategoryIcon(selectedJob.category)} {selectedJob.category.name}</span>
+                </p>
+              )}
+              <div>
+                <p className="font-medium text-gray-700 dark:text-gray-200 mb-1">Opis</p>
+                <p className="text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{selectedJob.description}</p>
+              </div>
+              {selectedJob.city && (
+                <p className="text-gray-600 dark:text-gray-300">📍 {selectedJob.city}</p>
+              )}
+              {(selectedJob.budgetMin != null || selectedJob.budgetMax != null) && (
+                <p className="text-gray-600 dark:text-gray-300">
+                  💰 {selectedJob.budgetMin != null && selectedJob.budgetMax != null
+                    ? `${selectedJob.budgetMin} - ${selectedJob.budgetMax} €`
+                    : selectedJob.budgetMin != null
+                      ? `Od ${selectedJob.budgetMin} €`
+                      : `Do ${selectedJob.budgetMax} €`}
+                </p>
+              )}
+              {selectedJob.deadline && (
+                <p className="text-gray-600 dark:text-gray-300">
+                  📅 Rok: {new Date(selectedJob.deadline).toLocaleDateString('hr-HR')}
+                </p>
+              )}
+              {selectedJob.images && selectedJob.images.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {selectedJob.images.map((img, i) => (
+                    <img key={i} src={img} alt="" className="w-24 h-24 object-cover rounded-lg" />
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2 p-6 border-t border-gray-200 dark:border-gray-700">
+              <button
+                type="button"
+                onClick={() => setSelectedJob(null)}
+                className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500"
+              >
+                Zatvori
+              </button>
+              {isProviderOrBusinessUser() && selectedJob.status === 'OPEN' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedJob(null);
+                    handleMakeOffer(selectedJob);
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                  Pošalji ponudu
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Offer Form Modal */}
       {showOfferForm && selectedJobForOffer && (
