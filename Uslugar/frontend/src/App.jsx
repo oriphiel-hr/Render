@@ -188,10 +188,18 @@ export default function App(){
     
     // Dohvati poslove s filterima (samo za prijavljene korisnike)
     if (token) {
-      const params = { q, ...filters };
-      Object.keys(params).forEach(key => {
-        if (!params[key]) delete params[key];
-      });
+      const params = {};
+      if (q && String(q).trim()) params.q = String(q).trim();
+      if (filters.categoryId) params.categoryId = filters.categoryId;
+      if (filters.city && String(filters.city).trim()) params.city = String(filters.city).trim();
+      if (filters.sortBy) params.sortBy = filters.sortBy;
+      if (filters.budgetMin) params.minBudget = filters.budgetMin;
+      if (filters.budgetMax) params.maxBudget = filters.budgetMax;
+      if (filters.status) params.status = filters.status;
+      if (filters.dateFrom) params.dateFrom = filters.dateFrom;
+      if (filters.dateTo) params.dateTo = filters.dateTo;
+      if (filters.urgency) params.urgency = filters.urgency;
+      if (filters.jobSize) params.jobSize = filters.jobSize;
       api.get('/jobs', { params }).then(r => setJobs(r.data)).catch(() => setJobs([]));
     } else {
       // Za neregistrirane korisnike - dohvati samo preview (prvih 6 najnovijih)
@@ -1402,13 +1410,13 @@ export default function App(){
                     {/* Quick filters */}
                     <div className="mt-3 flex flex-wrap gap-2">
                       <select
-                        className="px-3 py-2 border dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm"
-                        value={filters.categoryId}
-                        onChange={e => setFilters(prev => ({ ...prev, categoryId: e.target.value }))}
+                        className="px-3 py-2 border dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        value={filters.categoryId || ''}
+                        onChange={e => setFilters(prev => ({ ...prev, categoryId: e.target.value || '' }))}
                       >
                         <option value="">🏷️ Sve kategorije</option>
                         {categories.filter(cat => cat.isActive && !cat.parentId).map(cat => (
-                          <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
+                          <option key={cat.id} value={String(cat.id)}>{getCategoryIcon(cat)} {cat.name}</option>
                         ))}
                       </select>
                       <input
@@ -2133,10 +2141,16 @@ export default function App(){
           onSuccess={() => {
             // Refresh jobs list if needed
             if (tab === 'user') {
-              const params = { q, ...filters };
-              Object.keys(params).forEach(key => {
-                if (!params[key]) delete params[key];
-              });
+              const params = {};
+              if (q && String(q).trim()) params.q = String(q).trim();
+              if (filters.categoryId) params.categoryId = filters.categoryId;
+              if (filters.city && String(filters.city).trim()) params.city = String(filters.city).trim();
+              if (filters.sortBy) params.sortBy = filters.sortBy;
+              if (filters.budgetMin) params.minBudget = filters.budgetMin;
+              if (filters.budgetMax) params.maxBudget = filters.budgetMax;
+              if (filters.status) params.status = filters.status;
+              if (filters.dateFrom) params.dateFrom = filters.dateFrom;
+              if (filters.dateTo) params.dateTo = filters.dateTo;
               api.get('/jobs', { params }).then(r => setJobs(r.data)).catch(() => setJobs([]));
             }
           }}

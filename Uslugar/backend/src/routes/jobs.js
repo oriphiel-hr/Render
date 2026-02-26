@@ -14,9 +14,20 @@ r.get('/', auth(false), async (req, res, next) => {
     // Ako je myJobs=true i korisnik je prijavljen, filtriraj po userId
     const userId = req.user?.id;
     
+    // Kada je categoryId poslan, uključi i sve podkategorije (poslovi u podkategorijama se također prikazuju)
+    let categoryFilter = {};
+    if (categoryId) {
+      const parentId = String(categoryId).trim();
+      const descendantIds = await prisma.category.findMany({
+        where: { OR: [{ id: parentId }, { parentId }] },
+        select: { id: true }
+      }).then(rows => rows.map(r => r.id));
+      categoryFilter = descendantIds.length > 0 ? { categoryId: { in: descendantIds } } : { categoryId: parentId };
+    }
+    
     const whereClause = {
       ...(myJobs && userId ? { userId } : { status: 'OPEN' }), // Ako je myJobs, prikaži sve poslove korisnika (svih statusa), inače samo otvorene
-      ...(categoryId ? { categoryId } : {}),
+      ...categoryFilter,
       ...(city ? { city: { contains: city, mode: 'insensitive' } } : {}),
       ...(urgency ? { urgency } : {}),
       ...(jobSize ? { jobSize } : {}),
