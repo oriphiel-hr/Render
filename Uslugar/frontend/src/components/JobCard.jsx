@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getCategoryIcon } from '../data/categoryIcons.js';
+import api from '../api.js';
 
 const JobCard = ({ job, onViewDetails, onMakeOffer }) => {
   const [isProvider, setIsProvider] = useState(false);
@@ -43,6 +44,23 @@ const JobCard = ({ job, onViewDetails, onMakeOffer }) => {
   const urgencyLabels = { URGENT: 'Hitno', HIGH: 'Visoka', NORMAL: 'Redovno', LOW: 'Niska' };
   const sizeLabels = { SMALL: 'Mali', MEDIUM: 'Srednji', LARGE: 'Veliki', EXTRA_LARGE: 'Vrlo velik' };
 
+  // Normaliziraj URL slike (string ili objekt s .url); relativne putanje pretvori u apsolutne
+  const toAbsoluteUrl = (url) => {
+    if (!url || typeof url !== 'string') return null;
+    if (url.startsWith('http')) return url;
+    if (url.startsWith('/')) {
+      const base = (api.defaults && api.defaults.baseURL) ? api.defaults.baseURL.replace(/\/api\/?$/, '') : '';
+      return base ? `${base}${url}` : url;
+    }
+    return url;
+  };
+  const imageList = Array.isArray(job.images) ? job.images : [];
+  const imageUrls = imageList
+    .map((item) => (typeof item === 'string' ? item : item && item.url))
+    .filter(Boolean)
+    .map(toAbsoluteUrl)
+    .filter(Boolean);
+
   return (
     <article className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden flex hover:shadow-md transition-shadow">
       <div className="hidden sm:block w-1 shrink-0 rounded-l-xl bg-gradient-to-b from-blue-400 to-blue-600" aria-hidden />
@@ -51,13 +69,13 @@ const JobCard = ({ job, onViewDetails, onMakeOffer }) => {
           <h3 className="text-lg font-bold text-gray-900 dark:text-white pr-2">{job.title}</h3>
           <div className="flex flex-wrap gap-1.5 shrink-0">
             {job.urgency && (
-              <span className={`px-2.5 py-0.5 rounded-lg text-xs font-medium ${getUrgencyStyle(job.urgency)}`}>
-                {urgencyLabels[job.urgency] || job.urgency}
+              <span title="Hitnost posla" className={`px-2.5 py-0.5 rounded-lg text-xs font-medium ${getUrgencyStyle(job.urgency)}`}>
+                Hitnost: {urgencyLabels[job.urgency] || job.urgency}
               </span>
             )}
             {job.jobSize && (
-              <span className={`px-2.5 py-0.5 rounded-lg text-xs font-medium ${getJobSizeStyle(job.jobSize)}`}>
-                {sizeLabels[job.jobSize] || job.jobSize}
+              <span title="Veličina posla" className={`px-2.5 py-0.5 rounded-lg text-xs font-medium ${getJobSizeStyle(job.jobSize)}`}>
+                Veličina: {sizeLabels[job.jobSize] || job.jobSize}
               </span>
             )}
           </div>
@@ -82,15 +100,15 @@ const JobCard = ({ job, onViewDetails, onMakeOffer }) => {
           )}
         </div>
 
-        {job.images && job.images.length > 0 && (
+        {imageUrls.length > 0 && (
           <div className="mb-4">
             <div className="flex gap-2 overflow-x-auto pb-1">
-              {job.images.slice(0, 3).map((image, index) => (
-                <img key={index} src={image} alt="" className="w-16 h-16 object-cover rounded-lg flex-shrink-0" loading="lazy" />
+              {imageUrls.slice(0, 3).map((src, index) => (
+                <img key={index} src={src} alt="" className="w-16 h-16 object-cover rounded-lg flex-shrink-0" loading="lazy" />
               ))}
-              {job.images.length > 3 && (
+              {imageUrls.length > 3 && (
                 <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-gray-500 dark:text-gray-400 text-xs flex-shrink-0">
-                  +{job.images.length - 3}
+                  +{imageUrls.length - 3}
                 </div>
               )}
             </div>

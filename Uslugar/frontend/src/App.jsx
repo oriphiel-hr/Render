@@ -2085,9 +2085,13 @@ export default function App(){
               )}
               {selectedJob.images && selectedJob.images.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {selectedJob.images.map((img, i) => (
-                    <img key={i} src={img} alt="" className="w-24 h-24 object-cover rounded-lg" />
-                  ))}
+                  {(Array.isArray(selectedJob.images) ? selectedJob.images : [])
+                    .map((img) => (typeof img === 'string' ? img : img && img.url))
+                    .filter(Boolean)
+                    .map((url) => (url.startsWith('http') ? url : (api.defaults?.baseURL || '').replace(/\/api\/?$/, '') + (url.startsWith('/') ? url : '/' + url)))
+                    .map((src, i) => (
+                      <img key={i} src={src} alt="" className="w-24 h-24 object-cover rounded-lg" />
+                    ))}
                 </div>
               )}
             </div>
