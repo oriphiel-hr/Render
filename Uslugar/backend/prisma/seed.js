@@ -104,7 +104,7 @@ async function main() {
       isPopular: false,
       displayOrder: 1,
       isActive: true,
-      savings: 'Ušteda 10€ vs pay-per-lead'
+      savings: 'Ušteda 10 EUR u odnosu na plaćanje po leadu'
     },
     {
       name: 'PREMIUM',
@@ -125,7 +125,7 @@ async function main() {
       isPopular: true,
       displayOrder: 2,
       isActive: true,
-      savings: 'Ušteda 161€ vs pay-per-lead (36% popust)'
+      savings: 'Ušteda 161 EUR u odnosu na plaćanje po leadu (36% popust)'
     },
     {
       name: 'PRO',
@@ -149,7 +149,7 @@ async function main() {
       isPopular: false,
       displayOrder: 3,
       isActive: true,
-      savings: 'Ušteda 351€ vs pay-per-lead (47% popust)'
+      savings: 'Ušteda 351 EUR u odnosu na plaćanje po leadu (47% popust)'
     }
   ];
 
@@ -203,7 +203,7 @@ async function main() {
     // Građevina Zagreb - Premium paket s popustom
     segmentedPlans.push({
       name: 'PREMIUM',
-      displayName: 'Premium - Građevina Zagreb',
+      displayName: 'Premium',
       price: 79, // Popust za Zagreb
       currency: 'EUR',
       credits: 25,
@@ -220,7 +220,7 @@ async function main() {
       isPopular: false,
       displayOrder: 2,
       isActive: true,
-      savings: 'Ušteda 171€ vs pay-per-lead (Zagreb popust)',
+      savings: 'Ušteda 171 EUR u odnosu na plaćanje po leadu (Zagreb popust)',
       categoryId: gradevinaCategory.id,
       region: 'Zagreb'
     });
@@ -230,7 +230,7 @@ async function main() {
     // IT usluge Dalmacija - PRO paket s popustom
     segmentedPlans.push({
       name: 'PRO',
-      displayName: 'Pro - IT Dalmacija',
+      displayName: 'Pro',
       price: 129, // Popust za Dalmaciju
       currency: 'EUR',
       credits: 50,
@@ -249,7 +249,7 @@ async function main() {
       isPopular: false,
       displayOrder: 3,
       isActive: true,
-      savings: 'Ušteda 371€ vs pay-per-lead (Dalmacija popust)',
+      savings: 'Ušteda 371 EUR u odnosu na plaćanje po leadu (Dalmacija popust)',
       categoryId: itCategory.id,
       region: 'Dalmacija'
     });
@@ -259,7 +259,7 @@ async function main() {
     // Arhitekti Istra - Basic paket
     segmentedPlans.push({
       name: 'BASIC',
-      displayName: 'Basic - Arhitekti Istra',
+      displayName: 'Basic',
       price: 35, // Popust za Istru
       currency: 'EUR',
       credits: 10,
@@ -275,7 +275,7 @@ async function main() {
       isPopular: false,
       displayOrder: 1,
       isActive: true,
-      savings: 'Ušteda 15€ vs pay-per-lead (Istra popust)',
+      savings: 'Ušteda 15 EUR u odnosu na plaćanje po leadu (Istra popust)',
       categoryId: arhitektiCategory.id,
       region: 'Istra'
     });

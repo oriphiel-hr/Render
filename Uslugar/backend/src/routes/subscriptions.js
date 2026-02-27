@@ -969,31 +969,28 @@ r.get('/can-send-offer', auth(true, ['PROVIDER']), async (req, res, next) => {
       where: { userId: req.user.id }
     });
 
+    // Ako nema pretplate, trenutno ne dopuštamo slanje (frontend će ponuditi pretplatu)
     if (!subscription) {
-      return res.json({ canSend: true, credits: PLANS.BASIC.credits });
+      return res.json({ canSend: false, credits: 0, reason: 'no_subscription' });
     }
 
-    // Check if expired
+    // Ako je istekla pretplata – nema slanja ponude
     if (subscription.expiresAt && new Date() > subscription.expiresAt) {
-      await prisma.subscription.update({
-        where: { userId: req.user.id },
-        data: {
-          status: 'EXPIRED',
-          plan: 'BASIC',
-          credits: PLANS.BASIC.credits
-        }
-      });
-      return res.json({ canSend: PLANS.BASIC.credits > 0, credits: PLANS.BASIC.credits });
+      return res.json({ canSend: false, credits: 0, expired: true });
     }
 
-    // PRO plan has unlimited credits (-1)
-    if (subscription.credits === -1) {
+    // PRO ili bilo koji plan s beskonačnim kreditima (-1) – uvijek može slati
+    const unlimited = subscription.credits === -1 || subscription.creditsBalance === -1;
+    if (unlimited) {
       return res.json({ canSend: true, credits: -1, unlimited: true });
     }
 
-    res.json({
-      canSend: subscription.credits > 0,
-      credits: subscription.credits
+    // Primarni izvor istine je creditsBalance (EXCLUSIVE), credits je legacy fallback
+    const balance = (subscription.creditsBalance ?? subscription.credits ?? 0);
+
+    return res.json({
+      canSend: balance > 0,
+      credits: balance
     });
   } catch (e) {
     next(e);
@@ -1006,18 +1003,28 @@ export const deductCredit = async (userId) => {
     where: { userId }
   });
 
-  if (!subscription || subscription.credits === -1) {
-    return; // No subscription or unlimited credits
+  if (!subscription) {
+    return; // Nema pretplate – siguran early-exit
   }
 
-  if (subscription.credits > 0) {
-    await prisma.subscription.update({
-      where: { userId },
-      data: {
-        credits: subscription.credits - 1
-      }
-    });
+  const unlimited = subscription.credits === -1 || subscription.creditsBalance === -1;
+  if (unlimited) {
+    return; // Beskonačni krediti – ne diramo stanje
   }
+
+  const current = (subscription.creditsBalance ?? subscription.credits ?? 0);
+  if (current <= 0) {
+    return; // Nema kredita za skidanje
+  }
+
+  // Ažuriraj oba polja radi kompatibilnosti (legacy + EXCLUSIVE)
+  await prisma.subscription.update({
+    where: { userId },
+    data: {
+      creditsBalance: current - 1,
+      credits: current - 1
+    }
+  });
 };
 
 /**

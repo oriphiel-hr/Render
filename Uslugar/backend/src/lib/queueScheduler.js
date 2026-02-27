@@ -21,7 +21,7 @@ import { checkAddonLifecycles, processAutoRenewals, processAddonUpsells } from '
 import { checkAndDowngradeExpiredSubscriptions } from '../routes/subscriptions.js';
 import { publishExpiredReviews } from '../services/review-publish-service.js';
 import { sendMonthlyReportsToAllUsers } from '../services/monthly-report-service.js';
-import { getLaunchTrialSubscriptions, checkAndUpdateLaunchTrial } from '../services/launch-trial-service.js';
+import { getLaunchTrialSubscriptions, checkAndUpdateLaunchTrial, grantLaunchTrialMonthlyCredits } from '../services/launch-trial-service.js';
 
 export function startQueueScheduler() {
   console.log('⏰ Starting Queue Scheduler...')
@@ -127,6 +127,7 @@ export function startQueueScheduler() {
     console.log('='.repeat(50))
     
     try {
+      // 1) Mjesečni izvještaji
       const result = await sendMonthlyReportsToAllUsers()
       if (result.success) {
         console.log(`✅ Monthly reports sent: ${result.sent}/${result.total} (${result.failed} failed)`)
@@ -135,6 +136,16 @@ export function startQueueScheduler() {
         }
       } else {
         console.error(`❌ Monthly reports failed: ${result.error}`)
+      }
+
+      // 2) Launch TRIAL – dodijeli minimalne besplatne kredite za niskopotražne segmente
+      try {
+        const launchCredits = await grantLaunchTrialMonthlyCredits()
+        if (launchCredits.updated > 0) {
+          console.log(`✅ Launch TRIAL: dodijeljeni besplatni krediti za ${launchCredits.updated} pretplata`)
+        }
+      } catch (launchErr) {
+        console.error('❌ Launch TRIAL monthly credits failed:', launchErr)
       }
     } catch (error) {
       console.error('❌ Monthly report sending failed:', error)

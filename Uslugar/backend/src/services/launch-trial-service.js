@@ -12,6 +12,8 @@ import { prisma } from '../lib/prisma.js';
 const MIN_JOBS_LAST_90_DAYS = 20;
 const MIN_LEADS_PER_PROVIDER = 3;
 const DAYS_90 = 90;
+const LAUNCH_TRIAL_FREE_CREDITS = 5; // minimalni broj besplatnih leadova mjesečno u niskopotražnim segmentima
+const LAUNCH_TRIAL_FREE_CREDITS = 5; // minimalni broj besplatnih leadova mjesečno u niskopotražnim segmentima
 
 /**
  * Dohvati segment pružatelja: kategorije i regija (grad/serviceArea)
@@ -155,4 +157,104 @@ export async function getLaunchTrialSubscriptions() {
     select: { userId: true }
   });
   return list;
+}
+
+/**
+ * Dodijeli minimalni broj besplatnih kredita svim Launch TRIAL pretplatama.
+ * U niskopotražnim segmentima pružatelj svaki mjesec dobije barem nekoliko besplatnih leadova,
+ * čak i ako je potrošio početne TRIAL kredite.
+ */
+export async function grantLaunchTrialMonthlyCredits() {
+  const subs = await prisma.subscription.findMany({
+    where: {
+      isLaunchTrial: true,
+      status: 'ACTIVE'
+    },
+    select: {
+      userId: true,
+      credits: true,
+      creditsBalance: true
+    }
+  });
+
+  let updated = 0;
+
+  for (const sub of subs) {
+    const current = (sub.creditsBalance ?? sub.credits ?? 0);
+    if (current >= LAUNCH_TRIAL_FREE_CREDITS) {
+      continue; // već ima dovoljno kredita
+    }
+    const newBalance = LAUNCH_TRIAL_FREE_CREDITS;
+
+    await prisma.subscription.update({
+      where: { userId: sub.userId },
+      data: {
+        creditsBalance: newBalance,
+        credits: newBalance
+      }
+    });
+
+    await prisma.notification.create({
+      data: {
+        userId: sub.userId,
+        type: 'SYSTEM',
+        title: 'Launch TRIAL – dodijeljeni besplatni krediti',
+        message: `Zbog niže potražnje u vašim kategorijama dodijeljeno vam je ${LAUNCH_TRIAL_FREE_CREDITS} besplatnih leadova za ovaj mjesec.`
+      }
+    });
+
+    updated++;
+  }
+
+  return { updated };
+}
+
+/**
+ * Dodijeli minimalni broj besplatnih kredita svim Launch TRIAL pretplatama.
+ * Ideja: u niskopotražnim segmentima pružatelj svaki mjesec dobije barem 5 prilika (leadova),
+ * čak i ako je potrošio početne TRIAL kredite.
+ */
+export async function grantLaunchTrialMonthlyCredits() {
+  const subs = await prisma.subscription.findMany({
+    where: {
+      isLaunchTrial: true,
+      status: 'ACTIVE'
+    },
+    select: {
+      userId: true,
+      credits: true,
+      creditsBalance: true
+    }
+  });
+
+  let updated = 0;
+
+  for (const sub of subs) {
+    const current = (sub.creditsBalance ?? sub.credits ?? 0);
+    if (current >= LAUNCH_TRIAL_FREE_CREDITS) {
+      continue; // već ima dovoljno kredita
+    }
+    const newBalance = LAUNCH_TRIAL_FREE_CREDITS;
+
+    await prisma.subscription.update({
+      where: { userId: sub.userId },
+      data: {
+        creditsBalance: newBalance,
+        credits: newBalance
+      }
+    });
+
+    await prisma.notification.create({
+      data: {
+        userId: sub.userId,
+        type: 'SYSTEM',
+        title: 'Launch TRIAL – dodijeljeni besplatni krediti',
+        message: `Zbog niže potražnje u vašim kategorijama dodijeljeno vam je ${LAUNCH_TRIAL_FREE_CREDITS} besplatnih leadova za ovaj mjesec.`
+      }
+    });
+
+    updated++;
+  }
+
+  return { updated };
 }
