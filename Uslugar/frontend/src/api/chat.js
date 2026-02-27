@@ -34,7 +34,7 @@ export const sendChatMessage = (roomId, content, imageUrl = null) => {
 };
 
 export const markMessagesAsRead = (roomId) => {
-  return api.patch(`/chat/rooms/${roomId}/read`);
+  return api.post(`/chat/rooms/${roomId}/mark-all-read`);
 };
 
 // ============================================================
