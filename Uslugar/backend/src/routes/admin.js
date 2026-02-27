@@ -830,11 +830,13 @@ r.patch('/providers/:providerId/approval', auth(true, ['ADMIN']), async (req, re
       }
     }
 
-    // If approved, ensure they have a subscription or set them to TRIAL
+    // If approved, ensure they have a subscription or set them to TRIAL (with trial credits for sending offers)
     if (status === 'APPROVED') {
       const existingSubscription = await prisma.subscription.findUnique({
         where: { userId: provider.userId }
       });
+
+      const TRIAL_CREDITS = 8; // Isti broj kao u subscriptions.js za self-service trial (7–8 leadova/ponuda)
 
       if (!existingSubscription) {
         await prisma.subscription.create({
@@ -843,7 +845,7 @@ r.patch('/providers/:providerId/approval', auth(true, ['ADMIN']), async (req, re
             plan: 'TRIAL',
             status: 'ACTIVE',
             credits: 0,
-            creditsBalance: 0,
+            creditsBalance: TRIAL_CREDITS,
             // Set expiration to 30 days from now
             expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
           }

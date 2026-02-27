@@ -49,12 +49,14 @@ r.post('/', auth(true, ['PROVIDER']), async (req, res, next) => {
       }
     }
     
-    // Check subscription and credits
+    // Check subscription and credits (use creditsBalance; TRIAL has creditsBalance=8, credits=0)
     const subscription = await prisma.subscription.findUnique({
       where: { userId: req.user.id }
     });
     
-    if (subscription && subscription.credits !== -1 && subscription.credits <= 0) {
+    const unlimited = subscription && (subscription.credits === -1 || subscription.creditsBalance === -1);
+    const balance = subscription ? (subscription.creditsBalance ?? subscription.credits ?? 0) : 0;
+    if (!subscription || (!unlimited && balance <= 0)) {
       return res.status(403).json({ 
         error: 'Insufficient credits', 
         message: 'Nemate dovoljno kredita za slanje ponude. Nadogradite svoju pretplatu.' 
