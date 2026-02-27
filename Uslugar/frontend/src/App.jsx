@@ -178,6 +178,13 @@ export default function App(){
   // Mobile menu state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Ako je korisnik već prijavljen, ne nudimo login/registraciju – automatski preusmjeri na user tab
+  useEffect(() => {
+    if (token && (tab === 'login' || tab === 'register-user' || tab === 'register-provider')) {
+      setTab('user');
+    }
+  }, [token, tab]);
+
   // Globalni listener za istek sesije (401 iz api.js)
   useEffect(() => {
     const handleSessionExpired = () => {
