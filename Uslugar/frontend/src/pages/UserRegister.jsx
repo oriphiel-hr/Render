@@ -39,6 +39,8 @@ export default function UserRegister({ onSuccess }) {
   const [companyNameValidating, setCompanyNameValidating] = useState(false);
   const [companyNameValidation, setCompanyNameValidation] = useState(null);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [categorySearch, setCategorySearch] = useState('');
+  const [expandedCategoryIds, setExpandedCategoryIds] = useState([]); // id-evi kategorija čije podkategorije su proširene
   
   // Auto-verification state
   const [autoVerifying, setAutoVerifying] = useState(false);
@@ -805,11 +807,36 @@ export default function UserRegister({ onSuccess }) {
             </div>
           ) : (
             <div className="space-y-4">
+              <label className="block text-sm font-medium text-gray-700">
+                Filtriraj kategorije
+              </label>
+              <input
+                type="search"
+                value={categorySearch}
+                onChange={(e) => setCategorySearch(e.target.value)}
+                placeholder="npr. autoelektričar, arhitekti..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                aria-label="Pretraži kategorije"
+              />
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {categories
-                  .filter(category => !category.parentId) // Samo glavne kategorije
-                  .map(category => {
+                {(() => {
+                  const q = categorySearch.trim().toLowerCase();
+                  const matches = (name, desc) => !q || (name && name.toLowerCase().includes(q)) || (desc && desc.toLowerCase().includes(q));
+                  const rootCategories = categories.filter(c => !c.parentId);
+                  const filteredRoots = q
+                    ? rootCategories.filter(root => {
+                        const subs = categories.filter(cat => cat.parentId === root.id);
+                        return matches(root.name, root.description) || subs.some(s => matches(s.name, s.description));
+                      })
+                    : rootCategories;
+                  return filteredRoots.map(category => {
                     const subcategories = categories.filter(cat => cat.parentId === category.id);
+                    const subFiltered = q
+                      ? subcategories.filter(s => matches(s.name, s.description))
+                      : subcategories;
+                    const expanded = expandedCategoryIds.includes(category.id);
+                    const showSubs = expanded ? subFiltered : subFiltered.slice(0, 3);
+                    const hasMore = subFiltered.length > 3;
                     return (
                       <div key={category.id} className="border border-gray-200 rounded-lg p-3 bg-white">
                         <label className="flex items-start space-x-3 cursor-pointer">
@@ -827,11 +854,11 @@ export default function UserRegister({ onSuccess }) {
                             {category.description && (
                               <p className="text-xs text-gray-600 mt-1">{category.description}</p>
                             )}
-                            {subcategories.length > 0 && (
+                            {subFiltered.length > 0 && (
                               <div className="mt-2">
                                 <p className="text-xs text-gray-500 mb-1">Podkategorije:</p>
                                 <div className="space-y-1">
-                                  {subcategories.slice(0, 3).map(subcategory => (
+                                  {showSubs.map(subcategory => (
                                     <label key={subcategory.id} className="flex items-center space-x-2 cursor-pointer">
                                       <input
                                         type="checkbox"
@@ -842,18 +869,48 @@ export default function UserRegister({ onSuccess }) {
                                       <span className="text-xs text-gray-700">{subcategory.name}</span>
                                     </label>
                                   ))}
-                                  {subcategories.length > 3 && (
-                                    <p className="text-xs text-gray-500">+{subcategories.length - 3} više</p>
+                                  {hasMore && !expanded && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.preventDefault(); setExpandedCategoryIds(prev => [...prev, category.id]); }}
+                                      className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                                    >
+                                      Prikaži sve podkategorije ({subFiltered.length})
+                                    </button>
+                                  )}
+                                  {hasMore && expanded && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.preventDefault(); setExpandedCategoryIds(prev => prev.filter(id => id !== category.id)); }}
+                                      className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                                    >
+                                      Prikaži manje
+                                    </button>
                                   )}
                                 </div>
                               </div>
                             )}
                           </div>
-          </label>
+                        </label>
                       </div>
                     );
-                  })}
+                  });
+                })()}
               </div>
+              {!loadingCategories && categorySearch.trim() && (() => {
+                const q = categorySearch.trim().toLowerCase();
+                const matches = (name, desc) => (name && name.toLowerCase().includes(q)) || (desc && desc.toLowerCase().includes(q));
+                const roots = categories.filter(c => !c.parentId);
+                const filtered = roots.filter(r => matches(r.name, r.description) || categories.some(c => c.parentId === r.id && matches(c.name, c.description)));
+                if (filtered.length === 0) {
+                  return (
+                    <p className="text-sm text-gray-500 text-center py-2">
+                      Nema kategorija koje odgovaraju pretrazi. Pokušajte drugi pojam.
+                    </p>
+                  );
+                }
+                return null;
+              })()}
               
               {formData.categoryIds.length === 0 && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">

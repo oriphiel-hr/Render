@@ -55,6 +55,31 @@ export function buildCategoryTree(categories) {
 }
 
 /**
+ * Filter category tree by search query (name or description). Keeps parent if any descendant matches.
+ * @param {Array} tree - Tree from buildCategoryTree
+ * @param {string} query - Search string (empty = no filter)
+ * @returns {Array} - Filtered tree
+ */
+export function filterCategoryTree(tree, query) {
+  if (!query || !query.trim()) return tree;
+  const q = query.trim().toLowerCase();
+  const matches = (node) =>
+    (node.name && node.name.toLowerCase().includes(q)) ||
+    (node.description && node.description.toLowerCase().includes(q));
+
+  function filterNodes(nodes) {
+    return nodes
+      .map(node => ({
+        ...node,
+        children: node.children && node.children.length ? filterNodes(node.children) : []
+      }))
+      .filter(node => matches(node) || (node.children && node.children.length > 0));
+  }
+
+  return filterNodes(tree);
+}
+
+/**
  * Find category by ID in tree structure
  * @param {Array} tree - Tree structure
  * @param {String} categoryId - Category ID to find

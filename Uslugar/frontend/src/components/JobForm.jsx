@@ -315,25 +315,34 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
   }, [initialData]);
   
   const { register, handleSubmit, formState: { errors }, setValue, watch, control } = useForm({
-    defaultValues: initialData || {
-      title: '',
-      description: '',
-      categoryId: '',
-      subcategoryId: '',
-      projectType: '',
-      budgetMin: '',
-      budgetMax: '',
-      city: '',
-      latitude: null,
-      longitude: null,
-      urgency: 'NORMAL',
-      jobSize: '',
-      deadline: '',
-      // Anonymous user fields
-      contactName: '',
-      contactEmail: '',
-      contactPhone: ''
-    }
+    defaultValues: initialData
+      ? {
+          ...initialData,
+          categoryId: initialData.categoryId ?? initialData.category?.id ?? '',
+          budgetMin: initialData.budgetMin != null ? String(initialData.budgetMin) : '',
+          budgetMax: initialData.budgetMax != null ? String(initialData.budgetMax) : '',
+          deadline: initialData.deadline
+            ? new Date(initialData.deadline).toISOString().slice(0, 10)
+            : ''
+        }
+      : {
+          title: '',
+          description: '',
+          categoryId: '',
+          subcategoryId: '',
+          projectType: '',
+          budgetMin: '',
+          budgetMax: '',
+          city: '',
+          latitude: null,
+          longitude: null,
+          urgency: 'NORMAL',
+          jobSize: '',
+          deadline: '',
+          contactName: '',
+          contactEmail: '',
+          contactPhone: ''
+        }
   });
 
   // Watch selected category and project type (categoryId iz Controllera)

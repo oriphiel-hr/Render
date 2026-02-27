@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../api';
 import { useLegalStatuses } from '../hooks/useLegalStatuses';
 import { validateOIB, validateEmail } from '../utils/validators';
-import { buildCategoryTree } from '../utils/category-tree.js';
+import { buildCategoryTree, filterCategoryTree } from '../utils/category-tree.js';
 import { getCategoryIcon } from '../data/categoryIcons.js';
 import MapPicker from '../components/MapPicker';
 import AddressAutocomplete from '../components/AddressAutocomplete';
@@ -38,6 +38,7 @@ export default function ProviderRegister({ onSuccess }) {
   const [companyNameValidating, setCompanyNameValidating] = useState(false);
   const [companyNameValidation, setCompanyNameValidation] = useState(null);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [categorySearch, setCategorySearch] = useState('');
   
   // Auto-verification state
   const [autoVerifying, setAutoVerifying] = useState(false);
@@ -599,9 +600,21 @@ export default function ProviderRegister({ onSuccess }) {
             </div>
           ) : (
             <div className="space-y-4">
+              <label className="block text-sm font-medium text-gray-700">
+                Filtriraj kategorije
+              </label>
+              <input
+                type="search"
+                value={categorySearch}
+                onChange={(e) => setCategorySearch(e.target.value)}
+                placeholder="npr. autoelektričar, arhitekti..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                aria-label="Pretraži kategorije"
+              />
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {(() => {
                     const categoryTree = buildCategoryTree(categories);
+                    const filteredTree = filterCategoryTree(categoryTree, categorySearch);
                     
                     function renderCategoryCard(node, depth = 0) {
                       const hasChildren = node.children && node.children.length > 0;
@@ -638,9 +651,21 @@ export default function ProviderRegister({ onSuccess }) {
                       );
                     }
                     
-                    return categoryTree.map(root => renderCategoryCard(root));
+                    return filteredTree.map(root => renderCategoryCard(root));
                   })()}
               </div>
+              {categorySearch.trim() && (() => {
+                const tree = buildCategoryTree(categories);
+                const filtered = filterCategoryTree(tree, categorySearch);
+                if (filtered.length === 0) {
+                  return (
+                    <p className="text-sm text-gray-500 text-center py-2">
+                      Nema kategorija koje odgovaraju pretrazi. Pokušajte drugi pojam.
+                    </p>
+                  );
+                }
+                return null;
+              })()}
               
               {formData.categoryIds.length === 0 && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">

@@ -239,7 +239,16 @@ app.get('/api/health', async (_req, res) => {
   }
 })
 
-// Serve uploads directory
+// Preusmjeri stare URL-ove slika (/uploads/xxx) na API rutu (/api/upload/xxx)
+app.get('/uploads/:filename', (req, res) => {
+  const filename = req.params.filename;
+  if (filename && !filename.includes('..')) {
+    return res.redirect(302, '/api/upload/' + encodeURIComponent(filename));
+  }
+  res.status(400).send('Invalid filename');
+});
+
+// Serve uploads directory (fallback za direktan pristup datotekama)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
 
 // Serve test screenshots directory

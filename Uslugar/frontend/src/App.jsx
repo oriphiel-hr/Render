@@ -768,7 +768,7 @@ export default function App(){
                   )}
                   <button
                     className="w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-700 dark:text-red-300 border-t border-gray-200 dark:border-gray-600 mt-1 pt-2"
-                    onClick={() => logout()}
+                    onClick={() => { logout(); setTab('user'); }}
                     aria-label="Odjavi se"
                   >
                     🚪 Odjava
@@ -1069,7 +1069,7 @@ export default function App(){
                 )}
                 <button
                   className="w-full text-left px-3 py-2 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-red-700 dark:text-red-300 transition-colors border-t border-gray-200 dark:border-gray-600 mt-1 pt-2"
-                  onClick={() => { logout(); setIsMobileMenuOpen(false); }}
+                  onClick={() => { logout(); setTab('user'); setIsMobileMenuOpen(false); }}
                   aria-label="Odjavi se"
                 >
                   🚪 Odjava
