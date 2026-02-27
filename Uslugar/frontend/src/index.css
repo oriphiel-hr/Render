@@ -117,3 +117,17 @@
 :target {
   scroll-margin-top: 96px;
 }
+
+/* Chat: osiguraj da je upisani tekst uvijek vidljiv u polju za poruku */
+.chat-message-input {
+  color: #111827;
+}
+html.dark .chat-message-input {
+  color: #f9fafb;
+}
+.chat-message-input::placeholder {
+  color: #6b7280;
+}
+html.dark .chat-message-input::placeholder {
+  color: #9ca3af;
+}
