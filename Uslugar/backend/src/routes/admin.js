@@ -1024,11 +1024,22 @@ Object.keys(MODELS).forEach(modelName => {
   r.put(`/${modelName}/:id`, auth(true, ['ADMIN']), async (req, res, next) => {
     try {
       const { id } = req.params;
-      const data = req.body;
+      const data = { ...req.body };
       
       // Remove fields that shouldn't be updated
       delete data.id;
       delete data.createdAt;
+      
+      // Specijalan slučaj za User: ne dopuštamo slanje cijelog providerProfile / legalStatus objekta
+      // jer Prisma očekuje nested update (update/connect), a ne puni objekt iz includa.
+      if (modelName === 'User') {
+        if (data.providerProfile) {
+          delete data.providerProfile;
+        }
+        if (data.legalStatus) {
+          delete data.legalStatus;
+        }
+      }
       
       const item = await model.update({
         where: { id },
