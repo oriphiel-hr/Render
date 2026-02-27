@@ -501,6 +501,17 @@ export default function App(){
       >
         <Logo size="md" />
         <div className="flex items-center gap-3">
+          {token && (() => {
+            try {
+              const u = JSON.parse(localStorage.getItem('user') || '{}');
+              const name = u.companyName || u.fullName || u.email || null;
+              return name ? (
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200 truncate max-w-[180px] sm:max-w-[240px]" title={name}>
+                  👤 {name}
+                </span>
+              ) : null;
+            } catch { return null; }
+          })()}
           {token && isProviderOrBusinessUser() && <CreditsWidget />}
         </div>
         {/* Desktop Navigation */}
@@ -820,6 +831,17 @@ export default function App(){
         {/* Mobile Navigation */}
         <div className="lg:hidden flex items-center justify-between">
           <div className="flex items-center gap-2">
+            {token && (() => {
+              try {
+                const u = JSON.parse(localStorage.getItem('user') || '{}');
+                const name = u.companyName || u.fullName || u.email || null;
+                return name ? (
+                  <span className="text-xs font-medium text-gray-700 dark:text-gray-200 truncate max-w-[100px] sm:max-w-[140px]" title={name}>
+                    👤 {name}
+                  </span>
+                ) : null;
+              } catch { return null; }
+            })()}
             <button
               className={'px-3 py-2 border rounded ' + (tab==='user' ? 'bg-gray-900 text-white' : 'hover:bg-gray-100')}
               onClick={() => navigateToTab('user')}

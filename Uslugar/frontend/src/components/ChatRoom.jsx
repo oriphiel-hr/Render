@@ -15,9 +15,13 @@ const ChatRoom = ({ room, currentUserId, onClose }) => {
   const jobTitle = room.job?.title || 'Posao';
   const jobOwnerId = room.job?.userId || room.job?.ownerId;
 
-  const getSenderLabel = (senderId) => {
-    if (senderId === jobOwnerId) return 'Korisnik';
-    return 'Pružatelj';
+  /** Ime pošiljatelja + uloga (Korisnik usluge / Pružatelj usluge) da je jasno tko piše */
+  const getSenderDisplayLabel = (message) => {
+    const name = message.sender?.fullName?.trim() || null;
+    const isKorisnik = message.senderId === jobOwnerId;
+    const roleLabel = isKorisnik ? 'Korisnik usluge' : 'Pružatelj usluge';
+    if (name) return `${name} (${roleLabel})`;
+    return roleLabel;
   };
 
   const formatMessageTime = (dateString) => {
@@ -68,6 +72,7 @@ const ChatRoom = ({ room, currentUserId, onClose }) => {
   }, [messages, room.id]);
 
   const loadMessages = async () => {
+    if (!room?.id) return;
     try {
       const response = await getChatMessages(room.id);
       // Backend vraća { messages: [...] }, ne niz
@@ -107,7 +112,7 @@ const ChatRoom = ({ room, currentUserId, onClose }) => {
 
     try {
       const response = await sendChatMessage(room.id, messageContent);
-      // Optimistički prikaži poruku odmah (backend vraća kreiranu poruku)
+      // Optimistički prikaži poruku odmah
       const created = response?.data;
       if (created && created.id) {
         const newMsg = {
@@ -119,7 +124,8 @@ const ChatRoom = ({ room, currentUserId, onClose }) => {
         };
         setMessages((prev) => [...(Array.isArray(prev) ? prev : []), newMsg]);
       }
-      // Učitaj ponovno s servera da dobijemo konzistentan popis (npr. ažurirani status)
+      // Odgoda prije učitavanja da baza stigne spremiti; inače GET može vratiti prazno i prepisati optimističku poruku
+      await new Promise((r) => setTimeout(r, 600));
       await loadMessages();
     } catch (err) {
       setError(err.response?.data?.error || 'Greška pri slanju poruke');
@@ -185,7 +191,7 @@ const ChatRoom = ({ room, currentUserId, onClose }) => {
               >
                 <div className={`flex flex-col max-w-[85%] sm:max-w-md ${isKorisnik ? 'items-end' : 'items-start'}`}>
                   <span className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                    {getSenderLabel(message.senderId)}
+                    {getSenderDisplayLabel(message)}
                   </span>
                   <div
                     className={`px-4 py-2.5 rounded-2xl ${
