@@ -104,12 +104,24 @@ const ChatRoom = ({ room, currentUserId, onClose }) => {
     setError('');
 
     try {
-      await sendChatMessage(room.id, messageContent);
-      // Reload messages to get the new one
+      const response = await sendChatMessage(room.id, messageContent);
+      // Optimistički prikaži poruku odmah (backend vraća kreiranu poruku)
+      const created = response?.data;
+      if (created && created.id) {
+        const newMsg = {
+          id: created.id,
+          content: created.content ?? messageContent,
+          senderId: created.senderId ?? currentUserId,
+          createdAt: created.createdAt ?? new Date().toISOString(),
+          sender: created.sender
+        };
+        setMessages((prev) => [...(Array.isArray(prev) ? prev : []), newMsg]);
+      }
+      // Učitaj ponovno s servera da dobijemo konzistentan popis (npr. ažurirani status)
       await loadMessages();
     } catch (err) {
       setError(err.response?.data?.error || 'Greška pri slanju poruke');
-      setNewMessage(messageContent); // Restore message on error
+      setNewMessage(messageContent);
     } finally {
       setSending(false);
     }
