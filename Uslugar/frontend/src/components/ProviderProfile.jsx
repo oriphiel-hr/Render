@@ -3,12 +3,13 @@ import ReviewList from './ReviewList';
 import api from '../api';
 import { QRCodeSVG } from 'qrcode.react';
 
-const ProviderProfile = ({ providerId, onClose }) => {
+const ProviderProfile = ({ providerId, onClose, onNavigateToMyJobs, scrollToAction }) => {
   const [provider, setProvider] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentUserId, setCurrentUserId] = useState(null);
   const [showShareModal, setShowShareModal] = useState(false);
+  const actionBoxRef = React.useRef(null);
 
   useEffect(() => {
     fetchProvider();
@@ -23,6 +24,12 @@ const ProviderProfile = ({ providerId, onClose }) => {
       }
     }
   }, [providerId]);
+
+  useEffect(() => {
+    if (provider && scrollToAction && actionBoxRef.current) {
+      actionBoxRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [provider, scrollToAction]);
 
   const fetchProvider = async () => {
     try {
@@ -200,6 +207,28 @@ const ProviderProfile = ({ providerId, onClose }) => {
               <span className="px-2 py-0.5 bg-orange-50 text-orange-700 rounded text-xs border border-orange-200" title="Profil u reviziji">
                 ⛔ Profil u reviziji
               </span>
+            )}
+          </div>
+
+          {/* Gdje prihvatiti ponudu / Kako angažirati pružatelja */}
+          <div ref={actionBoxRef} className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-2">📋 Kako angažirati ovog pružatelja?</h3>
+            <p className="text-sm text-blue-800 dark:text-blue-300 mb-2">
+              Ponude se <strong>ne prihvaćaju na ovom profilu</strong>. Ako ste objavili posao i primili ponudu od ovog pružatelja:
+            </p>
+            <ol className="text-sm text-blue-800 dark:text-blue-300 list-decimal list-inside space-y-1 mb-3">
+              <li>Idite u <strong>Moji poslovi</strong> (izbornik „Moj račun”).</li>
+              <li>Otvorite svoj posao koji ima primljene ponude.</li>
+              <li>U odjeljku „Primljene ponude” kliknite <strong>Prihvati</strong> na željenu ponudu.</li>
+            </ol>
+            {onNavigateToMyJobs && (
+              <button
+                type="button"
+                onClick={onNavigateToMyJobs}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
+              >
+                📋 Otvori Moji poslovi
+              </button>
             )}
           </div>
 

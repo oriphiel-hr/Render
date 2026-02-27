@@ -147,6 +147,7 @@ export default function App(){
   const [showJobForm, setShowJobForm] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
   const [selectedProvider, setSelectedProvider] = useState(null);
+  const [openProviderForContact, setOpenProviderForContact] = useState(false);
   const [filters, setFilters] = useState({
     categoryId: '',
     city: '',
@@ -307,11 +308,13 @@ export default function App(){
   };
 
   const handleViewProviderProfile = (provider) => {
+    setOpenProviderForContact(false);
     setSelectedProvider(provider);
   };
 
   const handleCloseProviderProfile = () => {
     setSelectedProvider(null);
+    setOpenProviderForContact(false);
   };
 
   const handleMakeOffer = (job) => {
@@ -338,7 +341,7 @@ export default function App(){
 
 
   const handleContactProvider = (provider) => {
-    // Otvori profil pružatelja (kontakt podaci ili chat dostupni u profilu / nakon prijave)
+    setOpenProviderForContact(true);
     setSelectedProvider(provider);
   };
 
@@ -2189,6 +2192,8 @@ export default function App(){
         <ProviderProfileModal
           providerId={selectedProvider.userId || selectedProvider.user?.id}
           onClose={handleCloseProviderProfile}
+          onNavigateToMyJobs={() => { handleCloseProviderProfile(); setTab('my-jobs'); }}
+          scrollToAction={openProviderForContact}
         />
       )}
     </div>

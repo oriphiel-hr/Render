@@ -19,7 +19,11 @@ const ChatList = ({ currentUserId, onClose }) => {
   const loadRooms = async () => {
     try {
       const response = await getChatRooms();
-      setRooms(response.data || []);
+      // Backend može vratiti niz ili objekt s poljem rooms
+      const list = Array.isArray(response.data)
+        ? response.data
+        : (response.data?.rooms ?? []);
+      setRooms(Array.isArray(list) ? list : []);
       setError('');
     } catch (err) {
       console.error('Error loading chat rooms:', err);

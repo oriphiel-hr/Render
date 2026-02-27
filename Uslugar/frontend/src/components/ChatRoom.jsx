@@ -39,7 +39,8 @@ const ChatRoom = ({ room, currentUserId, onClose }) => {
   const messagesWithDates = (() => {
     const result = [];
     let lastDate = null;
-    const sorted = (messages || []).slice().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    const arr = Array.isArray(messages) ? messages : [];
+    const sorted = arr.slice().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
     sorted.forEach((msg) => {
       const msgDate = new Date(msg.createdAt).toDateString();
       if (msgDate !== lastDate) {
@@ -69,7 +70,11 @@ const ChatRoom = ({ room, currentUserId, onClose }) => {
   const loadMessages = async () => {
     try {
       const response = await getChatMessages(room.id);
-      setMessages(response.data || []);
+      // Backend vraća { messages: [...] }, ne niz
+      const list = Array.isArray(response.data)
+        ? response.data
+        : (response.data?.messages ?? []);
+      setMessages(Array.isArray(list) ? list : []);
       setError('');
     } catch (err) {
       console.error('Error loading messages:', err);
