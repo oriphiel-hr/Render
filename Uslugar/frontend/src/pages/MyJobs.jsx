@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../api';
 import { useAuth } from '../App.jsx';
 import { createChatRoom } from '../api/chat';
@@ -16,6 +16,7 @@ export default function MyJobs({ onNavigate, categories = [] }) {
   const [chatRoom, setChatRoom] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const hasAutoExpandedRef = useRef(false);
 
   useEffect(() => {
     if (!token) {
@@ -38,9 +39,27 @@ export default function MyJobs({ onNavigate, categories = [] }) {
     loadMyJobs();
   }, [token]);
 
+  // Automatski prikaži detalje prvog posla koji ima ponude ili chat (bez klika na "Prikaži detalje")
+  useEffect(() => {
+    if (loading || user?.role === 'PROVIDER' || jobs.length === 0 || hasAutoExpandedRef.current) return;
+    const list = statusFilter === 'ALL' ? jobs : jobs.filter(j => j.status === statusFilter);
+    const firstRelevant = list.find(
+      (j) =>
+        (j.status === 'OPEN' && (j.offers?.length ?? 0) > 0) ||
+        j.status === 'IN_PROGRESS' ||
+        j.status === 'COMPLETED'
+    );
+    if (firstRelevant) {
+      hasAutoExpandedRef.current = true;
+      setSelectedJob(firstRelevant);
+      loadOffers(firstRelevant.id);
+    }
+  }, [loading, jobs, user?.role, statusFilter]);
+
   const loadMyJobs = async () => {
     try {
       setLoading(true);
+      hasAutoExpandedRef.current = false; // Omogući ponovno auto-proširenje nakon osvježavanja
       
       // Provjeri role korisnika
       const storedUser = localStorage.getItem('user');
