@@ -639,6 +639,11 @@ model Subscription {
   createdAt              DateTime           @default(now())
   updatedAt              DateTime           @updatedAt
 
+  // Launch TRIAL: besplatno dok nema dovoljno klijenata u kategorijama/regiji
+  isLaunchTrial              Boolean   @default(false) // true = ne naplaćujemo jer je potražnja niska
+  launchTrialDemandCheckedAt DateTime?  // Zadnji put kada smo provjerili potražnju
+  launchTrialEndsAt          DateTime?  // Kraj besplatnog razdoblja kad potražnja postane dovoljna (obavijest + od tada naplata)
+
   invoices        Invoice[]
   trialEngagement TrialEngagement?
   history         SubscriptionHistory[] // Povijest promjena pretplate

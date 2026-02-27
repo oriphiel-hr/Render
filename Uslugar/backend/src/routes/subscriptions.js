@@ -638,6 +638,25 @@ r.get('/me', auth(true, ['PROVIDER', 'ADMIN', 'USER']), async (req, res, next) =
           userId: req.user.id
         }
       });
+
+      // Launch TRIAL: provjeri ima li dovoljno potražnje u kategorijama pružatelja
+      try {
+        const { isEligibleForLaunchTrial } = await import('../services/launch-trial-service.js');
+        const { eligible } = await isEligibleForLaunchTrial(req.user.id);
+        if (eligible) {
+          await prisma.subscription.update({
+            where: { userId: req.user.id },
+            data: {
+              isLaunchTrial: true,
+              launchTrialDemandCheckedAt: new Date()
+            }
+          });
+          subscription = await prisma.subscription.findUnique({ where: { userId: req.user.id } });
+          console.log(`[TRIAL] Launch TRIAL aktiviran za korisnika ${req.user.id} (niska potražnja u segmentu)`);
+        }
+      } catch (launchTrialErr) {
+        console.error('[TRIAL] Launch TRIAL check error:', launchTrialErr);
+      }
     }
 
     // Check if subscription expired - automatski vraćanje na BASIC plan
@@ -651,10 +670,30 @@ r.get('/me', auth(true, ['PROVIDER', 'ADMIN', 'USER']), async (req, res, next) =
       }
     }
 
+    // Launch TRIAL: za postojeće TRIAL pretplate bez postavljenog isLaunchTrial, provjeri jednom
+    if (subscription.plan === 'TRIAL' && subscription.status === 'ACTIVE' && subscription.isLaunchTrial == null) {
+      try {
+        const { isEligibleForLaunchTrial } = await import('../services/launch-trial-service.js');
+        const { eligible } = await isEligibleForLaunchTrial(req.user.id);
+        await prisma.subscription.update({
+          where: { userId: req.user.id },
+          data: {
+            isLaunchTrial: eligible,
+            launchTrialDemandCheckedAt: new Date()
+          }
+        });
+        subscription = await prisma.subscription.findUnique({ where: { userId: req.user.id } });
+      } catch (e) {
+        console.error('[TRIAL] Launch TRIAL check error (existing):', e);
+      }
+    }
+
     const { plansObj } = await getPlansFromDB();
     res.json({
       subscription,
-      planDetails: plansObj[subscription.plan] || null
+      planDetails: plansObj[subscription.plan] || null,
+      launchTrial: subscription.plan === 'TRIAL' && subscription.isLaunchTrial === true,
+      launchTrialEndsAt: subscription.launchTrialEndsAt || null
     });
   } catch (e) {
     next(e);

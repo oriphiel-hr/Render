@@ -1,15 +1,31 @@
 import React from 'react';
 
-const FAQ = () => {
-  const faqs = [
+const FAQ = ({ userType = 'guest' }) => {
+  // Segmentirano prema publici
+  const faqsUser = [
     {
       question: "Je li objavljivanje posla besplatno?",
       answer: "Da. Kao korisnik usluge (naručitelj) ne plaćate kredite – objavljivanje poslova i korištenje platforme za vas je besplatno. Kredite plaćaju pružatelji usluga kada kupuju vaš upit (ekskluzivni lead)."
     },
     {
       question: "Što ako pružatelj ne odgovori ili ne ispuni dogovor?",
-      answer: "Možete prijaviti problem u aplikaciji. Platforma rješava prijave prema pravilima (npr. pružatelj može dobiti povrat svog kredita – to je njegov proces, vas ne zanima iznos u kreditima)."
+      answer: "Možete prijaviti problem u aplikaciji. Platforma rješava prijave prema pravilima. Vi ne plaćate ništa dodatno – eventualni povrat kredita je interni proces pružatelja."
     },
+    {
+      question: "Što je trust score?",
+      answer: "Trust score (0-100) pokazuje koliko je klijent verifikiran i pouzdan za rad. Pomaže pružateljima da znaju da surađuju s ozbiljnim naručiteljima."
+    },
+    {
+      question: "Kako funkcionira recenziranje?",
+      answer: "Nakon završenog posla, vi i pružatelj se možete međusobno ocijeniti i komentirati. Ocjene pomažu drugim korisnicima da odaberu kvalitetne suradnike."
+    },
+    {
+      question: "Kako funkcionira chat sustav?",
+      answer: "Možete razgovarati s pružateljem u real-time chatu vezanom uz konkretan posao. Sav dogovor i komunikacija ostaju unutar platforme."
+    }
+  ];
+
+  const faqsProvider = [
     {
       question: "Što je ekskluzivan lead?",
       answer: "Ekskluzivan lead znači da samo vi (kao pružatelj) dobivate kontakt klijenta. Nema drugih izvođača koji konkuriraju za isti posao."
@@ -20,61 +36,48 @@ const FAQ = () => {
     },
     {
       question: "Koliko košta 1 kredit?",
-      answer: "1 kredit = 1 ekskluzivan lead. Cijena varira ovisno o planu koji odaberete. Odnosi se na pružatelje usluga – korisnici ne plaćaju kredite."
+      answer: "1 kredit = 1 ekskluzivan lead. Cijena ovisi o pretplatničkom planu. Kredite plaćaju isključivo pružatelji usluga – korisnici koji objavljuju poslove ne plaćaju ništa."
     },
     {
       question: "Što je AI quality score?",
-      answer: "AI quality score ocjenjuje kvalitetu leadova na temelju povijesti odgovora i uspješnosti."
+      answer: "AI quality score ocjenjuje kvalitetu leadova na temelju povijesti odgovora, uspješnosti i ponašanja korisnika. Viši score znači veća vjerojatnost da će se posao realizirati."
     },
     {
       question: "Mogu li otkazati pretplatu?",
-      answer: "Da, možete otkazati pretplatu bilo kada. Ne postoji ugovorna obveza."
+      answer: "Da, možete otkazati pretplatu bilo kada. Nema ugovorne obveze – nakon isteka tekućeg obračunskog razdoblja pretplata se više ne obnavlja."
     },
     {
       question: "Kako funkcionira queue sustav?",
-      answer: "Leadovi se dodjeljuju redom providerima. Imate 24 sata da odgovorite na ponuđeni lead."
-    },
-    {
-      question: "Što je trust score?",
-      answer: "Trust score (0-100) pokazuje koliko je klijent verifikiran i pouzdan za rad."
+      answer: "Leadovi se dodjeljuju redom providerima koji ispunjavaju kriterije. Imate određeno vrijeme (npr. 24 sata) da odgovorite na ponuđeni lead prije nego što prijeđe na sljedećeg."
     },
     {
       question: "Trebam li licencu za svoju djelatnost?",
-      answer: "Neke kategorije zahtijevaju licencu. Možete upload-ovati dokumente licenci u svom profilu."
+      answer: "Za neke kategorije obavezna je licenca ili ovlaštenje. U svom profilu možete uploadati dokumente licenci kako bi klijenti vidjeli da ste ovlašteni za rad."
     },
     {
       question: "Kako vidim svoju ROI statistiku?",
-      answer: "U ROI dashboard-u vidite konverziju leadova, ukupan prihod i prosječnu vrijednost leada."
+      answer: "U ROI dashboardu vidite koliko ste leadova kupili, koliko ste poslova zatvorili i koji je ukupni prihod – tako možete pratiti isplativost platforme."
     },
     {
       question: "Mogu li pregovarati o cijeni?",
-      answer: "Da, možete označiti ponude kao 'pregovorno' i razgovarati s klijentom o cijeni."
-    },
-    {
-      question: "Kako funkcionira recenziranje?",
-      answer: "Nakon završenog posla, klijent i pružatelj se mogu međusobno ocijeniti i komentirati."
-    },
-    {
-      question: "Što ako ne odgovorim na lead u roku?",
-      answer: "Lead se automatski prebacuje na sljedećeg providera u redu čekanja."
-    },
-    {
-      question: "Kako funkcionira chat sustav?",
-      answer: "Možete razgovarati s klijentom u real-time chatu vezanom uz konkretan posao."
-    },
-    {
-      question: "Mogu li filtrirati leadove po kategorijama?",
-      answer: "Da, možete odabrati kategorije koje vas zanimaju i primati samo relevantne leadove."
+      answer: "Da. Možete označiti ponude kao 'pregovorno' i kroz chat dogovoriti konačnu cijenu s klijentom."
     },
     {
       question: "Što je trial period?",
-      answer: "Novi pružatelji dobivaju 7 dana besplatno s 5 kredita da probaju platformu. Korisnici koji objavljuju poslove ne troše kredite – platforma je za njih besplatna."
+      answer: "Novi pružatelji dobivaju probni period (npr. 7 dana) s početnim brojem kredita kako bi testirali platformu. Korisnici koji objavljuju poslove ne troše kredite – za njih je objava posla besplatna."
     },
     {
       question: "Kako se ažuriraju krediti?",
-      answer: "Krediti se dodaju mjesečno prema vašem planu (za pružatelje) ili možete kupiti dodatne. Korisnici usluge ne koriste kredite."
+      answer: "Krediti se dodaju mjesečno prema vašem planu ili ih možete dodatno kupiti. Stanje kredita uvijek je vidljivo u vašem profilu."
     }
   ];
+
+  const audienceFromUserType = userType === 'provider' ? 'provider' : 'user';
+  const [audience, setAudience] = React.useState(audienceFromUserType);
+
+  const faqsToShow = audience === 'provider'
+    ? faqsProvider
+    : faqsUser;
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-gray-50 min-h-screen">
@@ -85,13 +88,41 @@ const FAQ = () => {
         <p className="text-xl text-gray-600 mb-8">
           Pronađite odgovore na najčešća pitanja o Uslugar platformi
         </p>
+        <div className="mb-6 flex justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => setAudience('user')}
+            className={
+              "px-4 py-2 rounded-full text-sm font-medium border " +
+              (audience === 'user'
+                ? "bg-blue-600 text-white border-blue-600"
+                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50")
+            }
+          >
+            👥 Za korisnike (naručitelje)
+          </button>
+          <button
+            type="button"
+            onClick={() => setAudience('provider')}
+            className={
+              "px-4 py-2 rounded-full text-sm font-medium border " +
+              (audience === 'provider'
+                ? "bg-purple-600 text-white border-purple-600"
+                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50")
+            }
+          >
+            🛠️ Za pružatelje usluga
+          </button>
+        </div>
         <p className="text-sm text-gray-500 mb-8 max-w-2xl mx-auto">
-          Prva pitanja odnose se na korisnike (naručitelje koji objavljuju poslove) i pružatelje (izvođače koji primaju leadove). Kao korisnik ne plaćate kredite – platforma je besplatna za objavljivanje poslova. Kredite plaćaju pružatelji kada kupuju vaš upit.
+          Trenutno prikazujemo odgovore za{" "}
+          <strong>{audience === 'provider' ? 'pružatelje usluga' : 'korisnike (naručitelje)'}</strong>.
+          Kao korisnik koji objavljuje poslove ne plaćate kredite – platforma je za vas besplatna. Informacije o kreditima i pretplati odnose se na pružatelje usluga.
         </p>
       </div>
 
       <div className="space-y-6">
-        {faqs.map((faq, index) => (
+        {faqsToShow.map((faq, index) => (
           <div key={index} className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow">
             <h3 className="text-xl font-semibold text-gray-900 mb-3">
               {faq.question}

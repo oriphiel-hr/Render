@@ -79,6 +79,19 @@ export default function App(){
     }
   };
 
+  // Helper funkcija: je li korisnik pružatelj usluge (ili admin)
+  const isProvider = () => {
+    if (!token) return false;
+    const storedUser = localStorage.getItem('user');
+    if (!storedUser) return false;
+    try {
+      const userData = JSON.parse(storedUser);
+      return userData.role === 'PROVIDER' || userData.role === 'ADMIN';
+    } catch {
+      return false;
+    }
+  };
+
   // "Postani pružatelj" samo za korisnike usluge koji su pravna osoba (imaju legalStatusId)
   const canShowPostaniPružatelj = () => {
     if (!token) return false;
@@ -505,24 +518,26 @@ export default function App(){
             >
               Početna
             </button>
-            <button
-              className={
-                navLinkBase +
-                ' ' +
-                (tab === 'pricing' ? navLinkActive : navLinkInactive)
-              }
-              onClick={() => {
-                if (window.location.pathname.startsWith('/admin/')) {
-                  window.location.replace('/#pricing');
-                } else {
-                  setTab('pricing');
+            {(!token || isProvider()) && (
+              <button
+                className={
+                  navLinkBase +
+                  ' ' +
+                  (tab === 'pricing' ? navLinkActive : navLinkInactive)
                 }
-              }}
-              aria-label="Cjenik"
-              aria-current={tab === 'pricing' ? 'page' : undefined}
-            >
-              Cjenik
-            </button>
+                onClick={() => {
+                  if (window.location.pathname.startsWith('/admin/')) {
+                    window.location.replace('/#pricing');
+                  } else {
+                    setTab('pricing');
+                  }
+                }}
+                aria-label="Cjenik"
+                aria-current={tab === 'pricing' ? 'page' : undefined}
+              >
+                Cjenik
+              </button>
+            )}
             <button
               className={
                 navLinkBase +
@@ -800,12 +815,14 @@ export default function App(){
             >
               🏠
             </button>
-            <button
-              className={'px-3 py-2 border rounded ' + (tab==='pricing' ? 'bg-orange-600 text-white' : 'border-orange-600 text-orange-600')}
-              onClick={() => navigateToTab('pricing')}
-            >
-              💰
-            </button>
+            {(!token || isProvider()) && (
+              <button
+                className={'px-3 py-2 border rounded ' + (tab==='pricing' ? 'bg-orange-600 text-white' : 'border-orange-600 text-orange-600')}
+                onClick={() => navigateToTab('pricing')}
+              >
+                💰
+              </button>
+            )}
             <button
               className={'px-3 py-2 border rounded ' + (tab==='faq' ? 'bg-purple-600 text-white' : 'border-purple-600 text-purple-600')}
               onClick={() => navigateToTab('faq')}
@@ -866,12 +883,14 @@ export default function App(){
               >
                 🏠 Početna
               </button>
-              <button
-                className={'w-full text-left px-3 py-2 rounded ' + (tab==='pricing' ? 'bg-orange-600 text-white' : 'hover:bg-gray-100')}
-                onClick={() => { navigateToTab('pricing'); setIsMobileMenuOpen(false); }}
-              >
-                💰 Cjenik
-              </button>
+              {(!token || isProvider()) && (
+                <button
+                  className={'w-full text-left px-3 py-2 rounded ' + (tab==='pricing' ? 'bg-orange-600 text-white' : 'hover:bg-gray-100')}
+                  onClick={() => { navigateToTab('pricing'); setIsMobileMenuOpen(false); }}
+                >
+                  💰 Cjenik
+                </button>
+              )}
               <button
                 className={'w-full text-left px-3 py-2 rounded ' + (tab==='faq' ? 'bg-purple-600 text-white' : 'hover:bg-gray-100')}
                 onClick={() => { navigateToTab('faq'); setIsMobileMenuOpen(false); }}
@@ -1974,7 +1993,7 @@ export default function App(){
 
       {tab === 'faq' && (
         <section id="faq" className="tab-section">
-          <FAQ />
+          <FAQ userType={isProvider() ? 'provider' : (token ? 'user' : 'guest')} />
         </section>
       )}
 

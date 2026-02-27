@@ -6,6 +6,8 @@ import Toast from '../components/Toast';
 export default function Pricing({ setTab }) {
   const [plans, setPlans] = useState([]);
   const [currentSubscription, setCurrentSubscription] = useState(null);
+  const [launchTrial, setLaunchTrial] = useState(false);
+  const [launchTrialEndsAt, setLaunchTrialEndsAt] = useState(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(null); // Track which plan is being processed
   const [toast, setToast] = useState({ message: '', type: 'info', isVisible: false });
@@ -79,6 +81,8 @@ export default function Pricing({ setTab }) {
         setPlans([trialPlan, ...plansRes.data]);
         if (subscriptionRes?.data?.subscription) {
           setCurrentSubscription(subscriptionRes.data.subscription);
+          setLaunchTrial(!!subscriptionRes.data.launchTrial);
+          setLaunchTrialEndsAt(subscriptionRes.data.launchTrialEndsAt || null);
         }
       })
       .catch(err => {
@@ -116,10 +120,23 @@ export default function Pricing({ setTab }) {
           <p className="text-xl text-gray-600 mb-8">
             Ekskluzivni leadovi bez konkurencije
           </p>
-          <div className="bg-green-100 border border-green-400 text-green-700 px-6 py-4 rounded-lg inline-block">
-            <p className="text-lg font-semibold">
-              1 lead = 1 izvođač | Refund ako klijent ne odgovori
-            </p>
+          <div className="space-y-3 max-w-3xl mx-auto">
+            <div className="bg-green-100 border border-green-400 text-green-700 px-6 py-4 rounded-lg">
+              <p className="text-lg font-semibold">
+                1 lead = 1 izvođač | Refund ako klijent ne odgovori
+              </p>
+            </div>
+            <div className="bg-blue-50 border border-blue-400 text-blue-800 px-6 py-4 rounded-lg text-sm md:text-base text-left">
+              <p className="font-semibold mb-1">
+                🤝 Pošteno pravilo za nove kategorije i regije
+              </p>
+              <p className="mb-1">
+                Dok u vašim odabranim kategorijama i regijama <strong>nema dovoljno klijenata</strong>, koristite <strong>najjači paket (TRIAL / Premium funkcionalnosti)</strong> bez plaćanja mjesečne naknade.
+              </p>
+              <p className="text-xs md:text-sm text-blue-900">
+                Konkretno: čim u zadnjih 90 dana u vašim kategorijama imamo <strong>barem 20 objavljenih poslova</strong> i možemo vam realno isporučiti <strong>min. 3–5 leadova mjesečno</strong>, smatramo da je tržište dovoljno aktivno i od sljedećeg obračunskog razdoblja prelazite na redovnu cijenu odabranog plana (uz jasnu najavu unaprijed).
+              </p>
+            </div>
           </div>
         </div>
 
@@ -129,6 +146,16 @@ export default function Pricing({ setTab }) {
             <h2 className="text-2xl font-bold text-green-900 mb-2">
               ✓ Vaš aktivni plan: <span className="text-green-700">{currentSubscription.plan}</span>
             </h2>
+            {launchTrial && currentSubscription.plan === 'TRIAL' && (
+              <p className="text-blue-700 font-semibold mb-2">
+                🚀 Launch TRIAL – besplatno dok u vašim kategorijama nema dovoljno klijenata
+              </p>
+            )}
+            {launchTrialEndsAt && (
+              <p className="text-amber-700 text-sm mb-2">
+                Besplatno razdoblje do: <strong>{new Date(launchTrialEndsAt).toLocaleDateString('hr-HR')}</strong> – zatim redovna naplata
+              </p>
+            )}
             <p className="text-gray-700">
               Preostalo kredita: <strong className="text-green-700">{currentSubscription.creditsBalance || 0}</strong>
               {currentSubscription.expiresAt && (
@@ -143,6 +170,7 @@ export default function Pricing({ setTab }) {
           {plans.map(plan => {
             const isCurrentPlan = currentSubscription?.plan === plan.name;
             const isTrial = plan.name === 'TRIAL';
+            const isStrongestPaidPlan = plan.name === 'PRO';
             
             return (
             <div
@@ -184,6 +212,11 @@ export default function Pricing({ setTab }) {
                 {isTrial && (
                   <p className="text-sm text-yellow-600 font-semibold mt-1">
                     7 dana besplatno!
+                  </p>
+                )}
+                {isStrongestPaidPlan && (
+                  <p className="mt-2 text-xs text-blue-700 font-semibold">
+                    Launch TRIAL: u novim kategorijama/regijama ovaj plan je privremeno besplatan dok ne dosegnemo dovoljan broj klijenata.
                   </p>
                 )}
               </div>

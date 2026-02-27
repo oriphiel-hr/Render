@@ -21,6 +21,7 @@ import { checkAddonLifecycles, processAutoRenewals, processAddonUpsells } from '
 import { checkAndDowngradeExpiredSubscriptions } from '../routes/subscriptions.js';
 import { publishExpiredReviews } from '../services/review-publish-service.js';
 import { sendMonthlyReportsToAllUsers } from '../services/monthly-report-service.js';
+import { getLaunchTrialSubscriptions, checkAndUpdateLaunchTrial } from '../services/launch-trial-service.js';
 
 export function startQueueScheduler() {
   console.log('⏰ Starting Queue Scheduler...')
@@ -66,6 +67,21 @@ export function startQueueScheduler() {
       const downgradeCheck = await checkAndDowngradeExpiredSubscriptions()
       if (downgradeCheck.downgraded > 0) {
         console.log(`✅ Downgraded ${downgradeCheck.downgraded} expired subscriptions to BASIC`)
+      }
+
+      // Launch TRIAL: provjeri ima li dovoljno potražnje za pružatelje na besplatnom TRIAL-u
+      try {
+        const launchList = await getLaunchTrialSubscriptions();
+        let launchUpdated = 0;
+        for (const { userId } of launchList) {
+          const result = await checkAndUpdateLaunchTrial(userId);
+          if (result.updated) launchUpdated++;
+        }
+        if (launchUpdated > 0) {
+          console.log(`✅ Launch TRIAL: ${launchUpdated} pretplata označeno za prelazak na plaćanje`)
+        }
+      } catch (launchErr) {
+        console.error('❌ Launch TRIAL check failed:', launchErr)
       }
       
       // Provjeri i objavi review-e čiji je rok istekao (reciprocal delay)
@@ -220,6 +236,7 @@ export function startQueueScheduler() {
   console.log('   - Add-on auto-renewal: Every hour at :00')
   console.log('   - Add-on upsell offers: Every hour at :00')
   console.log('   - Expired subscriptions downgrade (TRIAL→BASIC): Every hour at :00')
+  console.log('   - Launch TRIAL demand check (prelazak na plaćanje): Every hour at :00')
   console.log('   - Review publish (reciprocal delay): Every hour at :00')
   console.log('   - Job alerts (INSTANT/DAILY/WEEKLY): Every hour at :00')
   console.log('   - Monthly reports: 1st of month at 09:00')
