@@ -338,7 +338,8 @@ export default function App(){
 
 
   const handleContactProvider = (provider) => {
-    // TODO: Implementirati chat ili kontakt
+    // Otvori profil pružatelja (kontakt podaci ili chat dostupni u profilu / nakon prijave)
+    setSelectedProvider(provider);
   };
 
   // sync hash radi "deeplinka"
@@ -2120,7 +2121,13 @@ export default function App(){
                       return src;
                     })
                     .map((src, i) => (
-                      <img key={i} src={src} alt="" className="w-24 h-24 object-cover rounded-lg" />
+                      <img
+                        key={i}
+                        src={src}
+                        alt=""
+                        className="w-24 h-24 object-cover rounded-lg"
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                      />
                     ))}
                 </div>
               )}

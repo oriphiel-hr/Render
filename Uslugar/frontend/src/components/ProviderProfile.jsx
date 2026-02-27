@@ -28,7 +28,25 @@ const ProviderProfile = ({ providerId, onClose }) => {
     try {
       setLoading(true);
       const response = await api.get(`/providers/${providerId}`);
-      setProvider(response.data);
+      const { user, reviews } = response.data;
+      if (!user?.providerProfile) {
+        setError('Profil nije pronađen');
+        return;
+      }
+      const ratingAvg = reviews?.length > 0
+        ? reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length
+        : 0;
+      const ratingCount = reviews?.length ?? 0;
+      setProvider({
+        ...user.providerProfile,
+        user,
+        reviews: reviews ?? [],
+        ratingAvg,
+        ratingCount,
+        conversionRate: user.providerProfile.conversionRate ?? 0,
+        avgResponseTimeMinutes: user.providerProfile.avgResponseTimeMinutes ?? 0,
+        legalStatus: user.legalStatus ?? null
+      });
     } catch (err) {
       setError('Greška pri učitavanju profila');
     } finally {
@@ -37,11 +55,12 @@ const ProviderProfile = ({ providerId, onClose }) => {
   };
 
   const renderStars = (rating) => {
+    const r = Number(rating) || 0;
     return [1, 2, 3, 4, 5].map((star) => (
       <span
         key={star}
         className={`text-lg ${
-          star <= rating ? 'text-yellow-400' : 'text-gray-300'
+          star <= r ? 'text-yellow-400' : 'text-gray-300'
         }`}
       >
         ★
@@ -122,7 +141,7 @@ const ProviderProfile = ({ providerId, onClose }) => {
                 <div className="flex items-center space-x-2 mt-1">
                   {renderStars(provider.ratingAvg)}
                   <span className="text-sm text-gray-600">
-                    {provider.ratingAvg.toFixed(1)} ({provider.ratingCount} recenzija)
+                    {(provider.ratingAvg ?? 0).toFixed(1)} ({provider.ratingCount ?? 0} recenzija)
                   </span>
                 </div>
               </div>
@@ -185,7 +204,7 @@ const ProviderProfile = ({ providerId, onClose }) => {
           </div>
 
           {/* Reputation Metrics */}
-          {(provider.avgResponseTimeMinutes > 0 || provider.conversionRate > 0) && (
+          {(provider.avgResponseTimeMinutes > 0 || (provider.conversionRate ?? 0) > 0) && (
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-3">⚡ Reputacija</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -222,7 +241,7 @@ const ProviderProfile = ({ providerId, onClose }) => {
                       <div>
                         <p className="text-sm text-gray-600 mb-1">Stopa konverzije</p>
                         <p className="text-2xl font-bold text-green-700">
-                          {provider.conversionRate.toFixed(1)}%
+                          {(provider.conversionRate ?? 0).toFixed(1)}%
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
                           Leadovi → Uspešni poslovi

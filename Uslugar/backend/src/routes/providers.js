@@ -278,7 +278,10 @@ r.get('/:userId', async (req, res, next) => {
     const { userId } = req.params;
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: { providerProfile: { include: { categories: true } } }
+      include: {
+        legalStatus: true,
+        providerProfile: { include: { categories: true } }
+      }
     });
     if (!user || user.role !== 'PROVIDER') return res.status(404).json({ error: 'Provider not found' });
     // reviews summary

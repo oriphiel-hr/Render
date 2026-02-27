@@ -2,9 +2,10 @@ import React from 'react';
 
 const ProviderCard = ({ provider, onViewProfile, onContact }) => {
   const renderStars = (rating) => {
+    const r = Number(rating) || 0;
     const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
+    const fullStars = Math.floor(r);
+    const hasHalfStar = r % 1 !== 0;
 
     for (let i = 0; i < fullStars; i++) {
       stars.push(
@@ -18,7 +19,7 @@ const ProviderCard = ({ provider, onViewProfile, onContact }) => {
       );
     }
 
-    const remainingStars = 5 - Math.ceil(rating);
+    const remainingStars = 5 - Math.ceil(r);
     for (let i = 0; i < remainingStars; i++) {
       stars.push(
         <span key={`empty-${i}`} className="text-gray-300">★</span>
@@ -66,9 +67,9 @@ const ProviderCard = ({ provider, onViewProfile, onContact }) => {
               </div>
             </div>
             <div className="flex items-center space-x-1">
-              {renderStars(provider.ratingAvg)}
+              {renderStars(provider.ratingAvg ?? 0)}
               <span className="text-sm text-gray-600 ml-1">
-                ({provider.ratingCount})
+                ({provider.ratingCount ?? 0})
               </span>
             </div>
           </div>
