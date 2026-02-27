@@ -74,7 +74,9 @@ const ChatRoom = ({ room, currentUserId, onClose }) => {
       const list = Array.isArray(response.data)
         ? response.data
         : (response.data?.messages ?? []);
-      setMessages(Array.isArray(list) ? list : []);
+      const next = Array.isArray(list) ? list : [];
+      // Nemoj prepisati praznim nizom ako već imamo poruke (npr. optimistička poruka ili GET kasni)
+      setMessages((prev) => (next.length === 0 && prev.length > 0 ? prev : next));
       setError('');
     } catch (err) {
       console.error('Error loading messages:', err);
