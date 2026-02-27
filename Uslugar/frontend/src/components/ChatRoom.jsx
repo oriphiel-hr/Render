@@ -19,11 +19,27 @@ const ChatRoom = ({ room, currentUserId, onClose }) => {
   const jobTitle = room.job?.title || 'Posao';
   const jobOwnerId = room.job?.userId || room.job?.ownerId;
 
-  /** Ime pošiljatelja + uloga (Korisnik usluge / Pružatelj usluge) da je jasno tko piše */
+  /** Ime pošiljatelja + uloga (Korisnik usluge / Pružatelj usluge). Ako nema job.userId, koristi ulogu trenutnog korisnika za njegove poruke, a za drugog sudionika suprotnu. */
   const getSenderDisplayLabel = (message) => {
     const name = message.sender?.fullName?.trim() || null;
-    const isKorisnik = message.senderId === jobOwnerId;
-    const roleLabel = isKorisnik ? 'Korisnik usluge' : 'Pružatelj usluge';
+    let roleLabel;
+    if (jobOwnerId != null) {
+      const isKorisnik = message.senderId === jobOwnerId;
+      roleLabel = isKorisnik ? 'Korisnik usluge' : 'Pružatelj usluge';
+    } else {
+      try {
+        const u = JSON.parse(localStorage.getItem('user') || '{}');
+        const currentIsProvider = u.role === 'PROVIDER' || u.role === 'ADMIN';
+        const isCurrentUser = message.senderId === currentUserId;
+        if (isCurrentUser) {
+          roleLabel = currentIsProvider ? 'Pružatelj usluge' : 'Korisnik usluge';
+        } else {
+          roleLabel = currentIsProvider ? 'Korisnik usluge' : 'Pružatelj usluge';
+        }
+      } catch {
+        roleLabel = 'Korisnik usluge';
+      }
+    }
     if (name) return `${name} (${roleLabel})`;
     return roleLabel;
   };
@@ -86,25 +102,30 @@ const ChatRoom = ({ room, currentUserId, onClose }) => {
     if (!roomId) return;
     try {
       const response = await getChatMessages(roomId);
-      const list = Array.isArray(response.data)
-        ? response.data
-        : (response.data?.messages ?? []);
+      const list =
+        Array.isArray(response.data)
+          ? response.data
+          : (response.data?.messages ?? response.data?.data?.messages ?? []);
       const next = Array.isArray(list) ? list : [];
       setMessages((prev) => {
-        // Nemoj prepisati praznim nizom ako već imamo poruke (polling ili kasnjenje)
         if (next.length === 0 && prev.length > 0) return prev;
         return next;
       });
       setError('');
-      // Ako je prvi učitaj i dobili smo prazno, jednom ponovi (za slučaj kašnjenja baze)
-      if (next.length === 0 && loadRetryCount.current < 1) {
+      if (next.length === 0 && loadRetryCount.current < 2) {
         loadRetryCount.current += 1;
-        setTimeout(() => loadMessages(), 500);
+        setTimeout(() => loadMessages(), loadRetryCount.current === 1 ? 600 : 1500);
       }
     } catch (err) {
       console.error('Error loading messages:', err);
-      if (err.response?.status !== 404) {
+      if (err.response?.status === 403) {
+        setError('Nemate pristup ovom razgovoru.');
+      } else if (err.response?.status !== 404) {
         setError('Greška pri učitavanju poruka');
+      }
+      if (loadRetryCount.current < 2) {
+        loadRetryCount.current += 1;
+        setTimeout(() => loadMessages(), 1000);
       }
     } finally {
       setLoading(false);

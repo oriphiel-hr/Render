@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '../api';
 import { useAuth } from '../App.jsx';
-import { createChatRoom } from '../api/chat';
+import { createChatRoom, getChatRoom } from '../api/chat';
 import ChatRoom from '../components/ChatRoom';
 import JobForm from '../components/JobForm';
 
@@ -183,10 +183,20 @@ export default function MyJobs({ onNavigate, categories = [] }) {
       // Ako je korisnik USER, drugi sudionik je pružatelj koji je poslao prihvaćenu ponudu (acceptedOffer.userId)
       const otherParticipantId = user?.role === 'PROVIDER' ? job.userId : acceptedOffer.userId;
 
-      // Kreiraj ili dohvati chat room
+      // Kreiraj ili dohvati chat room, zatim dohvati sobu po ID-u da poruke budu konzistentne
       try {
         const response = await createChatRoom(job.id, otherParticipantId);
-        setChatRoom(response.data);
+        const roomFromPost = response.data;
+        if (roomFromPost?.id) {
+          try {
+            const roomRes = await getChatRoom(roomFromPost.id);
+            setChatRoom(roomRes.data);
+          } catch {
+            setChatRoom(roomFromPost);
+          }
+        } else {
+          setChatRoom(roomFromPost);
+        }
       } catch (err) {
         if (err.response?.status === 403) {
           alert(err.response?.data?.error || 'Nemate pristup chatu za ovaj posao.');

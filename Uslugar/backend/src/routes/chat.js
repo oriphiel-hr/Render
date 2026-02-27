@@ -151,7 +151,8 @@ r.get('/rooms', auth(true), async (req, res, next) => {
           select: {
             id: true,
             title: true,
-            status: true
+            status: true,
+            userId: true
           }
         },
         messages: {
@@ -266,7 +267,8 @@ r.post('/rooms', auth(true), async (req, res, next) => {
         job: {
           select: {
             id: true,
-            title: true
+            title: true,
+            userId: true
           }
         }
       }
@@ -298,13 +300,35 @@ r.post('/rooms', auth(true), async (req, res, next) => {
         job: {
           select: {
             id: true,
-            title: true
+            title: true,
+            userId: true
           }
         }
       }
     });
 
     res.status(201).json(room);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Dohvati jednu sobu po ID-u (za konzistentan podatak pri učitavanju poruka)
+r.get('/rooms/:roomId', auth(true), async (req, res, next) => {
+  try {
+    const { roomId } = req.params;
+    const room = await prisma.chatRoom.findFirst({
+      where: {
+        id: roomId,
+        participants: { some: { id: req.user.id } }
+      },
+      include: {
+        participants: { select: { id: true, fullName: true, email: true } },
+        job: { select: { id: true, title: true, userId: true } }
+      }
+    });
+    if (!room) return res.status(404).json({ error: 'Room not found' });
+    res.json(room);
   } catch (e) {
     next(e);
   }
