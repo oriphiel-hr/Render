@@ -22,7 +22,9 @@ export const getChatRoom = (roomId) => {
 // ============================================================
 
 export const getChatMessages = (roomId) => {
-  return api.get(`/chat/rooms/${roomId}/messages`);
+  return api.get(`/chat/rooms/${roomId}/messages`, {
+    headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' }
+  });
 };
 
 export const sendChatMessage = (roomId, content, imageUrl = null) => {

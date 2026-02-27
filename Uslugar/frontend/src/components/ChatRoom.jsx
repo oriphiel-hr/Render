@@ -102,6 +102,10 @@ const ChatRoom = ({ room, currentUserId, onClose }) => {
     if (!roomId) return;
     try {
       const response = await getChatMessages(roomId);
+      if (response.status === 304) {
+        setLoading(false);
+        return;
+      }
       const list =
         Array.isArray(response.data)
           ? response.data

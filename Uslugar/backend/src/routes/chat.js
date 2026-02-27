@@ -560,12 +560,16 @@ r.get('/rooms/:roomId/messages', auth(true), async (req, res, next) => {
     const { isThreadLocked } = await import('../services/thread-locking-service.js');
     const lockStatus = await isThreadLocked(roomId);
 
-    res.json({
+    const body = {
       messages: updatedMessages.reverse(),
       threadLocked: lockStatus.isLocked,
       lockReason: lockStatus.reason,
       unlockedUntil: lockStatus.unlockedUntil
-    });
+    };
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Content-Type', 'application/json; charset=utf-8');
+    res.send(JSON.stringify(body));
   } catch (e) {
     next(e);
   }
