@@ -10,6 +10,10 @@ const ChatRoom = ({ room, currentUserId, onClose }) => {
   const [error, setError] = useState('');
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
+  const loadRetryCount = useRef(0);
+
+  // Stabilan roomId (string) za API – ispravno ponovno učitavanje pri otvaranju iste sobe
+  const roomId = room?.id != null ? String(room.id) : null;
 
   const otherParticipant = room.participants?.find(p => p.id !== currentUserId);
   const jobTitle = room.job?.title || 'Posao';
@@ -57,32 +61,46 @@ const ChatRoom = ({ room, currentUserId, onClose }) => {
   })();
 
   useEffect(() => {
+    if (!roomId) {
+      setLoading(false);
+      setMessages([]);
+      return;
+    }
+    setMessages([]);
+    setLoading(true);
+    setError('');
+    loadRetryCount.current = 0;
     loadMessages();
-    // Poll for new messages every 3 seconds
     const interval = setInterval(loadMessages, 3000);
     return () => clearInterval(interval);
-  }, [room.id]);
+  }, [roomId]);
 
   useEffect(() => {
     scrollToBottom();
-    // Mark messages as read when viewing
-    if (messages.length > 0) {
-      markMessagesAsRead(room.id).catch(console.error);
+    if (messages.length > 0 && roomId) {
+      markMessagesAsRead(roomId).catch(console.error);
     }
-  }, [messages, room.id]);
+  }, [messages, roomId]);
 
   const loadMessages = async () => {
-    if (!room?.id) return;
+    if (!roomId) return;
     try {
-      const response = await getChatMessages(room.id);
-      // Backend vraća { messages: [...] }, ne niz
+      const response = await getChatMessages(roomId);
       const list = Array.isArray(response.data)
         ? response.data
         : (response.data?.messages ?? []);
       const next = Array.isArray(list) ? list : [];
-      // Nemoj prepisati praznim nizom ako već imamo poruke (npr. optimistička poruka ili GET kasni)
-      setMessages((prev) => (next.length === 0 && prev.length > 0 ? prev : next));
+      setMessages((prev) => {
+        // Nemoj prepisati praznim nizom ako već imamo poruke (polling ili kasnjenje)
+        if (next.length === 0 && prev.length > 0) return prev;
+        return next;
+      });
       setError('');
+      // Ako je prvi učitaj i dobili smo prazno, jednom ponovi (za slučaj kašnjenja baze)
+      if (next.length === 0 && loadRetryCount.current < 1) {
+        loadRetryCount.current += 1;
+        setTimeout(() => loadMessages(), 500);
+      }
     } catch (err) {
       console.error('Error loading messages:', err);
       if (err.response?.status !== 404) {
@@ -111,7 +129,7 @@ const ChatRoom = ({ room, currentUserId, onClose }) => {
     setError('');
 
     try {
-      const response = await sendChatMessage(room.id, messageContent);
+      const response = await sendChatMessage(roomId, messageContent);
       // Optimistički prikaži poruku odmah
       const created = response?.data;
       if (created && created.id) {
@@ -124,7 +142,6 @@ const ChatRoom = ({ room, currentUserId, onClose }) => {
         };
         setMessages((prev) => [...(Array.isArray(prev) ? prev : []), newMsg]);
       }
-      // Odgoda prije učitavanja da baza stigne spremiti; inače GET može vratiti prazno i prepisati optimističku poruku
       await new Promise((r) => setTimeout(r, 600));
       await loadMessages();
     } catch (err) {

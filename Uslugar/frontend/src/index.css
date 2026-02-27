@@ -91,6 +91,30 @@
   }
 }
 
+/* Navigacija: prikaz imena ulogirane osobe/tvrtke – čitljivo i friendly */
+@layer components {
+  .nav-user-badge {
+    @apply text-sm font-medium text-gray-700 dark:text-gray-200 truncate;
+    @apply border-r border-gray-200 dark:border-gray-600;
+    @apply pr-4 mr-2 py-1;
+    max-width: 12rem;
+  }
+  @media (min-width: 640px) {
+    .nav-user-badge {
+      max-width: 14rem;
+    }
+  }
+  .nav-user-badge-mobile {
+    @apply text-xs font-medium text-gray-700 dark:text-gray-200 truncate py-1;
+    max-width: 5.5rem;
+  }
+  @media (min-width: 640px) {
+    .nav-user-badge-mobile {
+      max-width: 7rem;
+    }
+  }
+}
+
 @keyframes slide-in {
   from {
     transform: translateX(100%);

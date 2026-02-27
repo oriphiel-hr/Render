@@ -484,6 +484,31 @@ export default function App(){
   const navLinkInactive =
     'text-gray-500 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white';
 
+  /*
+   * POSLOVNA LOGIKA GRUPIRANJA MENIJA (navigacija)
+   * -----------------------------------------------
+   * LIJEVA STRANA (javno / glavna navigacija):
+   *   - Početna, Cjenik, FAQ, Kontakt = najčešće korišteni linkovi (Cjenik samo ako nema tokena ili je korisnik PROVIDER).
+   *   - Dropdown "Više" = manje korištene informacijske stranice: Dokumentacija, O nama, Tipovi korisnika, Dijagrami procesa.
+   *
+   * DESNA STRANA KAD KORISNIK NIJE PRIJAVLJEN (!token):
+   *   - "Korisnik" = autentikacija: Prijava, Registracija.
+   *   - "Usluge" = pregledavanje: Kategorije.
+   *
+   * DESNA STRANA KAD JE KORISNIK PRIJAVLJEN (token):
+   *   - "Leadovi" (dropdown) = samo ako isProviderOrBusinessUser() (PROVIDER, ADMIN ili USER s legalStatusId).
+   *     Stavke: Leadovi, Moji Leadovi, Tim Lokacije, ROI, Pretplata, Fakture, Direktor Dashboard.
+   *   - Ime + uloga (badge) = tko je prijavljen.
+   *   - "Moj račun" (dropdown) = osobni prostor: Traži usluge, Moji poslovi, Pružatelji, Chat, Moj profil;
+   *     "Postani pružatelj" samo ako canShowPostaniPružatelj() (USER koji već ima legalStatusId);
+   *     Odjava na dnu s vizualnom odvojenošću (border-top).
+   *
+   * Pomoćne funkcije:
+   *   - isProviderOrBusinessUser() = PROVIDER | ADMIN | (USER && legalStatusId).
+   *   - isProvider() = PROVIDER | ADMIN (npr. za prikaz Cjenika).
+   *   - canShowPostaniPružatelj() = USER && legalStatusId (pravna osoba koja može postati pružatelj).
+   */
+
   return (
     <div className="relative p-6 max-w-5xl mx-auto min-h-screen transition-colors bg-gradient-to-b from-stone-50/95 via-amber-50/50 to-orange-50/70 dark:from-gray-900 dark:to-gray-900">
       {/* Skip to main content link for screen readers */}
@@ -501,17 +526,6 @@ export default function App(){
       >
         <Logo size="md" />
         <div className="flex items-center gap-3">
-          {token && (() => {
-            try {
-              const u = JSON.parse(localStorage.getItem('user') || '{}');
-              const name = u.companyName || u.fullName || u.email || null;
-              return name ? (
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-200 truncate max-w-[180px] sm:max-w-[240px]" title={name}>
-                  👤 {name}
-                </span>
-              ) : null;
-            } catch { return null; }
-          })()}
           {token && isProviderOrBusinessUser() && <CreditsWidget />}
         </div>
         {/* Desktop Navigation */}
@@ -747,6 +761,19 @@ export default function App(){
                   </DropdownMenu>
                 )}
 
+                {/* Ime ulogirane osobe/tvrtke – desno uz Moj račun */}
+                {(() => {
+                  try {
+                    const u = JSON.parse(localStorage.getItem('user') || '{}');
+                    const name = u.companyName || u.fullName || u.email || null;
+                    const roleLabel = u.role === 'PROVIDER' ? 'Pružatelj usluge' : 'Korisnik Usluge';
+                    return name ? (
+                      <span className="nav-user-badge" title={`${name} (${roleLabel})`}>
+                        👤 {name} · {roleLabel}
+                      </span>
+                    ) : null;
+                  } catch { return null; }
+                })()}
                 {/* Moj račun – Traži usluge, Moji poslovi, Pružatelji, Chat, Profil, Postani pružatelj */}
                 <DropdownMenu
                   title="Moj račun"
@@ -831,17 +858,6 @@ export default function App(){
         {/* Mobile Navigation */}
         <div className="lg:hidden flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {token && (() => {
-              try {
-                const u = JSON.parse(localStorage.getItem('user') || '{}');
-                const name = u.companyName || u.fullName || u.email || null;
-                return name ? (
-                  <span className="text-xs font-medium text-gray-700 dark:text-gray-200 truncate max-w-[100px] sm:max-w-[140px]" title={name}>
-                    👤 {name}
-                  </span>
-                ) : null;
-              } catch { return null; }
-            })()}
             <button
               className={'px-3 py-2 border rounded ' + (tab==='user' ? 'bg-gray-900 text-white' : 'hover:bg-gray-100')}
               onClick={() => navigateToTab('user')}
@@ -882,8 +898,20 @@ export default function App(){
             </button>
           </div>
           
-          <button
-            onClick={() => setIsMobileMenuOpen(true)}
+          <div className="flex items-center gap-2">
+            {token && (() => {
+              try {
+                const u = JSON.parse(localStorage.getItem('user') || '{}');
+                const name = u.companyName || u.fullName || u.email || null;
+                return name ? (
+                  <span className="nav-user-badge-mobile" title={name}>
+                    👤 {name}
+                  </span>
+                ) : null;
+              } catch { return null; }
+            })()}
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
             className="px-3 py-2 border rounded hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
           >
             ☰
