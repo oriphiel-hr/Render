@@ -926,6 +926,7 @@ export default function App(){
             {isDarkMode ? '☀️' : '🌙'}
           </button>
         </div>
+        </div>
       </header>
 
       {/* Mobile Menu */}
