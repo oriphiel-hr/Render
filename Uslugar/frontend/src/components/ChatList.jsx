@@ -159,7 +159,7 @@ const ChatList = ({ currentUserId, onClose }) => {
               return tb - ta;
             });
 
-            if (filteredRooms.length === 0) {
+            if (roomsWithMeta.length === 0) {
               return (
                 <div className="px-4 py-6 text-sm text-gray-500 dark:text-gray-400">
                   Nema razgovora koji odgovaraju pretrazi.
