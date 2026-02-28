@@ -479,10 +479,10 @@ r.get('/rooms/:roomId/messages', auth(true), async (req, res, next) => {
     const messages = await prisma.chatMessage.findMany({
       where: { 
         roomId,
-        // Filtriraj odbijene poruke (osim ako je admin)
-        moderationStatus: req.user.role === 'ADMIN' 
-          ? undefined 
-          : { not: 'REJECTED' }
+        // Prikaži sve osim REJECTED; uključi i poruke s moderationStatus null (inače SQL isključuje null u "!= REJECTED")
+        ...(req.user.role === 'ADMIN'
+          ? {}
+          : { OR: [{ moderationStatus: null }, { moderationStatus: { not: 'REJECTED' } }] })
       },
       include: {
         sender: {
@@ -529,10 +529,9 @@ r.get('/rooms/:roomId/messages', auth(true), async (req, res, next) => {
     const updatedMessages = await prisma.chatMessage.findMany({
       where: { 
         roomId,
-        // Filtriraj odbijene poruke (osim ako je admin)
-        moderationStatus: req.user.role === 'ADMIN' 
-          ? undefined 
-          : { not: 'REJECTED' }
+        ...(req.user.role === 'ADMIN'
+          ? {}
+          : { OR: [{ moderationStatus: null }, { moderationStatus: { not: 'REJECTED' } }] })
       },
       include: {
         sender: {

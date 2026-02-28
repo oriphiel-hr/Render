@@ -271,22 +271,45 @@ const ChatRoom = ({ room, currentUserId, onClose }) => {
 
       {/* Unos */}
       <form onSubmit={handleSend} className="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-gray-100">
+        {/* Brze poruke: Dogovori termin / Zatraži lokaciju prikazujemo samo pružatelju; korisniku usluge druge opcije */}
         <div className="flex flex-wrap items-center gap-2 mb-2 text-xs text-gray-600 dark:text-gray-400">
-          <span className="font-medium mr-1">Brze poruke:</span>
-          <button
-            type="button"
-            onClick={() => handleQuickInsert('Mogu doći danas između 17–19 h, odgovara li vam?')}
-            className="px-3 py-1 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-          >
-            📅 Dogovori termin
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickInsert('Možete li mi poslati lokaciju ili adresu?')}
-            className="px-3 py-1 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-          >
-            📍 Zatraži lokaciju
-          </button>
+          {currentUserId === jobOwnerId ? (
+            <>
+              <span className="font-medium mr-1">Brze poruke:</span>
+              <button
+                type="button"
+                onClick={() => handleQuickInsert('Kada vam odgovara?')}
+                className="px-3 py-1 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+              >
+                📅 Kada vam odgovara?
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickInsert('Hvala, čekam vaš odgovor.')}
+                className="px-3 py-1 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+              >
+                👍 Hvala, čekam odgovor
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="font-medium mr-1">Brze poruke:</span>
+              <button
+                type="button"
+                onClick={() => handleQuickInsert('Mogu doći danas između 17–19 h, odgovara li vam?')}
+                className="px-3 py-1 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+              >
+                📅 Dogovori termin
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickInsert('Možete li mi poslati lokaciju ili adresu?')}
+                className="px-3 py-1 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+              >
+                📍 Zatraži lokaciju
+              </button>
+            </>
+          )}
         </div>
         <div className="flex gap-2">
           <input
