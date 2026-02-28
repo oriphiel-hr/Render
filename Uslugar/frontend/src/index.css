@@ -137,9 +137,9 @@
   }
 }
 
-/* Ensure anchor targets are not hidden under the top nav */
+/* Ensure anchor targets are not hidden under the top nav (posebno #chat) */
 :target {
-  scroll-margin-top: 96px;
+  scroll-margin-top: 120px;
 }
 
 /* Chat: osiguraj da je upisani tekst uvijek vidljiv u polju za poruku */
