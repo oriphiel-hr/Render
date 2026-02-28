@@ -131,7 +131,7 @@ const ChatList = ({ currentUserId, onClose }) => {
         ) : (
           (() => {
             const term = search.trim().toLowerCase();
-            const filteredRooms = term
+            const baseRooms = term
               ? rooms.filter((room) => {
                   const other = getOtherParticipant(room);
                   const name = (other?.fullName || '').toLowerCase();
@@ -139,6 +139,25 @@ const ChatList = ({ currentUserId, onClose }) => {
                   return name.includes(term) || jobTitle.includes(term);
                 })
               : rooms;
+
+            const roomsWithMeta = baseRooms.map((room) => {
+              const lastMessage = getLastMessage(room);
+              const status = room.job?.status || null;
+              const isActiveJob = status === 'OPEN' || status === 'IN_PROGRESS' || !status;
+              const waitingYourReply =
+                isActiveJob && !!lastMessage && lastMessage.senderId && lastMessage.senderId !== currentUserId;
+              const youSentLast =
+                isActiveJob && !!lastMessage && lastMessage.senderId && lastMessage.senderId === currentUserId;
+              return { room, lastMessage, waitingYourReply, youSentLast };
+            });
+
+            roomsWithMeta.sort((a, b) => {
+              if (a.waitingYourReply && !b.waitingYourReply) return -1;
+              if (!a.waitingYourReply && b.waitingYourReply) return 1;
+              const ta = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
+              const tb = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
+              return tb - ta;
+            });
 
             if (filteredRooms.length === 0) {
               return (
@@ -150,9 +169,8 @@ const ChatList = ({ currentUserId, onClose }) => {
 
             return (
               <div className="divide-y divide-gray-100 dark:divide-gray-700/80">
-                {filteredRooms.map((room) => {
+                {roomsWithMeta.map(({ room, lastMessage, waitingYourReply, youSentLast }) => {
                   const otherParticipant = getOtherParticipant(room);
-                  const lastMessage = getLastMessage(room);
                   const jobTitle = room.job?.title || 'Posao';
                   const selected = isSelectedRoom(room);
 
@@ -174,8 +192,13 @@ const ChatList = ({ currentUserId, onClose }) => {
                           <span className="font-semibold text-gray-900 dark:text-white truncate">
                             {otherParticipant?.fullName || 'Korisnik'}
                           </span>
+                          {waitingYourReply && (
+                            <span className="inline-flex items-center rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200 px-2 py-0.5 text-[10px] font-semibold">
+                              Čeka vaš odgovor
+                            </span>
+                          )}
                           {lastMessage && (
-                            <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
+                            <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 ml-1">
                               {formatTime(lastMessage.createdAt)}
                             </span>
                           )}
@@ -184,9 +207,16 @@ const ChatList = ({ currentUserId, onClose }) => {
                           {jobTitle}
                         </p>
                         {lastMessage && (
-                          <p className="text-sm text-gray-600 dark:text-gray-300 truncate">
-                            {lastMessage.content}
-                          </p>
+                          <>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 truncate">
+                              {lastMessage.content}
+                            </p>
+                            {youSentLast && !waitingYourReply && (
+                              <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+                                Čekate odgovor
+                              </p>
+                            )}
+                          </>
                         )}
                       </div>
                     </button>

@@ -196,9 +196,16 @@ const ChatRoom = ({ room, currentUserId, onClose }) => {
         >
           ←
         </button>
-        <h3 className="font-semibold text-lg truncate flex-1">
-          {jobTitle}
-        </h3>
+        <div className="flex flex-col flex-1 min-w-0">
+          <h3 className="font-semibold text-lg truncate">
+            {jobTitle}
+          </h3>
+          <p className="text-xs text-blue-100 truncate">
+            {(otherParticipant?.fullName || 'Sugovornik')}{' '}
+            · {currentUserId === jobOwnerId ? 'Pružatelj usluge' : 'Korisnik usluge'} · Vi:{' '}
+            {currentUserId === jobOwnerId ? 'Korisnik usluge' : 'Pružatelj usluge'}
+          </p>
+        </div>
       </div>
 
       {/* Poruke */}

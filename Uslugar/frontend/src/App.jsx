@@ -45,6 +45,7 @@ import DropdownMenu from './components/DropdownMenu';
 import MobileMenu from './components/MobileMenu';
 import Logo from './components/Logo';
 import { useDarkMode } from './contexts/DarkModeContext.jsx';
+import { getChatRooms } from './api/chat';
 
 export function useAuth() {
   const [token, setToken] = useState(localStorage.getItem('token'));
@@ -175,6 +176,7 @@ export default function App(){
     isAvailable: null,
     sortBy: 'rating'
   });
+  const [chatWaitingCount, setChatWaitingCount] = useState(0);
   
   // Mobile menu state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -270,6 +272,44 @@ export default function App(){
       setCurrentUserId(null);
     }
   }, [token]);
+
+  // Periodično dohvaćanje chat soba za badge (broj razgovora koji čekaju odgovor)
+  useEffect(() => {
+    if (!token || !currentUserId) {
+      setChatWaitingCount(0);
+      return;
+    }
+    let cancelled = false;
+
+    const loadChatRooms = async () => {
+      try {
+        const response = await getChatRooms();
+        const rooms = Array.isArray(response.data)
+          ? response.data
+          : (response.data?.rooms ?? []);
+        if (!Array.isArray(rooms) || cancelled) return;
+        const count = rooms.reduce((acc, room) => {
+          const last = room.messages && room.messages.length > 0 ? room.messages[0] : null;
+          const status = room.job?.status || null;
+          const isActiveJob = status === 'OPEN' || status === 'IN_PROGRESS' || !status;
+          if (isActiveJob && last && last.senderId && last.senderId !== currentUserId) {
+            return acc + 1;
+          }
+          return acc;
+        }, 0);
+        if (!cancelled) setChatWaitingCount(count);
+      } catch {
+        if (!cancelled) setChatWaitingCount(0);
+      }
+    };
+
+    loadChatRooms();
+    const intervalId = setInterval(loadChatRooms, 15000);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [token, currentUserId]);
 
   useEffect(() => {
     if (tab !== 'providers') return;
@@ -610,6 +650,25 @@ export default function App(){
             >
               Kontakt
             </button>
+            {token && (
+              <button
+                className={
+                  navLinkBase +
+                  ' ' +
+                  (tab === 'chat' ? navLinkActive : navLinkInactive)
+                }
+                onClick={() => setTab('chat')}
+                aria-label="Chat"
+                aria-current={tab === 'chat' ? 'page' : undefined}
+              >
+                💬 Chat
+                {chatWaitingCount > 0 && (
+                  <span className="ml-1 inline-flex items-center justify-center rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-100 px-1.5 py-0.5 text-[10px] font-semibold">
+                    {chatWaitingCount > 9 ? '9+' : chatWaitingCount}
+                  </span>
+                )}
+              </button>
+            )}
             {/* Secondary pages grouped u dropdown */}
             <DropdownMenu title="Više" className={navLinkBase + ' ' + navLinkInactive}>
               <button
@@ -803,6 +862,11 @@ export default function App(){
                     aria-label="Chat"
                   >
                     💬 Chat
+                    {chatWaitingCount > 0 && (
+                      <span className="ml-auto inline-flex items-center justify-center rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-100 px-2 py-0.5 text-[10px] font-semibold">
+                        {chatWaitingCount > 9 ? '9+' : chatWaitingCount}
+                      </span>
+                    )}
                   </button>
                   <button
                     className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + ((tab === 'provider-profile' || tab === 'user-profile') ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
@@ -896,6 +960,20 @@ export default function App(){
             >
               📞
             </button>
+            {token && (
+              <button
+                className={'px-3 py-2 border rounded ' + (tab==='chat' ? 'bg-indigo-600 text-white' : 'border-indigo-600 text-indigo-600')}
+                onClick={() => navigateToTab('chat')}
+                aria-label="Chat"
+              >
+                💬
+                {chatWaitingCount > 0 && (
+                  <span className="ml-1 inline-flex items-center justify-center rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-100 px-1.5 py-0.5 text-[10px] font-semibold">
+                    {chatWaitingCount > 9 ? '9+' : chatWaitingCount}
+                  </span>
+                )}
+              </button>
+            )}
           </div>
           
           <div className="flex items-center gap-2">
