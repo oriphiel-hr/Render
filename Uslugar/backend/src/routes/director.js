@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { auth } from '../lib/auth.js';
+import { sendTeamInviteEmail } from '../lib/email.js';
+import { randomBytes } from 'crypto';
 import {
   addLeadToCompanyQueue,
   assignLeadToTeamMember,
@@ -173,6 +175,81 @@ r.post('/team/add', auth(true, ['PROVIDER']), async (req, res, next) => {
     res.json({
       success: true,
       message: 'Član tima uspješno dodan'
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * POST /api/director/team/invite
+ * Pošalji pozivnicu članu tima na email.
+ * Ako korisnik već postoji i PROVIDER je, direktor ga može odmah dodati klasičnim /team/add pozivom.
+ */
+r.post('/team/invite', auth(true, ['PROVIDER']), async (req, res, next) => {
+  try {
+    const director = await getDirectorWithTeam(req.user.id);
+
+    if (!director) {
+      return res.status(403).json({
+        error: 'Nemate pristup',
+        message: 'Samo direktor može slati pozivnice za tim.'
+      });
+    }
+
+    const { email } = req.body;
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ error: 'Email je obavezan' });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Ako korisnik već postoji i PROVIDER je, nema potrebe za pozivnicom – direktor ga može dodati direktno
+      const existingUser = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+      include: { providerProfile: true }
+    });
+
+    if (existingUser && existingUser.role === 'PROVIDER' && existingUser.providerProfile) {
+      // Provjeri da li je već u timu
+      if (existingUser.providerProfile.companyId === director.id) {
+        return res.status(200).json({
+          success: true,
+          alreadyInTeam: true,
+          message: 'Korisnik je već član tima.'
+        });
+      }
+
+      // Direktor ga i dalje mora dodati kroz /team/add (frontend to već radi), ovdje samo javimo status
+      return res.status(200).json({
+        success: true,
+        existingProvider: true,
+        message: 'Korisnik već ima PROVIDER profil. Dodajte ga kroz obrazac za dodavanje člana tima.'
+      });
+    }
+
+    // Kreiraj ili ponovno iskoristi TeamInvite zapis
+    const token = randomBytes(32).toString('hex');
+    await prisma.teamInvite.create({
+      data: {
+        email: normalizedEmail,
+        directorId: director.id,
+        token
+      }
+    });
+
+    // Pošalji email pozivnicu (za nove ili ne-PROVIDER korisnike)
+    await sendTeamInviteEmail(
+      normalizedEmail,
+      director.user.fullName || 'Direktor',
+      director.companyName || null,
+      token
+    );
+
+    res.status(201).json({
+      success: true,
+      invited: true,
+      message: 'Pozivnica je poslana na navedeni email. Nakon što se korisnik registrira kao pružatelj usluga, možete ga dodati u tim.'
     });
   } catch (e) {
     next(e);

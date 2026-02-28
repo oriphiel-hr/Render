@@ -830,6 +830,26 @@ r.post('/rooms/:roomId/messages', auth(true), async (req, res, next) => {
     const { updateThreadActivity } = await import('../services/thread-locking-service.js');
     await updateThreadActivity(roomId);
 
+    // Ako je poruka od pružatelja u chatu povezanom s ekskluzivnim leadom, automatski označi lead kao kontaktiran
+    if (room.jobId && room.job) {
+      try {
+        const purchase = await prisma.leadPurchase.findFirst({
+          where: {
+            jobId: room.jobId,
+            providerId: req.user.id,
+            status: 'ACTIVE'
+          }
+        });
+        if (purchase) {
+          const { markLeadContacted } = await import('../services/lead-service.js');
+          await markLeadContacted(purchase.id, req.user.id);
+        }
+      } catch (leadErr) {
+        console.error('Error auto-marking lead as contacted:', leadErr);
+        // Ne bacamo grešku - slanje poruke je već uspjelo
+      }
+    }
+
     // Kreiraj SLA tracking ako poruka nije od samog sebe (npr. provider odgovara klijentu)
     try {
       const { createSLATracking } = await import('../services/sla-reminder-service.js');

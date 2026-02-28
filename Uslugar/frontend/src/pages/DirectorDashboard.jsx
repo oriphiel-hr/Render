@@ -91,13 +91,18 @@ export default function DirectorDashboard() {
       // Prvo pronađi korisnika po emailu
       const usersResponse = await api.get(`/users?email=${newMemberEmail}`);
       if (!usersResponse.data || usersResponse.data.length === 0) {
-        setError('Korisnik s tim emailom nije pronađen');
+        // Ako korisnik ne postoji, pošalji pozivnicu na email
+        await api.post('/director/team/invite', { email: newMemberEmail });
+        setNewMemberEmail('');
+        alert('Pozivnica je poslana na navedeni email. Nakon što se korisnik registrira kao pružatelj usluga, moći ćete ga dodati u tim.');
         return;
       }
 
       const user = usersResponse.data[0];
       if (user.role !== 'PROVIDER') {
-        setError('Korisnik mora biti PROVIDER');
+        // Postojeći korisnik, ali nije PROVIDER – pošalji mu pozivnicu s uputama za nadogradnju
+        await api.post('/director/team/invite', { email: newMemberEmail });
+        setError('Korisnik postoji, ali nema PROVIDER profil. Poslana je pozivnica s uputama za nadogradnju računa.');
         return;
       }
 

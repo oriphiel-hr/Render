@@ -76,7 +76,41 @@ r.post('/', auth(true, ['PROVIDER']), async (req, res, next) => {
     
     // Deduct credit
     await deductCredit(req.user.id);
-    
+
+    // Ekskluzivan lead: slanje ponude (1 kredit) = kupnja leada za tog pružatelja → lead nestane s tržnice, pojavi se u Moji leadovi
+    if (job.isExclusive && job.leadStatus === 'AVAILABLE' && !job.assignedProviderId) {
+      try {
+        const existing = await prisma.leadPurchase.findFirst({
+          where: { jobId, providerId: req.user.id, status: { not: 'REFUNDED' } }
+        });
+        if (!existing) {
+          const leadPrice = job.leadPrice ?? 10;
+          await prisma.leadPurchase.create({
+            data: {
+              jobId,
+              providerId: req.user.id,
+              creditsSpent: 1,
+              leadPrice,
+              status: 'ACTIVE',
+              contactUnlocked: false
+            }
+          });
+          await prisma.job.update({
+            where: { id: jobId },
+            data: { assignedProviderId: req.user.id, leadStatus: 'ASSIGNED' }
+          });
+          try {
+            const { createPublicChatRoom } = await import('../services/public-chat-service.js');
+            await createPublicChatRoom(jobId, req.user.id);
+          } catch (chatErr) {
+            console.error('[OFFER] Public chat for exclusive lead:', chatErr);
+          }
+        }
+      } catch (leadErr) {
+        console.error('[OFFER] Link exclusive lead to offer failed:', leadErr);
+      }
+    }
+
     // Track TRIAL engagement - offer sent
     try {
       const { trackOfferSent } = await import('../services/trial-engagement-service.js');

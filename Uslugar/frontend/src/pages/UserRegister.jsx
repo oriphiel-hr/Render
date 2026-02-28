@@ -41,6 +41,7 @@ export default function UserRegister({ onSuccess }) {
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [categorySearch, setCategorySearch] = useState('');
   const [expandedCategoryIds, setExpandedCategoryIds] = useState([]); // id-evi kategorija čije podkategorije su proširene
+  const [teamInviteToken, setTeamInviteToken] = useState(null);
   
   // Auto-verification state
   const [autoVerifying, setAutoVerifying] = useState(false);
@@ -104,6 +105,23 @@ export default function UserRegister({ onSuccess }) {
       }
     }
   };
+  
+  // Pročitaj teamInvite token iz URL hash-a (npr. #register-user?teamInvite=...&email=...)
+  useEffect(() => {
+    try {
+      const hash = window.location.hash || '';
+      const query = hash.includes('?') ? hash.split('?')[1] : '';
+      const params = new URLSearchParams(query);
+      const invite = params.get('teamInvite');
+      const emailFromUrl = params.get('email');
+      if (invite) setTeamInviteToken(invite);
+      if (emailFromUrl) {
+        setFormData(prev => ({ ...prev, email: emailFromUrl }));
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
   
   // Učitaj kategorije
   useEffect(() => {
@@ -304,6 +322,11 @@ export default function UserRegister({ onSuccess }) {
         userData.legalStatusId = formData.legalStatusId || undefined;
         userData.taxId = formData.taxId || undefined;
         userData.companyName = formData.companyName || undefined;
+      }
+
+      // Ako je korisnik došao preko team invite linka i registrira se kao PROVIDER, proslijedi token backendu
+      if (teamInviteToken && effectiveUserType === 'PROVIDER') {
+        userData.teamInviteToken = teamInviteToken;
       }
 
       const response = await api.post('/auth/register', userData, { timeout: 45000 });

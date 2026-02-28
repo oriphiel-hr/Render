@@ -17,6 +17,7 @@ export default function UpgradeToProvider() {
   const [success, setSuccess] = useState(false);
   const [user, setUser] = useState(null);
   const [oibError, setOibError] = useState('');
+  const [teamInviteToken, setTeamInviteToken] = useState(null);
 
   useEffect(() => {
     // Auto-fill email if user is logged in
@@ -29,6 +30,19 @@ export default function UpgradeToProvider() {
       } catch (err) {
         console.error('Failed to parse token:', err);
       }
+    }
+  }, []);
+
+  // Pročitaj teamInvite token iz URL hash-a (npr. #upgrade-to-provider?teamInvite=...)
+  useEffect(() => {
+    try {
+      const hash = window.location.hash || '';
+      const query = hash.includes('?') ? hash.split('?')[1] : '';
+      const params = new URLSearchParams(query);
+      const invite = params.get('teamInvite');
+      if (invite) setTeamInviteToken(invite);
+    } catch (e) {
+      // ignore
     }
   }, []);
 
@@ -85,7 +99,12 @@ export default function UpgradeToProvider() {
         return;
       }
       
-      const response = await api.post('/auth/upgrade-to-provider', formData);
+      const body = { ...formData };
+      if (teamInviteToken) {
+        body.teamInviteToken = teamInviteToken;
+      }
+
+      const response = await api.post('/auth/upgrade-to-provider', body);
       const { token, user: updatedUser } = response.data;
       
       // Save new token

@@ -10,7 +10,7 @@ const r = Router();
 
 r.post('/register', async (req, res, next) => {
   try {
-    const { email, password, fullName, role = 'USER', phone, city, legalStatusId, taxId, companyName } = req.body;
+    const { email, password, fullName, role = 'USER', phone, city, legalStatusId, taxId, companyName, teamInviteToken } = req.body;
     if (!email || !password || !fullName) return res.status(400).json({ error: 'Missing fields' });
     
     // VALIDACIJA: PROVIDER pravni status (OBAVEZNO - prema zakonu)
@@ -112,6 +112,7 @@ r.post('/register', async (req, res, next) => {
     
     const user = await prisma.user.create({ data: userData });
     
+    let providerProfile = null;
     if (role === 'PROVIDER') {
       const providerProfile = await prisma.providerProfile.create({ 
         data: { 
@@ -201,6 +202,35 @@ r.post('/register', async (req, res, next) => {
       } catch (verifyError) {
         console.error('[Register] Error during auto-verify:', verifyError);
         // Ne blokiraj registraciju ako auto-verify faila
+      }
+    }
+
+    // Ako postoji teamInviteToken, automatski spoji PROVIDER profil na direktorov tim
+    if (teamInviteToken && role === 'PROVIDER') {
+      try {
+        const invite = await prisma.teamInvite.findUnique({
+          where: { token: teamInviteToken }
+        });
+        if (invite && !invite.accepted && invite.email.toLowerCase() === email.toLowerCase()) {
+          const directorProfile = await prisma.providerProfile.findUnique({
+            where: { id: invite.directorId }
+          });
+          const myProfile = providerProfile || await prisma.providerProfile.findUnique({ where: { userId: user.id } });
+
+          if (directorProfile && myProfile) {
+            await prisma.providerProfile.update({
+              where: { id: myProfile.id },
+              data: { companyId: directorProfile.id }
+            });
+            await prisma.teamInvite.update({
+              where: { token: teamInviteToken },
+              data: { accepted: true, acceptedAt: new Date() }
+            });
+            console.log(`[Register] ✅ Team invite accepted for ${email}, linked to director ${directorProfile.id}`);
+          }
+        }
+      } catch (err) {
+        console.error('[Register] Error linking team invite:', err);
       }
     }
     
@@ -589,7 +619,7 @@ r.post('/reset-password', async (req, res, next) => {
 // Upgrade USER to PROVIDER
 r.post('/upgrade-to-provider', async (req, res, next) => {
   try {
-    const { email, password, legalStatusId, taxId, companyName } = req.body;
+    const { email, password, legalStatusId, taxId, companyName, teamInviteToken } = req.body;
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password required' });
     }
@@ -669,8 +699,9 @@ r.post('/upgrade-to-provider', async (req, res, next) => {
       where: { userId: user.id } 
     });
     
+    let providerProfile = existingProfile;
     if (!existingProfile) {
-      await prisma.providerProfile.create({
+      providerProfile = await prisma.providerProfile.create({
         data: {
           userId: user.id,
           bio: '',
@@ -683,6 +714,35 @@ r.post('/upgrade-to-provider', async (req, res, next) => {
     }
     
     console.log('[OK] User upgraded to PROVIDER:', user.email);
+
+    // Ako postoji teamInviteToken, automatski spoji PROVIDER profil na direktorov tim
+    if (teamInviteToken) {
+      try {
+        const invite = await prisma.teamInvite.findUnique({
+          where: { token: teamInviteToken }
+        });
+        if (invite && !invite.accepted && invite.email.toLowerCase() === email.toLowerCase()) {
+          const directorProfile = await prisma.providerProfile.findUnique({
+            where: { id: invite.directorId }
+          });
+          const myProfile = providerProfile || await prisma.providerProfile.findUnique({ where: { userId: updatedUser.id } });
+
+          if (directorProfile && myProfile) {
+            await prisma.providerProfile.update({
+              where: { id: myProfile.id },
+              data: { companyId: directorProfile.id }
+            });
+            await prisma.teamInvite.update({
+              where: { token: teamInviteToken },
+              data: { accepted: true, acceptedAt: new Date() }
+            });
+            console.log(`[Upgrade] ✅ Team invite accepted for ${email}, linked to director ${directorProfile.id}`);
+          }
+        }
+      } catch (err) {
+        console.error('[Upgrade] Error linking team invite:', err);
+      }
+    }
     
     // Generate new token with updated role
     const token = signToken({ 

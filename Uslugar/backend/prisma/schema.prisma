@@ -85,6 +85,20 @@ model SupportTicket {
   @@index([category])
 }
 
+// Pozivnice za članove tima (direktor → potencijalni član)
+model TeamInvite {
+  id         String   @id @default(cuid())
+  email      String
+  directorId String
+  token      String   @unique
+  accepted   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  acceptedAt DateTime?
+
+  @@index([email])
+  @@index([directorId])
+}
+
 // White-Label Configuration - PRO users only
 model WhiteLabel {
   id              String   @id @default(cuid())

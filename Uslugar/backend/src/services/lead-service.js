@@ -1055,12 +1055,57 @@ export async function unlockContact(jobId, providerId) {
  * Dohvati kupljene leadove providera
  */
 export async function getMyLeads(providerId, status = null) {
+  // Povijesni popravak: ako je pružatelj poslao ponudu (1 kredit) na ekskluzivan lead, ali nema LeadPurchase, kreiraj ga
+  const offersOnExclusive = await prisma.offer.findMany({
+    where: { userId: providerId },
+    select: { jobId: true }
+  });
+  const jobIds = [...new Set(offersOnExclusive.map((o) => o.jobId))];
+  if (jobIds.length > 0) {
+    const jobs = await prisma.job.findMany({
+      where: {
+        id: { in: jobIds },
+        isExclusive: true,
+        OR: [
+          { leadStatus: 'AVAILABLE' },
+          { assignedProviderId: null }
+        ]
+      },
+      select: { id: true, leadPrice: true }
+    });
+    for (const job of jobs) {
+      const existing = await prisma.leadPurchase.findFirst({
+        where: { jobId: job.id, providerId, status: { not: 'REFUNDED' } }
+      });
+      if (!existing) {
+        try {
+          await prisma.leadPurchase.create({
+            data: {
+              jobId: job.id,
+              providerId,
+              creditsSpent: 1,
+              leadPrice: job.leadPrice ?? 10,
+              status: 'ACTIVE',
+              contactUnlocked: false
+            }
+          });
+          await prisma.job.update({
+            where: { id: job.id },
+            data: { assignedProviderId: providerId, leadStatus: 'ASSIGNED' }
+          });
+        } catch (err) {
+          console.error('[LEAD] Backfill lead from offer failed for job', job.id, err);
+        }
+      }
+    }
+  }
+
   const where = {
     providerId,
     ...(status && { status })
   };
 
-  const purchases = await prisma.leadPurchase.findMany({
+  let purchases = await prisma.leadPurchase.findMany({
     where,
     include: {
       job: {
@@ -1080,6 +1125,50 @@ export async function getMyLeads(providerId, status = null) {
     },
     orderBy: { createdAt: 'desc' }
   });
+
+  // Sync: ako pružatelj je već poslao poruku u chatu za ACTIVE lead, automatski označi kao CONTACTED
+  let anySynced = false;
+  for (const p of purchases) {
+    if (p.status !== 'ACTIVE') continue;
+    const room = await prisma.chatRoom.findFirst({
+      where: { jobId: p.jobId },
+      select: { id: true }
+    });
+    if (!room) continue;
+    const providerSentMessage = await prisma.chatMessage.findFirst({
+      where: { roomId: room.id, senderId: providerId },
+      select: { id: true }
+    });
+    if (!providerSentMessage) continue;
+    try {
+      await markLeadContacted(p.id, providerId);
+      anySynced = true;
+    } catch (err) {
+      console.error('[LEAD] Sync contacted from chat failed for purchase', p.id, err);
+    }
+  }
+  if (anySynced) {
+    purchases = await prisma.leadPurchase.findMany({
+      where,
+      include: {
+        job: {
+          include: {
+            user: {
+              select: {
+                fullName: true,
+                email: true,
+                phone: true,
+                city: true,
+                clientVerification: true
+              }
+            },
+            category: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
 
   // Pay-per-contact: Skrij kontakt informacije ako nisu otključane
   return purchases.map(purchase => ({

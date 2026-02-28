@@ -933,6 +933,66 @@ export const sendPaymentConfirmationEmail = async (toEmail, fullName, planName, 
   }
 };
 
+// Pozivnica članu tima (direktor → potencijalni član)
+export const sendTeamInviteEmail = async (toEmail, directorName, companyName = null, inviteToken) => {
+  if (!transporter) {
+    console.log('SMTP not configured, skipping team invite email:', toEmail);
+    return;
+  }
+
+  try {
+    const baseUrl = process.env.FRONTEND_URL || 'https://www.uslugar.eu';
+    const registerUrl = `${baseUrl}/#register-user?teamInvite=${inviteToken || ''}&email=${encodeURIComponent(toEmail)}`;
+    const upgradeUrl = `${baseUrl}/#upgrade-to-provider?teamInvite=${inviteToken || ''}`;
+
+    await transporter.sendMail({
+      from: `"Uslugar" <${getFromEmail()}>`,
+      to: toEmail,
+      subject: `Pozivnica u tim na Uslugarru`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="UTF-8" /></head>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin:0 auto; padding:20px; background:#f9fafb;">
+          <div style="background:#4CAF50; color:#fff; padding:20px; border-radius:8px 8px 0 0; text-align:center;">
+            <h1 style="margin:0; font-size:24px;">Pozivnica u tim</h1>
+          </div>
+          <div style="background:#ffffff; padding:24px; border-radius:0 0 8px 8px;">
+            <p>Poštovani/a,</p>
+            <p>
+              ${companyName ? `<strong>${directorName}</strong> iz tvrtke <strong>${companyName}</strong>` : `<strong>${directorName}</strong>`}
+              želi vas dodati kao člana tima na platformi <strong>Uslugar</strong>.
+            </p>
+            <p style="margin-top:16px;">
+              Ako već imate račun pružatelja usluga, samo se prijavite na Uslugar i direktor će vas dodati u tim putem vaše email adrese <strong>${toEmail}</strong>.
+            </p>
+            <p style="margin-top:16px;">
+              Ako još nemate račun, možete se registrirati kao korisnik i potom nadograditi na pružatelja usluga:
+            </p>
+            <ol style="margin:16px 0 24px 20px; padding:0;">
+              <li>Registrirajte se na Uslugar koristeći email adresu <strong>${toEmail}</strong>:
+                <br/><a href="${registerUrl}" style="color:#4CAF50;">${registerUrl}</a>
+              </li>
+              <li>Nakon prijave, odaberite opciju <strong>"Postani pružatelj"</strong>:
+                <br/><a href="${upgradeUrl}" style="color:#4CAF50;">${upgradeUrl}</a>
+              </li>
+            </ol>
+            <p>Nakon što dovršite registraciju kao pružatelj, direktor će vas moći dodati u tim u nekoliko klikova.</p>
+            <p style="margin-top:24px; font-size:12px; color:#6b7280;">
+              Ako niste očekivali ovu poruku, možete je slobodno ignorirati.
+            </p>
+          </div>
+        </body>
+        </html>
+      `
+    });
+
+    console.log('Team invite email sent to:', toEmail);
+  } catch (error) {
+    console.error('Error sending team invite email:', error);
+  }
+};
+
 /**
  * Pošalji email notifikaciju za refund subscription payment-a
  */
