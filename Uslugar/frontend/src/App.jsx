@@ -779,13 +779,13 @@ export default function App(){
                       className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
                       onClick={() => { setTab('leads'); }}
                     >
-                      🛒 Leadovi
+                      🛒 Tržnica leadova
                     </button>
                     <button
                       className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
                       onClick={() => { setTab('my-leads'); }}
                     >
-                      📋 Moji Leadovi
+                      📋 Moji ekskluzivni leadovi
                     </button>
                     <button
                       className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
