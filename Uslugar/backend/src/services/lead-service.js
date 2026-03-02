@@ -866,6 +866,12 @@ export async function getAvailableLeads(providerId, filters = {}) {
     assignedProviderId: null,
     categoryId: { in: categoryIds },
     userId: { not: providerId }, // Ne prikazuj vlastite poslove
+    // Ako je pružatelj već poslao ponudu na ovaj posao, ne prikazuj ga više u tržnici
+    offers: {
+      none: {
+        userId: providerId
+      }
+    },
     ...filters
   };
 
