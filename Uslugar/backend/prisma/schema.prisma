@@ -958,6 +958,8 @@ model LeadPurchase {
   stripePaymentIntentId String? // Stripe Payment Intent ID (za refund kroz Stripe)
   stripeRefundId        String? // Stripe Refund ID (nakon refund-a)
   notes                 String? // Dodatne bilješke
+  nextStep              String? // Mini CRM: sljedeći korak (npr. "Nazovi u petak")
+  nextStepAt            DateTime? // Mini CRM: datum podsjetnika
   createdAt             DateTime             @default(now())
   updatedAt             DateTime             @updatedAt
 

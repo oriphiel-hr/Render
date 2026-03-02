@@ -16,6 +16,7 @@ export default function MyJobs({ onNavigate, categories = [] }) {
   const [chatRoom, setChatRoom] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [completingJobId, setCompletingJobId] = useState(null);
   const hasAutoExpandedRef = useRef(false);
 
   useEffect(() => {
@@ -208,6 +209,19 @@ export default function MyJobs({ onNavigate, categories = [] }) {
     } catch (error) {
       console.error('Error opening chat:', error);
       alert('Greška pri otvaranju chata');
+    }
+  };
+
+  const handleMarkJobComplete = async (jobId) => {
+    if (!window.confirm('Označiti ovaj posao kao završen? Nakon toga možete ostaviti recenziju pružatelju.')) return;
+    try {
+      setCompletingJobId(jobId);
+      await api.patch(`/jobs/${jobId}/complete`);
+      await loadMyJobs();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Greška pri označavanju posla kao završen.');
+    } finally {
+      setCompletingJobId(null);
     }
   };
 
@@ -570,13 +584,22 @@ export default function MyJobs({ onNavigate, categories = [] }) {
                   
                   {/* Chat gumb - ako postoji prihvaćena ponuda */}
                   {(job.status === 'ACCEPTED' || job.status === 'IN_PROGRESS') && (
-                    <div className="mt-4 pt-4 border-t">
+                    <div className="mt-4 pt-4 border-t flex flex-wrap gap-2">
                       <button
                         onClick={() => handleOpenChat(job)}
                         className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
                       >
                         💬 Otvori Chat
                       </button>
+                      {job.status === 'IN_PROGRESS' && (
+                        <button
+                          onClick={() => handleMarkJobComplete(job.id)}
+                          disabled={completingJobId === job.id}
+                          className="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700 disabled:opacity-50"
+                        >
+                          {completingJobId === job.id ? '...' : '✅ Označi posao kao završen'}
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -584,13 +607,22 @@ export default function MyJobs({ onNavigate, categories = [] }) {
 
               {/* Chat gumb za providera - ako je ponuda prihvaćena */}
               {isProvider && job.myOffer?.status === 'ACCEPTED' && (
-                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600 flex flex-wrap gap-2">
                   <button
                     onClick={() => handleOpenChat(job)}
                     className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
                   >
                     💬 Otvori Chat
                   </button>
+                  {job.status === 'IN_PROGRESS' && (
+                    <button
+                      onClick={() => handleMarkJobComplete(job.id)}
+                      disabled={completingJobId === job.id}
+                      className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
+                    >
+                      {completingJobId === job.id ? '...' : '✅ Označi posao kao završen'}
+                    </button>
+                  )}
                 </div>
               )}
               </div>

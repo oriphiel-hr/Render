@@ -258,6 +258,42 @@ r.post('/purchases/:purchaseId/refund', auth(true, ['PROVIDER']), async (req, re
   }
 });
 
+// Mini CRM: ažuriraj bilješke, sljedeći korak i podsjetnik za lead
+r.patch('/purchases/:purchaseId', auth(true, ['PROVIDER']), async (req, res, next) => {
+  try {
+    const { purchaseId } = req.params;
+    const { notes, nextStep, nextStepAt } = req.body;
+
+    const purchase = await prisma.leadPurchase.findUnique({
+      where: { id: purchaseId }
+    });
+    if (!purchase) {
+      return res.status(404).json({ error: 'Purchase not found' });
+    }
+    if (purchase.providerId !== req.user.id) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    const data = {};
+    if (notes !== undefined) data.notes = notes === '' ? null : notes;
+    if (nextStep !== undefined) data.nextStep = nextStep === '' ? null : nextStep;
+    if (nextStepAt !== undefined) data.nextStepAt = nextStepAt ? new Date(nextStepAt) : null;
+
+    const updated = await prisma.leadPurchase.update({
+      where: { id: purchaseId },
+      data
+    });
+
+    res.json({
+      success: true,
+      purchase: updated,
+      message: 'Ažurirano.'
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ============================================================
 // KREDITI - Upravljanje kreditima
 // ============================================================
@@ -343,16 +379,17 @@ r.get('/export/my-leads', auth(true, ['PROVIDER']), requirePlan('PREMIUM'), asyn
   try {
     const leads = await getMyLeads(req.user.id, null);
     
-    // Generiraj CSV
-    const csvHeader = 'ID,Naziv,Kategorija,Grad,Budžet,Status,Kontaktirano,Konvertirano,Refundirano,Cijena,Potrošeno kredita,Created At\n';
+    // Generiraj CSV (uključujući Mini CRM: bilješke, sljedeći korak, podsjetnik)
+    const csvHeader = 'ID,Naziv,Kategorija,Grad,Budžet,Status,Kontaktirano,Konvertirano,Refundirano,Cijena,Potrošeno kredita,Created At,Bilješke,Sljedeći korak,Podsjetnik\n';
     const csvRows = leads.map(p => {
       const job = p.job || {};
       const user = (job.user || {});
+      const escape = (v) => (v == null || v === '') ? '' : `"${String(v).replace(/"/g, '""')}"`;
       return [
         p.id,
-        `"${job.title || ''}"`,
-        `"${(job.category || {}).name || ''}"`,
-        `"${job.city || ''}"`,
+        escape(job.title),
+        escape((job.category || {}).name),
+        escape(job.city),
         `${job.budgetMin || 0}-${job.budgetMax || 0} EUR`,
         p.status,
         p.contactedAt ? new Date(p.contactedAt).toISOString() : '',
@@ -360,7 +397,10 @@ r.get('/export/my-leads', auth(true, ['PROVIDER']), requirePlan('PREMIUM'), asyn
         p.refundedAt ? new Date(p.refundedAt).toISOString() : '',
         `${p.leadPrice} credits`,
         p.creditsSpent,
-        new Date(p.createdAt).toISOString()
+        new Date(p.createdAt).toISOString(),
+        escape(p.notes),
+        escape(p.nextStep),
+        p.nextStepAt ? new Date(p.nextStepAt).toISOString().slice(0, 10) : ''
       ].join(',');
     }).join('\n');
     

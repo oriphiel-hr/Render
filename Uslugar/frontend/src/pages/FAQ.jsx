@@ -59,6 +59,10 @@ const FAQ = ({ userType = 'guest' }) => {
       answer: "U ROI dashboardu vidite koliko ste leadova kupili, koliko ste poslova zatvorili i koji je ukupni prihod – tako možete pratiti isplativost platforme."
     },
     {
+      question: "Što uključuje Mini CRM za leadove?",
+      answer: "Mini CRM u „Moji ekskluzivni leadovi” uključuje: bilješke po leadu (napomene, dogovoreno s klijentom), sljedeći korak (npr. „Nazovi u petak”) i datum podsjetnika – sve na jednoj kartici leada, s gumbom Spremi."
+    },
+    {
       question: "Mogu li pregovarati o cijeni?",
       answer: "Da. Možete označiti ponude kao 'pregovorno' i kroz chat dogovoriti konačnu cijenu s klijentom."
     },

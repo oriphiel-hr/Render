@@ -1,6 +1,6 @@
 // USLUGAR EXCLUSIVE - My Leads Page
 import React, { useState, useEffect } from 'react';
-import { getMyLeads, markLeadContacted, markLeadConverted, requestRefund, getCreditsBalance, exportMyLeadsCSV, exportCreditsHistoryCSV, unlockContact, getAssignedLeads, updateAssignedLeadStatus } from '../api/exclusive';
+import { getMyLeads, markLeadContacted, markLeadConverted, requestRefund, getCreditsBalance, exportMyLeadsCSV, exportCreditsHistoryCSV, unlockContact, getAssignedLeads, updateAssignedLeadStatus, updateLeadPurchaseCrm } from '../api/exclusive';
 
 export default function MyLeads() {
   const [leads, setLeads] = useState([]);
@@ -13,6 +13,8 @@ export default function MyLeads() {
   const [assignedQueue, setAssignedQueue] = useState([]);
   const [isTeamMember, setIsTeamMember] = useState(false);
   const [updatingStatusId, setUpdatingStatusId] = useState(null);
+  const [savingCrmId, setSavingCrmId] = useState(null);
+  const [crmDraft, setCrmDraft] = useState({});
 
   useEffect(() => {
     loadLeads();
@@ -135,6 +137,37 @@ export default function MyLeads() {
       loadCredits();
     } catch (err) {
       alert('Greška: ' + (err.response?.data?.error || 'Neuspjelo'));
+    }
+  };
+
+  const getCrmValue = (purchase, field) => {
+    if (crmDraft[purchase.id] && crmDraft[purchase.id][field] !== undefined) return crmDraft[purchase.id][field];
+    const v = purchase[field];
+    if (field === 'nextStepAt' && v) return new Date(v).toISOString().slice(0, 10);
+    return v || '';
+  };
+
+  const setCrmValue = (purchaseId, field, value) => {
+    setCrmDraft(prev => ({ ...prev, [purchaseId]: { ...(prev[purchaseId] || {}), [field]: value } }));
+  };
+
+  const handleSaveCrm = async (purchase) => {
+    const notes = getCrmValue(purchase, 'notes');
+    const nextStep = getCrmValue(purchase, 'nextStep');
+    const nextStepAt = getCrmValue(purchase, 'nextStepAt');
+    try {
+      setSavingCrmId(purchase.id);
+      await updateLeadPurchaseCrm(purchase.id, {
+        notes: notes || null,
+        nextStep: nextStep || null,
+        nextStepAt: nextStepAt ? nextStepAt : null
+      });
+      setCrmDraft(prev => { const next = { ...prev }; delete next[purchase.id]; return next; });
+      loadLeads();
+    } catch (err) {
+      alert('Greška: ' + (err.response?.data?.error || 'Neuspjelo'));
+    } finally {
+      setSavingCrmId(null);
     }
   };
 
@@ -439,6 +472,9 @@ export default function MyLeads() {
                     >
                       ✅ Označiti kao realiziran
                     </button>
+                    <p className="text-xs text-gray-500 w-full mt-1">
+                      Klijent može potvrditi završetak u „Moji poslovi” → Označi posao kao završen.
+                    </p>
                     <button
                       onClick={() => handleRefund(purchase.id)}
                       className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
@@ -461,12 +497,51 @@ export default function MyLeads() {
                 )}
               </div>
 
-              {/* Notes */}
-              {purchase.notes && (
-                <div className="mt-3 p-3 bg-gray-50 rounded text-sm text-gray-700">
-                  <strong>Bilješke:</strong> {purchase.notes}
+              {/* Mini CRM: bilješke, sljedeći korak, podsjetnik */}
+              <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700/40 rounded-lg border border-gray-200 dark:border-gray-600">
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">📋 Mini CRM</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Bilješke</label>
+                    <textarea
+                      value={getCrmValue(purchase, 'notes')}
+                      onChange={(e) => setCrmValue(purchase.id, 'notes', e.target.value)}
+                      placeholder="Napomene o leadu, dogovoreno s klijentom..."
+                      rows={2}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Sljedeći korak</label>
+                      <input
+                        type="text"
+                        value={getCrmValue(purchase, 'nextStep')}
+                        onChange={(e) => setCrmValue(purchase.id, 'nextStep', e.target.value)}
+                        placeholder="npr. Nazovi u petak"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Podsjetnik (datum)</label>
+                      <input
+                        type="date"
+                        value={getCrmValue(purchase, 'nextStepAt')}
+                        onChange={(e) => setCrmValue(purchase.id, 'nextStepAt', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleSaveCrm(purchase)}
+                    disabled={savingCrmId === purchase.id}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    {savingCrmId === purchase.id ? 'Spremanje...' : 'Spremi'}
+                  </button>
                 </div>
-              )}
+              </div>
             </div>
           ))}
         </div>

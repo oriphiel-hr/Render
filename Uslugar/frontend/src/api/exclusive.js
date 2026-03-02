@@ -40,6 +40,11 @@ export const requestRefund = (purchaseId, reason) => {
   return api.post(`/exclusive/leads/purchases/${purchaseId}/refund`, { reason });
 };
 
+/** Mini CRM: ažuriraj bilješke, sljedeći korak, podsjetnik */
+export const updateLeadPurchaseCrm = (purchaseId, data) => {
+  return api.patch(`/exclusive/leads/purchases/${purchaseId}`, data);
+};
+
 /** Leadovi dodijeljeni meni (član tima) */
 export const getAssignedLeads = () => {
   return api.get('/director/lead-queue/my-assigned');

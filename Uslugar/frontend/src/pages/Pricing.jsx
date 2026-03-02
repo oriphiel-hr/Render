@@ -70,7 +70,7 @@ export default function Pricing({ setTab }) {
             'ROI statistika',
             'Refund ako klijent ne odgovori',
             'Email notifikacije',
-            'Mini CRM za leadove'
+            'Mini CRM za leadove (bilješke, sljedeći korak, podsjetnik po leadu)'
           ],
           isPopular: false,
           displayOrder: 0,

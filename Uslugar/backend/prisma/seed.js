@@ -99,7 +99,7 @@ async function main() {
         'Refund ako klijent ne odgovori',
         'ROI statistika',
         'Email notifikacije',
-        'Mini CRM za leadove'
+        'Mini CRM za leadove (bilješke, sljedeći korak, podsjetnik po leadu)'
       ],
       isPopular: false,
       displayOrder: 1,
@@ -119,7 +119,7 @@ async function main() {
         'AI prioritet - viđeni prvi',
         'ROI statistika + analitika',
         'SMS + Email notifikacije',
-        'Mini CRM za leadove',
+        'Mini CRM za leadove (bilješke, sljedeći korak, podsjetnik po leadu)',
         'Prioritetna podrška'
       ],
       isPopular: true,
@@ -270,7 +270,7 @@ async function main() {
         'Refund ako klijent ne odgovori',
         'ROI statistika',
         'Email notifikacije',
-        'Mini CRM za leadove'
+        'Mini CRM za leadove (bilješke, sljedeći korak, podsjetnik po leadu)'
       ],
       isPopular: false,
       displayOrder: 1,
