@@ -130,8 +130,8 @@ export default function LeadMarketplace() {
       {/* Header sa balansam kredita */}
       <div className="mb-8 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Ekskluzivni Leadovi</h1>
-          <p className="text-gray-600 mt-2">1 lead = 1 izvođač. Bez konkurencije.</p>
+          <h1 className="text-3xl font-bold text-gray-900">Tržnica ekskluzivnih leadova</h1>
+          <p className="text-gray-600 mt-2">Kupujte nove leadove &ndash; 1 lead = 1 izvođač, bez konkurencije.</p>
         </div>
         
         <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-4 rounded-lg shadow-lg">
