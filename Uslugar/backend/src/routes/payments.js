@@ -311,8 +311,9 @@ r.post('/create-checkout', auth(true, ['PROVIDER']), async (req, res, next) => {
         },
         quantity: 1
       }],
-      success_url: `${process.env.CLIENT_URL || 'https://uslugar.oriph.io'}#subscription-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.CLIENT_URL || 'https://uslugar.oriph.io'}#pricing`,
+      // Redirect back to public frontend after Stripe
+      success_url: `${process.env.CLIENT_URL || process.env.FRONTEND_URL || 'https://www.uslugar.eu'}#subscription-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.CLIENT_URL || process.env.FRONTEND_URL || 'https://www.uslugar.eu'}#pricing`,
       metadata: metadata
     };
     
