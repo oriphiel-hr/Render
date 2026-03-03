@@ -3,6 +3,7 @@
  */
 
 import PDFDocument from 'pdfkit';
+import fs from 'fs';
 import { prisma } from '../lib/prisma.js';
 import { sendInvoiceEmail } from '../lib/email.js';
 import { fiscalizeInvoice, requiresFiscalization, generateQRCodeURL } from './fiscalization-service.js';
@@ -154,6 +155,28 @@ export async function generateInvoicePDF(invoice) {
       doc.on('error', reject);
 
       // ============================================
+      // FONT CONFIG (Unicode podrška preko custom TTF-a)
+      // ============================================
+      const unicodeFontPath = process.env.INVOICE_FONT_PATH;
+      let bodyFont = 'Helvetica';
+      let boldFont = 'Helvetica-Bold';
+
+      if (unicodeFontPath) {
+        try {
+          if (fs.existsSync(unicodeFontPath)) {
+            doc.registerFont('InvoiceUnicode', unicodeFontPath);
+            bodyFont = 'InvoiceUnicode';
+            boldFont = 'InvoiceUnicode';
+            console.log('[INVOICE] Using custom unicode font for invoices:', unicodeFontPath);
+          } else {
+            console.warn('[INVOICE] INVOICE_FONT_PATH does not exist:', unicodeFontPath);
+          }
+        } catch (fontError) {
+          console.error('[INVOICE] Failed to register unicode font:', fontError);
+        }
+      }
+
+      // ============================================
       // HEADER - Uslugar "logo" (stilizirano kao na početnoj stranici)
       // ============================================
       // Kvadratni "U" znak
@@ -164,7 +187,7 @@ export async function generateInvoicePDF(invoice) {
 
       doc
         .fillColor('#ffffff')
-        .font('Helvetica-Bold')
+        .font(boldFont)
         .fontSize(20)
         .text('U', 50, 45, { width: 32, align: 'center' })
         .restore();
@@ -172,7 +195,7 @@ export async function generateInvoicePDF(invoice) {
       // Tekstualni dio logotipa
       doc
         .fillColor('#111827')
-        .font('Helvetica-Bold')
+        .font(boldFont)
         .fontSize(20)
         .text('Uslugar', 90, 44, { align: 'left' })
         .font('Helvetica')
@@ -196,11 +219,11 @@ export async function generateInvoicePDF(invoice) {
       let yPos = 50;
       doc
         .fontSize(9)
-        .font('Helvetica-Bold')
+        .font(boldFont)
         .text('IZDAVATELJ:', 400, yPos, { align: 'left' });
       yPos += 15;
       doc
-        .font('Helvetica')
+        .font(bodyFont)
         .fontSize(8);
       companyInfo.forEach(line => {
         doc.text(line, 400, yPos, { align: 'left' });
@@ -214,11 +237,11 @@ export async function generateInvoicePDF(invoice) {
       const isStornoTitle = invoice.isStorno || invoice.amount < 0;
       doc
         .fontSize(20)
-        .font('Helvetica-Bold')
+        .font(boldFont)
         .fillColor(isStornoTitle ? '#DC2626' : '#333333')
         .text(isStornoTitle ? 'STORNO FAKTURA' : 'FAKTURA', 50, yPos)
         .fontSize(12)
-        .font('Helvetica')
+        .font(bodyFont)
         .fillColor('#333333')
         .text(`Broj: ${invoice.invoiceNumber}`, 50, yPos + 30);
       
@@ -242,9 +265,9 @@ export async function generateInvoicePDF(invoice) {
       yPos += 100;
       doc
         .fontSize(10)
-        .font('Helvetica-Bold')
+        .font(boldFont)
         .text('KUPAC:', 50, yPos)
-        .font('Helvetica')
+        .font(bodyFont)
         .fontSize(9);
 
       const customerInfo = [
@@ -272,7 +295,7 @@ export async function generateInvoicePDF(invoice) {
       // INVOICE ITEMS TABLE
       // ============================================
       yPos += 40;
-      doc.fontSize(10).font('Helvetica-Bold');
+      doc.fontSize(10).font(boldFont);
       
       // Table header
       doc
@@ -292,14 +315,14 @@ export async function generateInvoicePDF(invoice) {
       
       doc
         .fillColor('#333333')
-        .font('Helvetica')
+        .font(bodyFont)
         .rect(50, yPos, 495, 35)
         .stroke();
       
       // Ako je storno faktura, prikaži jasno
       if (isStorno) {
         doc
-          .font('Helvetica-Bold')
+          .font(boldFont)
           .fontSize(12)
           .fillColor('#DC2626') // Crvena za storno
           .text('STORNO FAKTURA', 60, yPos + 5, { width: 200 });
@@ -329,7 +352,7 @@ export async function generateInvoicePDF(invoice) {
       
       doc
         .fillColor(isStorno ? '#DC2626' : '#333333')
-        .font('Helvetica')
+        .font(bodyFont)
         .fontSize(10)
         .text('1', 280, yPos + 10)
         .text(displayAmount, 380, yPos + 10)
@@ -373,7 +396,7 @@ export async function generateInvoicePDF(invoice) {
         doc
           .fillColor('#333333')
           .fontSize(8)
-          .font('Helvetica-Bold')
+          .font(boldFont)
           .text('FISKALIZACIJA:', 50, fiscalY)
           .font('Helvetica');
         
