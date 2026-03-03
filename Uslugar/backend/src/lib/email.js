@@ -3,6 +3,48 @@ import nodemailer from 'nodemailer';
 // Osnovni URL za frontend (public site)
 const FRONTEND_BASE_URL = process.env.FRONTEND_URL || 'https://www.uslugar.eu';
 
+// Jedinstveni HTML logo (stil kao na početnoj stranici)
+const EMAIL_LOGO_HTML = `
+  <div style="text-align:center;margin-bottom:20px;">
+    <div style="display:inline-flex;align-items:center;gap:12px;">
+      <div style="
+        width:40px;
+        height:40px;
+        border-radius:16px;
+        background:linear-gradient(135deg,#10B981,#0EA5E9,#2563EB);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        box-shadow:0 4px 10px rgba(16,185,129,0.4);
+      ">
+        <span style="color:#ffffff;font-weight:800;font-size:20px;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+          U
+        </span>
+      </div>
+      <div style="text-align:left;">
+        <div style="
+          font-size:20px;
+          font-weight:800;
+          color:#111827;
+          font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+        ">
+          Uslugar
+        </div>
+        <div style="
+          font-size:10px;
+          letter-spacing:0.18em;
+          text-transform:uppercase;
+          color:#059669;
+          font-weight:600;
+          font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+        ">
+          Marketplace usluga
+        </div>
+      </div>
+    </div>
+  </div>
+`;
+
 // Kreiraj transporter (koristimo produkcijski SMTP, Mailpit samo za lokalne/test instance)
 // Za testiranje lokalno koristi Mailpit varijable: MAILPIT_SMTP_HOST, MAILPIT_SMTP_PORT, MAILPIT_SMTP_USER
 // U produkciji (NODE_ENV === 'production') uvijek koristi standardne SMTP varijable: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS
@@ -276,10 +318,8 @@ export const sendInvoiceEmail = async (toEmail, fullName, invoice, pdfBuffer) =>
           <meta charset="UTF-8">
         </head>
         <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background-color: #4CAF50; padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
-            <h1 style="color: white; margin: 0;">USLUGAR</h1>
-          </div>
-          <div style="background-color: #f9f9f9; padding: 30px; border-radius: 0 0 5px 5px;">
+          <div style="background-color: #f9f9f9; padding: 30px; border-radius: 10px;">
+            ${EMAIL_LOGO_HTML}
             <h2 style="color: #333; margin-top: 0;">Faktura je generirana</h2>
             <p>Poštovani/na <strong>${fullName}</strong>,</p>
             <p>Vaša faktura <strong>${invoice.invoiceNumber}</strong> je generirana i priložena u ovom emailu.</p>
@@ -872,6 +912,7 @@ export const sendPaymentConfirmationEmail = async (toEmail, fullName, planName, 
         </head>
         <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background-color: #f8f9fa; padding: 30px; border-radius: 10px;">
+            ${EMAIL_LOGO_HTML}
             <div style="text-align: center; margin-bottom: 30px;">
               <h1 style="color: #4CAF50; font-size: 32px; margin: 0;">🎉 Hvala vam!</h1>
             </div>
@@ -958,10 +999,9 @@ export const sendTeamInviteEmail = async (toEmail, directorName, companyName = n
         <html>
         <head><meta charset="UTF-8" /></head>
         <body style="font-family: Arial, sans-serif; max-width: 600px; margin:0 auto; padding:20px; background:#f9fafb;">
-          <div style="background:#4CAF50; color:#fff; padding:20px; border-radius:8px 8px 0 0; text-align:center;">
-            <h1 style="margin:0; font-size:24px;">Pozivnica u tim</h1>
-          </div>
-          <div style="background:#ffffff; padding:24px; border-radius:0 0 8px 8px;">
+          <div style="background:#ffffff; padding:24px; border-radius:8px; box-shadow:0 2px 4px rgba(15,23,42,0.08);">
+            ${EMAIL_LOGO_HTML}
+            <h1 style="margin:0 0 16px 0; font-size:22px; color:#111827; text-align:center;">Pozivnica u tim</h1>
             <p>Poštovani/a,</p>
             <p>
               ${companyName ? `<strong>${directorName}</strong> iz tvrtke <strong>${companyName}</strong>` : `<strong>${directorName}</strong>`}
@@ -1032,10 +1072,9 @@ export const sendLeadReminderEmail = async (user, leads) => {
       <meta charset="UTF-8" />
     </head>
     <body style="font-family: Arial, sans-serif; max-width: 640px; margin:0 auto; padding:24px; background:#f9fafb;">
-      <div style="background:#1D4ED8; color:#fff; padding:20px 24px; border-radius:12px 12px 0 0;">
-        <h1 style="margin:0; font-size:22px;">Uslugar – Mini CRM podsjetnik</h1>
-      </div>
-      <div style="background:#ffffff; padding:24px; border-radius:0 0 12px 12px; box-shadow:0 2px 4px rgba(15,23,42,0.08);">
+      <div style="background:#ffffff; padding:24px; border-radius:12px; box-shadow:0 2px 4px rgba(15,23,42,0.08);">
+        ${EMAIL_LOGO_HTML}
+        <h1 style="margin:0 0 16px 0; font-size:22px; color:#111827;">Mini CRM podsjetnik</h1>
         <p style="font-size:15px; color:#111827; margin-top:0;">
           Poštovani/na <strong>${user.fullName || ''}</strong>,
         </p>

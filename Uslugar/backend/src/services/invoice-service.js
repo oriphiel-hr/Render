@@ -154,17 +154,31 @@ export async function generateInvoicePDF(invoice) {
       doc.on('error', reject);
 
       // ============================================
-      // HEADER - Uslugar branding
+      // HEADER - Uslugar "logo" (stilizirano kao na početnoj stranici)
       // ============================================
+      // Kvadratni "U" znak
       doc
-        .fillColor('#4CAF50') // Uslugar zelena
-        .fontSize(28)
+        .save()
+        .roundedRect(50, 40, 32, 32, 8)
+        .fill('#10B981');
+
+      doc
+        .fillColor('#ffffff')
         .font('Helvetica-Bold')
-        .text('USLUGAR', 50, 50, { align: 'left' })
-        .fillColor('#333333')
-        .fontSize(10)
+        .fontSize(20)
+        .text('U', 50, 45, { width: 32, align: 'center' })
+        .restore();
+
+      // Tekstualni dio logotipa
+      doc
+        .fillColor('#111827')
+        .font('Helvetica-Bold')
+        .fontSize(20)
+        .text('Uslugar', 90, 44, { align: 'left' })
         .font('Helvetica')
-        .text('Platforma za povezivanje korisnika i pružatelja usluga', 50, 80);
+        .fontSize(8)
+        .fillColor('#059669')
+        .text('MARKETPLACE USLUGA', 90, 66, { align: 'left', characterSpacing: 1.5 });
 
       // ============================================
       // COMPANY INFO (Desno)

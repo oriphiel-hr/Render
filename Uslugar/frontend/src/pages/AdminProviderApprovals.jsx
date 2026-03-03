@@ -230,7 +230,7 @@ export default function AdminProviderApprovals() {
                     ✕ Odbij
                   </button>
                   <button
-                    onClick={() => window.location.href = `#admin-User?id=${provider.userId}`}
+                    onClick={() => { window.location.href = `/admin/User?id=${encodeURIComponent(provider.userId)}`; }}
                     className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     👤 Profil

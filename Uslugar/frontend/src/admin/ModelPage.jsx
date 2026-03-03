@@ -169,7 +169,7 @@ function renderCellValue(value, colName) {
     if (colName === 'user' && value.id && (value.email || value.fullName)) {
       return (
         <a 
-          href={`#admin-User?id=${value.id}`}
+          href={`/admin/User?id=${encodeURIComponent(value.id)}`}
           className="text-blue-600 hover:text-blue-800 hover:underline"
         >
           👤 {value.fullName || value.email || value.id}
@@ -181,7 +181,7 @@ function renderCellValue(value, colName) {
     if (colName === 'job' && value.id && value.title) {
       return (
         <a 
-          href={`#admin-Job?id=${value.id}`}
+          href={`/admin/Job?id=${encodeURIComponent(value.id)}`}
           className="text-green-600 hover:text-green-800 hover:underline"
         >
           📋 {value.title}
@@ -193,7 +193,7 @@ function renderCellValue(value, colName) {
     if (colName === 'offer' && value.id) {
       return (
         <a 
-          href={`#admin-Offer?id=${value.id}`}
+          href={`/admin/Offer?id=${encodeURIComponent(value.id)}`}
           className="text-purple-600 hover:text-purple-800 hover:underline"
         >
           💰 Offer {value.id.slice(-8)}
@@ -205,7 +205,7 @@ function renderCellValue(value, colName) {
     if (colName === 'category' && value.id && value.name) {
       return (
         <a 
-          href={`#admin-Category?id=${value.id}`}
+          href={`/admin/Category?id=${encodeURIComponent(value.id)}`}
           className="text-indigo-600 hover:text-indigo-800 hover:underline"
         >
           📂 {value.name}
