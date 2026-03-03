@@ -464,7 +464,7 @@ export default function AdminPlatformStats() {
             <div className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
               <span className="text-gray-700 dark:text-gray-300">Stopa konverzije</span>
               <span className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded-full font-semibold">
-                {stats.leads.conversionRate}%
+                {stats.leads.totalPurchased > 0 ? `${stats.leads.conversionRate}%` : '—'}
               </span>
             </div>
             <div className="flex justify-between items-center py-2">

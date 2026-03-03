@@ -356,8 +356,14 @@ export default function ROIDashboard() {
             </div>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400">Stopa Konverzije</p>
-          <p className="text-3xl font-bold text-green-600 dark:text-green-400">{roi.conversionRate.toFixed(1)}%</p>
-          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">{roi.totalLeadsConverted} od {roi.totalLeadsPurchased}</p>
+          <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+            {roi.totalLeadsPurchased > 0 ? roi.conversionRate.toFixed(1) + '%' : '—'}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+            {roi.totalLeadsPurchased > 0
+              ? `${roi.totalLeadsConverted} od ${roi.totalLeadsPurchased}`
+              : 'Još nema dovoljno podataka'}
+          </p>
         </div>
 
         {/* ROI */}
