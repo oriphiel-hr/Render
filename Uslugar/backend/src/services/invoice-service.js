@@ -234,7 +234,7 @@ export async function generateInvoicePDF(invoice) {
         .fontSize(12)
         .fillColor('#333333')
         .text(`Datum izdavanja: ${formatDate(invoice.issueDate)}`, 50, yPos + 45)
-        .text(`Rok placanja: ${formatDate(invoice.dueDate)}`, 50, yPos + 60);
+        .text(`Rok plaćanja: ${formatDate(invoice.dueDate)}`, 50, yPos + 60);
 
       // ============================================
       // CUSTOMER INFO
@@ -307,20 +307,12 @@ export async function generateInvoicePDF(invoice) {
         yPos += 15;
       }
       
-      // Opis usluge - podebljano i jasno
+      // Opis usluge - podebljano i jasno (samo kratki naslov, bez dugog opisa u ćeliji)
       doc
         .fillColor('#333333')
         .font('Helvetica-Bold')
         .fontSize(10)
         .text(description.title, 60, yPos + 8, { width: 200 });
-      
-      if (description.details) {
-        doc
-          .font('Helvetica')
-          .fontSize(8)
-          .fillColor('#666666')
-          .text(description.details, 60, yPos + 20, { width: 200 });
-      }
       
       // Ako je storno, prikaži vezu na originalnu fakturu
       if (invoice.originalInvoiceId && originalInvoice) {
@@ -456,9 +448,10 @@ function getInvoiceDescription(invoice) {
     };
     const planName = planNames[invoice.subscription.plan] || invoice.subscription.plan;
     return {
-      title: `Pretplata na Uslugar platformu - ${planName}`,
-      // Izbjegni dijakritike zbog nekih PDF readera
-      details: `Mjesecna pretplata za pristup Uslugar platformi (marketplace za povezivanje korisnika i pruzatelja usluga). Plan: ${planName}`
+      // Kratki naslov da stane u ćeliju tablice
+      title: `Pretplata Uslugar - ${planName}`,
+      // Duži opis se po potrebi može koristiti u nekom drugom kontekstu
+      details: `Mjesečna pretplata za pristup Uslugar platformi (marketplace za povezivanje korisnika i pružatelja usluga). Plan: ${planName}`
     };
   } else if (invoice.type === 'LEAD_PURCHASE' && invoice.leadPurchase) {
     const jobTitle = invoice.leadPurchase.job?.title || 'Lead';
