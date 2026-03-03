@@ -1,6 +1,6 @@
 // USLUGAR EXCLUSIVE - My Leads Page
 import React, { useState, useEffect } from 'react';
-import { getMyLeads, markLeadContacted, markLeadConverted, requestRefund, getCreditsBalance, exportMyLeadsCSV, exportCreditsHistoryCSV, unlockContact, getAssignedLeads, updateAssignedLeadStatus, updateLeadPurchaseCrm } from '../api/exclusive';
+import { getMyLeads, markLeadContacted, markLeadConverted, requestRefund, getCreditsBalance, exportMyLeadsCSV, exportCreditsHistoryCSV, unlockContact, getAssignedLeads, updateAssignedLeadStatus, updateLeadPurchaseCrm, getLeadActivities, addLeadNote } from '../api/exclusive';
 
 export default function MyLeads() {
   const [leads, setLeads] = useState([]);
@@ -15,6 +15,9 @@ export default function MyLeads() {
   const [updatingStatusId, setUpdatingStatusId] = useState(null);
   const [savingCrmId, setSavingCrmId] = useState(null);
   const [crmDraft, setCrmDraft] = useState({});
+  const [activitiesByPurchase, setActivitiesByPurchase] = useState({});
+  const [activitiesLoadingId, setActivitiesLoadingId] = useState(null);
+  const [newNote, setNewNote] = useState({});
 
   useEffect(() => {
     loadLeads();
@@ -168,6 +171,36 @@ export default function MyLeads() {
       alert('Greška: ' + (err.response?.data?.error || 'Neuspjelo'));
     } finally {
       setSavingCrmId(null);
+    }
+  };
+
+  const loadActivitiesForPurchase = async (purchaseId) => {
+    try {
+      setActivitiesLoadingId(purchaseId);
+      const res = await getLeadActivities(purchaseId);
+      setActivitiesByPurchase(prev => ({ ...prev, [purchaseId]: res.data.activities || [] }));
+    } catch (err) {
+      console.error('Error loading lead activities', err);
+    } finally {
+      setActivitiesLoadingId(null);
+    }
+  };
+
+  const handleAddNote = async (purchase) => {
+    const message = (newNote[purchase.id] || '').trim();
+    if (!message) return;
+    try {
+      setActivitiesLoadingId(purchase.id);
+      const res = await addLeadNote(purchase.id, message, 'Bilješka');
+      setActivitiesByPurchase(prev => ({
+        ...prev,
+        [purchase.id]: [res.data.activity, ...(prev[purchase.id] || [])]
+      }));
+      setNewNote(prev => ({ ...prev, [purchase.id]: '' }));
+    } catch (err) {
+      alert('Greška pri spremanju bilješke: ' + (err.response?.data?.error || 'Neuspjelo'));
+    } finally {
+      setActivitiesLoadingId(null);
     }
   };
 
@@ -359,8 +392,22 @@ export default function MyLeads() {
         </div>
       ) : (
         <div className="space-y-4">
-          {leads.map((purchase) => (
-            <div key={purchase.id} className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
+          {leads.map((purchase) => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            let reminderBadge = null;
+            if (purchase.nextStepAt) {
+              const reminderDate = new Date(purchase.nextStepAt);
+              const cmp = new Date(reminderDate);
+              cmp.setHours(0, 0, 0, 0);
+              if (cmp.getTime() === today.getTime()) {
+                reminderBadge = { type: 'today', label: '📅 Danas podsjetnik' };
+              } else if (cmp.getTime() < today.getTime() && purchase.status !== 'CONVERTED' && purchase.status !== 'REFUNDED') {
+                reminderBadge = { type: 'overdue', label: '⏰ Podsjetnik prošao' };
+              }
+            }
+            return (
+            <div key={purchase.id} className={`bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow ${reminderBadge?.type === 'overdue' ? 'border border-amber-400' : ''}`}>
               <div className="flex justify-between items-start mb-4">
                 <div className="flex-1">
                   <h3 className="text-xl font-bold text-gray-900 mb-2">{purchase.job.title}</h3>
@@ -373,9 +420,20 @@ export default function MyLeads() {
                   </div>
                 </div>
                 
-                <span className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap ${getStatusColor(purchase.status)}`}>
-                  {purchase.status}
-                </span>
+                <div className="flex flex-col items-end gap-2">
+                  <span className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap ${getStatusColor(purchase.status)}`}>
+                    {purchase.status}
+                  </span>
+                  {reminderBadge && (
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                      reminderBadge.type === 'today'
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {reminderBadge.label}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Client Contact Info (Pay-per-contact model) */}
@@ -540,6 +598,62 @@ export default function MyLeads() {
                   >
                     {savingCrmId === purchase.id ? 'Spremanje...' : 'Spremi'}
                   </button>
+                </div>
+              </div>
+
+              {/* Timeline aktivnosti */}
+              <div className="mt-4 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200">🕒 Aktivnosti</h4>
+                  <button
+                    type="button"
+                    onClick={() => loadActivitiesForPurchase(purchase.id)}
+                    disabled={activitiesLoadingId === purchase.id}
+                    className="text-xs text-blue-600 hover:underline disabled:opacity-50"
+                  >
+                    {activitiesLoadingId === purchase.id ? 'Učitavanje...' : 'Osvježi'}
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newNote[purchase.id] || ''}
+                      onChange={(e) => setNewNote(prev => ({ ...prev, [purchase.id]: e.target.value }))}
+                      placeholder="Dodaj novu bilješku..."
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleAddNote(purchase)}
+                      disabled={activitiesLoadingId === purchase.id}
+                      className="px-3 py-2 bg-gray-800 text-white rounded-lg text-xs font-medium hover:bg-gray-900 disabled:opacity-50"
+                    >
+                      Spremi bilješku
+                    </button>
+                  </div>
+                  <div className="max-h-40 overflow-y-auto text-xs text-gray-700 dark:text-gray-300 divide-y divide-gray-200 dark:divide-gray-700">
+                    {(activitiesByPurchase[purchase.id] || []).length === 0 ? (
+                      <p className="py-2 text-gray-400">Još nema aktivnosti.</p>
+                    ) : (
+                      (activitiesByPurchase[purchase.id] || []).map((act) => (
+                        <div key={act.id} className="py-2 flex gap-2">
+                          <span className="text-[11px] text-gray-500 whitespace-nowrap">
+                            {new Date(act.createdAt).toLocaleString('hr-HR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <div>
+                            <div className="font-medium">
+                              {act.isSystem ? '🛠️ ' : '📝 '}
+                              {act.label || (act.isSystem ? 'Sistemska aktivnost' : 'Bilješka')}
+                            </div>
+                            <div className="text-gray-700 dark:text-gray-200">
+                              {act.message}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

@@ -521,6 +521,37 @@ r.patch('/:jobId/complete', auth(true, ['USER', 'PROVIDER']), async (req, res, n
     
     // Send notifications
     await notifyJobCompleted(jobId);
+
+    // Mini CRM: ako postoji LeadPurchase za ovaj job, zabilježi aktivnost „Posao završen”
+    try {
+      const leadPurchase = await prisma.leadPurchase.findFirst({
+        where: {
+          jobId,
+          status: { in: ['ACTIVE', 'CONTACTED', 'CONVERTED', 'REFUNDED'] }
+        },
+        select: {
+          id: true,
+          providerId: true
+        }
+      });
+      if (leadPurchase) {
+        await prisma.leadActivity.create({
+          data: {
+            purchaseId: leadPurchase.id,
+            providerId: leadPurchase.providerId,
+            type: 'SYSTEM_JOB_COMPLETED',
+            label: 'Posao završen',
+            message: 'Posao je označen kao završen u „Moji poslovi”.',
+            isSystem: true,
+            metadata: {
+              jobId
+            }
+          }
+        });
+      }
+    } catch (activityError) {
+      console.error('Error creating lead activity for completed job:', activityError);
+    }
     
     res.json({
       success: true,

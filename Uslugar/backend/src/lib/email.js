@@ -993,6 +993,93 @@ export const sendTeamInviteEmail = async (toEmail, directorName, companyName = n
   }
 };
 
+// Dnevni podsjetnik za leadove (Mini CRM - nextStepAt)
+export const sendLeadReminderEmail = async (user, leads) => {
+  if (!transporter) {
+    console.log('SMTP not configured, skipping lead reminder email for:', user.email);
+    return;
+  }
+
+  if (!leads || leads.length === 0) return;
+
+  const baseUrl = process.env.FRONTEND_URL || 'https://www.uslugar.eu';
+
+  const rowsHtml = leads.map(p => {
+    const job = p.job || {};
+    const nextStep = p.nextStep || 'Nema definiranog sljedećeg koraka';
+    const nextStepAt = p.nextStepAt
+      ? new Date(p.nextStepAt).toLocaleDateString('hr-HR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      : 'Bez datuma';
+    return `
+      <tr>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #eee; font-size: 14px;">${job.title || ''}</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #eee; font-size: 14px;">${nextStep}</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #eee; font-size: 14px;">${nextStepAt}</td>
+      </tr>
+    `;
+  }).join('');
+
+  const subject = '📅 Danas nazovi ove leadove (Mini CRM podsjetnik)';
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8" />
+    </head>
+    <body style="font-family: Arial, sans-serif; max-width: 640px; margin:0 auto; padding:24px; background:#f9fafb;">
+      <div style="background:#1D4ED8; color:#fff; padding:20px 24px; border-radius:12px 12px 0 0;">
+        <h1 style="margin:0; font-size:22px;">Uslugar – Mini CRM podsjetnik</h1>
+      </div>
+      <div style="background:#ffffff; padding:24px; border-radius:0 0 12px 12px; box-shadow:0 2px 4px rgba(15,23,42,0.08);">
+        <p style="font-size:15px; color:#111827; margin-top:0;">
+          Poštovani/na <strong>${user.fullName || ''}</strong>,
+        </p>
+        <p style="font-size:14px; color:#4B5563;">
+          Na temelju vaših podsjetnika u <strong>Mini CRM-u</strong>, danas imate sljedeće leadove za kontaktiranje ili praćenje:
+        </p>
+        <table style="width:100%; border-collapse:collapse; margin:20px 0;">
+          <thead>
+            <tr>
+              <th align="left" style="padding:8px 12px; border-bottom:2px solid #3B82F6; font-size:13px; color:#111827;">Lead</th>
+              <th align="left" style="padding:8px 12px; border-bottom:2px solid #3B82F6; font-size:13px; color:#111827;">Sljedeći korak</th>
+              <th align="left" style="padding:8px 12px; border-bottom:2px solid #3B82F6; font-size:13px; color:#111827;">Podsjetnik</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+        <p style="font-size:14px; color:#4B5563; margin-top:20px;">
+          Otvorite „Moji ekskluzivni leadovi” kako biste ažurirali status, dodali bilješke ili kontaktirali klijente:
+        </p>
+        <div style="text-align:center; margin:24px 0;">
+          <a href="${baseUrl}/#my-leads"
+             style="background:#3B82F6; color:#fff; padding:12px 32px; border-radius:999px; text-decoration:none; font-weight:bold; font-size:15px; display:inline-block;">
+            📂 Otvori Moje leadove
+          </a>
+        </div>
+        <p style="font-size:12px; color:#9CA3AF; margin-top:24px; text-align:center;">
+          Ako ne želite primati ove podsjetnike, obratite se podršci ili promijenite postavke u svom profilu.
+        </p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: `"Uslugar" <${getFromEmail()}>`,
+      to: user.email,
+      subject,
+      html
+    });
+    console.log(`📧 Lead reminder email sent to: ${user.email} (${leads.length} leadova)`);
+  } catch (error) {
+    console.error('Error sending lead reminder email:', error);
+  }
+};
+
 /**
  * Pošalji email notifikaciju za refund subscription payment-a
  */

@@ -239,6 +239,23 @@ export function startQueueScheduler() {
     console.log('='.repeat(50) + '\n')
   })
 
+  // Daily lead reminders (Mini CRM nextStepAt) - svaki dan u 7:30
+  cron.schedule('30 7 * * *', async () => {
+    console.log(`\n${'='.repeat(50)}`)
+    console.log(`📧 Daily Lead Reminders Check: ${new Date().toISOString()}`)
+    console.log('='.repeat(50))
+    
+    try {
+      const { sendDailyLeadReminders } = await import('./subscription-reminder.js');
+      const result = await sendDailyLeadReminders();
+      console.log(`✅ Lead reminders: providers=${result.providers}, emailsSent=${result.emailsSent}`);
+    } catch (error) {
+      console.error('❌ Daily lead reminders failed:', error)
+    }
+    
+    console.log('='.repeat(50) + '\n')
+  })
+
   console.log('✅ Queue Scheduler started successfully')
   console.log('   - Expired offers check: Every hour at :00')
   console.log('   - Inactive lead purchases check (48h auto-refund): Every hour at :00')
@@ -256,6 +273,7 @@ export function startQueueScheduler() {
   console.log('   - Batch auto-verification: Daily at 11:00')
   console.log('   - Thread locking check: Daily at 02:00')
   console.log('   - Inactivity reminders (>14 days): Daily at 08:00')
+  console.log('   - Daily lead reminders (Mini CRM nextStepAt): Daily at 07:30')
   console.log('   - Monitor heartbeat: Every 15 minutes')
 }
 

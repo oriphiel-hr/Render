@@ -707,3 +707,108 @@ export async function checkInactiveUsers() {
   }
 }
 
+/**
+ * Dnevni podsjetnici za leadove iz Mini CRM-a (nextStepAt <= danas)
+ */
+export async function sendDailyLeadReminders() {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+
+    // Pronađi sve providere s leadovima koji imaju nextStepAt <= danas i status ACTIVE/CONTACTED
+    const purchases = await prisma.leadPurchase.findMany({
+      where: {
+        nextStepAt: {
+          lte: todayEnd
+        },
+        status: {
+          in: ['ACTIVE', 'CONTACTED']
+        }
+      },
+      include: {
+        job: {
+          select: {
+            id: true,
+            title: true,
+            category: {
+              select: { name: true }
+            }
+          }
+        },
+        provider: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    if (purchases.length === 0) {
+      return { providers: 0, emailsSent: 0 };
+    }
+
+    // Grupiraj po provideru
+    const byProvider = new Map();
+    for (const p of purchases) {
+      if (!p.provider?.email) continue;
+      const key = p.provider.id;
+      if (!byProvider.has(key)) {
+        byProvider.set(key, { user: p.provider, leads: [] });
+      }
+      byProvider.get(key).leads.push(p);
+    }
+
+    let emailsSent = 0;
+
+    for (const { user, leads } of byProvider.values()) {
+      try {
+        // Provjeri je li u zadnjih 24h već poslan lead podsjetnik (TITLE contains)
+        const recentNotification = await prisma.notification.findFirst({
+          where: {
+            userId: user.id,
+            type: 'SYSTEM',
+            title: {
+              contains: 'Lead podsjetnik'
+            },
+            createdAt: {
+              gte: new Date(today.getTime() - 24 * 60 * 60 * 1000)
+            }
+          }
+        });
+        if (recentNotification) {
+          continue;
+        }
+
+        const { sendLeadReminderEmail } = await import('./email.js');
+        await sendLeadReminderEmail(user, leads);
+
+        // Zapiši notifikaciju da ne šaljemo duplikat isti dan
+        await prisma.notification.create({
+          data: {
+            userId: user.id,
+            type: 'SYSTEM',
+            title: 'Lead podsjetnik – Mini CRM',
+            message: 'Poslan je dnevni email podsjetnik za leadove s današnjim ili prošlim podsjetnikom.',
+            jobId: leads[0]?.jobId || null
+          }
+        });
+
+        emailsSent++;
+      } catch (err) {
+        console.error('Error sending daily lead reminder for provider', user.id, err);
+      }
+    }
+
+    return {
+      providers: byProvider.size,
+      emailsSent
+    };
+  } catch (error) {
+    console.error('Error in sendDailyLeadReminders:', error);
+    throw error;
+  }
+}
+

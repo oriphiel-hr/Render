@@ -45,6 +45,15 @@ export const updateLeadPurchaseCrm = (purchaseId, data) => {
   return api.patch(`/exclusive/leads/purchases/${purchaseId}`, data);
 };
 
+/** Mini CRM: aktivnosti (timeline) za lead */
+export const getLeadActivities = (purchaseId) => {
+  return api.get(`/exclusive/leads/purchases/${purchaseId}/activities`);
+};
+
+export const addLeadNote = (purchaseId, message, label) => {
+  return api.post(`/exclusive/leads/purchases/${purchaseId}/activities`, { message, label });
+};
+
 /** Leadovi dodijeljeni meni (član tima) */
 export const getAssignedLeads = () => {
   return api.get('/director/lead-queue/my-assigned');

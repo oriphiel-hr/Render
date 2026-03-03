@@ -181,6 +181,7 @@ model User {
   featureOwnership    CompanyFeatureOwnership[] @relation("UserFeatureOwnership")
   lockedThreads       ChatRoom[]                @relation("LockedThreads") // Threadovi koje je korisnik zaključao
   addonSubscriptions  AddonSubscription[] // Add-on paketi korisnika
+  leadActivities      LeadActivity[]
 
   // Testing runs authored by this user (admin)
   testRuns TestRun[] @relation("TestRunAuthor")
@@ -965,11 +966,31 @@ model LeadPurchase {
 
   creditTransactions CreditTransaction[]
   invoices           Invoice[]
+  activities         LeadActivity[]
 
   @@index([jobId])
   @@index([providerId])
   @@index([status])
   @@index([refundRequestStatus])
+  @@index([createdAt])
+}
+
+/// Mini CRM aktivnosti po leadu (timeline)
+model LeadActivity {
+  id          String       @id @default(cuid())
+  purchase    LeadPurchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  purchaseId  String
+  provider    User         @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  providerId  String
+  type        String       // npr. SYSTEM_LEAD_PURCHASED, SYSTEM_CONTACT_UNLOCKED, NOTE
+  label       String?      // kratak naslov za prikaz
+  message     String       // detaljniji opis / bilješka
+  isSystem    Boolean      @default(false)
+  metadata    Json?
+  createdAt   DateTime     @default(now())
+
+  @@index([purchaseId])
+  @@index([providerId])
   @@index([createdAt])
 }
 

@@ -5,6 +5,24 @@ import { notifyProvider, notifyClient } from '../lib/notifications.js';
 import { isWithinRadius, findClosestTeamLocation, sortJobsByDistance } from '../lib/geo-utils.js';
 import Stripe from 'stripe';
 
+async function createLeadActivity(purchaseId, providerId, type, label, message, metadata = null) {
+  try {
+    await prisma.leadActivity.create({
+      data: {
+        purchaseId,
+        providerId,
+        type,
+        label,
+        message,
+        isSystem: !type.startsWith('NOTE'),
+        metadata: metadata ? metadata : undefined
+      }
+    });
+  } catch (err) {
+    console.error('[LEAD-ACTIVITY] Failed to create activity', type, purchaseId, err);
+  }
+}
+
 // Stripe initialization for refund processing
 let stripe;
 try {
@@ -270,6 +288,20 @@ export async function purchaseLead(jobId, providerId, options = {}) {
     const paymentMethod = stripePaymentIntent ? 'Stripe Payment' : 'Internal Credits';
     console.log(`[LEAD] Provider ${providerId} purchased lead ${jobId} for ${leadPrice} credits (${paymentMethod})`);
 
+    // Mini CRM: zapiši sistemsku aktivnost „Lead kupljen”
+    await createLeadActivity(
+      purchase.id,
+      providerId,
+      'SYSTEM_LEAD_PURCHASED',
+      'Lead kupljen',
+      `Lead kupljen za ${leadPrice} kredita (${paymentMethod}).`,
+      {
+        jobId,
+        leadPrice,
+        paymentMethod
+      }
+    );
+
     return {
       success: true,
       purchase,
@@ -371,6 +403,18 @@ export async function markLeadContacted(purchaseId, providerId) {
     leadsContacted: 1
   });
 
+  // Mini CRM: zapiši sistemsku aktivnost „Kontaktiran”
+  await createLeadActivity(
+    updated.id,
+    providerId,
+    'SYSTEM_CONTACTED',
+    'Lead kontaktiran',
+    'Lead je označen kao kontaktiran.',
+    {
+      jobId: purchase.jobId
+    }
+  );
+
   return updated;
 }
 
@@ -429,6 +473,19 @@ export async function markLeadConverted(purchaseId, providerId, revenue = 0) {
     leadsConverted: 1,
     revenue
   });
+
+  // Mini CRM: zapiši sistemsku aktivnost „Realiziran”
+  await createLeadActivity(
+    updated.id,
+    providerId,
+    'SYSTEM_CONVERTED',
+    'Lead realiziran',
+    `Lead je označen kao realiziran. Prihod: ${revenue || 0} EUR.`,
+    {
+      jobId: purchase.jobId,
+      revenue
+    }
+  );
 
   return updated;
 }
@@ -505,6 +562,19 @@ export async function requestLeadRefund(purchaseId, providerId, reason = 'Client
   }
 
   console.log(`[REFUND-REQUEST] Refund zahtjev kreiran za purchase ${purchaseId}, čeka admin odobrenje`);
+
+  // Mini CRM: zapiši sistemsku aktivnost „Zahtjev za povrat”
+  await createLeadActivity(
+    updated.id,
+    providerId,
+    'SYSTEM_REFUND_REQUESTED',
+    'Zahtjev za povrat',
+    `Zatražen je povrat za lead. Razlog: ${reason}`,
+    {
+      jobId: purchase.jobId,
+      reason
+    }
+  );
 
   return updated;
 }
@@ -640,6 +710,19 @@ export async function processLeadRefund(purchaseId, adminId, approved = true, ad
   } else {
     console.log(`[LEAD] Zahtjev za povrat obrađen (interni krediti): ${purchase.creditsSpent} kredita vraćeno provideru ${providerId} za lead ${purchase.jobId}`);
   }
+
+  // Mini CRM: zapiši aktivnost „Refundiran”
+  await createLeadActivity(
+    updated.id,
+    purchase.providerId,
+    'SYSTEM_REFUNDED',
+    'Lead refundiran',
+    'Lead je refundiran i krediti su vraćeni.',
+    {
+      jobId: purchase.jobId,
+      creditsRefunded: purchase.creditsSpent
+    }
+  );
 
   return updated;
 }
@@ -1015,6 +1098,19 @@ export async function unlockContact(jobId, providerId) {
         creditsSpent: purchase.creditsSpent + unlockCost // Dodaj unlock cost na ukupan iznos
       }
     });
+
+    // Mini CRM: zapiši sistemsku aktivnost „Kontakt otključan”
+    await createLeadActivity(
+      purchase.id,
+      providerId,
+      'SYSTEM_CONTACT_UNLOCKED',
+      'Kontakt otključan',
+      'Kontakt klijenta otključan (1 kredit).',
+      {
+        jobId,
+        unlockCost
+      }
+    );
 
     // 6. Log audit - contact revealed
     try {

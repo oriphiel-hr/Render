@@ -294,6 +294,74 @@ r.patch('/purchases/:purchaseId', auth(true, ['PROVIDER']), async (req, res, nex
   }
 });
 
+// Mini CRM: dohvat aktivnosti (timeline) za lead
+r.get('/purchases/:purchaseId/activities', auth(true, ['PROVIDER']), async (req, res, next) => {
+  try {
+    const { purchaseId } = req.params;
+    const purchase = await prisma.leadPurchase.findUnique({
+      where: { id: purchaseId },
+      select: { id: true, providerId: true }
+    });
+    if (!purchase) {
+      return res.status(404).json({ error: 'Purchase not found' });
+    }
+    if (purchase.providerId !== req.user.id) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    const activities = await prisma.leadActivity.findMany({
+      where: { purchaseId },
+      orderBy: { createdAt: 'desc' },
+      take: 100
+    });
+
+    res.json({ activities });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Mini CRM: dodaj ručnu bilješku u timeline
+r.post('/purchases/:purchaseId/activities', auth(true, ['PROVIDER']), async (req, res, next) => {
+  try {
+    const { purchaseId } = req.params;
+    const { message, label } = req.body;
+
+    if (!message || !message.trim()) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    const purchase = await prisma.leadPurchase.findUnique({
+      where: { id: purchaseId },
+      select: { id: true, providerId: true, jobId: true }
+    });
+    if (!purchase) {
+      return res.status(404).json({ error: 'Purchase not found' });
+    }
+    if (purchase.providerId !== req.user.id) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    const activity = await prisma.leadActivity.create({
+      data: {
+        purchaseId,
+        providerId: req.user.id,
+        type: 'NOTE',
+        label: label || 'Bilješka',
+        message: message.trim(),
+        isSystem: false,
+        metadata: {
+          jobId: purchase.jobId
+        }
+      }
+    });
+
+    res.status(201).json({ activity });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // ============================================================
 // KREDITI - Upravljanje kreditima
 // ============================================================
