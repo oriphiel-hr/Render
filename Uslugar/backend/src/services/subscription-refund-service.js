@@ -76,9 +76,13 @@ export async function refundSubscription(userId, reason = 'Requested by customer
     stripePaymentIntentId = invoice.stripePaymentIntentId;
     refundAmount = invoice.totalAmount; // Ukupan iznos fakture u centima
   } else {
-    // Ako nema invoice, pokušaj pronaći plan price
-    const planDetails = await prisma.subscriptionPlan.findUnique({
-      where: { name: subscription.plan }
+    // Ako nema invoice, pokušaj pronaći plan price (core plan: bez kategorije/regije)
+    const planDetails = await prisma.subscriptionPlan.findFirst({
+      where: {
+        name: subscription.plan,
+        categoryId: null,
+        region: null
+      }
     });
     
     if (planDetails && planDetails.price > 0) {

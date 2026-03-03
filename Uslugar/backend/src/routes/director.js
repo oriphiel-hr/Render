@@ -950,8 +950,12 @@ r.post('/plans/quote', auth(true), async (req, res, next) => {
     // Ako je planCode, dohvati feature-e iz plana
     let featuresToCheck = requestedFeatures;
     if (planCode && !requestedFeatures) {
-      const plan = await prisma.subscriptionPlan.findUnique({
-        where: { name: planCode }
+      const plan = await prisma.subscriptionPlan.findFirst({
+        where: {
+          name: planCode,
+          categoryId: null,
+          region: null
+        }
       });
       if (!plan) {
         return res.status(400).json({

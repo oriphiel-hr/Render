@@ -58,9 +58,13 @@ r.post('/create-checkout', auth(true, ['PROVIDER']), async (req, res, next) => {
       return res.status(400).json({ error: 'Plan is required' });
     }
 
-    // Get plan details from database
-    const planDetails = await prisma.subscriptionPlan.findUnique({
-      where: { name: plan }
+    // Get plan details from database (core plan: no category/region)
+    const planDetails = await prisma.subscriptionPlan.findFirst({
+      where: {
+        name: plan,
+        categoryId: null,
+        region: null
+      }
     });
 
     if (!planDetails) {
@@ -121,8 +125,12 @@ r.post('/create-checkout', auth(true, ['PROVIDER']), async (req, res, next) => {
       
       if (hasActivePaidSubscription && subscription.plan !== plan) {
         // Izračunaj prorated billing
-        const currentPlanDetails = await prisma.subscriptionPlan.findUnique({
-          where: { name: subscription.plan }
+        const currentPlanDetails = await prisma.subscriptionPlan.findFirst({
+          where: {
+            name: subscription.plan,
+            categoryId: null,
+            region: null
+          }
         });
         
         if (currentPlanDetails) {
@@ -936,8 +944,12 @@ async function activateSubscription(userId, plan, credits, stripePaymentIntentId
     // Log to subscription history
     try {
       const { logSubscriptionChange } = await import('../services/subscription-history-service.js');
-      const planDetails = await prisma.subscriptionPlan.findUnique({
-        where: { name: plan }
+      const planDetails = await prisma.subscriptionPlan.findFirst({
+        where: {
+          name: plan,
+          categoryId: null,
+          region: null
+        }
       });
       const planPrice = planDetails?.price || 0;
       
@@ -1009,9 +1021,13 @@ async function activateSubscription(userId, plan, credits, stripePaymentIntentId
 
     console.log(`[SUBSCRIPTION] Activated: User ${userIdStr}, Plan ${plan}, Credits ${credits}`);
 
-    // Get actual plan price from database
-    const planDetails = await prisma.subscriptionPlan.findUnique({
-      where: { name: plan }
+    // Get actual core plan price from database
+    const planDetails = await prisma.subscriptionPlan.findFirst({
+      where: {
+        name: plan,
+        categoryId: null,
+        region: null
+      }
     });
     const planPrice = planDetails?.price || 0;
 
