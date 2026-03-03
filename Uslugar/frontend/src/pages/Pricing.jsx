@@ -54,7 +54,10 @@ export default function Pricing({ setTab }) {
       localStorage.getItem('token') ? getMySubscription().catch(() => null) : Promise.resolve(null)
     ])
       .then(([plansRes, subscriptionRes]) => {
-        
+        // Filtriraj samo osnovne planove (bez regionalno/kategorijski specifičnih)
+        const rawPlans = Array.isArray(plansRes.data) ? plansRes.data : [];
+        const corePlans = rawPlans.filter(p => !p.region && !p.categoryId);
+
         // Add TRIAL plan
         const trialPlan = {
           id: 'trial-plan',
@@ -78,7 +81,7 @@ export default function Pricing({ setTab }) {
           savings: 'Besplatno!'
         };
         
-        setPlans([trialPlan, ...plansRes.data]);
+        setPlans([trialPlan, ...corePlans]);
         if (subscriptionRes?.data?.subscription) {
           setCurrentSubscription(subscriptionRes.data.subscription);
           setLaunchTrial(!!subscriptionRes.data.launchTrial);
