@@ -155,13 +155,40 @@ export default function MyLeads() {
   };
 
   const handleSaveCrm = async (purchase) => {
-    const notes = getCrmValue(purchase, 'notes');
+    const existingNotes = purchase.notes || '';
+    const inputNotesRaw = getCrmValue(purchase, 'notes');
+    const inputNotes = (inputNotesRaw || '').trim();
     const nextStep = getCrmValue(purchase, 'nextStep');
     const nextStepAt = getCrmValue(purchase, 'nextStepAt');
+
+    // Ako nema nove bilješke, ne diramo notes (sažetak ostaje kakav je)
+    let finalNotes = existingNotes;
+    if (inputNotes) {
+      const now = new Date();
+      const dateLabel = now.toLocaleString('hr-HR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      // Ako korisnik već ručno vidi stari tekst i doda novi na kraj, samo ga pošaljemo
+      if (!existingNotes) {
+        finalNotes = `[${dateLabel}] ${inputNotes}`;
+      } else if (inputNotes.startsWith(existingNotes)) {
+        // Već sadrži staru povijest, ne dupliramo
+        finalNotes = inputNotes;
+      } else {
+        // Korisnik je upisao novu bilješku, dodaj je na kraj sa datumom
+        finalNotes = `${existingNotes}\n[${dateLabel}] ${inputNotes}`;
+      }
+    }
+
     try {
       setSavingCrmId(purchase.id);
       await updateLeadPurchaseCrm(purchase.id, {
-        notes: notes || null,
+        notes: finalNotes || null,
         nextStep: nextStep || null,
         nextStepAt: nextStepAt ? nextStepAt : null
       });
