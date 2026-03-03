@@ -173,8 +173,12 @@ export async function generateInvoicePDF(invoice) {
           fontCandidates.push(path.join(process.cwd(), envFontPath));
         }
       }
-      // Fallback: font pored backend-a (backend/fonts/DejaVuSans.ttf) neovisno o cwd
+      // cwd/fonts (kad je root = Uslugar/backend, npr. /app/fonts)
+      fontCandidates.push(path.join(process.cwd(), 'fonts', 'DejaVuSans.ttf'));
+      // relativno na ovaj modul: backend/src/services -> ../../fonts
       fontCandidates.push(path.join(__dirname, '..', '..', 'fonts', 'DejaVuSans.ttf'));
+      // unutar src (uvijek u deployu): backend/src/assets/fonts
+      fontCandidates.push(path.join(__dirname, '..', '..', 'assets', 'fonts', 'DejaVuSans.ttf'));
 
       let unicodeFontPath = null;
       for (const p of fontCandidates) {
