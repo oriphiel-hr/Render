@@ -657,7 +657,8 @@ export default function MyLeads() {
                 </div>
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
       )}
 
