@@ -189,8 +189,8 @@ export async function generateInvoicePDF(invoice) {
         'Slavenskoga ulica 5',
         '10000 Zagreb',
         'Direktor: Tomislav Kranjec',
-        'Email: <TREBA UNIJETI KAD SE PREBACI NA PRODUKCIJU>',
-        'Web: <TREBA UNIJETI KAD SE PREBACI NA PRODUKCIJU>'
+        'Email: uslugar@oriphiel.hr',
+        'Web: https://www.uslugar.eu'
       ];
 
       let yPos = 50;
@@ -234,7 +234,7 @@ export async function generateInvoicePDF(invoice) {
         .fontSize(12)
         .fillColor('#333333')
         .text(`Datum izdavanja: ${formatDate(invoice.issueDate)}`, 50, yPos + 45)
-        .text(`Rok plaćanja: ${formatDate(invoice.dueDate)}`, 50, yPos + 60);
+        .text(`Rok placanja: ${formatDate(invoice.dueDate)}`, 50, yPos + 60);
 
       // ============================================
       // CUSTOMER INFO
@@ -457,18 +457,19 @@ function getInvoiceDescription(invoice) {
     const planName = planNames[invoice.subscription.plan] || invoice.subscription.plan;
     return {
       title: `Pretplata na Uslugar platformu - ${planName}`,
-      details: `Mjesečna pretplata za pristup Uslugar platformi za povezivanje korisnika i pružatelja usluga. Plan: ${planName}`
+      // Izbjegni dijakritike zbog nekih PDF readera
+      details: `Mjesecna pretplata za pristup Uslugar platformi (marketplace za povezivanje korisnika i pruzatelja usluga). Plan: ${planName}`
     };
   } else if (invoice.type === 'LEAD_PURCHASE' && invoice.leadPurchase) {
     const jobTitle = invoice.leadPurchase.job?.title || 'Lead';
     return {
       title: `Kupovina ekskluzivnog leada: ${jobTitle}`,
-      details: `Kupovina ekskluzivnog leada za posao "${jobTitle}" na Uslugar platformi. Pružatelj dobiva ekskluzivni pristup kontakt podacima klijenta.`
+      details: `Kupovina ekskluzivnog leada za posao "${jobTitle}" na Uslugar platformi. Pruzatelj dobiva ekskluzivni pristup kontakt podacima klijenta.`
     };
   }
   return {
     title: 'Usluga na Uslugar platformi',
-    details: 'Usluga povezivanja korisnika i pružatelja usluga'
+    details: 'Usluga povezivanja korisnika i pruzatelja usluga'
   };
 }
 
