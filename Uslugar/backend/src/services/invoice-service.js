@@ -4,10 +4,14 @@
 
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { prisma } from '../lib/prisma.js';
 import { sendInvoiceEmail } from '../lib/email.js';
 import { fiscalizeInvoice, requiresFiscalization, generateQRCodeURL } from './fiscalization-service.js';
 // S3 storage uklonjen - PDF-ovi se generiraju na zahtjev
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /**
  * Generira jedinstveni broj fakture
@@ -157,23 +161,40 @@ export async function generateInvoicePDF(invoice) {
       // ============================================
       // FONT CONFIG (Unicode podrška preko custom TTF-a)
       // ============================================
-      const unicodeFontPath = process.env.INVOICE_FONT_PATH;
+      const envFontPath = process.env.INVOICE_FONT_PATH;
       let bodyFont = 'Helvetica';
       let boldFont = 'Helvetica-Bold';
 
+      const fontCandidates = [];
+      if (envFontPath) {
+        if (path.isAbsolute(envFontPath)) {
+          fontCandidates.push(envFontPath);
+        } else {
+          fontCandidates.push(path.join(process.cwd(), envFontPath));
+        }
+      }
+      // Fallback: font pored backend-a (backend/fonts/DejaVuSans.ttf) neovisno o cwd
+      fontCandidates.push(path.join(__dirname, '..', '..', 'fonts', 'DejaVuSans.ttf'));
+
+      let unicodeFontPath = null;
+      for (const p of fontCandidates) {
+        if (p && fs.existsSync(p)) {
+          unicodeFontPath = p;
+          break;
+        }
+      }
+
       if (unicodeFontPath) {
         try {
-          if (fs.existsSync(unicodeFontPath)) {
-            doc.registerFont('InvoiceUnicode', unicodeFontPath);
-            bodyFont = 'InvoiceUnicode';
-            boldFont = 'InvoiceUnicode';
-            console.log('[INVOICE] Using custom unicode font for invoices:', unicodeFontPath);
-          } else {
-            console.warn('[INVOICE] INVOICE_FONT_PATH does not exist:', unicodeFontPath);
-          }
+          doc.registerFont('InvoiceUnicode', unicodeFontPath);
+          bodyFont = 'InvoiceUnicode';
+          boldFont = 'InvoiceUnicode';
+          console.log('[INVOICE] Using custom unicode font for invoices:', unicodeFontPath);
         } catch (fontError) {
           console.error('[INVOICE] Failed to register unicode font:', fontError);
         }
+      } else if (envFontPath) {
+        console.warn('[INVOICE] INVOICE_FONT_PATH not found (tried):', fontCandidates);
       }
 
       // ============================================
