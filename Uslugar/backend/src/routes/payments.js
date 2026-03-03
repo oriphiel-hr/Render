@@ -1046,7 +1046,8 @@ async function activateSubscription(userId, plan, credits, stripePaymentIntentId
           amount: Math.round(planPrice * 100), // U centima
           currency: 'EUR',
           subscriptionId: subscription.id,
-          stripePaymentIntentId: stripePaymentIntent || null
+          // Spremaj Stripe Payment Intent ID ako je poznat
+          stripePaymentIntentId: stripePaymentIntentId || null
         });
 
         console.log(`[INVOICE] Created invoice ${invoice.invoiceNumber} for subscription`);
