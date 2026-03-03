@@ -175,10 +175,12 @@ export async function generateInvoicePDF(invoice) {
       }
       // cwd/fonts (kad je root = Uslugar/backend, npr. /app/fonts)
       fontCandidates.push(path.join(process.cwd(), 'fonts', 'DejaVuSans.ttf'));
+      // cwd/src/assets/fonts (na Renderu: /app/src/assets/fonts)
+      fontCandidates.push(path.join(process.cwd(), 'src', 'assets', 'fonts', 'DejaVuSans.ttf'));
       // relativno na ovaj modul: backend/src/services -> ../../fonts
       fontCandidates.push(path.join(__dirname, '..', '..', 'fonts', 'DejaVuSans.ttf'));
-      // unutar src (uvijek u deployu): backend/src/assets/fonts
-      fontCandidates.push(path.join(__dirname, '..', '..', 'assets', 'fonts', 'DejaVuSans.ttf'));
+      // relativno na ovaj modul: services -> ../assets/fonts (na Renderu: /app/src/assets/fonts)
+      fontCandidates.push(path.join(__dirname, '..', 'assets', 'fonts', 'DejaVuSans.ttf'));
 
       let unicodeFontPath = null;
       for (const p of fontCandidates) {
@@ -197,8 +199,8 @@ export async function generateInvoicePDF(invoice) {
         } catch (fontError) {
           console.error('[INVOICE] Failed to register unicode font:', fontError);
         }
-      } else if (envFontPath) {
-        console.warn('[INVOICE] INVOICE_FONT_PATH not found (tried):', fontCandidates);
+      } else {
+        console.warn('[INVOICE] No unicode font found (tried):', fontCandidates);
       }
 
       // ============================================

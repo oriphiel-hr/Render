@@ -730,6 +730,17 @@ r.get('/plans', auth(false), async (req, res, next) => {
     
     console.log(`[PLANS] isUserNew: ${isUserNew}, plans count: ${dbPlans.length}`);
     
+    // Osobni nazivi za core planove (BASIC, PREMIUM, PRO) – za segmentirane prikaži ovo umjesto kategorija/regija
+    let coreDisplayNames = {};
+    dbPlans.filter(p => !p.categoryId && !p.region).forEach(p => { coreDisplayNames[p.name] = p.displayName; });
+    if (dbPlans.some(p => p.categoryId || p.region)) {
+      const corePlans = await prisma.subscriptionPlan.findMany({
+        where: { categoryId: null, region: null },
+        select: { name: true, displayName: true }
+      });
+      corePlans.forEach(p => { coreDisplayNames[p.name] = p.displayName; });
+    }
+    
     // Transformuj dbPlans da uključe smanjene cijene
     const plansWithDiscounts = dbPlans.map(plan => {
       const key = plan.categoryId || plan.region 
@@ -738,8 +749,19 @@ r.get('/plans', auth(false), async (req, res, next) => {
       
       const planInfo = plansObj[key];
       
+      // Normaliziraj savings: € -> EUR da se izbjegne encoding (ÔéČ) u frontendu
+      const rawSavings = plan.savings || '';
+      const savings = rawSavings.replace(/\u20AC/g, ' EUR ').replace(/\s+/g, ' ').trim();
+      
+      // Za segmentirane planove prikaži osobni naziv (npr. "Basic"), ne "Arhitekti Istra"
+      const displayName = (plan.categoryId || plan.region) 
+        ? (coreDisplayNames[plan.name] || plan.displayName) 
+        : plan.displayName;
+      
       const result = {
         ...plan,
+        displayName,
+        savings: savings || rawSavings,
         price: planInfo.price, // Može biti smanjena cijena
         originalPrice: planInfo.originalPrice, // Originalna cijena
         newUserDiscount: planInfo.newUserDiscount // Informacije o popustu

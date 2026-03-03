@@ -58,12 +58,12 @@ export default function SubscriptionPlans() {
       
       console.log('Plans response:', plansRes.data);
       
-      // Convert array to object keyed by plan name
-      // API returns plans with 'name' field (BASIC, PREMIUM, PRO) from database
+      // Convert array to object keyed by plan name (composite key for segmented: name_categoryId_region)
       const plansObj = {};
       plansRes.data.forEach(plan => {
-        // Use 'name' field (BASIC, PREMIUM, PRO) as key, not displayName
-        const key = plan.name; // This is the plan code (BASIC, PREMIUM, PRO)
+        const key = (plan.categoryId || plan.region)
+          ? `${plan.name}_${plan.categoryId || ''}_${plan.region || ''}`
+          : plan.name;
         plansObj[key] = plan;
         
         // Log discount info for debugging
@@ -146,7 +146,9 @@ export default function SubscriptionPlans() {
           <div className="flex justify-between items-center mb-4">
             <div>
               <p className="text-sm text-blue-700 mb-1">Trenutna pretplata:</p>
-              <p className="text-3xl font-bold text-blue-900">{currentSubscription.plan}</p>
+              <p className="text-3xl font-bold text-blue-900">
+                {plans[currentSubscription.plan]?.displayName || currentSubscription.plan}
+              </p>
               <p className="text-sm text-blue-600 mt-1">
                 Status: <span className="font-semibold">{currentSubscription.status}</span>
               </p>
@@ -266,7 +268,7 @@ export default function SubscriptionPlans() {
                 {plan.savings && (
                   <div className="mb-6 text-center">
                     <span className="inline-block px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-semibold">
-                      💰 {plan.savings}
+                      💰 {(plan.savings || '').replace(/ÔéČ/g, '€').replace(/\s+EUR\s+/g, ' € ')}
                     </span>
                   </div>
                 )}

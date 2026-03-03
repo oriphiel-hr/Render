@@ -256,7 +256,7 @@ async function main() {
   }
 
   if (arhitektiCategory) {
-    // Arhitekti Istra - Basic paket
+    // Arhitekti Istra - Basic paket (segmentirani)
     segmentedPlans.push({
       name: 'BASIC',
       displayName: 'Basic',
@@ -265,17 +265,16 @@ async function main() {
       credits: 10,
       features: [
         '10 ekskluzivnih leadova mjesečno',
-        'Paket za arhitekte',
         '1 lead = 1 izvođač (bez konkurencije)',
         'Refund ako klijent ne odgovori',
         'ROI statistika',
         'Email notifikacije',
-        'Mini CRM za leadove (bilješke, sljedeći korak, podsjetnik po leadu)'
+        'Mini CRM za leadove'
       ],
       isPopular: false,
       displayOrder: 1,
       isActive: true,
-      savings: 'Ušteda 15 EUR u odnosu na plaćanje po leadu',
+      savings: 'Ušteda 15 EUR vs pay-per-lead',
       categoryId: arhitektiCategory.id,
       region: 'Istra'
     });

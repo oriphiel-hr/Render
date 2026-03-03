@@ -236,7 +236,7 @@ export default function Pricing({ setTab }) {
               {plan.savings && (
                 <div className="mb-4 text-center">
                   <p className="text-sm font-semibold text-green-600">
-                    {plan.savings}
+                    {(plan.savings || '').replace(/ÔéČ/g, '€').replace(/\s+EUR\s+/g, ' € ')}
                   </p>
                 </div>
               )}
