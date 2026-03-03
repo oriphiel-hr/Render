@@ -279,6 +279,9 @@ export default function AdminUsersOverview() {
                 >
                   Registriran {sortBy === 'createdAt' && (sortOrder === 'asc' ? '↑' : '↓')}
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Akcije
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -336,6 +339,14 @@ export default function AdminUsersOverview() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(user.createdAt).toLocaleDateString('hr-HR')}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <button
+                      onClick={() => { window.location.href = `#admin-User?id=${user.id}`; }}
+                      className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-xs font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      👤 Uredi korisnika
+                    </button>
                   </td>
                 </tr>
               ))}

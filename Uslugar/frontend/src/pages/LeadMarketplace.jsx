@@ -19,7 +19,7 @@ export default function LeadMarketplace() {
     const token = localStorage.getItem('token');
     if (!token) {
       setLoading(false);
-      setError('Za pristup ekskluzivnim leadovima potrebno je prijaviti se kao pružatelj usluga.');
+      setError('Za pristup ekskluzivnim leadovima prijavite se ili registrirajte kao pružatelj usluga.');
       return;
     }
     loadLeads();

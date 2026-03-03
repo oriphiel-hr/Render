@@ -1,5 +1,8 @@
 import nodemailer from 'nodemailer';
 
+// Osnovni URL za frontend (public site)
+const FRONTEND_BASE_URL = process.env.FRONTEND_URL || 'https://www.uslugar.eu';
+
 // Kreiraj transporter (koristimo produkcijski SMTP, Mailpit samo za lokalne/test instance)
 // Za testiranje lokalno koristi Mailpit varijable: MAILPIT_SMTP_HOST, MAILPIT_SMTP_PORT, MAILPIT_SMTP_USER
 // U produkciji (NODE_ENV === 'production') uvijek koristi standardne SMTP varijable: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS
@@ -259,7 +262,8 @@ export const sendInvoiceEmail = async (toEmail, fullName, invoice, pdfBuffer) =>
 
   try {
     const invoiceAmount = (invoice.totalAmount / 100).toFixed(2);
-    const invoiceUrl = `${process.env.FRONTEND_URL || 'https://uslugar.oriph.io'}#invoices/${invoice.id}`;
+    // Vodi na listu faktura u novom frontendu
+    const invoiceUrl = `${FRONTEND_BASE_URL}#invoices`;
 
     await transporter.sendMail({
       from: `"Uslugar" <${getFromEmail()}>`,
@@ -430,7 +434,7 @@ export const sendVerificationConfirmationEmail = async (toEmail, fullName) => {
     return;
   }
 
-  const loginUrl = `${process.env.FRONTEND_URL || 'https://www.uslugar.eu'}/login`;
+  const loginUrl = `${FRONTEND_BASE_URL}#login`;
 
   try {
     await transporter.sendMail({
@@ -899,7 +903,7 @@ export const sendPaymentConfirmationEmail = async (toEmail, fullName, planName, 
             </div>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="https://uslugar.oriph.io/#leads" 
+              <a href="${FRONTEND_BASE_URL}#login?redirect=leads" 
                  style="background-color: #4CAF50; 
                         color: white; 
                         padding: 15px 40px; 
@@ -1125,7 +1129,7 @@ export const sendSubscriptionRefundEmail = async (toEmail, fullName, planName, r
             <p>Vaša pretplata je otkazana, a svi krediti su oduzeti.</p>
 
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.FRONTEND_URL || 'https://uslugar.oriph.io'}#subscription" 
+              <a href="${FRONTEND_BASE_URL}#subscription" 
                  style="background-color: #4CAF50; 
                         color: white; 
                         padding: 12px 24px; 
