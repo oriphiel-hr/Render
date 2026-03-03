@@ -209,7 +209,7 @@ async function main() {
       credits: 25,
       features: [
         '25 ekskluzivnih leadova mjesečno',
-        'Specifično za Građevinu u Zagrebu',
+        'Paket za građevinske radove',
         '1 lead = 1 izvođač (bez konkurencije)',
         'Refund ako klijent ne odgovori',
         'AI prioritet - viđeni prvi',
@@ -220,7 +220,7 @@ async function main() {
       isPopular: false,
       displayOrder: 2,
       isActive: true,
-      savings: 'Ušteda 171 EUR u odnosu na plaćanje po leadu (Zagreb popust)',
+      savings: 'Ušteda 171 EUR u odnosu na plaćanje po leadu',
       categoryId: gradevinaCategory.id,
       region: 'Zagreb'
     });
@@ -236,7 +236,7 @@ async function main() {
       credits: 50,
       features: [
         '50 ekskluzivnih leadova mjesečno',
-        'Specifično za IT usluge u Dalmaciji',
+        'Paket za IT usluge',
         '1 lead = 1 izvođač (bez konkurencije)',
         'Refund ako klijent ne odgovori',
         'AI prioritet - viđeni prvi',
@@ -249,7 +249,7 @@ async function main() {
       isPopular: false,
       displayOrder: 3,
       isActive: true,
-      savings: 'Ušteda 371 EUR u odnosu na plaćanje po leadu (Dalmacija popust)',
+      savings: 'Ušteda 371 EUR u odnosu na plaćanje po leadu',
       categoryId: itCategory.id,
       region: 'Dalmacija'
     });
@@ -265,7 +265,7 @@ async function main() {
       credits: 10,
       features: [
         '10 ekskluzivnih leadova mjesečno',
-        'Specifično za Arhitekte u Istri',
+        'Paket za arhitekte',
         '1 lead = 1 izvođač (bez konkurencije)',
         'Refund ako klijent ne odgovori',
         'ROI statistika',
@@ -275,7 +275,7 @@ async function main() {
       isPopular: false,
       displayOrder: 1,
       isActive: true,
-      savings: 'Ušteda 15 EUR u odnosu na plaćanje po leadu (Istra popust)',
+      savings: 'Ušteda 15 EUR u odnosu na plaćanje po leadu',
       categoryId: arhitektiCategory.id,
       region: 'Istra'
     });
