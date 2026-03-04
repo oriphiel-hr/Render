@@ -91,7 +91,6 @@ const About = () => {
                   <span>Queue sustav za pravednu distribuciju</span>
                 </li>
               </ul>
-            </div>
           </div>
         </div>
       </div>
