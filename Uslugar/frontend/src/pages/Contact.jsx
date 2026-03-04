@@ -1,6 +1,46 @@
-import React from 'react';
+import React, { useState } from 'react';
+import api from '../api';
 
 const Contact = () => {
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(null);
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    subject: '',
+    message: ''
+  });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await api.post('/contact', {
+        name: form.name,
+        email: form.email,
+        phone: form.phone || undefined,
+        subject: form.subject,
+        message: form.message
+      });
+      if (res.data?.success) {
+        setSuccess(true);
+        setForm({ name: '', email: '', phone: '', subject: '', message: '' });
+      } else {
+        setError(res.data?.error || 'Došlo je do greške.');
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || 'Došlo je do greške. Pokušajte ponovno.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-gray-50 min-h-screen">
@@ -91,7 +131,18 @@ const Contact = () => {
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
               💬 Pošaljite nam poruku
             </h2>
-            <form className="space-y-6">
+            {success && (
+              <div className="mb-6 p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200">
+                <p className="font-medium">✓ Hvala na poruci!</p>
+                <p className="text-sm mt-1">Primili smo vaš upit i javit ćemo vam se u roku od 24 sata. Provjerite email za potvrdu.</p>
+              </div>
+            )}
+            {error && (
+              <div className="mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200">
+                {error}
+              </div>
+            )}
+            <form className="space-y-6" onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
@@ -101,6 +152,9 @@ const Contact = () => {
                     type="text"
                     id="name"
                     name="name"
+                    value={form.name}
+                    onChange={handleChange}
+                    required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Vaše ime i prezime"
                   />
@@ -113,6 +167,9 @@ const Contact = () => {
                     type="email"
                     id="email"
                     name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="vas@email.com"
                   />
@@ -127,6 +184,8 @@ const Contact = () => {
                   type="tel"
                   id="phone"
                   name="phone"
+                  value={form.phone}
+                  onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="091 123 4567"
                 />
@@ -139,6 +198,9 @@ const Contact = () => {
                 <select
                   id="subject"
                   name="subject"
+                  value={form.subject}
+                  onChange={handleChange}
+                  required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">Odaberite predmet</option>
@@ -158,16 +220,20 @@ const Contact = () => {
                   id="message"
                   name="message"
                   rows="4"
+                  value={form.message}
+                  onChange={handleChange}
+                  required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Opišite svoje pitanje ili zahtjev..."
-                ></textarea>
+                />
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                disabled={loading}
+                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                📤 Pošalji poruku
+                {loading ? 'Šaljem...' : '📤 Pošalji poruku'}
               </button>
             </form>
           </div>

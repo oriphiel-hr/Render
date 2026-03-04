@@ -85,6 +85,20 @@ model SupportTicket {
   @@index([category])
 }
 
+// Kontakt upiti s web forme (ne zahtijeva prijavu)
+model ContactInquiry {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String   // general, technical, business, partnership, complaint
+  message   String
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([createdAt])
+}
+
 // Pozivnice za članove tima (direktor → potencijalni član)
 model TeamInvite {
   id         String   @id @default(cuid())

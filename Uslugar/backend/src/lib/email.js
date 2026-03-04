@@ -1311,6 +1311,92 @@ export const sendAddonUpsellEmail = async (
   }
 };
 
+/**
+ * Potvrda korisniku nakon slanja kontakt forme
+ */
+export const sendContactConfirmationToUser = async (toEmail, name) => {
+  if (!transporter) {
+    console.log('SMTP not configured, skipping contact confirmation email:', toEmail);
+    return;
+  }
+  try {
+    await transporter.sendMail({
+      from: `"Uslugar" <${getFromEmail()}>`,
+      to: toEmail,
+      subject: 'Hvala na upitu - Uslugar',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="UTF-8"></head>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background-color: #f8f9fa; padding: 30px; border-radius: 10px;">
+            <h1 style="color: #333; margin-bottom: 20px;">Hvala na poruci! 👋</h1>
+            <p style="font-size: 16px; color: #555;">Poštovani/a <strong>${name}</strong>,</p>
+            <p style="font-size: 16px; color: #555; line-height: 1.6;">
+              Primili smo vaš upit i javit ćemo vam se u roku od 24 sata.
+            </p>
+            <p style="font-size: 14px; color: #888; margin-top: 20px;">
+              Ako imate hitan upit, slobodno nas nazovite na 091 561 8258.
+            </p>
+            <p style="font-size: 12px; color: #999; text-align: center; margin-top: 30px;">
+              Uslugar - Platforma za pronalaženje lokalnih pružatelja usluga<br>
+              © ${new Date().getFullYear()} Uslugar.
+            </p>
+          </div>
+        </body>
+        </html>
+      `
+    });
+    console.log('[CONTACT] Confirmation email sent to:', toEmail);
+  } catch (error) {
+    console.error('[CONTACT] Error sending confirmation:', error);
+    throw error;
+  }
+};
+
+/**
+ * Obavijest adminu o novom kontakt upitu
+ */
+export const sendContactNotificationToAdmin = async ({ name, email, phone, subject, subjectLabel, message }) => {
+  if (!transporter) {
+    console.log('SMTP not configured, skipping contact admin notification');
+    return;
+  }
+  const toEmail = process.env.CONTACT_ADMIN_EMAIL || 'support@uslugar.hr';
+  try {
+    await transporter.sendMail({
+      from: `"Uslugar" <${getFromEmail()}>`,
+      to: toEmail,
+      replyTo: email,
+      subject: `[Uslugar Kontakt] ${subjectLabel} - ${name}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="UTF-8"></head>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background-color: #f8f9fa; padding: 30px; border-radius: 10px;">
+            <h1 style="color: #333; margin-bottom: 20px;">Novi kontakt upit</h1>
+            <p><strong>Ime:</strong> ${name}</p>
+            <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
+            <p><strong>Telefon:</strong> ${phone || '—'}</p>
+            <p><strong>Predmet:</strong> ${subjectLabel}</p>
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+            <p style="white-space: pre-wrap;">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
+            <p style="font-size: 12px; color: #999; margin-top: 20px;">
+              Odgovorite direktno na ${email} (Reply-To je postavljen).
+            </p>
+          </div>
+        </body>
+        </html>
+      `
+    });
+    console.log('[CONTACT] Admin notification sent to:', toEmail);
+  } catch (error) {
+    console.error('[CONTACT] Error sending admin notification:', error);
+    throw error;
+  }
+};
+
 export { transporter, createTransporter };
 export default { transporter, createTransporter };
 
