@@ -822,24 +822,26 @@ export default function App(){
                   </DropdownMenu>
                 )}
 
-                {/* Ime ulogirane osobe/tvrtke – desno uz Moj račun */}
-                {(() => {
-                  try {
-                    const u = JSON.parse(localStorage.getItem('user') || '{}');
-                    const name = u.companyName || u.fullName || u.email || null;
-                    const roleLabel = u.role === 'PROVIDER' ? 'Pružatelj usluge' : 'Korisnik Usluge';
-                    return name ? (
-                      <span className="nav-user-badge" title={`${name} (${roleLabel})`}>
-                        👤 {name} · {roleLabel}
-                      </span>
-                    ) : null;
-                  } catch { return null; }
-                })()}
-                {/* Moj račun – Traži usluge, Moji poslovi, Pružatelji, Chat, Profil, Postani pružatelj */}
+                {/* Moj račun – ime korisnika unutar okvira, iznad stavki menija */}
                 <DropdownMenu
                   title="Moj račun"
                   className={navLinkBase + ' ' + (['user', 'my-jobs', 'providers', 'chat', 'provider-profile', 'user-profile', 'upgrade-to-provider'].includes(tab) ? navLinkActive : navLinkInactive)}
                 >
+                  {(() => {
+                    try {
+                      const u = JSON.parse(localStorage.getItem('user') || '{}');
+                      const name = u.companyName || u.fullName || u.email || null;
+                      const roleLabel = u.role === 'PROVIDER' ? 'Pružatelj usluge' : 'Korisnik Usluge';
+                      return name ? (
+                        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50">
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white truncate" title={name}>
+                            {name}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{roleLabel}</p>
+                        </div>
+                      ) : null;
+                    } catch { return null; }
+                  })()}
                   <button
                     className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'user' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
                     onClick={() => setTab('user')}
