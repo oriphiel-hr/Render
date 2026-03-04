@@ -716,6 +716,11 @@ r.get('/plans', auth(false), async (req, res, next) => {
     if (region !== undefined) {
       filters.region = region === 'null' || region === '' ? null : region;
     }
+    // Kad nema filtera, vraćaj samo core planove (Basic, Premium, Pro)
+    if (Object.keys(filters).length === 0) {
+      filters.categoryId = null;
+      filters.region = null;
+    }
     
     // Provjeri je li korisnik autentificiran (za smanjene cijene)
     let userId = null;
