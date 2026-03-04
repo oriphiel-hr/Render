@@ -1142,7 +1142,8 @@ export default function App(){
             </div>
           )}
 
-          {/* Dark Mode Toggle - Mobile Menu */}
+          {/* Dark Mode Toggle - samo za neprijavljene (prijavljeni imaju u Profil sekciji) */}
+          {!token && (
           <div className="pt-4 border-t dark:border-gray-700">
             <button
               onClick={() => { toggleDarkMode(); }}
@@ -1152,10 +1153,27 @@ export default function App(){
               <span>{isDarkMode ? 'Svijetli način' : 'Tamni način'}</span>
             </button>
           </div>
+          )}
 
           {/* Korisnik usluge sekcija - samo za USER-e bez legalStatusId */}
           {token && !isProviderOrBusinessUser() && (
             <div>
+              {/* Ime korisnika unutar okvira, iznad stavki */}
+              {(() => {
+                try {
+                  const u = JSON.parse(localStorage.getItem('user') || '{}');
+                  const name = u.companyName || u.fullName || u.email || null;
+                  const roleLabel = 'Korisnik Usluge';
+                  return name ? (
+                    <div className="px-4 py-3 mb-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white truncate" title={name}>
+                        {name}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{roleLabel}</p>
+                    </div>
+                  ) : null;
+                } catch { return null; }
+              })()}
               <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Moji Poslovi</h3>
               <div className="space-y-1">
                 <button
@@ -1235,6 +1253,14 @@ export default function App(){
                     🏢 Postani pružatelj
                   </button>
                 )}
+                <button
+                  onClick={() => { toggleDarkMode(); setIsMobileMenuOpen(false); }}
+                  className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300 transition-colors flex items-center gap-2"
+                  aria-label={isDarkMode ? 'Svijetli način' : 'Tamni način'}
+                >
+                  {isDarkMode ? '☀️' : '🌙'}
+                  <span>{isDarkMode ? 'Svijetli način' : 'Tamni način'}</span>
+                </button>
                 <button
                   className="w-full text-left px-3 py-2 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-red-700 dark:text-red-300 transition-colors border-t border-gray-200 dark:border-gray-600 mt-1 pt-2"
                   onClick={() => { logout(); setTab('user'); setIsMobileMenuOpen(false); }}
