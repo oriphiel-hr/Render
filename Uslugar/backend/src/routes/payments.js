@@ -58,16 +58,21 @@ r.post('/create-checkout', auth(true, ['PROVIDER']), async (req, res, next) => {
       return res.status(400).json({ error: 'Plan is required' });
     }
 
+    // Base plan name (za slučaj composite key npr. PREMIUM_xxx_Zagreb)
+    const planName = typeof plan === 'string' ? plan.split('_')[0] : plan;
+
     // Get plan details from database (core plan: no category/region)
     const planDetails = await prisma.subscriptionPlan.findFirst({
       where: {
-        name: plan,
+        name: planName,
         categoryId: null,
-        region: null
+        region: null,
+        isActive: true
       }
     });
 
     if (!planDetails) {
+      console.warn('[CREATE-CHECKOUT] Invalid plan:', plan, 'resolved to:', planName);
       return res.status(400).json({ error: 'Invalid plan' });
     }
 

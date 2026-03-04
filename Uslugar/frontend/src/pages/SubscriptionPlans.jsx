@@ -58,12 +58,12 @@ export default function SubscriptionPlans() {
       
       console.log('Plans response:', plansRes.data);
       
-      // Convert array to object keyed by plan name (composite key for segmented: name_categoryId_region)
+      // Prikaži samo core planove (bez segmentiranih – Istra, Zagreb, Dalmacija itd.)
+      const corePlans = (plansRes.data || []).filter(p => !p.categoryId && !p.region);
+      
       const plansObj = {};
-      plansRes.data.forEach(plan => {
-        const key = (plan.categoryId || plan.region)
-          ? `${plan.name}_${plan.categoryId || ''}_${plan.region || ''}`
-          : plan.name;
+      corePlans.forEach(plan => {
+        const key = plan.name;
         plansObj[key] = plan;
         
         // Log discount info for debugging
@@ -147,7 +147,10 @@ export default function SubscriptionPlans() {
             <div>
               <p className="text-sm text-blue-700 mb-1">Trenutna pretplata:</p>
               <p className="text-3xl font-bold text-blue-900">
-                {plans[currentSubscription.plan]?.displayName || currentSubscription.plan}
+                {(() => {
+                  const baseKey = (currentSubscription.plan || '').split('_')[0];
+                  return plans[baseKey]?.displayName || baseKey || currentSubscription.plan;
+                })()}
               </p>
               <p className="text-sm text-blue-600 mt-1">
                 Status: <span className="font-semibold">{currentSubscription.status}</span>
@@ -201,7 +204,7 @@ export default function SubscriptionPlans() {
       {/* Plans Grid */}
       <div className="grid md:grid-cols-3 gap-8 mb-12">
         {Object.entries(plans).map(([key, plan]) => {
-          const isCurrentPlan = currentSubscription?.plan === key;
+          const isCurrentPlan = currentSubscription?.plan === key || (currentSubscription?.plan || '').startsWith(key + '_');
           const isPopular = plan.popular;
           
           return (
