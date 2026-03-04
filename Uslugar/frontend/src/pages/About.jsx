@@ -58,50 +58,17 @@ const About = () => {
 
         {/* Company Details */}
         <div className="bg-white rounded-lg shadow-md p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            🏢 Podaci o tvrtki
-          </h2>
-          
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                📍 Adresa
-              </h3>
-              <p className="text-gray-700">
-                Slavenskoga ulica 5<br />
-                10000 Zagreb<br />
-                Hrvatska
-              </p>
-            </div>
+          <p className="text-gray-700 mb-6 leading-relaxed">
+            Imate pitanje ili želite saznati više?{' '}
+            <a href="#contact" className="text-blue-600 hover:text-blue-800 font-medium hover:underline underline-offset-2">
+              Kontaktirajte nas →
+            </a>
+          </p>
 
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                📞 Kontakt
-              </h3>
-              <p className="text-gray-700">
-                <strong>Telefon:</strong> <a href="tel:+385915618258" className="inline-flex items-center gap-2 text-blue-700 hover:text-blue-900 hover:underline underline-offset-2 px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 border border-blue-100 transition-colors">📞 091 561 8258</a><br />
-                <strong>Kontakt osoba:</strong> Tomislav Kranjec, direktor
-              </p>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                💼 Naša djelatnost
-              </h3>
-              <p className="text-gray-700">
-                <strong>Djelatnost:</strong> Računalno programiranje i razvoj softvera<br />
-                <strong>Specijalizacija:</strong> Web aplikacije, mobilne aplikacije i IT savjetovanje<br />
-                <span className="text-sm text-gray-600">
-                  Pružamo usluge razvoja web stranica, mobilnih aplikacija, 
-                  e-trgovine i IT savjetovanja za poduzeća svih veličina.
-                </span>
-              </p>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                🌟 Zašto Uslugar?
-              </h3>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              🌟 Zašto Uslugar?
+            </h3>
               <ul className="text-gray-700 space-y-2">
                 <li className="flex items-start gap-2">
                   <span className="text-blue-500">🎯</span>

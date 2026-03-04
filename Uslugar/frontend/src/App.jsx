@@ -652,25 +652,6 @@ export default function App(){
             >
               Kontakt
             </button>
-            {token && (
-              <button
-                className={
-                  navLinkBase +
-                  ' ' +
-                  (tab === 'chat' ? navLinkActive : navLinkInactive)
-                }
-                onClick={() => setTab('chat')}
-                aria-label="Chat"
-                aria-current={tab === 'chat' ? 'page' : undefined}
-              >
-                💬 Chat
-                {chatWaitingCount > 0 && (
-                  <span className="ml-1 inline-flex items-center justify-center rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-100 px-1.5 py-0.5 text-[10px] font-semibold">
-                    {chatWaitingCount > 9 ? '9+' : chatWaitingCount}
-                  </span>
-                )}
-              </button>
-            )}
             {/* Secondary pages grouped u dropdown */}
             <DropdownMenu title="Više" className={navLinkBase + ' ' + navLinkInactive}>
               <button
@@ -797,6 +778,18 @@ export default function App(){
                       📋 Moji ekskluzivni leadovi
                     </button>
                     <button
+                      className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'chat' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
+                      onClick={() => { setTab('chat'); }}
+                      aria-label="Chat"
+                    >
+                      💬 Chat
+                      {chatWaitingCount > 0 && (
+                        <span className="ml-auto inline-flex items-center justify-center rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-100 px-2 py-0.5 text-[10px] font-semibold">
+                          {chatWaitingCount > 9 ? '9+' : chatWaitingCount}
+                        </span>
+                      )}
+                    </button>
+                    <button
                       className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
                       onClick={() => { setTab('team-locations'); }}
                     >
@@ -867,18 +860,21 @@ export default function App(){
                   >
                     👥 Pružatelji
                   </button>
-                  <button
-                    className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'chat' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
-                    onClick={() => setTab('chat')}
-                    aria-label="Chat"
-                  >
-                    💬 Chat
-                    {chatWaitingCount > 0 && (
-                      <span className="ml-auto inline-flex items-center justify-center rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-100 px-2 py-0.5 text-[10px] font-semibold">
-                        {chatWaitingCount > 9 ? '9+' : chatWaitingCount}
-                      </span>
-                    )}
-                  </button>
+                  {/* Chat samo za korisnike usluge (pružatelji imaju Chat u Leadovi dropdownu) */}
+                  {!isProviderOrBusinessUser() && (
+                    <button
+                      className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'chat' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
+                      onClick={() => setTab('chat')}
+                      aria-label="Chat"
+                    >
+                      💬 Chat
+                      {chatWaitingCount > 0 && (
+                        <span className="ml-auto inline-flex items-center justify-center rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-100 px-2 py-0.5 text-[10px] font-semibold">
+                          {chatWaitingCount > 9 ? '9+' : chatWaitingCount}
+                        </span>
+                      )}
+                    </button>
+                  )}
                   <button
                     className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + ((tab === 'provider-profile' || tab === 'user-profile') ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
                     onClick={() => {
@@ -969,7 +965,8 @@ export default function App(){
             >
               📞
             </button>
-            {token && (
+            {/* Chat ikona - samo za korisnike usluge (pružatelji imaju Chat u Leadovi) */}
+            {token && !isProviderOrBusinessUser() && (
               <button
                 className={'px-3 py-2 border rounded ' + (tab==='chat' ? 'bg-indigo-600 text-white' : 'border-indigo-600 text-indigo-600')}
                 onClick={() => navigateToTab('chat')}
@@ -1115,6 +1112,17 @@ export default function App(){
                   📋 Moji Leadovi
                 </button>
                 <button
+                  className={'w-full text-left px-3 py-2 rounded transition-colors ' + (tab==='chat' ? 'bg-indigo-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300')}
+                  onClick={() => { setTab('chat'); setIsMobileMenuOpen(false); }}
+                >
+                  💬 Chat
+                  {chatWaitingCount > 0 && (
+                    <span className="ml-2 inline-flex items-center justify-center rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-100 px-2 py-0.5 text-[10px] font-semibold">
+                      {chatWaitingCount > 9 ? '9+' : chatWaitingCount}
+                    </span>
+                  )}
+                </button>
+                <button
                   className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300 transition-colors"
                   onClick={() => { setTab('team-locations'); setIsMobileMenuOpen(false); }}
                 >
@@ -1198,16 +1206,21 @@ export default function App(){
             </div>
           )}
 
-          {/* Chat sekcija - za sve prijavljene korisnike */}
-          {token && (
+          {/* Chat sekcija - samo za korisnike usluge (pružatelji imaju Chat u Leadovi) */}
+          {token && !isProviderOrBusinessUser() && (
             <div>
               <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Komunikacija</h3>
               <div className="space-y-1">
                 <button
-                  className={'w-full text-left px-3 py-2 rounded transition-colors ' + (tab==='chat' ? 'bg-indigo-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300')}
+                  className={'w-full text-left px-3 py-2 rounded transition-colors flex items-center gap-2 ' + (tab==='chat' ? 'bg-indigo-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300')}
                   onClick={() => { setTab('chat'); setIsMobileMenuOpen(false); }}
                 >
                   💬 Chat
+                  {chatWaitingCount > 0 && (
+                    <span className="ml-auto inline-flex items-center justify-center rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-100 px-2 py-0.5 text-[10px] font-semibold">
+                      {chatWaitingCount > 9 ? '9+' : chatWaitingCount}
+                    </span>
+                  )}
                 </button>
               </div>
             </div>
