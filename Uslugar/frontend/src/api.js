@@ -1,11 +1,11 @@
 // src/api.js
 import axios from 'axios'
 
-// Production: https://api.uslugar.oriph.io/api (Render.com)
+// Production: https://api.uslugar.eu/api (Render.com)
 // Development: http://localhost:4000/api
 // Runtime (run-single): Playwright injektira window.__USLUGAR_API_URL__; inače ?apiUrl= u URL-u ili hash.
 function getApiBase() {
-  if (typeof window === 'undefined') return import.meta.env.VITE_API_URL || 'https://api.uslugar.oriph.io';
+  if (typeof window === 'undefined') return import.meta.env.VITE_API_URL || 'https://api.uslugar.eu';
   const injected = window.__USLUGAR_API_URL__;
   if (injected && typeof injected === 'string') {
     try { sessionStorage.setItem('uslugar_test_api_url', injected); } catch (_) {}
@@ -26,7 +26,7 @@ function getApiBase() {
     const fromStorage = sessionStorage.getItem('uslugar_test_api_url');
     if (fromStorage) return fromStorage;
   } catch (_) {}
-  return import.meta.env.VITE_API_URL || 'https://api.uslugar.oriph.io';
+  return import.meta.env.VITE_API_URL || 'https://api.uslugar.eu';
 }
 
 /** Trenutni API base (origin bez /api) – koristi za run-single apiBaseUrl da test koristi isti backend kao Admin. */
