@@ -1558,8 +1558,8 @@ export default function App(){
             </>
           )}
 
-          {/* Moderna tražilica - glavni fokus za prijavljene korisnike */}
-          {token && (
+          {/* Pretraži poslove – samo za pružatelje (oni traže leadove) */}
+          {token && isProviderOrBusinessUser() && (
             <div className="mb-8">
               {/* Pretraga - jedan jasan blok */}
               <div className="sticky top-0 z-40 bg-stone-50/98 dark:bg-gray-900 border-b border-stone-200/80 dark:border-gray-700 pb-6 mb-8 -mx-6 px-6 pt-5">
@@ -1732,8 +1732,32 @@ export default function App(){
             </div>
           )}
 
-          {/* Jobs grid/list - samo za prijavljene korisnike */}
-          {token && (
+          {/* Korisnik usluge – CTA Objavi posao + Moji poslovi (bez pretrage) */}
+          {token && !isProviderOrBusinessUser() && (
+            <div className="mt-6 p-6 md:p-8 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
+              <div className="max-w-xl mx-auto text-center">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Objavite svoj posao</h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">Opišite što vam treba i dobit ćete ponude od pouzdanih pružatelja usluga.</p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <button
+                    onClick={() => setShowJobForm(true)}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
+                  >
+                    Objavi posao
+                  </button>
+                  <button
+                    onClick={() => setTab('my-jobs')}
+                    className="px-6 py-3 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Moji poslovi
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Jobs grid/list - samo za pružatelje (oni pretražuju leadove) */}
+          {token && isProviderOrBusinessUser() && (
             <>
               {/* Rezultati - jasna sekcija s headerom */}
               <section className="mt-2">
