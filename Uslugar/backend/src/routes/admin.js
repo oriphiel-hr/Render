@@ -1982,6 +1982,39 @@ r.get('/verification-documents', auth(true, ['ADMIN']), async (req, res, next) =
 });
 
 /**
+ * GET /api/admin/contact-inquiries
+ * Pregled svih kontakt upita (admin)
+ * Query params: subject, limit, offset, startDate, endDate
+ */
+r.get('/contact-inquiries', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const { subject, limit = 50, offset = 0, startDate, endDate } = req.query;
+    const where = {};
+
+    if (subject) where.subject = subject;
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.gte = new Date(startDate);
+      if (endDate) where.createdAt.lte = new Date(endDate);
+    }
+
+    const [inquiries, total] = await Promise.all([
+      prisma.contactInquiry.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: Math.min(parseInt(limit) || 50, 200),
+        skip: parseInt(offset) || 0
+      }),
+      prisma.contactInquiry.count({ where })
+    ]);
+
+    res.json({ inquiries, total });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
  * GET /api/admin/sms-logs
  * Pregled svih SMS-ova (admin)
  * Query params: phone, type, status, limit, offset, startDate, endDate

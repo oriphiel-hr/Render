@@ -24,6 +24,7 @@ import AdminAuditLogs from '../pages/AdminAuditLogs'
 import AdminApiRequestLogs from '../pages/AdminApiRequestLogs'
 import AdminErrorLogs from '../pages/AdminErrorLogs'
 import AdminAddonEventLogs from '../pages/AdminAddonEventLogs'
+import AdminContactInquiries from '../pages/AdminContactInquiries'
 import api from '../api'
 
 // Model nazivi u PascalCase kako backend očekuje
@@ -79,7 +80,7 @@ export default function AdminRouter(){
     const adminPathRoutes = ['payments', 'provider-approvals', 'kyc-metrics', 'verification-documents', 
                              'platform-stats', 'moderation', 'sms-logs', 'invoices', 
                              'users-overview', 'cleanup', 'testing', 'testing-blocks', 'database', 'api-reference', 'user-types',
-                             'audit-logs', 'api-request-logs', 'error-logs', 'addon-event-logs'];
+                             'audit-logs', 'api-request-logs', 'error-logs', 'addon-event-logs', 'contact-inquiries'];
     // Dodaj sve MODELS kao admin rute
     const adminModelRoutes = MODELS.map(m => m.toLowerCase());
     
@@ -263,6 +264,7 @@ export default function AdminRouter(){
           <Route path="/admin/api-request-logs" element={<AdminApiRequestLogs />} />
           <Route path="/admin/error-logs" element={<AdminErrorLogs />} />
           <Route path="/admin/addon-event-logs" element={<AdminAddonEventLogs />} />
+          <Route path="/admin/contact-inquiries" element={<AdminContactInquiries />} />
           {/* Fallback ruta za nepoznate admin rute - redirect na prvi model */}
           <Route path="/admin/*" element={<Navigate to={`/admin/${MODELS[0]}`} replace />} />
         </Route>

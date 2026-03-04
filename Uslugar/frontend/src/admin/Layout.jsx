@@ -94,6 +94,13 @@ const NAVIGATION_GROUPS = [
     ]
   },
   {
+    title: 'Support',
+    icon: '💬',
+    items: [
+      { to: '/admin/contact-inquiries', label: 'Kontakt upiti', icon: '📩' }
+    ]
+  },
+  {
     title: 'Ostalo',
     icon: '⚙️',
     items: [
@@ -132,7 +139,8 @@ function getPageTitle(pathname) {
     'audit-logs': 'Audit Logs',
     'api-request-logs': 'API Request Logs',
     'error-logs': 'Error Logs',
-    'addon-event-logs': 'Addon Event Logs'
+    'addon-event-logs': 'Addon Event Logs',
+    'contact-inquiries': 'Kontakt upiti'
   }
   
   return specialPages[path] || 'Admin Panel'
