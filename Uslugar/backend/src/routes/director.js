@@ -205,7 +205,8 @@ r.post('/team/invite', auth(true, ['PROVIDER']), async (req, res, next) => {
     const normalizedEmail = email.trim().toLowerCase();
 
     // Ako korisnik već postoji i PROVIDER je, nema potrebe za pozivnicom – direktor ga može dodati direktno
-      const existingUser = await prisma.user.findUnique({
+    // findFirst jer email nije unique sam po sebi (unique je email+role)
+    const existingUser = await prisma.user.findFirst({
       where: { email: normalizedEmail },
       include: { providerProfile: true }
     });
