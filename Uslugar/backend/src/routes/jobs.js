@@ -175,28 +175,41 @@ r.get('/for-provider', auth(true, ['PROVIDER']), async (req, res, next) => {
 // create job - allow anonymous users (like Trebam.hr)
 r.post('/', async (req, res, next) => {
   try {
-    const { 
-      title, 
-      description, 
-      categoryId,
-      subcategoryId,
-      projectType,
-      customFields,
-      budgetMin, 
-      budgetMax, 
-      city, 
-      latitude, 
-      longitude, 
-      urgency = 'NORMAL', 
-      jobSize, 
-      deadline, 
-      images = [],
-      // Anonymous user contact info
-      contactEmail,
-      contactPhone,
-      contactName,
-      anonymous = false
-    } = req.body;
+    const body = req.body;
+    // Defensivno: prihvaćaj i uobičajene greške u ključevima (categoryld→categoryId, projectlype→projectType)
+    const title = body.title;
+    const description = body.description;
+    const categoryId = body.categoryId ?? body.categoryld;
+    const subcategoryId = body.subcategoryId;
+    const projectType = body.projectType ?? body.projectlype;
+    const customFieldsRaw = body.customFields;
+    const budgetMin = body.budgetMin;
+    const budgetMax = body.budgetMax;
+    const city = body.city;
+    const latitude = body.latitude;
+    const longitude = body.longitude;
+    const urgency = body.urgency ?? 'NORMAL';
+    const jobSize = body.jobSize;
+    const deadline = body.deadline;
+    const images = body.images ?? [];
+    const contactEmail = body.contactEmail;
+    const contactPhone = body.contactPhone;
+    const contactName = body.contactName;
+    const anonymous = body.anonymous ?? false;
+
+    // Normaliziraj customFields – brojčane vrijednosti pretvori u brojeve
+    const numericKeys = ['currentFloors', 'newFloors', 'surface', 'floors', 'plotSize', 'buildingYear', 'rooms', 'bathrooms', 'kitchens', 'walls'];
+    const customFields = customFieldsRaw && typeof customFieldsRaw === 'object'
+      ? Object.fromEntries(
+          Object.entries(customFieldsRaw).map(([k, v]) => {
+            if (numericKeys.includes(k) && v !== '' && v != null) {
+              const n = Number(v);
+              return [k, isNaN(n) ? v : n];
+            }
+            return [k, v];
+          })
+        )
+      : null;
     
     // If subcategory is provided, use it as the categoryId
     const finalCategoryId = subcategoryId || categoryId;
@@ -336,23 +349,35 @@ r.post('/', async (req, res, next) => {
 r.patch('/:jobId', auth(true), async (req, res, next) => {
   try {
     const { jobId } = req.params;
-    const {
-      title,
-      description,
-      categoryId,
-      subcategoryId,
-      projectType,
-      customFields,
-      budgetMin,
-      budgetMax,
-      city,
-      latitude,
-      longitude,
-      urgency = 'NORMAL',
-      jobSize,
-      deadline,
-      images = []
-    } = req.body;
+    const body = req.body;
+    const title = body.title;
+    const description = body.description;
+    const categoryId = body.categoryId ?? body.categoryld;
+    const subcategoryId = body.subcategoryId;
+    const projectType = body.projectType ?? body.projectlype;
+    const customFieldsRaw = body.customFields;
+    const budgetMin = body.budgetMin;
+    const budgetMax = body.budgetMax;
+    const city = body.city;
+    const latitude = body.latitude;
+    const longitude = body.longitude;
+    const urgency = body.urgency ?? 'NORMAL';
+    const jobSize = body.jobSize;
+    const deadline = body.deadline;
+    const images = body.images ?? [];
+
+    const numericKeys = ['currentFloors', 'newFloors', 'surface', 'floors', 'plotSize', 'buildingYear', 'rooms', 'bathrooms', 'kitchens', 'walls'];
+    const customFields = customFieldsRaw && typeof customFieldsRaw === 'object'
+      ? Object.fromEntries(
+          Object.entries(customFieldsRaw).map(([k, v]) => {
+            if (numericKeys.includes(k) && v !== '' && v != null) {
+              const n = Number(v);
+              return [k, isNaN(n) ? v : n];
+            }
+            return [k, v];
+          })
+        )
+      : undefined;
 
     const job = await prisma.job.findUnique({
       where: { id: jobId },
@@ -393,7 +418,7 @@ r.patch('/:jobId', auth(true), async (req, res, next) => {
         description,
         categoryId: finalCategoryId,
         projectType: projectType ?? job.projectType,
-        customFields: customFields ?? job.customFields,
+        customFields: customFields !== undefined ? customFields : job.customFields,
         budgetMin: budgetMin != null ? parseInt(budgetMin) : job.budgetMin,
         budgetMax: budgetMax != null ? parseInt(budgetMax) : job.budgetMax,
         city: city ?? job.city,
