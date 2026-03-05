@@ -179,9 +179,27 @@ export default function App(){
     sortBy: 'rating'
   });
   const [chatWaitingCount, setChatWaitingCount] = useState(0);
-  
+  const [providerMeta, setProviderMeta] = useState({ hasTeam: false, isDirector: false });
+
   // Mobile menu state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Dohvati hasTeam i isDirector za uvjetni prikaz Tim Lokacije i Direktor Dashboard
+  useEffect(() => {
+    if (!token || !isProviderOrBusinessUser()) {
+      setProviderMeta({ hasTeam: false, isDirector: false });
+      return;
+    }
+    api.get('/providers/me')
+      .then((res) => {
+        const p = res.data;
+        setProviderMeta({
+          hasTeam: !!(p?.isDirector || p?.companyId),
+          isDirector: !!p?.isDirector
+        });
+      })
+      .catch(() => setProviderMeta({ hasTeam: false, isDirector: false }));
+  }, [token]);
 
   // Ako je korisnik već prijavljen, ne nudimo login/registraciju – automatski preusmjeri na user tab
   useEffect(() => {
@@ -789,12 +807,14 @@ export default function App(){
                         </span>
                       )}
                     </button>
-                    <button
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
-                      onClick={() => { setTab('team-locations'); }}
-                    >
-                      📍 Tim Lokacije
-                    </button>
+                    {providerMeta.hasTeam && (
+                      <button
+                        className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
+                        onClick={() => { setTab('team-locations'); }}
+                      >
+                        📍 Tim Lokacije
+                      </button>
+                    )}
                     <button
                       className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
                       onClick={() => { setTab('roi'); }}
@@ -813,12 +833,14 @@ export default function App(){
                     >
                       📄 Fakture
                     </button>
-                    <button
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
-                      onClick={() => { setTab('director'); }}
-                    >
-                      👔 Direktor Dashboard
-                    </button>
+                    {providerMeta.isDirector && (
+                      <button
+                        className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
+                        onClick={() => { setTab('director'); }}
+                      >
+                        👔 Direktor Dashboard
+                      </button>
+                    )}
                   </DropdownMenu>
                 )}
 
@@ -1122,12 +1144,14 @@ export default function App(){
                     </span>
                   )}
                 </button>
-                <button
-                  className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300 transition-colors"
-                  onClick={() => { setTab('team-locations'); setIsMobileMenuOpen(false); }}
-                >
-                  📍 Tim Lokacije
-                </button>
+                {providerMeta.hasTeam && (
+                  <button
+                    className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300 transition-colors"
+                    onClick={() => { setTab('team-locations'); setIsMobileMenuOpen(false); }}
+                  >
+                    📍 Tim Lokacije
+                  </button>
+                )}
                 <button
                   className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300 transition-colors"
                   onClick={() => { setTab('roi'); setIsMobileMenuOpen(false); }}
@@ -1146,6 +1170,14 @@ export default function App(){
                 >
                   📄 Fakture
                 </button>
+                {providerMeta.isDirector && (
+                  <button
+                    className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300 transition-colors"
+                    onClick={() => { setTab('director'); setIsMobileMenuOpen(false); }}
+                  >
+                    👔 Direktor Dashboard
+                  </button>
+                )}
               </div>
             </div>
           )}
