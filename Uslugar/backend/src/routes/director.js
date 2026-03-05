@@ -68,7 +68,8 @@ async function getDirectorWithTeam(userId) {
               email: true,
               phone: true
             }
-          }
+          },
+          categories: { select: { name: true } }
         }
       }
     }
@@ -102,11 +103,11 @@ r.get('/team', auth(true, ['PROVIDER']), async (req, res, next) => {
       teamMembers: director.teamMembers.map(member => ({
         id: member.id,
         userId: member.userId,
-        fullName: member.user.fullName,
-        email: member.user.email,
-        phone: member.user.phone,
+        fullName: member.user?.fullName ?? '',
+        email: member.user?.email ?? '',
+        phone: member.user?.phone ?? null,
         isAvailable: member.isAvailable,
-        categories: member.categories.map(c => c.name)
+        categories: (member.categories ?? []).map(c => c.name)
       }))
     });
   } catch (e) {
