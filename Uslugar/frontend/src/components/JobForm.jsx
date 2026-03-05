@@ -140,23 +140,89 @@ const PROJECT_TYPES_BY_CATEGORY = {
     'Selidba stana',
     'Selidba ureda',
     'Prijevoz namještaja'
+  ],
+  // Arhitektura i dizajn
+  '3D vizualizacija': [
+    '3D render',
+    'Arhitektonska vizualizacija',
+    'Interior vizualizacija',
+    'Exterior vizualizacija',
+    'Virtualna turneja',
+    'Proizvodna vizualizacija',
+    'Ostalo'
+  ],
+  'Dizajneri interijera': [
+    'Dizajn interijera',
+    'Namještaj i dekor',
+    'Svetlosni dizajn',
+    'Renovacija',
+    'Ostalo'
+  ],
+  'Projektiranje građevina': [
+    'Novogradnja',
+    'Renovacija',
+    'Adaptacija',
+    'Statika',
+    'Legalizacija',
+    'Ostalo'
+  ],
+  'Vrtni dizajn': [
+    'Dizajn vrta',
+    'Krajobrazno uređenje',
+    'Sadnja i održavanje',
+    'Ostalo'
+  ],
+  // IT i web
+  'Web dizajn': [
+    'Novi web',
+    'Redizajn',
+    'Landing page',
+    'Održavanje',
+    'Ostalo'
+  ],
+  'Programiranje': [
+    'Web aplikacija',
+    'Mobilna aplikacija',
+    'API razvoj',
+    'Održavanje',
+    'Konzulting',
+    'Ostalo'
+  ],
+  'Mobilne aplikacije': [
+    'iOS',
+    'Android',
+    'Cross-platform',
+    'Održavanje',
+    'Ostalo'
+  ],
+  // Čišćenje (i varijante naziva)
+  'Čistoća i održavanje': [
+    'Stanovanje',
+    'Poslovni prostor',
+    'Nakon gradnje',
+    'Kancelarija',
+    'Deep clean'
+  ],
+  'Čišćenje kuće': [
+    'Stanovanje',
+    'Poslovni prostor',
+    'Nakon gradnje',
+    'Deep clean'
+  ],
+  'Čišćenje nakon gradnje': [
+    'Stan',
+    'Kuća',
+    'Poslovni prostor'
+  ],
+  'Čišćenje tepiha': [
+    'Stanovanje',
+    'Poslovni prostor',
+    'Deep clean'
   ]
 };
 
-// Opći projekti za kategorije koje nemaju specifične
-const DEFAULT_PROJECT_TYPES = [
-  'Renovacija',
-  'Gradnja',
-  'Popravak',
-  'Ugradnja',
-  'Servis',
-  'Održavanje',
-  'Dizajn',
-  'Planiranje',
-  'Čišćenje',
-  'Dostava',
-  'Ostalo'
-];
+// Za kategorije bez specifične konfiguracije – samo "Ostalo" (izbjegavamo miješanje npr. Čišćenje za 3D vizualizaciju)
+const DEFAULT_PROJECT_TYPES = ['Ostalo'];
 
 // Konfiguracija specifičnih polja ovisno o kategoriji i vrsti projekta
 const FIELD_CONFIGURATIONS = {
