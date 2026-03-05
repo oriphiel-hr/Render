@@ -443,7 +443,7 @@ export default function DirectorDashboard() {
                     >
                       <p className="font-semibold">{lead.job.title}</p>
                       <p className="text-sm text-gray-600">
-                        Od: {lead.provider.user.fullName} ({lead.provider.user.email})
+                        Od: {lead.provider?.fullName || '-'} ({lead.provider?.email || '-'})
                       </p>
                       <p className="text-sm text-gray-600">
                         Budžet: {lead.job.budgetMax} €

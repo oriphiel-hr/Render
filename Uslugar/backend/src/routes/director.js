@@ -490,13 +490,9 @@ r.get('/decisions', auth(true, ['PROVIDER']), async (req, res, next) => {
               }
             },
             provider: {
-              include: {
-                user: {
-                  select: {
-                    fullName: true,
-                    email: true
-                  }
-                }
+              select: {
+                fullName: true,
+                email: true
               }
             }
           },
