@@ -171,18 +171,23 @@ export default function MyJobs({ onNavigate, categories = [] }) {
 
   const handleOpenChat = async (job) => {
     try {
-      const jobOffers = offers[job.id] || job.offers || [];
-      const acceptedOffer = jobOffers.find(o => o.status === 'ACCEPTED');
+      // Provider: provjeri job.myOffer (iz my-offers API-ja)
+      // Korisnik: provjeri offers[job.id] – lista ponuda
+      const isProvider = user?.role === 'PROVIDER';
+      const hasAcceptedOffer = isProvider
+        ? job.myOffer?.status === 'ACCEPTED'
+        : (offers[job.id] || job.offers || []).some(o => o.status === 'ACCEPTED');
       
-      if (!acceptedOffer) {
+      if (!hasAcceptedOffer) {
         alert('Chat je dostupan samo za poslove s prihvaćenom ponudom.');
         return;
       }
 
       // Odredi drugog sudionika
-      // Ako je korisnik PROVIDER, drugi sudionik je vlasnik posla (job.userId)
-      // Ako je korisnik USER, drugi sudionik je pružatelj koji je poslao prihvaćenu ponudu (acceptedOffer.userId)
-      const otherParticipantId = user?.role === 'PROVIDER' ? job.userId : acceptedOffer.userId;
+      // Provider: drugi sudionik je vlasnik posla (job.userId)
+      // Korisnik: drugi sudionik je pružatelj s prihvaćenom ponudom
+      const acceptedOffer = !isProvider && (offers[job.id] || job.offers || []).find(o => o.status === 'ACCEPTED');
+      const otherParticipantId = isProvider ? job.userId : (acceptedOffer?.userId ?? job.userId);
 
       // Kreiraj ili dohvati chat room, zatim dohvati sobu po ID-u da poruke budu konzistentne
       try {
@@ -583,7 +588,7 @@ export default function MyJobs({ onNavigate, categories = [] }) {
                   )}
                   
                   {/* Chat gumb - ako postoji prihvaćena ponuda */}
-                  {(job.status === 'ACCEPTED' || job.status === 'IN_PROGRESS') && (
+                  {(job.status === 'IN_PROGRESS' || job.status === 'COMPLETED') && (
                     <div className="mt-4 pt-4 border-t flex flex-wrap gap-2">
                       <button
                         onClick={() => handleOpenChat(job)}
