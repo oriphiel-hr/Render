@@ -753,6 +753,16 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
                     onChange={(e) => setCustomFields({ ...customFields, [field.key]: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
+                ) : field.type === 'number' ? (
+                  <input
+                    type="number"
+                    value={customFields[field.key] ?? ''}
+                    onChange={(e) => setCustomFields({ ...customFields, [field.key]: e.target.value })}
+                    placeholder={field.placeholder}
+                    min={field.min ?? 1}
+                    step={field.step ?? 1}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
                 ) : (
                   <input
                     type={field.type || 'text'}
@@ -829,6 +839,7 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
           <input
             {...register('budgetMin')}
             type="number"
+            min={0}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="50"
           />
@@ -841,6 +852,7 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
           <input
             {...register('budgetMax')}
             type="number"
+            min={0}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="500"
           />

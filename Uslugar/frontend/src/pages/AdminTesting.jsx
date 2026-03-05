@@ -3545,6 +3545,7 @@ Write-Host "Tunel radi! Otvori http://localhost:8025" -ForegroundColor Green`}</
                           <label className="block text-xs font-medium mb-1">Capture Group:</label>
                           <input
                             type="number"
+                            min={1}
                             value={strategy.group || 1}
                             onChange={e => {
                               const strategies = [...(testData?.email?.linkExtraction?.strategies || [])]

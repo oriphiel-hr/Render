@@ -88,6 +88,7 @@ export default function AdminApiRequestLogs() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Status Code</label>
             <input
               type="number"
+              min={0}
               value={filters.statusCode}
               onChange={e => setFilters({ ...filters, statusCode: e.target.value, offset: 0 })}
               placeholder="200, 404, 500..."

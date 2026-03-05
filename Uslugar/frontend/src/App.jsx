@@ -1716,6 +1716,7 @@ export default function App(){
                           <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Min budžet (€)</label>
                           <input
                             type="number"
+                            min={0}
                             className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm"
                             placeholder="0"
                             value={filters.budgetMin}
@@ -1726,6 +1727,7 @@ export default function App(){
                           <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Max budžet (€)</label>
                           <input
                             type="number"
+                            min={0}
                             className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm"
                             placeholder="∞"
                             value={filters.budgetMax}

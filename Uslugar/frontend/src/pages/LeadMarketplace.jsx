@@ -157,6 +157,7 @@ export default function LeadMarketplace() {
         />
         <input
           type="number"
+          min={0}
           placeholder="Min budget"
           value={filters.minBudget}
           onChange={(e) => setFilters({...filters, minBudget: e.target.value})}
@@ -164,6 +165,7 @@ export default function LeadMarketplace() {
         />
         <input
           type="number"
+          min={0}
           placeholder="Max budget"
           value={filters.maxBudget}
           onChange={(e) => setFilters({...filters, maxBudget: e.target.value})}
