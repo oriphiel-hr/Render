@@ -210,13 +210,50 @@ export default function ProviderRegister({ onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setEmailError('');
+    setOibError('');
     setLoading(true);
 
     try {
-      // Validacija emaila prije slanja
+      // Validacija obaveznih polja – redom s jasnim porukama (izbjegavamo generičko "Ispunite polje")
+      if (!formData.fullName?.trim()) {
+        setError('Ime i prezime odgovorne osobe je obavezno.');
+        setLoading(false);
+        return;
+      }
+      if (!formData.email?.trim()) {
+        setError('Email je obavezan.');
+        setLoading(false);
+        return;
+      }
       if (!validateEmail(formData.email)) {
-        setError('Email adresa nije valjana');
-        setEmailError('Email adresa nije valjana');
+        setError('Email adresa nije valjana. Provjerite format (npr. ime@domena.hr).');
+        setEmailError('Email adresa nije valjana.');
+        setLoading(false);
+        return;
+      }
+      if (!formData.password) {
+        setError('Lozinka je obavezna. Minimalno 6 znakova.');
+        setLoading(false);
+        return;
+      }
+      if (formData.password.length < 6) {
+        setError('Lozinka mora imati minimalno 6 znakova.');
+        setLoading(false);
+        return;
+      }
+      if (!formData.phone?.trim()) {
+        setError('Telefon je obavezan.');
+        setLoading(false);
+        return;
+      }
+      if (!formData.city?.trim()) {
+        setError('Lokacija (grad) je obavezna. Unesite grad ili odaberite s karte.');
+        setLoading(false);
+        return;
+      }
+      if (formData.website && !/^https?:\/\/.+\..+/.test(formData.website.trim())) {
+        setError('Website mora biti valjan URL (npr. https://vasa-web.hr).');
         setLoading(false);
         return;
       }
@@ -388,7 +425,7 @@ export default function ProviderRegister({ onSuccess }) {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} noValidate className="space-y-6">
         {/* Osnovni podaci */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">Osnovni podaci</h3>
