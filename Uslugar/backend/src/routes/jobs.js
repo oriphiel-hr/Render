@@ -274,6 +274,9 @@ r.post('/', async (req, res, next) => {
       linkingTokenExpiresAt.setDate(linkingTokenExpiresAt.getDate() + 7); // 7 days
     }
     
+    const validUrgency = ['LOW', 'NORMAL', 'HIGH', 'URGENT'].includes(urgency) ? urgency : 'NORMAL';
+    const validJobSize = ['SMALL', 'MEDIUM', 'LARGE', 'EXTRA_LARGE'].includes(jobSize) ? jobSize : null;
+
     const job = await prisma.job.create({
       data: {
         title, 
@@ -286,8 +289,8 @@ r.post('/', async (req, res, next) => {
         city: city || null, 
         latitude: latitude ? parseFloat(latitude) : null,
         longitude: longitude ? parseFloat(longitude) : null,
-        urgency,
-        jobSize,
+        urgency: validUrgency,
+        jobSize: validJobSize,
         deadline: deadline ? new Date(deadline) : null,
         images: Array.isArray(images) ? images : [],
         userId: userId, // Will be null for anonymous users
@@ -342,7 +345,17 @@ r.post('/', async (req, res, next) => {
       ...job,
       message: anonymous ? 'Hvala na upitu! Poslali smo Vam e-mail s detaljima.' : 'Posao kreiran uspješno!'
     });
-  } catch (e) { next(e); }
+  } catch (e) {
+    console.error('[JOBS] POST /api/jobs error:', e.message, e.meta || e);
+    const isPrisma = e.code && String(e.code).startsWith('P');
+    if (isPrisma) {
+      return res.status(400).json({
+        error: 'Greška pri spremanju posla',
+        message: e.code === 'P2003' ? 'Odabrana kategorija ne postoji.' : (e.message || 'Ne možemo spremiti posao. Pokušajte ponovno.')
+      });
+    }
+    next(e);
+  }
 });
 
 // Ažuriraj posao – samo ako je status OPEN (vlasnik može mijenjati podatke dok nema prihvaćene ponude)
