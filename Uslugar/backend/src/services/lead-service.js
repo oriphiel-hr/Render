@@ -2,7 +2,7 @@
 import { prisma } from '../lib/prisma.js';
 import { deductCredits, refundCredits } from './credit-service.js';
 import { notifyProvider, notifyClient } from '../lib/notifications.js';
-import { isWithinRadius, findClosestTeamLocation, sortJobsByDistance } from '../lib/geo-utils.js';
+import { isWithinRadius, findClosestTeamLocation, sortJobsByDistance, calculateDistance } from '../lib/geo-utils.js';
 import Stripe from 'stripe';
 
 async function createLeadActivity(purchaseId, providerId, type, label, message, metadata = null) {
@@ -206,7 +206,23 @@ export async function purchaseLead(jobId, providerId, options = {}) {
       // Ne baci grešku - lead je kupljen, chat se može kreirati kasnije
     }
 
-    // 9. Ažuriraj ROI statistiku
+    // 9b. Ako je kupac direktor, automatski dodaj lead u interni queue tvrtke
+    try {
+      const directorProfile = await prisma.providerProfile.findFirst({
+        where: { userId: providerId, isDirector: true },
+        select: { id: true }
+      });
+      if (directorProfile) {
+        const { addLeadToCompanyQueue } = await import('./company-lead-distribution.js');
+        await addLeadToCompanyQueue(jobId, directorProfile.id);
+        console.log(`[LEAD] Lead dodan u interni queue tvrtke (direktor)`);
+      }
+    } catch (queueError) {
+      console.error('[LEAD] Greška pri dodavanju leada u interni queue:', queueError);
+      // Ne baci grešku - lead je kupljen, ručna dodjela je moguća
+    }
+
+    // 10. Ažuriraj ROI statistiku
     await updateProviderROI(providerId, {
       leadsPurchased: 1,
       creditsSpent: usedCredits ? leadPrice : 0 // Ako se koristi Stripe, ne trošimo interne kredite
@@ -926,6 +942,7 @@ export async function getAvailableLeads(providerId, filters = {}) {
     where: { userId: providerId },
     include: { 
       categories: true,
+      user: { select: { city: true, latitude: true, longitude: true } },
       teamLocations: {
         where: { isActive: true } // Samo aktivne lokacije
       }
@@ -998,8 +1015,20 @@ export async function getAvailableLeads(providerId, filters = {}) {
     // Sortiraj po udaljenosti do najbliže lokacije
     leads = sortJobsByDistance(leads, provider.teamLocations);
   } else {
-    // Fallback: ako nema tim lokacije, sortiraj po quality score
-    leads = leads.sort((a, b) => (b.qualityScore || 0) - (a.qualityScore || 0));
+    // Fallback: nema tim lokacije – izračunaj udaljenost iz User (grad/koordinate)
+    const userLat = provider.user?.latitude ?? null;
+    const userLon = provider.user?.longitude ?? null;
+    const userCity = provider.user?.city ?? null;
+    leads = leads.map(job => {
+      let distanceKm = Infinity;
+      if (job.latitude && job.longitude && userLat != null && userLon != null) {
+        distanceKm = calculateDistance(userLat, userLon, job.latitude, job.longitude);
+      } else if (job.city && userCity && String(job.city).toLowerCase() === String(userCity).toLowerCase()) {
+        distanceKm = 0;
+      }
+      return { ...job, distanceKm: Math.round(distanceKm * 10) / 10, nearestTeamLocation: null };
+    });
+    leads.sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
   }
 
   // Pay-per-contact: Skrij kontakt informacije (kontakt se otključava nakon kupovine + unlock)

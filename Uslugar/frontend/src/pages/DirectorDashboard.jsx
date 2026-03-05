@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
+import TeamMap from '../components/TeamMap';
 
 export default function DirectorDashboard() {
   const [team, setTeam] = useState(null);
@@ -9,10 +10,11 @@ export default function DirectorDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('team'); // 'team', 'finances', 'decisions', 'lead-queue'
+  const [teamView, setTeamView] = useState('list'); // 'list' | 'map'
   const [newMemberEmail, setNewMemberEmail] = useState('');
   const [leadQueue, setLeadQueue] = useState(null);
-  const [selectedQueueId, setSelectedQueueId] = useState(null);
-  const [assignToMemberId, setAssignToMemberId] = useState('');
+  const [assignOptionsByJob, setAssignOptionsByJob] = useState({}); // jobId -> { options, loading }
+  const [expandedAssignEntryId, setExpandedAssignEntryId] = useState(null); // queue entry id
 
   useEffect(() => {
     checkDirectorStatus();
@@ -161,6 +163,25 @@ export default function DirectorDashboard() {
     }
   };
 
+  const loadAssignOptions = async (jobId) => {
+    if (!jobId) return;
+    const existing = assignOptionsByJob[jobId];
+    if (existing?.options || existing?.loading) return;
+    setAssignOptionsByJob((prev) => ({ ...prev, [jobId]: { options: null, loading: true } }));
+    try {
+      const res = await api.get(`/director/team/assign-options?jobId=${jobId}`);
+      setAssignOptionsByJob((prev) => ({
+        ...prev,
+        [jobId]: { options: res.data.options, jobCity: res.data.jobCity, loading: false }
+      }));
+    } catch (err) {
+      setAssignOptionsByJob((prev) => ({
+        ...prev,
+        [jobId]: { options: [], loading: false }
+      }));
+    }
+  };
+
   if (loading && !isDirector) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -273,46 +294,85 @@ export default function DirectorDashboard() {
             </form>
           </div>
 
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => setTeamView('list')}
+              className={`px-4 py-2 rounded-lg font-medium text-sm ${teamView === 'list' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              📋 Lista
+            </button>
+            <button
+              onClick={() => setTeamView('map')}
+              className={`px-4 py-2 rounded-lg font-medium text-sm ${teamView === 'map' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              🗺️ Mapa
+            </button>
+          </div>
+
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Članovi Tima</h2>
             {team.teamMembers.length === 0 ? (
               <p className="text-gray-500">Nemate članova tima</p>
+            ) : teamView === 'map' ? (
+              <TeamMap members={team.teamMembers} />
             ) : (
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {team.teamMembers.map((member) => (
                   <div
                     key={member.id}
-                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
+                    className="rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
                   >
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{member.fullName}</h3>
-                      <p className="text-sm text-gray-600">{member.email}</p>
-                      {member.phone && (
-                        <p className="text-sm text-gray-600">{member.phone}</p>
-                      )}
-                      <div className="mt-2">
-                        <span className={`px-2 py-1 text-xs rounded ${
-                          member.isAvailable
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
+                    <div className="p-5">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg">
+                            {(member.fullName || '?').charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-gray-900">{member.fullName}</h3>
+                            <p className="text-xs text-gray-600 truncate max-w-[180px]">{member.email}</p>
+                          </div>
+                        </div>
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          member.isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                         }`}>
                           {member.isAvailable ? 'Dostupan' : 'Nedostupan'}
                         </span>
                       </div>
-                      {member.categories.length > 0 && (
-                        <div className="mt-2">
-                          <span className="text-xs text-gray-500">
-                            Kategorije: {member.categories.join(', ')}
-                          </span>
+                      {member.phone && (
+                        <p className="text-sm text-gray-600 mb-2">📞 {member.phone}</p>
+                      )}
+                      {member.city && (
+                        <p className="text-sm text-gray-600 mb-2 flex items-center gap-1">
+                          📍 {member.city}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="inline-flex items-center px-2 py-1 rounded-md bg-indigo-50 text-indigo-700 text-xs font-medium">
+                          {member.activeJobsCount ?? 0} aktivnih poslova
+                        </span>
+                      </div>
+                      {member.categories?.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {member.categories.map((cat) => (
+                            <span
+                              key={cat}
+                              className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs"
+                            >
+                              {cat}
+                            </span>
+                          ))}
                         </div>
                       )}
                     </div>
-                    <button
-                      onClick={() => removeTeamMember(member.id)}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-                    >
-                      Ukloni
-                    </button>
+                    <div className="px-5 py-3 bg-gray-50 border-t border-gray-100">
+                      <button
+                        onClick={() => removeTeamMember(member.id)}
+                        className="text-sm text-red-600 hover:text-red-700 font-medium"
+                      >
+                        Ukloni iz tima
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -545,31 +605,22 @@ export default function DirectorDashboard() {
 
                     {entry.status === 'PENDING' && team && team.teamMembers.length > 0 && (
                       <div className="mt-4 pt-4 border-t border-gray-200">
-                        <div className="flex gap-2 flex-wrap">
+                        <div className="flex gap-2 flex-wrap items-center">
                           <button
                             onClick={() => handleAutoAssign(entry.id)}
                             className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm"
                           >
                             🤖 Auto-assign
                           </button>
-                          <select
-                            value={assignToMemberId}
-                            onChange={(e) => {
-                              setAssignToMemberId(e.target.value);
-                              if (e.target.value) {
-                                handleManualAssign(entry.id, e.target.value);
-                                setAssignToMemberId('');
-                              }
+                          <button
+                            onClick={() => {
+                              setExpandedAssignEntryId(expandedAssignEntryId === entry.id ? null : entry.id);
+                              loadAssignOptions(entry.jobId);
                             }}
-                            className="px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                            className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
                           >
-                            <option value="">Odaberi tim člana...</option>
-                            {team.teamMembers.map((member) => (
-                              <option key={member.id} value={member.id}>
-                                {member.fullName} ({member.email})
-                              </option>
-                            ))}
-                          </select>
+                            {expandedAssignEntryId === entry.id ? '▼ Sakrij izbor' : '👤 Odaberi tim člana'}
+                          </button>
                           <button
                             onClick={() => {
                               const reason = prompt('Razlog odbijanja:');
@@ -582,6 +633,54 @@ export default function DirectorDashboard() {
                             ❌ Odbij
                           </button>
                         </div>
+                        {expandedAssignEntryId === entry.id && (
+                          <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <p className="text-xs text-gray-600 mb-2">
+                              Posao: {entry.job?.user?.city || 'Nepoznata lokacija'} · Odaberi člana (prikazana udaljenost od posla)
+                            </p>
+                            {(() => {
+                              const data = assignOptionsByJob[entry.jobId];
+                              if (!data) {
+                                return <p className="text-sm text-gray-500">Učitavanje...</p>;
+                              }
+                              if (data.loading) {
+                                return <p className="text-sm text-gray-500">Učitavanje...</p>;
+                              }
+                              const options = data.options || [];
+                              return (
+                                <div className="space-y-2 max-h-48 overflow-y-auto">
+                                  {options.map((opt) => (
+                                    <button
+                                      key={opt.id}
+                                      onClick={() => {
+                                        handleManualAssign(entry.id, opt.id);
+                                        setExpandedAssignEntryId(null);
+                                      }}
+                                      disabled={!opt.isAvailable}
+                                      className={`w-full text-left px-3 py-2 rounded-lg border transition flex justify-between items-center ${
+                                        opt.isAvailable
+                                          ? 'border-gray-200 hover:border-indigo-300 hover:bg-indigo-50'
+                                          : 'border-gray-100 bg-gray-100 text-gray-500 cursor-not-allowed'
+                                      }`}
+                                    >
+                                      <span className="font-medium text-gray-900">{opt.fullName}</span>
+                                      <span className="text-xs text-gray-600 flex items-center gap-2">
+                                        {opt.activeJobsCount > 0 && (
+                                          <span>{opt.activeJobsCount} aktivnih</span>
+                                        )}
+                                        {opt.distanceKm !== null && opt.distanceKm !== undefined && (
+                                          <span className={opt.sameCity ? 'text-green-600' : ''}>
+                                            {opt.sameCity || opt.distanceKm === 0 ? '📍 Isti grad' : `~${opt.distanceKm} km`}
+                                          </span>
+                                        )}
+                                      </span>
+                                    </button>
+                                  ))}
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

@@ -1,10 +1,12 @@
 /**
  * USLUGAR EXCLUSIVE - Team Category Matching Service
  * 
- * Uspoređuje kategorije korisnika s vještinama timova kako bi lead preuzeo najrelevantniji specijalist
+ * Uspoređuje kategorije korisnika s vještinama timova kako bi lead preuzeo najrelevantniji specijalist.
+ * Uz kategoriju uzima u obzir i udaljenost (prioritizira bliže članove).
  */
 
 import { prisma } from '../lib/prisma.js';
+import { calculateDistance } from '../lib/geo-utils.js';
 
 /**
  * Izračunaj match score između kategorije posla i kategorija tim člana
@@ -50,7 +52,7 @@ export async function findBestTeamMatches(jobId, companyId) {
       throw new Error('Job not found');
     }
 
-    // Dohvati sve tim članove tvrtke
+    // Dohvati sve tim članove tvrtke (s lokacijama)
     const teamMembers = await prisma.providerProfile.findMany({
       where: {
         companyId,
@@ -69,8 +71,15 @@ export async function findBestTeamMatches(jobId, companyId) {
             id: true,
             fullName: true,
             email: true,
-            city: true
+            city: true,
+            latitude: true,
+            longitude: true
           }
+        },
+        teamLocations: {
+          where: { isActive: true },
+          orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+          take: 1
         }
       }
     });
@@ -79,20 +88,36 @@ export async function findBestTeamMatches(jobId, companyId) {
       return [];
     }
 
-    // Izračunaj match score za svakog tim člana
+    const jobLat = job.latitude;
+    const jobLon = job.longitude;
+    const jobCity = job.city;
+
+    // Izračunaj match score i udaljenost za svakog tim člana
     const matches = teamMembers.map(member => {
       const categoryIds = member.categories.map(cat => cat.id);
       const matchScore = calculateCategoryMatchScore(job.categoryId, categoryIds);
-      
+      const loc = member.teamLocations?.[0] || member.user;
+      const lat = loc?.latitude ?? member.user?.latitude ?? null;
+      const lon = loc?.longitude ?? member.user?.longitude ?? null;
+      let distanceKm = Infinity;
+      if (jobLat && jobLon && lat != null && lon != null) {
+        distanceKm = calculateDistance(lat, lon, jobLat, jobLon);
+      } else if (jobCity && (loc?.city || member.user?.city) && jobCity === (loc?.city || member.user?.city)) {
+        distanceKm = 0; // Isti grad
+      }
       return {
         teamMember: member,
         matchScore,
-        categoryIds
+        categoryIds,
+        distanceKm
       };
     });
 
-    // Sortiraj po match score-u (viši = bolji)
-    matches.sort((a, b) => b.matchScore - a.matchScore);
+    // Sortiraj: prvo po match score (viši = bolji), zatim po udaljenosti (manja = bolja)
+    matches.sort((a, b) => {
+      if (b.matchScore !== a.matchScore) return b.matchScore - a.matchScore;
+      return a.distanceKm - b.distanceKm;
+    });
 
     // Filtriraj samo one s match score > 0
     const validMatches = matches.filter(m => m.matchScore > 0);

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { auth } from '../lib/auth.js';
 import { uploadDocument, getImageUrl } from '../lib/upload.js';
+import { calculateDistance } from '../lib/geo-utils.js';
 
 const r = Router();
 
@@ -16,7 +17,10 @@ r.get('/', async (req, res, next) => {
       hasLicenses,
       isAvailable,
       search,
-      sortBy = 'rating' // 'rating', 'badges', 'recent'
+      sortBy = 'rating', // 'rating', 'badges', 'recent', 'distance'
+      userLat,
+      userLon,
+      centerCity // Alternativa: grad za centar pretrage (geocoding na klijentu)
     } = req.query;
 
     // Build where clause
@@ -62,18 +66,29 @@ r.get('/', async (req, res, next) => {
             fullName: true,
             email: true,
             phone: true,
-            city: true
+            city: true,
+            latitude: true,
+            longitude: true
           }
         },
         categories: true,
         licenses: {
           where: { isVerified: true }
+        },
+        teamLocations: {
+          where: { isActive: true },
+          orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+          take: 1
         }
       },
-      orderBy: getOrderBy(sortBy)
+      orderBy: sortBy === 'distance' ? undefined : getOrderBy(sortBy)
     });
 
-    // Calculate ratings and filter by minRating
+    const lat = userLat ? parseFloat(userLat) : null;
+    const lon = userLon ? parseFloat(userLon) : null;
+    const hasUserLocation = lat != null && lon != null && !isNaN(lat) && !isNaN(lon);
+
+    // Calculate ratings, distance, and filter by minRating
     const providersWithRatings = await Promise.all(
       providers.map(async (provider) => {
         const reviews = await prisma.review.findMany({
@@ -85,10 +100,26 @@ r.get('/', async (req, res, next) => {
           : 0;
         const ratingCount = reviews.length;
 
+        const loc = provider.teamLocations?.[0] || provider.user;
+        const pLat = loc?.latitude ?? provider.user?.latitude ?? null;
+        const pLon = loc?.longitude ?? provider.user?.longitude ?? null;
+        const pCity = loc?.city || provider.user?.city || null;
+
+        let distanceKm = null;
+        if (hasUserLocation && pLat != null && pLon != null) {
+          distanceKm = Math.round(calculateDistance(lat, lon, pLat, pLon) * 10) / 10;
+        } else if (centerCity && pCity && String(centerCity).toLowerCase() === String(pCity).toLowerCase()) {
+          distanceKm = 0;
+        }
+
         return {
           ...provider,
           ratingAvg,
-          ratingCount
+          ratingCount,
+          latitude: pLat,
+          longitude: pLon,
+          city: pCity,
+          distanceKm
         };
       })
     );
@@ -118,7 +149,13 @@ r.get('/', async (req, res, next) => {
     }
 
     // Re-sort after filtering
-    if (sortBy === 'badges') {
+    if (sortBy === 'distance' && (hasUserLocation || centerCity)) {
+      filtered.sort((a, b) => {
+        const da = a.distanceKm ?? Infinity;
+        const db = b.distanceKm ?? Infinity;
+        return da - db;
+      });
+    } else if (sortBy === 'badges') {
       filtered.sort((a, b) => {
         const badgesA = getBadgeCount(a);
         const badgesB = getBadgeCount(b);

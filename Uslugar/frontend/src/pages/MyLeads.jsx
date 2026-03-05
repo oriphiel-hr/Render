@@ -1,8 +1,8 @@
 // USLUGAR EXCLUSIVE - My Leads Page
 import React, { useState, useEffect } from 'react';
-import { getMyLeads, markLeadContacted, markLeadConverted, requestRefund, getCreditsBalance, exportMyLeadsCSV, exportCreditsHistoryCSV, unlockContact, getAssignedLeads, updateAssignedLeadStatus, updateLeadPurchaseCrm, getLeadActivities, addLeadNote } from '../api/exclusive';
+import { getMyLeads, markLeadContacted, markLeadConverted, requestRefund, getCreditsBalance, exportMyLeadsCSV, exportCreditsHistoryCSV, unlockContact, getAssignedLeads, updateAssignedLeadStatus, updateLeadPurchaseCrm, getLeadActivities, addLeadNote, addLeadToCompanyQueue, getDirectorLeadQueue } from '../api/exclusive';
 
-export default function MyLeads() {
+export default function MyLeads({ isDirector = false }) {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -18,12 +18,26 @@ export default function MyLeads() {
   const [activitiesByPurchase, setActivitiesByPurchase] = useState({});
   const [activitiesLoadingId, setActivitiesLoadingId] = useState(null);
   const [newNote, setNewNote] = useState({});
+  const [addingToQueueId, setAddingToQueueId] = useState(null);
+  const [inQueueJobIds, setInQueueJobIds] = useState(new Set());
 
   useEffect(() => {
     loadLeads();
     loadCredits();
     loadAssignedLeads();
   }, [filter]);
+
+  useEffect(() => {
+    if (isDirector) {
+      getDirectorLeadQueue()
+        .then((res) => {
+          const queue = res.data?.queue || [];
+          const ids = new Set(queue.map((e) => e.jobId));
+          setInQueueJobIds(ids);
+        })
+        .catch(() => setInQueueJobIds(new Set()));
+    }
+  }, [isDirector]);
 
   const loadAssignedLeads = async () => {
     try {
@@ -210,6 +224,20 @@ export default function MyLeads() {
       console.error('Error loading lead activities', err);
     } finally {
       setActivitiesLoadingId(null);
+    }
+  };
+
+  const handleAddToQueue = async (jobId) => {
+    if (!jobId) return;
+    try {
+      setAddingToQueueId(jobId);
+      await addLeadToCompanyQueue(jobId);
+      setInQueueJobIds((prev) => new Set([...prev, jobId]));
+      alert('✅ Lead dodan u interni queue. Možete ga dodijeliti tim članu u Direktor Dashboardu → Interni Lead Queue.');
+    } catch (err) {
+      alert('Greška: ' + (err.response?.data?.message || err.response?.data?.error || 'Neuspjelo'));
+    } finally {
+      setAddingToQueueId(null);
     }
   };
 
@@ -529,6 +557,34 @@ export default function MyLeads() {
                   <span>Konvertirano: {new Date(purchase.convertedAt).toLocaleDateString('hr-HR')}</span>
                 )}
               </div>
+
+              {/* Direktor: dodaj u interni queue */}
+              {isDirector && (purchase.jobId || purchase.job?.id) && !inQueueJobIds.has(purchase.jobId || purchase.job?.id) && (
+                <div className="mb-4">
+                  <button
+                    onClick={() => handleAddToQueue(purchase.jobId || purchase.job?.id)}
+                    disabled={addingToQueueId === (purchase.jobId || purchase.job?.id)}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium text-sm disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {addingToQueueId === (purchase.jobId || purchase.job?.id) ? (
+                      <>
+                        <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                        Dodavanje...
+                      </>
+                    ) : (
+                      <>📋 Dodaj u interni queue</>
+                    )}
+                  </button>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Dodaj lead u interni queue tvrtke da ga možete dodijeliti članu tima u Direktor Dashboardu.
+                  </p>
+                </div>
+              )}
+              {isDirector && (purchase.jobId || purchase.job?.id) && inQueueJobIds.has(purchase.jobId || purchase.job?.id) && (
+                <div className="mb-4 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg text-sm text-indigo-800">
+                  ✓ Lead je u internom queueu. Dodijelite ga tim članu u Direktor Dashboardu → Interni Lead Queue.
+                </div>
+              )}
 
               {/* Action Buttons */}
               <div className="flex gap-2">

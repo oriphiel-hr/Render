@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function ProviderFilter({ filters, setFilters, categories, onReset }) {
+export default function ProviderFilter({ filters, setFilters, categories, onReset, onUseMyLocation }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 border border-gray-200 dark:border-gray-700">
       <div className="flex justify-between items-center mb-4">
@@ -47,10 +47,10 @@ export default function ProviderFilter({ filters, setFilters, categories, onRese
           </select>
         </div>
 
-        {/* City */}
+        {/* City / Centar pretrage */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Lokacija
+            Lokacija / Grad
           </label>
           <input
             type="text"
@@ -89,6 +89,7 @@ export default function ProviderFilter({ filters, setFilters, categories, onRese
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="rating">Ocjena ⭐</option>
+            <option value="distance">Udaljenost 📍</option>
             <option value="badges">Broj badge-ova 🏅</option>
             <option value="recent">Najnoviji 📅</option>
           </select>
@@ -140,6 +141,18 @@ export default function ProviderFilter({ filters, setFilters, categories, onRese
               Samo dostupni 🟢
             </span>
           </label>
+
+          {filters.sortBy === 'distance' && (
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={() => onUseMyLocation && onUseMyLocation()}
+                className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+              >
+                📍 Koristi moju lokaciju
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

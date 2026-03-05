@@ -123,11 +123,17 @@ const ProviderCard = ({ provider, onViewProfile, onContact }) => {
           )}
 
           <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 flex-wrap gap-1">
+              {provider.distanceKm != null && (
+                <span className="font-medium text-blue-600">~{provider.distanceKm} km</span>
+              )}
+              {(provider.city || provider.user?.city) && (
+                <span>📍 {provider.city || provider.user?.city}</span>
+              )}
               {provider.experience && (
                 <span>📅 {provider.experience} godina iskustva</span>
               )}
-              {provider.serviceArea && (
+              {provider.serviceArea && !provider.city && (
                 <span>📍 {provider.serviceArea}</span>
               )}
             </div>
@@ -139,6 +145,18 @@ const ProviderCard = ({ provider, onViewProfile, onContact }) => {
             </div>
           </div>
 
+          {((provider.latitude != null && provider.longitude != null) || (provider.user?.latitude != null && provider.user?.longitude != null)) && (
+            <div className="mb-4">
+              <a
+                href={`https://www.google.com/maps?q=${provider.latitude ?? provider.user?.latitude},${provider.longitude ?? provider.user?.longitude}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline"
+              >
+                🗺️ Otvori u Google Maps
+              </a>
+            </div>
+          )}
           {provider.website && (
             <div className="mb-4">
               <a

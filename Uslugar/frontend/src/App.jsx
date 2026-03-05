@@ -7,6 +7,7 @@ import JobCard from './components/JobCard';
 import JobForm from './components/JobForm';
 import ProviderCard from './components/ProviderCard';
 import ProviderFilter from './components/ProviderFilter';
+import ProvidersMap from './components/ProvidersMap';
 import ReviewList from './components/ReviewList';
 import Login from './pages/Login';
 import UserRegister from './pages/UserRegister';
@@ -178,6 +179,8 @@ export default function App(){
     isAvailable: null,
     sortBy: 'rating'
   });
+  const [providerUserLocation, setProviderUserLocation] = useState(null); // { lat, lon } za sort by distance
+  const [providersView, setProvidersView] = useState('list'); // 'list' | 'map'
   const [chatWaitingCount, setChatWaitingCount] = useState(0);
   const [providerMeta, setProviderMeta] = useState({ hasTeam: false, isDirector: false });
 
@@ -343,11 +346,17 @@ export default function App(){
   useEffect(() => {
     if (tab !== 'providers') return;
     
-    // Dohvati providere s API-ja s filterima
     const params = { ...providerFilters };
     Object.keys(params).forEach(key => {
       if (!params[key]) delete params[key];
     });
+    if (providerUserLocation) {
+      params.userLat = providerUserLocation.lat;
+      params.userLon = providerUserLocation.lon;
+    }
+    if (params.sortBy === 'distance' && !providerUserLocation && params.city) {
+      params.centerCity = params.city;
+    }
     
     api.get('/providers', { params })
       .then(r => {
@@ -357,7 +366,7 @@ export default function App(){
         console.error('Error fetching providers:', err);
         setProviders([]);
       });
-  }, [tab, providerFilters]);
+  }, [tab, providerFilters, providerUserLocation]);
 
   const handleJobSubmit = async (jobData) => {
     try {
@@ -2003,7 +2012,7 @@ export default function App(){
 
       {tab === 'my-leads' && (
         <section id="my-leads" className="tab-section">
-          <MyLeads />
+          <MyLeads isDirector={providerMeta.isDirector} />
         </section>
       )}
 
@@ -2207,29 +2216,68 @@ export default function App(){
               filters={providerFilters}
               setFilters={setProviderFilters}
               categories={categories}
-              onReset={() => setProviderFilters({
-                search: null,
-                categoryId: null,
-                city: null,
-                minRating: null,
-                verified: null,
-                hasLicenses: null,
-                isAvailable: null,
-                sortBy: 'rating'
-              })}
+              onReset={() => {
+                setProviderFilters({
+                  search: null,
+                  categoryId: null,
+                  city: null,
+                  minRating: null,
+                  verified: null,
+                  hasLicenses: null,
+                  isAvailable: null,
+                  sortBy: 'rating'
+                });
+                setProviderUserLocation(null);
+              }}
+              onUseMyLocation={() => {
+                if (!navigator.geolocation) {
+                  alert('Vaš preglednik ne podržava geolokaciju.');
+                  return;
+                }
+                navigator.geolocation.getCurrentPosition(
+                  (pos) => {
+                    setProviderUserLocation({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+                    setProviderFilters((f) => ({ ...f, sortBy: 'distance' }));
+                  },
+                  () => alert('Nije moguće dohvatiti lokaciju. Provjerite dozvole preglednika.')
+                );
+              }}
             />
             
-            {/* Providers grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {providers.map(provider => (
-                <ProviderCard
-                  key={provider.id}
-                  provider={provider}
-                  onViewProfile={handleViewProviderProfile}
-                  onContact={handleContactProvider}
-                />
-              ))}
+            <div className="flex gap-2 mb-4">
+              <button
+                type="button"
+                onClick={() => setProvidersView('list')}
+                className={`px-4 py-2 rounded-lg font-medium text-sm ${providersView === 'list' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'}`}
+              >
+                📋 Lista
+              </button>
+              <button
+                type="button"
+                onClick={() => setProvidersView('map')}
+                className={`px-4 py-2 rounded-lg font-medium text-sm ${providersView === 'map' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'}`}
+              >
+                🗺️ Mapa
+              </button>
             </div>
+            
+            {providersView === 'map' ? (
+              <ProvidersMap
+                providers={providers}
+                onProviderClick={handleViewProviderProfile}
+              />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {providers.map(provider => (
+                  <ProviderCard
+                    key={provider.id}
+                    provider={provider}
+                    onViewProfile={handleViewProviderProfile}
+                    onContact={handleContactProvider}
+                  />
+                ))}
+              </div>
+            )}
             
             {providers.length === 0 && (
               <div className="text-center py-12">

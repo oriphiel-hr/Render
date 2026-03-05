@@ -10,6 +10,7 @@ import {
   getCompanyLeadQueue,
   declineCompanyLead
 } from '../services/company-lead-distribution.js';
+import { calculateDistance } from '../lib/geo-utils.js';
 import { getDirectorBillingSummary } from '../services/billing-adjustment-service.js';
 import {
   getOwnedFeatures,
@@ -42,7 +43,7 @@ async function isDirector(userId) {
 }
 
 /**
- * Helper funkcija za dohvat direktora i njegovih tim članova
+ * Helper funkcija za dohvat direktora i njegovih tim članova (s lokacijama)
  */
 async function getDirectorWithTeam(userId) {
   const director = await prisma.providerProfile.findFirst({
@@ -66,10 +67,18 @@ async function getDirectorWithTeam(userId) {
               id: true,
               fullName: true,
               email: true,
-              phone: true
+              phone: true,
+              city: true,
+              latitude: true,
+              longitude: true
             }
           },
-          categories: { select: { name: true } }
+          categories: { select: { name: true } },
+          teamLocations: {
+            where: { isActive: true },
+            orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+            take: 1
+          }
         }
       }
     }
@@ -79,7 +88,7 @@ async function getDirectorWithTeam(userId) {
 
 /**
  * GET /api/director/team
- * Dohvati sve članove tima (samo za direktora)
+ * Dohvati sve članove tima (samo za direktora) s aktivnim poslovima i lokacijama
  */
 r.get('/team', auth(true, ['PROVIDER']), async (req, res, next) => {
   try {
@@ -92,6 +101,41 @@ r.get('/team', auth(true, ['PROVIDER']), async (req, res, next) => {
       });
     }
 
+    const memberIds = director.teamMembers.map(m => m.id);
+    const activeCounts = memberIds.length > 0
+      ? await prisma.companyLeadQueue.groupBy({
+          by: ['assignedToId'],
+          where: {
+            assignedToId: { in: memberIds },
+            status: { in: ['ASSIGNED', 'IN_PROGRESS'] }
+          },
+          _count: { id: true }
+        })
+      : [];
+    const countByMember = Object.fromEntries(
+      activeCounts.map(r => [r.assignedToId, r._count.id])
+    );
+
+    const teamMembers = director.teamMembers.map(member => {
+      const loc = member.teamLocations?.[0] || member.user;
+      const city = loc?.city || member.user?.city || null;
+      const latitude = loc?.latitude ?? member.user?.latitude ?? null;
+      const longitude = loc?.longitude ?? member.user?.longitude ?? null;
+      return {
+        id: member.id,
+        userId: member.userId,
+        fullName: member.user?.fullName ?? '',
+        email: member.user?.email ?? '',
+        phone: member.user?.phone ?? null,
+        isAvailable: member.isAvailable,
+        categories: (member.categories ?? []).map(c => c.name),
+        city,
+        latitude,
+        longitude,
+        activeJobsCount: countByMember[member.id] || 0
+      };
+    });
+
     res.json({
       director: {
         id: director.id,
@@ -100,16 +144,72 @@ r.get('/team', auth(true, ['PROVIDER']), async (req, res, next) => {
         email: director.user.email,
         companyName: director.companyName
       },
-      teamMembers: director.teamMembers.map(member => ({
+      teamMembers
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * GET /api/director/team/assign-options?jobId=xxx
+ * Tim članovi s udaljenošću od posla (za modale dodjele)
+ */
+r.get('/team/assign-options', auth(true, ['PROVIDER']), async (req, res, next) => {
+  try {
+    const director = await getDirectorWithTeam(req.user.id);
+    if (!director) {
+      return res.status(403).json({ error: 'Nemate pristup', message: 'Samo direktor može pristupiti.' });
+    }
+    const jobId = req.query.jobId;
+    if (!jobId) {
+      return res.status(400).json({ error: 'jobId je obavezan u query parametrima' });
+    }
+
+    const job = await prisma.job.findUnique({
+      where: { id: jobId },
+      select: { city: true, latitude: true, longitude: true }
+    });
+    if (!job) {
+      return res.status(404).json({ error: 'Posao nije pronađen' });
+    }
+
+    const memberIds = director.teamMembers.map(m => m.id);
+    const activeCounts = memberIds.length > 0
+      ? await prisma.companyLeadQueue.groupBy({
+          by: ['assignedToId'],
+          where: {
+            assignedToId: { in: memberIds },
+            status: { in: ['ASSIGNED', 'IN_PROGRESS'] }
+          },
+          _count: { id: true }
+        })
+      : [];
+    const countByMember = Object.fromEntries(activeCounts.map(r => [r.assignedToId, r._count.id]));
+
+    const options = director.teamMembers.map(member => {
+      const loc = member.teamLocations?.[0] || member.user;
+      const lat = loc?.latitude ?? member.user?.latitude ?? null;
+      const lon = loc?.longitude ?? member.user?.longitude ?? null;
+      let distanceKm = null;
+      if (job.latitude && job.longitude && lat != null && lon != null) {
+        distanceKm = Math.round(calculateDistance(lat, lon, job.latitude, job.longitude) * 10) / 10;
+      } else if (job.city && (loc?.city || member.user?.city)) {
+        distanceKm = (job.city === (loc?.city || member.user?.city)) ? 0 : null;
+      }
+      return {
         id: member.id,
-        userId: member.userId,
         fullName: member.user?.fullName ?? '',
         email: member.user?.email ?? '',
-        phone: member.user?.phone ?? null,
+        city: loc?.city || member.user?.city || null,
+        activeJobsCount: countByMember[member.id] || 0,
         isAvailable: member.isAvailable,
-        categories: (member.categories ?? []).map(c => c.name)
-      }))
+        distanceKm,
+        sameCity: job.city && (loc?.city || member.user?.city) && job.city === (loc?.city || member.user?.city)
+      };
     });
+
+    res.json({ options, jobCity: job.city });
   } catch (e) {
     next(e);
   }

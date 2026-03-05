@@ -59,6 +59,16 @@ export const getAssignedLeads = () => {
   return api.get('/director/lead-queue/my-assigned');
 };
 
+/** Direktor: dohvat internog lead queuea tvrtke */
+export const getDirectorLeadQueue = () => {
+  return api.get('/director/lead-queue');
+};
+
+/** Direktor: dodaj lead u interni queue tvrtke */
+export const addLeadToCompanyQueue = (jobId) => {
+  return api.post('/director/lead-queue/add', { jobId });
+};
+
 /** Ažuriraj status leada dodijeljenog tim članu: IN_PROGRESS | COMPLETED */
 export const updateAssignedLeadStatus = (queueId, status) => {
   return api.patch(`/director/lead-queue/${queueId}/status`, { status });
