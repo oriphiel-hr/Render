@@ -185,20 +185,29 @@ export default function App(){
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Dohvati hasTeam i isDirector za uvjetni prikaz Tim Lokacije i Direktor Dashboard
+  // hasTeam = direktor s barem 1 članom ILI član tima (companyId); inače sakrij Tim Lokacije
   useEffect(() => {
     if (!token || !isProviderOrBusinessUser()) {
       setProviderMeta({ hasTeam: false, isDirector: false });
       return;
     }
-    api.get('/providers/me')
-      .then((res) => {
+    const load = async () => {
+      try {
+        const res = await api.get('/providers/me');
         const p = res.data;
-        setProviderMeta({
-          hasTeam: !!(p?.isDirector || p?.companyId),
-          isDirector: !!p?.isDirector
-        });
-      })
-      .catch(() => setProviderMeta({ hasTeam: false, isDirector: false }));
+        const isDirector = !!p?.isDirector;
+        let hasTeam = !!p?.companyId; // član tima
+        if (isDirector) {
+          const teamRes = await api.get('/director/team').catch(() => ({ data: { teamMembers: [] } }));
+          const members = teamRes?.data?.teamMembers || [];
+          hasTeam = members.length > 0;
+        }
+        setProviderMeta({ hasTeam, isDirector });
+      } catch {
+        setProviderMeta({ hasTeam: false, isDirector: false });
+      }
+    };
+    load();
   }, [token]);
 
   // Ako je korisnik već prijavljen, ne nudimo login/registraciju – automatski preusmjeri na user tab
