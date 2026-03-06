@@ -84,6 +84,30 @@ const PROCESS_DIAGRAMS = {
     N4 --> N6[SMS Twilio]
     N4 --> N7[In-App]
     N4 --> N8[Chat poruke]`
+  },
+  refund: {
+    title: 'Refund Sustav',
+    mermaid: `flowchart TD
+    R1[Korisnik podnese zahtjev] --> R2[Zahtjev u sustavu]
+    R2 --> R3[Provjera uslova]
+    R3 --> R4{Isplativ?}
+    R4 -->|Da| R5[Admin provjera]
+    R4 -->|Ne| R6[Odbijeno]
+    R5 --> R7{Odobreno?}
+    R7 -->|Da| R8[Refund odobren - povrat sredstava]
+    R7 -->|Ne| R9[Refund odbijen]`
+  },
+  reputacija: {
+    title: 'Reputacijski Sustav / Recenzije',
+    mermaid: `flowchart TD
+    REP1[Završen posao] --> REP2[Korisnik ostavi ocjenu]
+    REP2 --> REP3[1-5 zvjezdica + komentar]
+    REP3 --> REP4[Recenzija spremljena]
+    REP4 --> REP5[Trust Score izračun]
+    REP5 --> REP6[Prosjek ocjena]
+    REP5 --> REP7[Broj recenzija]
+    REP6 --> REP8[Badge / Profil pružatelja]
+    REP7 --> REP8`
   }
 };
 
