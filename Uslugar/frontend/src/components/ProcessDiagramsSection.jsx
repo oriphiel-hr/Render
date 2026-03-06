@@ -142,18 +142,17 @@ export default function ProcessDiagramsSection({ isDarkMode }) {
 
   return (
     <div className="space-y-1">
-        {Object.entries(PROCESS_DIAGRAMS).map(([key, { title, mermaid: mermaidCode }]) => (
-          <ProcessDiagramItem
-            key={key}
-            id={key}
-            title={title}
-            mermaidCode={mermaidCode}
-            isExpanded={expandedProcess === key}
-            onToggle={() => setExpandedProcess((p) => (p === key ? null : key))}
-            isDarkMode={!!isDarkMode}
-          />
-        ))}
-      </div>
+      {Object.entries(PROCESS_DIAGRAMS).map(([key, { title, mermaid: mermaidCode }]) => (
+        <ProcessDiagramItem
+          key={key}
+          id={key}
+          title={title}
+          mermaidCode={mermaidCode}
+          isExpanded={expandedProcess === key}
+          onToggle={() => setExpandedProcess((p) => (p === key ? null : key))}
+          isDarkMode={!!isDarkMode}
+        />
+      ))}
     </div>
   );
 }
