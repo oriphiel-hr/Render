@@ -138,6 +138,52 @@ r.get('/journey-status', auth(true), async (req, res, next) => {
       const addonsActive = addons.filter((a) => a.status === 'ACTIVE').length;
       const addonsExpired = addons.filter((a) => ['EXPIRED', 'DEPLETED', 'CANCELLED'].includes(a.status)).length;
 
+      const leadStatusDir = await prisma.leadPurchase.groupBy({
+        by: ['status'],
+        where: { providerId: userId },
+        _count: { id: true }
+      });
+      const leadStatusCounts = Object.fromEntries(leadStatusDir.map((r) => [r.status, r._count.id]));
+      const leadStatus = {
+        active: leadStatusCounts.ACTIVE ?? 0,
+        contacted: leadStatusCounts.CONTACTED ?? 0,
+        converted: leadStatusCounts.CONVERTED ?? 0,
+        refunded: leadStatusCounts.REFUNDED ?? 0,
+        expired: leadStatusCounts.EXPIRED ?? 0,
+        cancelled: leadStatusCounts.CANCELLED ?? 0
+      };
+
+      const unreadMessages = await prisma.chatMessage.count({
+        where: {
+          readAt: null,
+          senderId: { not: userId },
+          room: { participants: { some: { id: userId } } }
+        }
+      });
+
+      const chatRoomsCount = await prisma.chatRoom.count({
+        where: { participants: { some: { id: userId } } }
+      });
+
+      const jobsPendingMod = await prisma.job.count({
+        where: { userId, moderationStatus: 'PENDING' }
+      });
+      const offersPendingMod = await prisma.offer.count({
+        where: { userId, moderationStatus: 'PENDING' }
+      });
+
+      const reviewsDir = await prisma.review.findMany({
+        where: { toUserId: userId },
+        select: { rating: true }
+      });
+      const ratingAvg = reviewsDir.length > 0
+        ? Math.round((reviewsDir.reduce((s, r) => s + r.rating, 0) / reviewsDir.length) * 10) / 10
+        : null;
+
+      const unpaidInvoices = await prisma.invoice.count({
+        where: { userId, status: { notIn: ['PAID', 'CANCELLED', 'STORNED'] } }
+      });
+
       return res.json({
         role: 'DIRECTOR',
         tracks,
@@ -160,7 +206,12 @@ r.get('/journey-status', auth(true), async (req, res, next) => {
             addonsActive,
             addonsExpired,
             addonsTotal: addons.length
-          }
+          },
+          recenzije: { count: reviewsDir.length, ratingAvg },
+          chat: { unreadMessages, chatRoomsCount },
+          moderacija: { jobsPending: jobsPendingMod, offersPending: offersPendingMod },
+          fakture: { unpaid: unpaidInvoices },
+          leadStatus
         }
       });
     }
@@ -213,6 +264,28 @@ r.get('/journey-status', auth(true), async (req, res, next) => {
         { id: 'completed', label: 'Završeno', done: !!hasCompleted }
       ];
 
+      const unreadTm = await prisma.chatMessage.count({
+        where: {
+          readAt: null,
+          senderId: { not: userId },
+          room: { participants: { some: { id: userId } } }
+        }
+      });
+      const chatRoomsTm = await prisma.chatRoom.count({
+        where: { participants: { some: { id: userId } } }
+      });
+      const offersModTm = await prisma.offer.count({ where: { userId, moderationStatus: 'PENDING' } });
+      const reviewsTm = await prisma.review.findMany({
+        where: { toUserId: userId },
+        select: { rating: true }
+      });
+      const ratingAvgTm = reviewsTm.length > 0
+        ? Math.round((reviewsTm.reduce((s, r) => s + r.rating, 0) / reviewsTm.length) * 10) / 10
+        : null;
+      const unpaidTm = await prisma.invoice.count({
+        where: { userId, status: { notIn: ['PAID', 'CANCELLED', 'STORNED'] } }
+      });
+
       return res.json({
         role: 'TEAM_MEMBER',
         currentStep,
@@ -227,7 +300,12 @@ r.get('/journey-status', auth(true), async (req, res, next) => {
         details: {
           jobs: { open: assignedCount, inProgress: inProgressCount, completed: completedCount, cancelled: 0 },
           refund: { pending: 0, approved: 0, rejected: 0 },
-          packages: null
+          packages: null,
+          recenzije: { count: reviewsTm.length, ratingAvg: ratingAvgTm },
+          chat: { unreadMessages: unreadTm, chatRoomsCount: chatRoomsTm },
+          moderacija: { jobsPending: 0, offersPending: offersModTm },
+          fakture: { unpaid: unpaidTm },
+          leadStatus: null
         }
       });
     }
@@ -306,6 +384,49 @@ r.get('/journey-status', auth(true), async (req, res, next) => {
       const addonsActive = addons.filter((a) => a.status === 'ACTIVE').length;
       const addonsExpired = addons.filter((a) => ['EXPIRED', 'DEPLETED', 'CANCELLED'].includes(a.status)).length;
 
+      const leadStatusProv = await prisma.leadPurchase.groupBy({
+        by: ['status'],
+        where: { providerId: userId },
+        _count: { id: true }
+      });
+      const lsProv = Object.fromEntries(leadStatusProv.map((r) => [r.status, r._count.id]));
+      const leadStatusP = {
+        active: lsProv.ACTIVE ?? 0,
+        contacted: lsProv.CONTACTED ?? 0,
+        converted: lsProv.CONVERTED ?? 0,
+        refunded: lsProv.REFUNDED ?? 0,
+        expired: lsProv.EXPIRED ?? 0,
+        cancelled: lsProv.CANCELLED ?? 0
+      };
+
+      const unreadProv = await prisma.chatMessage.count({
+        where: {
+          readAt: null,
+          senderId: { not: userId },
+          room: { participants: { some: { id: userId } } }
+        }
+      });
+      const chatRoomsProv = await prisma.chatRoom.count({
+        where: { participants: { some: { id: userId } } }
+      });
+
+      const jobsModProv = 0;
+      const offersModProv = await prisma.offer.count({
+        where: { userId, moderationStatus: 'PENDING' }
+      });
+
+      const reviewsProv = await prisma.review.findMany({
+        where: { toUserId: userId },
+        select: { rating: true }
+      });
+      const ratingAvgProv = reviewsProv.length > 0
+        ? Math.round((reviewsProv.reduce((s, r) => s + r.rating, 0) / reviewsProv.length) * 10) / 10
+        : null;
+
+      const unpaidProv = await prisma.invoice.count({
+        where: { userId, status: { notIn: ['PAID', 'CANCELLED', 'STORNED'] } }
+      });
+
       return res.json({
         role: 'PROVIDER',
         currentStep,
@@ -329,7 +450,12 @@ r.get('/journey-status', auth(true), async (req, res, next) => {
             addonsActive,
             addonsExpired,
             addonsTotal: addons.length
-          }
+          },
+          recenzije: { count: reviewsProv.length, ratingAvg: ratingAvgProv },
+          chat: { unreadMessages: unreadProv, chatRoomsCount: chatRoomsProv },
+          moderacija: { jobsPending: jobsModProv, offersPending: offersModProv },
+          fakture: { unpaid: unpaidProv },
+          leadStatus: leadStatusP
         }
       });
     }
@@ -381,6 +507,27 @@ r.get('/journey-status', auth(true), async (req, res, next) => {
       { id: 'completed', label: 'Završeno', done: !!jobCompleted }
     ];
 
+    const unreadUser = await prisma.chatMessage.count({
+      where: {
+        readAt: null,
+        senderId: { not: userId },
+        room: { participants: { some: { id: userId } } }
+      }
+    });
+    const chatRoomsUser = await prisma.chatRoom.count({
+      where: { participants: { some: { id: userId } } }
+    });
+    const jobsModUser = await prisma.job.count({
+      where: { userId, moderationStatus: 'PENDING' }
+    });
+    const reviewsUser = await prisma.review.findMany({
+      where: { toUserId: userId },
+      select: { rating: true }
+    });
+    const ratingAvgUser = reviewsUser.length > 0
+      ? Math.round((reviewsUser.reduce((s, r) => s + r.rating, 0) / reviewsUser.length) * 10) / 10
+      : null;
+
     return res.json({
       role: 'USER',
       currentStep,
@@ -395,7 +542,12 @@ r.get('/journey-status', auth(true), async (req, res, next) => {
       details: {
         jobs: { open: jobsOpen, inProgress: jobsInProgressCount, completed: jobsCompletedCount, cancelled: jobsCancelled },
         refund: { pending: 0, approved: 0, rejected: 0 },
-        packages: null
+        packages: null,
+        recenzije: { count: reviewsUser.length, ratingAvg: ratingAvgUser },
+        chat: { unreadMessages: unreadUser, chatRoomsCount: chatRoomsUser },
+        moderacija: { jobsPending: jobsModUser, offersPending: 0 },
+        fakture: { unpaid: 0 },
+        leadStatus: null
       }
     });
   } catch (e) {

@@ -2730,7 +2730,16 @@ export default function UserTypesFlowcharts() {
             {journeyError}
           </div>
         ) : journeyStatus ? (
-          <JourneyDiagram journeyStatus={journeyStatus} />
+          <JourneyDiagram
+            journeyStatus={journeyStatus}
+            onRefresh={() => {
+              if (!token) return;
+              api.get('/users/journey-status')
+                .then((r) => setJourneyStatus(r.data))
+                .catch((err) => setJourneyError(err?.response?.data?.message || 'Greška'));
+            }}
+            isDarkMode={isDarkMode}
+          />
         ) : null}
       </div>
 
