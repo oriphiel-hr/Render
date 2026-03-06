@@ -1,8 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useDarkMode } from '../contexts/DarkModeContext.jsx';
+import { useAuth } from '../App';
+import api from '@/api';
+import JourneyDiagram from '../components/JourneyDiagram';
 
 export default function UserTypesFlowcharts() {
   const { isDarkMode } = useDarkMode();
+  const { token } = useAuth();
+  const [journeyStatus, setJourneyStatus] = useState(null);
+  const [journeyLoading, setJourneyLoading] = useState(false);
+  const [journeyError, setJourneyError] = useState(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -50,6 +57,24 @@ export default function UserTypesFlowcharts() {
     setZoom(1);
     setPan({ x: 0, y: 0 });
   };
+
+  // Dohvati journey status za interaktivni "Vi ste ovdje" dijagram
+  useEffect(() => {
+    if (!token) {
+      setJourneyStatus(null);
+      setJourneyError(null);
+      return;
+    }
+    setJourneyLoading(true);
+    setJourneyError(null);
+    api.get('/users/journey-status')
+      .then((r) => setJourneyStatus(r.data))
+      .catch((err) => {
+        setJourneyError(err?.response?.status === 401 ? 'Prijavite se za prikaz' : 'Ne mogu dohvatiti status putovanja.');
+        setJourneyStatus(null);
+      })
+      .finally(() => setJourneyLoading(false));
+  }, [token]);
 
   const zoomIn = () => {
     setZoom(prev => Math.min(3, prev + 0.1));
@@ -2682,6 +2707,31 @@ export default function UserTypesFlowcharts() {
         <p className="text-xl mb-6" style={{ color: textColor }}>
           Vizualni prikaz cijelog procesa za različite tipove korisnika na Uslugar platformi
         </p>
+      </div>
+
+      {/* Interaktivni "Vi ste ovdje" dijagram (Mermaid) */}
+      <div className="mb-16 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+        <h2 className="text-2xl font-bold mb-4" style={{ color: textColor }}>
+          📍 Vi ste ovdje – Vaš put kroz platformu
+        </h2>
+        <p className="text-sm mb-4" style={{ color: textColor, opacity: 0.8 }}>
+          Dijagram se prilagođava vašem tipu korisnika i prikazuje trenutni korak te što čeka na drugog sudionika (npr. pružatelja ili klijenta).
+        </p>
+        {!token ? (
+          <div className="flex items-center justify-center p-8 rounded-lg border border-dashed border-gray-300 dark:border-gray-600" style={{ color: textColor, opacity: 0.8 }}>
+            Prijavite se da biste vidjeli gdje se nalazite u procesu.
+          </div>
+        ) : journeyLoading ? (
+          <div className="flex items-center justify-center p-12 text-gray-500 dark:text-gray-400">
+            Učitavanje...
+          </div>
+        ) : journeyError ? (
+          <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200">
+            {journeyError}
+          </div>
+        ) : journeyStatus ? (
+          <JourneyDiagram journeyStatus={journeyStatus} />
+        ) : null}
       </div>
 
       <div className="space-y-16">
