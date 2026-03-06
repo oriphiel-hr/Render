@@ -88,7 +88,7 @@ ${classDef}
       return buildMermaidDirector();
     }
     if (!journeyStatus?.steps?.length) return 'flowchart TD\n  A[Nema podataka]';
-    const { currentStep, steps, role } = journeyStatus;
+    const { currentStep, steps } = journeyStatus;
 
     const nodeIds = steps.map((s) => s.id.replace(/-/g, '_'));
     const lines = [];
