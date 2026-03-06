@@ -82,12 +82,17 @@ api.interceptors.response.use(
 
       if (!isAuthEndpoint && !window.__USLUGAR_SESSION_EXPIRED_HANDLED__) {
         window.__USLUGAR_SESSION_EXPIRED_HANDLED__ = true;
+        const isAdminRequest = url.startsWith('/admin');
         try {
-          // Očisti lokalnu sesiju; App će odraditi ostatak
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
+          if (isAdminRequest) {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminUser');
+          } else {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+          }
         } catch (_) {}
-        window.dispatchEvent(new CustomEvent('uslugar:session-expired'));
+        window.dispatchEvent(new CustomEvent('uslugar:session-expired', { detail: { isAdminRequest } }));
       }
     }
     return Promise.reject(error);

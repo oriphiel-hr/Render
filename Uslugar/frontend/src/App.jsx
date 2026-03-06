@@ -220,16 +220,17 @@ export default function App(){
     }
   }, [token, tab]);
 
+  const [showSessionExpiredModal, setShowSessionExpiredModal] = useState(false);
+
   // Globalni listener za istek sesije (401 iz api.js)
   useEffect(() => {
-    const handleSessionExpired = () => {
-      // Resetiraj flag da se ponovno može okinuti nakon nove prijave
-      try {
-        delete window.__USLUGAR_SESSION_EXPIRED_HANDLED__;
-      } catch (_) {}
-      logout();
-      alert('Vaša prijava je istekla. Radi sigurnosti se morate ponovno prijaviti prije nastavka.');
-      setTab('login');
+    const handleSessionExpired = (e) => {
+      const isAdmin = e?.detail?.isAdminRequest;
+      if (!isAdmin) {
+        logout();
+        setTab('login');
+      }
+      setShowSessionExpiredModal(true);
     };
 
     window.addEventListener('uslugar:session-expired', handleSessionExpired);
@@ -2499,6 +2500,36 @@ export default function App(){
           onNavigateToMyJobs={() => { handleCloseProviderProfile(); setTab('my-jobs'); }}
           scrollToAction={openProviderForContact}
         />
+      )}
+
+      {/* Session Expired Modal – zamjenjuje blocking alert, uvijek se može zatvoriti */}
+      {showSessionExpiredModal && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="session-expired-title"
+          onClick={() => setShowSessionExpiredModal(false)}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md mx-4 border border-gray-200 dark:border-gray-700"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="session-expired-title" className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+              Sesija je istekla
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              Vaša prijava je istekla. Radi sigurnosti se morate ponovno prijaviti prije nastavka.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowSessionExpiredModal(false)}
+              className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+            >
+              U redu
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

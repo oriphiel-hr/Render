@@ -221,6 +221,21 @@ export default function AdminRouter(){
     setUser(null);
   };
 
+  // Slušaj istek sesije – prikaži admin login (modal se zatvara u App.jsx)
+  useEffect(() => {
+    const handleSessionExpired = (e) => {
+      if (e?.detail?.isAdminRequest) {
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminUser');
+        delete api.defaults.headers.common['Authorization'];
+        setIsAuthenticated(false);
+        setUser(null);
+      }
+    };
+    window.addEventListener('uslugar:session-expired', handleSessionExpired);
+    return () => window.removeEventListener('uslugar:session-expired', handleSessionExpired);
+  }, []);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
