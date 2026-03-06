@@ -124,6 +124,20 @@ r.get('/journey-status', auth(true), async (req, res, next) => {
 
       const currentFocus = !hasLeads ? 'leads' : creditsBalance === 0 ? 'credits' : teamMembersCount === 0 && pendingInvites > 0 ? 'team' : 'active';
 
+      const leadPurchasesDir = await prisma.leadPurchase.findMany({
+        where: { providerId: userId },
+        select: { refundRequestStatus: true }
+      });
+      const refundPending = leadPurchasesDir.filter((p) => p.refundRequestStatus === 'PENDING').length;
+      const refundApproved = leadPurchasesDir.filter((p) => p.refundRequestStatus === 'APPROVED').length;
+      const refundRejected = leadPurchasesDir.filter((p) => p.refundRequestStatus === 'REJECTED').length;
+      const addons = await prisma.addonSubscription.findMany({
+        where: { userId },
+        select: { status: true }
+      });
+      const addonsActive = addons.filter((a) => a.status === 'ACTIVE').length;
+      const addonsExpired = addons.filter((a) => ['EXPIRED', 'DEPLETED', 'CANCELLED'].includes(a.status)).length;
+
       return res.json({
         role: 'DIRECTOR',
         tracks,
@@ -135,6 +149,18 @@ r.get('/journey-status', auth(true), async (req, res, next) => {
           queueAssigned,
           queueInProgress,
           queueCompleted
+        },
+        details: {
+          jobs: { open: queuePending, inProgress: queueAssigned + queueInProgress, completed: queueCompleted, cancelled: 0 },
+          queue: { pending: queuePending, assigned: queueAssigned, inProgress: queueInProgress, completed: queueCompleted },
+          refund: { pending: refundPending, approved: refundApproved, rejected: refundRejected },
+          packages: {
+            subscriptionPlan: sub?.plan ?? null,
+            subscriptionStatus: sub?.status ?? null,
+            addonsActive,
+            addonsExpired,
+            addonsTotal: addons.length
+          }
         }
       });
     }
@@ -197,6 +223,11 @@ r.get('/journey-status', auth(true), async (req, res, next) => {
           inProgress: inProgressCount,
           completed: completedCount,
           totalAssigned: assignedCount + inProgressCount + completedCount
+        },
+        details: {
+          jobs: { open: assignedCount, inProgress: inProgressCount, completed: completedCount, cancelled: 0 },
+          refund: { pending: 0, approved: 0, rejected: 0 },
+          packages: null
         }
       });
     }
@@ -263,6 +294,18 @@ r.get('/journey-status', auth(true), async (req, res, next) => {
         { id: 'completed', label: 'Završeno', done: !!jobCompleted }
       ];
 
+      const jobsOpen = myJobs.filter((j) => j.status === 'OPEN').length;
+      const jobsCancelled = myJobs.filter((j) => j.status === 'CANCELLED').length;
+      const refundPending = leadPurchases.filter((p) => p.refundRequestStatus === 'PENDING').length;
+      const refundApproved = leadPurchases.filter((p) => p.refundRequestStatus === 'APPROVED').length;
+      const refundRejected = leadPurchases.filter((p) => p.refundRequestStatus === 'REJECTED').length;
+      const addons = await prisma.addonSubscription.findMany({
+        where: { userId },
+        select: { status: true }
+      });
+      const addonsActive = addons.filter((a) => a.status === 'ACTIVE').length;
+      const addonsExpired = addons.filter((a) => ['EXPIRED', 'DEPLETED', 'CANCELLED'].includes(a.status)).length;
+
       return res.json({
         role: 'PROVIDER',
         currentStep,
@@ -276,6 +319,17 @@ r.get('/journey-status', auth(true), async (req, res, next) => {
           leadsPurchased: leadPurchases.length,
           jobsInProgress: jobsInProgressCount,
           jobsCompleted: jobsCompletedCount
+        },
+        details: {
+          jobs: { open: jobsOpen, inProgress: jobsInProgressCount, completed: jobsCompletedCount, cancelled: jobsCancelled },
+          refund: { pending: refundPending, approved: refundApproved, rejected: refundRejected },
+          packages: {
+            subscriptionPlan: sub?.plan ?? null,
+            subscriptionStatus: sub?.status ?? null,
+            addonsActive,
+            addonsExpired,
+            addonsTotal: addons.length
+          }
         }
       });
     }
@@ -288,8 +342,10 @@ r.get('/journey-status', auth(true), async (req, res, next) => {
     const jobCompleted = myJobs.find((j) => j.status === 'COMPLETED');
     const jobsPosted = myJobs.length;
     const offersReceived = myJobs.reduce((s, j) => s + (j.offers?.length || 0), 0);
+    const jobsOpen = myJobs.filter((j) => j.status === 'OPEN').length;
     const jobsInProgressCount = myJobs.filter((j) => j.status === 'IN_PROGRESS').length;
     const jobsCompletedCount = myJobs.filter((j) => j.status === 'COMPLETED').length;
+    const jobsCancelled = myJobs.filter((j) => j.status === 'CANCELLED').length;
 
     let currentStep = 'reg';
     let waitingOn = null;
@@ -335,6 +391,11 @@ r.get('/journey-status', auth(true), async (req, res, next) => {
         offersReceived,
         jobsInProgress: jobsInProgressCount,
         jobsCompleted: jobsCompletedCount
+      },
+      details: {
+        jobs: { open: jobsOpen, inProgress: jobsInProgressCount, completed: jobsCompletedCount, cancelled: jobsCancelled },
+        refund: { pending: 0, approved: 0, rejected: 0 },
+        packages: null
       }
     });
   } catch (e) {

@@ -24,6 +24,7 @@ export default function JourneyDiagram({ journeyStatus }) {
   const containerRef = useRef(null);
   const [svg, setSvg] = useState('');
   const [error, setError] = useState(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const buildMermaidDirector = () => {
     const { tracks = [], currentFocus } = journeyStatus;
@@ -218,6 +219,123 @@ ${classDef}
         className="mermaid-diagram overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4"
         dangerouslySetInnerHTML={{ __html: svg }}
       />
+
+      {journeyStatus.details && (
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={() => setDetailsOpen((o) => !o)}
+            className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+          >
+            {detailsOpen ? '▼' : '▶'} Detalji: statusi poslova, refund, paketi
+          </button>
+          {detailsOpen && (
+            <DetailsPanel details={journeyStatus.details} role={journeyStatus.role} />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DetailsPanel({ details, role }) {
+  const { jobs, queue, refund, packages } = details || {};
+  const hasJobs = jobs && (jobs.open + jobs.inProgress + jobs.completed + jobs.cancelled > 0);
+  const hasQueue = queue && (queue.pending + queue.assigned + queue.inProgress + queue.completed > 0);
+  const hasRefund = refund && (refund.pending + refund.approved + refund.rejected > 0);
+  const hasPackages = packages && (packages.subscriptionPlan || packages.addonsTotal > 0);
+
+  if (!hasJobs && !hasQueue && !hasRefund && !hasPackages) {
+    return (
+      <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 italic">
+        Nema dodatnih detalja za prikaz.
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-2 p-4 rounded-lg bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 space-y-4">
+      {hasQueue && (
+        <div>
+          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Leadovi u queueu</h4>
+          <div className="flex flex-wrap gap-3 text-sm">
+            <span className="px-2 py-1 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200">
+              Čeka dodjelu: {queue.pending}
+            </span>
+            <span className="px-2 py-1 rounded bg-sky-100 dark:bg-sky-900/40 text-sky-800 dark:text-sky-200">
+              Dodijeljeno: {queue.assigned}
+            </span>
+            <span className="px-2 py-1 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200">
+              U tijeku: {queue.inProgress}
+            </span>
+            <span className="px-2 py-1 rounded bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200">
+              Završeno: {queue.completed}
+            </span>
+          </div>
+        </div>
+      )}
+      {hasJobs && (role !== 'DIRECTOR' || !hasQueue) && (
+        <div>
+          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            {role === 'TEAM_MEMBER' ? 'Leadovi (dodijeljeni)' : 'Poslovi'}
+          </h4>
+          <div className="flex flex-wrap gap-3 text-sm">
+            <span className="px-2 py-1 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200">
+              {role === 'TEAM_MEMBER' ? 'Dodijeljeno (čekaju početak)' : 'Otvoreno'}: {jobs.open}
+            </span>
+            <span className="px-2 py-1 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200">
+              U tijeku: {jobs.inProgress}
+            </span>
+            <span className="px-2 py-1 rounded bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200">
+              Završeno: {jobs.completed}
+            </span>
+            {jobs.cancelled > 0 && (
+              <span className="px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                Otkazano: {jobs.cancelled}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+      {hasRefund && (
+        <div>
+          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Refund zahtjevi</h4>
+          <div className="flex flex-wrap gap-3 text-sm">
+            {refund.pending > 0 && (
+              <span className="px-2 py-1 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200">
+                Čeka odobrenje: {refund.pending}
+              </span>
+            )}
+            {refund.approved > 0 && (
+              <span className="px-2 py-1 rounded bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200">
+                Odobreno: {refund.approved}
+              </span>
+            )}
+            {refund.rejected > 0 && (
+              <span className="px-2 py-1 rounded bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200">
+                Odbijeno: {refund.rejected}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+      {hasPackages && (
+        <div>
+          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Paketi</h4>
+          <div className="flex flex-wrap gap-3 text-sm">
+            {packages.subscriptionPlan && (
+              <span className="px-2 py-1 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-200">
+                Pretplata: {packages.subscriptionPlan} ({packages.subscriptionStatus || '–'})
+              </span>
+            )}
+            {packages.addonsTotal > 0 && (
+              <span className="px-2 py-1 rounded bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200">
+                Add-oni: {packages.addonsActive} aktivnih, {packages.addonsExpired} isteklih
+              </span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
