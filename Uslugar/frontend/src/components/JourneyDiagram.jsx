@@ -33,68 +33,11 @@ function getMermaidConfig(isDark) {
 
 mermaid.initialize(getMermaidConfig(false));
 
-const PROCESS_DIAGRAMS = {
-  verificacija: {
-    title: 'Proces Verifikacije i Licenciranja',
-    mermaid: `flowchart TD
-    V1[Pružatelj] --> V2[KYC Upload dokumenata]
-    V2 --> V3[Admin provjera]
-    V3 --> V4{Odobreno?}
-    V4 -->|Da| V5[Verificiran - Badge Safety]
-    V4 -->|Ne| V6[Odbijeno - Upload ponovo]
-    V6 --> V2`
-  },
-  pretplata: {
-    title: 'Proces Pretplata',
-    mermaid: `flowchart TD
-    P1[Registracija] --> P2[TRIAL paket]
-    P2 --> P3{Upgrade?}
-    P3 -->|BASIC| P4[BASIC plan]
-    P3 -->|PREMIUM| P5[PREMIUM - 50 kredita]
-    P3 -->|PRO| P6[PRO - sve funkcije]
-    P3 -->|Ne| P7[Nema pretplate]`
-  },
-  queue: {
-    title: 'Queue Sustav za Distribuciju Leadova',
-    mermaid: `flowchart TD
-    Q1[Lead kreiran] --> Q2[LeadQueue - WAITING]
-    Q2 --> Q3[Queue Scheduler]
-    Q3 --> Q4[Partner Score izračun]
-    Q4 --> Q5[Lead ponuđen pružatelju]
-    Q5 --> Q6{Odgovor?}
-    Q6 -->|Da| Q7[ACCEPTED - Lead kupljen]
-    Q6 -->|Ne| Q8[DECLINED - Sljedeći u redu]`
-  },
-  lead: {
-    title: 'Lead Sustav',
-    mermaid: `flowchart TD
-    L1[Korisnik objavljuje posao] --> L2[Posao = Ekskluzivni Lead]
-    L2 --> L3[AI Score, Trust Score, cijena]
-    L3 --> L4[Lead na tržištu - AVAILABLE]
-    L4 --> L5{Kupovina?}
-    L5 -->|Da| L6[Pružatelj kupuje - krediti/Stripe]
-    L6 --> L7[Kontakt otkriven, ROI Dashboard]
-    L5 -->|Ne| L8[Ostaje na tržištu]`
-  },
-  notifikacije: {
-    title: 'Notifikacije i Komunikacija',
-    mermaid: `flowchart TD
-    N1[Event se dogodio] --> N2[Notifikacijski sustav]
-    N2 --> N3[Routing prema korisniku]
-    N3 --> N4[Multi-channel slanje]
-    N4 --> N5[Email]
-    N4 --> N6[SMS Twilio]
-    N4 --> N7[In-App]
-    N4 --> N8[Chat poruke]`
-  }
-};
-
 export default function JourneyDiagram({ journeyStatus, onRefresh, isDarkMode }) {
   const containerRef = useRef(null);
   const [svg, setSvg] = useState('');
   const [error, setError] = useState(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [expandedProcess, setExpandedProcess] = useState(null);
 
   const buildMermaidDirector = () => {
     const { tracks = [], currentFocus } = journeyStatus;
@@ -317,73 +260,6 @@ ${classDef}
           {detailsOpen && (
             <DetailsPanel details={journeyStatus.details} role={journeyStatus.role} />
           )}
-        </div>
-      )}
-
-      <div className="mt-6">
-        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Povezani procesi</h4>
-        <div className="space-y-1">
-          {Object.entries(PROCESS_DIAGRAMS).map(([key, { title }]) => (
-            <ProcessDiagramItem
-              key={key}
-              id={key}
-              title={title}
-              mermaid={PROCESS_DIAGRAMS[key].mermaid}
-              isExpanded={expandedProcess === key}
-              onToggle={() => setExpandedProcess((p) => (p === key ? null : key))}
-              isDarkMode={!!isDarkMode}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ProcessDiagramItem({ id, title, mermaid: mermaidCode, isExpanded, onToggle, isDarkMode }) {
-  const containerRef = useRef(null);
-  const [svg, setSvg] = useState('');
-  const [err, setErr] = useState(null);
-
-  useEffect(() => {
-    if (!isExpanded || !containerRef.current) {
-      setSvg('');
-      setErr(null);
-      return;
-    }
-    setErr(null);
-    mermaid.initialize(getMermaidConfig(isDarkMode));
-    const diagramId = `process-${id}-${Date.now()}`;
-    mermaid
-      .render(diagramId, mermaidCode)
-      .then(({ svg: result }) => setSvg(result))
-      .catch((e) => {
-        console.error('Process diagram error:', e);
-        setErr('Dijagram se nije mogao prikazati.');
-      });
-  }, [isExpanded, mermaidCode, id, isDarkMode]);
-
-  return (
-    <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="w-full px-4 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center justify-between"
-      >
-        {title}
-        <span className="text-gray-500">{isExpanded ? '▼' : '▶'}</span>
-      </button>
-      {isExpanded && (
-        <div className="p-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700">
-          <div ref={containerRef} className="overflow-x-auto">
-            {err ? (
-              <p className="text-sm text-red-600 dark:text-red-400">{err}</p>
-            ) : svg ? (
-              <div dangerouslySetInnerHTML={{ __html: svg }} />
-            ) : (
-              <p className="text-sm text-gray-500">Učitavanje...</p>
-            )}
-          </div>
         </div>
       )}
     </div>

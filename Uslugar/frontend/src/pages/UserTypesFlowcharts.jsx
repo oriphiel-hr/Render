@@ -3,6 +3,7 @@ import { useDarkMode } from '../contexts/DarkModeContext.jsx';
 import { useAuth } from '../App';
 import api from '@/api';
 import JourneyDiagram from '../components/JourneyDiagram';
+import ProcessDiagramsSection from '../components/ProcessDiagramsSection';
 
 export default function UserTypesFlowcharts() {
   const { isDarkMode } = useDarkMode();
@@ -2741,6 +2742,17 @@ export default function UserTypesFlowcharts() {
             isDarkMode={isDarkMode}
           />
         ) : null}
+      </div>
+
+      {/* Povezani procesi - zasebna kartica odmah ispod */}
+      <div className="mb-16 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+        <h2 className="text-2xl font-bold mb-4" style={{ color: textColor }}>
+          📋 Povezani procesi
+        </h2>
+        <p className="text-sm mb-4" style={{ color: textColor, opacity: 0.8 }}>
+          Verifikacija, pretplata, queue sustav, lead sustav, notifikacije
+        </p>
+        <ProcessDiagramsSection isDarkMode={isDarkMode} />
       </div>
 
       <div className="space-y-16">
