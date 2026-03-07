@@ -690,49 +690,55 @@ export default function App(){
             </button>
             {/* Secondary pages grouped u dropdown */}
             <DropdownMenu title="Više" className={navLinkBase + ' ' + navLinkInactive}>
-              <button
-                className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 transition-colors duration-150"
-                onClick={() => {
-                  if (window.location.pathname.startsWith('/admin/')) {
-                    window.location.replace('/#documentation');
-                  } else {
-                    setTab('documentation');
-                  }
-                }}
-              >
-                📚 Dokumentacija
-              </button>
-              <button
-                className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 transition-colors duration-150"
-                onClick={() => {
-                  if (window.location.pathname.startsWith('/admin/')) {
-                    window.location.replace('/#about');
-                  } else {
-                    setTab('about');
-                  }
-                }}
-              >
-                🏢 O nama
-              </button>
-              <button
-                className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 transition-colors duration-150"
-                onClick={() => {
-                  if (window.location.pathname.startsWith('/admin/')) {
-                    window.location.replace('/#user-types-flowcharts');
-                  } else {
-                    setTab('user-types-flowcharts');
-                  }
-                }}
-              >
-                📊 Dijagrami procesa
-              </button>
-              <button
-                className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150 border-t border-gray-200 dark:border-gray-600 mt-1 pt-2"
-                onClick={() => { toggleDarkMode(); }}
-                aria-label={isDarkMode ? 'Svijetli način' : 'Tamni način'}
-              >
-                {isDarkMode ? '☀️' : '🌙'} {isDarkMode ? 'Svijetli način' : 'Tamni način'}
-              </button>
+              <div className="pt-2 first:pt-0">
+                <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Informacije</div>
+                <button
+                  className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 transition-colors duration-150"
+                  onClick={() => {
+                    if (window.location.pathname.startsWith('/admin/')) {
+                      window.location.replace('/#documentation');
+                    } else {
+                      setTab('documentation');
+                    }
+                  }}
+                >
+                  📚 Dokumentacija
+                </button>
+                <button
+                  className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 transition-colors duration-150"
+                  onClick={() => {
+                    if (window.location.pathname.startsWith('/admin/')) {
+                      window.location.replace('/#about');
+                    } else {
+                      setTab('about');
+                    }
+                  }}
+                >
+                  🏢 O nama
+                </button>
+                <button
+                  className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 transition-colors duration-150"
+                  onClick={() => {
+                    if (window.location.pathname.startsWith('/admin/')) {
+                      window.location.replace('/#user-types-flowcharts');
+                    } else {
+                      setTab('user-types-flowcharts');
+                    }
+                  }}
+                >
+                  📊 Dijagrami procesa
+                </button>
+              </div>
+              <div className="pt-2 mt-1 border-t border-gray-100 dark:border-gray-700">
+                <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Postavke</div>
+                <button
+                  className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
+                  onClick={() => { toggleDarkMode(); }}
+                  aria-label={isDarkMode ? 'Svijetli način' : 'Tamni način'}
+                >
+                  {isDarkMode ? '☀️' : '🌙'} {isDarkMode ? 'Svijetli način' : 'Tamni način'}
+                </button>
+              </div>
             </DropdownMenu>
           </div>
 
@@ -741,45 +747,51 @@ export default function App(){
             {!token && (
               <>
                 <DropdownMenu title="Korisnik" className={navLinkBase + ' ' + navLinkInactive}>
-                  <button
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
-                    onClick={() => {
-                      if (window.location.pathname.startsWith('/admin/')) {
-                        window.location.replace('/#login');
-                      } else {
-                        setTab('login');
-                      }
-                    }}
-                  >
-                    🔑 Prijava
-                  </button>
-                  <button
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
-                    onClick={() => {
-                      if (window.location.pathname.startsWith('/admin/')) {
-                        window.location.replace('/#register-user');
-                      } else {
-                        setTab('register-user');
-                      }
-                    }}
-                  >
-                    👤 Registracija
-                  </button>
+                  <div className="pt-2 first:pt-0">
+                    <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Pristup</div>
+                    <button
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
+                      onClick={() => {
+                        if (window.location.pathname.startsWith('/admin/')) {
+                          window.location.replace('/#login');
+                        } else {
+                          setTab('login');
+                        }
+                      }}
+                    >
+                      🔑 Prijava
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
+                      onClick={() => {
+                        if (window.location.pathname.startsWith('/admin/')) {
+                          window.location.replace('/#register-user');
+                        } else {
+                          setTab('register-user');
+                        }
+                      }}
+                    >
+                      👤 Registracija
+                    </button>
+                  </div>
                 </DropdownMenu>
 
                 <DropdownMenu title="Usluge" className={navLinkBase + ' ' + navLinkInactive}>
-                  <button
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
-                    onClick={() => {
-                      if (window.location.pathname.startsWith('/admin/')) {
-                        window.location.replace('/#categories');
-                      } else {
-                        setTab('categories');
-                      }
-                    }}
-                  >
-                    🛠️ Kategorije ({categories.length})
-                  </button>
+                  <div className="pt-2 first:pt-0">
+                    <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Katalog</div>
+                    <button
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
+                      onClick={() => {
+                        if (window.location.pathname.startsWith('/admin/')) {
+                          window.location.replace('/#categories');
+                        } else {
+                          setTab('categories');
+                        }
+                      }}
+                    >
+                      🛠️ Kategorije ({categories.length})
+                    </button>
+                  </div>
                 </DropdownMenu>
               </>
             )}
@@ -789,64 +801,82 @@ export default function App(){
                 {/* Leadovi dropdown - samo za PROVIDER-e i USER-e koji su tvrtke/obrti */}
                 {isProviderOrBusinessUser() && (
                   <DropdownMenu title="Leadovi" className={navLinkBase + ' ' + navLinkInactive}>
-                    <button
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
-                      onClick={() => { setTab('leads'); }}
-                    >
-                      🛒 Tržnica leadova
-                    </button>
-                    <button
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
-                      onClick={() => { setTab('my-leads'); }}
-                    >
-                      📋 Moji ekskluzivni leadovi
-                    </button>
-                    <button
-                      className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'chat' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
-                      onClick={() => { setTab('chat'); }}
-                      aria-label="Chat"
-                    >
-                      💬 Chat
-                      {chatWaitingCount > 0 && (
-                        <span className="ml-auto inline-flex items-center justify-center rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-100 px-2 py-0.5 text-[10px] font-semibold">
-                          {chatWaitingCount > 9 ? '9+' : chatWaitingCount}
-                        </span>
-                      )}
-                    </button>
-                    {providerMeta.hasTeam && (
+                    {/* Group: Leadovi */}
+                    <div className="pt-2 first:pt-0">
+                      <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Leadovi</div>
                       <button
                         className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
-                        onClick={() => { setTab('team-locations'); }}
+                        onClick={() => { setTab('leads'); }}
                       >
-                        📍 Tim Lokacije
+                        🛒 Tržnica leadova
                       </button>
-                    )}
-                    <button
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
-                      onClick={() => { setTab('roi'); }}
-                    >
-                      📊 ROI
-                    </button>
-                    <button
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
-                      onClick={() => { setTab('subscription'); }}
-                    >
-                      💳 Pretplata
-                    </button>
-                    <button
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
-                      onClick={() => { setTab('invoices'); }}
-                    >
-                      📄 Fakture
-                    </button>
-                    {providerMeta.isDirector && (
                       <button
                         className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
-                        onClick={() => { setTab('director'); }}
+                        onClick={() => { setTab('my-leads'); }}
                       >
-                        👔 Direktor Dashboard
+                        📋 Moji ekskluzivni leadovi
                       </button>
+                    </div>
+                    {/* Group: Komunikacija i analitika */}
+                    <div className="pt-2 mt-1 border-t border-gray-100 dark:border-gray-700">
+                      <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Komunikacija i analitika</div>
+                      <button
+                        className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'chat' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
+                        onClick={() => { setTab('chat'); }}
+                        aria-label="Chat"
+                      >
+                        💬 Chat
+                        {chatWaitingCount > 0 && (
+                          <span className="ml-auto inline-flex items-center justify-center rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-100 px-2 py-0.5 text-[10px] font-semibold">
+                            {chatWaitingCount > 9 ? '9+' : chatWaitingCount}
+                          </span>
+                        )}
+                      </button>
+                      <button
+                        className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
+                        onClick={() => { setTab('roi'); }}
+                      >
+                        📊 ROI
+                      </button>
+                    </div>
+                    {/* Group: Tim – samo ako postoji bar jedna stavka */}
+                    {(providerMeta.hasTeam || providerMeta.isDirector) && (
+                      <div className="pt-2 mt-1 border-t border-gray-100 dark:border-gray-700">
+                        <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Tim</div>
+                        {providerMeta.hasTeam && (
+                          <button
+                            className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
+                            onClick={() => { setTab('team-locations'); }}
+                          >
+                            📍 Tim Lokacije
+                          </button>
+                        )}
+                        {providerMeta.isDirector && (
+                          <button
+                            className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
+                            onClick={() => { setTab('director'); }}
+                          >
+                            👔 Direktor Dashboard
+                          </button>
+                        )}
+                      </div>
                     )}
+                    {/* Group: Pretplata i naplata */}
+                    <div className="pt-2 mt-1 border-t border-gray-100 dark:border-gray-700">
+                      <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Pretplata i naplata</div>
+                      <button
+                        className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
+                        onClick={() => { setTab('subscription'); }}
+                      >
+                        💳 Pretplata
+                      </button>
+                      <button
+                        className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
+                        onClick={() => { setTab('invoices'); }}
+                      >
+                        📄 Fakture
+                      </button>
+                    </div>
                   </DropdownMenu>
                 )}
 
@@ -870,79 +900,87 @@ export default function App(){
                       ) : null;
                     } catch { return null; }
                   })()}
-                  <button
-                    className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'user' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
-                    onClick={() => setTab('user')}
-                  >
-                    🏠 Traži usluge
-                  </button>
-                  <button
-                    className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'my-jobs' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
-                    onClick={() => setTab('my-jobs')}
-                  >
-                    📋 Moji poslovi
-                  </button>
-                  <button
-                    className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'providers' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
-                    onClick={() => setTab('providers')}
-                  >
-                    👥 Pružatelji
-                  </button>
-                  {/* Chat samo za korisnike usluge (pružatelji imaju Chat u Leadovi dropdownu) */}
-                  {!isProviderOrBusinessUser() && (
+                  <div className="pt-2 first:pt-0">
+                    <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Navigacija</div>
                     <button
-                      className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'chat' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
-                      onClick={() => setTab('chat')}
-                      aria-label="Chat"
+                      className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'user' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
+                      onClick={() => setTab('user')}
                     >
-                      💬 Chat
-                      {chatWaitingCount > 0 && (
-                        <span className="ml-auto inline-flex items-center justify-center rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-100 px-2 py-0.5 text-[10px] font-semibold">
-                          {chatWaitingCount > 9 ? '9+' : chatWaitingCount}
-                        </span>
-                      )}
+                      🏠 Traži usluge
                     </button>
-                  )}
-                  <button
-                    className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + ((tab === 'provider-profile' || tab === 'user-profile') ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
-                    onClick={() => {
-                      const storedUser = localStorage.getItem('user');
-                      if (storedUser) {
-                        try {
-                          const userData = JSON.parse(storedUser);
-                          setTab((userData.role === 'PROVIDER' || (userData.role === 'USER' && userData.legalStatusId)) ? 'provider-profile' : 'user-profile');
-                        } catch {
+                    <button
+                      className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'my-jobs' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
+                      onClick={() => setTab('my-jobs')}
+                    >
+                      📋 Moji poslovi
+                    </button>
+                    <button
+                      className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'providers' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
+                      onClick={() => setTab('providers')}
+                    >
+                      👥 Pružatelji
+                    </button>
+                    {!isProviderOrBusinessUser() && (
+                      <button
+                        className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'chat' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
+                        onClick={() => setTab('chat')}
+                        aria-label="Chat"
+                      >
+                        💬 Chat
+                        {chatWaitingCount > 0 && (
+                          <span className="ml-auto inline-flex items-center justify-center rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-100 px-2 py-0.5 text-[10px] font-semibold">
+                            {chatWaitingCount > 9 ? '9+' : chatWaitingCount}
+                          </span>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                  <div className="pt-2 mt-1 border-t border-gray-100 dark:border-gray-700">
+                    <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Račun</div>
+                    <button
+                      className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + ((tab === 'provider-profile' || tab === 'user-profile') ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
+                      onClick={() => {
+                        const storedUser = localStorage.getItem('user');
+                        if (storedUser) {
+                          try {
+                            const userData = JSON.parse(storedUser);
+                            setTab((userData.role === 'PROVIDER' || (userData.role === 'USER' && userData.legalStatusId)) ? 'provider-profile' : 'user-profile');
+                          } catch {
+                            setTab('user-profile');
+                          }
+                        } else {
                           setTab('user-profile');
                         }
-                      } else {
-                        setTab('user-profile');
-                      }
-                    }}
-                  >
-                    👤 Moj profil
-                  </button>
-                  {canShowPostaniPružatelj() && (
-                    <button
-                      className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'upgrade-to-provider' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
-                      onClick={() => setTab('upgrade-to-provider')}
+                      }}
                     >
-                      🏢 Postani pružatelj
+                      👤 Moj profil
                     </button>
-                  )}
-                  <button
-                    className="w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-700 dark:text-red-300 border-t border-gray-200 dark:border-gray-600 mt-1 pt-2"
-                    onClick={() => { logout(); setTab('user'); }}
-                    aria-label="Odjavi se"
-                  >
-                    🚪 Odjava
-                  </button>
-                  <button
-                    className="w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 border-t border-gray-200 dark:border-gray-600"
-                    onClick={() => { toggleDarkMode(); }}
-                    aria-label={isDarkMode ? 'Svijetli način' : 'Tamni način'}
-                  >
-                    {isDarkMode ? '☀️' : '🌙'} {isDarkMode ? 'Svijetli način' : 'Tamni način'}
-                  </button>
+                    {canShowPostaniPružatelj() && (
+                      <button
+                        className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'upgrade-to-provider' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
+                        onClick={() => setTab('upgrade-to-provider')}
+                      >
+                        🏢 Postani pružatelj
+                      </button>
+                    )}
+                  </div>
+                  <div className="pt-2 mt-1 border-t border-gray-100 dark:border-gray-700">
+                    <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Postavke</div>
+                    <button
+                      className="w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200"
+                      onClick={() => { toggleDarkMode(); }}
+                      aria-label={isDarkMode ? 'Svijetli način' : 'Tamni način'}
+                    >
+                      {isDarkMode ? '☀️' : '🌙'} {isDarkMode ? 'Svijetli način' : 'Tamni način'}
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-700 dark:text-red-300"
+                      onClick={() => { logout(); setTab('user'); }}
+                      aria-label="Odjavi se"
+                    >
+                      🚪 Odjava
+                    </button>
+                  </div>
                 </DropdownMenu>
               </>
             )}
