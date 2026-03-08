@@ -14,7 +14,6 @@ export default function DirectorDashboard() {
   const [teamView, setTeamView] = useState('list'); // 'list' | 'map'
   const [leadQueueView, setLeadQueueView] = useState('list');
   const [decisionsView, setDecisionsView] = useState('list'); // 'list' | 'map'
-  const [decisionsView, setDecisionsView] = useState('list'); // 'list' | 'map'
   const [newMemberEmail, setNewMemberEmail] = useState('');
   const [leadQueue, setLeadQueue] = useState(null);
   const [assignOptionsByJob, setAssignOptionsByJob] = useState({}); // jobId -> { options, loading }
