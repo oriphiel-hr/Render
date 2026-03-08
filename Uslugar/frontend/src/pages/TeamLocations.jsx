@@ -6,7 +6,6 @@ import api from '../api';
 import MapPicker from '../components/MapPicker';
 import AddressAutocomplete from '../components/AddressAutocomplete';
 import TeamLocationsMap from '../components/TeamLocationsMap';
-import TeamLocationsMap from '../components/TeamLocationsMap';
 
 export default function TeamLocations() {
   const [locations, setLocations] = useState([]);
