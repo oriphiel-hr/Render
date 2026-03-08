@@ -507,6 +507,19 @@ r.post('/:jobId/accept/:offerId', auth(true, ['USER', 'PROVIDER']), async (req, 
     
     // Pošalji notifikaciju pružatelju
     await notifyAcceptedOffer(offer, job);
+
+    // Statistika po tim lokacijama: prihvaćeno (ako je ekskluzivan lead)
+    try {
+      const leadPurchase = await prisma.leadPurchase.findFirst({
+        where: { jobId, providerId: offer.userId, status: { not: 'REFUNDED' } }
+      });
+      if (leadPurchase) {
+        const { incrementTeamLocationLeadStats } = await import('../services/team-location-stats-service.js');
+        await incrementTeamLocationLeadStats(offer.userId, job, { leadsAccepted: 1 });
+      }
+    } catch (tlErr) {
+      console.error('[JOBS] Team location stats (leadsAccepted):', tlErr?.message);
+    }
     
     res.json({ ok: true });
   } catch (e) { next(e); }

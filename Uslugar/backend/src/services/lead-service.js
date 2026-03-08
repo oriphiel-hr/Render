@@ -318,6 +318,14 @@ export async function purchaseLead(jobId, providerId, options = {}) {
       }
     );
 
+    // Statistika po tim lokacijama: primljeno
+    try {
+      const { incrementTeamLocationLeadStats } = await import('./team-location-stats-service.js');
+      await incrementTeamLocationLeadStats(providerId, job, { leadsReceived: 1 });
+    } catch (tlErr) {
+      console.error('[LEAD] Team location stats (leadsReceived):', tlErr?.message);
+    }
+
     return {
       success: true,
       purchase,
@@ -502,6 +510,17 @@ export async function markLeadConverted(purchaseId, providerId, revenue = 0) {
       revenue
     }
   );
+
+  // Statistika po tim lokacijama: konvertirano
+  try {
+    const job = await prisma.job.findUnique({ where: { id: purchase.jobId } });
+    if (job) {
+      const { incrementTeamLocationLeadStats } = await import('./team-location-stats-service.js');
+      await incrementTeamLocationLeadStats(providerId, job, { leadsConverted: 1 });
+    }
+  } catch (tlErr) {
+    console.error('[LEAD] Team location stats (leadsConverted):', tlErr?.message);
+  }
 
   return updated;
 }
