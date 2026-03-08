@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { findClosestTeamLocation } from '../lib/geo-utils.js';
 
 function resolveLocationId(teamLocations, job) {
+  if (!job || !teamLocations?.length) return teamLocations?.find(t => t.isPrimary)?.id ?? teamLocations?.[0]?.id;
   const closest = findClosestTeamLocation(teamLocations, job);
   return closest?.id ?? teamLocations.find(t => t.isPrimary)?.id ?? teamLocations[0]?.id;
 }
@@ -115,7 +116,8 @@ export async function recalculateTeamLocationStats(providerUserId) {
       director.teamMembers.forEach(m => providerUserIds.push(m.userId));
     }
   }
-  const uniqueUserIds = [...new Set(providerUserIds)];
+  const uniqueUserIds = [...new Set(providerUserIds)].filter(Boolean);
+  if (!uniqueUserIds.length) return { debug: { queueEntries: 0, purchases: 0, error: 'No provider userIds' } };
 
   // primljeno: LeadPurchase + CompanyLeadQueue (leadovi u queueu tvrtke)
   const directorProfileId = profile.companyId || profile.id;
@@ -135,6 +137,7 @@ export async function recalculateTeamLocationStats(providerUserId) {
 
   const seenJobIds = new Set();
   for (const p of purchases) {
+    if (!p?.job) continue;
     const lid = resolveLocationId(teamLocations, p.job);
     if (!lid) continue;
     if (!seenJobIds.has(p.jobId)) {
@@ -145,6 +148,7 @@ export async function recalculateTeamLocationStats(providerUserId) {
   }
   for (const qe of queueEntries) {
     if (seenJobIds.has(qe.jobId)) continue;
+    if (!qe?.job) continue;
     const lid = resolveLocationId(teamLocations, qe.job);
     if (lid) {
       seenJobIds.add(qe.jobId);

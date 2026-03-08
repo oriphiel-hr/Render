@@ -1078,8 +1078,11 @@ r.post('/me/team-locations/recalculate-stats', auth(true, ['PROVIDER']), async (
     });
     res.json({ message: 'Statistika ažurirana', locations, debug: result?.debug });
   } catch (e) {
-    console.error('[TEAM-LOCATIONS] recalculate-stats error:', e);
-    next(e);
+    console.error('[TEAM-LOCATIONS] recalculate-stats error:', e?.message || e);
+    res.status(500).json({
+      error: 'Greška pri osvježavanju statistike',
+      message: e?.message || String(e)
+    });
   }
 });
 
