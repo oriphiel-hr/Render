@@ -72,7 +72,6 @@ export async function incrementTeamLocationLeadStats(providerUserId, job, stats 
 export async function recalculateTeamLocationStats(providerUserId) {
   const profile = await prisma.providerProfile.findUnique({
     where: { userId: providerUserId },
-    select: { id: true, companyId: true, userId: true },
     include: {
       teamLocations: {
         where: { isActive: true },
