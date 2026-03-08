@@ -65,14 +65,14 @@ export default function ProvidersMap({ providers = [], onProviderClick }) {
 
   if (withCoords.length === 0) {
     return (
-      <div className="h-96 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200">
-        <p className="text-gray-500">Nema lokacija za prikaz. Pružatelji trebaju imati grad u profilu.</p>
+      <div className="h-96 flex items-center justify-center bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+        <p className="text-gray-500 dark:text-gray-400">Nema lokacija za prikaz. Pružatelji trebaju imati grad u profilu.</p>
       </div>
     );
   }
 
   return (
-    <div className="h-96 rounded-lg overflow-hidden border border-gray-200">
+    <div className="h-96 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
       <MapContainer center={center} zoom={8} style={{ height: '100%', width: '100%' }} scrollWheelZoom>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -82,8 +82,8 @@ export default function ProvidersMap({ providers = [], onProviderClick }) {
           <Marker key={p.id} position={positions[p.id]}>
             <Popup>
               <div className="min-w-[180px]">
-                <p className="font-semibold text-gray-900">{p.user?.fullName}</p>
-                <p className="text-sm text-gray-600">{p.user?.email}</p>
+                <p className="font-semibold text-gray-900 dark:text-white">{p.user?.fullName}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{p.user?.email}</p>
                 {(p.city || p.user?.city) && (
                   <p className="text-sm text-gray-500">📍 {p.city || p.user?.city}</p>
                 )}

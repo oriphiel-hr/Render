@@ -62,14 +62,14 @@ export default function LeadsMap({ leads = [], onLeadClick }) {
 
   if (withCoords.length === 0) {
     return (
-      <div className="h-96 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200">
-        <p className="text-gray-500">Nema lokacija za prikaz. Leadovi trebaju imati grad.</p>
+      <div className="h-96 flex items-center justify-center bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+        <p className="text-gray-500 dark:text-gray-400">Nema lokacija za prikaz. Leadovi trebaju imati grad.</p>
       </div>
     );
   }
 
   return (
-    <div className="h-96 rounded-lg overflow-hidden border border-gray-200">
+    <div className="h-96 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
       <MapContainer center={center} zoom={8} style={{ height: '100%', width: '100%' }} scrollWheelZoom>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -79,8 +79,8 @@ export default function LeadsMap({ leads = [], onLeadClick }) {
           <Marker key={lead.id} position={positions[lead.id]}>
             <Popup>
               <div className="min-w-[200px]">
-                <p className="font-semibold text-gray-900">{lead.title}</p>
-                <p className="text-sm text-gray-600 line-clamp-2">{lead.description}</p>
+                <p className="font-semibold text-gray-900 dark:text-white">{lead.title}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{lead.description}</p>
                 {lead.city && <p className="text-sm text-gray-500">📍 {lead.city}</p>}
                 {lead.distanceKm != null && lead.distanceKm !== Infinity && (
                   <p className="text-xs text-blue-600 font-medium">~{lead.distanceKm} km od vas</p>

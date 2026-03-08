@@ -191,3 +191,60 @@ export async function recalculateTeamLocationStats(providerUserId) {
     }
   };
 }
+
+/**
+ * Dohvati poslove (leadove) povezane s tim lokacijama – za prikaz na karti
+ */
+export async function getLeadJobsForTeamLocations(providerUserId) {
+  const profile = await prisma.providerProfile.findUnique({
+    where: { userId: providerUserId },
+    include: {
+      teamLocations: {
+        where: { isActive: true },
+        select: { id: true }
+      }
+    }
+  });
+  if (!profile) return [];
+
+  const directorProfileId = profile.companyId || profile.id;
+  const providerUserIds = [profile.userId];
+  if (profile.companyId) {
+    const company = await prisma.providerProfile.findUnique({
+      where: { id: profile.companyId },
+      include: { teamMembers: { select: { userId: true } } }
+    });
+    if (company) {
+      providerUserIds.push(company.userId);
+      company.teamMembers.forEach(m => providerUserIds.push(m.userId));
+    }
+  } else {
+    const director = await prisma.providerProfile.findUnique({
+      where: { id: profile.id },
+      include: { teamMembers: { select: { userId: true } } }
+    });
+    if (director) director.teamMembers.forEach(m => providerUserIds.push(m.userId));
+  }
+  const uniqueUserIds = [...new Set(providerUserIds)].filter(Boolean);
+  if (!uniqueUserIds.length) return [];
+
+  const [purchases, queueEntries] = await Promise.all([
+    prisma.leadPurchase.findMany({
+      where: { providerId: { in: uniqueUserIds }, status: { not: 'REFUNDED' } },
+      include: { job: { include: { category: true } } }
+    }),
+    prisma.companyLeadQueue.findMany({
+      where: { directorId: directorProfileId },
+      include: { job: { include: { category: true } } }
+    })
+  ]);
+
+  const byJobId = new Map();
+  for (const p of purchases) {
+    if (p?.job) byJobId.set(p.jobId, { job: p.job, status: p.status === 'CONVERTED' ? 'converted' : 'received' });
+  }
+  for (const qe of queueEntries) {
+    if (qe?.job && !byJobId.has(qe.jobId)) byJobId.set(qe.jobId, { job: qe.job, status: 'received' });
+  }
+  return Array.from(byJobId.values());
+}

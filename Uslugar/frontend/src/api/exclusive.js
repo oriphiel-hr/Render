@@ -221,3 +221,7 @@ export const toggleTeamLocationActive = (locationId) => {
 export const recalculateTeamLocationStats = () => {
   return api.post('/providers/me/team-locations/recalculate-stats');
 };
+
+export const getTeamLocationLeadJobs = () => {
+  return api.get('/providers/me/team-locations/lead-jobs');
+};

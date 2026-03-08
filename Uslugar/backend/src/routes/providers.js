@@ -1062,6 +1062,15 @@ r.get('/me/team-locations', auth(true, ['PROVIDER']), async (req, res, next) => 
   } catch (e) { next(e); }
 });
 
+// Dohvati poslove (leadove) za tim lokacije – za prikaz na karti
+r.get('/me/team-locations/lead-jobs', auth(true, ['PROVIDER']), async (req, res, next) => {
+  try {
+    const { getLeadJobsForTeamLocations } = await import('../services/team-location-stats-service.js');
+    const jobs = await getLeadJobsForTeamLocations(req.user.id);
+    res.json(jobs);
+  } catch (e) { next(e); }
+});
+
 // Ponovno izračunaj statistiku leadova (backfill)
 r.post('/me/team-locations/recalculate-stats', auth(true, ['PROVIDER']), async (req, res, next) => {
   try {

@@ -1,4 +1,4 @@
-// Pregledna karta svih tim lokacija
+// Pregledna karta svih tim lokacija + lokacije poslova (leadova)
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import L from 'leaflet';
@@ -11,6 +11,15 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
+const greenIcon = new L.Icon({
+  iconUrl: 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-2x-green.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
 function geocodeCity(city) {
   if (!city) return Promise.resolve(null);
   return fetch(
@@ -20,8 +29,9 @@ function geocodeCity(city) {
     .then((data) => (data?.[0] ? [parseFloat(data[0].lat), parseFloat(data[0].lon)] : null));
 }
 
-export default function TeamLocationsMap({ locations = [] }) {
+export default function TeamLocationsMap({ locations = [], jobs = [] }) {
   const [positions, setPositions] = useState({});
+  const [jobPositions, setJobPositions] = useState({});
 
   useEffect(() => {
     let cancelled = false;
@@ -41,21 +51,41 @@ export default function TeamLocationsMap({ locations = [] }) {
     return () => { cancelled = true; };
   }, [locations]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const resolve = async () => {
+      const result = {};
+      for (const item of jobs) {
+        const j = item.job || item;
+        const key = j.id;
+        if (j.latitude != null && j.longitude != null) {
+          result[key] = [parseFloat(j.latitude), parseFloat(j.longitude)];
+        } else if (j.city) {
+          const coords = await geocodeCity(j.city);
+          if (!cancelled && coords) result[key] = coords;
+        }
+      }
+      if (!cancelled) setJobPositions(result);
+    };
+    resolve();
+    return () => { cancelled = true; };
+  }, [jobs]);
+
   const withCoords = locations.filter((l) => positions[l.id]);
+  const jobsWithCoords = jobs.filter((item) => {
+    const j = item.job || item;
+    return jobPositions[j.id];
+  });
+  const allPoints = [...withCoords.map((l) => positions[l.id]), ...jobsWithCoords.map((item) => jobPositions[(item.job || item).id])];
   const center =
-    withCoords.length > 0
-      ? withCoords
-          .reduce((acc, l) => {
-            const p = positions[l.id];
-            return [acc[0] + p[0], acc[1] + p[1]];
-          }, [0, 0])
-          .map((v) => v / withCoords.length)
+    allPoints.length > 0
+      ? allPoints.reduce((acc, p) => [acc[0] + p[0], acc[1] + p[1]], [0, 0]).map((v) => v / allPoints.length)
       : [45.815399, 15.966568];
 
-  if (withCoords.length === 0) return null;
+  if (withCoords.length === 0 && jobsWithCoords.length === 0) return null;
 
   return (
-    <div className="h-64 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 mb-6">
+    <div className="h-64 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 mb-6 relative">
       <MapContainer center={center} zoom={7} style={{ height: '100%', width: '100%' }} scrollWheelZoom>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -92,7 +122,29 @@ export default function TeamLocationsMap({ locations = [] }) {
             </React.Fragment>
           );
         })}
+        {jobsWithCoords.map((item) => {
+          const j = item.job || item;
+          const pos = jobPositions[j.id];
+          const statusLabel = item.status === 'converted' ? 'Konvertirano' : 'Primljeno';
+          return (
+            <Marker key={`job-${j.id}`} position={pos} icon={greenIcon}>
+              <Popup>
+                <div className="min-w-[180px]">
+                  <p className="font-semibold text-gray-900 dark:text-white">{j.title}</p>
+                  {j.city && <p className="text-sm text-gray-600 dark:text-gray-400">📍 {j.city}</p>}
+                  <p className="text-xs font-medium mt-1 text-green-600">{statusLabel}</p>
+                  {j.category?.name && <p className="text-xs text-gray-500 mt-0.5">{j.category.name}</p>}
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
       </MapContainer>
+      {jobsWithCoords.length > 0 && (
+        <div className="absolute bottom-2 left-2 z-[1000] bg-white/90 dark:bg-gray-800/90 rounded px-2 py-1 text-xs text-gray-600 dark:text-gray-400 shadow">
+          🟢 = posao/lead
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 // Team Locations Management - GEO-DYNAMIC
 // MapPicker and AddressAutocomplete components for interactive location selection
 import React, { useState, useEffect } from 'react';
-import { getTeamLocations, createTeamLocation, updateTeamLocation, deleteTeamLocation, toggleTeamLocationActive, recalculateTeamLocationStats } from '../api/exclusive';
+import { getTeamLocations, createTeamLocation, updateTeamLocation, deleteTeamLocation, toggleTeamLocationActive, recalculateTeamLocationStats, getTeamLocationLeadJobs } from '../api/exclusive';
 import api from '../api';
 import MapPicker from '../components/MapPicker';
 import AddressAutocomplete from '../components/AddressAutocomplete';
@@ -9,6 +9,7 @@ import TeamLocationsMap from '../components/TeamLocationsMap';
 
 export default function TeamLocations() {
   const [locations, setLocations] = useState([]);
+  const [leadJobs, setLeadJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -33,14 +34,18 @@ export default function TeamLocations() {
 
   const loadLocations = async (refreshStats = false) => {
     try {
-      const res = await getTeamLocations();
-      const locs = Array.isArray(res.data) ? res.data : [];
+      const [locsRes, jobsRes] = await Promise.all([
+        getTeamLocations(),
+        getTeamLocationLeadJobs().catch(() => ({ data: [] }))
+      ]);
+      const locs = Array.isArray(locsRes.data) ? locsRes.data : [];
       setLocations(locs);
+      setLeadJobs(Array.isArray(jobsRes.data) ? jobsRes.data : []);
       if (locs.length > 0 && refreshStats) {
         try {
           const statsRes = await recalculateTeamLocationStats();
           if (statsRes.data?.locations?.length) setLocations(statsRes.data.locations);
-        } catch (_) { /* ignoriraj – koristi učitane lokacije */ }
+        } catch (_) { /* ignoriraj */ }
       }
     } catch (err) {
       console.error('Error loading locations:', err);
@@ -337,7 +342,7 @@ export default function TeamLocations() {
       {!loading && locations.length > 0 && (
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">🗺️ Pregled na karti</h3>
-          <TeamLocationsMap locations={locations} />
+          <TeamLocationsMap locations={locations} jobs={leadJobs} />
         </div>
       )}
 

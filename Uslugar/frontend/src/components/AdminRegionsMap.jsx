@@ -72,7 +72,7 @@ export default function AdminRegionsMap({ regions = [] }) {
           <Marker key={r.city} position={positions[r.city]}>
             <Popup>
               <div className="min-w-[180px]">
-                <p className="font-semibold text-gray-900">{r.city}</p>
+                <p className="font-semibold text-gray-900 dark:text-white">{r.city}</p>
                 <p className="text-sm text-blue-600 mt-1">👥 Pružatelji: {r.providersCount}</p>
                 <p className="text-sm text-green-600">📋 Poslovi: {r.jobsCount}</p>
               </div>
