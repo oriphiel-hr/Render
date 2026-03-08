@@ -1066,7 +1066,7 @@ r.get('/me/team-locations', auth(true, ['PROVIDER']), async (req, res, next) => 
 r.post('/me/team-locations/recalculate-stats', auth(true, ['PROVIDER']), async (req, res, next) => {
   try {
     const { recalculateTeamLocationStats } = await import('../services/team-location-stats-service.js');
-    await recalculateTeamLocationStats(req.user.id);
+    const result = await recalculateTeamLocationStats(req.user.id);
     const provider = await prisma.providerProfile.findUnique({
       where: { userId: req.user.id },
       select: { id: true }
@@ -1076,8 +1076,11 @@ r.post('/me/team-locations/recalculate-stats', auth(true, ['PROVIDER']), async (
       where: { providerId: provider.id },
       orderBy: [{ isPrimary: 'desc' }, { isActive: 'desc' }, { createdAt: 'desc' }]
     });
-    res.json({ message: 'Statistika ažurirana', locations });
-  } catch (e) { next(e); }
+    res.json({ message: 'Statistika ažurirana', locations, debug: result?.debug });
+  } catch (e) {
+    console.error('[TEAM-LOCATIONS] recalculate-stats error:', e);
+    next(e);
+  }
 });
 
 // Create new team location

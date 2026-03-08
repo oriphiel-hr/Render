@@ -66,6 +66,7 @@ export async function incrementTeamLocationLeadStats(providerUserId, job, stats 
 /**
  * Ponovno izračunaj statistiku leadova za sve tim lokacije providera (backfill postojećih podataka)
  * @param {string} providerUserId - ID korisnika (User.id) koji je provider
+ * @returns {{ debug?: { queueEntries: number, purchases: number, locationIds: string[] } }}
  */
 export async function recalculateTeamLocationStats(providerUserId) {
   const profile = await prisma.providerProfile.findUnique({
@@ -177,4 +178,13 @@ export async function recalculateTeamLocationStats(providerUserId) {
       }
     });
   }
+
+  return {
+    debug: {
+      queueEntries: queueEntries.length,
+      purchases: purchases.length,
+      locationIds: teamLocations.map(l => l.id),
+      counts: Object.fromEntries(teamLocations.map(l => [l.id, counts[l.id]]))
+    }
+  };
 }

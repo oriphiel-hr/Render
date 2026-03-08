@@ -304,8 +304,16 @@ export default function TeamLocations() {
                 const res = await recalculateTeamLocationStats();
                 if (res.data?.locations) setLocations(res.data.locations);
                 else await loadLocations();
+                if (res.data?.debug) {
+                  const d = res.data.debug;
+                  console.log('[TeamLocations] recalculate debug:', d);
+                  if (d.queueEntries === 0 && d.purchases === 0) {
+                    alert('Nema leadova u queueu niti kupljenih leadova za ovu tvrtku.');
+                  }
+                }
               } catch (err) {
                 console.error(err);
+                alert('Greška pri osvježavanju: ' + (err?.response?.data?.error || err?.message || 'Nepoznato'));
               } finally {
                 setRecalculating(false);
               }
