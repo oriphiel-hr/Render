@@ -300,9 +300,6 @@ export default function TeamLocations() {
         </div>
       )}
 
-      {/* Pregledna karta lokacija */}
-      {!loading && locations.length > 0 && <TeamLocationsMap locations={locations} />}
-
       {/* Locations List */}
       {loading ? (
         <div className="text-center py-8">Učitavanje...</div>
