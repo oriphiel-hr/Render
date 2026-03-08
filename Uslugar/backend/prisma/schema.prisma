@@ -456,6 +456,9 @@ model Review {
   moderationReviewedAt      DateTime? // Kada je pregledano
   moderationRejectionReason String? // Razlog odbijanja (ako je odbijen)
   moderationNotes           String? // Bilješke moderatora
+  moderationAiUsed          Boolean  @default(false) // Da li je korišten AI (OpenAI) za provjeru
+  moderationProvider        String? // "OpenAI" ako je AI korišten, null za fallback
+  moderationOpenaiId        String? // OpenAI Moderation API response id (modr-xxx) za provjeru
 
   // REPORT - Prijava lažnih ocjena
   isReported        Boolean       @default(false) // Da li je recenzija prijavljena kao lažna

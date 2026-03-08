@@ -303,10 +303,10 @@ export default function LeadMarketplace() {
                     )}
                   </div>
 
-                  {/* AI Score Bar */}
+                  {/* Quality Score Bar */}
                   <div className="mb-4">
                     <div className="flex justify-between text-xs text-gray-600 mb-1">
-                      <span>AI Kvaliteta</span>
+                      <span>Kvaliteta</span>
                       <span>{lead.qualityScore || 0}/100</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
@@ -358,7 +358,7 @@ export default function LeadMarketplace() {
           <li>✅ <strong>Otključavanje kontakta:</strong> Dodatno 1 kredit za email i telefon klijenta</li>
           <li>✅ <strong>Ekskluzivnost:</strong> Samo vi ćete imati pristup ovom klijentu</li>
           <li>✅ <strong>Refund:</strong> Ako klijent ne odgovori, vraćamo kredite</li>
-          <li>✅ <strong>AI Scoring:</strong> Leadovi ocjenjeni prema kvaliteti (0-100)</li>
+          <li>✅ <strong>Bodovanje kvalitete:</strong> Leadovi ocjenjeni prema kvaliteti (0-100)</li>
           <li>✅ <strong>Verificirani klijenti:</strong> Provjereni telefon, email, ID</li>
         </ul>
       </div>

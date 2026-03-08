@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReviewList from './ReviewList';
+import LocationMap from './LocationMap';
 import api from '../api';
 import { QRCodeSVG } from 'qrcode.react';
 
@@ -209,6 +210,20 @@ const ProviderProfile = ({ providerId, onClose, onNavigateToMyJobs, scrollToActi
               </span>
             )}
           </div>
+
+          {/* Lokacija na karti */}
+          {(provider.user?.city || provider.user?.latitude != null) && (
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">📍 Lokacija</h3>
+              <LocationMap
+                city={provider.user?.city}
+                latitude={provider.user?.latitude}
+                longitude={provider.user?.longitude}
+                label={provider.user?.fullName}
+                height="180px"
+              />
+            </div>
+          )}
 
           {/* Gdje prihvatiti ponudu / Kako angažirati pružatelja */}
           <div ref={actionBoxRef} className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">

@@ -81,7 +81,7 @@ export default function UserTypesFlowcharts() {
           📋 Povezani procesi
         </h2>
         <p className="text-sm mb-4" style={{ color: textColor, opacity: 0.8 }}>
-          Verifikacija, pretplata, queue sustav, lead sustav, notifikacije
+          Verifikacija, pretplata, queue sustav, lead sustav (bodovanje kvalitete), notifikacije, refund, reputacija
         </p>
         <ProcessDiagramsSection isDarkMode={isDarkMode} />
       </div>
@@ -92,7 +92,7 @@ export default function UserTypesFlowcharts() {
         </h3>
         <p className="text-sm" style={{ color: isDarkMode ? '#BFDBFE' : '#1E3A8A' }}>
           Interaktivni dijagram prikazuje vaš put kroz platformu ovisno o tipu korisnika (korisnik usluge, pružatelj, direktor, član tima).
-          U sekciji Povezani procesi možete pregledati Verifikaciju, Pretplatu, Queue sustav, Lead sustav i Notifikacije.
+          U sekciji Povezani procesi pregledate Verifikaciju, Pretplatu, Queue sustav (s bodovanjem prioriteta), Lead sustav s bodovanjem kvalitete, Notifikacije, Refund i Reputaciju.
         </p>
       </div>
     </div>

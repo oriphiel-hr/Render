@@ -393,3 +393,52 @@ export async function getMonthlyTrends(monthsBack = 12) {
   }
 }
 
+/**
+ * Statistike po regijama (gradovima) - za kartu
+ * @returns {Promise<Array>} [{ city, providersCount, jobsCount }]
+ */
+export async function getPlatformStatsByRegion() {
+  try {
+    const providersByCity = await prisma.user.groupBy({
+      by: ['city'],
+      where: {
+        role: 'PROVIDER',
+        city: { not: null }
+      },
+      _count: { id: true }
+    });
+
+    const jobsByCity = await prisma.job.groupBy({
+      by: ['city'],
+      where: {
+        city: { not: null }
+      },
+      _count: { id: true }
+    });
+
+    const providersMap = Object.fromEntries(
+      providersByCity.map((p) => [p.city, p._count.id])
+    );
+    const jobsMap = Object.fromEntries(
+      jobsByCity.map((j) => [j.city, j._count.id])
+    );
+
+    const allCities = new Set([
+      ...providersByCity.map((p) => p.city),
+      ...jobsByCity.map((j) => j.city)
+    ]);
+
+    return [...allCities]
+      .filter(Boolean)
+      .map((city) => ({
+        city,
+        providersCount: providersMap[city] || 0,
+        jobsCount: jobsMap[city] || 0
+      }))
+      .sort((a, b) => (b.providersCount + b.jobsCount) - (a.providersCount + a.jobsCount));
+  } catch (error) {
+    console.error('[Platform Stats Service] Error getting stats by region:', error);
+    throw error;
+  }
+}
+

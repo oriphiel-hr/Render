@@ -4,6 +4,7 @@ import { useAuth } from '../App.jsx';
 import { createChatRoom, getChatRoom } from '../api/chat';
 import ChatRoom from '../components/ChatRoom';
 import JobForm from '../components/JobForm';
+import JobsMap from '../components/JobsMap';
 
 export default function MyJobs({ onNavigate, categories = [] }) {
   const { token } = useAuth();
@@ -16,6 +17,7 @@ export default function MyJobs({ onNavigate, categories = [] }) {
   const [chatRoom, setChatRoom] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [jobsView, setJobsView] = useState('list'); // 'list' | 'map'
   const [completingJobId, setCompletingJobId] = useState(null);
   const hasAutoExpandedRef = useRef(false);
 
@@ -466,6 +468,28 @@ export default function MyJobs({ onNavigate, categories = [] }) {
         </div>
       ) : (
         <div className="space-y-4">
+          <div className="flex justify-end gap-2 mb-4">
+            <button
+              onClick={() => setJobsView('list')}
+              className={`px-4 py-2 rounded-lg font-medium text-sm ${jobsView === 'list' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+            >
+              📋 Lista
+            </button>
+            <button
+              onClick={() => setJobsView('map')}
+              className={`px-4 py-2 rounded-lg font-medium text-sm ${jobsView === 'map' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+            >
+              🗺️ Mapa
+            </button>
+          </div>
+          {jobsView === 'map' ? (
+            <JobsMap
+              jobs={filteredJobs}
+              showStatus={true}
+              onJobClick={(job) => handleViewJobDetails(job)}
+            />
+          ) : (
+          <>
           {filteredJobs.map(job => (
             <div key={job.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden flex">
               <div className="hidden sm:block w-1 shrink-0 rounded-l-xl bg-gradient-to-b from-blue-400 to-blue-600" aria-hidden />
@@ -633,6 +657,8 @@ export default function MyJobs({ onNavigate, categories = [] }) {
               </div>
             </div>
           ))}
+          </>
+          )}
         </div>
       )}
       {/* Modal za uređivanje posla – samo za otvorene poslove */}

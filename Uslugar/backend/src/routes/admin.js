@@ -3,7 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { auth } from '../lib/auth.js';
 import { deleteUserWithRelations } from '../lib/delete-helpers.js';
 import { offerToNextInQueue } from '../lib/leadQueueManager.js';
-import { getPlatformStatistics, getMonthlyTrends } from '../services/platform-stats-service.js';
+import { getPlatformStatistics, getMonthlyTrends, getPlatformStatsByRegion } from '../services/platform-stats-service.js';
 import { getPendingModeration, moderateContent, getModerationStats, reportMessage } from '../services/moderation-service.js';
 import { sendMonthlyReportsToAllUsers, sendMonthlyReport } from '../services/monthly-report-service.js';
 
@@ -17,6 +17,19 @@ r.get('/platform-stats', auth(true, ['ADMIN']), async (req, res, next) => {
   try {
     const stats = await getPlatformStatistics();
     res.json(stats);
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * GET /api/admin/platform-stats/regions
+ * Statistike po regijama (gradovima) - za kartu
+ */
+r.get('/platform-stats/regions', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const regions = await getPlatformStatsByRegion();
+    res.json(regions);
   } catch (e) {
     next(e);
   }
@@ -46,6 +59,23 @@ r.get('/platform-trends', auth(true, ['ADMIN']), async (req, res, next) => {
     const monthsBack = parseInt(req.query.months) || 12;
     const trends = await getMonthlyTrends(monthsBack);
     res.json(trends);
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * GET /api/admin/ai-status
+ * Status AI funkcionalnosti i integracija
+ */
+r.get('/ai-status', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const openaiConfigured = Boolean(process.env.OPENAI_API_KEY);
+    res.json({
+      openaiConfigured,
+      leadScoringType: 'rule-based',
+      documentation: '/docs/SETUP-OPENAI-API-KEY.md'
+    });
   } catch (e) {
     next(e);
   }

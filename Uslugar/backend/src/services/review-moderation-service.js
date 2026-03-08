@@ -56,7 +56,8 @@ async function checkWithOpenAI(text) {
     return {
       flagged: result.flagged,
       categories: result.categories,
-      categoryScores: result.category_scores
+      categoryScores: result.category_scores,
+      id: response.id || null // OpenAI Moderation API id (modr-xxx) za provjeru
     };
   } catch (error) {
     console.error('[REVIEW_MODERATION] OpenAI API error:', error.message);
@@ -68,7 +69,7 @@ async function checkWithOpenAI(text) {
  * AI automatska provjera sadržaja recenzije (OpenAI Moderation API + fallback provjere)
  * @param {String} comment - Tekst recenzije
  * @param {Number} rating - Ocjena (1-5)
- * @returns {Object} - { isApproved: boolean, reason: string, flaggedWords: string[], confidence: number, aiUsed: boolean }
+ * @returns {Object} - { isApproved, reason, flaggedWords, confidence, aiUsed, moderationProvider, openaiModerationId }
  */
 export async function autoModerateReview(comment, rating) {
   try {
@@ -201,8 +202,10 @@ export async function autoModerateReview(comment, rating) {
       flaggedWords,
       confidence: Math.max(0, Math.min(1, confidence)),
       moderationStatus: isApproved ? 'APPROVED' : needsHumanReview ? 'PENDING' : 'REJECTED',
-      aiUsed: aiUsed, // Da li je korišten OpenAI API
-      aiFlagged: aiResult?.flagged || false // Da li je OpenAI flag-ao sadržaj
+      aiUsed: aiUsed,
+      aiFlagged: aiResult?.flagged || false,
+      moderationProvider: aiUsed ? 'OpenAI' : null,
+      openaiModerationId: aiResult?.id || null
     };
   } catch (error) {
     console.error('[REVIEW_MODERATION] Error in auto-moderate review:', error);
@@ -215,7 +218,9 @@ export async function autoModerateReview(comment, rating) {
       confidence: 0.5,
       moderationStatus: 'PENDING',
       aiUsed: false,
-      aiFlagged: false
+      aiFlagged: false,
+      moderationProvider: null,
+      openaiModerationId: null
     };
   }
 }
@@ -349,12 +354,14 @@ export async function rejectReview(reviewId, adminId, rejectionReason, notes = n
       }
     });
 
-    // Obavijesti korisnika o odbijanju
+    // Obavijesti korisnika o odbijanju (admin odbio - uključi referencu i način žalbe)
+    const supportEmail = process.env.CONTACT_ADMIN_EMAIL || 'support@uslugar.hr';
+    const msg = `Vaša recenzija je odbijena od strane moderatora. Razlog: ${rejectionReason}. Referenca: #${reviewId}. Ako smatrate da je došlo do greške, možete podnijeti žalbu na ${supportEmail} uz referencu #${reviewId}.`;
     try {
       await prisma.notification.create({
         data: {
           title: 'Recenzija odbijena',
-          message: `Vaša recenzija je odbijena: ${rejectionReason}`,
+          message: msg,
           type: 'REVIEW_REJECTED',
           userId: review.fromUserId
         }

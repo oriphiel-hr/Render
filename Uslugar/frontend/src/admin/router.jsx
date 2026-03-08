@@ -25,6 +25,7 @@ import AdminApiRequestLogs from '../pages/AdminApiRequestLogs'
 import AdminErrorLogs from '../pages/AdminErrorLogs'
 import AdminAddonEventLogs from '../pages/AdminAddonEventLogs'
 import AdminContactInquiries from '../pages/AdminContactInquiries'
+import AdminAiIntegracije from '../pages/AdminAiIntegracije'
 import api from '../api'
 
 // Model nazivi u PascalCase kako backend očekuje
@@ -280,6 +281,7 @@ export default function AdminRouter(){
           <Route path="/admin/error-logs" element={<AdminErrorLogs />} />
           <Route path="/admin/addon-event-logs" element={<AdminAddonEventLogs />} />
           <Route path="/admin/contact-inquiries" element={<AdminContactInquiries />} />
+          <Route path="/admin/ai-integrations" element={<AdminAiIntegracije />} />
           {/* Fallback ruta za nepoznate admin rute - redirect na prvi model */}
           <Route path="/admin/*" element={<Navigate to={`/admin/${MODELS[0]}`} replace />} />
         </Route>

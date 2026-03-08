@@ -70,6 +70,13 @@ const NAVIGATION_GROUPS = [
     ]
   },
   {
+    title: 'AI i Integracije',
+    icon: '🤖',
+    items: [
+      { to: '/admin/ai-integrations', label: 'AI i integracije', icon: '🔗' }
+    ]
+  },
+  {
     title: 'Razvoj i Alati',
     icon: '🛠️',
     items: [
@@ -140,7 +147,8 @@ function getPageTitle(pathname) {
     'api-request-logs': 'API Request Logs',
     'error-logs': 'Error Logs',
     'addon-event-logs': 'Addon Event Logs',
-    'contact-inquiries': 'Kontakt upiti'
+    'contact-inquiries': 'Kontakt upiti',
+    'ai-integrations': 'AI i integracije'
   }
   
   return specialPages[path] || 'Admin Panel'

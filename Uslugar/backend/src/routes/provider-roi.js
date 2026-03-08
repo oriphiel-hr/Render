@@ -11,6 +11,7 @@ import {
 import { sendMonthlyReport } from '../services/monthly-report-service.js';
 import { getProviderPosition, calculateBenchmarks } from '../services/benchmark-service.js';
 import { forecastProviderPerformance } from '../services/forecast-service.js';
+import { computeRoiFromLeadPurchases } from '../services/roi-sync.js';
 
 const r = Router();
 
@@ -20,10 +21,10 @@ r.get('/dashboard', auth(true, ['PROVIDER']), async (req, res, next) => {
     const providerId = req.user.id;
     
     // Dohvati ROI podatke
-    const roi = await prisma.providerROI.findUnique({
+    let roi = await prisma.providerROI.findUnique({
       where: { providerId }
     });
-    
+
     // Dohvati subscription podatke
     const subscription = await prisma.subscription.findUnique({
       where: { userId: providerId },
@@ -57,6 +58,29 @@ r.get('/dashboard', auth(true, ['PROVIDER']), async (req, res, next) => {
       where: { providerId },
       _count: { status: true }
     });
+
+    // Ako ProviderROI je prazan ili zastario (0 kupljenih) ali imamo LeadPurchase, izračunaj iz stvarnih podataka
+    const totalFromStatus = statusCounts.reduce((acc, g) => acc + (g._count?.status || 0), 0);
+    const hasLeads = recentLeads.length > 0 || totalFromStatus > 0;
+    if ((!roi || roi.totalLeadsPurchased === 0) && hasLeads) {
+      const computed = await computeRoiFromLeadPurchases(providerId);
+      if (computed) {
+        roi = computed;
+        // Opsionalno: sinkroniziraj ProviderROI u bazu za buduće zahtjeve
+        try {
+          await prisma.providerROI.upsert({
+            where: { providerId },
+            create: {
+              providerId,
+              ...computed
+            },
+            update: computed
+          });
+        } catch (e) {
+          console.warn('[ROI] Sync ProviderROI failed:', e.message);
+        }
+      }
+    }
     
     const dashboard = {
       roi: roi || {

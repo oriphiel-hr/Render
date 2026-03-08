@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import api from '../api';
 
-const ReviewForm = ({ providerId, providerName, onReviewSubmitted, existingReview = null }) => {
+const ReviewForm = ({ providerId, providerName, jobId, onReviewSubmitted, existingReview = null }) => {
   const [rating, setRating] = useState(existingReview?.rating || 0);
   const [comment, setComment] = useState(existingReview?.comment || '');
   const [submitting, setSubmitting] = useState(false);
@@ -21,18 +21,18 @@ const ReviewForm = ({ providerId, providerName, onReviewSubmitted, existingRevie
       const data = {
         toUserId: providerId,
         rating,
-        comment: comment.trim()
+        comment: comment.trim(),
+        ...(jobId && { jobId })
       };
 
+      let response;
       if (existingReview) {
-        // Ažuriranje postojećeg review-a
-        await api.put(`/reviews/${existingReview.id}`, data);
+        response = await api.put(`/reviews/${existingReview.id}`, data);
       } else {
-        // Kreiranje novog review-a
-        await api.post('/reviews', data);
+        response = await api.post('/reviews', data);
       }
 
-      onReviewSubmitted?.();
+      onReviewSubmitted?.(response?.data);
     } catch (err) {
       setError(err.response?.data?.error || 'Greška pri slanju recenzije');
     } finally {

@@ -1,5 +1,6 @@
 // Benchmark Service - Usporedba s drugim providerima
 import { prisma } from '../lib/prisma.js';
+import { computeRoiFromLeadPurchases } from './roi-sync.js';
 
 /**
  * Izračunaj benchmark statistike (prosjek, median, percentili) za sve providere
@@ -161,7 +162,7 @@ export async function calculateBenchmarks() {
  */
 export async function getProviderPosition(providerId) {
   try {
-    const providerROI = await prisma.providerROI.findUnique({
+    let providerROI = await prisma.providerROI.findUnique({
       where: { providerId },
       select: {
         totalLeadsPurchased: true,
@@ -175,11 +176,17 @@ export async function getProviderPosition(providerId) {
       }
     });
 
+    // Ako ProviderROI je prazan ali imamo LeadPurchase, izračunaj iz stvarnih podataka
     if (!providerROI || providerROI.totalLeadsPurchased === 0) {
-      return {
-        hasData: false,
-        message: 'Nedostaju podaci za usporedbu. Kupite barem jedan lead da biste vidjeli svoju poziciju.'
-      };
+      const computed = await computeRoiFromLeadPurchases(providerId);
+      if (computed && computed.totalLeadsPurchased > 0) {
+        providerROI = computed;
+      } else {
+        return {
+          hasData: false,
+          message: 'Nedostaju podaci za usporedbu. Kupite barem jedan lead da biste vidjeli svoju poziciju.'
+        };
+      }
     }
 
     const benchmarks = await calculateBenchmarks();

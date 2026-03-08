@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 import TeamMap from '../components/TeamMap';
+import JobsMap from '../components/JobsMap';
 
 export default function DirectorDashboard() {
   const [team, setTeam] = useState(null);
@@ -11,6 +12,9 @@ export default function DirectorDashboard() {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('team'); // 'team', 'finances', 'decisions', 'lead-queue'
   const [teamView, setTeamView] = useState('list'); // 'list' | 'map'
+  const [leadQueueView, setLeadQueueView] = useState('list');
+  const [decisionsView, setDecisionsView] = useState('list'); // 'list' | 'map'
+  const [decisionsView, setDecisionsView] = useState('list'); // 'list' | 'map'
   const [newMemberEmail, setNewMemberEmail] = useState('');
   const [leadQueue, setLeadQueue] = useState(null);
   const [assignOptionsByJob, setAssignOptionsByJob] = useState({}); // jobId -> { options, loading }
@@ -463,6 +467,31 @@ export default function DirectorDashboard() {
       {/* Decisions Tab */}
       {activeTab === 'decisions' && decisions && (
         <div className="space-y-6">
+          <div className="flex justify-end gap-2 mb-4">
+            <button
+              onClick={() => setDecisionsView('list')}
+              className={`px-4 py-2 rounded-lg font-medium text-sm ${decisionsView === 'list' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              📋 Lista
+            </button>
+            <button
+              onClick={() => setDecisionsView('map')}
+              className={`px-4 py-2 rounded-lg font-medium text-sm ${decisionsView === 'map' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              🗺️ Mapa
+            </button>
+          </div>
+          {decisionsView === 'map' ? (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <JobsMap
+                jobs={[
+                  ...decisions.pendingOffers.map((o) => ({ job: o.job, status: 'PONUDA' })),
+                  ...decisions.pendingLeads.map((l) => ({ job: l.job, status: 'LEAD' }))
+                ]}
+                showStatus={true}
+              />
+            </div>
+          ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-white rounded-lg shadow-md p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
@@ -514,6 +543,7 @@ export default function DirectorDashboard() {
               )}
             </div>
           </div>
+          )}
         </div>
       )}
 
@@ -542,11 +572,33 @@ export default function DirectorDashboard() {
             </div>
           )}
 
-          {/* Lista leadova */}
+          {/* Lista / Mapa leadova */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Leadovi u Queueu</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Leadovi u Queueu</h2>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setLeadQueueView('list')}
+                  className={`px-4 py-2 rounded-lg font-medium text-sm ${leadQueueView === 'list' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  📋 Lista
+                </button>
+                <button
+                  onClick={() => setLeadQueueView('map')}
+                  className={`px-4 py-2 rounded-lg font-medium text-sm ${leadQueueView === 'map' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  🗺️ Mapa
+                </button>
+              </div>
+            </div>
             {leadQueue.queue.length === 0 ? (
               <p className="text-gray-500">Nema leadova u queueu</p>
+            ) : leadQueueView === 'map' ? (
+              <JobsMap
+                jobs={leadQueue.queue}
+                showStatus={true}
+                onJobClick={(entry) => setExpandedAssignEntryId(entry.id)}
+              />
             ) : (
               <div className="space-y-4">
                 {leadQueue.queue.map((entry) => (

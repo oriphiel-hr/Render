@@ -8,6 +8,7 @@ import JobForm from './components/JobForm';
 import ProviderCard from './components/ProviderCard';
 import ProviderFilter from './components/ProviderFilter';
 import ProvidersMap from './components/ProvidersMap';
+import LocationMap from './components/LocationMap';
 import ReviewList from './components/ReviewList';
 import Login from './pages/Login';
 import UserRegister from './pages/UserRegister';
@@ -1412,7 +1413,7 @@ export default function App(){
                 </div>
                 
                 <div className="mt-4 text-xs opacity-75">
-                  <p>✓ Ekskluzivni leadovi ✓ Refund sistem ✓ ROI statistika ✓ AI prioritet</p>
+                  <p>✓ Ekskluzivni leadovi ✓ Refund sistem ✓ ROI statistika ✓ Prioritet prema bodovima</p>
                 </div>
               </div>
             </div>
@@ -2421,7 +2422,18 @@ export default function App(){
                 <p className="text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{selectedJob.description}</p>
               </div>
               {selectedJob.city && (
-                <p className="text-gray-600 dark:text-gray-300">📍 {selectedJob.city}</p>
+                <>
+                  <p className="text-gray-600 dark:text-gray-300 mb-2">📍 {selectedJob.city}</p>
+                  <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 mb-4">
+                    <LocationMap
+                      city={selectedJob.city}
+                      latitude={selectedJob.latitude}
+                      longitude={selectedJob.longitude}
+                      label={selectedJob.title}
+                      height="180px"
+                    />
+                  </div>
+                </>
               )}
               {(selectedJob.budgetMin != null || selectedJob.budgetMax != null) && (
                 <p className="text-gray-600 dark:text-gray-300">

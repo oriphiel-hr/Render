@@ -5,6 +5,8 @@ import { getTeamLocations, createTeamLocation, updateTeamLocation, deleteTeamLoc
 import api from '../api';
 import MapPicker from '../components/MapPicker';
 import AddressAutocomplete from '../components/AddressAutocomplete';
+import TeamLocationsMap from '../components/TeamLocationsMap';
+import TeamLocationsMap from '../components/TeamLocationsMap';
 
 export default function TeamLocations() {
   const [locations, setLocations] = useState([]);
@@ -290,6 +292,17 @@ export default function TeamLocations() {
           </form>
         </div>
       )}
+
+      {/* Pregledna karta lokacija */}
+      {!loading && locations.length > 0 && (
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">🗺️ Pregled na karti</h3>
+          <TeamLocationsMap locations={locations} />
+        </div>
+      )}
+
+      {/* Pregledna karta lokacija */}
+      {!loading && locations.length > 0 && <TeamLocationsMap locations={locations} />}
 
       {/* Locations List */}
       {loading ? (

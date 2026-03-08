@@ -64,10 +64,10 @@ const PROCESS_DIAGRAMS = {
     Q6 -->|Ne| Q8[DECLINED - Sljedeći u redu]`
   },
   lead: {
-    title: 'Lead Sustav',
+    title: 'Lead Sustav (bodovanje kvalitete)',
     mermaid: `flowchart TD
     L1[Korisnik objavljuje posao] --> L2[Posao = Ekskluzivni Lead]
-    L2 --> L3[AI Score, Trust Score, cijena]
+    L2 --> L3[Quality Score, Trust Score, cijena]
     L3 --> L4[Lead na tržištu - AVAILABLE]
     L4 --> L5{Kupovina?}
     L5 -->|Da| L6[Pružatelj kupuje - krediti/Stripe]

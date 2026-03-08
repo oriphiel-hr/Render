@@ -162,6 +162,8 @@ r.post('/', auth(true), async (req, res, next) => {
     const shouldPublish = !!reciprocalReview && moderationResult.isApproved;
     const now = new Date();
     
+    const supportEmail = process.env.CONTACT_ADMIN_EMAIL || 'support@uslugar.hr';
+
     const review = await prisma.review.create({
       data: { 
         jobId,
@@ -172,8 +174,11 @@ r.post('/', auth(true), async (req, res, next) => {
         isPublished: shouldPublish,
         publishedAt: shouldPublish ? now : null,
         reviewDeadline: reviewDeadline,
-        moderationStatus: moderationResult.moderationStatus, // PENDING, APPROVED, ili REJECTED
-        moderationNotes: moderationResult.reason || null // Razlog ako je potrebna moderacija
+        moderationStatus: moderationResult.moderationStatus,
+        moderationNotes: moderationResult.reason || null,
+        moderationAiUsed: moderationResult.aiUsed || false,
+        moderationProvider: moderationResult.moderationProvider || null,
+        moderationOpenaiId: moderationResult.openaiModerationId || null
       },
       include: {
         job: {
@@ -227,28 +232,53 @@ r.post('/', auth(true), async (req, res, next) => {
       }
     }
 
-    // Ako AI nije odobrio, obavijesti korisnika
+    // Ako AI nije odobrio, obavijesti korisnika s transparentnom porukom, referencom i načinom žalbe
     if (!moderationResult.isApproved && moderationResult.needsHumanReview) {
+      const aiDisclosure = moderationResult.aiUsed
+        ? ' Vaš sadržaj je provjeren pomoću OpenAI Moderation API (vanjski AI sustav, ne Uslugar).'
+        : ' Vaš sadržaj je provjeren automatskim pravilima platforme.';
+      const msg = `Vaša recenzija je poslana na ljudsku moderaciju.${aiDisclosure} Referenca: #${review.id}. Ako smatrate da je došlo do greške, možete podnijeti žalbu na ${supportEmail} uz navedenu referencu.`;
       await prisma.notification.create({
         data: {
           title: 'Recenzija čeka moderaciju',
-          message: 'Vaša recenzija je poslana na moderaciju. Objavljena će biti nakon provjere.',
+          message: msg,
           type: 'REVIEW_PENDING',
           userId: req.user.id
         }
       });
     } else if (!moderationResult.isApproved && !moderationResult.needsHumanReview) {
+      const aiDisclosure = moderationResult.aiUsed
+        ? ' Vaš sadržaj je provjeren pomoću OpenAI Moderation API (vanjski AI sustav, ne Uslugar) i označen kao neprikladan.'
+        : ' Vaš sadržaj je provjeren automatskim pravilima platforme i označen kao neprikladan.';
+      const reason = moderationResult.reason ? ` Razlog: ${moderationResult.reason}.` : '';
+      const openaiRef = moderationResult.openaiModerationId ? ` Provjera OpenAI ID: ${moderationResult.openaiModerationId}.` : '';
+      const msg = `Vaša recenzija je automatski odbijena.${aiDisclosure}${reason}${openaiRef} Referenca: #${review.id}. Ako smatrate da je došlo do greške, možete podnijeti žalbu na ${supportEmail} uz referencu #${review.id}.`;
       await prisma.notification.create({
         data: {
           title: 'Recenzija odbijena',
-          message: `Vaša recenzija je automatski odbijena: ${moderationResult.reason || 'Krši pravila platforme'}`,
+          message: msg,
           type: 'REVIEW_REJECTED',
           userId: req.user.id
         }
       });
     }
 
-    res.status(201).json(review);
+    // Ako recenzija nije odobrena, dodaj moderationInfo za prikaz korisniku (disclosure, referenca, žalba)
+    const payload = { ...review };
+    if (!moderationResult.isApproved) {
+      const aiDisclosure = moderationResult.aiUsed
+        ? 'Vaš sadržaj je provjeren pomoću OpenAI Moderation API (vanjski AI sustav, ne Uslugar).'
+        : 'Vaš sadržaj je provjeren automatskim pravilima platforme.';
+      payload.moderationInfo = {
+        disclosure: aiDisclosure,
+        referenceId: review.id,
+        openaiModerationId: moderationResult.openaiModerationId || null,
+        appealEmail: supportEmail,
+        appealInstructions: `Ako smatrate da je došlo do greške, pošaljite žalbu na ${supportEmail} uz referencu #${review.id}.`
+      };
+    }
+
+    res.status(201).json(payload);
   } catch (e) { 
     console.error('[REVIEWS] Error creating review:', e);
     next(e); 

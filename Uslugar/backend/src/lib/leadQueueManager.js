@@ -435,6 +435,14 @@ export async function respondToLeadOffer(queueId, response, userId) {
       return { leadPurchase, transaction }
     })
     
+    // Sinkroniziraj ProviderROI (kupljeni leadovi moraju se odraziti u ROI dashboardu)
+    try {
+      const { syncProviderROIFromPurchases } = await import('../services/roi-sync.js');
+      await syncProviderROIFromPurchases(userId);
+    } catch (e) {
+      console.warn('[ROI] Sync after queue purchase failed:', e.message);
+    }
+
     // Ako je provider direktor, dodaj lead u interni queue tvrtke (nakon što se transakcija završi)
     try {
       await addToCompanyQueueIfDirector(queueItem.jobId, userId);

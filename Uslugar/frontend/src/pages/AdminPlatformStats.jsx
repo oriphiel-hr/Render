@@ -2,19 +2,31 @@
 import React, { useState, useEffect } from 'react';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import api from '../api';
+import AdminRegionsMap from '../components/AdminRegionsMap';
 import { useDarkMode } from '../contexts/DarkModeContext.jsx';
 
 export default function AdminPlatformStats() {
   const { isDarkMode } = useDarkMode();
   const [stats, setStats] = useState(null);
   const [trends, setTrends] = useState(null);
+  const [regions, setRegions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     loadStats();
     loadTrends();
+    loadRegions();
   }, []);
+
+  const loadRegions = async () => {
+    try {
+      const res = await api.get('/admin/platform-stats/regions');
+      setRegions(res.data || []);
+    } catch (err) {
+      console.error('Error loading regions:', err);
+    }
+  };
 
   const loadStats = async () => {
     try {
@@ -328,6 +340,14 @@ export default function AdminPlatformStats() {
             {stats.reviews.total} recenzija
           </div>
         </div>
+      </div>
+
+      {/* Karta po regijama */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          Statistike po regijama (gradovima)
+        </h3>
+        <AdminRegionsMap regions={regions} />
       </div>
 
       {/* Charts */}

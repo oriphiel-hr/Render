@@ -7,6 +7,7 @@ const ReviewList = ({ providerId, currentUserId, onReviewSubmitted }) => {
   const [error, setError] = useState('');
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [existingReview, setExistingReview] = useState(null);
+  const [moderationInfo, setModerationInfo] = useState(null);
 
   useEffect(() => {
     fetchReviews();
@@ -30,7 +31,8 @@ const ReviewList = ({ providerId, currentUserId, onReviewSubmitted }) => {
     }
   };
 
-  const handleReviewSubmitted = () => {
+  const handleReviewSubmitted = (responseData) => {
+    setModerationInfo(responseData?.moderationInfo || null);
     setShowReviewForm(false);
     fetchReviews();
     onReviewSubmitted?.();
@@ -101,6 +103,20 @@ const ReviewList = ({ providerId, currentUserId, onReviewSubmitted }) => {
           </button>
         )}
       </div>
+
+      {moderationInfo && (
+        <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-sm">
+          <p className="font-medium text-amber-900 dark:text-amber-200 mb-1">Status moderacije</p>
+          <p className="text-amber-800 dark:text-amber-300 mb-1">{moderationInfo.disclosure}</p>
+          <p className="text-amber-700 dark:text-amber-400 mb-1">
+            Referenca: <strong>#{moderationInfo.referenceId}</strong>
+            {moderationInfo.openaiModerationId && (
+              <> · OpenAI ID: <code className="text-xs">{moderationInfo.openaiModerationId}</code></>
+            )}
+          </p>
+          <p className="text-amber-700 dark:text-amber-400">{moderationInfo.appealInstructions}</p>
+        </div>
+      )}
 
       {showReviewForm && (
         <div className="mb-6">
