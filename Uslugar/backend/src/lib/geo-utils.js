@@ -25,6 +25,15 @@ function toRad(degrees) {
   return degrees * (Math.PI / 180);
 }
 
+function citiesMatch(a, b) {
+  if (!a || !b) return false;
+  const na = String(a).toLowerCase().trim();
+  const nb = String(b).toLowerCase().trim();
+  if (na === nb) return true;
+  // "Grad Zagreb" vs "Zagreb", "Split" vs "Grad Split"
+  return na.includes(nb) || nb.includes(na);
+}
+
 /**
  * Check if job is within radius of team location
  * @param {Object} teamLocation - Team location with latitude, longitude, radiusKm
@@ -35,16 +44,16 @@ export function isWithinRadius(teamLocation, job) {
   if (!teamLocation.latitude || !teamLocation.longitude) {
     // Fallback: city match if GPS not available
     return {
-      isWithinRadius: teamLocation.city === job.city,
-      distanceKm: teamLocation.city === job.city ? 0 : Infinity
+      isWithinRadius: citiesMatch(teamLocation.city, job.city),
+      distanceKm: citiesMatch(teamLocation.city, job.city) ? 0 : Infinity
     };
   }
 
   if (!job.latitude || !job.longitude) {
-    // Fallback: city match
+    // Fallback: city match ("Zagreb" vs "Grad Zagreb")
     return {
-      isWithinRadius: teamLocation.city === job.city,
-      distanceKm: teamLocation.city === job.city ? 0 : Infinity
+      isWithinRadius: citiesMatch(teamLocation.city, job.city),
+      distanceKm: citiesMatch(teamLocation.city, job.city) ? 0 : Infinity
     };
   }
 

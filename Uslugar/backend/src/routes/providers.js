@@ -1062,6 +1062,24 @@ r.get('/me/team-locations', auth(true, ['PROVIDER']), async (req, res, next) => 
   } catch (e) { next(e); }
 });
 
+// Ponovno izračunaj statistiku leadova (backfill)
+r.post('/me/team-locations/recalculate-stats', auth(true, ['PROVIDER']), async (req, res, next) => {
+  try {
+    const { recalculateTeamLocationStats } = await import('../services/team-location-stats-service.js');
+    await recalculateTeamLocationStats(req.user.id);
+    const provider = await prisma.providerProfile.findUnique({
+      where: { userId: req.user.id },
+      select: { id: true }
+    });
+    if (!provider) return res.status(404).json({ error: 'Provider profile not found' });
+    const locations = await prisma.providerTeamLocation.findMany({
+      where: { providerId: provider.id },
+      orderBy: [{ isPrimary: 'desc' }, { isActive: 'desc' }, { createdAt: 'desc' }]
+    });
+    res.json({ message: 'Statistika ažurirana', locations });
+  } catch (e) { next(e); }
+});
+
 // Create new team location
 r.post('/me/team-locations', auth(true, ['PROVIDER']), async (req, res, next) => {
   try {

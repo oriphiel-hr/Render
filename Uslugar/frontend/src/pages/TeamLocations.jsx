@@ -1,7 +1,7 @@
 // Team Locations Management - GEO-DYNAMIC
 // MapPicker and AddressAutocomplete components for interactive location selection
 import React, { useState, useEffect } from 'react';
-import { getTeamLocations, createTeamLocation, updateTeamLocation, deleteTeamLocation, toggleTeamLocationActive } from '../api/exclusive';
+import { getTeamLocations, createTeamLocation, updateTeamLocation, deleteTeamLocation, toggleTeamLocationActive, recalculateTeamLocationStats } from '../api/exclusive';
 import api from '../api';
 import MapPicker from '../components/MapPicker';
 import AddressAutocomplete from '../components/AddressAutocomplete';
@@ -25,6 +25,7 @@ export default function TeamLocations() {
     notes: ''
   });
   const [locationAddress, setLocationAddress] = useState('');
+  const [recalculating, setRecalculating] = useState(false);
 
   useEffect(() => {
     loadLocations();
@@ -289,6 +290,31 @@ export default function TeamLocations() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Osvježi statistiku leadova */}
+      {!loading && locations.length > 0 && (
+        <div className="mb-4 flex justify-end">
+          <button
+            type="button"
+            onClick={async () => {
+              setRecalculating(true);
+              try {
+                const res = await recalculateTeamLocationStats();
+                if (res.data?.locations) setLocations(res.data.locations);
+                else await loadLocations();
+              } catch (err) {
+                console.error(err);
+              } finally {
+                setRecalculating(false);
+              }
+            }}
+            disabled={recalculating}
+            className="px-4 py-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg text-sm font-medium hover:bg-indigo-200 dark:hover:bg-indigo-900/50 disabled:opacity-50"
+          >
+            {recalculating ? 'Osvježavam…' : '🔄 Osvježi statistiku leadova'}
+          </button>
         </div>
       )}
 

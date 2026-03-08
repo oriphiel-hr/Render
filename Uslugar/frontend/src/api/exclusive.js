@@ -217,3 +217,7 @@ export const deleteTeamLocation = (locationId) => {
 export const toggleTeamLocationActive = (locationId) => {
   return api.patch(`/providers/me/team-locations/${locationId}/toggle-active`);
 };
+
+export const recalculateTeamLocationStats = () => {
+  return api.post('/providers/me/team-locations/recalculate-stats');
+};
