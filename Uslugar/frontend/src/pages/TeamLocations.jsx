@@ -28,13 +28,20 @@ export default function TeamLocations() {
   const [recalculating, setRecalculating] = useState(false);
 
   useEffect(() => {
-    loadLocations();
+    loadLocations(true);
   }, []);
 
-  const loadLocations = async () => {
+  const loadLocations = async (refreshStats = false) => {
     try {
       const res = await getTeamLocations();
-      setLocations(res.data);
+      const locs = Array.isArray(res.data) ? res.data : [];
+      setLocations(locs);
+      if (locs.length > 0 && refreshStats) {
+        try {
+          const statsRes = await recalculateTeamLocationStats();
+          if (statsRes.data?.locations?.length) setLocations(statsRes.data.locations);
+        } catch (_) { /* ignoriraj – koristi učitane lokacije */ }
+      }
     } catch (err) {
       console.error('Error loading locations:', err);
     } finally {
