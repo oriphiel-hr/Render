@@ -137,6 +137,70 @@
   }
 }
 
+/* FAQ accordion expand/collapse */
+.faq-accordion-grid {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.35s ease-out;
+}
+.faq-accordion-grid.open {
+  grid-template-rows: 1fr;
+}
+.faq-accordion-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* FAQ page entrance animation */
+@keyframes faq-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.faq-animate-in {
+  animation: faq-fade-in 0.5s ease-out forwards;
+}
+.faq-animate-in.faq-delay-0 { animation-delay: 0.05s; opacity: 0; }
+.faq-animate-in.faq-delay-1 { animation-delay: 0.15s; opacity: 0; }
+.faq-animate-in.faq-delay-2 { animation-delay: 0.25s; opacity: 0; }
+.faq-animate-in.faq-delay-3 { animation-delay: 0.35s; opacity: 0; }
+.faq-animate-in.faq-delay-4 { animation-delay: 0.45s; opacity: 0; }
+.faq-animate-in.faq-delay-5 { animation-delay: 0.55s; opacity: 0; }
+.faq-animate-in.faq-delay-6 { animation-delay: 0.65s; opacity: 0; }
+.faq-animate-in.faq-delay-7 { animation-delay: 0.75s; opacity: 0; }
+.faq-animate-in.faq-delay-8 { animation-delay: 0.85s; opacity: 0; }
+.faq-animate-in.faq-delay-9 { animation-delay: 0.95s; opacity: 0; }
+.faq-animate-in.faq-delay-10 { animation-delay: 1.05s; opacity: 0; }
+.faq-animate-in.faq-delay-11 { animation-delay: 1.15s; opacity: 0; }
+.faq-animate-in.faq-delay-12 { animation-delay: 1.25s; opacity: 0; }
+.faq-animate-in.faq-delay-13 { animation-delay: 1.35s; opacity: 0; }
+.faq-animate-in.faq-delay-14 { animation-delay: 1.45s; opacity: 0; }
+.faq-animate-in.faq-delay-15 { animation-delay: 1.55s; opacity: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .faq-animate-in,
+  .faq-animate-in.faq-delay-0,
+  .faq-animate-in.faq-delay-1,
+  .faq-animate-in.faq-delay-2,
+  .faq-animate-in.faq-delay-3,
+  .faq-animate-in.faq-delay-4,
+  .faq-animate-in.faq-delay-5,
+  .faq-animate-in.faq-delay-6,
+  .faq-animate-in[class*="faq-delay-"] {
+    animation-duration: 0.01ms;
+    animation-delay: 0s;
+    opacity: 1;
+  }
+  .faq-accordion-grid {
+    transition-duration: 0.01ms;
+  }
+}
+
 /* Ensure anchor targets are not hidden under the top nav (posebno #chat) */
 :target {
   scroll-margin-top: 120px;
@@ -154,4 +218,16 @@ html.dark .chat-message-input {
 }
 html.dark .chat-message-input::placeholder {
   color: #9ca3af;
+}
+
+/* Print: FAQ stranica – sakrij gumb "Vrati se na vrh", prikaži sav sadržaj */
+@media print {
+  .faq-back-to-top {
+    display: none !important;
+  }
+  .faq-animate-in,
+  .faq-animate-in[class*="faq-delay-"] {
+    animation: none !important;
+    opacity: 1 !important;
+  }
 }

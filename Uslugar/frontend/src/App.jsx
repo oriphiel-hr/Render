@@ -560,6 +560,8 @@ export default function App(){
     'relative px-2 py-1 text-sm font-medium transition-colors';
   const navLinkActive =
     'text-gray-900 dark:text-white after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:w-full after:rounded-full after:bg-emerald-500';
+  const navLinkActiveFaq =
+    'text-gray-900 dark:text-white after:absolute after:left-0 after:-bottom-1 after:h-0.5 after:w-full after:rounded-full after:bg-indigo-500';
   const navLinkInactive =
     'text-gray-500 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white';
 
@@ -657,7 +659,7 @@ export default function App(){
               className={
                 navLinkBase +
                 ' ' +
-                (tab === 'faq' ? navLinkActive : navLinkInactive)
+                (tab === 'faq' ? navLinkActiveFaq : navLinkInactive)
               }
               onClick={() => {
                 if (window.location.pathname.startsWith('/admin/')) {
@@ -1009,7 +1011,7 @@ export default function App(){
               </button>
             )}
             <button
-              className={'px-3 py-2 border rounded ' + (tab==='faq' ? 'bg-purple-600 text-white' : 'border-purple-600 text-purple-600')}
+              className={'px-3 py-2 border rounded ' + (tab==='faq' ? 'bg-indigo-600 text-white' : 'border-indigo-600 text-indigo-600')}
               onClick={() => navigateToTab('faq')}
             >
               ❓
@@ -1098,32 +1100,32 @@ export default function App(){
               </button>
               {(!token || isProvider()) && (
                 <button
-                  className={'w-full text-left px-3 py-2 rounded ' + (tab==='pricing' ? 'bg-orange-600 text-white' : 'hover:bg-gray-100')}
+                  className={'w-full text-left px-3 py-2 rounded ' + (tab==='pricing' ? 'bg-orange-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700')}
                   onClick={() => { navigateToTab('pricing'); setIsMobileMenuOpen(false); }}
                 >
                   💰 Cjenik
                 </button>
               )}
               <button
-                className={'w-full text-left px-3 py-2 rounded ' + (tab==='faq' ? 'bg-purple-600 text-white' : 'hover:bg-gray-100')}
+                className={'w-full text-left px-3 py-2 rounded ' + (tab==='faq' ? 'bg-indigo-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700')}
                 onClick={() => { navigateToTab('faq'); setIsMobileMenuOpen(false); }}
               >
                 ❓ FAQ
               </button>
               <button
-                className={'w-full text-left px-3 py-2 rounded ' + (tab==='documentation' ? 'bg-indigo-600 text-white' : 'hover:bg-gray-100')}
+                className={'w-full text-left px-3 py-2 rounded ' + (tab==='documentation' ? 'bg-indigo-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700')}
                 onClick={() => { navigateToTab('documentation'); setIsMobileMenuOpen(false); }}
               >
                 📚 Dokumentacija
               </button>
               <button
-                className={'w-full text-left px-3 py-2 rounded ' + (tab==='about' ? 'bg-green-600 text-white' : 'hover:bg-gray-100')}
+                className={'w-full text-left px-3 py-2 rounded ' + (tab==='about' ? 'bg-green-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700')}
                 onClick={() => { navigateToTab('about'); setIsMobileMenuOpen(false); }}
               >
                 🏢 O nama
               </button>
               <button
-                className={'w-full text-left px-3 py-2 rounded ' + (tab==='contact' ? 'bg-blue-600 text-white' : 'hover:bg-gray-100')}
+                className={'w-full text-left px-3 py-2 rounded ' + (tab==='contact' ? 'bg-blue-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700')}
                 onClick={() => { navigateToTab('contact'); setIsMobileMenuOpen(false); }}
               >
                 📞 Kontakt

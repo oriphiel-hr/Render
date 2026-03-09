@@ -261,19 +261,36 @@ export default function Pricing({ setTab }) {
           })}
         </div>
 
-        {/* FAQ Link */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Imate pitanja?
+        {/* Česta pitanja o naplati */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 text-center border border-gray-200 dark:border-gray-700">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            Česta pitanja o naplati
           </h2>
-          <p className="text-xl text-gray-600 mb-6">
-            Pogledajte našu FAQ sekciju s odgovorima na najčešća pitanja
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            Odgovori na pitanja o kreditima, pretplati i cijenama
           </p>
+          <ul className="space-y-2 text-left max-w-md mx-auto mb-6">
+            <li>
+              <button type="button" onClick={() => setTab('faq')} className="text-indigo-600 dark:text-indigo-400 hover:underline text-sm font-medium">
+                Koliko košta 1 kredit?
+              </button>
+            </li>
+            <li>
+              <button type="button" onClick={() => setTab('faq')} className="text-indigo-600 dark:text-indigo-400 hover:underline text-sm font-medium">
+                Mogu li otkazati pretplatu?
+              </button>
+            </li>
+            <li>
+              <button type="button" onClick={() => setTab('faq')} className="text-indigo-600 dark:text-indigo-400 hover:underline text-sm font-medium">
+                Kako se ažuriraju krediti?
+              </button>
+            </li>
+          </ul>
           <button
             onClick={() => setTab('faq')}
-            className="inline-block bg-purple-600 text-white py-3 px-8 rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+            className="inline-block bg-indigo-600 text-white py-3 px-8 rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
           >
-            ❓ Pregledaj FAQ
+            ❓ Pregledaj sva FAQ pitanja
           </button>
         </div>
 
