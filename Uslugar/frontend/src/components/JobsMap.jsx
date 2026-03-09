@@ -95,11 +95,14 @@ export default function JobsMap({ jobs = [], onJobClick, showStatus = true }) {
         {withCoords.map((entry) => {
           const job = entry.job || entry;
           const status = entry.status ?? job.status;
+          const code = entry.leadLabel || entry.code || null;
           return (
             <Marker key={job.id} position={positions[job.id]}>
               <Popup>
                 <div className="min-w-[220px]">
-                  <p className="font-semibold text-gray-900 dark:text-white">{job.title}</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {code ? `${code} — ${job.title}` : job.title}
+                  </p>
                   {job.description && (
                     <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mt-1">{job.description}</p>
                   )}

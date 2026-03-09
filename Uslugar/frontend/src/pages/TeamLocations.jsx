@@ -1,6 +1,6 @@
 // Team Locations Management - GEO-DYNAMIC
 // MapPicker and AddressAutocomplete components for interactive location selection
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getTeamLocations, createTeamLocation, updateTeamLocation, deleteTeamLocation, toggleTeamLocationActive, recalculateTeamLocationStats, getTeamLocationLeadJobs } from '../api/exclusive';
 import api from '../api';
 import MapPicker from '../components/MapPicker';
@@ -9,6 +9,7 @@ import TeamLocationsMap from '../components/TeamLocationsMap';
 
 export default function TeamLocations() {
   const [locations, setLocations] = useState([]);
+  const formRef = useRef(null);
   const [leadJobs, setLeadJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
@@ -122,6 +123,10 @@ export default function TeamLocations() {
       notes: loc.notes || ''
     });
     setShowForm(true);
+    // Scrollaj do forme da bude vidljiva nakon klika na "Uredi"
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 0);
   };
 
   // Auto-fill GPS from city (simple geocoding via API)
@@ -171,7 +176,7 @@ export default function TeamLocations() {
 
       {/* Form */}
       {showForm && (
-        <div className="mb-6 bg-white border rounded-lg p-6">
+        <div ref={formRef} className="mb-6 bg-white border rounded-lg p-6">
           <h2 className="text-xl font-semibold mb-4">{editing ? 'Uredi lokaciju' : 'Nova lokacija'}</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

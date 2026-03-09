@@ -215,6 +215,13 @@ export default function DirectorDashboard() {
     );
   }
 
+  const numberedLeadQueue = leadQueue?.queue
+    ? leadQueue.queue.map((entry, index) => ({
+        ...entry,
+        leadLabel: `L${index + 1}`
+      }))
+    : [];
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="mb-8">
@@ -594,20 +601,27 @@ export default function DirectorDashboard() {
               <p className="text-gray-500">Nema leadova u queueu</p>
             ) : leadQueueView === 'map' ? (
               <JobsMap
-                jobs={leadQueue.queue}
+                jobs={numberedLeadQueue}
                 showStatus={true}
                 onJobClick={(entry) => setExpandedAssignEntryId(entry.id)}
               />
             ) : (
               <div className="space-y-4">
-                {leadQueue.queue.map((entry) => (
+                {numberedLeadQueue.map((entry) => (
                   <div
                     key={entry.id}
                     className="border border-gray-200 rounded-lg p-4"
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900">{entry.job.title}</h3>
+                        <h3 className="font-semibold text-gray-900">
+                          {entry.leadLabel && (
+                            <span className="inline-flex items-center justify-center mr-2 px-2 py-0.5 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800">
+                              {entry.leadLabel}
+                            </span>
+                          )}
+                          {entry.job.title}
+                        </h3>
                         <p className="text-sm text-gray-600 mt-1">{entry.job.description}</p>
                         <div className="mt-2 flex flex-wrap gap-2">
                           <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">

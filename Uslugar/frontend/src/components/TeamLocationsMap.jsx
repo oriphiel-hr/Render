@@ -20,6 +20,15 @@ const greenIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
+const orangeIcon = new L.Icon({
+  iconUrl: 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-2x-orange.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
 function geocodeCity(city) {
   if (!city) return Promise.resolve(null);
   return fetch(
@@ -95,6 +104,7 @@ export default function TeamLocationsMap({ locations = [], jobs = [] }) {
           const pos = positions[loc.id];
           const radius = (loc.radiusKm || 50) * 1000;
           const isActive = loc.isActive !== false;
+          const circleColor = loc.isPrimary ? '#2563eb' : '#0ea5e9';
           return (
             <React.Fragment key={loc.id}>
               <Marker position={pos}>
@@ -112,10 +122,11 @@ export default function TeamLocationsMap({ locations = [], jobs = [] }) {
                   center={pos}
                   radius={radius}
                   pathOptions={{
-                    color: isActive ? '#3b82f6' : '#9ca3af',
-                    fillColor: isActive ? '#93c5fd' : '#d1d5db',
+                    color: isActive ? circleColor : '#9ca3af',
+                    fillColor: isActive ? circleColor : '#d1d5db',
                     fillOpacity: 0.2,
-                    weight: 1
+                    weight: 1,
+                    dashArray: loc.isPrimary ? undefined : '4 4'
                   }}
                 />
               )}
@@ -126,8 +137,9 @@ export default function TeamLocationsMap({ locations = [], jobs = [] }) {
           const j = item.job || item;
           const pos = jobPositions[j.id];
           const statusLabel = item.status === 'converted' ? 'Konvertirano' : 'Primljeno';
+          const icon = item.status === 'converted' ? greenIcon : orangeIcon;
           return (
-            <Marker key={`job-${j.id}`} position={pos} icon={greenIcon}>
+            <Marker key={`job-${j.id}`} position={pos} icon={icon}>
               <Popup>
                 <div className="min-w-[180px]">
                   <p className="font-semibold text-gray-900 dark:text-white">{j.title}</p>
@@ -140,9 +152,12 @@ export default function TeamLocationsMap({ locations = [], jobs = [] }) {
           );
         })}
       </MapContainer>
-      {jobsWithCoords.length > 0 && (
-        <div className="absolute bottom-2 left-2 z-[1000] bg-white/90 dark:bg-gray-800/90 rounded px-2 py-1 text-xs text-gray-600 dark:text-gray-400 shadow">
-          🟢 = posao/lead
+      {(withCoords.length > 0 || jobsWithCoords.length > 0) && (
+        <div className="absolute bottom-2 left-2 z-[1000] bg-white/90 dark:bg-gray-800/90 rounded px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 shadow space-y-0.5">
+          <div>🔵 puni krug = primarna tim lokacija</div>
+          <div>🔵 isprekidani krug = dodatna tim lokacija</div>
+          <div>🟢 pin = konvertirani posao</div>
+          <div>🟠 pin = primljeni lead (još nije konvertiran)</div>
         </div>
       )}
     </div>
