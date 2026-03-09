@@ -11,22 +11,21 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
-const greenIcon = new L.Icon({
-  iconUrl: 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-2x-green.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+// Koristimo divIcon umjesto CDN slika da izbjegnemo Tracking Prevention u preglednicima (npr. Edge)
+const greenIcon = L.divIcon({
+  className: 'leaflet-marker-custom',
+  html: '<div style="width:100%;height:100%;border-radius:50%;background:#22c55e;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></div>',
+  iconSize: [26, 26],
+  iconAnchor: [13, 13],
+  popupAnchor: [0, -13]
 });
 
-const orangeIcon = new L.Icon({
-  iconUrl: 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-2x-orange.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+const orangeIcon = L.divIcon({
+  className: 'leaflet-marker-custom',
+  html: '<div style="width:100%;height:100%;border-radius:50%;background:#f97316;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></div>',
+  iconSize: [26, 26],
+  iconAnchor: [13, 13],
+  popupAnchor: [0, -13]
 });
 
 function geocodeCity(city) {

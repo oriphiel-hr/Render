@@ -1109,6 +1109,10 @@ r.post('/me/team-locations', auth(true, ['PROVIDER']), async (req, res, next) =>
 
     const { name, city, latitude, longitude, address, postalCode, radiusKm = 50, isActive = true, isPrimary = false, notes } = req.body;
 
+    const lat = latitude != null && latitude !== '' ? parseFloat(latitude) : null;
+    const lon = longitude != null && longitude !== '' ? parseFloat(longitude) : null;
+    const validCoords = lat != null && lon != null && !Number.isNaN(lat) && !Number.isNaN(lon);
+
     // Ako je nova lokacija primary, makni primary s ostalih
     if (isPrimary) {
       await prisma.providerTeamLocation.updateMany({
@@ -1122,8 +1126,7 @@ r.post('/me/team-locations', auth(true, ['PROVIDER']), async (req, res, next) =>
         providerId: provider.id,
         name,
         city,
-        latitude,
-        longitude,
+        ...(validCoords && { latitude: lat, longitude: lon }),
         address,
         postalCode,
         radiusKm: parseInt(radiusKm) || 50,
@@ -1162,6 +1165,10 @@ r.put('/me/team-locations/:locationId', auth(true, ['PROVIDER']), async (req, re
 
     const { name, city, latitude, longitude, address, postalCode, radiusKm, isActive, isPrimary, notes } = req.body;
 
+    const lat = latitude != null && latitude !== '' ? parseFloat(latitude) : undefined;
+    const lon = longitude != null && longitude !== '' ? parseFloat(longitude) : undefined;
+    const validCoords = lat != null && lon != null && !Number.isNaN(lat) && !Number.isNaN(lon);
+
     // Ako je nova lokacija primary, makni primary s ostalih
     if (isPrimary && !location.isPrimary) {
       await prisma.providerTeamLocation.updateMany({
@@ -1173,16 +1180,15 @@ r.put('/me/team-locations/:locationId', auth(true, ['PROVIDER']), async (req, re
     const updated = await prisma.providerTeamLocation.update({
       where: { id: locationId },
       data: {
-        name,
-        city,
-        latitude,
-        longitude,
-        address,
-        postalCode,
-        radiusKm: radiusKm ? parseInt(radiusKm) : undefined,
+        ...(name !== undefined && { name }),
+        ...(city !== undefined && { city }),
+        ...(validCoords && { latitude: lat, longitude: lon }),
+        ...(address !== undefined && { address }),
+        ...(postalCode !== undefined && { postalCode }),
+        radiusKm: radiusKm != null && radiusKm !== '' ? parseInt(radiusKm) : undefined,
         isActive: isActive !== undefined ? isActive : undefined,
         isPrimary: isPrimary !== undefined ? isPrimary : undefined,
-        notes,
+        ...(notes !== undefined && { notes }),
         lastActiveAt: isActive ? new Date() : location.lastActiveAt
       }
     });
