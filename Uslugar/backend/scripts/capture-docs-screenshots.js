@@ -3,9 +3,9 @@
  * Koristi paket "playwright" iz backend/ (isti kao tests/scripts verzija).
  * OUT_DIR i BASE_URL moraju biti postavljeni u env (postavlja admin endpoint).
  */
-const playwright = require('playwright');
-const path = require('path');
-const fs = require('fs');
+import playwright from 'playwright';
+import path from 'node:path';
+import fs from 'node:fs';
 
 const BASE_URL = process.env.BASE_URL || 'https://www.uslugar.eu';
 const OUT_DIR = process.env.OUT_DIR || path.resolve(process.cwd(), 'public', 'docs');
