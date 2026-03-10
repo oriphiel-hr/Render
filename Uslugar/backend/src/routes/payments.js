@@ -53,6 +53,7 @@ r.post('/create-checkout', auth(true, ['PROVIDER']), async (req, res, next) => {
     }
 
     const { plan } = req.body;
+    const interval = (req.body.interval === 'yearly' || req.body.interval === 'year') ? 'year' : 'month';
     
     if (!plan) {
       return res.status(400).json({ error: 'Plan is required' });
@@ -269,16 +270,18 @@ r.post('/create-checkout', auth(true, ['PROVIDER']), async (req, res, next) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    // Create metadata
+    // Create metadata (godišnja = 12× krediti)
+    const useYearlyBilling = interval === 'year' && !proratedInfo && planDetails.price > 0;
     const metadata = {
       userId: req.user.id.toString(),
       plan: plan,
-      credits: planDetails.credits.toString(),
+      credits: (useYearlyBilling ? planDetails.credits * 12 : planDetails.credits).toString(),
       originalPrice: planDetails.price.toString(),
       discountedPrice: adjustedPrice.toString(),
       discountApplied: discountApplied.toString(),
       discountType: discountType || '',
-      proratedInfo: proratedInfo ? JSON.stringify(proratedInfo) : ''
+      proratedInfo: proratedInfo ? JSON.stringify(proratedInfo) : '',
+      interval: interval
     };
     
     console.log('[CREATE-CHECKOUT] Creating session with metadata:', metadata);
@@ -294,7 +297,14 @@ r.post('/create-checkout', auth(true, ['PROVIDER']), async (req, res, next) => {
     
     const productDescription = proratedInfo
       ? `Proporcionalna naplata za ${proratedInfo.daysRemaining} preostalih dana. Originalna cijena: ${planDetails.price}€, Naplaćeno: ${adjustedPrice}€`
-      : `${planDetails.credits} ekskluzivnih leadova mjesečno${discountApplied && discountType !== 'prorated' ? ` - Originalna cijena: ${planDetails.price}€` : ''}`;
+      : interval === 'year'
+        ? `${planDetails.credits * 12} ekskluzivnih leadova godišnje (10 mjeseci, 2 besplatno)`
+        : `${planDetails.credits} ekskluzivnih leadova mjesečno${discountApplied && discountType !== 'prorated' ? ` - Originalna cijena: ${planDetails.price}€` : ''}`;
+    
+    // Godišnja cijena: 10 mjeseci (2 mj. besplatno); prorated i popusti samo za mjesečno
+    const useYearly = useYearlyBilling;
+    const finalUnitPrice = useYearly ? adjustedPrice * 10 : adjustedPrice;
+    const recurringInterval = useYearly ? 'year' : 'month';
     
     const sessionConfig = {
       payment_method_types: ['card'], // Kartice (Visa, Mastercard, Diners)
@@ -307,10 +317,10 @@ r.post('/create-checkout', auth(true, ['PROVIDER']), async (req, res, next) => {
             name: productName,
             description: productDescription,
           },
-          unit_amount: Math.round(adjustedPrice * 100), // Stripe koristi cents
+          unit_amount: Math.round(finalUnitPrice * 100), // Stripe koristi cents
           ...(mode === 'subscription' ? {
             recurring: {
-              interval: 'month' // Mjesečna pretplata
+              interval: recurringInterval
             }
           } : {})
         },
@@ -368,12 +378,13 @@ r.post('/webhook', async (req, res, next) => {
       const userId = session.metadata.userId;
       const plan = session.metadata.plan;
       const credits = parseInt(session.metadata.credits);
-      const paymentIntentId = session.payment_intent; // Stripe Payment Intent ID
+      const paymentIntentId = session.payment_intent;
+      const interval = session.metadata.interval === 'year' ? 'year' : 'month';
 
-      console.log(`[PAYMENT] Subscription activated for user ${userId}, plan: ${plan}`);
+      console.log(`[PAYMENT] Subscription activated for user ${userId}, plan ${plan}, interval ${interval}`);
 
       // Activate subscription (sada će automatski kreirati fakturu unutar activateSubscription)
-      await activateSubscription(userId, plan, credits, paymentIntentId);
+      await activateSubscription(userId, plan, credits, paymentIntentId, interval);
 
       return res.json({ received: true });
     }
@@ -833,8 +844,13 @@ r.get('/success', async (req, res, next) => {
 
 /**
  * Helper: Activate subscription after payment
+ * @param {string} userId
+ * @param {string} plan
+ * @param {number} credits
+ * @param {string|null} stripePaymentIntentId
+ * @param {'month'|'year'} interval - 'year' za godišnju pretplatu (expiresAt +12 mj)
  */
-async function activateSubscription(userId, plan, credits, stripePaymentIntentId = null) {
+async function activateSubscription(userId, plan, credits, stripePaymentIntentId = null, interval = 'month') {
   try {
     // Ensure userId is a string (database expects string, not number)
     const userIdStr = typeof userId === 'string' ? userId : userId.toString();
@@ -873,7 +889,7 @@ async function activateSubscription(userId, plan, credits, stripePaymentIntentId
     console.log(`[ACTIVATE SUBSCRIPTION] Existing subscription:`, existingSubscription);
 
     // Ako korisnik već ima aktivnu plaćenu pretplatu, zadrži postojeći expiresAt (prorated billing)
-    // Inače, postavi novi expiresAt (1 mjesec od sada)
+    // Inače, postavi novi expiresAt (1 mjesec ili 12 mjeseci ovisno o intervalu)
     let expiresAt;
     if (existingSubscription && 
         existingSubscription.expiresAt && 
@@ -884,10 +900,14 @@ async function activateSubscription(userId, plan, credits, stripePaymentIntentId
       expiresAt = new Date(existingSubscription.expiresAt);
       console.log(`[ACTIVATE SUBSCRIPTION] Keeping existing expiresAt for prorated billing: ${expiresAt}`);
     } else {
-      // Nova pretplata ili upgrade iz TRIAL/BASIC - 1 mjesec od sada
       expiresAt = new Date();
-      expiresAt.setMonth(expiresAt.getMonth() + 1);
-      console.log(`[ACTIVATE SUBSCRIPTION] New subscription or upgrade from TRIAL/BASIC, expiresAt: ${expiresAt}`);
+      if (interval === 'year') {
+        expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+        console.log(`[ACTIVATE SUBSCRIPTION] Yearly subscription, expiresAt: ${expiresAt}`);
+      } else {
+        expiresAt.setMonth(expiresAt.getMonth() + 1);
+        console.log(`[ACTIVATE SUBSCRIPTION] Monthly subscription, expiresAt: ${expiresAt}`);
+      }
     }
     
     console.log(`[ACTIVATE SUBSCRIPTION] Updating subscription, expiresAt: ${expiresAt}`);

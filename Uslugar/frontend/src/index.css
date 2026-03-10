@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply text-gray-900 dark:text-gray-100 transition-colors;
+    @apply text-gray-900 dark:text-gray-100 transition-colors font-sans;
   }
 
   html:not(.dark) body {
@@ -88,6 +88,12 @@
 
   .animate-dropdown {
     animation: dropdown-fade-in 0.2s ease-out forwards;
+  }
+
+  /* Safe area za uređaje s rezom / zaobljenim rubovima */
+  .safe-area-x {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
   }
 }
 
@@ -191,7 +197,15 @@
   .faq-animate-in.faq-delay-4,
   .faq-animate-in.faq-delay-5,
   .faq-animate-in.faq-delay-6,
-  .faq-animate-in[class*="faq-delay-"] {
+  .faq-animate-in.faq-delay-7,
+  .faq-animate-in.faq-delay-8,
+  .faq-animate-in.faq-delay-9,
+  .faq-animate-in.faq-delay-10,
+  .faq-animate-in.faq-delay-11,
+  .faq-animate-in.faq-delay-12,
+  .faq-animate-in.faq-delay-13,
+  .faq-animate-in.faq-delay-14,
+  .faq-animate-in.faq-delay-15 {
     animation-duration: 0.01ms;
     animation-delay: 0s;
     opacity: 1;
@@ -199,7 +213,48 @@
   .faq-accordion-grid {
     transition-duration: 0.01ms;
   }
+  .pricing-hero-in,
+  .pricing-card-in,
+  .pricing-card-in[class*="delay-"] {
+    animation-duration: 0.01ms;
+    animation-delay: 0s;
+    opacity: 1;
+    transform: none;
+  }
 }
+
+/* Pricing page: hero and card entrance */
+@keyframes pricing-hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes pricing-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.pricing-hero-in {
+  animation: pricing-hero-in 0.6s ease-out forwards;
+}
+.pricing-card-in {
+  animation: pricing-card-in 0.5s ease-out forwards;
+}
+.pricing-card-in.delay-0 { animation-delay: 0.1s; opacity: 0; }
+.pricing-card-in.delay-1 { animation-delay: 0.2s; opacity: 0; }
+.pricing-card-in.delay-2 { animation-delay: 0.35s; opacity: 0; }
+.pricing-card-in.delay-3 { animation-delay: 0.5s; opacity: 0; }
+.pricing-card-in.delay-4 { animation-delay: 0.65s; opacity: 0; }
 
 /* Ensure anchor targets are not hidden under the top nav (posebno #chat) */
 :target {

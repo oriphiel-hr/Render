@@ -4,6 +4,25 @@ import { prisma } from '../lib/prisma.js';
 const r = Router();
 
 /**
+ * GET /api/public/pricing-stats
+ * Javne brojke za trust blok na Pricingu (broj pružatelja, leadova isporučenih)
+ */
+r.get('/pricing-stats', async (req, res, next) => {
+  try {
+    const [providersCount, leadsDeliveredCount] = await Promise.all([
+      prisma.user.count({ where: { role: 'PROVIDER' } }),
+      prisma.leadPurchase.count({ where: { status: { in: ['ACTIVE', 'CONVERTED'] } } })
+    ]);
+    res.json({
+      providersCount,
+      leadsDeliveredCount
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
  * GET /api/public/user-types-overview
  * Općeniti pregled tipova korisnika - statistike bez osobnih podataka
  */

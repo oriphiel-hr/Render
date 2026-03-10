@@ -591,7 +591,7 @@ export default function App(){
    */
 
   return (
-    <div className="relative p-6 max-w-5xl mx-auto min-h-screen transition-colors bg-gradient-to-b from-stone-50/95 via-amber-50/50 to-orange-50/70 dark:from-gray-900 dark:to-gray-900">
+    <div className="relative p-6 max-w-5xl mx-auto min-h-screen safe-area-x transition-colors bg-gradient-to-b from-stone-50/95 via-amber-50/50 to-orange-50/70 dark:from-gray-900 dark:to-gray-900">
       {/* Skip to main content link for screen readers */}
       <a 
         href="#main-content" 
