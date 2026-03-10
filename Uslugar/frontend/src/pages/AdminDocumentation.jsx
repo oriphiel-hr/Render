@@ -405,6 +405,9 @@ Sve promjene su commitane i pushane. Pružatelji usluga sada imaju grafički pri
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
             Generiraj testne korisnike s hrvatskim imenima i snimi screenshotove za dokumentaciju vodiča (pokreće Playwright skriptu na serveru).
           </p>
+          <p className="text-xs text-amber-600 dark:text-amber-400 mb-4">
+            Na produkciji (api.uslugar.eu) mapa <code className="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">tests</code> obično nije u deployu, pa generiranje neće raditi. Pokreni ga lokalno: u rootu projekta <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">{'cd tests && npm run screenshots:docs'}</code> (nakon što su testni korisnici kreirani preko gumba iznad).
+          </p>
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
@@ -436,11 +439,15 @@ Sve promjene su commitane i pushane. Pružatelji usluga sada imaju grafički pri
                   const { data } = await api.post('/admin/generate-docs-screenshots');
                   setScreenshotResult(data);
                 } catch (err) {
+                  const d = err.response?.data || {};
                   setScreenshotResult({
                     success: false,
-                    error: err.response?.data?.error || err.message || 'Greška pri generiranju screenshotova.',
-                    stderr: err.response?.data?.stderr,
-                    stdout: err.response?.data?.stdout,
+                    error: d.error || err.message || 'Greška pri generiranju screenshotova.',
+                    hint: d.hint,
+                    scriptPath: d.scriptPath,
+                    cwd: d.cwd,
+                    stderr: d.stderr,
+                    stdout: d.stdout,
                   });
                 } finally {
                   setScreenshotLoading(false);
@@ -492,6 +499,12 @@ Sve promjene su commitane i pushane. Pružatelji usluga sada imaju grafički pri
                 <>
                   <p className="font-medium">{screenshotResult.error}</p>
                   {screenshotResult.hint && <p className="mt-1">{screenshotResult.hint}</p>}
+                  {screenshotResult.scriptPath != null && (
+                    <p className="mt-1 text-xs opacity-90">Tražena putanja: <code className="break-all">{screenshotResult.scriptPath}</code></p>
+                  )}
+                  {screenshotResult.cwd != null && (
+                    <p className="text-xs opacity-90">Radna mapa servera: <code className="break-all">{screenshotResult.cwd}</code></p>
+                  )}
                   {(screenshotResult.stdout || screenshotResult.stderr) && (
                     <pre className="mt-3 p-2 bg-black/10 dark:bg-white/10 rounded overflow-x-auto text-xs max-h-40 overflow-y-auto">
                       {screenshotResult.stderr || screenshotResult.stdout}
