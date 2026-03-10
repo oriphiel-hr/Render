@@ -11,6 +11,7 @@
     "test:kyc": "playwright test e2e/kyc.spec.js",
     "test:jobs": "playwright test e2e/jobs.spec.js",
     "test:all-domains": "playwright test e2e/all-domains.spec.js",
+    "screenshots:docs": "node scripts/capture-docs-screenshots.js",
     "report": "playwright show-report"
   },
   "devDependencies": {

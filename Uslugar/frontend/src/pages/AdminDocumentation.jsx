@@ -11,6 +11,9 @@ const AdminDocumentation = () => {
   const [featureDescriptions, setFeatureDescriptions] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [screenshotLoading, setScreenshotLoading] = useState(false);
+  const [screenshotResult, setScreenshotResult] = useState(null);
+  const [testUsersResult, setTestUsersResult] = useState(null);
 
   // Učitaj podatke iz baze - i admin i javne funkcionalnosti
   useEffect(() => {
@@ -392,6 +395,112 @@ Sve promjene su commitane i pushane. Pružatelji usluga sada imaju grafički pri
               ></div>
             </div>
           </div>
+        </div>
+
+        {/* Generiranje screenshotova vodiča */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            📸 Screenshotovi vodiča
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Generiraj testne korisnike s hrvatskim imenima i snimi screenshotove za dokumentaciju vodiča (pokreće Playwright skriptu na serveru).
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={async () => {
+                setTestUsersResult(null);
+                setScreenshotResult(null);
+                try {
+                  const { data } = await api.post('/admin/screenshot-test-users');
+                  setTestUsersResult(data);
+                } catch (err) {
+                  setTestUsersResult({
+                    success: false,
+                    error: err.response?.data?.error || err.message || 'Greška pri generiranju korisnika.',
+                  });
+                }
+              }}
+              className="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 font-medium text-sm"
+            >
+              Generiraj testne korisnike
+            </button>
+            <button
+              type="button"
+              disabled={screenshotLoading}
+              onClick={async () => {
+                setScreenshotResult(null);
+                setTestUsersResult(null);
+                setScreenshotLoading(true);
+                try {
+                  const { data } = await api.post('/admin/generate-docs-screenshots');
+                  setScreenshotResult(data);
+                } catch (err) {
+                  setScreenshotResult({
+                    success: false,
+                    error: err.response?.data?.error || err.message || 'Greška pri generiranju screenshotova.',
+                    stderr: err.response?.data?.stderr,
+                    stdout: err.response?.data?.stdout,
+                  });
+                } finally {
+                  setScreenshotLoading(false);
+                }
+              }}
+              className="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {screenshotLoading ? 'Generiranje…' : 'Generiraj screenshotove vodiča'}
+            </button>
+          </div>
+          {testUsersResult && (
+            <div className={`mt-4 p-4 rounded-lg text-sm ${testUsersResult.success ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300' : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300'}`}>
+              {testUsersResult.success ? (
+                <>
+                  <p className="font-medium">{testUsersResult.message}</p>
+                  {testUsersResult.users?.length > 0 && (
+                    <ul className="mt-2 list-disc list-inside">
+                      {testUsersResult.users.map((u, i) => (
+                        <li key={i}>{u.fullName} ({u.role}) – {u.email}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {testUsersResult.passwordHint && <p className="mt-2 text-gray-600 dark:text-gray-400">{testUsersResult.passwordHint}</p>}
+                </>
+              ) : (
+                <p>{testUsersResult.error}</p>
+              )}
+            </div>
+          )}
+          {screenshotResult && (
+            <div className={`mt-4 p-4 rounded-lg text-sm ${screenshotResult.success ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300' : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300'}`}>
+              {screenshotResult.success ? (
+                <>
+                  <p className="font-medium">{screenshotResult.message}</p>
+                  {screenshotResult.users?.length > 0 && (
+                    <ul className="mt-2 list-disc list-inside">
+                      {screenshotResult.users.map((u, i) => (
+                        <li key={i}>{u.fullName} ({u.role}) – {u.email}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {screenshotResult.stdout && (
+                    <pre className="mt-3 p-2 bg-black/10 dark:bg-white/10 rounded overflow-x-auto text-xs max-h-40 overflow-y-auto">
+                      {screenshotResult.stdout}
+                    </pre>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p className="font-medium">{screenshotResult.error}</p>
+                  {screenshotResult.hint && <p className="mt-1">{screenshotResult.hint}</p>}
+                  {(screenshotResult.stdout || screenshotResult.stderr) && (
+                    <pre className="mt-3 p-2 bg-black/10 dark:bg-white/10 rounded overflow-x-auto text-xs max-h-40 overflow-y-auto">
+                      {screenshotResult.stderr || screenshotResult.stdout}
+                    </pre>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

@@ -6,6 +6,9 @@ import { offerToNextInQueue } from '../lib/leadQueueManager.js';
 import { getPlatformStatistics, getMonthlyTrends, getPlatformStatsByRegion } from '../services/platform-stats-service.js';
 import { getPendingModeration, moderateContent, getModerationStats, reportMessage } from '../services/moderation-service.js';
 import { sendMonthlyReportsToAllUsers, sendMonthlyReport } from '../services/monthly-report-service.js';
+import { ensureScreenshotTestUsers } from '../services/screenshot-test-users-service.js';
+import { spawn } from 'child_process';
+import path from 'path';
 
 const r = Router();
 
@@ -5642,6 +5645,94 @@ r.get('/user-types-overview', auth(true, ['ADMIN']), async (req, res, next) => {
           description: 'Korisnici s barem jednom značkom - uključuje i pružatelje i tvrtke/obrte koji traže usluge'
         }
       }
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * POST /api/admin/screenshot-test-users
+ * Osiguraj/kreiraj testne korisnike za screenshotove (s uvjerljivim hrvatskim imenima).
+ */
+r.post('/screenshot-test-users', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const { users, password } = await ensureScreenshotTestUsers();
+    res.json({
+      success: true,
+      message: 'Testni korisnici su spremni za snimanje screenshotova.',
+      users,
+      passwordHint: 'Lozinka je ista za sve (postavi SCREENSHOT_TEST_PASSWORD u env).',
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * POST /api/admin/generate-docs-screenshots
+ * Generira screenshotove vodiča (pokreće Playwright skriptu s testnim korisnicima).
+ */
+r.post('/generate-docs-screenshots', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const { users, password } = await ensureScreenshotTestUsers();
+    const baseUrl = process.env.FRONTEND_URL || req.get('origin') || 'https://www.uslugar.eu';
+    const repoRoot = path.join(process.cwd(), '..');
+    const scriptPath = path.join(repoRoot, 'tests', 'scripts', 'capture-docs-screenshots.js');
+    const outDir = path.join(repoRoot, 'frontend', 'public', 'docs');
+
+    const userByRole = {};
+    users.forEach((u) => { userByRole[u.role] = u; });
+
+    const env = {
+      ...process.env,
+      BASE_URL: baseUrl,
+      OUT_DIR: outDir,
+      TEST_EMAIL_KORISNIK: userByRole.korisnik?.email,
+      TEST_PASSWORD_KORISNIK: password,
+      TEST_EMAIL_PRUVATELJ: userByRole.pružatelj?.email,
+      TEST_PASSWORD_PRUVATELJ: password,
+      TEST_EMAIL_TIM_CLAN: userByRole.tim?.email,
+      TEST_PASSWORD_TIM_CLAN: password,
+      TEST_EMAIL_DIREKTOR: userByRole.direktor?.email,
+      TEST_PASSWORD_DIREKTOR: password,
+    };
+
+    const fs = await import('fs');
+    if (!fs.existsSync(scriptPath)) {
+      return res.status(503).json({
+        success: false,
+        error: 'Skripta za screenshotove nije pronađena.',
+        hint: 'Očekivana putanja: tests/scripts/capture-docs-screenshots.js (pokreni backend iz roota repozitorija).',
+      });
+    }
+
+    const child = spawn('node', [scriptPath], {
+      cwd: repoRoot,
+      env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (d) => { stdout += d.toString(); });
+    child.stderr.on('data', (d) => { stderr += d.toString(); });
+
+    const code = await new Promise((resolve) => child.on('close', resolve));
+    if (code !== 0) {
+      return res.status(500).json({
+        success: false,
+        error: 'Generiranje screenshotova nije uspjelo.',
+        stdout: stdout.slice(-2000),
+        stderr: stderr.slice(-2000),
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Screenshotovi su generirani.',
+      users: users.map((u) => ({ role: u.role, email: u.email, fullName: u.fullName })),
+      stdout: stdout.slice(-1500),
     });
   } catch (e) {
     next(e);
