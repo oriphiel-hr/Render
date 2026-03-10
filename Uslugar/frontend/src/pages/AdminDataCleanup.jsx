@@ -105,7 +105,7 @@ export default function AdminDataCleanup(){
             {renderCount('Provider profili', preview.providerProfiles)}
             {renderCount('Provider licence', preview.providerLicenses)}
             {renderCount('Provider ROI', preview.providerROIs)}
-            {renderCount('Team lokacije', preview.providerTeamLocations)}
+            {renderCount('Lokacije timova', preview.providerTeamLocations)}
             
             <div className="font-semibold text-blue-700 mb-2 mt-3">Pretplate i naplata</div>
             {renderCount('Pretplate', preview.subscriptions)}
@@ -198,7 +198,7 @@ export default function AdminDataCleanup(){
             {renderCount('Provider profili', result.deleted?.providerProfiles)}
             {renderCount('Provider licence', result.deleted?.providerLicenses)}
             {renderCount('Provider ROI', result.deleted?.providerROIs)}
-            {renderCount('Team lokacije', result.deleted?.providerTeamLocations)}
+            {renderCount('Lokacije timova', result.deleted?.providerTeamLocations)}
             
             <div className="font-semibold text-green-700 mb-2 mt-3">Pretplate i naplata</div>
             {renderCount('Pretplate', result.deleted?.subscriptions)}

@@ -187,8 +187,8 @@ export default function App(){
   // Mobile menu state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Dohvati hasTeam i isDirector za uvjetni prikaz Tim Lokacije i Direktor Dashboard
-  // hasTeam = direktor s barem 1 članom ILI član tima (companyId); inače sakrij Tim Lokacije
+  // Dohvati hasTeam i isDirector za uvjetni prikaz Lokacije timova i Direktor Dashboard
+  // hasTeam = direktor s barem 1 članom ILI član tima (companyId); inače sakrij Lokacije timova
   useEffect(() => {
     if (!token || !isProviderOrBusinessUser()) {
       setProviderMeta({ hasTeam: false, isDirector: false });
@@ -578,7 +578,7 @@ export default function App(){
    *
    * DESNA STRANA KAD JE KORISNIK PRIJAVLJEN (token):
    *   - "Leadovi" (dropdown) = samo ako isProviderOrBusinessUser() (PROVIDER, ADMIN ili USER s legalStatusId).
-   *     Stavke: Leadovi, Moji Leadovi, Tim Lokacije, ROI, Pretplata, Fakture, Direktor Dashboard.
+   *     Stavke: Leadovi, Moji Leadovi, Lokacije timova, ROI, Pretplata, Fakture, Direktor Dashboard.
    *   - Ime + uloga (badge) = tko je prijavljen.
    *   - "Moj račun" (dropdown) = osobni prostor: Traži usluge, Moji poslovi, Pružatelji, Chat, Moj profil;
    *     "Postani pružatelj" samo ako canShowPostaniPružatelj() (USER koji već ima legalStatusId);
@@ -869,7 +869,7 @@ export default function App(){
                             className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
                             onClick={() => { setTab('team-locations'); }}
                           >
-                            📍 Tim Lokacije
+                            📍 Lokacije timova
                           </button>
                         )}
                         {providerMeta.isDirector && (
@@ -1226,7 +1226,7 @@ export default function App(){
                     className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300 transition-colors"
                     onClick={() => { setTab('team-locations'); setIsMobileMenuOpen(false); }}
                   >
-                    📍 Tim Lokacije
+                    📍 Lokacije timova
                   </button>
                 )}
                 <button

@@ -67,7 +67,7 @@ export default function TeamMap({ members = [] }) {
     return (
       <div className="h-96 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200">
         <p className="text-gray-500">
-          Nema lokacija za prikaz. Dodajte grad u profilu člana ili u Team Lokacije.
+          Nema lokacija za prikaz. Dodajte grad u profilu člana ili u Lokacije timova.
         </p>
       </div>
     );

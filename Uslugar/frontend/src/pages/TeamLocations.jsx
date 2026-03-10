@@ -152,7 +152,7 @@ export default function TeamLocations() {
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">📍 Tim Lokacije</h1>
+          <h1 className="text-3xl font-bold text-gray-900">📍 Lokacije timova</h1>
           <p className="text-gray-600 mt-2">Definiraj više lokacija i radijuse pokrivanja za mobilne timove</p>
         </div>
         <button
