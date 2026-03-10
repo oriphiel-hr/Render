@@ -436,7 +436,7 @@ Sve promjene su commitane i pushane. Pružatelji usluga sada imaju grafički pri
                 setTestUsersResult(null);
                 setScreenshotLoading(true);
                 try {
-                  const { data } = await api.post('/admin/generate-docs-screenshots');
+                  const { data } = await api.post('/admin/generate-docs-screenshots', {}, { timeout: 180000 });
                   setScreenshotResult(data);
                 } catch (err) {
                   const d = err.response?.data || {};

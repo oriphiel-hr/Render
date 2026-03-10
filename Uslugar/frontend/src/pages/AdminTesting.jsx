@@ -2982,7 +2982,7 @@ export default function AdminTesting(){
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">📸 Screenshotovi vodiča</h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-              Generiraj testne korisnike (hrvatska imena) i snimi screenshotove za dokumentaciju vodiča. Na produkciji (api.uslugar.eu) mapa <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">tests</code> obično nije u deployu — pokreni lokalno: <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">{'cd tests && npm run screenshots:docs'}</code>.
+              Generiraj testne korisnike (hrvatska imena) i snimi screenshotove za dokumentaciju vodiča. Na produkciji (api.uslugar.eu) mapa <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">tests</code> obično nije u deployu — pokreni lokalno: u rootu projekta <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">{'cd tests && npm run screenshots:docs'}</code> (nakon što su testni korisnici kreirani preko gumba iznad).
             </p>
             <div className="flex flex-wrap gap-3">
               <button
@@ -3009,7 +3009,7 @@ export default function AdminTesting(){
                   setScreenshotTestUsersResult(null)
                   setScreenshotGenLoading(true)
                   try {
-                    const { data } = await api.post('/admin/generate-docs-screenshots')
+                    const { data } = await api.post('/admin/generate-docs-screenshots', {}, { timeout: 180000 });
                     setScreenshotGenResult(data)
                   } catch (err) {
                     const d = err.response?.data || {}
