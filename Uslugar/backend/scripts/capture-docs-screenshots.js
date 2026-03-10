@@ -1,46 +1,28 @@
 /**
- * Snimanje screenshotova za vodič dokumentacije (sve uloge).
- * Koristi Playwright; pokreće se iz roota projekta:
- *
- *   cd tests && node scripts/capture-docs-screenshots.js
- *
- * Env varijable (opcionalno):
- *   BASE_URL          = https://www.uslugar.eu  (ili http://localhost:5173 za lokalno)
- *   OUT_DIR           = putanja do frontend/public/docs (default: ../../frontend/public/docs)
- *   TEST_EMAIL_KORISNIK, TEST_PASSWORD_KORISNIK   = za ulogu korisnik
- *   TEST_EMAIL_PRUVATELJ, TEST_PASSWORD_PRUVATELJ = za ulogu pružatelj
- *   TEST_EMAIL_TIM_CLAN, TEST_PASSWORD_TIM_CLAN   = za ulogu član tima
- *   TEST_EMAIL_DIREKTOR, TEST_PASSWORD_DIREKTOR   = za ulogu direktor
- *
- * Ako nemaš testnih računa, možeš pokrenuti samo javne stranice (bez login*).
+ * Snimanje screenshotova za vodič dokumentacije (pokretanje iz backend konteksta).
+ * Koristi paket "playwright" iz backend/ (isti kao tests/scripts verzija).
+ * OUT_DIR i BASE_URL moraju biti postavljeni u env (postavlja admin endpoint).
  */
-
-const { chromium } = require('@playwright/test');
+const playwright = require('playwright');
 const path = require('path');
 const fs = require('fs');
 
 const BASE_URL = process.env.BASE_URL || 'https://www.uslugar.eu';
-const OUT_DIR = process.env.OUT_DIR
-  ? path.resolve(process.env.OUT_DIR)
-  : path.resolve(__dirname, '..', '..', 'frontend', 'public', 'docs');
+const OUT_DIR = process.env.OUT_DIR || path.resolve(process.cwd(), 'public', 'docs');
 
-/** Lista screenshotova: filename, hash, role za login (null = javna stranica) */
 const SCREENSHOTS = [
-  // --- Korisnik usluge
   { file: 'guide-korisnik-1.png', hash: '#login', role: null },
   { file: 'guide-korisnik-2.png', hash: '#user', role: 'korisnik' },
   { file: 'moji-poslovi-mock.png', hash: '#my-jobs', role: 'korisnik' },
   { file: 'guide-korisnik-4.png', hash: '#chat', role: 'korisnik' },
   { file: 'guide-korisnik-5.png', hash: '#my-jobs', role: 'korisnik' },
   { file: 'guide-korisnik-6.png', hash: '#user', role: 'korisnik' },
-  // --- Pružatelj
   { file: 'guide-pruzatelj-1.png', hash: '#register-provider', role: null },
   { file: 'guide-pruzatelj-2.png', hash: '#leads', role: 'pružatelj' },
   { file: 'guide-pruzatelj-3.png', hash: '#leads', role: 'pružatelj' },
   { file: 'moji-leadovi-direktor-mock.png', hash: '#my-leads', role: 'direktor' },
   { file: 'guide-pruzatelj-5.png', hash: '#pricing', role: null },
   { file: 'guide-pruzatelj-6.png', hash: '#roi', role: 'pružatelj' },
-  // --- Član tima
   { file: 'guide-tim-1.png', hash: '#my-leads', role: 'tim_clan' },
   { file: 'moji-leadovi-team-member-mock.png', hash: '#my-leads', role: 'tim_clan' },
   { file: 'guide-tim-3.png', hash: '#chat', role: 'tim_clan' },
@@ -49,28 +31,16 @@ const SCREENSHOTS = [
 ];
 
 const CREDENTIALS = {
-  korisnik: {
-    email: process.env.TEST_EMAIL_KORISNIK,
-    password: process.env.TEST_PASSWORD_KORISNIK,
-  },
-  pružatelj: {
-    email: process.env.TEST_EMAIL_PRUVATELJ,
-    password: process.env.TEST_PASSWORD_PRUVATELJ,
-  },
-  tim_clan: {
-    email: process.env.TEST_EMAIL_TIM_CLAN,
-    password: process.env.TEST_PASSWORD_TIM_CLAN,
-  },
-  direktor: {
-    email: process.env.TEST_EMAIL_DIREKTOR,
-    password: process.env.TEST_PASSWORD_DIREKTOR,
-  },
+  korisnik: { email: process.env.TEST_EMAIL_KORISNIK, password: process.env.TEST_PASSWORD_KORISNIK },
+  pružatelj: { email: process.env.TEST_EMAIL_PRUVATELJ, password: process.env.TEST_PASSWORD_PRUVATELJ },
+  tim_clan: { email: process.env.TEST_EMAIL_TIM_CLAN, password: process.env.TEST_PASSWORD_TIM_CLAN },
+  direktor: { email: process.env.TEST_EMAIL_DIREKTOR, password: process.env.TEST_PASSWORD_DIREKTOR },
 };
 
 async function login(page, role) {
   const cred = CREDENTIALS[role];
   if (!cred?.email || !cred?.password) {
-    console.warn(`[SKIP] Nema TEST_EMAIL_${role.toUpperCase()} / TEST_PASSWORD_${role.toUpperCase()} – preskačem login.`);
+    console.warn(`[SKIP] Nema kredencijala za ${role}.`);
     return false;
   }
   await page.goto(`${BASE_URL}#login`, { waitUntil: 'networkidle' });
@@ -87,7 +57,7 @@ async function main() {
   console.log('OUT_DIR:', OUT_DIR);
   console.log('BASE_URL:', BASE_URL);
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await playwright.chromium.launch({ headless: true });
   const context = await browser.newContext({
     viewport: { width: 1280, height: 900 },
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -114,10 +84,9 @@ async function main() {
       await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
       await page.waitForTimeout(2000);
 
-      const outPath = path.resolve(OUT_DIR, file);
+      const outPath = path.join(OUT_DIR, file);
       await page.screenshot({ path: outPath, fullPage: false });
-      const exists = fs.existsSync(outPath);
-      console.log(exists ? `OK: ${file} -> ${outPath}` : `WARN: ${file} nije na disku: ${outPath}`);
+      console.log('OK:', file);
     } catch (err) {
       console.error('ERR:', file, err.message);
     }
@@ -125,12 +94,7 @@ async function main() {
   }
 
   await browser.close();
-  const files = fs.readdirSync(OUT_DIR).filter((f) => f.endsWith('.png'));
   console.log('Gotovo. Screenshotovi u:', OUT_DIR);
-  console.log('Broj .png datoteka na disku:', files.length);
-  if (files.length > 0) {
-    files.forEach((f) => console.log('  -', f));
-  }
 }
 
 main().catch((e) => {

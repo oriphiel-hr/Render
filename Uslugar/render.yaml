@@ -1,0 +1,22 @@
+# Render Blueprint – backend s podrškom za generiranje screenshotova vodiča
+#
+# U Render Dashboardu za backend servis:
+# - Root Directory: backend  (ili prazno ako je repo root = Uslugar)
+# - Build Command (ako je Root Directory = backend):
+#     npm ci && npx playwright install --with-deps chromium
+# - Build Command (ako je Root Directory = prazno, repo root):
+#     cd backend && npm ci && npx playwright install --with-deps chromium
+# - Start Command (ako Root = backend): npm run start
+# - Start Command (ako Root = prazno): cd backend && npm run start
+#
+# Tada backend ima scripts/capture-docs-screenshots.js i Playwright Chromium,
+# pa Admin "Generiraj screenshotove vodiča" radi. Screenshotovi: backend/public/docs → serviraju se na /docs
+
+services:
+  - type: web
+    name: api
+    runtime: node
+    # Prilagodi rootDir u Dashboardu; ove naredbe pretpostavljaju rootDir: backend
+    buildCommand: npm ci && npx playwright install --with-deps chromium
+    startCommand: npm run start
+    healthCheckPath: /api/health

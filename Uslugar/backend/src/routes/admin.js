@@ -7,6 +7,7 @@ import { getPlatformStatistics, getMonthlyTrends, getPlatformStatsByRegion } fro
 import { getPendingModeration, moderateContent, getModerationStats, reportMessage } from '../services/moderation-service.js';
 import { sendMonthlyReportsToAllUsers, sendMonthlyReport } from '../services/monthly-report-service.js';
 import { ensureScreenshotTestUsers } from '../services/screenshot-test-users-service.js';
+import { ensureScreenshotDemoData } from '../services/screenshot-demo-data-service.js';
 import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -5664,11 +5665,15 @@ r.get('/user-types-overview', auth(true, ['ADMIN']), async (req, res, next) => {
 r.post('/screenshot-test-users', auth(true, ['ADMIN']), async (req, res, next) => {
   try {
     const { users, password } = await ensureScreenshotTestUsers();
+    const demo = await ensureScreenshotDemoData();
     res.json({
       success: true,
-      message: 'Testni korisnici su spremni za snimanje screenshotova.',
+      message: demo.ok
+        ? 'Testni korisnici i demo podaci (Tržnica, ROI, Moji leadovi, Chat) su spremni.'
+        : 'Testni korisnici su spremni. Demo podaci nisu dodani (provjeri kategorije u bazi).',
       users,
       passwordHint: 'Lozinka je ista za sve (postavi SCREENSHOT_TEST_PASSWORD u env).',
+      demo: demo.ok ? { jobsCreated: demo.jobsCreated, leadsPurchased: demo.leadsPurchased } : null,
     });
   } catch (e) {
     next(e);
@@ -5678,14 +5683,23 @@ r.post('/screenshot-test-users', auth(true, ['ADMIN']), async (req, res, next) =
 /**
  * POST /api/admin/generate-docs-screenshots
  * Generira screenshotove vodiča (pokreće Playwright skriptu s testnim korisnicima).
+ * Prvo pokušava skriptu u backend/scripts/ (radi u Dockeru i na Renderu bez tests/), zatim tests/scripts/.
  */
 r.post('/generate-docs-screenshots', auth(true, ['ADMIN']), async (req, res, next) => {
   try {
     const { users, password } = await ensureScreenshotTestUsers();
     const baseUrl = process.env.FRONTEND_URL || req.get('origin') || 'https://www.uslugar.eu';
+    const fs = await import('fs');
+
+    // 1) Pokušaj backend/scripts/ (cwd = backend; radi u Dockeru i na Renderu)
+    const backendScript = path.join(process.cwd(), 'scripts', 'capture-docs-screenshots.js');
+    const backendOutDir = path.join(process.cwd(), 'public', 'docs');
+    const useBackendScript = fs.existsSync(backendScript);
+
     const repoRoot = process.env.SCREENSHOT_REPO_ROOT || PROJECT_ROOT;
-    const scriptPath = path.join(repoRoot, 'tests', 'scripts', 'capture-docs-screenshots.js');
-    const outDir = path.join(repoRoot, 'frontend', 'public', 'docs');
+    const scriptPath = useBackendScript ? backendScript : path.join(repoRoot, 'tests', 'scripts', 'capture-docs-screenshots.js');
+    const outDir = useBackendScript ? backendOutDir : path.join(repoRoot, 'frontend', 'public', 'docs');
+    const cwd = useBackendScript ? process.cwd() : repoRoot;
 
     const userByRole = {};
     users.forEach((u) => { userByRole[u.role] = u; });
@@ -5704,19 +5718,18 @@ r.post('/generate-docs-screenshots', auth(true, ['ADMIN']), async (req, res, nex
       TEST_PASSWORD_DIREKTOR: password,
     };
 
-    const fs = await import('fs');
     if (!fs.existsSync(scriptPath)) {
       return res.status(503).json({
         success: false,
         error: 'Skripta za screenshotove nije pronađena.',
-        hint: 'Očekivana putanja: tests/scripts/capture-docs-screenshots.js u rootu projekta. Na Renderu provjeri da je mapa tests uključena u deploy.',
+        hint: 'Očekivana putanja: backend/scripts/capture-docs-screenshots.js ili tests/scripts/capture-docs-screenshots.js. Na Renderu koristi Root Directory = repo root i Build Command koji uključuje npx playwright install chromium.',
         scriptPath,
         cwd: process.cwd(),
       });
     }
 
     const child = spawn('node', [scriptPath], {
-      cwd: repoRoot,
+      cwd,
       env,
       stdio: ['ignore', 'pipe', 'pipe'],
     });

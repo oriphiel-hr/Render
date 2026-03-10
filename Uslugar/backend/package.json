@@ -19,6 +19,7 @@
     "migrate-and-seed:documentation": "prisma migrate deploy --schema=prisma/schema.prisma && npm run seed:documentation",
     "extract:documentation": "node scripts/extract-documentation.js",
     "generate:documentation-seed": "node scripts/generate-documentation-seed.js",
+    "seed:screenshot-users": "node scripts/seed-screenshot-users.js",
     "db:fix": "node prisma/seed-db-fix.js",
     "test:sms": "node scripts/test-sms.js"
   },

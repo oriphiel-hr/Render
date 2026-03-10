@@ -708,6 +708,11 @@ export default function AdminTesting(){
   const [checkpointSummaries, setCheckpointSummaries] = useState({})
   const [loadingCheckpointSummary, setLoadingCheckpointSummary] = useState(null)
   
+  // Screenshotovi vodiča (admin endpoint)
+  const [screenshotTestUsersResult, setScreenshotTestUsersResult] = useState(null)
+  const [screenshotGenResult, setScreenshotGenResult] = useState(null)
+  const [screenshotGenLoading, setScreenshotGenLoading] = useState(false)
+  
   // Slušaj promjene hash-a u URL-u
   useEffect(() => {
     let isHandlingHash = false // Flag da izbjegnemo beskonačnu petlju
@@ -2973,6 +2978,96 @@ export default function AdminTesting(){
 
       {tab === 'plans' && (
         <div className="space-y-6">
+          {/* Screenshotovi vodiča - ista funkcionalnost kao na Admin Dokumentaciji */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">📸 Screenshotovi vodiča</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+              Generiraj testne korisnike (hrvatska imena) i snimi screenshotove za dokumentaciju vodiča. Na produkciji (api.uslugar.eu) mapa <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">tests</code> obično nije u deployu — pokreni lokalno: <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">{'cd tests && npm run screenshots:docs'}</code>.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={async () => {
+                  setScreenshotTestUsersResult(null)
+                  setScreenshotGenResult(null)
+                  try {
+                    const { data } = await api.post('/admin/screenshot-test-users')
+                    setScreenshotTestUsersResult(data)
+                  } catch (err) {
+                    setScreenshotTestUsersResult({ success: false, error: err.response?.data?.error || err.message || 'Greška.' })
+                  }
+                }}
+                className="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500 font-medium text-sm"
+              >
+                Generiraj testne korisnike
+              </button>
+              <button
+                type="button"
+                disabled={screenshotGenLoading}
+                onClick={async () => {
+                  setScreenshotGenResult(null)
+                  setScreenshotTestUsersResult(null)
+                  setScreenshotGenLoading(true)
+                  try {
+                    const { data } = await api.post('/admin/generate-docs-screenshots')
+                    setScreenshotGenResult(data)
+                  } catch (err) {
+                    const d = err.response?.data || {}
+                    setScreenshotGenResult({
+                      success: false,
+                      error: d.error || err.message || 'Greška.',
+                      hint: d.hint,
+                      scriptPath: d.scriptPath,
+                      cwd: d.cwd,
+                      stderr: d.stderr,
+                      stdout: d.stdout,
+                    })
+                  } finally {
+                    setScreenshotGenLoading(false)
+                  }
+                }}
+                className="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {screenshotGenLoading ? 'Generiranje…' : 'Generiraj screenshotove vodiča'}
+              </button>
+            </div>
+            {screenshotTestUsersResult && (
+              <div className={`mt-4 p-4 rounded-lg text-sm ${screenshotTestUsersResult.success ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300' : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300'}`}>
+                {screenshotTestUsersResult.success ? (
+                  <>
+                    <p className="font-medium">{screenshotTestUsersResult.message}</p>
+                    {screenshotTestUsersResult.users?.length > 0 && (
+                      <ul className="mt-2 list-disc list-inside">
+                        {screenshotTestUsersResult.users.map((u, i) => (
+                          <li key={i}>{u.fullName} ({u.role}) – {u.email}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </>
+                ) : (
+                  <p>{screenshotTestUsersResult.error}</p>
+                )}
+              </div>
+            )}
+            {screenshotGenResult && (
+              <div className={`mt-4 p-4 rounded-lg text-sm ${screenshotGenResult.success ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300' : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300'}`}>
+                {screenshotGenResult.success ? (
+                  <>
+                    <p className="font-medium">{screenshotGenResult.message}</p>
+                    {screenshotGenResult.stdout && <pre className="mt-2 p-2 bg-black/10 rounded text-xs max-h-32 overflow-auto">{screenshotGenResult.stdout}</pre>}
+                  </>
+                ) : (
+                  <>
+                    <p className="font-medium">{screenshotGenResult.error}</p>
+                    {screenshotGenResult.hint && <p className="mt-1">{screenshotGenResult.hint}</p>}
+                    {screenshotGenResult.scriptPath != null && <p className="mt-1 text-xs">Putanja: <code className="break-all">{screenshotGenResult.scriptPath}</code></p>}
+                    {(screenshotGenResult.stdout || screenshotGenResult.stderr) && <pre className="mt-2 p-2 bg-black/10 rounded text-xs max-h-32 overflow-auto">{screenshotGenResult.stderr || screenshotGenResult.stdout}</pre>}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Novi sekvencijalni test suite */}
           <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">

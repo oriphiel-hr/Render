@@ -76,6 +76,9 @@ ENV LC_ALL=C.UTF-8
 # Install OpenSSL 3.0 for Prisma
 RUN apt-get update -y && apt-get install -y openssl libssl3 && rm -rf /var/lib/apt/lists/*
 
+# Ovisnosti za Playwright Chromium (screenshotovi vodiča) – --with-deps instalira i sustavne pakete
+RUN npx playwright install --with-deps chromium
+
 # prod deps
 COPY package*.json ./
 RUN npm ci --omit=dev
@@ -100,9 +103,14 @@ RUN chmod +x /app/start.sh
 COPY TEST-PLAN-*.md ./
 
 # Copy tests directory (contains test-data.json for Admin Testing panel)
-# test-data.json should be in backend/tests/ folder (copied from root tests/ folder)
 # Build context is Uslugar/backend/, so tests/ should be in Uslugar/backend/tests/
 COPY tests ./tests
+
+# Script za generiranje screenshotova vodiča (koristi playwright iz backend node_modules)
+COPY scripts ./scripts
+
+# Instaliraj Chromium za Playwright (screenshotovi vodiča)
+RUN npx playwright install chromium
 
 # tvoj server sluša na 8080
 EXPOSE 4000

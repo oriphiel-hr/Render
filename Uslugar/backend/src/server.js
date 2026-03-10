@@ -255,7 +255,10 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
 // Serve test screenshots directory
 app.use('/test-screenshots', express.static(path.join(__dirname, '../test-screenshots')))
 
-// Dodaj nedostajuće kategorije - javni endpoint
+// Serve generated doc screenshots (backend/public/docs) – za Admin "Generiraj screenshotove vodiča"
+app.use('/docs', express.static(path.join(__dirname, '../public/docs')))
+
+// Dodaj nedostajuće kategorije
 app.post('/api/add-categories', async (req, res) => {
   try {
     console.log('🌱 Dodavanje nedostajućih kategorija...');
