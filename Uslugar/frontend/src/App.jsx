@@ -187,7 +187,7 @@ export default function App(){
   // Mobile menu state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Dohvati hasTeam i isDirector za uvjetni prikaz Lokacije timova i Direktor Dashboard
+  // Dohvati hasTeam i isDirector za uvjetni prikaz Lokacije timova i Nadzorna ploča direktora
   // hasTeam = direktor s barem 1 članom ILI član tima (companyId); inače sakrij Lokacije timova
   useEffect(() => {
     if (!token || !isProviderOrBusinessUser()) {
@@ -574,13 +574,13 @@ export default function App(){
    *
    * DESNA STRANA KAD KORISNIK NIJE PRIJAVLJEN (!token):
    *   - "Korisnik" = autentikacija: Prijava, Registracija.
-   *   - "Usluge" = pregledavanje: Kategorije.
+   *   - "Kategorije" = pregledavanje kategorija usluga.
    *
    * DESNA STRANA KAD JE KORISNIK PRIJAVLJEN (token):
    *   - "Leadovi" (dropdown) = samo ako isProviderOrBusinessUser() (PROVIDER, ADMIN ili USER s legalStatusId).
-   *     Stavke: Leadovi, Moji Leadovi, Lokacije timova, ROI, Pretplata, Fakture, Direktor Dashboard.
+   *     Stavke: Leadovi, Moji Leadovi, Lokacije timova, ROI, Pretplata, Fakture, Nadzorna ploča direktora.
    *   - Ime + uloga (badge) = tko je prijavljen.
-   *   - "Moj račun" (dropdown) = osobni prostor: Traži usluge, Moji poslovi, Pružatelji, Chat, Moj profil;
+   *   - "Moj račun" (dropdown) = osobni prostor: Traži poslove, Moji poslovi, Pružatelji, Chat, Moj profil;
    *     "Postani pružatelj" samo ako canShowPostaniPružatelj() (USER koji već ima legalStatusId);
    *     Odjava na dnu s vizualnom odvojenošću (border-top).
    *
@@ -648,10 +648,10 @@ export default function App(){
                   setTab('user');
                 }
               }}
-              aria-label="Traži usluge"
+              aria-label="Traži poslove"
               aria-current={tab === 'user' ? 'page' : undefined}
             >
-              Traži usluge
+              Traži poslove
             </button>
             {(!token || isProvider()) && (
               <button
@@ -797,7 +797,7 @@ export default function App(){
                   </div>
                 </DropdownMenu>
 
-                <DropdownMenu title="Usluge" className={navLinkBase + ' ' + navLinkInactive}>
+                <DropdownMenu title="Kategorije" className={navLinkBase + ' ' + navLinkInactive}>
                   <div className="pt-2 first:pt-0">
                     <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Katalog</div>
                     <button
@@ -877,7 +877,7 @@ export default function App(){
                             className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
                             onClick={() => { setTab('director'); }}
                           >
-                            👔 Direktor Dashboard
+                            👔 Nadzorna ploča direktora
                           </button>
                         )}
                       </div>
@@ -933,7 +933,7 @@ export default function App(){
                       className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'user' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
                       onClick={() => setTab('user')}
                     >
-                      🔍 Traži usluge
+                      🔍 Traži poslove
                     </button>
                     <button
                       className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'my-jobs' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
@@ -1126,7 +1126,7 @@ export default function App(){
                 className={'w-full text-left px-3 py-2 rounded transition-colors ' + (tab==='user' ? 'bg-gray-900 dark:bg-gray-700 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300')}
                 onClick={() => { setTab('user'); setIsMobileMenuOpen(false); }}
               >
-                🔍 Traži usluge
+                🔍 Traži poslove
               </button>
               {(!token || isProvider()) && (
                 <button
@@ -1181,7 +1181,7 @@ export default function App(){
           {/* Services Section */}
           {!token && (
             <div>
-              <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Usluge</h3>
+              <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Kategorije</h3>
               <div className="space-y-1">
                 <button
                   className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300 transition-colors"
@@ -1252,7 +1252,7 @@ export default function App(){
                     className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300 transition-colors"
                     onClick={() => { setTab('director'); setIsMobileMenuOpen(false); }}
                   >
-                    👔 Direktor Dashboard
+                    👔 Nadzorna ploča direktora
                   </button>
                 )}
               </div>
@@ -1303,7 +1303,7 @@ export default function App(){
                   className={'w-full text-left px-3 py-2 rounded transition-colors ' + (tab === 'user' ? 'bg-gray-900 dark:bg-gray-700 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300')}
                   onClick={() => { setTab('user'); setIsMobileMenuOpen(false); }}
                 >
-                  🔍 Traži usluge
+                  🔍 Traži poslove
                 </button>
                 <button
                   className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300 transition-colors"

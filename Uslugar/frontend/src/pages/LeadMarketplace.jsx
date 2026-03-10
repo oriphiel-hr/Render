@@ -160,7 +160,7 @@ export default function LeadMarketplace() {
         <input
           type="number"
           min={0}
-          placeholder="Min budget"
+          placeholder="Min. budžet"
           value={filters.minBudget}
           onChange={(e) => setFilters({...filters, minBudget: e.target.value})}
           className="px-4 py-2 border rounded-lg w-32"
@@ -168,7 +168,7 @@ export default function LeadMarketplace() {
         <input
           type="number"
           min={0}
-          placeholder="Max budget"
+          placeholder="Max. budžet"
           value={filters.maxBudget}
           onChange={(e) => setFilters({...filters, maxBudget: e.target.value})}
           className="px-4 py-2 border rounded-lg w-32"
@@ -268,7 +268,7 @@ export default function LeadMarketplace() {
                       </svg>
                       {lead.budgetMin && lead.budgetMax 
                         ? `${lead.budgetMin}-${lead.budgetMax} EUR`
-                        : 'Budget nije definiran'
+                        : 'Budžet nije definiran'
                       }
                     </div>
                     

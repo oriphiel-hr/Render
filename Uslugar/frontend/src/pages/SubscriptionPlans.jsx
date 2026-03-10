@@ -408,7 +408,7 @@ export default function SubscriptionPlans() {
           <details className="bg-white rounded-lg p-4 shadow">
             <summary className="font-semibold text-gray-900 cursor-pointer">Što je quality score?</summary>
             <p className="mt-2 text-gray-700 text-sm">
-              Svaki lead ima automatski izračunati score 0-100 na osnovu verifikacije klijenta, budgeta, opisa, urgencije, itd.
+              Svaki lead ima automatski izračunati score 0-100 na temelju verifikacije klijenta, budžeta, opisa, hitnosti itd.
               Viši score = kvalitetniji lead = veća šansa za konverziju.
             </p>
           </details>

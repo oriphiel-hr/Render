@@ -368,7 +368,7 @@ export default function ProviderBenchmark() {
           <Radar data={radarChartData} options={chartOptions} />
         </div>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center">
-          Vrijednosti prikazuju vašu poziciju u odnosu na sve providere (0% = najniže, 100% = najviše)
+          Vrijednosti prikazuju vašu poziciju u odnosu na sve pružatelje (0% = najniže, 100% = najviše)
         </p>
       </div>
 

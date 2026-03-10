@@ -140,7 +140,7 @@ export default function AdminPlatformStats() {
         tension: 0.4
       },
       {
-        label: 'Novi providere',
+        label: 'Novi pružatelji',
         data: trends.map(t => t.newProviders),
         borderColor: chartColors.success,
         backgroundColor: `${chartColors.success}40`,
@@ -310,7 +310,7 @@ export default function AdminPlatformStats() {
 
         {/* Active Providers */}
         <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-lg">
-          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Aktivni providere</h4>
+          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Aktivni pružatelji</h4>
           <div className="text-2xl font-bold text-gray-900 dark:text-white">
             {stats.users.activeProviders}
           </div>
@@ -541,7 +541,7 @@ export default function AdminPlatformStats() {
             <p className="text-xl font-bold text-gray-900 dark:text-white">{stats.engagement.avgMessagesPerRoom}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Verificirani providere</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Verificirani pružatelji</p>
             <p className="text-xl font-bold text-gray-900 dark:text-white">
               {stats.verification.verifiedProviders} ({stats.verification.providerVerificationRate}%)
             </p>

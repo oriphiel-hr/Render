@@ -43,7 +43,7 @@ const PROCESS_DIAGRAMS = {
     V6 --> V2`
   },
   pretplata: {
-    title: 'Proces Pretplata',
+    title: 'Proces pretplate',
     mermaid: `flowchart TD
     P1[Registracija] --> P2[TRIAL paket]
     P2 --> P3{Upgrade?}
@@ -53,7 +53,7 @@ const PROCESS_DIAGRAMS = {
     P3 -->|Ne| P7[Nema pretplate]`
   },
   queue: {
-    title: 'Queue Sustav za Distribuciju Leadova',
+    title: 'Sustav reda čekanja za distribuciju leadova',
     mermaid: `flowchart TD
     Q1[Lead kreiran] --> Q2[LeadQueue - WAITING]
     Q2 --> Q3[Queue Scheduler]
@@ -64,7 +64,7 @@ const PROCESS_DIAGRAMS = {
     Q6 -->|Ne| Q8[DECLINED - Sljedeći u redu]`
   },
   lead: {
-    title: 'Lead Sustav (bodovanje kvalitete)',
+    title: 'Sustav leadova (bodovanje kvalitete)',
     mermaid: `flowchart TD
     L1[Korisnik objavljuje posao] --> L2[Posao = Ekskluzivni Lead]
     L2 --> L3[Quality Score, Trust Score, cijena]
@@ -86,7 +86,7 @@ const PROCESS_DIAGRAMS = {
     N4 --> N8[Chat poruke]`
   },
   refund: {
-    title: 'Refund Sustav',
+    title: 'Sustav povrata',
     mermaid: `flowchart TD
     R1[Korisnik podnese zahtjev] --> R2[Zahtjev u sustavu]
     R2 --> R3[Provjera uslova]

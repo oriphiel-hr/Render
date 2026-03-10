@@ -171,7 +171,7 @@ export const GUIDE_TIM_CLAN = [
     userAction: 'Direktor vas je dodao u tim tvrtke. Imate vlastiti račun (email, lozinka), ali leadove vam dodjeljuje direktor.',
     appResult: 'U "Moji leadovi" vidite sekciju "Leadovi dodijeljeni meni" – to su leadovi koje vam je direktor dodijelio.',
     image: '/docs/guide-tim-1.png',
-    puniOpis: `**1.** Kao član tima imate vlastiti User račun (PROVIDER) i povezani ste na tvrtku preko direktora. Direktor vas dodaje u tim u Director Dashboardu (samo on može dodavati ili uklanjati članove).
+    puniOpis: `**1.** Kao član tima imate vlastiti User račun (PROVIDER) i povezani ste na tvrtku preko direktora. Direktor vas dodaje u tim u nadzornoj ploči direktora (samo on može dodavati ili uklanjati članove).
 
 **2.** Leadove ne kupujete sami – direktor ih kupuje za tvrtku i zatim vam ih dodjeljuje ručno ili automatski (prema kategoriji i dostupnosti). Primat ćete notifikaciju "Novi lead dodijeljen" s linkom na Moje leadove.
 
@@ -216,10 +216,10 @@ export const GUIDE_TIM_CLAN = [
   {
     step: 5,
     title: 'Što ne možete – samo direktor',
-    userAction: 'Vi ne dodajete članove tima, ne dodjeljujete leadove i ne pristupate Director Dashboardu (tim, financije, odluke).',
+    userAction: 'Vi ne dodajete članove tima, ne dodjeljujete leadove i ne pristupate nadzornoj ploči direktora (tim, financije, odluke).',
     appResult: 'Jasna podjela: vi radite na dodijeljenim leadovima; direktor upravlja timom i queueom.',
     image: '/docs/director-dashboard-lead-queue-mock.png',
-    puniOpis: `**1.** **Director Dashboard** (Tim, Lead queue, Financije, Odluke) dostupan je samo direktoru. Kao član tima ne možete pristupiti tom izborniku – dobit ćete poruku da samo direktor može.
+    puniOpis: `**1.** **Nadzorna ploča direktora** (Tim, Red leadova, Financije, Odluke) dostupna je samo direktoru. Kao član tima ne možete pristupiti tom izborniku – dobit ćete poruku da samo direktor može.
 
 **2.** Dodavanje i uklanjanje članova tima, ručna ili automatska dodjela leadova i odbijanje leadova u queueu – sve to radi isključivo direktor. Vi primate leadove koje vam on dodijeli i ažurirate status (Započni rad / Završeno).
 
@@ -257,7 +257,7 @@ export const DOC_CATEGORIES_FOR_PRUVATELJ = [
   'Chat i Komunikacija',
   'Notifikacije',
   'USLUGAR EXCLUSIVE Funkcionalnosti',
-  'Queue Sustav za Distribuciju Leadova',
+  'Sustav reda čekanja za distribuciju leadova',
   'Refund i Povrat Kredita',
   'Upravljanje Pretplatama',
   'Pravni Status i Verifikacija',

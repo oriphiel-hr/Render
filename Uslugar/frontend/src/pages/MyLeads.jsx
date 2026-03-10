@@ -233,7 +233,7 @@ export default function MyLeads({ isDirector = false }) {
       setAddingToQueueId(jobId);
       await addLeadToCompanyQueue(jobId);
       setInQueueJobIds((prev) => new Set([...prev, jobId]));
-      alert('✅ Lead dodan u interni queue. Možete ga dodijeliti tim članu u Direktor Dashboardu → Interni Lead Queue.');
+      alert('✅ Lead dodan u interni red čekanja. Možete ga dodijeliti članu tima u nadzornoj ploči direktora → Interni red leadova.');
     } catch (err) {
       alert('Greška: ' + (err.response?.data?.message || err.response?.data?.error || 'Neuspjelo'));
     } finally {
@@ -576,13 +576,13 @@ export default function MyLeads({ isDirector = false }) {
                     )}
                   </button>
                   <p className="text-xs text-gray-500 mt-1">
-                    Dodaj lead u interni queue tvrtke da ga možete dodijeliti članu tima u Direktor Dashboardu.
+                    Dodaj lead u interni red čekanja tvrtke da ga možete dodijeliti članu tima u nadzornoj ploči direktora.
                   </p>
                 </div>
               )}
               {isDirector && (purchase.jobId || purchase.job?.id) && inQueueJobIds.has(purchase.jobId || purchase.job?.id) && (
                 <div className="mb-4 px-3 py-2 bg-indigo-50 border border-indigo-200 rounded-lg text-sm text-indigo-800">
-                  ✓ Lead je u internom queueu. Dodijelite ga tim članu u Direktor Dashboardu → Interni Lead Queue.
+                  ✓ Lead je u internom redu čekanja. Dodijelite ga članu tima u nadzornoj ploči direktora → Interni red leadova.
                 </div>
               )}
 
