@@ -13,8 +13,8 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-// Repo root: .../Render (admin router je u Uslugar/backend/src/routes)
-const REPO_ROOT = path.resolve(__dirname, '../../../..');
+// Root projekta (Uslugar): backend/src/routes -> ../../.. = Uslugar (radi i lokalno i na Renderu)
+const PROJECT_ROOT = path.resolve(__dirname, '../../..');
 
 const r = Router();
 
@@ -5683,9 +5683,9 @@ r.post('/generate-docs-screenshots', auth(true, ['ADMIN']), async (req, res, nex
   try {
     const { users, password } = await ensureScreenshotTestUsers();
     const baseUrl = process.env.FRONTEND_URL || req.get('origin') || 'https://www.uslugar.eu';
-    const repoRoot = REPO_ROOT;
+    const repoRoot = process.env.SCREENSHOT_REPO_ROOT || PROJECT_ROOT;
     const scriptPath = path.join(repoRoot, 'tests', 'scripts', 'capture-docs-screenshots.js');
-    const outDir = path.join(repoRoot, 'Uslugar', 'frontend', 'public', 'docs');
+    const outDir = path.join(repoRoot, 'frontend', 'public', 'docs');
 
     const userByRole = {};
     users.forEach((u) => { userByRole[u.role] = u; });
@@ -5709,7 +5709,9 @@ r.post('/generate-docs-screenshots', auth(true, ['ADMIN']), async (req, res, nex
       return res.status(503).json({
         success: false,
         error: 'Skripta za screenshotove nije pronađena.',
-        hint: 'Očekivana putanja: tests/scripts/capture-docs-screenshots.js (pokreni backend iz roota repozitorija).',
+        hint: 'Očekivana putanja: tests/scripts/capture-docs-screenshots.js u rootu projekta. Na Renderu provjeri da je mapa tests uključena u deploy.',
+        scriptPath,
+        cwd: process.cwd(),
       });
     }
 
