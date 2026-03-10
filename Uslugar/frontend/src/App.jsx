@@ -621,6 +621,24 @@ export default function App(){
               className={
                 navLinkBase +
                 ' ' +
+                (tab === 'time-landing' ? navLinkActive : navLinkInactive)
+              }
+              onClick={() => {
+                if (window.location.pathname.startsWith('/admin/')) {
+                  window.location.replace('/#time-landing');
+                } else {
+                  setTab('time-landing');
+                }
+              }}
+              aria-label="Početna stranica"
+              aria-current={tab === 'time-landing' ? 'page' : undefined}
+            >
+              Početna
+            </button>
+            <button
+              className={
+                navLinkBase +
+                ' ' +
                 (tab === 'user' ? navLinkActive : navLinkInactive)
               }
               onClick={() => {
@@ -630,10 +648,10 @@ export default function App(){
                   setTab('user');
                 }
               }}
-              aria-label="Početna stranica"
+              aria-label="Traži usluge"
               aria-current={tab === 'user' ? 'page' : undefined}
             >
-              Početna
+              Traži usluge
             </button>
             {(!token || isProvider()) && (
               <button
@@ -906,10 +924,16 @@ export default function App(){
                   <div className="pt-2 first:pt-0">
                     <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Navigacija</div>
                     <button
+                      className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'time-landing' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
+                      onClick={() => setTab('time-landing')}
+                    >
+                      🏠 Početna
+                    </button>
+                    <button
                       className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'user' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
                       onClick={() => setTab('user')}
                     >
-                      🏠 Traži usluge
+                      🔍 Traži usluge
                     </button>
                     <button
                       className={'w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 ' + (tab === 'my-jobs' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200')}
@@ -978,7 +1002,7 @@ export default function App(){
                     </button>
                     <button
                       className="w-full text-left px-4 py-2 flex items-center gap-2 transition-colors duration-150 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-700 dark:text-red-300"
-                      onClick={() => { logout(); setTab('user'); }}
+                      onClick={() => { logout(); setTab('time-landing'); }}
                       aria-label="Odjavi se"
                     >
                       🚪 Odjava
@@ -1093,10 +1117,16 @@ export default function App(){
             <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Glavno</h3>
             <div className="space-y-1">
               <button
-                className={'w-full text-left px-3 py-2 rounded transition-colors ' + (tab==='user' ? 'bg-gray-900 dark:bg-gray-700 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300')}
-                onClick={() => { navigateToTab('user'); setIsMobileMenuOpen(false); }}
+                className={'w-full text-left px-3 py-2 rounded transition-colors ' + (tab==='time-landing' ? 'bg-gray-900 dark:bg-gray-700 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300')}
+                onClick={() => { setTab('time-landing'); setIsMobileMenuOpen(false); }}
               >
                 🏠 Početna
+              </button>
+              <button
+                className={'w-full text-left px-3 py-2 rounded transition-colors ' + (tab==='user' ? 'bg-gray-900 dark:bg-gray-700 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300')}
+                onClick={() => { setTab('user'); setIsMobileMenuOpen(false); }}
+              >
+                🔍 Traži usluge
               </button>
               {(!token || isProvider()) && (
                 <button
@@ -1264,10 +1294,16 @@ export default function App(){
               <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Moji Poslovi</h3>
               <div className="space-y-1">
                 <button
-                  className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300 transition-colors"
+                  className={'w-full text-left px-3 py-2 rounded transition-colors ' + (tab === 'time-landing' ? 'bg-gray-900 dark:bg-gray-700 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300')}
+                  onClick={() => { setTab('time-landing'); setIsMobileMenuOpen(false); }}
+                >
+                  🏠 Početna
+                </button>
+                <button
+                  className={'w-full text-left px-3 py-2 rounded transition-colors ' + (tab === 'user' ? 'bg-gray-900 dark:bg-gray-700 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300')}
                   onClick={() => { setTab('user'); setIsMobileMenuOpen(false); }}
                 >
-                  🏠 Traži usluge
+                  🔍 Traži usluge
                 </button>
                 <button
                   className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300 transition-colors"
@@ -1355,7 +1391,7 @@ export default function App(){
                 </button>
                 <button
                   className="w-full text-left px-3 py-2 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-red-700 dark:text-red-300 transition-colors border-t border-gray-200 dark:border-gray-600 mt-1 pt-2"
-                  onClick={() => { logout(); setTab('user'); setIsMobileMenuOpen(false); }}
+                  onClick={() => { logout(); setTab('time-landing'); setIsMobileMenuOpen(false); }}
                   aria-label="Odjavi se"
                 >
                   🚪 Odjava
