@@ -291,9 +291,6 @@ const Documentation = ({ setTab }) => {
 
         {guideSteps ? (
           <div className="space-y-10">
-            <p className="text-sm text-amber-700 dark:text-amber-400">
-              📷 Ilustracije (screenshotovi) u vodiču bit će dodane; trenutno se prikazuju placeholderi dok ne budu dostupne prave slike.
-            </p>
             {docRole && (
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Prijavljeni ste kao <strong>{effectiveGuideRole === 'korisnik' ? 'korisnik usluge' : effectiveGuideRole === 'tim_clan' ? 'član tima' : 'pružatelj usluge'}</strong>. Prikazuje se odgovarajući vodič.
