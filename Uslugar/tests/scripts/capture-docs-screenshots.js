@@ -60,6 +60,7 @@ const SCREENSHOTS = [
   { file: 'guide-korisnik-5.png', hash: '#my-jobs', role: 'korisnik' },
   { file: 'guide-korisnik-6.png', hash: '#user', role: 'korisnik' },
   // --- Pružatelj
+  // guide-pruzatelj-1: stranica registracije (Postani pružatelj / register-user). NE smije biti "Objavite svoj posao" – to je za korisnika.
   { file: 'guide-pruzatelj-1.png', hash: '#register-provider', role: null },
   { file: 'guide-pruzatelj-2.png', hash: '#leads', role: 'pružatelj' },
   { file: 'guide-pruzatelj-3.png', hash: '#leads', role: 'pružatelj' },

@@ -95,7 +95,7 @@ export const GUIDE_PRUVATELJ = [
     title: 'Registracija kao pružatelj',
     userAction: 'Odaberete "Postani pružatelj" ili registraciju kao pružatelj. Unesete podatke tvrtke/obrta i odaberete kategorije u kojima radite (npr. Električar, Vodoinstalater).',
     appResult: 'Profil pružatelja je kreiran. Nakon potvrde (i eventualne pretplate) vidite "Leadovi" i "Moj račun".',
-    image: '/docs/guide-pruzatelj-1.png?v=2',
+    image: '/docs/guide-korisnik-1.png?v=2',
     puniOpis: `**1.** Odaberete "Postani pružatelj" ili registraciju kao pružatelj. Unesete podatke tvrtke ili obrta te pravni status; sustav podržava različite uloge (USER, PROVIDER, ADMIN) i JWT autentifikaciju.
 
 **2.** Prođete wizard registracije: odabirete kategorije u kojima radite (npr. Električar, Vodoinstalater) iz dinamičkog popisa s emoji ikonama i NKD kodovima, te regije u kojima primate poslove. Kategorije mogu imati oznake za licencirane djelatnosti i tipove licenci (elektrotehnička, građevinska itd.).
@@ -116,15 +116,15 @@ export const GUIDE_PRUVATELJ = [
   },
   {
     step: 3,
-    title: 'Slanje ponude',
-    userAction: 'Kliknete na posao koji Vas zanima i pošaljete ponudu (cijena, rok, kratki opis).',
-    appResult: 'Naručitelj vidi vašu ponudu u "Moji poslovi". Ako prihvati, otvara se chat soba za dogovor.',
+    title: 'Kupnja leada',
+    userAction: 'Kliknete na posao koji Vas zanima i kupite lead (potrošite jedan kredit). Dobivate ekskluzivni pristup klijentu – samo Vi vidite taj upit.',
+    appResult: 'Naručitelj vidi da je lead kupljen; otvara se chat soba za dogovor. Jedan kredit = jedan ekskluzivni lead.',
     image: '/docs/guide-pruzatelj-3.png?v=2',
-    puniOpis: `**1.** Otvorite posao koji Vas zanima i odaberete slanje ponude. Unesete iznos ponude, poruku uz ponudu i procijenjeni broj dana za izvršenje. Možete označiti ponudu kao pregovornu ako je cijena predmet dogovora.
+    puniOpis: `**1.** Otvorite posao (lead) koji Vas zanima na tržnici leadova i odaberete kupnju. Potrošit ćete jedan kredit za taj ekskluzivni lead – samo Vi dobivate kontakt naručitelja, nema natjecanja s drugim izvođačima.
 
-**2.** Sustav prikazuje status ponude: NA ČEKANJU dok naručitelj ne odluči, zatim PRIHVAĆENA ili ODBIJENA. Naručitelj vidi sve ponude i može pregovarati o cijeni ako ste to označili.
+**2.** Nakon kupnje lead se pojavljuje u "Moji leadovi", a automatski se otvara chat soba s naručiteljem za dogovor o terminu i detaljima. Krediti se nadopunjuju prema pretplati (TRIAL, BASIC, PREMIUM, PRO).
 
-**3.** Ako naručitelj prihvati vašu ponudu, status posla prelazi u U TIJEKU i otvara se chat soba. Potrošit ćete jedan kredit za taj ekskluzivni lead (krediti se nadopunjuju prema pretplati). Notifikacije Vas obavještavaju o prihvaćenoj ili odbijenoj ponudi.`,
+**3.** Notifikacije Vas obavještavaju o novim leadovima koji odgovaraju vašim kategorijama. Ako naručitelj zatraži rješavanje prema pravilima platforme, kredit se može vratiti (refund).`,
   },
   {
     step: 4,
@@ -132,7 +132,7 @@ export const GUIDE_PRUVATELJ = [
     userAction: 'U "Chat" dopisujete se s klijentom. Jedan potrošeni kredit = jedan ekskluzivni lead.',
     appResult: 'Sve razgovore vodite u jednoj sobi. Kredite vidite u widgetu u headeru; dopuna preko "Cjenik" / pretplata.',
     image: '/docs/guide-korisnik-4.png?v=2',
-    puniOpis: `**1.** U izborniku odaberete "Chat". Za svaki posao s prihvaćenom ponudom imate jednu chat sobu s naručiteljem. Povijest poruka je spremljena; možete slati i slike. Status poruke (poslana, pročitana) vidljiv je oboma stranama.
+    puniOpis: `**1.** U izborniku odaberete "Chat". Za svaki kupljeni lead imate jednu chat sobu s naručiteljem. Povijest poruka je spremljena; možete slati i slike. Status poruke (poslana, pročitana) vidljiv je oboma stranama.
 
 **2.** Real-time chat; notifikacije za nove poruke stižu putem emaila, SMS-a, in-app ili push obavijesti. Brojač nepročitanih pokazuje koliko poruka još niste pročitali. Sve ostaje u jednoj sobi.
 
@@ -160,7 +160,7 @@ export const GUIDE_PRUVATELJ = [
 
 **2.** Identity Badge i verifikacije: potvrdite email, telefon i tvrtku za oznaku verificiranog profila. Verificirani profil dobiva više povjerenja i bolju vidljivost. Pravni status i reputacijski sustav prate vašu povijest i ocjene.
 
-**3.** U "ROI" ili "Leadovi" vidite statistike: troškovi (potrošeni krediti, pretplata), konverzije (prihvaćene ponude, završeni poslovi), povrat kredita (refund). Fakture i naplata pregledavaju se u "Moj račun".`,
+**3.** U "ROI" ili "Leadovi" vidite statistike: troškovi (potrošeni krediti, pretplata), konverzije (kupljeni leadovi, završeni poslovi), povrat kredita (refund). Fakture i naplata pregledavaju se u "Moj račun".`,
   },
 ];
 
