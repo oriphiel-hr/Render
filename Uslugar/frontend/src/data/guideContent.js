@@ -4,6 +4,7 @@
  * frontend/public/docs/ (npr. guide-korisnik-1.png ... guide-korisnik-6.png,
  * guide-pružatelj-1.png ... guide-pružatelj-6.png) i zamijeni PLACEHOLDER() s
  * putanjama npr. /docs/guide-korisnik-1.png.
+ * Cache-busting: ?v=2 osigurava učitavanje novih screenshotova nakon deploya.
  */
 
 const PLACEHOLDER = (text) =>
@@ -16,7 +17,7 @@ export const GUIDE_KORISNIK = [
     title: 'Registracija i prijava',
     userAction: 'Odaberete "Registracija" ili "Prijava" u izborniku i unesete email, lozinku i osnovne podatke.',
     appResult: 'Dobivate pristup svom računu i glavnoj stranici. U izborniku vidite "Moj račun", "Moji poslovi" i ostale opcije.',
-    image: '/docs/guide-korisnik-1.png',
+    image: '/docs/guide-korisnik-1.png?v=2',
     puniOpis: `**1.** Odaberete "Registracija" ili "Prijava" u izborniku. Za registraciju unesete email, lozinku i osnovne podatke; za prijavu samo email i lozinku. Sustav koristi JWT autentifikaciju i automatski postavlja ulogu (korisnik usluge, pružatelj, admin).
 
 **2.** Nakon registracije stiže email s linkom za potvrdu – provjerite poštu i kliknite na link kako bi račun bio aktivan. Bez potvrde emaila neke opcije možda neće biti dostupne.
@@ -30,7 +31,7 @@ export const GUIDE_KORISNIK = [
     title: 'Objavi posao',
     userAction: 'U "Moji poslovi" kliknete "Objavi posao" (ili na početnoj "Objavi novi posao"). Ispunite naslov, kategoriju (npr. Električar), grad, budžet i opis.',
     appResult: 'Posao se objavljuje i pojavljuje u listi. Samo jedan provjereni pružatelj dobiva vaš upit – nema spam poziva.',
-    image: '/docs/guide-korisnik-2.png',
+    image: '/docs/guide-korisnik-2.png?v=2',
     puniOpis: `**1.** U "Moji poslovi" kliknete "Objavi posao" ili na početnoj stranici "Objavi novi posao". Odaberete kategoriju usluge (npr. Električar) iz dinamičkog popisa – prikazuju se emoji ikone, opisi i NKD kodovi.
 
 **2.** Ispunite naslov, detaljni opis posla, lokaciju (grad), budžet (min–max) i po želji geolokaciju. Možete dodati slike posla. Označite hitnost: NORMALNA ili HITNA; veličinu posla (MALA, SREDNJA, VELIKA); rok izvršenja.
@@ -42,7 +43,7 @@ export const GUIDE_KORISNIK = [
     title: 'Pregled ponuda',
     userAction: 'U "Moji poslovi" otvorite svoj posao i vidite ponudu (ili poruku) od pružatelja.',
     appResult: 'Aplikacija prikazuje detalje ponude. Možete prihvatiti ponudu ili nastaviti razgovor u chatu.',
-    image: '/docs/moji-poslovi-mock.png',
+    image: '/docs/moji-poslovi-mock.png?v=2',
     puniOpis: `**1.** U "Moji poslovi" otvorite svoj posao. Za svaki posao vidite status: OTVOREN (čekate ponude), U TIJEKU (odabrali ste pružatelja), ZAVRŠEN ili OTKAZAN.
 
 **2.** Kad pružatelj pošalje ponudu, prikazuje se iznos, poruka uz ponudu, procijenjeni broj dana i može li se pregovarati o cijeni. Status ponude: NA ČEKANJU, PRIHVAĆENA ili ODBIJENA. Možete pregledati sve ponude za taj posao.
@@ -54,7 +55,7 @@ export const GUIDE_KORISNIK = [
     title: 'Chat i dogovor',
     userAction: 'U "Chat" odaberete razgovor s pružateljem i dopisujete se za termin i detalje.',
     appResult: 'Sve ostaje u jednoj sobi. Kad se dogovorite, posao možete označiti kao završen.',
-    image: '/docs/guide-korisnik-4.png',
+    image: '/docs/guide-korisnik-4.png?v=2',
     puniOpis: `**1.** U izborniku odaberete "Chat". Vidite listu razgovora – za svaki posao jedna chat soba s pružateljem kojeg ste prihvatili. Odaberete razgovor i vidite povijest poruka.
 
 **2.** Dopisujete se u realnom vremenu; možete poslati i slike. Poruke imaju status (poslana, pročitana). Sve ostaje u jednoj sobi. Notifikacije za nove poruke stižu putem emaila, SMS-a, in-app ili push obavijesti.
@@ -66,7 +67,7 @@ export const GUIDE_KORISNIK = [
     title: 'Ocjenjivanje i recenzije',
     userAction: 'Nakon završenog posla možete ocijeniti pružatelja (1–5 zvjezdica) i ostaviti komentar.',
     appResult: 'Recenzija se prikazuje na profilu pružatelja. I Vi i pružatelj se međusobno možete ocijeniti.',
-    image: '/docs/guide-korisnik-5.png',
+    image: '/docs/guide-korisnik-5.png?v=2',
     puniOpis: `**1.** Nakon što je posao označen kao ZAVRŠEN, sustav omogućuje obostrano ocjenjivanje – i Vi i pružatelj možete jedan drugome dati ocjenu i komentar. Duplikati recenzija su spriječeni; postojeću recenziju možete uređivati ili obrisati.
 
 **2.** Odaberete ocjenu od 1 do 5 zvjezdica i napišete kratki komentar. Sustav automatski izračunava prosječnu ocjenu i broj recenzija na profilu pružatelja.
@@ -78,7 +79,7 @@ export const GUIDE_KORISNIK = [
     title: 'Refund i notifikacije',
     userAction: 'Ako pružatelj ne odgovori ili ne ispuni dogovor, možete prijaviti problem u aplikaciji. Kao korisnik koristite platformu besplatno – kredite plaćaju pružatelji kad kupuju vaš upit. Sve važne događaje primate putem emaila ili notifikacija.',
     appResult: 'Prijave se rješavaju prema pravilima platforme; notifikacije Vas obavještavaju o novim ponudama, porukama i statusu poslova.',
-    image: '/docs/guide-korisnik-6.png',
+    image: '/docs/guide-korisnik-6.png?v=2',
     puniOpis: `**1.** Kao korisnik usluge koristite platformu besplatno – ne plaćate kredite. Kredite troše pružatelji kad kupuju vaš upit (lead). Ako pružatelj ne odgovori na vaš posao ili ne ispuni dogovor, u aplikaciji možete prijaviti problem ili zatražiti rješavanje; platforma postupa prema pravilima (povrat kredita odnosi se na pružatelja, ne na Vas).
 
 **2.** Notifikacije: primate obavijesti za nove ponude, prihvaćene ili odbijene ponude, nove poruke u chatu i promjene statusa poslova. Kanali su email notifikacije, SMS (Infobip), in-app notifikacije i push obavijesti u pregledniku. Brojač nepročitanih notifikacija pokazuje što još niste pročitali.
@@ -94,7 +95,7 @@ export const GUIDE_PRUVATELJ = [
     title: 'Registracija kao pružatelj',
     userAction: 'Odaberete "Postani pružatelj" ili registraciju kao pružatelj. Unesete podatke tvrtke/obrta i odaberete kategorije u kojima radite (npr. Električar, Vodoinstalater).',
     appResult: 'Profil pružatelja je kreiran. Nakon potvrde (i eventualne pretplate) vidite "Leadovi" i "Moj račun".',
-    image: '/docs/guide-pruzatelj-1.png',
+    image: '/docs/guide-pruzatelj-1.png?v=2',
     puniOpis: `**1.** Odaberete "Postani pružatelj" ili registraciju kao pružatelj. Unesete podatke tvrtke ili obrta te pravni status; sustav podržava različite uloge (USER, PROVIDER, ADMIN) i JWT autentifikaciju.
 
 **2.** Prođete wizard registracije: odabirete kategorije u kojima radite (npr. Električar, Vodoinstalater) iz dinamičkog popisa s emoji ikonama i NKD kodovima, te regije u kojima primate poslove. Kategorije mogu imati oznake za licencirane djelatnosti i tipove licenci (elektrotehnička, građevinska itd.).
@@ -106,7 +107,7 @@ export const GUIDE_PRUVATELJ = [
     title: 'Pregled leadova',
     userAction: 'U izborniku odaberete "Leadovi" (ili "Dostupni leadovi"). Filtrirate po kategoriji, gradu ili budžetu ako želite.',
     appResult: 'Vidite listu poslova koji odgovaraju vašim kategorijama. Jedan lead = samo Vi dobivate kontakt klijenta.',
-    image: '/docs/guide-pruzatelj-2.png',
+    image: '/docs/guide-pruzatelj-2.png?v=2',
     puniOpis: `**1.** U izborniku odaberete "Leadovi" ili "Dostupni leadovi". Lista se dinamički učitava – prikazuju se samo poslovi koji odgovaraju vašim kategorijama i regijama. Ekskluzivni lead sustav: jedan lead = samo Vi dobivate kontakt klijenta.
 
 **2.** Koristite filtere: kategorija, grad, budžet, status posla (OTVOREN, U TIJEKU, ZAVRŠEN, OTKAZAN), hitnost (NORMALNA, HITNA), veličina (MALA, SREDNJA, VELIKA), datum. Možete sortirati po najnovijem, budžetu i slično. Tražilica ima sticky search bar i napredne filtere.
@@ -118,7 +119,7 @@ export const GUIDE_PRUVATELJ = [
     title: 'Slanje ponude',
     userAction: 'Kliknete na posao koji Vas zanima i pošaljete ponudu (cijena, rok, kratki opis).',
     appResult: 'Naručitelj vidi vašu ponudu u "Moji poslovi". Ako prihvati, otvara se chat soba za dogovor.',
-    image: '/docs/guide-pruzatelj-3.png',
+    image: '/docs/guide-pruzatelj-3.png?v=2',
     puniOpis: `**1.** Otvorite posao koji Vas zanima i odaberete slanje ponude. Unesete iznos ponude, poruku uz ponudu i procijenjeni broj dana za izvršenje. Možete označiti ponudu kao pregovornu ako je cijena predmet dogovora.
 
 **2.** Sustav prikazuje status ponude: NA ČEKANJU dok naručitelj ne odluči, zatim PRIHVAĆENA ili ODBIJENA. Naručitelj vidi sve ponude i može pregovarati o cijeni ako ste to označili.
@@ -130,7 +131,7 @@ export const GUIDE_PRUVATELJ = [
     title: 'Chat i krediti',
     userAction: 'U "Chat" dopisujete se s klijentom. Jedan potrošeni kredit = jedan ekskluzivni lead.',
     appResult: 'Sve razgovore vodite u jednoj sobi. Kredite vidite u widgetu u headeru; dopuna preko "Cjenik" / pretplata.',
-    image: '/docs/moji-leadovi-direktor-mock.png',
+    image: '/docs/moji-leadovi-direktor-mock.png?v=2',
     puniOpis: `**1.** U izborniku odaberete "Chat". Za svaki posao s prihvaćenom ponudom imate jednu chat sobu s naručiteljem. Povijest poruka je spremljena; možete slati i slike. Status poruke (poslana, pročitana) vidljiv je oboma stranama.
 
 **2.** Real-time chat; notifikacije za nove poruke stižu putem emaila, SMS-a, in-app ili push obavijesti. Brojač nepročitanih pokazuje koliko poruka još niste pročitali. Sve ostaje u jednoj sobi.
@@ -142,7 +143,7 @@ export const GUIDE_PRUVATELJ = [
     title: 'Pretplata i cjenik',
     userAction: 'U "Cjenik" odaberete plan (TRIAL, BASIC, PREMIUM, PRO). Krediti se nadopunjuju prema planu; možete kupiti dodatne kredite.',
     appResult: 'Pretplata se upravlja preko Stripe; status vidite u "Moj račun" ili "Pretplata". Krediti se oduzimaju pri kupnji leada.',
-    image: '/docs/guide-pruzatelj-5.png',
+    image: '/docs/guide-pruzatelj-5.png?v=2',
     puniOpis: `**1.** U "Cjenik" odaberete pretplatni plan: TRIAL, BASIC, PREMIUM ili PRO. Svaki plan donosi određeni broj kredita (npr. mjesečno). Krediti se automatski nadopunjuju prema planu; možete kupiti i dodatne kredite.
 
 **2.** Naplata i pretplata upravljaju se preko Stripe integracije. Fakture i status pretplate vidite u "Moj račun" ili "Pretplata". Krediti se oduzimaju kad kupite lead (kad vaša ponuda bude prihvaćena). Ako naručitelj zatraži refund prema pravilima, kredit se može vratiti – refund i povrat kredita vide se u istom odjeljku.
@@ -154,7 +155,7 @@ export const GUIDE_PRUVATELJ = [
     title: 'Profil, verifikacija i ROI',
     userAction: 'U "Moj profil" ažurirate podatke, kategorije i regije. Možete potvrditi email, telefon, tvrtku (Identity Badge). U "ROI" ili "Leadovi" vidite statistike i povijest.',
     appResult: 'Verificirani profil dobiva više povjerenja; ROI dashboard pokazuje troškove, konverzije i povrat kredita (refund).',
-    image: '/docs/guide-pruzatelj-6.png',
+    image: '/docs/guide-pruzatelj-6.png?v=2',
     puniOpis: `**1.** U "Moj profil" ažurirate podatke: biografija, specijalizacije, godine iskustva, web stranica, područje rada, status dostupnosti. Odaberete kategorije i regije za primanje leadova; možete upravljati team locations (geo-dinamičke lokacije) i radius checking. Portfolio, certifikati i licence dodaju vjerodostojnost.
 
 **2.** Identity Badge i verifikacije: potvrdite email, telefon i tvrtku za oznaku verificiranog profila. Verificirani profil dobiva više povjerenja i bolju vidljivost. Pravni status i reputacijski sustav prate vašu povijest i ocjene.
@@ -170,7 +171,7 @@ export const GUIDE_TIM_CLAN = [
     title: 'Tko ste Vi – član tima',
     userAction: 'Direktor vas je dodao u tim tvrtke. Imate vlastiti račun (email, lozinka), ali leadove vam dodjeljuje direktor.',
     appResult: 'U "Moji leadovi" vidite sekciju "Leadovi dodijeljeni meni" – to su leadovi koje vam je direktor dodijelio.',
-    image: '/docs/guide-tim-1.png',
+    image: '/docs/guide-tim-1.png?v=2',
     puniOpis: `**1.** Kao član tima imate vlastiti User račun (PROVIDER) i povezani ste na tvrtku preko direktora. Direktor vas dodaje u tim u nadzornoj ploči direktora (samo on može dodavati ili uklanjati članove).
 
 **2.** Leadove ne kupujete sami – direktor ih kupuje za tvrtku i zatim vam ih dodjeljuje ručno ili automatski (prema kategoriji i dostupnosti). Primat ćete notifikaciju "Novi lead dodijeljen" s linkom na Moje leadove.
@@ -182,7 +183,7 @@ export const GUIDE_TIM_CLAN = [
     title: 'Leadovi dodijeljeni meni',
     userAction: 'U "Moji leadovi" pregledavate listu dodijeljenih leadova. Za svaki lead vidite posao, klijenta, status (Dodijeljeno / U tijeku / Završeno).',
     appResult: 'Jedna jasna lista svih leadova koji su vam dodijeljeni; možete ih označiti kao "Započinjem rad" ili "Završeno".',
-    image: '/docs/moji-leadovi-team-member-mock.png',
+    image: '/docs/moji-leadovi-team-member-mock.png?v=2',
     puniOpis: `**1.** U "Moji leadovi" (npr. izbornik → Leadovi) otvorite stranicu. Na vrhu, ako ste član tima, vidite blok **Leadovi dodijeljeni meni**. U njemu su svi leadovi koje vam je direktor dodijelio iz internog queuea tvrtke.
 
 **2.** Za svaki lead prikazuju se: naslov posla, kategorija, grad, ime klijenta, tvrtka (direktor), datum dodjele i status: DODIJELJENO (tek ste ga dobili), U TIJEKU (započeli ste rad), ZAVRŠENO (završeni posao).
@@ -194,7 +195,7 @@ export const GUIDE_TIM_CLAN = [
     title: 'Chat s klijentom',
     userAction: 'Kad vam je lead dodijeljen, za taj posao možete koristiti chat s klijentom. U chatu su i Vi i direktor (ako je lead dodijeljen vama).',
     appResult: 'Sva komunikacija s klijentom odvija se u jednoj sobi; direktor može pratiti razgovor.',
-    image: '/docs/guide-tim-3.png',
+    image: '/docs/guide-tim-3.png?v=2',
     puniOpis: `**1.** Nakon što vam je lead dodijeljen, za taj posao (job) automatski imate pristup **public chat** sobi s klijentom. U sobi su klijent, direktor i Vi (tim član kojem je lead dodijeljen).
 
 **2.** U izborniku odaberete "Chat" i vidite listu razgovora. Odaberete razgovor za odgovarajući posao i dopisujete s klijentom u realnom vremenu. Možete slati poruke i slike. Notifikacije vas obavještavaju o novim porukama.
@@ -206,7 +207,7 @@ export const GUIDE_TIM_CLAN = [
     title: 'Interni chat (Direktor ↔ tim)',
     userAction: 'Direktor može otvoriti interni chat s vama (1-na-1 ili grupa s više članova tima). Koristite ga za koordinaciju i pitanja unutar tvrtke.',
     appResult: 'Interni razgovori ostaju odvojeni od chata s klijentima; sve je u aplikaciji.',
-    image: '/docs/guide-tim-4.png',
+    image: '/docs/guide-tim-4.png?v=2',
     puniOpis: `**1.** Osim chata s klijentom, direktor može kreirati **INTERNAL** chat sobe – između sebe i pojedinog člana tima ili grupu s više članova. Samo direktor može kreirati te sobe.
 
 **2.** U chatu vidite listu soba; interne sobe (Direktor ↔ tim) koristite za dogovore, upite i koordinaciju unutar tvrtke. Razgovori s klijentima ostaju u posebnim soabama po poslu.
@@ -218,7 +219,7 @@ export const GUIDE_TIM_CLAN = [
     title: 'Što ne možete – samo direktor',
     userAction: 'Vi ne dodajete članove tima, ne dodjeljujete leadove i ne pristupate nadzornoj ploči direktora (tim, financije, odluke).',
     appResult: 'Jasna podjela: vi radite na dodijeljenim leadovima; direktor upravlja timom i queueom.',
-    image: '/docs/director-dashboard-lead-queue-mock.png',
+    image: '/docs/director-dashboard-lead-queue-mock.png?v=2',
     puniOpis: `**1.** **Nadzorna ploča direktora** (Tim, Red leadova, Financije, Odluke) dostupna je samo direktoru. Kao član tima ne možete pristupiti tom izborniku – dobit ćete poruku da samo direktor može.
 
 **2.** Dodavanje i uklanjanje članova tima, ručna ili automatska dodjela leadova i odbijanje leadova u queueu – sve to radi isključivo direktor. Vi primate leadove koje vam on dodijeli i ažurirate status (Započni rad / Završeno).
