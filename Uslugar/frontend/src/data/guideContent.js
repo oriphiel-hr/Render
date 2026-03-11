@@ -31,7 +31,7 @@ export const GUIDE_KORISNIK = [
     title: 'Objavi posao',
     userAction: 'U "Moji poslovi" kliknete "Objavi posao" (ili na početnoj "Objavi novi posao"). Ispunite naslov, kategoriju (npr. Električar), grad, budžet i opis.',
     appResult: 'Posao se objavljuje i pojavljuje u listi. Samo jedan provjereni pružatelj dobiva vaš upit – nema spam poziva.',
-    image: '/docs/guide-korisnik-2.png?v=2',
+    image: '/docs/moji-poslovi-mock.png?v=2',
     puniOpis: `**1.** U "Moji poslovi" kliknete "Objavi posao" ili na početnoj stranici "Objavi novi posao". Odaberete kategoriju usluge (npr. Električar) iz dinamičkog popisa – prikazuju se emoji ikone, opisi i NKD kodovi.
 
 **2.** Ispunite naslov, detaljni opis posla, lokaciju (grad), budžet (min–max) i po želji geolokaciju. Možete dodati slike posla. Označite hitnost: NORMALNA ili HITNA; veličinu posla (MALA, SREDNJA, VELIKA); rok izvršenja.
@@ -43,7 +43,7 @@ export const GUIDE_KORISNIK = [
     title: 'Pregled ponuda',
     userAction: 'U "Moji poslovi" otvorite svoj posao i vidite ponudu (ili poruku) od pružatelja.',
     appResult: 'Aplikacija prikazuje detalje ponude. Možete prihvatiti ponudu ili nastaviti razgovor u chatu.',
-    image: '/docs/moji-poslovi-mock.png?v=2',
+    image: '/docs/guide-korisnik-5.png?v=2',
     puniOpis: `**1.** U "Moji poslovi" otvorite svoj posao. Za svaki posao vidite status: OTVOREN (čekate ponude), U TIJEKU (odabrali ste pružatelja), ZAVRŠEN ili OTKAZAN.
 
 **2.** Kad pružatelj pošalje ponudu, prikazuje se iznos, poruka uz ponudu, procijenjeni broj dana i može li se pregovarati o cijeni. Status ponude: NA ČEKANJU, PRIHVAĆENA ili ODBIJENA. Možete pregledati sve ponude za taj posao.
@@ -131,7 +131,7 @@ export const GUIDE_PRUVATELJ = [
     title: 'Chat i krediti',
     userAction: 'U "Chat" dopisujete se s klijentom. Jedan potrošeni kredit = jedan ekskluzivni lead.',
     appResult: 'Sve razgovore vodite u jednoj sobi. Kredite vidite u widgetu u headeru; dopuna preko "Cjenik" / pretplata.',
-    image: '/docs/moji-leadovi-direktor-mock.png?v=2',
+    image: '/docs/guide-korisnik-4.png?v=2',
     puniOpis: `**1.** U izborniku odaberete "Chat". Za svaki posao s prihvaćenom ponudom imate jednu chat sobu s naručiteljem. Povijest poruka je spremljena; možete slati i slike. Status poruke (poslana, pročitana) vidljiv je oboma stranama.
 
 **2.** Real-time chat; notifikacije za nove poruke stižu putem emaila, SMS-a, in-app ili push obavijesti. Brojač nepročitanih pokazuje koliko poruka još niste pročitali. Sve ostaje u jednoj sobi.
@@ -141,12 +141,12 @@ export const GUIDE_PRUVATELJ = [
   {
     step: 5,
     title: 'Pretplata i cjenik',
-    userAction: 'U "Cjenik" odaberete plan (TRIAL, BASIC, PREMIUM, PRO). Krediti se nadopunjuju prema planu; možete kupiti dodatne kredite.',
-    appResult: 'Pretplata se upravlja preko Stripe; status vidite u "Moj račun" ili "Pretplata". Krediti se oduzimaju pri kupnji leada.',
+    userAction: 'U "Cjenik" vidite ponudu ekskluzivnih leadova – jedan izvođač po leadu, bez natjecanja. Odaberete plan (TRIAL, BASIC, PREMIUM, PRO) i eventualno dodatne kredite.',
+    appResult: 'Krediti se nadopunjuju prema planu. Pretplata se upravlja preko Stripea; status vidite u "Moj račun" ili "Pretplata". Krediti se oduzimaju pri kupnji leada.',
     image: '/docs/guide-pruzatelj-5.png?v=2',
-    puniOpis: `**1.** U "Cjenik" odaberete pretplatni plan: TRIAL, BASIC, PREMIUM ili PRO. Svaki plan donosi određeni broj kredita (npr. mjesečno). Krediti se automatski nadopunjuju prema planu; možete kupiti i dodatne kredite.
+    puniOpis: `**1.** Na stranici "Cjenik" prikazana je ponuda ekskluzivnih leadova: jedan izvođač po leadu, bez natjecanja i gubitka vremena. Odaberete pretplatni plan (TRIAL, BASIC, PREMIUM, PRO) – svaki plan donosi određeni broj kredita (npr. mjesečno). Možete kupiti i dodatne kredite.
 
-**2.** Naplata i pretplata upravljaju se preko Stripe integracije. Fakture i status pretplate vidite u "Moj račun" ili "Pretplata". Krediti se oduzimaju kad kupite lead (kad vaša ponuda bude prihvaćena). Ako naručitelj zatraži refund prema pravilima, kredit se može vratiti – refund i povrat kredita vide se u istom odjeljku.
+**2.** Naplata i pretplata upravljaju se preko Stripe integracije. Fakture i status pretplate vidite u "Moj račun" ili "Pretplata". Krediti se oduzimaju kad kupite lead. Ako naručitelj zatraži refund prema pravilima, kredit se može vratiti.
 
 **3.** Preporučeno je održavati dovoljno kredita za leadove koje želite primati. ROI dashboard (sljedeći korak) pomaže pratiti troškove, konverzije i povrat kredita.`,
   },
