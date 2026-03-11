@@ -35,6 +35,33 @@ ChartJS.register(
   Filler
 );
 
+/** Demo podaci za screenshot vodiča (?screenshotMode=docs) – konzistentne, realistične brojke */
+const DEMO_DASHBOARD = {
+  roi: {
+    totalLeadsPurchased: 8,
+    totalLeadsContacted: 5,
+    totalLeadsConverted: 3,
+    totalCreditsSpent: 80,
+    totalRevenue: 4200,
+    conversionRate: 37.5,
+    roi: 425,
+    avgLeadValue: 1400
+  },
+  subscription: {
+    plan: 'BASIC',
+    creditsBalance: 50,
+    lifetimeCreditsUsed: 80,
+    lifetimeLeadsConverted: 3
+  },
+  statusBreakdown: { CONVERTED: 3, CONTACTED: 2, ACTIVE: 3, REFUNDED: 0 },
+  recentLeads: [
+    { id: 'demo-1', status: 'CONVERTED', createdAt: new Date().toISOString(), job: { title: 'Renovacija kupaonice', category: { name: 'Građevinarstvo' }, budgetMax: 1500 } },
+    { id: 'demo-2', status: 'CONTACTED', createdAt: new Date().toISOString(), job: { title: 'Fasada i izolacija', category: { name: 'Fasade' }, budgetMax: 1800 } },
+    { id: 'demo-3', status: 'ACTIVE', createdAt: new Date().toISOString(), job: { title: 'Adaptacija potkrovlja', category: { name: 'Građevinarstvo' }, budgetMax: 1400 } }
+  ],
+  insights: [{ type: 'success', message: 'Vaša stopa konverzije je 37.5% – dobar rezultat za početak.' }]
+};
+
 export default function ROIDashboard() {
   const { isDarkMode } = useDarkMode();
   const [dashboard, setDashboard] = useState(null);
@@ -53,10 +80,23 @@ export default function ROIDashboard() {
   const loadDashboard = async () => {
     try {
       setLoading(true);
+      setError('');
       const response = await getROIDashboard();
-      setDashboard(response.data);
+      const data = response.data;
+      const isScreenshotDocs = typeof window !== 'undefined' && window.location.href.includes('screenshotMode=docs');
+      if (isScreenshotDocs && (!data.roi || data.roi.totalLeadsPurchased === 0)) {
+        setDashboard(DEMO_DASHBOARD);
+      } else {
+        setDashboard(data);
+      }
     } catch (err) {
-      setError(err.response?.data?.error || 'Greška pri učitavanju dashboard-a');
+      const isScreenshotDocs = typeof window !== 'undefined' && window.location.href.includes('screenshotMode=docs');
+      if (isScreenshotDocs) {
+        setDashboard(DEMO_DASHBOARD);
+        setError('');
+      } else {
+        setError(err.response?.data?.error || 'Greška pri učitavanju dashboard-a');
+      }
     } finally {
       setLoading(false);
     }
