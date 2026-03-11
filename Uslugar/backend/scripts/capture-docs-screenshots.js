@@ -80,7 +80,10 @@ async function main() {
         lastRole = null;
       }
 
-      const url = `${BASE_URL}${hash.startsWith('#') ? hash : '#' + hash}`;
+      // Dodaj screenshotMode=docs query param za frontend (prikaz demo leadova u vodiču, bez utjecaja na regularan promet)
+      const baseWithoutHash = BASE_URL.split('#')[0];
+      const hashPart = hash.startsWith('#') ? hash : '#' + hash;
+      const url = `${baseWithoutHash}?screenshotMode=docs${hashPart}`;
       await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
       await page.waitForTimeout(2000);
 

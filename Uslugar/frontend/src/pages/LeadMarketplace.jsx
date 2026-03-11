@@ -3,6 +3,58 @@ import React, { useState, useEffect } from 'react';
 import { getAvailableLeads, purchaseLead, getCreditsBalance, unlockContact } from '../api/exclusive';
 import LeadsMap from '../components/LeadsMap';
 
+// Demo leadovi za slučaj kada backend vrati 403 (npr. za screenshotove / dokumentaciju u dev okruženju)
+const DEMO_LEADS = [
+  {
+    id: 'demo-1',
+    title: 'Renovacija kupaonice – keramičar',
+    description: 'Kupaonica 6 m², potrebno skidanje stare keramike i postavljanje nove. Lokacija Zagreb.',
+    city: 'Zagreb',
+    budgetMin: 2500,
+    budgetMax: 4500,
+    leadPrice: 10,
+    qualityScore: 82,
+    urgency: 'HIGH',
+    distanceKm: 3,
+    user: {
+      fullName: 'Ana Horvat',
+      clientVerification: { phoneVerified: true, emailVerified: true, companyVerified: false },
+    },
+  },
+  {
+    id: 'demo-2',
+    title: 'Fasada i izolacija kuće',
+    description: 'Obiteljska kuća 180 m², potrebno postaviti novu fasadu i toplinsku izolaciju.',
+    city: 'Velika Gorica',
+    budgetMin: 8000,
+    budgetMax: 14000,
+    leadPrice: 12,
+    qualityScore: 76,
+    urgency: 'NORMAL',
+    distanceKm: 15,
+    user: {
+      fullName: 'Ivana Kovač',
+      clientVerification: { phoneVerified: true, emailVerified: true, companyVerified: true },
+    },
+  },
+  {
+    id: 'demo-3',
+    title: 'Adaptacija potkrovlja',
+    description: 'Uređenje potkrovlja u stambeni prostor (knauf, podovi, instalacije).',
+    city: 'Zagreb',
+    budgetMin: 12000,
+    budgetMax: 22000,
+    leadPrice: 15,
+    qualityScore: 65,
+    urgency: 'URGENT',
+    distanceKm: 7,
+    user: {
+      fullName: 'Marko Barić',
+      clientVerification: { phoneVerified: true, emailVerified: true, companyVerified: false },
+    },
+  },
+];
+
 export default function LeadMarketplace() {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,12 +70,6 @@ export default function LeadMarketplace() {
   const [leadsView, setLeadsView] = useState('list'); // 'list' | 'map'
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setLoading(false);
-      setError('Za pristup ekskluzivnim leadovima prijavite se ili registrirajte kao pružatelj usluga.');
-      return;
-    }
     loadLeads();
     loadCredits();
   }, []);
@@ -36,14 +82,27 @@ export default function LeadMarketplace() {
     } catch (err) {
       const status = err?.response?.status;
       const backendError = err?.response?.data?.error;
+      const isScreenshotMode =
+        typeof window !== 'undefined' && window.location.href.includes('screenshotMode=docs');
       if (status === 401) {
-        setError('Nedostaje prijava. Prijavite se ili registrirajte kao pružatelj usluga.');
+        if (isScreenshotMode || import.meta.env.MODE === 'development') {
+          // Dev / screenshot okruženje: pokaži demo leadove umjesto bannera
+          setLeads(DEMO_LEADS);
+          setError('');
+        } else {
+          setError('Nedostaje prijava. Prijavite se ili registrirajte kao pružatelj usluga.');
+        }
       } else if (status === 403) {
-        // Ne prikazuj sirovi "Forbidden" tekst – prikaži razumljivu poruku
-        setError(
-          'Ekskluzivni leadovi su dostupni samo odobrenim pružateljima usluga s aktivnom pretplatom. ' +
-          'Provjerite je li vaš profil odobren i da imate aktivan paket.'
-        );
+        if (isScreenshotMode || import.meta.env.MODE === 'development') {
+          // Dev / screenshot okruženje: pokaži demo leadove
+          setLeads(DEMO_LEADS);
+          setError('');
+        } else {
+          setError(
+            'Ekskluzivni leadovi su dostupni samo odobrenim pružateljima usluga s aktivnom pretplatom. ' +
+            'Provjerite je li vaš profil odobren i da imate aktivan paket.'
+          );
+        }
       } else {
         setError(
           backendError && backendError !== 'Forbidden'

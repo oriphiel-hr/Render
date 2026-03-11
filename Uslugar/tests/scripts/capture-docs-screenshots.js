@@ -7,22 +7,48 @@
  * Env varijable (opcionalno):
  *   BASE_URL          = https://www.uslugar.eu  (ili http://localhost:5173 za lokalno)
  *   OUT_DIR           = putanja do frontend/public/docs (default: ../../frontend/public/docs)
+ *
+ * Za BASE_URL=localhost prvo u drugom terminalu pokreni: cd frontend && npm run dev
  *   TEST_EMAIL_KORISNIK, TEST_PASSWORD_KORISNIK   = za ulogu korisnik
  *   TEST_EMAIL_PRUVATELJ, TEST_PASSWORD_PRUVATELJ = za ulogu pružatelj
  *   TEST_EMAIL_TIM_CLAN, TEST_PASSWORD_TIM_CLAN   = za ulogu član tima
  *   TEST_EMAIL_DIREKTOR, TEST_PASSWORD_DIREKTOR   = za ulogu direktor
  *
  * Ako nemaš testnih računa, možeš pokrenuti samo javne stranice (bez login*).
+ * Za kredencijale u mapi tests pokreni: . .\scripts\set-screenshot-env.ps1
  */
 
 const { chromium } = require('@playwright/test');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
+const https = require('https');
 
 const BASE_URL = process.env.BASE_URL || 'https://www.uslugar.eu';
 const OUT_DIR = process.env.OUT_DIR
   ? path.resolve(process.env.OUT_DIR)
   : path.resolve(__dirname, '..', '..', 'frontend', 'public', 'docs');
+
+/** Ako je BASE_URL localhost, provjeri je li server pokrenut; ako ne, ispiši upute i izađi. */
+function checkBaseUrlReachable() {
+  const isLocal = /localhost|127\.0\.0\.1/i.test(BASE_URL);
+  if (!isLocal) return Promise.resolve();
+  const url = new URL(BASE_URL);
+  const client = url.protocol === 'https:' ? https : http;
+  return new Promise((resolve, reject) => {
+    const req = client.get(BASE_URL, (res) => {
+      res.resume();
+      resolve();
+    });
+    req.on('error', (err) => reject(err));
+    req.setTimeout(5000, () => { req.destroy(); reject(new Error('timeout')); });
+  }).catch(() => {
+    console.error('\nFrontend nije dostupan na', BASE_URL);
+    console.error('U drugom terminalu pokreni: cd frontend && npm run dev');
+    console.error('Zatim ponovno: cd tests && npm run screenshots:docs\n');
+    process.exit(1);
+  });
+}
 
 /** Lista screenshotova: filename, hash, role za login (null = javna stranica) */
 const SCREENSHOTS = [
@@ -83,6 +109,8 @@ async function login(page, role) {
 }
 
 async function main() {
+  await checkBaseUrlReachable();
+
   fs.mkdirSync(OUT_DIR, { recursive: true });
   console.log('OUT_DIR:', OUT_DIR);
   console.log('BASE_URL:', BASE_URL);
@@ -110,7 +138,10 @@ async function main() {
         lastRole = null;
       }
 
-      const url = `${BASE_URL}${hash.startsWith('#') ? hash : '#' + hash}`;
+      // Dodaj screenshotMode=docs query param za frontend (prikaz demo leadova u vodiču, bez utjecaja na produkciju)
+      const baseWithoutHash = BASE_URL.split('#')[0];
+      const hashPart = hash.startsWith('#') ? hash : '#' + hash;
+      const url = `${baseWithoutHash}?screenshotMode=docs${hashPart}`;
       await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
       await page.waitForTimeout(2000);
 
