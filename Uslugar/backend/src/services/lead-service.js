@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { deductCredits, refundCredits } from './credit-service.js';
 import { notifyProvider, notifyClient } from '../lib/notifications.js';
 import { isWithinRadius, findClosestTeamLocation, sortJobsByDistance, calculateDistance } from '../lib/geo-utils.js';
+import { getLeadPriceForJob } from '../config/lead-price.js';
 import Stripe from 'stripe';
 
 async function createLeadActivity(purchaseId, providerId, type, label, message, metadata = null) {
@@ -114,9 +115,9 @@ export async function purchaseLead(jobId, providerId, options = {}) {
     throw new Error('You already purchased this lead');
   }
 
-  const leadPrice = job.leadPrice || 10;
-  const creditPriceInEUR = 10; // 1 kredit = 10 EUR
-  const leadPriceInCents = leadPrice * creditPriceInEUR * 100; // Cijena u centima za Stripe
+  const priceInfo = getLeadPriceForJob(job);
+  const leadPrice = priceInfo.leadPriceCredits;
+  const leadPriceInCents = Math.round(priceInfo.totalEUR * 100); // Cijena u centima za Stripe
 
   let stripePaymentIntent = null;
   let usedCredits = false;
@@ -252,10 +253,7 @@ export async function purchaseLead(jobId, providerId, options = {}) {
     if (stripePaymentIntent) {
       try {
         const { createInvoice, generateAndSendInvoice } = await import('./invoice-service.js');
-        
-        // Izračunaj cijenu u centima (1 kredit = 10 EUR = 1000 cents)
-        const creditPriceInEUR = 10;
-        const amountInCents = leadPrice * creditPriceInEUR * 100;
+        const amountInCents = leadPriceInCents;
         
         const invoice = await createInvoice({
           userId: providerId,
@@ -691,7 +689,7 @@ export async function processLeadRefund(purchaseId, adminId, approved = true, ad
         metadata: {
           leadId: purchase.jobId,
           purchaseId: purchase.id,
-          reason: reason,
+          reason: purchase.refundReason || 'requested_by_customer',
           refundedBy: providerId,
           creditsRefunded: purchase.creditsSpent.toString()
         }
@@ -715,7 +713,7 @@ export async function processLeadRefund(purchaseId, adminId, approved = true, ad
   await refundCredits(
     providerId,
     purchase.creditsSpent,
-    `Zahtjev za povrat: ${purchase.job.title} - ${reason}`,
+    `Zahtjev za povrat: ${purchase.job.title} - ${purchase.refundReason || 'N/A'}`,
     purchase.id
   );
 
@@ -1057,9 +1055,17 @@ export async function getAvailableLeads(providerId, filters = {}) {
     // - Lead je već kupljen I kontakt je otključan
     // Inače je skriven (prije kupovine ili nakon kupovine bez unlock-a)
     const isContactUnlocked = purchase?.contactUnlocked === true;
-    
+    const priceInfo = getLeadPriceForJob(lead);
     return {
       ...lead,
+      leadPrice: priceInfo.leadPriceCredits,
+      leadPriceBreakdown: {
+        fixedEUR: priceInfo.fixedEUR,
+        percentEUR: priceInfo.percentEUR,
+        jobValueEUR: priceInfo.jobValueEUR,
+        totalEUR: priceInfo.totalEUR,
+        percent: priceInfo.percent
+      },
       user: {
         ...lead.user,
         email: isContactUnlocked ? lead.user.email : undefined,
@@ -1221,20 +1227,21 @@ export async function getMyLeads(providerId, status = null) {
           { assignedProviderId: null }
         ]
       },
-      select: { id: true, leadPrice: true }
+      select: { id: true, budgetMin: true, budgetMax: true }
     });
     for (const job of jobs) {
       const existing = await prisma.leadPurchase.findFirst({
         where: { jobId: job.id, providerId, status: { not: 'REFUNDED' } }
       });
       if (!existing) {
+        const priceInfo = getLeadPriceForJob(job);
         try {
           await prisma.leadPurchase.create({
             data: {
               jobId: job.id,
               providerId,
               creditsSpent: 1,
-              leadPrice: job.leadPrice ?? 10,
+              leadPrice: priceInfo.leadPriceCredits,
               status: 'ACTIVE',
               contactUnlocked: false
             }

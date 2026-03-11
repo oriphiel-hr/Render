@@ -7,6 +7,7 @@
  * - Chat soba i poruke → Chat nije prazan
  */
 import { prisma } from '../lib/prisma.js';
+import { getLeadPriceForJob } from '../config/lead-price.js';
 import { purchaseLead, markLeadContacted, markLeadConverted } from './lead-service.js';
 import { deductCredits } from './credit-service.js';
 
@@ -30,17 +31,21 @@ async function ensureMarkoHasLeadPurchases(marko, allAvailableJobs) {
       continue;
     }
     try {
-      await deductCredits(marko.id, job.leadPrice || 10, `Lead: ${job.title}`, job.id);
+      const priceInfo = getLeadPriceForJob(job);
+      const leadPrice = priceInfo.leadPriceCredits;
+      await deductCredits(marko.id, leadPrice, `Lead: ${job.title}`, job.id);
     } catch (e) {
       console.warn('[SCREENSHOT-DEMO] deductCredits failed:', e.message);
       continue;
     }
+    const priceInfo = getLeadPriceForJob(job);
+    const leadPrice = priceInfo.leadPriceCredits;
     const purchase = await prisma.leadPurchase.create({
       data: {
         jobId: job.id,
         providerId: marko.id,
-        creditsSpent: job.leadPrice || 10,
-        leadPrice: job.leadPrice || 10,
+        creditsSpent: leadPrice,
+        leadPrice,
         status: 'ACTIVE',
         contactUnlocked: false,
       },

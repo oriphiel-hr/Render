@@ -4,6 +4,7 @@ import { getAvailableLeads, purchaseLead, getCreditsBalance, unlockContact } fro
 import LeadsMap from '../components/LeadsMap';
 
 // Demo leadovi za slučaj kada backend vrati 403 (npr. za screenshotove / dokumentaciju u dev okruženju)
+// Cijena = 4 EUR + 2% vrijednosti posla (prosjek budžeta), 1 kredit = 10 EUR
 const DEMO_LEADS = [
   {
     id: 'demo-1',
@@ -12,7 +13,8 @@ const DEMO_LEADS = [
     city: 'Zagreb',
     budgetMin: 2500,
     budgetMax: 4500,
-    leadPrice: 10,
+    leadPrice: 7,
+    leadPriceBreakdown: { fixedEUR: 4, percentEUR: 70, jobValueEUR: 3500, totalEUR: 74, percent: 2 },
     qualityScore: 82,
     urgency: 'HIGH',
     distanceKm: 3,
@@ -28,7 +30,8 @@ const DEMO_LEADS = [
     city: 'Velika Gorica',
     budgetMin: 8000,
     budgetMax: 14000,
-    leadPrice: 12,
+    leadPrice: 23,
+    leadPriceBreakdown: { fixedEUR: 4, percentEUR: 220, jobValueEUR: 11000, totalEUR: 224, percent: 2 },
     qualityScore: 76,
     urgency: 'NORMAL',
     distanceKm: 15,
@@ -44,7 +47,8 @@ const DEMO_LEADS = [
     city: 'Zagreb',
     budgetMin: 12000,
     budgetMax: 22000,
-    leadPrice: 15,
+    leadPrice: 34,
+    leadPriceBreakdown: { fixedEUR: 4, percentEUR: 340, jobValueEUR: 17000, totalEUR: 344, percent: 2 },
     qualityScore: 65,
     urgency: 'URGENT',
     distanceKm: 7,
@@ -57,6 +61,7 @@ const DEMO_LEADS = [
 
 export default function LeadMarketplace() {
   const [leads, setLeads] = useState([]);
+  const [pricingFormula, setPricingFormula] = useState(null); // { fixedEUR, percent } iz API-ja
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [creditsBalance, setCreditsBalance] = useState(0);
@@ -78,7 +83,8 @@ export default function LeadMarketplace() {
     try {
       setLoading(true);
       const response = await getAvailableLeads(filters);
-      setLeads(response.data.leads);
+      setLeads(response.data.leads || []);
+      setPricingFormula(response.data.pricingFormula || null);
     } catch (err) {
       const status = err?.response?.status;
       const backendError = err?.response?.data?.error;
@@ -128,21 +134,26 @@ export default function LeadMarketplace() {
     }
   };
 
-  const handlePurchase = async (jobId, leadPrice) => {
+  const handlePurchase = async (lead) => {
+    const leadPrice = lead.leadPrice ?? 10;
     if (creditsBalance < leadPrice) {
       setError(`Nemate dovoljno kredita! Potrebno: ${leadPrice}, Dostupno: ${creditsBalance}`);
       return;
     }
 
+    const b = lead.leadPriceBreakdown;
+    const breakdownText = b
+      ? `Naknada: ${b.fixedEUR} EUR + ${b.percent}% (vrijednost posla ${b.jobValueEUR} EUR) = ${b.totalEUR} EUR (${leadPrice} kredita).`
+      : `Kupiti ovaj ekskluzivan lead za ${leadPrice} kredita?`;
     const confirmed = window.confirm(
-      `Kupiti ovaj ekskluzivan lead za ${leadPrice} kredita?\n\nNakon kupovine, morat ćete dodatno platiti 1 kredit da biste vidjeli kontakt klijenta (Pay-per-contact model).`
+      `${breakdownText}\n\nNakon kupovine, morat ćete dodatno platiti 1 kredit da biste vidjeli kontakt klijenta (Pay-per-contact model).`
     );
 
     if (!confirmed) return;
 
     try {
-      setPurchasing(jobId);
-      const response = await purchaseLead(jobId);
+      setPurchasing(lead.id);
+      const response = await purchaseLead(lead.id);
       
       alert(`✅ Lead uspješno kupljen!\n\nPreostalo kredita: ${response.data.creditsRemaining}\n\n${response.data.message}`);
       
@@ -159,7 +170,7 @@ export default function LeadMarketplace() {
     } finally {
       setPurchasing(null);
     }
-  };
+  }; 
 
   const handleUnlockContact = async (jobId) => {
     if (creditsBalance < 1) {
@@ -295,7 +306,7 @@ export default function LeadMarketplace() {
       ) : leadsView === 'map' ? (
         <LeadsMap
           leads={leads}
-          onLeadClick={(lead) => handlePurchase(lead.id, lead.leadPrice || 10)}
+          onLeadClick={(lead) => handlePurchase(lead)}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -306,13 +317,20 @@ export default function LeadMarketplace() {
             return (
               <div key={lead.id} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow overflow-hidden">
                 {/* Quality Badge */}
-                <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b flex justify-between items-center">
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${quality.color}`}>
-                    {quality.icon} {quality.text}
-                  </span>
-                  <span className="text-lg font-bold text-green-600">
-                    {lead.leadPrice || 10} kredita
-                  </span>
+                <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b flex flex-col gap-1">
+                  <div className="flex justify-between items-center">
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${quality.color}`}>
+                      {quality.icon} {quality.text}
+                    </span>
+                    <span className="text-lg font-bold text-green-600">
+                      {lead.leadPrice || 10} kredita
+                    </span>
+                  </div>
+                  {lead.leadPriceBreakdown && (
+                    <p className="text-xs text-gray-600">
+                      Naknada: {lead.leadPriceBreakdown.fixedEUR} EUR + {lead.leadPriceBreakdown.percent}% (vrijednost {lead.leadPriceBreakdown.jobValueEUR} EUR) = {lead.leadPriceBreakdown.totalEUR} EUR
+                    </p>
+                  )}
                 </div>
 
                 {/* Lead Content */}
@@ -394,7 +412,7 @@ export default function LeadMarketplace() {
 
                   {/* Purchase Button */}
                   <button
-                    onClick={() => handlePurchase(lead.id, lead.leadPrice || 10)}
+                    onClick={() => handlePurchase(lead)}
                     disabled={isPurchasing || creditsBalance < (lead.leadPrice || 10)}
                     className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                   >
@@ -424,6 +442,11 @@ export default function LeadMarketplace() {
       {/* Info Box */}
       <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-blue-900 mb-2">ℹ️ Kako funkcionira Pay-per-contact model?</h3>
+        {(pricingFormula || (leads.length > 0 && leads[0]?.leadPriceBreakdown)) && (
+          <p className="text-sm text-blue-800 mb-2">
+            <strong>Cijena leada:</strong> {pricingFormula ? `${pricingFormula.fixedEUR} EUR + ${pricingFormula.percent}% vrijednosti posla` : '4 EUR + 2% vrijednosti posla'} (prema budžetu u oglasu). Manji posao = manja naknada; veći posao = malo veća.
+          </p>
+        )}
         <ul className="text-sm text-blue-800 space-y-1">
           <li>✅ <strong>Kupovina leada:</strong> Plaćate za ekskluzivni pristup leadu (vidite naslov, opis, lokaciju)</li>
           <li>✅ <strong>Otključavanje kontakta:</strong> Dodatno 1 kredit za email i telefon klijenta</li>

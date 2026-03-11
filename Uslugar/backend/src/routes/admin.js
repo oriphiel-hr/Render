@@ -1526,12 +1526,14 @@ r.post('/queue/:queueId/offer', auth(true, ['ADMIN']), async (req, res, next) =>
     });
 
     // Pošalji notifikaciju provideru
+    const { getLeadPriceForJob } = await import('../config/lead-price.js');
+    const leadPriceCredits = getLeadPriceForJob(queueItem.job).leadPriceCredits;
     await prisma.notification.create({
       data: {
         userId: queueItem.providerId,
         type: 'NEW_JOB',
         title: '🎯 Novi ekskluzivni lead dostupan!',
-        message: `${queueItem.job.category.name}: ${queueItem.job.title}. Cijena: ${queueItem.job.leadPrice} kredita. Imate 24h da odgovorite.`,
+        message: `${queueItem.job.category.name}: ${queueItem.job.title}. Cijena: ${leadPriceCredits} kredita. Imate 24h da odgovorite.`,
         jobId: queueItem.jobId
       }
     });

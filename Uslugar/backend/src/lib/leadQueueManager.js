@@ -356,8 +356,10 @@ export async function respondToLeadOffer(queueId, response, userId) {
   console.log(`💬 Provider ${userId} odgovorio: ${response}`)
   
   if (response === 'INTERESTED') {
-    // Provider želi kupiti lead
-    const leadPrice = queueItem.job.leadPrice
+    // Provider želi kupiti lead – cijena iz fiksno + postotak vrijednosti posla
+    const { getLeadPriceForJob } = await import('../config/lead-price.js');
+    const priceInfo = getLeadPriceForJob(queueItem.job);
+    const leadPrice = priceInfo.leadPriceCredits;
     
     // Provjeri ima li dovoljno kredita
     const subscription = await prisma.subscription.findUnique({
@@ -527,23 +529,27 @@ export async function checkExpiredOffers() {
 async function sendLeadOfferNotification(queueItem) {
   const job = await prisma.job.findUnique({
     where: { id: queueItem.jobId },
-    include: { 
+    include: {
       user: true,
       category: true
     }
   })
-  
+
+  const { getLeadPriceForJob } = await import('../config/lead-price.js')
+  const priceInfo = getLeadPriceForJob(job)
+  const leadPriceCredits = priceInfo.leadPriceCredits
+
   const provider = await prisma.user.findUnique({
     where: { id: queueItem.providerId }
   })
-  
+
   // Kreiraj notifikaciju u bazi
   await prisma.notification.create({
     data: {
       userId: provider.id,
       type: 'NEW_JOB',
       title: '🎯 Novi ekskluzivni lead dostupan!',
-      message: `${job.category.name}: ${job.title} u ${job.city}. Cijena: ${job.leadPrice} kredita. Imate 24h da odgovorite.`,
+      message: `${job.category.name}: ${job.title} u ${job.city}. Cijena: ${leadPriceCredits} kredita. Imate 24h da odgovorite.`,
       jobId: job.id
     }
   })

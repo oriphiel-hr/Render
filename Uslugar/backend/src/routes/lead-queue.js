@@ -226,6 +226,9 @@ router.get('/job/:jobId/my-position', authMiddleware, async (req, res) => {
       ? `${Math.floor(estimatedWaitHours / 24)} dana`
       : `${estimatedWaitHours} sati`
     
+    const { getLeadPriceForJob } = await import('../config/lead-price.js')
+    const leadPriceCredits = getLeadPriceForJob(myQueueItem.job).leadPriceCredits
+    
     res.json({
       success: true,
       myPosition: {
@@ -244,7 +247,7 @@ router.get('/job/:jobId/my-position', authMiddleware, async (req, res) => {
         title: myQueueItem.job.title,
         category: myQueueItem.job.category.name,
         city: myQueueItem.job.city,
-        leadPrice: myQueueItem.job.leadPrice
+        leadPrice: leadPriceCredits
       },
       queueContext: allQueueItems.map(item => ({
         position: item.position,

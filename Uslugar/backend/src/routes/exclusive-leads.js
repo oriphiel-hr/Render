@@ -61,7 +61,8 @@ r.post('/:jobId/create-payment-intent', auth(true, ['PROVIDER']), async (req, re
       select: {
         id: true,
         title: true,
-        leadPrice: true,
+        budgetMin: true,
+        budgetMax: true,
         leadStatus: true,
         assignedProviderId: true
       }
@@ -75,10 +76,10 @@ r.post('/:jobId/create-payment-intent', auth(true, ['PROVIDER']), async (req, re
       return res.status(410).json({ error: 'Lead is not available' });
     }
 
-    // Izračunaj cijenu u centima (1 kredit = 10 EUR = 1000 cents)
-    const leadPrice = job.leadPrice || 10;
-    const creditPriceInEUR = 10;
-    const amountInCents = leadPrice * creditPriceInEUR * 100;
+    const { getLeadPriceForJob } = await import('../config/lead-price.js');
+    const priceInfo = getLeadPriceForJob(job);
+    const leadPrice = priceInfo.leadPriceCredits;
+    const amountInCents = Math.round(priceInfo.totalEUR * 100);
 
     // Kreiraj Stripe Payment Intent
     const paymentIntent = await stripe.paymentIntents.create({
@@ -101,7 +102,14 @@ r.post('/:jobId/create-payment-intent', auth(true, ['PROVIDER']), async (req, re
       paymentIntentId: paymentIntent.id,
       amount: amountInCents,
       currency: 'eur',
-      leadPrice: leadPrice,
+      leadPrice,
+      leadPriceBreakdown: {
+        fixedEUR: priceInfo.fixedEUR,
+        percentEUR: priceInfo.percentEUR,
+        jobValueEUR: priceInfo.jobValueEUR,
+        totalEUR: priceInfo.totalEUR,
+        percent: priceInfo.percent
+      },
       message: 'Payment Intent created. Use clientSecret to complete payment on frontend.'
     });
 
@@ -114,18 +122,20 @@ r.post('/:jobId/create-payment-intent', auth(true, ['PROVIDER']), async (req, re
 r.get('/available', auth(true, ['PROVIDER']), async (req, res, next) => {
   try {
     const { city, categoryId, minBudget, maxBudget } = req.query;
-    
+    const { getLeadPricingFormula } = await import('../config/lead-price.js');
+
     const filters = {};
     if (city) filters.city = city;
     if (categoryId) filters.categoryId = categoryId;
     if (minBudget) filters.budgetMin = { gte: parseInt(minBudget) };
     if (maxBudget) filters.budgetMax = { lte: parseInt(maxBudget) };
-    
+
     const leads = await getAvailableLeads(req.user.id, filters);
-    
+
     res.json({
       total: leads.length,
-      leads
+      leads,
+      pricingFormula: getLeadPricingFormula()
     });
   } catch (e) {
     next(e);
