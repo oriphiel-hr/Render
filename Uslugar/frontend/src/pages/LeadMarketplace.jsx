@@ -34,10 +34,22 @@ export default function LeadMarketplace() {
       const response = await getAvailableLeads(filters);
       setLeads(response.data.leads);
     } catch (err) {
-      if (err?.response?.status === 401) {
+      const status = err?.response?.status;
+      const backendError = err?.response?.data?.error;
+      if (status === 401) {
         setError('Nedostaje prijava. Prijavite se ili registrirajte kao pružatelj usluga.');
+      } else if (status === 403) {
+        // Ne prikazuj sirovi "Forbidden" tekst – prikaži razumljivu poruku
+        setError(
+          'Ekskluzivni leadovi su dostupni samo odobrenim pružateljima usluga s aktivnom pretplatom. ' +
+          'Provjerite je li vaš profil odobren i da imate aktivan paket.'
+        );
       } else {
-        setError(err.response?.data?.error || 'Greška pri učitavanju leadova');
+        setError(
+          backendError && backendError !== 'Forbidden'
+            ? backendError
+            : 'Greška pri učitavanju leadova ili nemate pristup tržnici leadova.'
+        );
       }
     } finally {
       setLoading(false);

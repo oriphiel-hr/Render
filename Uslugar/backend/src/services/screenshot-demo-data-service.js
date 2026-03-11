@@ -8,11 +8,50 @@
  */
 import { prisma } from '../lib/prisma.js';
 import { purchaseLead, markLeadContacted, markLeadConverted } from './lead-service.js';
+import { deductCredits } from './credit-service.js';
 
 const DOMAIN = process.env.SCREENSHOT_TEST_DOMAIN || 'uslugar.hr';
 
 function email(suffix) {
   return `screenshot-${suffix}@${DOMAIN}`;
+}
+
+/** Ako purchaseLead ne uspije, kreiraj LeadPurchase ručno da Moji leadovi i ROI imaju podatke. */
+async function ensureMarkoHasLeadPurchases(marko, allAvailableJobs) {
+  const toUse = allAvailableJobs.slice(0, 2);
+  if (toUse.length === 0) return [];
+  const purchases = [];
+  for (const job of toUse) {
+    const existing = await prisma.leadPurchase.findFirst({
+      where: { jobId: job.id, providerId: marko.id, status: { not: 'REFUNDED' } },
+    });
+    if (existing) {
+      purchases.push(existing);
+      continue;
+    }
+    try {
+      await deductCredits(marko.id, job.leadPrice || 10, `Lead: ${job.title}`, job.id);
+    } catch (e) {
+      console.warn('[SCREENSHOT-DEMO] deductCredits failed:', e.message);
+      continue;
+    }
+    const purchase = await prisma.leadPurchase.create({
+      data: {
+        jobId: job.id,
+        providerId: marko.id,
+        creditsSpent: job.leadPrice || 10,
+        leadPrice: job.leadPrice || 10,
+        status: 'ACTIVE',
+        contactUnlocked: false,
+      },
+    });
+    await prisma.job.update({
+      where: { id: job.id },
+      data: { assignedProviderId: marko.id, leadStatus: 'ASSIGNED' },
+    });
+    purchases.push(purchase);
+  }
+  return purchases;
 }
 
 /**
@@ -119,15 +158,42 @@ export async function ensureScreenshotDemoData() {
     (j) => j.leadStatus === 'AVAILABLE' && !j.assignedProviderId
   );
 
-  // 5) Marko kupuje 2 leada
+  // Osiguraj pretplatu za Marka (potrebno za purchaseLead ili fallback deductCredits)
+  let markoSub = await prisma.subscription.findUnique({ where: { userId: marko.id } });
+  if (!markoSub) {
+    await prisma.subscription.create({
+      data: {
+        userId: marko.id,
+        plan: 'BASIC',
+        status: 'ACTIVE',
+        creditsBalance: 50,
+        lifetimeCreditsUsed: 0,
+        lifetimeLeadsConverted: 0,
+      },
+    });
+  } else if (markoSub.creditsBalance < 20) {
+    await prisma.subscription.update({
+      where: { userId: marko.id },
+      data: { creditsBalance: 50 },
+    });
+  }
+
+  // 5) Marko kupuje 2 leada (purchaseLead koristi kredite)
   const toPurchase = allAvailableJobs.slice(0, 2);
-  const purchases = [];
+  let purchases = [];
   for (const job of toPurchase) {
     try {
       const result = await purchaseLead(job.id, marko.id, {});
       purchases.push(result.purchase);
     } catch (e) {
       console.warn('[SCREENSHOT-DEMO] purchaseLead failed:', job.id, e.message);
+    }
+  }
+  // Fallback: ako nijedna kupnja nije uspjela, kreiraj LeadPurchase ručno (Moji leadovi + ROI)
+  if (purchases.length === 0) {
+    purchases = await ensureMarkoHasLeadPurchases(marko, allAvailableJobs);
+    if (purchases.length > 0) {
+      console.log('[SCREENSHOT-DEMO] Kreirani leadovi ručno (fallback):', purchases.length);
     }
   }
 
