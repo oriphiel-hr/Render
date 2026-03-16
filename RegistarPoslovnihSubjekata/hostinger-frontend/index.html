@@ -361,6 +361,74 @@
         <summary style="font-size:0.8rem;cursor:pointer;color:#4b5563;">Prikaži raw JSON /api/sudreg_docs</summary>
         <pre id="docsJson" style="margin-top:0.4rem;max-height:260px;">{}</pre>
       </details>
+
+      <details style="margin-top:0.9rem;">
+        <summary style="font-size:0.8rem;cursor:pointer;color:#4b5563;">
+          Specifikacija endpointa (statički popis)
+        </summary>
+        <div style="margin-top:0.5rem;font-size:0.8rem;color:#4b5563;">
+          Base URL: <code>https://registar-poslovnih-subjekata.onrender.com</code>
+        </div>
+
+        <h3 style="margin:0.6rem 0 0.2rem;font-size:0.9rem;">Javni endpointi</h3>
+        <div class="table-wrapper" style="max-height:220px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Metoda</th>
+                <th>Putanja</th>
+                <th>Opis</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>GET</td><td><code>/</code></td><td>Health-check (isti odgovor kao <code>/health</code>).</td></tr>
+              <tr><td>GET</td><td><code>/health</code></td><td>Health-check.</td></tr>
+              <tr><td>GET</td><td><code>/api/sudreg_token</code></td><td>Dohvat OAuth tokena za Sudreg (client_credentials).</td></tr>
+              <tr><td>GET</td><td><code>/api/sudreg</code></td><td>Proxy prema Sudreg API-ju. Obavezan parametar <code>endpoint</code> (npr. <code>subjekti</code>, <code>detalji_subjekta</code>, <code>sudovi</code>); ostali query parametri se prosljeđuju.</td></tr>
+              <tr><td>GET</td><td><code>/api/sudreg_expected_counts</code></td><td>Čitanje očekivanih brojeva redaka po endpointu/snapshotu iz baze. Parametri: <code>snapshot_id</code> (obavezno), opcionalno <code>endpoint</code>, <code>limit</code>, <code>offset</code>.</td></tr>
+              <tr><td>GET</td><td><code>/api/sudreg_cron_daily/status</code></td><td>Status zadnjeg <code>cron_daily</code> joba (startedAt, finishedAt, status, summary, currentPhase, currentEndpoint).</td></tr>
+              <tr><td>GET</td><td><code>/api/sudreg_docs</code></td><td>JSON s popisom svih endpointa i konfiguracijom Sudreg API-ja.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 style="margin:0.9rem 0 0.2rem;font-size:0.9rem;">Write endpointi (zahtijevaju API ključ)</h3>
+        <div class="table-wrapper" style="max-height:220px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Metoda</th>
+                <th>Putanja</th>
+                <th>Opis</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>POST</td><td><code>/api/sudreg_token</code></td><td>Dohvat OAuth tokena (isto kao GET, ali POST).</td></tr>
+              <tr><td>POST</td><td><code>/api/sudreg_expected_counts</code></td><td>Dohvat <code>X-Total-Count</code> sa Sudreg API-ja i upis u <code>rps_sudreg_expected_counts</code>. Opcionalno: <code>snapshot_id</code>.</td></tr>
+              <tr><td>POST</td><td><code>/api/sudreg_sync_entiteti</code></td><td>Sync entitetskih tablica (subjekti, tvrtke, sjedista, email_adrese, postupci, pravni_oblici, pretezite_djelatnosti, predmeti_poslovanja, evidencijske_djelatnosti, temeljni_kapitali) za jedan snapshot. Parametri: <code>snapshot_id</code>, <code>max_batches</code>.</td></tr>
+              <tr><td>POST</td><td><code>/api/sudreg_sync_promjene</code></td><td>Sync Sudreg promjena u tablicu <code>sudreg_promjene</code>. Parametri: <code>snapshot_id</code>, <code>start_offset</code>.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 style="margin:0.9rem 0 0.2rem;font-size:0.9rem;">Cron / ETL endpointi (API ključ)</h3>
+        <div class="table-wrapper" style="max-height:220px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Metoda</th>
+                <th>Putanja</th>
+                <th>Opis</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>POST</td><td><code>/api/sudreg_cron_daily</code></td><td>Pokreće daily job: <code>expected_counts</code> → <code>sync_sifrarnici</code> → <code>sync_entiteti</code>. Bez parametara vraća 202 (background). Uz <code>?wait=1</code> čeka završetak i vraća 200 + summary.</td></tr>
+              <tr><td>POST</td><td><code>/api/sudreg_cron_daily/stop</code></td><td>Zahtjev za zaustavljanje tekućeg sync joba (postavlja <code>cronDailyShouldStop=true</code>).</td></tr>
+              <tr><td>POST</td><td><code>/api/sudreg_cron_daily/rollback</code></td><td>Zaustavlja sync i briše sve podatke iz tablica <code>sudreg_%</code> i <code>rps_sudreg_%</code>.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
     </aside>
   </main>
 
