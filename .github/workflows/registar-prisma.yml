@@ -1,4 +1,4 @@
-name: Registar – Prisma build i migracije
+name: Registar poslovnih subjekata – Prisma build i migracije
 
 on:
   workflow_dispatch:
