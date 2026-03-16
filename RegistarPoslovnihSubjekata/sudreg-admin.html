@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="hr">
+<head>
+  <meta charset="utf-8" />
+  <title>Sudreg Cron Admin</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:#f3f4f6;
+      margin:0;
+      padding:1.5rem;
+      color:#111827;
+    }
+    h1 { font-size:1.6rem; margin-bottom:0.5rem; }
+    h2 { font-size:1.1rem; margin:1.5rem 0 0.5rem; }
+    .card {
+      background:#fff;
+      border-radius:0.75rem;
+      padding:1rem 1.25rem;
+      box-shadow:0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom:1rem;
+      max-width:960px;
+    }
+    label { font-size:0.85rem; display:block; margin-bottom:0.15rem; color:#4b5563; }
+    input {
+      width:100%;
+      padding:0.4rem 0.6rem;
+      border-radius:0.5rem;
+      border:1px solid #d1d5db;
+      font-size:0.9rem;
+    }
+    input:focus {
+      outline:none;
+      border-color:#4f46e5;
+      box-shadow:0 0 0 1px #4f46e5;
+    }
+    .row {
+      display:flex;
+      gap:0.75rem;
+      flex-wrap:wrap;
+      margin-bottom:0.5rem;
+    }
+    .row > div { flex:1 1 220px; }
+    button {
+      border:none;
+      border-radius:999px;
+      padding:0.45rem 0.9rem;
+      font-size:0.85rem;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:0.35rem;
+    }
+    button.primary { background:#4f46e5; color:#fff; }
+    button.secondary { background:#e5e7eb; color:#111827; }
+    button.danger { background:#b91c1c; color:#fff; }
+    button:disabled { opacity:0.6; cursor:not-allowed; }
+    .btn-row {
+      display:flex;
+      flex-wrap:wrap;
+      gap:0.5rem;
+      margin-bottom:0.5rem;
+    }
+    pre {
+      background:#111827;
+      color:#e5e7eb;
+      padding:0.75rem;
+      border-radius:0.75rem;
+      font-size:0.8rem;
+      overflow:auto;
+      max-height:420px;
+    }
+    .status-line { font-size:0.85rem; margin-bottom:0.5rem; }
+    .badge {
+      display:inline-block;
+      border-radius:999px;
+      padding:0.1rem 0.6rem;
+      font-size:0.7rem;
+      font-weight:600;
+      text-transform:uppercase;
+      letter-spacing:0.04em;
+    }
+    .badge-ok { background:#dcfce7; color:#166534; }
+    .badge-run { background:#dbeafe; color:#1d4ed8; }
+    .badge-fail { background:#fee2e2; color:#b91c1c; }
+    small { color:#6b7280; font-size:0.75rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Sudreg Cron Admin</h1>
+    <small>Privatni alat za pokretanje i praćenje <code>/api/sudreg_cron_daily</code>. Postavke se čuvaju u ovom pregledniku.</small>
+  </div>
+
+  <div class="card">
+    <h2>Postavke</h2>
+    <div class="row">
+      <div>
+        <label for="baseUrl">API base URL (bez završnog /)</label>
+        <input id="baseUrl" placeholder="https://registar-poslovnih-subjekata.onrender.com" />
+      </div>
+      <div>
+        <label for="apiKey">API ključ (write)</label>
+        <input id="apiKey" type="password" placeholder="x-api-key vrijednost" />
+        <small>Čuva se u localStorage, ne šalje se nigdje osim prema tvom API-ju.</small>
+      </div>
+    </div>
+    <button class="secondary" id="saveSettingsBtn">Spremi postavke</button>
+    <span id="saveHint" style="margin-left:0.5rem;font-size:0.8rem;color:#16a34a;display:none;">Spremljeno.</span>
+  </div>
+
+  <div class="card">
+    <h2>Kontrole</h2>
+    <div class="btn-row">
+      <button class="primary" id="runBgBtn">▶ Pokreni dnevni sync (background)</button>
+      <button class="primary" id="runWaitBtn">▶ Pokreni dnevni sync i pričekaj</button>
+      <button class="secondary" id="statusBtn">ℹ Status zadnjeg joba</button>
+    </div>
+    <div class="btn-row">
+      <button class="secondary" id="stopBtn">⏹ Stopiraj tekući job</button>
+      <button class="danger" id="rollbackBtn">⟲ ROLLBACK (opasno)</button>
+    </div>
+    <small>Prije korištenja provjeri da je <strong>base URL</strong> ispravan i da API ključ ima dopuštenje za write.</small>
+  </div>
+
+  <div class="card">
+    <h2>Stanje</h2>
+    <div id="statusLine" class="status-line">Nema još poziva.</div>
+    <pre id="output">{}</pre>
+  </div>
+
+  <script>
+    const baseUrlInput = document.getElementById('baseUrl');
+    const apiKeyInput  = document.getElementById('apiKey');
+    const outputEl     = document.getElementById('output');
+    const statusLineEl = document.getElementById('statusLine');
+    const saveHintEl   = document.getElementById('saveHint');
+
+    const loadSettings = () => {
+      const s = JSON.parse(localStorage.getItem('sudregAdminSettings') || '{}');
+      if (s.baseUrl) baseUrlInput.value = s.baseUrl;
+      if (s.apiKey) apiKeyInput.value = s.apiKey;
+    };
+    const saveSettings = () => {
+      localStorage.setItem('sudregAdminSettings', JSON.stringify({
+        baseUrl: baseUrlInput.value.trim(),
+        apiKey: apiKeyInput.value
+      }));
+      saveHintEl.style.display = 'inline';
+      setTimeout(() => { saveHintEl.style.display = 'none'; }, 1200);
+    };
+
+    const getSettings = () => {
+      const baseUrl = baseUrlInput.value.trim().replace(/\\/+$/, '');
+      const apiKey = apiKeyInput.value;
+      if (!baseUrl) throw new Error('Nije postavljen base URL.');
+      return { baseUrl, apiKey };
+    };
+
+    const setStatus = (msg, type = 'info', extra = {}) => {
+      let badgeClass = 'badge';
+      let badgeText  = 'INFO';
+      if (type === 'ok')   { badgeClass += ' badge-ok';   badgeText = 'OK'; }
+      if (type === 'run')  { badgeClass += ' badge-run';  badgeText = 'RUN'; }
+      if (type === 'fail') { badgeClass += ' badge-fail'; badgeText = 'GREŠKA'; }
+      const phase = extra.currentPhase ? ` | Faza: ${extra.currentPhase}` : '';
+      statusLineEl.innerHTML = '<span class=\"' + badgeClass + '\">' + badgeText + '</span> ' + msg + phase;
+    };
+
+    const setOutput = (data) => {
+      outputEl.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+    };
+
+    async function callApi(path, { method = 'GET', useKey = false } = {}) {
+      const { baseUrl, apiKey } = getSettings();
+      const headers = { 'Content-Type': 'application/json' };
+      if (useKey && apiKey) headers['x-api-key'] = apiKey;
+
+      const res = await fetch(baseUrl + path, {
+        method,
+        headers
+      });
+      let json;
+      try {
+        json = await res.json();
+      } catch {
+        json = { raw: await res.text() };
+      }
+      if (!res.ok) {
+        throw { status: res.status, body: json };
+      }
+      return json;
+    }
+
+    document.getElementById('saveSettingsBtn').onclick = saveSettings;
+
+    document.getElementById('runBgBtn').onclick = async () => {
+      try {
+        setStatus('Pokrećem cron_daily (background)...', 'run');
+        const data = await callApi('/api/sudreg_cron_daily', { method: 'POST', useKey: true });
+        setStatus('Poziv prihvaćen (background).', 'ok');
+        setOutput(data);
+      } catch (e) {
+        setStatus('Greška pri pokretanju (background).', 'fail');
+        setOutput(e);
+      }
+    };
+
+    document.getElementById('runWaitBtn').onclick = async () => {
+      try {
+        setStatus('Pokrećem cron_daily (?wait=1)...', 'run');
+        const data = await callApi('/api/sudreg_cron_daily?wait=1', { method: 'POST', useKey: true });
+        setStatus('cron_daily završen (wait=1).', 'ok', data);
+        setOutput(data);
+      } catch (e) {
+        setStatus('Greška pri pokretanju (?wait=1).', 'fail');
+        setOutput(e);
+      }
+    };
+
+    document.getElementById('statusBtn').onclick = async () => {
+      try {
+        setStatus('Dohvaćam status...', 'run');
+        const data = await callApi('/api/sudreg_cron_daily/status', { method: 'GET' });
+        setStatus('Status: ' + (data.status || 'nepoznat'), data.status === 'running' ? 'run' : 'ok', data);
+        setOutput(data);
+      } catch (e) {
+        setStatus('Greška pri dohvaćanju statusa.', 'fail');
+        setOutput(e);
+      }
+    };
+
+    document.getElementById('stopBtn').onclick = async () => {
+      if (!confirm('Sigurno želiš zaustaviti tekući sync?')) return;
+      try {
+        setStatus('Šaljem stop...', 'run');
+        const data = await callApi('/api/sudreg_cron_daily/stop', { method: 'POST', useKey: true });
+        setStatus('Zahtjev za stopiranjem poslan.', 'ok');
+        setOutput(data);
+      } catch (e) {
+        setStatus('Greška pri slanju stop.', 'fail');
+        setOutput(e);
+      }
+    };
+
+    document.getElementById('rollbackBtn').onclick = async () => {
+      if (!confirm('OPREZ: rollback briše SVE sudreg podatke. Nastaviti?')) return;
+      if (!confirm('Stvarno si siguran? Ovo je zadnja potvrda.')) return;
+      try {
+        setStatus('Izvršavam ROLLBACK...', 'run');
+        const data = await callApi('/api/sudreg_cron_daily/rollback', { method: 'POST', useKey: true });
+        setStatus('Rollback završen.', 'ok');
+        setOutput(data);
+      } catch (e) {
+        setStatus('Greška pri rollbacku.', 'fail');
+        setOutput(e);
+      }
+    };
+
+    loadSettings();
+  </script>
+</body>
+</html>
+
