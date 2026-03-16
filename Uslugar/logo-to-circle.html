@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Uslugar – logo u krug</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
+    h1 { font-size: 1.25rem; }
+    .preview { margin: 16px 0; text-align: center; }
+    canvas { border: 1px solid #ccc; border-radius: 8px; max-width: 100%; }
+    button { padding: 10px 20px; font-size: 1rem; cursor: pointer; margin-top: 8px; }
+    p { color: #666; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <h1>Profilna slika u krug (Uslugar logo)</h1>
+  <p>Odaberi logo (npr. <strong>Uslugar_logo.png</strong>). Slika se skalira u krug. Preporučeno za Facebook/Google profilnu (400×400 px).</p>
+  <p><label style="cursor:pointer;"><input type="file" id="file" accept="image/*" style="display:none;"> Odaberi sliku</label></p>
+  <div class="preview">
+    <canvas id="c" width="400" height="400"></canvas>
+  </div>
+  <button type="button" id="download" disabled>Preuzmi PNG (400×400)</button>
+
+  <script>
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+    const size = 400;
+    const img = new Image();
+    const downloadBtn = document.getElementById('download');
+
+    function drawCircle() {
+      const r = size / 2;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(r, r, r, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+
+      const scale = Math.min(size / img.width, size / img.height);
+      const w = img.width * scale;
+      const h = img.height * scale;
+      const x = (size - w) / 2;
+      const y = (size - h) / 2;
+      ctx.drawImage(img, x, y, w, h);
+      ctx.restore();
+      downloadBtn.disabled = false;
+    }
+
+    img.onload = drawCircle;
+    img.onerror = function () {
+      ctx.fillStyle = '#eee';
+      ctx.fillRect(0, 0, size, size);
+      ctx.fillStyle = '#333';
+      ctx.font = '14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Nije moguće učitati sliku.', size/2, size/2 - 8);
+      ctx.fillText('Odaberi PNG ili JPG.', size/2, size/2 + 8);
+      downloadBtn.disabled = true;
+    };
+
+    document.getElementById('file').onchange = function (e) {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = function () { img.src = r.result; };
+      r.readAsDataURL(f);
+    };
+
+    downloadBtn.onclick = function () {
+      const a = document.createElement('a');
+      a.download = 'Uslugar_profilna_krug.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    };
+  </script>
+</body>
+</html>
