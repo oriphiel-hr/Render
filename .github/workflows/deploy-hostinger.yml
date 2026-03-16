@@ -1,4 +1,4 @@
-name: Registar – Frontend deploy na Hostinger
+name: Hostinger – Deploy frontenda Registra poslovnih subjekata
 
 on:
   # Ručni run (Actions → Deploy frontend to Hostinger → Run workflow)
@@ -23,16 +23,6 @@ jobs:
         run: |
           echo "Sadržaj RegistarPoslovnihSubjekata/hostinger-frontend:"
           ls -R RegistarPoslovnihSubjekata/hostinger-frontend
-
-      - name: Test FTP connection (no upload)
-        run: |
-          echo "Testing FTP connection to ${{ secrets.HOSTINGER_REGISTARPOSLOVNIHSUBJEKATA_HOST }}..."
-          # Jednostavan test – pokušaj se spojiti i izaći
-          sudo apt-get update > /dev/null
-          sudo apt-get install -y lftp > /dev/null
-          lftp -u "${{ secrets.HOSTINGER_REGISTARPOSLOVNIHSUBJEKATA_USERNAME }}","${{ secrets.HOSTINGER_REGISTARPOSLOVNIHSUBJEKATA_PASSWORD }}" \
-            -e "ls; bye" \
-            "ftp://${{ secrets.HOSTINGER_REGISTARPOSLOVNIHSUBJEKATA_HOST }}"
 
       - name: Deploy to Hostinger via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
