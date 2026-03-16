@@ -429,6 +429,58 @@
           </table>
         </div>
       </details>
+
+      <details style="margin-top:0.9rem;">
+        <summary style="font-size:0.8rem;cursor:pointer;color:#4b5563;">
+          Primjeri poziva (curl)
+        </summary>
+        <div style="margin-top:0.5rem;font-size:0.8rem;color:#4b5563;">
+          Base URL: <code>https://registar-poslovnih-subjekata.onrender.com</code>
+        </div>
+
+        <h3 style="margin:0.6rem 0 0.2rem;font-size:0.9rem;">Bez upisa u bazu</h3>
+        <p class="small">Ovi pozivi ili samo proxy-aju prema Sudreg API-ju ili čitaju postojeće podatke iz naše baze.</p>
+        <pre style="margin-top:0.4rem;max-height:260px;white-space:pre;">
+# Token za Sudreg (client_credentials)
+curl -s "https://registar-poslovnih-subjekata.onrender.com/api/sudreg_token"
+
+# Proxy prema Sudreg API-ju – subjekti (snapshot_id=123, prva stranica)
+curl -s "https://registar-poslovnih-subjekata.onrender.com/api/sudreg?endpoint=subjekti&amp;snapshot_id=123&amp;limit=10&amp;offset=0"
+
+# Detalji subjekta po OIB-u
+curl -s "https://registar-poslovnih-subjekata.onrender.com/api/sudreg?endpoint=detalji_subjekta&amp;tip_identifikatora=oib&amp;identifikator=12345678901"
+
+# Šifrarnik sudova
+curl -s "https://registar-poslovnih-subjekata.onrender.com/api/sudreg?endpoint=sudovi&amp;snapshot_id=123"
+
+# Očekivani brojevi redaka (čitanje iz rps_sudreg_expected_counts)
+curl -s "https://registar-poslovnih-subjekata.onrender.com/api/sudreg_expected_counts?snapshot_id=123"
+        </pre>
+
+        <h3 style="margin:0.9rem 0 0.2rem;font-size:0.9rem;">S upisom u bazu (API ključ)</h3>
+        <p class="small">Ovi pozivi čitaju Sudreg API i upisuju/obnavljaju podatke u tablicama <code>rps_sudreg_%</code> i <code>sudreg_%</code>. Potreban je API ključ: <code>X-API-Key: &lt;tvoj_kljuc&gt;</code>.</p>
+        <pre style="margin-top:0.4rem;max-height:260px;white-space:pre;">
+# Upis očekivanih brojeva redaka za jedan snapshot (rps_sudreg_expected_counts)
+curl -s -X POST "https://registar-poslovnih-subjekata.onrender.com/api/sudreg_expected_counts?snapshot_id=123" \
+  -H "X-API-Key: TVOJ_API_KLJUC"
+
+# Sync promjena (Sudreg /promjene → sudreg_promjene)
+curl -s -X POST "https://registar-poslovnih-subjekata.onrender.com/api/sudreg_sync_promjene?snapshot_id=123" \
+  -H "X-API-Key: TVOJ_API_KLJUC"
+
+# Sync entiteta (subjekti, tvrtke, sjedista, ...) za snapshot_id=123
+curl -s -X POST "https://registar-poslovnih-subjekata.onrender.com/api/sudreg_sync_entiteti?snapshot_id=123&amp;max_batches=5" \
+  -H "X-API-Key: TVOJ_API_KLJUC"
+
+# Cijeli cron_daily (expected_counts → šifrarnici → entiteti) u pozadini
+curl -s -X POST "https://registar-poslovnih-subjekata.onrender.com/api/sudreg_cron_daily" \
+  -H "X-API-Key: TVOJ_API_KLJUC"
+
+# cron_daily uz čekanje završetka
+curl -s -X POST "https://registar-poslovnih-subjekata.onrender.com/api/sudreg_cron_daily?wait=1" \
+  -H "X-API-Key: TVOJ_API_KLJUC"
+        </pre>
+      </details>
     </aside>
   </main>
 
