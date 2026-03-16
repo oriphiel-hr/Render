@@ -32,7 +32,7 @@ jobs:
           password: ${{ secrets.HOSTINGER_REGISTARPOSLOVNIHSUBJEKATA_PASSWORD }}
           server-dir: ${{ secrets.HOSTINGER_REGISTARPOSLOVNIHSUBJEKATA_SERVER_DIR }}/
           local-dir: RegistarPoslovnihSubjekata/hostinger-frontend/
-          protocol: ftp
+          protocol: ftps
           port: 21
           dangerous-clean-slate: false
 
