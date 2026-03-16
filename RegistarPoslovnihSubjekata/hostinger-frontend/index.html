@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="hr">
+<head>
+  <meta charset="utf-8" />
+  <title>Registar poslovnih subjekata – API pregled</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root {
+      --bg: #f3f4f6;
+      --card: #ffffff;
+      --primary: #4f46e5;
+      --primary-dark: #4338ca;
+      --border: #e5e7eb;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, #eef2ff, #f3f4f6 45%, #f9fafb 75%);
+      color: var(--text-main);
+    }
+    header {
+      background: #111827;
+      color: #f9fafb;
+      padding: 0.8rem 1.6rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    header span.logo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.8rem;
+      height: 1.8rem;
+      border-radius: 0.6rem;
+      background: linear-gradient(135deg, #4f46e5, #6366f1);
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+    header nav a {
+      color: #e5e7eb;
+      text-decoration: none;
+      font-size: 0.85rem;
+      margin-left: 0.75rem;
+    }
+    header nav a:hover {
+      text-decoration: underline;
+    }
+
+    main {
+      max-width: 1120px;
+      margin: 1.8rem auto 2.4rem;
+      padding: 0 1rem;
+      display: grid;
+      grid-template-columns: minmax(0, 2.1fr) minmax(0, 1.4fr);
+      gap: 1.25rem;
+    }
+    @media (max-width: 900px) {
+      main { grid-template-columns: minmax(0,1fr); }
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 0.9rem;
+      padding: 1rem 1.3rem;
+      border: 1px solid rgba(148,163,184,0.35);
+      box-shadow: 0 12px 30px rgba(15,23,42,0.10);
+    }
+    h2 {
+      margin: 0 0 0.4rem;
+      font-size: 1.1rem;
+    }
+    p {
+      margin: 0.1rem 0;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .hero-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }
+    .hero-sub {
+      font-size: 0.95rem;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 0.08rem 0.55rem;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+    .pill-ok { background:#dcfce7; color:#166534; }
+    .pill-run { background:#dbeafe; color:#1d4ed8; }
+    .pill-err { background:#fee2e2; color:#b91c1c; }
+    .pill-idle { background:#e5e7eb; color:#4b5563; }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+      gap: 0.5rem 0.9rem;
+      margin-top: 0.6rem;
+      font-size: 0.83rem;
+    }
+    @media (max-width: 700px) {
+      .status-grid { grid-template-columns:minmax(0,1fr); }
+    }
+    .status-label { color: var(--text-muted); font-size: 0.77rem; text-transform:uppercase; letter-spacing:0.05em; }
+    .status-value { font-weight: 500; }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-top: 0.5rem;
+    }
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 0.45rem 0.95rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    button.primary {
+      background: var(--primary);
+      color: #fff;
+    }
+    button.primary:hover { background: var(--primary-dark); }
+    button.secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+    button.secondary:hover {
+      background: #d1d5db;
+    }
+    button.danger {
+      background:#b91c1c;
+      color:#fff;
+    }
+    button.danger:hover { background:#991b1b; }
+    button:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    .small {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0.35rem;
+      margin-top: 0.6rem;
+      margin-bottom: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .tab {
+      padding: 0.25rem 0.7rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      border: 1px solid transparent;
+      cursor: pointer;
+      background: #e5e7eb;
+      color: #374151;
+    }
+    .tab.active {
+      background: #eef2ff;
+      color: #3730a3;
+      border-color: #6366f1;
+    }
+
+    .table-wrapper {
+      border-radius: 0.7rem;
+      border: 1px solid #e5e7eb;
+      overflow: hidden;
+      background: #f9fafb;
+      max-height: 380px;
+      overflow-y: auto;
+      margin-top: 0.4rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+    thead {
+      background: #eef2ff;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    th, td {
+      padding: 0.35rem 0.55rem;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+    }
+    th {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #4b5563;
+    }
+    tbody tr:nth-child(even) td {
+      background: #f9fafb;
+    }
+    tbody tr:hover td {
+      background: #eef2ff;
+    }
+
+    pre {
+      font-size: 0.78rem;
+      background: #020617;
+      color: #e5e7eb;
+      border-radius: 0.75rem;
+      padding: 0.75rem;
+      max-height: 360px;
+      overflow: auto;
+    }
+
+    a.admin-link {
+      font-size: 0.8rem;
+      color: var(--primary);
+      text-decoration: none;
+    }
+    a.admin-link:hover { text-decoration: underline; }
+
+    .badge-count {
+      display:inline-flex;
+      align-items:center;
+      border-radius:999px;
+      padding:0.1rem 0.5rem;
+      font-size:0.7rem;
+      background:#e5e7eb;
+      color:#374151;
+      margin-left:0.3rem;
+    }
+
+    .loader-inline {
+      display:inline-block;
+      width:0.9rem;
+      height:0.9rem;
+      border-radius:999px;
+      border:2px solid #e5e7eb;
+      border-top-color:var(--primary);
+      animation:spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>
+      <span class="logo">R</span>
+      Registar poslovnih subjekata – API
+    </h1>
+    <nav>
+      <a href="sudreg-admin.html" target="_blank" rel="noreferrer">Sudreg cron admin</a>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Lijevo: Dashboard i kontrole -->
+    <section class="card">
+      <div>
+        <div class="hero-title">Pregled statusa sinkronizacije i API-ja</div>
+        <p class="hero-sub">Ovdje vidiš zadnje pokretanje Sudreg cron joba i možeš ga ručno pokrenuti, zaustaviti ili rollbackati.</p>
+      </div>
+
+      <div style="margin-top:0.75rem;">
+        <div class="status-grid" id="statusGrid">
+          <div>
+            <div class="status-label">Status joba</div>
+            <div class="status-value" id="statusValue">
+              <span class="pill pill-idle">IDLE</span>
+            </div>
+          </div>
+          <div>
+            <div class="status-label">Faza / endpoint</div>
+            <div class="status-value" id="phaseValue">–</div>
+          </div>
+          <div>
+            <div class="status-label">Početak</div>
+            <div class="status-value" id="startedAtValue">–</div>
+          </div>
+          <div>
+            <div class="status-label">Završetak</div>
+            <div class="status-value" id="finishedAtValue">–</div>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="primary" id="refreshStatusBtn">🔄 Osvježi status</button>
+          <button class="secondary" id="startBgBtn">▶ Pokreni (background)</button>
+          <button class="secondary" id="startWaitBtn">▶ Pokreni i pričekaj</button>
+        </div>
+        <div class="btn-row" style="margin-top:0.3rem;">
+          <button class="secondary" id="stopBtn">⏹ Stopiraj tekući job</button>
+          <button class="danger" id="rollbackBtn">⟲ ROLLBACK (opasno)</button>
+        </div>
+        <p class="small" id="statusNote" style="margin-top:0.4rem;">API base: <code id="apiBaseLabel"></code></p>
+      </div>
+
+      <div style="margin-top:1rem;">
+        <h2>Odgovor statusa (JSON)</h2>
+        <pre id="statusJson">{}</pre>
+      </div>
+    </section>
+
+    <!-- Desno: API katalog -->
+    <aside class="card">
+      <div>
+        <h2>API metode</h2>
+        <p>Popis endpointa koje backend izlaže, grupirano na public, write i cron. Podaci dolaze iz <code>/api/sudreg_docs</code>.</p>
+      </div>
+
+      <div class="btn-row">
+        <button class="secondary" id="loadDocsBtn">📚 Učitaj /api/sudreg_docs</button>
+      </div>
+      <p class="small" id="docsSummary" style="margin-top:0.3rem;">Još nema učitanih podataka.</p>
+
+      <div class="tabs" id="groupTabs" style="display:none;">
+        <button class="tab active" data-group="public">Public</button>
+        <button class="tab" data-group="write">Write</button>
+        <button class="tab" data-group="cron">Cron</button>
+      </div>
+
+      <div class="table-wrapper" id="docsTableWrapper" style="display:none;">
+        <table id="docsTable">
+          <thead>
+            <tr>
+              <th>Metoda</th>
+              <th>Path</th>
+              <th>Opis</th>
+            </tr>
+          </thead>
+          <tbody id="docsTbody"></tbody>
+        </table>
+      </div>
+
+      <details style="margin-top:0.7rem;">
+        <summary style="font-size:0.8rem;cursor:pointer;color:#4b5563;">Prikaži raw JSON /api/sudreg_docs</summary>
+        <pre id="docsJson" style="margin-top:0.4rem;max-height:260px;">{}</pre>
+      </details>
+    </aside>
+  </main>
+
+  <script>
+    // API base URL – prilagodi svom backendu (Render)
+    const API_BASE = 'https://registar-poslovnih-subjekata.onrender.com';
+
+    document.getElementById('apiBaseLabel').textContent = API_BASE.replace(/^https?:\/\//, '');
+
+    const statusJsonEl = document.getElementById('statusJson');
+    const statusValueEl = document.getElementById('statusValue');
+    const phaseValueEl = document.getElementById('phaseValue');
+    const startedAtEl = document.getElementById('startedAtValue');
+    const finishedAtEl = document.getElementById('finishedAtValue');
+    const docsSummaryEl = document.getElementById('docsSummary');
+    const docsJsonEl = document.getElementById('docsJson');
+    const docsTableWrapper = document.getElementById('docsTableWrapper');
+    const docsTbody = document.getElementById('docsTbody');
+    const groupTabs = document.getElementById('groupTabs');
+
+    const refreshStatusBtn = document.getElementById('refreshStatusBtn');
+    const startBgBtn = document.getElementById('startBgBtn');
+    const startWaitBtn = document.getElementById('startWaitBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const rollbackBtn = document.getElementById('rollbackBtn');
+    const loadDocsBtn = document.getElementById('loadDocsBtn');
+
+    let docsData = null;
+
+    function fmtDate(iso) {
+      if (!iso) return '–';
+      try {
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return iso;
+        return d.toLocaleString('hr-HR');
+      } catch {
+        return iso;
+      }
+    }
+
+    function renderStatusPill(status) {
+      const s = (status || 'idle').toLowerCase();
+      let cls = 'pill-idle';
+      let label = 'IDLE';
+      if (s === 'running') { cls = 'pill-run'; label = 'RUNNING'; }
+      else if (s === 'ok') { cls = 'pill-ok'; label = 'OK'; }
+      else if (s === 'error') { cls = 'pill-err'; label = 'ERROR'; }
+      return '<span class="pill ' + cls + '">' + label + '</span>';
+    }
+
+    async function callApi(path, options = {}) {
+      const { method = 'GET' } = options;
+      const res = await fetch(API_BASE + path, { method, headers: { 'Content-Type': 'application/json' } });
+      let json;
+      try {
+        json = await res.json();
+      } catch {
+        json = { raw: await res.text() };
+      }
+      if (!res.ok) {
+        const err = new Error('HTTP ' + res.status);
+        err.response = json;
+        throw err;
+      }
+      return json;
+    }
+
+    async function loadStatus() {
+      try {
+        refreshStatusBtn.disabled = true;
+        refreshStatusBtn.innerHTML = '<span class="loader-inline"></span> Osvježavam...';
+        const data = await callApi('/api/sudreg_cron_daily/status');
+        statusJsonEl.textContent = JSON.stringify(data, null, 2);
+
+        statusValueEl.innerHTML = renderStatusPill(data.status);
+        phaseValueEl.textContent = (data.currentPhase || '–') +
+          (data.currentEndpoint ? ' / ' + data.currentEndpoint : '');
+        startedAtEl.textContent = fmtDate(data.startedAt);
+        finishedAtEl.textContent = fmtDate(data.finishedAt);
+      } catch (err) {
+        statusJsonEl.textContent = JSON.stringify(err.response || { error: err.message }, null, 2);
+        statusValueEl.innerHTML = renderStatusPill('error');
+      } finally {
+        refreshStatusBtn.disabled = false;
+        refreshStatusBtn.textContent = '🔄 Osvježi status';
+      }
+    }
+
+    async function startCron(wait) {
+      const btn = wait ? startWaitBtn : startBgBtn;
+      try {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="loader-inline"></span> Pokrećem...';
+        const path = wait ? '/api/sudreg_cron_daily?wait=1' : '/api/sudreg_cron_daily';
+        const data = await callApi(path, { method: 'POST' });
+        statusJsonEl.textContent = JSON.stringify(data, null, 2);
+        // Nakon starta uvijek povuci status
+        await loadStatus();
+      } catch (err) {
+        statusJsonEl.textContent = JSON.stringify(err.response || { error: err.message }, null, 2);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = wait ? '▶ Pokreni i pričekaj' : '▶ Pokreni (background)';
+      }
+    }
+
+    async function stopCron() {
+      if (!confirm('Sigurno želiš zaustaviti tekući sync?')) return;
+      try {
+        stopBtn.disabled = true;
+        stopBtn.innerHTML = '<span class="loader-inline"></span> Šaljem stop...';
+        const data = await callApi('/api/sudreg_cron_daily/stop', { method: 'POST' });
+        statusJsonEl.textContent = JSON.stringify(data, null, 2);
+        await loadStatus();
+      } catch (err) {
+        statusJsonEl.textContent = JSON.stringify(err.response || { error: err.message }, null, 2);
+      } finally {
+        stopBtn.disabled = false;
+        stopBtn.textContent = '⏹ Stopiraj tekući job';
+      }
+    }
+
+    async function rollbackCron() {
+      if (!confirm('OPREZ: rollback briše SVE sudreg podatke. Nastaviti?')) return;
+      if (!confirm('Stvarno si siguran? Ovo je zadnja potvrda.')) return;
+      try {
+        rollbackBtn.disabled = true;
+        rollbackBtn.innerHTML = '<span class="loader-inline"></span> Izvršavam rollback...';
+        const data = await callApi('/api/sudreg_cron_daily/rollback', { method: 'POST' });
+        statusJsonEl.textContent = JSON.stringify(data, null, 2);
+        await loadStatus();
+      } catch (err) {
+        statusJsonEl.textContent = JSON.stringify(err.response || { error: err.message }, null, 2);
+      } finally {
+        rollbackBtn.disabled = false;
+        rollbackBtn.textContent = '⟲ ROLLBACK (opasno)';
+      }
+    }
+
+    function renderDocsTable(group) {
+      if (!docsData) return;
+      const endpoints = docsData.endpoints?.[group] || [];
+      docsTbody.innerHTML = '';
+      endpoints.forEach((e) => {
+        const tr = document.createElement('tr');
+        const methodTd = document.createElement('td');
+        methodTd.textContent = e.method || '';
+        const pathTd = document.createElement('td');
+        pathTd.textContent = e.path || '';
+        const descTd = document.createElement('td');
+        descTd.textContent = e.summary || e.description || '';
+        tr.appendChild(methodTd);
+        tr.appendChild(pathTd);
+        tr.appendChild(descTd);
+        docsTbody.appendChild(tr);
+      });
+      docsTableWrapper.style.display = 'block';
+    }
+
+    async function loadDocs() {
+      try {
+        loadDocsBtn.disabled = true;
+        loadDocsBtn.innerHTML = '<span class="loader-inline"></span> Učitavam...';
+        docsSummaryEl.textContent = 'Učitavam /api/sudreg_docs...';
+        const data = await callApi('/api/sudreg_docs');
+        docsData = data;
+        docsJsonEl.textContent = JSON.stringify(data, null, 2);
+
+        const groups = data.endpoints || {};
+        const countPublic = (groups.public || []).length;
+        const countWrite  = (groups.write || []).length;
+        const countCron   = (groups.cron || []).length;
+
+        docsSummaryEl.innerHTML =
+          'Public: ' + countPublic +
+          ' · Write: ' + countWrite +
+          ' · Cron: ' + countCron +
+          ' endpointa.';
+
+        // Prikaži tabove
+        groupTabs.style.display = 'flex';
+        // Renderiraj default (public)
+        setActiveTab('public');
+      } catch (err) {
+        docsSummaryEl.textContent = 'Greška pri dohvaćanju /api/sudreg_docs.';
+        docsJsonEl.textContent = JSON.stringify(err.response || { error: err.message }, null, 2);
+      } finally {
+        loadDocsBtn.disabled = false;
+        loadDocsBtn.textContent = '📚 Učitaj /api/sudreg_docs';
+      }
+    }
+
+    function setActiveTab(group) {
+      Array.from(groupTabs.querySelectorAll('.tab')).forEach((btn) => {
+        btn.classList.toggle('active', btn.getAttribute('data-group') === group);
+      });
+      renderDocsTable(group);
+    }
+
+    // Event listeners
+    refreshStatusBtn.addEventListener('click', () => loadStatus());
+    startBgBtn.addEventListener('click', () => startCron(false));
+    startWaitBtn.addEventListener('click', () => startCron(true));
+    stopBtn.addEventListener('click', () => stopCron());
+    rollbackBtn.addEventListener('click', () => rollbackCron());
+    loadDocsBtn.addEventListener('click', () => loadDocs());
+
+    groupTabs.addEventListener('click', (e) => {
+      if (e.target.classList.contains('tab')) {
+        const g = e.target.getAttribute('data-group');
+        setActiveTab(g);
+      }
+    });
+
+    // Na učitavanje stranice – automatski povuci status
+    window.addEventListener('load', () => {
+      loadStatus().catch(() => {});
+    });
+  </script>
+</body>
+</html>
+

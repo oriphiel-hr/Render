@@ -111,20 +111,6 @@
   </div>
 
   <div class="card">
-    <h2>Kontrole</h2>
-    <div class="btn-row">
-      <button class="primary" id="runBgBtn">▶ Pokreni dnevni sync (background)</button>
-      <button class="primary" id="runWaitBtn">▶ Pokreni dnevni sync i pričekaj</button>
-      <button class="secondary" id="statusBtn">ℹ Status zadnjeg joba</button>
-    </div>
-    <div class="btn-row">
-      <button class="secondary" id="stopBtn">⏹ Stopiraj tekući job</button>
-      <button class="danger" id="rollbackBtn">⟲ ROLLBACK (opasno)</button>
-    </div>
-    <small>Prije korištenja provjeri da je <strong>base URL</strong> ispravan i da API ključ ima dopuštenje za write.</small>
-  </div>
-
-  <div class="card">
     <h2>API metode (/api/sudreg_docs)</h2>
     <p style="font-size:0.85rem;color:#4b5563;margin-top:0;">
       Ovdje možeš vidjeti grupirani popis endpointa koje izlaže backend (public, write, cron).
@@ -213,7 +199,7 @@
 
     document.getElementById('saveSettingsBtn').onclick = saveSettings;
 
-    document.getElementById('runBgBtn').onclick = async () => {
+    document.getElementById('runBgBtn')?.addEventListener('click', async () => {
       try {
         setStatus('Pokrećem cron_daily (background)...', 'run');
         const data = await callApi('/api/sudreg_cron_daily', { method: 'POST', useKey: true });
@@ -223,9 +209,9 @@
         setStatus('Greška pri pokretanju (background).', 'fail');
         setOutput(e);
       }
-    };
+    });
 
-    document.getElementById('runWaitBtn').onclick = async () => {
+    document.getElementById('runWaitBtn')?.addEventListener('click', async () => {
       try {
         setStatus('Pokrećem cron_daily (?wait=1)...', 'run');
         const data = await callApi('/api/sudreg_cron_daily?wait=1', { method: 'POST', useKey: true });
@@ -235,9 +221,9 @@
         setStatus('Greška pri pokretanju (?wait=1).', 'fail');
         setOutput(e);
       }
-    };
+    });
 
-    document.getElementById('statusBtn').onclick = async () => {
+    document.getElementById('statusBtn')?.addEventListener('click', async () => {
       try {
         setStatus('Dohvaćam status...', 'run');
         const data = await callApi('/api/sudreg_cron_daily/status', { method: 'GET' });
@@ -247,9 +233,9 @@
         setStatus('Greška pri dohvaćanju statusa.', 'fail');
         setOutput(e);
       }
-    };
+    });
 
-    document.getElementById('stopBtn').onclick = async () => {
+    document.getElementById('stopBtn')?.addEventListener('click', async () => {
       if (!confirm('Sigurno želiš zaustaviti tekući sync?')) return;
       try {
         setStatus('Šaljem stop...', 'run');
@@ -260,9 +246,9 @@
         setStatus('Greška pri slanju stop.', 'fail');
         setOutput(e);
       }
-    };
+    });
 
-    document.getElementById('rollbackBtn').onclick = async () => {
+    document.getElementById('rollbackBtn')?.addEventListener('click', async () => {
       if (!confirm('OPREZ: rollback briše SVE sudreg podatke. Nastaviti?')) return;
       if (!confirm('Stvarno si siguran? Ovo je zadnja potvrda.')) return;
       try {
@@ -274,12 +260,12 @@
         setStatus('Greška pri rollbacku.', 'fail');
         setOutput(e);
       }
-    };
+    });
 
     document.getElementById('loadDocsBtn').onclick = async () => {
       try {
         docsSummaryEl.textContent = 'Učitavam /api/sudreg_docs...';
-        const json = await callApi('/api/sudreg_docs', { method: 'GET', useKey: false });
+        const json = await callApi('/api/sudreg_docs', { method: 'GET' });
         setDocsOutput(json);
 
         const groups = json?.endpoints || {};
