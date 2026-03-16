@@ -1,4 +1,4 @@
-name: Deploy frontend to Hostinger
+name: Registar – Frontend deploy na Hostinger
 
 on:
   # Ručni run (Actions → Deploy frontend to Hostinger → Run workflow)
@@ -12,7 +12,7 @@ on:
       - ".github/workflows/deploy-hostinger.yml"
 
 jobs:
-  deploy:
+  deploy-registar-hostinger:
     runs-on: ubuntu-latest
 
     steps:
