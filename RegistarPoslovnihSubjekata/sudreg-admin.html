@@ -125,6 +125,18 @@
   </div>
 
   <div class="card">
+    <h2>API metode (/api/sudreg_docs)</h2>
+    <p style="font-size:0.85rem;color:#4b5563;margin-top:0;">
+      Ovdje možeš vidjeti grupirani popis endpointa koje izlaže backend (public, write, cron).
+    </p>
+    <div class="btn-row" style="margin-top:0.5rem;">
+      <button class="secondary" id="loadDocsBtn">📚 Učitaj popis metoda</button>
+    </div>
+    <div id="docsSummary" style="font-size:0.8rem;color:#4b5563;margin-top:0.5rem;">Još nema učitanih podataka.</div>
+    <pre id="docsOutput" style="margin-top:0.6rem;max-height:360px;">{}</pre>
+  </div>
+
+  <div class="card">
     <h2>Stanje</h2>
     <div id="statusLine" class="status-line">Nema još poziva.</div>
     <pre id="output">{}</pre>
@@ -136,6 +148,8 @@
     const outputEl     = document.getElementById('output');
     const statusLineEl = document.getElementById('statusLine');
     const saveHintEl   = document.getElementById('saveHint');
+    const docsOutputEl = document.getElementById('docsOutput');
+    const docsSummaryEl = document.getElementById('docsSummary');
 
     const loadSettings = () => {
       const s = JSON.parse(localStorage.getItem('sudregAdminSettings') || '{}');
@@ -170,6 +184,10 @@
 
     const setOutput = (data) => {
       outputEl.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+    };
+
+    const setDocsOutput = (data) => {
+      docsOutputEl.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
     };
 
     async function callApi(path, { method = 'GET', useKey = false } = {}) {
@@ -255,6 +273,28 @@
       } catch (e) {
         setStatus('Greška pri rollbacku.', 'fail');
         setOutput(e);
+      }
+    };
+
+    document.getElementById('loadDocsBtn').onclick = async () => {
+      try {
+        docsSummaryEl.textContent = 'Učitavam /api/sudreg_docs...';
+        const json = await callApi('/api/sudreg_docs', { method: 'GET', useKey: false });
+        setDocsOutput(json);
+
+        const groups = json?.endpoints || {};
+        const countPublic = (groups.public || []).length;
+        const countWrite  = (groups.write || []).length;
+        const countCron   = (groups.cron || []).length;
+
+        docsSummaryEl.textContent =
+          'Public: ' + countPublic +
+          ' · Write: ' + countWrite +
+          ' · Cron: ' + countCron +
+          ' endpointa. (detalji u JSON prikazu ispod)';
+      } catch (e) {
+        docsSummaryEl.textContent = 'Greška pri dohvaćanju /api/sudreg_docs.';
+        setDocsOutput(e);
       }
     };
 
