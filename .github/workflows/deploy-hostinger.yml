@@ -1,0 +1,48 @@
+name: Deploy frontend to Hostinger
+
+on:
+  # Ručni run (Actions → Deploy frontend to Hostinger → Run workflow)
+  workflow_dispatch:
+  # Automatski deploy na push u main (po želji možeš maknuti ovaj dio)
+  push:
+    branches:
+      - main
+    paths:
+      - "RegistarPoslovnihSubjekata/**"
+      - ".github/workflows/deploy-hostinger.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show prepared frontend files
+        run: |
+          echo "Sadržaj RegistarPoslovnihSubjekata/hostinger-frontend:"
+          ls -R RegistarPoslovnihSubjekata/hostinger-frontend
+
+      - name: Test FTP connection (no upload)
+        run: |
+          echo "Testing FTP connection to ${{ secrets.HOSTINGER_REGISTARPOSLOVNIHSUBJEKATA_HOST }}..."
+          # Jednostavan test – pokušaj se spojiti i izaći
+          sudo apt-get update > /dev/null
+          sudo apt-get install -y lftp > /dev/null
+          lftp -u "${{ secrets.HOSTINGER_REGISTARPOSLOVNIHSUBJEKATA_USERNAME }}","${{ secrets.HOSTINGER_REGISTARPOSLOVNIHSUBJEKATA_PASSWORD }}" \
+            -e "ls; bye" \
+            "ftp://${{ secrets.HOSTINGER_REGISTARPOSLOVNIHSUBJEKATA_HOST }}"
+
+      - name: Deploy to Hostinger via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.HOSTINGER_REGISTARPOSLOVNIHSUBJEKATA_HOST }}
+          username: ${{ secrets.HOSTINGER_REGISTARPOSLOVNIHSUBJEKATA_USERNAME }}
+          password: ${{ secrets.HOSTINGER_REGISTARPOSLOVNIHSUBJEKATA_PASSWORD }}
+          server-dir: ${{ secrets.HOSTINGER_REGISTARPOSLOVNIHSUBJEKATA_SERVER_DIR }}
+          local-dir: RegistarPoslovnihSubjekata/hostinger-frontend
+          protocol: ftp
+          port: 21
+          dangerous-clean-slate: false
+
