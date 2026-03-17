@@ -481,6 +481,237 @@ curl -s -X POST "https://registar-poslovnih-subjekata.onrender.com/api/sudreg_cr
   -H "X-API-Key: TVOJ_API_KLJUC"
         </pre>
       </details>
+
+      <details style="margin-top:0.9rem;">
+        <summary style="font-size:0.8rem;cursor:pointer;color:#4b5563;">
+          Sudreg open_api metode (izvorni servis)
+        </summary>
+        <div style="margin-top:0.5rem;font-size:0.8rem;color:#4b5563;">
+          Službena open_api specifikacija Sudreg javnog servisa dostupna je na:
+          <br />
+          <code>https://sudreg-data.gov.hr/api/javni/dokumentacija/open_api</code>
+          <p class="small" style="margin-top:0.4rem;">
+            Donji popis je sažetak najčešće korištenih metoda. Sve su <code>GET</code> i prihvaćaju standardne
+            parametre za straničenje: <code>snapshot_id</code>, <code>offset</code>, <code>limit</code>,
+            <code>no_data_error</code>, <code>omit_nulls</code> (ako nije drukčije navedeno).
+          </p>
+        </div>
+
+        <h3 style="margin:0.6rem 0 0.2rem;font-size:0.9rem;">Glavna knjiga – subjekti i osnovni podaci</h3>
+        <div class="table-wrapper" style="max-height:220px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Path</th>
+                <th>Sažetak</th>
+                <th>Ključni parametri</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>/subjekti</code></td>
+                <td>Osnovni podaci o subjektima.</td>
+                <td><code>snapshot_id</code>, <code>tvrtka_naziv</code>, <code>only_active</code>, <code>offset</code>, <code>limit</code></td>
+              </tr>
+              <tr>
+                <td><code>/tvrtke</code></td>
+                <td>Pune tvrtke / nazivi subjekata.</td>
+                <td><code>snapshot_id</code>, <code>offset</code>, <code>limit</code></td>
+              </tr>
+              <tr>
+                <td><code>/skracene_tvrtke</code></td>
+                <td>Skraćene tvrtke.</td>
+                <td><code>snapshot_id</code>, <code>offset</code>, <code>limit</code></td>
+              </tr>
+              <tr>
+                <td><code>/sjedista</code></td>
+                <td>Sjedišta i adrese subjekata.</td>
+                <td><code>snapshot_id</code>, <code>offset</code>, <code>limit</code></td>
+              </tr>
+              <tr>
+                <td><code>/email_adrese</code></td>
+                <td>E-mail adrese subjekata.</td>
+                <td><code>snapshot_id</code>, <code>offset</code>, <code>limit</code></td>
+              </tr>
+              <tr>
+                <td><code>/postupci</code></td>
+                <td>Postupci nad subjektima (stečaj, likvidacija...).</td>
+                <td><code>snapshot_id</code>, <code>offset</code>, <code>limit</code></td>
+              </tr>
+              <tr>
+                <td><code>/temeljni_kapitali</code></td>
+                <td>Temeljni kapitali subjekata.</td>
+                <td><code>snapshot_id</code>, <code>offset</code>, <code>limit</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 style="margin:0.9rem 0 0.2rem;font-size:0.9rem;">Djelatnosti i poslovanje</h3>
+        <div class="table-wrapper" style="max-height:220px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Path</th>
+                <th>Sažetak</th>
+                <th>Ključni parametri</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>/pretezite_djelatnosti</code></td>
+                <td>Pretežite djelatnosti subjekata.</td>
+                <td><code>snapshot_id</code>, <code>offset</code>, <code>limit</code></td>
+              </tr>
+              <tr>
+                <td><code>/predmeti_poslovanja</code></td>
+                <td>Predmeti poslovanja (djelatnosti) subjekata.</td>
+                <td><code>snapshot_id</code>, <code>expand_relations</code>, <code>offset</code>, <code>limit</code></td>
+              </tr>
+              <tr>
+                <td><code>/evidencijske_djelatnosti</code></td>
+                <td>Evidencijske djelatnosti (nije obavezno upisivati).</td>
+                <td><code>snapshot_id</code>, <code>offset</code>, <code>limit</code></td>
+              </tr>
+              <tr>
+                <td><code>/gfi</code></td>
+                <td>Predana godišnja financijska izvješća (meta‑podaci).</td>
+                <td><code>snapshot_id</code>, <code>offset</code>, <code>limit</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 style="margin:0.9rem 0 0.2rem;font-size:0.9rem;">Podružnice</h3>
+        <div class="table-wrapper" style="max-height:220px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Path</th>
+                <th>Sažetak</th>
+                <th>Ključni parametri</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>/nazivi_podruznica</code></td>
+                <td>Nazivi podružnica subjekata.</td>
+                <td><code>snapshot_id</code>, <code>offset</code>, <code>limit</code></td>
+              </tr>
+              <tr>
+                <td><code>/skraceni_nazivi_podruznica</code></td>
+                <td>Skraćeni nazivi podružnica.</td>
+                <td><code>snapshot_id</code>, <code>offset</code>, <code>limit</code></td>
+              </tr>
+              <tr>
+                <td><code>/sjedista_podruznica</code></td>
+                <td>Sjedišta i adrese podružnica.</td>
+                <td><code>snapshot_id</code>, <code>offset</code>, <code>limit</code></td>
+              </tr>
+              <tr>
+                <td><code>/email_adrese_podruznica</code></td>
+                <td>E-mail adrese podružnica.</td>
+                <td><code>snapshot_id</code>, <code>offset</code>, <code>limit</code></td>
+              </tr>
+              <tr>
+                <td><code>/djelatnosti_podruznica</code></td>
+                <td>Djelatnosti podružnica.</td>
+                <td><code>snapshot_id</code>, <code>offset</code>, <code>limit</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 style="margin:0.9rem 0 0.2rem;font-size:0.9rem;">Ostalo, promjene i snimke</h3>
+        <div class="table-wrapper" style="max-height:220px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Path</th>
+                <th>Sažetak</th>
+                <th>Ključni parametri</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>/promjene</code></td>
+                <td>Popis zadnjih promjena nad subjektima.</td>
+                <td><code>snapshot_id</code>, <code>offset</code>, <code>limit</code></td>
+              </tr>
+              <tr>
+                <td><code>/snapshots</code></td>
+                <td>Popis svih snimki baze sudskog registra.</td>
+                <td><code>no_data_error</code>, <code>omit_nulls</code></td>
+              </tr>
+              <tr>
+                <td><code>/counts</code></td>
+                <td>Ukupan broj redaka po tablici (aktivni i povijesni).</td>
+                <td><code>snapshot_id</code>, <code>no_data_error</code>, <code>omit_nulls</code></td>
+              </tr>
+              <tr>
+                <td><code>/detalji_subjekta</code></td>
+                <td>Svi podaci o jednom subjektu u strukturiranom objektu.</td>
+                <td><code>tip_identifikatora</code> (mbs|oib, obavezno), <code>identifikator</code> (obavezno), <code>snapshot_id</code>, <code>expand_relations</code>, <code>only_active</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 style="margin:0.9rem 0 0.2rem;font-size:0.9rem;">Šifrarnici (primjeri)</h3>
+        <div class="table-wrapper" style="max-height:220px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Path</th>
+                <th>Sažetak</th>
+                <th>Ključni parametri</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>/drzave</code></td>
+                <td>Šifrarnik država.</td>
+                <td><code>snapshot_id</code>, <code>history_columns</code>, <code>no_data_error</code></td>
+              </tr>
+              <tr>
+                <td><code>/jezici</code></td>
+                <td>Šifrarnik jezika.</td>
+                <td><code>snapshot_id</code>, <code>history_columns</code>, <code>no_data_error</code></td>
+              </tr>
+              <tr>
+                <td><code>/nacionalna_klasifikacija_djelatnosti</code></td>
+                <td>NKD šifrarnik djelatnosti.</td>
+                <td><code>snapshot_id</code>, <code>history_columns</code>, <code>no_data_error</code></td>
+              </tr>
+              <tr>
+                <td><code>/sudovi</code></td>
+                <td>Šifrarnik sudova (uključuje stalne službe).</td>
+                <td><code>snapshot_id</code>, <code>expand_relations</code>, <code>history_columns</code></td>
+              </tr>
+              <tr>
+                <td><code>/valute</code></td>
+                <td>Šifrarnik valuta.</td>
+                <td><code>snapshot_id</code>, <code>expand_relations</code>, <code>history_columns</code></td>
+              </tr>
+              <tr>
+                <td><code>/vrste_pravnih_oblika</code></td>
+                <td>Vrste pravnih oblika.</td>
+                <td><code>snapshot_id</code>, <code>history_columns</code>, <code>no_data_error</code></td>
+              </tr>
+              <tr>
+                <td><code>/vrste_postupaka</code></td>
+                <td>Vrste postupaka (stečaj, likvidacija...).</td>
+                <td><code>snapshot_id</code>, <code>no_data_error</code></td>
+              </tr>
+              <tr>
+                <td><code>/statusi</code></td>
+                <td>Šifrarnik statusa retka.</td>
+                <td><code>snapshot_id</code>, <code>no_data_error</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
     </aside>
   </main>
 
