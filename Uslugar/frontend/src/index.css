@@ -286,3 +286,10 @@ html.dark .chat-message-input::placeholder {
     opacity: 1 !important;
   }
 }
+
+/* Mobile menu: spriječi prelamanje teksta u stavkama */
+.mobile-menu-panel button {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
