@@ -21,8 +21,10 @@ export default function AdminScreenshots() {
   const getAbsUrl = (maybeRel) => {
     if (!maybeRel) return maybeRel;
     if (typeof window === 'undefined') return maybeRel;
-    if (maybeRel.startsWith('http')) return maybeRel;
-    return `${window.location.origin}${maybeRel}`;
+    // Ukloni fragment (npr. #time-landing) da ne ode u browserove blob/capture modove
+    const clean = maybeRel.split('#')[0];
+    if (clean.startsWith('http')) return clean;
+    return `${window.location.origin}${clean}`;
   };
 
   const grouped = useMemo(() => {
@@ -190,14 +192,14 @@ export default function AdminScreenshots() {
                   <div key={v.fileName} className="rounded border bg-white p-2">
                     <div className="text-xs text-gray-600 font-mono truncate mb-2">{v.fileName}</div>
                     <video controls className="w-full rounded" src={v.url} />
-                    <a
+                    <button
+                      type="button"
                       className="text-sm text-indigo-700 hover:underline mt-2 inline-block"
-                      href={getAbsUrl(v.url)}
-                      download={v.fileName}
+                      onClick={() => downloadVideo(v.url, v.fileName)}
                       title="Preuzmi video datoteku"
                     >
                       Preuzmi video
-                    </a>
+                    </button>
                   </div>
                 ))}
               </div>
@@ -245,6 +247,29 @@ export default function AdminScreenshots() {
       setZipLoading(false);
     }
   };
+
+  async function downloadVideo(videoUrl, fileName) {
+    try {
+      setVideoLoading(true);
+      setError('');
+      const url = getAbsUrl(videoUrl);
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+      const blob = await res.blob();
+      const objUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objUrl;
+      a.download = fileName || 'video';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(objUrl);
+    } catch (e) {
+      setError(e?.message || 'Greška pri preuzimanju videa.');
+    } finally {
+      setVideoLoading(false);
+    }
+  }
 
   const deleteAllScreenshots = async () => {
     const ok = window.confirm('Obrisati SVE screenshotove (images) iz /docs i /docs/social/**/shots? Ova radnja je nepovratna.');

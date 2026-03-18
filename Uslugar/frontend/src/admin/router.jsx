@@ -136,6 +136,11 @@ export default function AdminRouter(){
         // Ali za sada omogućimo normalno otvaranje
         return;
       }
+
+      // Object URLs (blob:...) se koriste za download (ZIP/video). Ne diraj ih preusmjeravanjima.
+      if (href.startsWith('blob:') || href.startsWith('data:')) {
+        return;
+      }
       
       // Hash linkovi
       if (href.startsWith('#')) {
