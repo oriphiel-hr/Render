@@ -8,6 +8,10 @@ export default function AdminScreenshots() {
   const [genResult, setGenResult] = useState(null);
   const [files, setFiles] = useState([]);
   const [filesLoading, setFilesLoading] = useState(false);
+  const [videoLoading, setVideoLoading] = useState(false);
+  const [videoResult, setVideoResult] = useState(null);
+  const [videoFormats, setVideoFormats] = useState([]);
+  const [videosLoading, setVideosLoading] = useState(false);
   const [error, setError] = useState('');
 
   const hasFiles = files?.length > 0;
@@ -38,8 +42,22 @@ export default function AdminScreenshots() {
     }
   }
 
+  async function refreshVideos() {
+    try {
+      setVideosLoading(true);
+      setError('');
+      const { data } = await api.get('/admin/docs-social-videos');
+      setVideoFormats(data.formats || []);
+    } catch (e) {
+      setError(e?.response?.data?.error || e.message || 'Greška pri učitavanju videa.');
+    } finally {
+      setVideosLoading(false);
+    }
+  }
+
   useEffect(() => {
     refreshList();
+    refreshVideos();
   }, []);
 
   const createTestUsersAndData = async () => {
@@ -79,6 +97,31 @@ export default function AdminScreenshots() {
     }
   };
 
+  const generateVideos = async () => {
+    try {
+      setVideoLoading(true);
+      setError('');
+      setVideoResult(null);
+      const { data } = await api.post(
+        '/admin/generate-social-videos',
+        { videoFormat: 'all', intervalMs: 2000, stepWaitMs: 2500 },
+        { timeout: 300000 }
+      );
+      setVideoResult(data);
+      await refreshVideos();
+    } catch (e) {
+      const d = e?.response?.data;
+      setVideoResult({
+        success: false,
+        error: d?.error || e.message || 'Greška pri generiranju videa.',
+        stdout: d?.stdout,
+        stderr: d?.stderr,
+      });
+    } finally {
+      setVideoLoading(false);
+    }
+  };
+
   const renderGrid = (items) => {
     if (!items?.length) return null;
     return (
@@ -102,6 +145,62 @@ export default function AdminScreenshots() {
             </div>
             <div className="px-3 py-2 text-xs text-gray-600 font-mono truncate">{f.fileName}</div>
           </a>
+        ))}
+      </div>
+    );
+  };
+
+  const renderVideos = () => {
+    if (!videoFormats?.length) {
+      return <div className="text-sm text-gray-600">Nema videa u `/docs/social`.</div>;
+    }
+    return (
+      <div className="space-y-8">
+        {videoFormats.map((fmt) => (
+          <section key={fmt.formatDir} className="border rounded-lg p-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+              <div>
+                <div className="font-semibold text-sm">{fmt.formatDir}</div>
+                {fmt.manifest?.ts && (
+                  <div className="text-xs text-gray-500">Zadnje generirano: {new Date(fmt.manifest.ts).toLocaleString()}</div>
+                )}
+              </div>
+              <a
+                href={`/docs/social/${fmt.formatDir}/`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-indigo-700 hover:underline"
+              >
+                Otvori folder
+              </a>
+            </div>
+
+            {fmt.videos?.length > 0 ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {fmt.videos.map((v) => (
+                  <div key={v.fileName} className="rounded border bg-white p-2">
+                    <div className="text-xs text-gray-600 font-mono truncate mb-2">{v.fileName}</div>
+                    <video controls className="w-full rounded" src={v.url} />
+                    <a className="text-sm text-indigo-700 hover:underline mt-2 inline-block" href={v.url} target="_blank" rel="noopener noreferrer">
+                      Preuzmi / otvori video
+                    </a>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-gray-600">Nema video datoteka (još).</div>
+            )}
+
+            {fmt.shots?.length > 0 && (
+              <div className="mt-4">
+                <div className="font-semibold text-sm mb-2">Česti screenshotovi (frames)</div>
+                {renderGrid(fmt.shots.slice(0, 12))}
+                {fmt.shots.length > 12 && (
+                  <div className="text-xs text-gray-500 mt-2">Prikazano prvih 12 od {fmt.shots.length}.</div>
+                )}
+              </div>
+            )}
+          </section>
         ))}
       </div>
     );
@@ -146,6 +245,13 @@ export default function AdminScreenshots() {
               {loadingScreenshots ? 'Generiram…' : '📸 Generiraj screenshotove vodiča'}
             </button>
             <button
+              onClick={generateVideos}
+              disabled={videoLoading}
+              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
+            >
+              {videoLoading ? 'Snimam…' : '🎬 Generiraj social video (TikTok/YT/FB)'}
+            </button>
+            <button
               onClick={refreshList}
               disabled={filesLoading}
               className="px-4 py-2 border rounded hover:bg-gray-50 disabled:opacity-50"
@@ -155,7 +261,7 @@ export default function AdminScreenshots() {
           </div>
         </div>
 
-        {(usersResult || genResult) && (
+        {(usersResult || genResult || videoResult) && (
           <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
             {usersResult && (
               <div className={`p-3 rounded border ${usersResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
@@ -198,8 +304,48 @@ export default function AdminScreenshots() {
                 )}
               </div>
             )}
+
+            {videoResult && (
+              <div className={`p-3 rounded border ${videoResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                <div className="font-semibold text-sm mb-1">Generiranje videa</div>
+                {videoResult.success ? (
+                  <>
+                    <div className="text-sm text-green-900">{videoResult.message}</div>
+                    {videoResult.stdout && (
+                      <pre className="mt-2 p-2 bg-black/10 rounded text-xs max-h-40 overflow-auto">{videoResult.stdout}</pre>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="text-sm text-red-900">{videoResult.error || 'Greška.'}</div>
+                    {(videoResult.stderr || videoResult.stdout) && (
+                      <pre className="mt-2 p-2 bg-black/10 rounded text-xs max-h-40 overflow-auto">{videoResult.stderr || videoResult.stdout}</pre>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
         )}
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-4 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <div className="font-semibold">Social videi</div>
+            <div className="text-sm text-gray-500">
+              TikTok/Reels (9:16), YouTube (16:9), Square (1:1) + česti screenshotovi tijekom snimanja.
+            </div>
+          </div>
+          <button
+            onClick={refreshVideos}
+            disabled={videosLoading}
+            className="px-4 py-2 border rounded hover:bg-gray-50 disabled:opacity-50"
+          >
+            {videosLoading ? 'Učitavam…' : '↻ Osvježi videe'}
+          </button>
+        </div>
+        {renderVideos()}
       </div>
 
       <div className="bg-white rounded-lg shadow p-4">

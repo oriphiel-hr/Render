@@ -5788,6 +5788,125 @@ r.get('/docs-screenshots', auth(true, ['ADMIN']), async (req, res, next) => {
   }
 });
 
+/**
+ * GET /api/admin/docs-social-videos
+ * Lista social videa i pripadnih screenshotova u backend/public/docs/social.
+ */
+r.get('/docs-social-videos', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const baseDir = path.join(process.cwd(), 'public', 'docs', 'social');
+    if (!fs.existsSync(baseDir)) {
+      return res.json({ success: true, dir: baseDir, formats: [] });
+    }
+    const formats = fs
+      .readdirSync(baseDir, { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name)
+      .sort((a, b) => a.localeCompare(b, 'hr', { numeric: true, sensitivity: 'base' }))
+      .map((formatDir) => {
+        const videosDir = path.join(baseDir, formatDir, 'videos');
+        const shotsDir = path.join(baseDir, formatDir, 'shots');
+        const manifestPath = path.join(baseDir, formatDir, 'manifest.json');
+
+        const videos = fs.existsSync(videosDir)
+          ? fs.readdirSync(videosDir).filter((f) => /\.(webm|mp4)$/i.test(f)).sort()
+          : [];
+        const shots = fs.existsSync(shotsDir)
+          ? fs.readdirSync(shotsDir).filter((f) => /\.(png|jpg|jpeg|webp)$/i.test(f)).sort()
+          : [];
+        const manifest = fs.existsSync(manifestPath)
+          ? (() => {
+              try { return JSON.parse(fs.readFileSync(manifestPath, 'utf-8')); } catch { return null; }
+            })()
+          : null;
+
+        return {
+          formatDir,
+          manifest,
+          videos: videos.map((fileName) => ({ fileName, url: `/docs/social/${formatDir}/videos/${fileName}` })),
+          shots: shots.map((fileName) => ({ fileName, url: `/docs/social/${formatDir}/shots/${fileName}` })),
+        };
+      });
+
+    res.json({ success: true, dir: baseDir, formats });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * POST /api/admin/generate-social-videos
+ * Pokreće Playwright skriptu za social video + češće screenshotove.
+ */
+r.post('/generate-social-videos', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const { users, password } = await ensureScreenshotTestUsers();
+    const baseUrl = process.env.FRONTEND_URL || req.get('origin') || 'https://www.uslugar.eu';
+
+    const scriptPath = path.join(process.cwd(), 'scripts', 'capture-social-videos.js');
+    const outDir = path.join(process.cwd(), 'public', 'docs', 'social');
+
+    if (!fs.existsSync(scriptPath)) {
+      return res.status(503).json({
+        success: false,
+        error: 'Skripta za social video nije pronađena.',
+        scriptPath,
+      });
+    }
+
+    const userByRole = {};
+    users.forEach((u) => { userByRole[u.role] = u; });
+
+    const { videoFormat = 'all', intervalMs = 2000, stepWaitMs = 2500 } = req.body || {};
+    const env = {
+      ...process.env,
+      BASE_URL: baseUrl,
+      OUT_DIR: outDir,
+      VIDEO_FORMAT: String(videoFormat),
+      SCREENSHOT_INTERVAL_MS: String(intervalMs),
+      STEP_WAIT_MS: String(stepWaitMs),
+      TEST_EMAIL_KORISNIK: userByRole.korisnik?.email,
+      TEST_PASSWORD_KORISNIK: password,
+      TEST_EMAIL_PRUVATELJ: userByRole.pružatelj?.email,
+      TEST_PASSWORD_PRUVATELJ: password,
+      TEST_EMAIL_TIM_CLAN: userByRole.tim?.email,
+      TEST_PASSWORD_TIM_CLAN: password,
+      TEST_EMAIL_DIREKTOR: userByRole.direktor?.email,
+      TEST_PASSWORD_DIREKTOR: password,
+    };
+
+    const child = spawn('node', [scriptPath], {
+      cwd: process.cwd(),
+      env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (d) => { stdout += d.toString(); });
+    child.stderr.on('data', (d) => { stderr += d.toString(); });
+
+    const code = await new Promise((resolve) => child.on('close', resolve));
+    if (code !== 0) {
+      return res.status(500).json({
+        success: false,
+        error: 'Generiranje social videa nije uspjelo.',
+        stdout: stdout.slice(-2000),
+        stderr: stderr.slice(-2000),
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Social videi i screenshotovi su generirani.',
+      users: users.map((u) => ({ role: u.role, email: u.email, fullName: u.fullName })),
+      stdout: stdout.slice(-1500),
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // DELETE /api/admin/testing/cleanup - Obriši sve test podatke
 r.delete('/testing/cleanup', auth(true, ['ADMIN']), async (req, res, next) => {
   try {
