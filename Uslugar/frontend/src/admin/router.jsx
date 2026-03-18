@@ -26,6 +26,7 @@ import AdminErrorLogs from '../pages/AdminErrorLogs'
 import AdminAddonEventLogs from '../pages/AdminAddonEventLogs'
 import AdminContactInquiries from '../pages/AdminContactInquiries'
 import AdminAiIntegracije from '../pages/AdminAiIntegracije'
+import AdminScreenshots from '../pages/AdminScreenshots'
 import api from '../api'
 
 // Model nazivi u PascalCase kako backend očekuje
@@ -80,7 +81,7 @@ export default function AdminRouter(){
     // Admin panel path rute (koje se koriste u BrowserRouter)
     const adminPathRoutes = ['payments', 'provider-approvals', 'kyc-metrics', 'verification-documents', 
                              'platform-stats', 'moderation', 'sms-logs', 'invoices', 
-                             'users-overview', 'cleanup', 'testing', 'testing-blocks', 'database', 'api-reference', 'user-types',
+                             'users-overview', 'cleanup', 'testing', 'testing-blocks', 'database', 'api-reference', 'user-types', 'screenshots',
                              'audit-logs', 'api-request-logs', 'error-logs', 'addon-event-logs', 'contact-inquiries'];
     // Dodaj sve MODELS kao admin rute
     const adminModelRoutes = MODELS.map(m => m.toLowerCase());
@@ -276,6 +277,7 @@ export default function AdminRouter(){
           <Route path="/admin/database" element={<AdminDatabaseEditor />} />
           <Route path="/admin/api-reference" element={<AdminApiReference />} />
           <Route path="/admin/user-types" element={<UserTypesOverview isAdmin={true} />} />
+          <Route path="/admin/screenshots" element={<AdminScreenshots />} />
           <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
           <Route path="/admin/api-request-logs" element={<AdminApiRequestLogs />} />
           <Route path="/admin/error-logs" element={<AdminErrorLogs />} />

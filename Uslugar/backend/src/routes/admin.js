@@ -11,6 +11,7 @@ import { ensureScreenshotDemoData } from '../services/screenshot-demo-data-servi
 import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'node:fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -5757,6 +5758,31 @@ r.post('/generate-docs-screenshots', auth(true, ['ADMIN']), async (req, res, nex
       users: users.map((u) => ({ role: u.role, email: u.email, fullName: u.fullName })),
       stdout: stdout.slice(-1500),
     });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * GET /api/admin/docs-screenshots
+ * Lista screenshotova generiranih za dokumentaciju vodiča (servira ih backend na /docs).
+ * Vraća fileName + url za prikaz u adminu.
+ */
+r.get('/docs-screenshots', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const docsDir = path.join(process.cwd(), 'public', 'docs');
+    if (!fs.existsSync(docsDir)) {
+      return res.json({ success: true, dir: docsDir, files: [] });
+    }
+    const entries = fs.readdirSync(docsDir, { withFileTypes: true });
+    const files = entries
+      .filter((e) => e.isFile())
+      .map((e) => e.name)
+      .filter((name) => /\.(png|jpg|jpeg|webp)$/i.test(name))
+      .sort((a, b) => a.localeCompare(b, 'hr', { numeric: true, sensitivity: 'base' }))
+      .map((fileName) => ({ fileName, url: `/docs/${fileName}` }));
+
+    res.json({ success: true, dir: docsDir, files });
   } catch (e) {
     next(e);
   }

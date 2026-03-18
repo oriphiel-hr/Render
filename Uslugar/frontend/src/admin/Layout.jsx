@@ -82,6 +82,7 @@ const NAVIGATION_GROUPS = [
     items: [
       { to: '/admin/testing', label: 'Testiranje', icon: '🧪' },
       { to: '/admin/testing-blocks', label: 'Blokovski testovi', icon: '🧱' },
+      { to: '/admin/screenshots', label: 'Screenshotovi', icon: '📸' },
       { to: '/admin/database', label: 'Database Editor', icon: '🗄️' },
       { to: '/admin/api-reference', label: 'API Reference', icon: '📚' },
       { to: '/admin/documentation', label: 'Dokumentacija', icon: '📖' },
@@ -137,6 +138,7 @@ function getPageTitle(pathname) {
     'users-overview': 'Pregled korisnika',
     'documentation': 'Dokumentacija',
     'database': 'Database Editor',
+    'screenshots': 'Screenshotovi',
     'api-reference': 'API Reference',
     'payments': 'Plaćanja',
     'cleanup': 'Čišćenje podataka',
