@@ -70,6 +70,14 @@ export async function ensureScreenshotDemoData() {
     where: { email_role: { email: email('pružatelj'), role: 'PROVIDER' } },
     include: { providerProfile: true },
   });
+  const director = await prisma.user.findUnique({
+    where: { email_role: { email: email('direktor'), role: 'PROVIDER' } },
+    include: { providerProfile: true },
+  });
+  const tim = await prisma.user.findUnique({
+    where: { email_role: { email: email('tim'), role: 'PROVIDER' } },
+    include: { providerProfile: true },
+  });
   if (!ana || !marko?.providerProfile) {
     console.warn('[SCREENSHOT-DEMO] Screenshot korisnici ne postoje. Prvo pokreni Generiraj testne korisnike.');
     return { ok: false, reason: 'missing_users' };
@@ -216,7 +224,131 @@ export async function ensureScreenshotDemoData() {
   const { syncProviderROIFromPurchases } = await import('./roi-sync.js');
   await syncProviderROIFromPurchases(marko.id);
 
-  // 6) Chat soba i poruke
+  // 5b) Demo lead + chat za tim_clan (da vodič za tim ima stvarne podatke)
+  //    - 1 kupljen lead (Moji ekskluzivni leadovi)
+  //    - 1 interni CompanyLeadQueue red (Leadovi dodijeljeni meni)
+  //    - 1 chat soba s porukom (Tab #chat)
+  if (director?.providerProfile && tim?.providerProfile) {
+    const directorProfileId = director.providerProfile.id;
+    const timProfileId = tim.providerProfile.id;
+
+    const timJobTitle = 'Demo: tim lead queue & chat';
+    const existingTimJob = await prisma.job.findFirst({
+      where: {
+        userId: ana.id,
+        isExclusive: true,
+        title: timJobTitle,
+      },
+    });
+
+    const timJob = existingTimJob
+      ? existingTimJob
+      : await prisma.job.create({
+          data: {
+            userId: ana.id,
+            title: timJobTitle,
+            description: 'Demo posao za prikaz LeadQueue + chata člana tima.',
+            city: 'Zagreb',
+            budgetMin: 2000,
+            budgetMax: 5000,
+            status: 'OPEN',
+            isExclusive: true,
+            leadStatus: 'AVAILABLE',
+            leadPrice: 10,
+            categoryId: category.id,
+            qualityScore: 70,
+            moderationStatus: 'APPROVED',
+          },
+        });
+
+    // Interni queue red (direktor -> tim)
+    await prisma.companyLeadQueue.upsert({
+      where: { jobId_directorId: { jobId: timJob.id, directorId: directorProfileId } },
+      update: {
+        assignedToId: timProfileId,
+        assignmentType: 'MANUAL',
+        status: 'ASSIGNED',
+        assignedAt: new Date(Date.now() - 1000 * 60 * 20),
+        position: 1,
+        notes: 'Demo: dodijeljeno članu tima (screenshot vodič).',
+      },
+      create: {
+        jobId: timJob.id,
+        directorId: directorProfileId,
+        assignedToId: timProfileId,
+        position: 1,
+        status: 'ASSIGNED',
+        assignmentType: 'MANUAL',
+        assignedAt: new Date(Date.now() - 1000 * 60 * 20),
+        notes: 'Demo: dodijeljeno članu tima (screenshot vodič).',
+      },
+    });
+
+    // Kupljen lead za tim (da se "Moji ekskluzivni leadovi" popune + chat se kreira automatski)
+    const existingTimPurchase = await prisma.leadPurchase.findFirst({
+      where: {
+        jobId: timJob.id,
+        providerId: tim.id,
+        status: { not: 'REFUNDED' },
+      },
+    });
+
+    if (!existingTimPurchase) {
+      // purchaseLead zahtjeva AVAILABLE i da nije već dodijeljeno
+      await prisma.job.update({
+        where: { id: timJob.id },
+        data: { leadStatus: 'AVAILABLE', assignedProviderId: null },
+      }).catch(() => {});
+
+      try {
+        await purchaseLead(timJob.id, tim.id, {});
+      } catch (e) {
+        console.warn('[SCREENSHOT-DEMO] Tim purchaseLead failed, fallback creating LeadPurchase:', e.message);
+        // Fallback: leadPurchase + chat room (isti princip kao kod Marko fallbacka)
+        const priceInfo = getLeadPriceForJob(timJob);
+        const leadPrice = priceInfo.leadPriceCredits;
+        let canCreateTimPurchase = true;
+        try {
+          await deductCredits(tim.id, leadPrice, `Lead: ${timJob.title}`, timJob.id);
+        } catch (deductErr) {
+          console.warn('[SCREENSHOT-DEMO] deductCredits failed for tim:', deductErr.message);
+          // Bez creditsa nema purchase; preskoči samo tim purchase (nastavi seed dalje).
+          canCreateTimPurchase = false;
+        }
+
+        if (canCreateTimPurchase) {
+          const purchase = await prisma.leadPurchase.create({
+            data: {
+              jobId: timJob.id,
+              providerId: tim.id,
+              creditsSpent: leadPrice,
+              leadPrice,
+              status: 'ACTIVE',
+              contactUnlocked: false,
+            },
+          });
+
+          await prisma.job.update({
+            where: { id: timJob.id },
+            data: { assignedProviderId: tim.id, leadStatus: 'ASSIGNED' },
+          });
+
+          // Kreiraj PUBLIC chat room (da #chat nije prazan)
+          try {
+            const { createPublicChatRoom } = await import('./public-chat-service.js');
+            await createPublicChatRoom(timJob.id, tim.id);
+          } catch (chatErr) {
+            console.warn('[SCREENSHOT-DEMO] createPublicChatRoom failed for tim:', chatErr.message);
+          }
+
+          // purchase varijabla postoji samo radi debuggiranja, ali ne koristimo je dalje
+          void purchase;
+        }
+      }
+    }
+  }
+
+  // 6) Chat soba i poruke (fallback za korisnik/pružatelj vodič)
   const jobForChat = await prisma.job.findFirst({
     where: { userId: ana.id },
     orderBy: { createdAt: 'desc' },

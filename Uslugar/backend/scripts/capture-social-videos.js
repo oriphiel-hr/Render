@@ -195,20 +195,27 @@ async function runForFormat(fmtKey) {
   const page = await context.newPage();
   let lastRole = null;
   let shotIdx = 0;
-  let timer = null;
+  const screenshotTimeoutMs = parseInt(process.env.SCREENSHOT_TIMEOUT_MS || '60000', 10);
+  const screenshotMaxRetries = parseInt(process.env.SCREENSHOT_MAX_RETRIES || '2', 10);
 
-  const takeShot = async (tag) => {
+  const takeShot = async (tag, attempt = 1) => {
     const file = `${String(++shotIdx).padStart(3, '0')}-${tag}.png`;
     const p = path.join(outShots, file);
-    await page.screenshot({ path: p, fullPage: false });
+    try {
+      // Moguć je spor odgovor nakon navigacije; mali delay smanjuje flaky screenshotove.
+      await page.waitForTimeout(250);
+      await page.screenshot({ path: p, fullPage: false, timeout: screenshotTimeoutMs, animations: 'disabled' });
+    } catch (e) {
+      if (attempt <= screenshotMaxRetries) {
+        console.warn(`[SHOT] Timeout (${attempt}/${screenshotMaxRetries}). retry tag=${tag} file=${file}`);
+        await page.waitForTimeout(750);
+        return takeShot(tag, attempt + 1);
+      }
+      throw e;
+    }
   };
 
   try {
-    timer = setInterval(() => {
-      // best-effort periodic screenshots
-      takeShot('interval').catch(() => {});
-    }, SCREENSHOT_INTERVAL_MS);
-
     if (INCLUDE_EMAIL_DEMO) {
       console.log('[EMAIL DEMO] enabled. MAILPIT_API_URL=', MAILPIT_API_URL, 'MAILPIT_WEB_URL=', MAILPIT_WEB_URL);
       await recordEmailClickSegment(page, takeShot);
@@ -229,12 +236,22 @@ async function runForFormat(fmtKey) {
 
       const url = buildUrl(step.hash);
       await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-      await page.waitForTimeout(STEP_WAIT_MS);
-      await takeShot(step.name);
-      console.log('OK step:', step.name);
+      // Snimaj "češće screenshotove" ali sekvencijalno (bez setInterval) da ne dođe do paralelnog screenshotiranja.
+      const start = Date.now();
+      await takeShot(`${step.name}-0`);
+      let k = 1;
+      while (Date.now() - start < STEP_WAIT_MS) {
+        const remaining = STEP_WAIT_MS - (Date.now() - start);
+        const wait = Math.min(SCREENSHOT_INTERVAL_MS, remaining);
+        if (wait <= 400) break;
+        await page.waitForTimeout(wait);
+        if (Date.now() - start >= STEP_WAIT_MS) break;
+        await takeShot(`${step.name}-${k}`);
+        k++;
+      }
+      console.log('OK step:', step.name, 'shots:', k);
     }
   } finally {
-    if (timer) clearInterval(timer);
     await page.close();
     await context.close();
     await browser.close();
