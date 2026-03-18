@@ -13,7 +13,7 @@ const MobileMenu = ({ isOpen, onClose, children }) => {
       />
       
       {/* Menu */}
-      <div className="relative bg-white dark:bg-gray-800 h-full w-80 max-w-sm shadow-xl">
+      <div className="relative bg-white dark:bg-gray-800 h-full w-80 max-w-sm shadow-xl overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
           <h2 className="text-lg font-semibold dark:text-white">Menu</h2>
           <button

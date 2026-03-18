@@ -2398,7 +2398,10 @@ export default function App(){
       {tab === 'chat' && token && currentUserId && (
         <section id="chat" className="tab-section">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg" style={{ height: 'calc(100vh - 200px)', minHeight: '600px' }}>
+            <div
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-lg"
+              style={{ height: 'calc(100vh - 200px)', minHeight: '60vh' }}
+            >
               <ChatList
                 currentUserId={currentUserId}
                 onClose={() => setTab('user')}

@@ -392,7 +392,7 @@ const Documentation = ({ setTab }) => {
                         <img
                           src={item.image}
                           alt={`Screenshot: ${item.title}`}
-                          className="w-full h-auto object-contain max-h-[420px]"
+                          className="w-full h-auto object-contain max-h-[60vh] sm:max-h-[420px]"
                           loading="lazy"
                           onError={() => setFailedGuideImages((prev) => new Set(prev).add(item.image))}
                         />

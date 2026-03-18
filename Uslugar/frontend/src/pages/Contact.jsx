@@ -255,7 +255,7 @@ const Contact = () => {
           </div>
 
           <div className="relative">
-            <div className="w-full h-96 rounded-lg border border-gray-300 overflow-hidden" style={{ minHeight: '400px' }}>
+            <div className="w-full h-[45vh] sm:h-96 rounded-lg border border-gray-300 overflow-hidden">
               <iframe
                 src="https://www.openstreetmap.org/export/embed.html?bbox=15.9700%2C45.8100%2C15.9900%2C45.8200&layer=mapnik&marker=45.8150%2C15.9819"
                 width="100%"
