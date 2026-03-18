@@ -12,9 +12,18 @@ export default function AdminScreenshots() {
   const [videoResult, setVideoResult] = useState(null);
   const [videoFormats, setVideoFormats] = useState([]);
   const [videosLoading, setVideosLoading] = useState(false);
+  const [zipLoading, setZipLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [error, setError] = useState('');
 
   const hasFiles = files?.length > 0;
+
+  const getAbsUrl = (maybeRel) => {
+    if (!maybeRel) return maybeRel;
+    if (typeof window === 'undefined') return maybeRel;
+    if (maybeRel.startsWith('http')) return maybeRel;
+    return `${window.location.origin}${maybeRel}`;
+  };
 
   const grouped = useMemo(() => {
     const groups = { korisnik: [], pruzatelj: [], tim: [], direktor: [], ostalo: [] };
@@ -181,8 +190,13 @@ export default function AdminScreenshots() {
                   <div key={v.fileName} className="rounded border bg-white p-2">
                     <div className="text-xs text-gray-600 font-mono truncate mb-2">{v.fileName}</div>
                     <video controls className="w-full rounded" src={v.url} />
-                    <a className="text-sm text-indigo-700 hover:underline mt-2 inline-block" href={v.url} target="_blank" rel="noopener noreferrer">
-                      Preuzmi / otvori video
+                    <a
+                      className="text-sm text-indigo-700 hover:underline mt-2 inline-block"
+                      href={getAbsUrl(v.url)}
+                      download={v.fileName}
+                      title="Preuzmi video datoteku"
+                    >
+                      Preuzmi video
                     </a>
                   </div>
                 ))}
@@ -204,6 +218,50 @@ export default function AdminScreenshots() {
         ))}
       </div>
     );
+  };
+
+  const downloadAllScreenshotsZip = async () => {
+    try {
+      setZipLoading(true);
+      setError('');
+      const { data } = await api.post(
+        '/admin/docs-screenshots/download-zip',
+        { scope: 'all' },
+        { responseType: 'blob', timeout: 300000 }
+      );
+
+      const blob = data instanceof Blob ? data : new Blob([data]);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `uslugar-screenshots-${new Date().toISOString().slice(0, 10)}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      setError(e?.response?.data?.error || e.message || 'Greška pri preuzimanju ZIP-a.');
+    } finally {
+      setZipLoading(false);
+    }
+  };
+
+  const deleteAllScreenshots = async () => {
+    const ok = window.confirm('Obrisati SVE screenshotove (images) iz /docs i /docs/social/**/shots? Ova radnja je nepovratna.');
+    if (!ok) return;
+
+    try {
+      setDeleteLoading(true);
+      setError('');
+      await api.delete('/admin/docs-screenshots', { data: { scope: 'all', confirm: true } });
+      setFiles([]);
+      await refreshList();
+      await refreshVideos();
+    } catch (e) {
+      setError(e?.response?.data?.error || e.message || 'Greška pri brisanju screenshotova.');
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   return (
@@ -356,14 +414,30 @@ export default function AdminScreenshots() {
               {hasFiles ? `Pronađeno ${files.length} datoteka.` : 'Nema screenshotova u /docs.'}
             </div>
           </div>
-          <a
-            href="/docs/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-indigo-700 hover:underline"
-          >
-            Otvori `/docs` u novom tabu
-          </a>
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <a
+              href="/docs/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-indigo-700 hover:underline"
+            >
+              Otvori `/docs` u novom tabu
+            </a>
+            <button
+              onClick={downloadAllScreenshotsZip}
+              disabled={zipLoading}
+              className="px-3 py-1.5 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {zipLoading ? 'ZIP...' : '⬇️ Skini sve (ZIP)'}
+            </button>
+            <button
+              onClick={deleteAllScreenshots}
+              disabled={deleteLoading}
+              className="px-3 py-1.5 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50"
+            >
+              {deleteLoading ? 'Brišem...' : '🗑️ Obriši screenshotove'}
+            </button>
+          </div>
         </div>
 
         {hasFiles ? (

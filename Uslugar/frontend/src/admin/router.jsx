@@ -163,7 +163,8 @@ export default function AdminRouter(){
           // Nije admin ruta - preusmjeri na glavnu aplikaciju
           e.preventDefault();
           e.stopPropagation();
-          window.location.replace(href);
+          // Očisti hash (fragment) jer se inače zalijepi na odredište
+          window.location.replace(href.split('#')[0]);
           return;
         }
         // Ako je admin ruta, omogući normalno React Router navigaciju

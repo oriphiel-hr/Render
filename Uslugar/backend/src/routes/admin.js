@@ -12,6 +12,7 @@ import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'node:fs';
+import archiver from 'archiver';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -5783,6 +5784,143 @@ r.get('/docs-screenshots', auth(true, ['ADMIN']), async (req, res, next) => {
       .map((fileName) => ({ fileName, url: `/docs/${fileName}` }));
 
     res.json({ success: true, dir: docsDir, files });
+  } catch (e) {
+    next(e);
+  }
+});
+
+function isScreenshotImageFile(name) {
+  return /\.(png|jpg|jpeg|webp)$/i.test(name);
+}
+
+function collectImageFilesRecursive(dir, relBase, out, relPrefix = '') {
+  const stack = [dir];
+  while (stack.length) {
+    const current = stack.pop();
+    const entries = fs.readdirSync(current, { withFileTypes: true });
+    for (const ent of entries) {
+      const abs = path.join(current, ent.name);
+      if (ent.isDirectory()) {
+        stack.push(abs);
+        continue;
+      }
+      if (!ent.isFile()) continue;
+      if (!isScreenshotImageFile(ent.name)) continue;
+      const rel = path.relative(relBase, abs).replace(/\\/g, '/');
+      out.push({ abs, rel: relPrefix ? `${relPrefix}/${rel}` : rel });
+    }
+  }
+}
+
+/**
+ * POST /api/admin/docs-screenshots/download-zip
+ * scope: all | documentation | social-shots
+ */
+r.post('/docs-screenshots/download-zip', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const { scope = 'all' } = req.body || {};
+    const docsDir = path.join(process.cwd(), 'public', 'docs');
+    const socialDir = path.join(docsDir, 'social');
+
+    if (!fs.existsSync(docsDir)) {
+      return res.status(404).json({ error: 'public/docs ne postoji' });
+    }
+
+    const files = [];
+
+    // Documentation images: samo root folder docs/ (bez /docs/social)
+    if (scope === 'all' || scope === 'documentation') {
+      const entries = fs.readdirSync(docsDir, { withFileTypes: true });
+      for (const ent of entries) {
+        if (!ent.isFile()) continue;
+        if (!isScreenshotImageFile(ent.name)) continue;
+        files.push({
+          abs: path.join(docsDir, ent.name),
+          rel: `docs/${ent.name}`,
+        });
+      }
+    }
+
+    // Social shots: /docs/social/*/shots/
+    if (scope === 'all' || scope === 'social-shots') {
+      if (fs.existsSync(socialDir)) {
+        const shotsBase = socialDir;
+        // Rekurzivno, ali samo image fileovi; struktura ostaje kao u folderu
+        collectImageFilesRecursive(shotsBase, shotsBase, files, 'docs/social');
+      }
+    }
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="docs-screenshots-${Date.now()}.zip"`);
+
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    archive.on('warning', (err) => {
+      // ne prekida, ali logiraj
+      console.warn('[ZIP] warning:', err);
+    });
+    archive.on('error', (err) => {
+      throw err;
+    });
+    archive.pipe(res);
+
+    for (const f of files) {
+      archive.file(f.abs, { name: f.rel });
+    }
+
+    await archive.finalize();
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * DELETE /api/admin/docs-screenshots
+ * scope: all | documentation | social-shots
+ */
+r.delete('/docs-screenshots', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const { scope = 'all', confirm = false } = req.body || {};
+    if (!confirm) {
+      return res.status(400).json({ error: 'Potrebna je potvrda (confirm=true)' });
+    }
+
+    const docsDir = path.join(process.cwd(), 'public', 'docs');
+    const socialDir = path.join(docsDir, 'social');
+    if (!fs.existsSync(docsDir)) return res.json({ success: true, deleted: {} });
+
+    let deletedDocumentation = 0;
+    let deletedSocialShots = 0;
+
+    if (scope === 'all' || scope === 'documentation') {
+      const entries = fs.readdirSync(docsDir, { withFileTypes: true });
+      const toDelete = entries
+        .filter((ent) => ent.isFile())
+        .filter((ent) => isScreenshotImageFile(ent.name));
+
+      for (const ent of toDelete) {
+        await fs.promises.unlink(path.join(docsDir, ent.name)).catch(() => {});
+        deletedDocumentation++;
+      }
+    }
+
+    if (scope === 'all' || scope === 'social-shots') {
+      if (fs.existsSync(socialDir)) {
+        const files = [];
+        collectImageFilesRecursive(socialDir, socialDir, files);
+        for (const f of files) {
+          await fs.promises.unlink(f.abs).catch(() => {});
+          deletedSocialShots++;
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      deleted: {
+        documentation: deletedDocumentation,
+        socialShots: deletedSocialShots,
+      },
+    });
   } catch (e) {
     next(e);
   }
