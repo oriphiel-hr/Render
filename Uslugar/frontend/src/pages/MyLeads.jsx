@@ -2,6 +2,65 @@
 import React, { useState, useEffect } from 'react';
 import { getMyLeads, markLeadContacted, markLeadConverted, requestRefund, getCreditsBalance, exportMyLeadsCSV, exportCreditsHistoryCSV, unlockContact, getAssignedLeads, updateAssignedLeadStatus, updateLeadPurchaseCrm, getLeadActivities, addLeadNote, addLeadToCompanyQueue, getDirectorLeadQueue } from '../api/exclusive';
 
+const isDocsScreenshotMode = () =>
+  typeof window !== 'undefined' && window.location.href.includes('screenshotMode=docs');
+
+const isDocsTeamMember = () => {
+  if (!isDocsScreenshotMode()) return false;
+  try {
+    const u = JSON.parse(localStorage.getItem('user') || '{}');
+    return typeof u?.email === 'string' && u.email.includes('screenshot-tim@');
+  } catch {
+    return false;
+  }
+};
+
+function getDocsTeamAssignedQueueMock() {
+  return [{
+    id: 'docs-tim-assigned-1',
+    status: 'ASSIGNED',
+    assignedAt: new Date().toISOString(),
+    startedAt: null,
+    completedAt: null,
+    job: {
+      title: 'Sanacija krovišta nakon nevremena',
+      category: { name: 'Krovopokrivački radovi' },
+      user: { fullName: 'Ana Horvat', city: 'Zagreb' },
+    },
+    director: { companyName: 'Građevina Babić d.o.o.' },
+  }];
+}
+
+function getDocsTeamLeadsMock() {
+  return [{
+    id: 'docs-tim-lead-1',
+    jobId: 'docs-job-1',
+    status: 'ACTIVE',
+    contactUnlocked: false,
+    creditsSpent: 7,
+    createdAt: new Date().toISOString(),
+    contactedAt: null,
+    convertedAt: null,
+    notes: 'Klijent traži izlazak na teren unutar 48h.',
+    nextStep: 'Nazvati klijenta i potvrditi termin',
+    nextStepAt: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
+    job: {
+      id: 'docs-job-1',
+      title: 'Procjena štete i popravak dimnjaka',
+      description: 'Potrebna hitna procjena i sanacija dimnjaka nakon oluje. Pristup krovu osiguran.',
+      budgetMin: 1200,
+      budgetMax: 2800,
+      category: { name: 'Građevinski radovi' },
+      user: {
+        fullName: 'Ana Horvat',
+        city: 'Zagreb',
+        email: undefined,
+        phone: undefined,
+      },
+    },
+  }];
+}
+
 export default function MyLeads({ isDirector = false }) {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -42,11 +101,23 @@ export default function MyLeads({ isDirector = false }) {
   const loadAssignedLeads = async () => {
     try {
       const res = await getAssignedLeads();
-      setAssignedQueue(res.data?.queue || []);
-      setIsTeamMember(res.data?.isTeamMember || false);
+      const queue = res.data?.queue || [];
+      const teamMember = res.data?.isTeamMember || false;
+      if (queue.length === 0 && !teamMember && isDocsTeamMember()) {
+        setAssignedQueue(getDocsTeamAssignedQueueMock());
+        setIsTeamMember(true);
+        return;
+      }
+      setAssignedQueue(queue);
+      setIsTeamMember(teamMember);
     } catch (err) {
-      setAssignedQueue([]);
-      setIsTeamMember(false);
+      if (isDocsTeamMember()) {
+        setAssignedQueue(getDocsTeamAssignedQueueMock());
+        setIsTeamMember(true);
+      } else {
+        setAssignedQueue([]);
+        setIsTeamMember(false);
+      }
     }
   };
 
@@ -55,9 +126,18 @@ export default function MyLeads({ isDirector = false }) {
       setLoading(true);
       const statusFilter = filter === 'ALL' ? null : filter;
       const response = await getMyLeads(statusFilter);
-      setLeads(response.data.leads);
+      const apiLeads = response.data?.leads || [];
+      if (apiLeads.length === 0 && isDocsTeamMember()) {
+        setLeads(getDocsTeamLeadsMock());
+      } else {
+        setLeads(apiLeads);
+      }
     } catch (err) {
-      setError(err.response?.data?.error || 'Greška pri učitavanju leadova');
+      if (isDocsTeamMember()) {
+        setLeads(getDocsTeamLeadsMock());
+      } else {
+        setError(err.response?.data?.error || 'Greška pri učitavanju leadova');
+      }
     } finally {
       setLoading(false);
     }

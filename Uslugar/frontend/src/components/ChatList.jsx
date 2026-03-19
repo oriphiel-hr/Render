@@ -2,6 +2,46 @@ import React, { useState, useEffect } from 'react';
 import { getChatRooms } from '../api/chat';
 import ChatRoom from './ChatRoom';
 
+const isDocsScreenshotMode = () =>
+  typeof window !== 'undefined' && window.location.href.includes('screenshotMode=docs');
+
+const isDocsTeamMember = () => {
+  if (!isDocsScreenshotMode()) return false;
+  try {
+    const u = JSON.parse(localStorage.getItem('user') || '{}');
+    return typeof u?.email === 'string' && u.email.includes('screenshot-tim@');
+  } catch {
+    return false;
+  }
+};
+
+function getDocsTeamChatRoomsMock(currentUserId) {
+  const fallbackCurrent = currentUserId || 'docs-current-user';
+  return [{
+    id: 'docs-room-1',
+    name: 'Chat: Procjena štete i popravak dimnjaka',
+    participants: [
+      { id: fallbackCurrent, fullName: 'Petra Novak', email: 'screenshot-tim@uslugar.hr', role: 'PROVIDER' },
+      { id: 'docs-ana', fullName: 'Ana Horvat', email: 'screenshot-korisnik@uslugar.hr', role: 'USER' },
+    ],
+    job: {
+      id: 'docs-job-1',
+      title: 'Procjena štete i popravak dimnjaka',
+      status: 'OPEN',
+      userId: 'docs-ana',
+    },
+    messages: [
+      {
+        id: 'docs-msg-1',
+        content: 'Pozdrav, možemo li dogovoriti izlazak na teren sutra u 10h?',
+        senderId: 'docs-ana',
+        createdAt: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
+        sender: { id: 'docs-ana', fullName: 'Ana Horvat' },
+      },
+    ],
+  }];
+}
+
 const ChatList = ({ currentUserId, onClose }) => {
   const [rooms, setRooms] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState(null);
@@ -23,11 +63,21 @@ const ChatList = ({ currentUserId, onClose }) => {
       const list = Array.isArray(response.data)
         ? response.data
         : (response.data?.rooms ?? []);
-      setRooms(Array.isArray(list) ? list : []);
+      const parsed = Array.isArray(list) ? list : [];
+      if (parsed.length === 0 && isDocsTeamMember()) {
+        setRooms(getDocsTeamChatRoomsMock(currentUserId));
+      } else {
+        setRooms(parsed);
+      }
       setError('');
     } catch (err) {
-      console.error('Error loading chat rooms:', err);
-      setError('Greška pri učitavanju chat soba');
+      if (isDocsTeamMember()) {
+        setRooms(getDocsTeamChatRoomsMock(currentUserId));
+        setError('');
+      } else {
+        console.error('Error loading chat rooms:', err);
+        setError('Greška pri učitavanju chat soba');
+      }
     } finally {
       setLoading(false);
     }
