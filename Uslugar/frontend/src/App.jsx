@@ -58,6 +58,12 @@ export function useAuth() {
 export default function App(){
   const { token, saveToken, logout } = useAuth();
   const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const docsScreenshotStamp = (() => {
+    if (typeof window === 'undefined') return null;
+    const params = new URLSearchParams(window.location.search || '');
+    if (params.get('screenshotMode') !== 'docs') return null;
+    return params.get('screenshotStamp') || 'nostamp';
+  })();
   
   // Helper funkcija za navigaciju koja provjerava da li smo u admin panelu
   const navigateToTab = (tabName) => {
@@ -1405,6 +1411,13 @@ export default function App(){
       </MobileMenu>
 
       <main id="main-content" role="main" aria-label="Glavni sadržaj">
+      {docsScreenshotStamp && (
+        <div className="fixed top-16 right-3 z-[80] pointer-events-none">
+          <div className="px-2 py-1 rounded-md bg-black/80 text-white text-[10px] sm:text-xs font-semibold tracking-wide shadow-lg border border-white/20">
+            DOCS STAMP: {docsScreenshotStamp}
+          </div>
+        </div>
+      )}
       {tab === 'user' && (
         <section id="user" className="tab-section dark:text-gray-100" aria-labelledby="user-heading">
           <h2 id="user-heading" className="sr-only">Početna stranica</h2>

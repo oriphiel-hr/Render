@@ -28,6 +28,7 @@ const BASE_URL = process.env.BASE_URL || 'https://www.uslugar.eu';
 const OUT_DIR = process.env.OUT_DIR
   ? path.resolve(process.env.OUT_DIR)
   : path.resolve(__dirname, '..', '..', 'frontend', 'public', 'docs');
+const SCREENSHOT_STAMP = process.env.SCREENSHOT_STAMP || new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
 
 /** Ako je BASE_URL localhost, provjeri je li server pokrenut; ako ne, ispiši upute i izađi. */
 function checkBaseUrlReachable() {
@@ -115,6 +116,7 @@ async function main() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
   console.log('OUT_DIR:', OUT_DIR);
   console.log('BASE_URL:', BASE_URL);
+  console.log('SCREENSHOT_STAMP:', SCREENSHOT_STAMP);
 
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
@@ -142,7 +144,7 @@ async function main() {
       // Dodaj screenshotMode=docs query param za frontend (prikaz demo leadova u vodiču, bez utjecaja na produkciju)
       const baseWithoutHash = BASE_URL.split('#')[0];
       const hashPart = hash.startsWith('#') ? hash : '#' + hash;
-      const url = `${baseWithoutHash}?screenshotMode=docs${hashPart}`;
+      const url = `${baseWithoutHash}?screenshotMode=docs&screenshotStamp=${encodeURIComponent(SCREENSHOT_STAMP)}${hashPart}`;
       await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
       await page.waitForTimeout(2000);
 

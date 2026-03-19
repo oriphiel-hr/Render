@@ -5,16 +5,6 @@ import { getMyLeads, markLeadContacted, markLeadConverted, requestRefund, getCre
 const isDocsScreenshotMode = () =>
   typeof window !== 'undefined' && window.location.href.includes('screenshotMode=docs');
 
-const isDocsTeamMember = () => {
-  if (!isDocsScreenshotMode()) return false;
-  try {
-    const u = JSON.parse(localStorage.getItem('user') || '{}');
-    return typeof u?.email === 'string' && u.email.includes('screenshot-tim@');
-  } catch {
-    return false;
-  }
-};
-
 function getDocsTeamAssignedQueueMock() {
   return [{
     id: 'docs-tim-assigned-1',
@@ -103,7 +93,7 @@ export default function MyLeads({ isDirector = false }) {
       const res = await getAssignedLeads();
       const queue = res.data?.queue || [];
       const teamMember = res.data?.isTeamMember || false;
-      if (queue.length === 0 && !teamMember && isDocsTeamMember()) {
+      if (queue.length === 0 && !teamMember && isDocsScreenshotMode() && !isDirector) {
         setAssignedQueue(getDocsTeamAssignedQueueMock());
         setIsTeamMember(true);
         return;
@@ -111,7 +101,7 @@ export default function MyLeads({ isDirector = false }) {
       setAssignedQueue(queue);
       setIsTeamMember(teamMember);
     } catch (err) {
-      if (isDocsTeamMember()) {
+      if (isDocsScreenshotMode() && !isDirector) {
         setAssignedQueue(getDocsTeamAssignedQueueMock());
         setIsTeamMember(true);
       } else {
@@ -127,13 +117,13 @@ export default function MyLeads({ isDirector = false }) {
       const statusFilter = filter === 'ALL' ? null : filter;
       const response = await getMyLeads(statusFilter);
       const apiLeads = response.data?.leads || [];
-      if (apiLeads.length === 0 && isDocsTeamMember()) {
+      if (apiLeads.length === 0 && isDocsScreenshotMode()) {
         setLeads(getDocsTeamLeadsMock());
       } else {
         setLeads(apiLeads);
       }
     } catch (err) {
-      if (isDocsTeamMember()) {
+      if (isDocsScreenshotMode()) {
         setLeads(getDocsTeamLeadsMock());
       } else {
         setError(err.response?.data?.error || 'Greška pri učitavanju leadova');

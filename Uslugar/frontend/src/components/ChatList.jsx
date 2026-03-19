@@ -5,16 +5,6 @@ import ChatRoom from './ChatRoom';
 const isDocsScreenshotMode = () =>
   typeof window !== 'undefined' && window.location.href.includes('screenshotMode=docs');
 
-const isDocsTeamMember = () => {
-  if (!isDocsScreenshotMode()) return false;
-  try {
-    const u = JSON.parse(localStorage.getItem('user') || '{}');
-    return typeof u?.email === 'string' && u.email.includes('screenshot-tim@');
-  } catch {
-    return false;
-  }
-};
-
 function getDocsTeamChatRoomsMock(currentUserId) {
   const fallbackCurrent = currentUserId || 'docs-current-user';
   return [{
@@ -64,14 +54,14 @@ const ChatList = ({ currentUserId, onClose }) => {
         ? response.data
         : (response.data?.rooms ?? []);
       const parsed = Array.isArray(list) ? list : [];
-      if (parsed.length === 0 && isDocsTeamMember()) {
+      if (parsed.length === 0 && isDocsScreenshotMode()) {
         setRooms(getDocsTeamChatRoomsMock(currentUserId));
       } else {
         setRooms(parsed);
       }
       setError('');
     } catch (err) {
-      if (isDocsTeamMember()) {
+      if (isDocsScreenshotMode()) {
         setRooms(getDocsTeamChatRoomsMock(currentUserId));
         setError('');
       } else {
