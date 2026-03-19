@@ -38,6 +38,71 @@ const CREDENTIALS = {
   direktor: { email: process.env.TEST_EMAIL_DIREKTOR, password: process.env.TEST_PASSWORD_DIREKTOR },
 };
 
+async function applyTeamGuideVisualFallback(page, file) {
+  if (!/^guide-tim-(1|3|4)\.png$/i.test(file) && !/^moji-leadovi-team-member-mock\.png$/i.test(file)) return;
+
+  await page.evaluate((fileName) => {
+    const textIncludes = (el, txt) => !!el && (el.textContent || '').includes(txt);
+    const all = Array.from(document.querySelectorAll('*'));
+
+    // MyLeads empty states (guide-tim-1 + team-member mock)
+    if (fileName === 'guide-tim-1.png' || fileName === 'moji-leadovi-team-member-mock.png') {
+      const assignedEmpty = all.find((el) => textIncludes(el, 'Trenutno nemate dodijeljenih leadova'));
+      if (assignedEmpty) {
+        assignedEmpty.innerHTML = `
+          <div style="padding:10px 12px;border:1px solid #d1d5db;border-radius:10px;background:#f8fafc;">
+            <div style="font-weight:700;color:#111827;margin-bottom:4px;">Sanacija krovišta nakon nevremena</div>
+            <div style="font-size:12px;color:#4b5563;">📍 Zagreb · 🏷️ Krovopokrivački radovi · Klijent: Ana Horvat</div>
+            <div style="margin-top:8px;display:inline-block;font-size:12px;padding:4px 8px;border-radius:999px;background:#fef3c7;color:#92400e;font-weight:600;">Dodijeljeno</div>
+          </div>
+        `;
+      }
+
+      const leadsEmpty = all.find((el) => textIncludes(el, 'Nema leadova'));
+      if (leadsEmpty) {
+        const wrapper = leadsEmpty.closest('div');
+        if (wrapper) {
+          wrapper.innerHTML = `
+            <div style="padding:14px;border:1px solid #d1d5db;border-radius:12px;background:white;">
+              <div style="display:flex;justify-content:space-between;gap:10px;">
+                <div>
+                  <div style="font-size:20px;font-weight:700;color:#111827;">Procjena štete i popravak dimnjaka</div>
+                  <div style="color:#374151;margin-top:6px;">Hitna procjena i sanacija dimnjaka nakon oluje.</div>
+                  <div style="margin-top:8px;color:#6b7280;font-size:12px;">📍 Zagreb · 💰 1200-2800 EUR · 📅 ${new Date().toLocaleDateString('hr-HR')}</div>
+                </div>
+                <div style="height:fit-content;padding:6px 10px;border-radius:999px;background:#dbeafe;color:#1e40af;font-size:12px;font-weight:700;">ACTIVE</div>
+              </div>
+            </div>
+          `;
+        }
+      }
+    }
+
+    // Chat empty state (guide-tim-3 + guide-tim-4)
+    if (fileName === 'guide-tim-3.png' || fileName === 'guide-tim-4.png') {
+      const chatEmpty = all.find((el) => textIncludes(el, 'Nemate aktivnih razgovora'));
+      if (chatEmpty) {
+        const listContainer = chatEmpty.closest('.flex-1.overflow-y-auto') || chatEmpty.closest('div');
+        if (listContainer) {
+          listContainer.innerHTML = `
+            <div style="padding:12px 16px;border-bottom:1px solid #f3f4f6;display:flex;gap:12px;align-items:flex-start;background:#f8fafc;">
+              <div style="width:42px;height:42px;border-radius:9999px;background:#2563eb;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;">A</div>
+              <div style="min-width:0;flex:1;">
+                <div style="display:flex;justify-content:space-between;gap:8px;">
+                  <div style="font-weight:700;color:#111827;">Ana Horvat</div>
+                  <div style="font-size:12px;color:#6b7280;">Prije 18 min</div>
+                </div>
+                <div style="font-size:12px;color:#6b7280;margin-top:2px;">Procjena štete i popravak dimnjaka</div>
+                <div style="font-size:14px;color:#374151;margin-top:2px;">Pozdrav, možemo li dogovoriti izlazak na teren sutra u 10h?</div>
+              </div>
+            </div>
+          `;
+        }
+      }
+    }
+  }, file);
+}
+
 async function login(page, role) {
   const cred = CREDENTIALS[role];
   if (!cred?.email || !cred?.password) {
@@ -88,6 +153,8 @@ async function main() {
       const url = `${baseWithoutHash}?screenshotMode=docs&screenshotStamp=${encodeURIComponent(SCREENSHOT_STAMP)}${hashPart}`;
       await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
       await page.waitForTimeout(2000);
+      await applyTeamGuideVisualFallback(page, file);
+      await page.waitForTimeout(200);
 
       const outPath = path.join(OUT_DIR, file);
       await page.screenshot({ path: outPath, fullPage: false });
