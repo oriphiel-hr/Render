@@ -5692,8 +5692,10 @@ r.post('/screenshot-test-users', auth(true, ['ADMIN']), async (req, res, next) =
 r.post('/generate-docs-screenshots', auth(true, ['ADMIN']), async (req, res, next) => {
   try {
     const { users, password } = await ensureScreenshotTestUsers();
+    const demo = await ensureScreenshotDemoData();
     const baseUrl = process.env.FRONTEND_URL || req.get('origin') || 'https://www.uslugar.eu';
     const fs = await import('fs');
+    const screenshotStamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
 
     // 1) Pokušaj backend/scripts/ (cwd = backend; radi u Dockeru i na Renderu)
     const backendScript = path.join(process.cwd(), 'scripts', 'capture-docs-screenshots.js');
@@ -5712,6 +5714,7 @@ r.post('/generate-docs-screenshots', auth(true, ['ADMIN']), async (req, res, nex
       ...process.env,
       BASE_URL: baseUrl,
       OUT_DIR: outDir,
+      SCREENSHOT_STAMP: screenshotStamp,
       TEST_EMAIL_KORISNIK: userByRole.korisnik?.email,
       TEST_PASSWORD_KORISNIK: password,
       TEST_EMAIL_PRUVATELJ: userByRole.pružatelj?.email,
@@ -5757,6 +5760,8 @@ r.post('/generate-docs-screenshots', auth(true, ['ADMIN']), async (req, res, nex
       success: true,
       message: 'Screenshotovi su generirani.',
       users: users.map((u) => ({ role: u.role, email: u.email, fullName: u.fullName })),
+      demo: demo.ok ? { jobsCreated: demo.jobsCreated, leadsPurchased: demo.leadsPurchased } : { ok: false, reason: demo.reason || 'unknown' },
+      screenshotStamp,
       stdout: stdout.slice(-1500),
     });
   } catch (e) {
