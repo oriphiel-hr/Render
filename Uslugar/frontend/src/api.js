@@ -6,9 +6,24 @@ import axios from 'axios'
 // Runtime (run-single): Playwright injektira window.__USLUGAR_API_URL__; inače ?apiUrl= u URL-u ili hash.
 function getApiBase() {
   if (typeof window === 'undefined') return import.meta.env.VITE_API_URL || 'https://api.uslugar.eu';
+
+  const forceOrigin = () => {
+    try { return window.location.origin; } catch (_) {}
+    return import.meta.env.VITE_API_URL || 'https://www.uslugar.eu';
+  };
+
+  // Za docs screenshot vodiče uvijek koristimo same-origin, da izbjegnemo probleme s certifikatima na api.uslugar.eu.
+  try {
+    const params = new URLSearchParams(window.location.search || '');
+    if (params.get('screenshotMode') === 'docs') {
+      return forceOrigin();
+    }
+  } catch (_) {}
+
   const injected = window.__USLUGAR_API_URL__;
   if (injected && typeof injected === 'string') {
     try { sessionStorage.setItem('uslugar_test_api_url', injected); } catch (_) {}
+    if (/api\.uslugar\.eu/i.test(injected)) return forceOrigin();
     return injected;
   }
   let fromQuery = new URLSearchParams(window.location.search).get('apiUrl');
@@ -19,12 +34,22 @@ function getApiBase() {
   if (fromQuery) {
     try {
       sessionStorage.setItem('uslugar_test_api_url', fromQuery);
+      if (/api\.uslugar\.eu/i.test(fromQuery)) return forceOrigin();
       return fromQuery;
     } catch (_) {}
   }
   try {
     const fromStorage = sessionStorage.getItem('uslugar_test_api_url');
-    if (fromStorage) return fromStorage;
+    if (fromStorage) {
+      if (/api\.uslugar\.eu/i.test(fromStorage)) return forceOrigin();
+      return fromStorage;
+    }
+  } catch (_) {}
+  // Default fallback:
+  // - Prefer same-origin backend under `/api` when we cannot/shouldn't reach `api.uslugar.eu`
+  // - This fixes cases where `api.uslugar.eu` cert isn't trusted by the browser.
+  try {
+    return window.location.origin;
   } catch (_) {}
   return import.meta.env.VITE_API_URL || 'https://api.uslugar.eu';
 }
