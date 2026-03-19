@@ -38,6 +38,10 @@ const CREDENTIALS = {
   direktor: { email: process.env.TEST_EMAIL_DIREKTOR, password: process.env.TEST_PASSWORD_DIREKTOR },
 };
 
+function isTeamGuideFile(file) {
+  return /^guide-tim-(1|3|4)\.png$/i.test(file) || /^moji-leadovi-team-member-mock\.png$/i.test(file);
+}
+
 async function applyTeamGuideVisualFallback(page, file) {
   if (!/^guide-tim-(1|3|4)\.png$/i.test(file) && !/^moji-leadovi-team-member-mock\.png$/i.test(file)) return;
 
@@ -100,6 +104,39 @@ async function applyTeamGuideVisualFallback(page, file) {
         }
       }
     }
+
+    // Hard fallback: čak i ako selektori gore ne pogode, dodaj vidljiv demo panel
+    // kako bi screenshot tim vodiča uvijek imao konkretan sadržaj.
+    if (!document.getElementById('docs-team-hard-fallback')) {
+      const panel = document.createElement('div');
+      panel.id = 'docs-team-hard-fallback';
+      panel.style.position = 'fixed';
+      panel.style.right = '16px';
+      panel.style.bottom = '16px';
+      panel.style.zIndex = '99999';
+      panel.style.maxWidth = '420px';
+      panel.style.padding = '12px 14px';
+      panel.style.borderRadius = '12px';
+      panel.style.background = 'rgba(15, 23, 42, 0.92)';
+      panel.style.color = '#fff';
+      panel.style.boxShadow = '0 12px 30px rgba(0,0,0,0.35)';
+      panel.style.fontFamily = 'Arial, sans-serif';
+      panel.style.lineHeight = '1.35';
+      panel.style.border = '1px solid rgba(255,255,255,0.15)';
+      panel.innerHTML = fileName === 'guide-tim-1.png' || fileName === 'moji-leadovi-team-member-mock.png'
+        ? `
+          <div style="font-size:12px;font-weight:700;opacity:0.9;">DEMO PODACI (TIM)</div>
+          <div style="margin-top:6px;font-size:14px;font-weight:700;">Dodijeljeni lead: Sanacija krovišta</div>
+          <div style="font-size:12px;opacity:0.95;margin-top:2px;">Klijent: Ana Horvat · Zagreb · Status: ASSIGNED</div>
+          <div style="margin-top:8px;font-size:13px;">Ekskluzivni lead: Procjena štete i popravak dimnjaka</div>
+        `
+        : `
+          <div style="font-size:12px;font-weight:700;opacity:0.9;">DEMO CHAT (TIM)</div>
+          <div style="margin-top:6px;font-size:14px;font-weight:700;">Ana Horvat</div>
+          <div style="font-size:13px;opacity:0.98;">"Možemo li dogovoriti izlazak na teren sutra u 10h?"</div>
+        `;
+      document.body.appendChild(panel);
+    }
   }, file);
 }
 
@@ -138,11 +175,16 @@ async function main() {
       if (role && role !== lastRole) {
         const ok = await login(page, role);
         if (!ok) {
-          console.log(`[SKIP] ${file} (nema kredencijala za ${role})`);
-          await page.close();
-          continue;
+          if (isTeamGuideFile(file)) {
+            console.warn(`[FALLBACK] ${file} bez login kredencijala (${role}) - koristim screenshotMode=docs + visual fallback.`);
+            lastRole = null;
+          } else {
+            console.log(`[SKIP] ${file} (nema kredencijala za ${role})`);
+            await page.close();
+            continue;
+          }
         }
-        lastRole = role;
+        if (ok) lastRole = role;
       } else if (!role) {
         lastRole = null;
       }
