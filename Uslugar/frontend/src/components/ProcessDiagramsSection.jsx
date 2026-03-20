@@ -1,6 +1,6 @@
 // Povezani procesi - Mermaid dijagrami
 import React, { useEffect, useState, useRef } from 'react';
-import mermaid from 'mermaid';
+import mermaid from 'mermaid/dist/mermaid.min.js';
 
 function getMermaidConfig(isDark) {
   return {
