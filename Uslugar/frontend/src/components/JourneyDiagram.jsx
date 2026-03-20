@@ -1,8 +1,20 @@
 // Interaktivni "Vi ste ovdje" dijagram s Mermaid
 import React, { useEffect, useState, useRef } from 'react';
-import * as mermaidLib from 'mermaid/dist/mermaid.min.js';
-
-const mermaid = mermaidLib?.default || mermaidLib?.mermaid || mermaidLib;
+let mermaidApiPromise = null;
+async function getMermaidApi() {
+  if (!mermaidApiPromise) {
+    mermaidApiPromise = import('mermaid')
+      .then((mod) => {
+        const api = mod?.default || mod?.mermaid || mod;
+        if (api && typeof api.initialize === 'function' && typeof api.render === 'function') {
+          return api;
+        }
+        return null;
+      })
+      .catch(() => null);
+  }
+  return mermaidApiPromise;
+}
 
 function getMermaidConfig(isDark) {
   return {
@@ -32,8 +44,6 @@ function getMermaidConfig(isDark) {
     }
   };
 }
-
-mermaid.initialize(getMermaidConfig(false));
 
 export default function JourneyDiagram({ journeyStatus, onRefresh, isDarkMode }) {
   const containerRef = useRef(null);
@@ -155,23 +165,36 @@ ${classDef}
   };
 
   useEffect(() => {
-    mermaid.initialize(getMermaidConfig(!!isDarkMode));
+    (async () => {
+      const mermaid = await getMermaidApi();
+      if (mermaid) mermaid.initialize(getMermaidConfig(!!isDarkMode));
+    })();
   }, [isDarkMode]);
 
   useEffect(() => {
+    let cancelled = false;
     if (!journeyStatus || !containerRef.current) return;
     setError(null);
     const diagram = buildMermaid();
-    const id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    mermaid
-      .render(id, diagram)
-      .then(({ svg: result }) => {
-        setSvg(result);
-      })
-      .catch((err) => {
+    (async () => {
+      const mermaid = await getMermaidApi();
+      if (!mermaid) {
+        if (!cancelled) setError('Dijagram trenutno nije dostupan.');
+        return;
+      }
+      try {
+        mermaid.initialize(getMermaidConfig(!!isDarkMode));
+        const id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const { svg: result } = await mermaid.render(id, diagram);
+        if (!cancelled) setSvg(result);
+      } catch (err) {
         console.error('Mermaid render error:', err);
-        setError('Dijagram se nije mogao prikazati.');
-      });
+        if (!cancelled) setError('Dijagram se nije mogao prikazati.');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [journeyStatus, isDarkMode]);
 
   if (!journeyStatus) {

@@ -1,8 +1,21 @@
 // Povezani procesi - Mermaid dijagrami
 import React, { useEffect, useState, useRef } from 'react';
-import * as mermaidLib from 'mermaid/dist/mermaid.min.js';
 
-const mermaid = mermaidLib?.default || mermaidLib?.mermaid || mermaidLib;
+let mermaidApiPromise = null;
+async function getMermaidApi() {
+  if (!mermaidApiPromise) {
+    mermaidApiPromise = import('mermaid')
+      .then((mod) => {
+        const api = mod?.default || mod?.mermaid || mod;
+        if (api && typeof api.initialize === 'function' && typeof api.render === 'function') {
+          return api;
+        }
+        return null;
+      })
+      .catch(() => null);
+  }
+  return mermaidApiPromise;
+}
 
 function getMermaidConfig(isDark) {
   return {
@@ -119,21 +132,32 @@ function ProcessDiagramItem({ id, title, mermaidCode, isExpanded, onToggle, isDa
   const [err, setErr] = useState(null);
 
   useEffect(() => {
+    let cancelled = false;
     if (!isExpanded || !containerRef.current) {
       setSvg('');
       setErr(null);
       return;
     }
     setErr(null);
-    mermaid.initialize(getMermaidConfig(isDarkMode));
-    const diagramId = `process-${id}-${Date.now()}`;
-    mermaid
-      .render(diagramId, mermaidCode)
-      .then(({ svg: result }) => setSvg(result))
-      .catch((e) => {
+    (async () => {
+      const mermaid = await getMermaidApi();
+      if (!mermaid) {
+        if (!cancelled) setErr('Dijagram trenutno nije dostupan.');
+        return;
+      }
+      try {
+        mermaid.initialize(getMermaidConfig(isDarkMode));
+        const diagramId = `process-${id}-${Date.now()}`;
+        const { svg: result } = await mermaid.render(diagramId, mermaidCode);
+        if (!cancelled) setSvg(result);
+      } catch (e) {
         console.error('Process diagram error:', e);
-        setErr('Dijagram se nije mogao prikazati.');
-      });
+        if (!cancelled) setErr('Dijagram se nije mogao prikazati.');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [isExpanded, mermaidCode, id, isDarkMode]);
 
   return (
