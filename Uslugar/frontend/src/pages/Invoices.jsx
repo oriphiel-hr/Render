@@ -5,6 +5,66 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 
+function isDocsScreenshotMode() {
+  if (typeof window === 'undefined') return false;
+  return new URLSearchParams(window.location.search).get('screenshotMode') === 'docs';
+}
+
+function getDocsInvoicesMock() {
+  const now = Date.now();
+  return [
+    {
+      id: 'docs-inv-1',
+      invoiceNumber: '2026-0101',
+      type: 'LEAD_PURCHASE',
+      status: 'DRAFT',
+      totalAmount: 1250,
+      issueDate: new Date(now - 1000 * 60 * 60 * 24 * 1).toISOString(),
+      dueDate: new Date(now + 1000 * 60 * 60 * 24 * 13).toISOString(),
+      leadPurchase: { job: { title: 'Sanacija krova nakon nevremena' } },
+      emailSentAt: null,
+      emailSentTo: null,
+    },
+    {
+      id: 'docs-inv-2',
+      invoiceNumber: '2026-0102',
+      type: 'LEAD_PURCHASE',
+      status: 'SENT',
+      totalAmount: 2375,
+      issueDate: new Date(now - 1000 * 60 * 60 * 24 * 3).toISOString(),
+      dueDate: new Date(now + 1000 * 60 * 60 * 24 * 11).toISOString(),
+      leadPurchase: { job: { title: 'Zamjena podova i izolacija' } },
+      emailSentAt: new Date(now - 1000 * 60 * 60 * 24 * 3).toISOString(),
+      emailSentTo: 'demo-provider@uslugar.hr',
+    },
+    {
+      id: 'docs-inv-3',
+      invoiceNumber: '2026-0103',
+      type: 'ADDON',
+      status: 'PAID',
+      totalAmount: 4990,
+      issueDate: new Date(now - 1000 * 60 * 60 * 24 * 8).toISOString(),
+      dueDate: new Date(now - 1000 * 60 * 60 * 24 * 1).toISOString(),
+      addon: { displayName: '100 Extra Credits' },
+      paidAt: new Date(now - 1000 * 60 * 60 * 24 * 2).toISOString(),
+      emailSentAt: new Date(now - 1000 * 60 * 60 * 24 * 8).toISOString(),
+      emailSentTo: 'demo-provider@uslugar.hr',
+    },
+    {
+      id: 'docs-inv-4',
+      invoiceNumber: '2026-0104',
+      type: 'LEAD_PURCHASE',
+      status: 'STORNED',
+      totalAmount: 1500,
+      issueDate: new Date(now - 1000 * 60 * 60 * 24 * 5).toISOString(),
+      dueDate: new Date(now + 1000 * 60 * 60 * 24 * 9).toISOString(),
+      leadPurchase: { job: { title: 'Procjena štete i hitna sanacija dimnjaka' } },
+      emailSentAt: new Date(now - 1000 * 60 * 60 * 24 * 5).toISOString(),
+      emailSentTo: 'demo-provider@uslugar.hr',
+    },
+  ];
+}
+
 export default function Invoices() {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,10 +86,20 @@ export default function Invoices() {
       if (statusFilter !== 'all') params.status = statusFilter;
 
       const response = await api.get('/invoices', { params });
-      setInvoices(response.data.invoices || []);
+      const nextInvoices = response.data.invoices || [];
+      if (isDocsScreenshotMode() && nextInvoices.length === 0) {
+        setInvoices(getDocsInvoicesMock());
+      } else {
+        setInvoices(nextInvoices);
+      }
     } catch (err) {
       console.error('Error loading invoices:', err);
-      setError(err.response?.data?.error || 'Greška pri učitavanju faktura.');
+      if (isDocsScreenshotMode()) {
+        setInvoices(getDocsInvoicesMock());
+        setError('');
+      } else {
+        setError(err.response?.data?.error || 'Greška pri učitavanju faktura.');
+      }
     } finally {
       setLoading(false);
     }
@@ -81,7 +151,9 @@ export default function Invoices() {
   };
 
   const getTypeLabel = (type) => {
-    return type === 'SUBSCRIPTION' ? 'Pretplata' : 'Kupovina leada';
+    if (type === 'SUBSCRIPTION') return 'Pretplata';
+    if (type === 'ADDON') return 'Add-on paket';
+    return 'Kupovina leada';
   };
 
   const getStatusBadge = (status) => {
@@ -89,14 +161,16 @@ export default function Invoices() {
       DRAFT: 'text-gray-600 bg-gray-100',
       SENT: 'text-blue-600 bg-blue-100',
       PAID: 'text-green-600 bg-green-100',
-      CANCELLED: 'text-red-600 bg-red-100'
+      CANCELLED: 'text-red-600 bg-red-100',
+      STORNED: 'text-red-700 bg-red-100'
     };
     
     const labels = {
       DRAFT: 'Nacrt',
       SENT: 'Poslana',
       PAID: 'Plaćena',
-      CANCELLED: 'Otkazana'
+      CANCELLED: 'Otkazana',
+      STORNED: 'Stornirana'
     };
 
     return (
