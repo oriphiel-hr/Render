@@ -161,6 +161,10 @@ export default function AdminRouter(){
       // Relativni linkovi koji nisu hash (npr. "/", "/#login", "/#register")
       // Ako relativni link nije dio admin panela, preusmjeri na glavnu aplikaciju
       if (href.startsWith('/')) {
+        // Statički docs asseti ne smiju kroz SPA/admin redirect logiku.
+        if (href.startsWith('/docs/')) {
+          return;
+        }
         // Provjeri da li je to admin ruta
         const isAdminPath = href.startsWith('/admin/') || href === '/admin';
         

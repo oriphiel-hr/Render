@@ -46,7 +46,7 @@ export default function AdminScreenshots() {
     try {
       setFilesLoading(true);
       setError('');
-      const { data } = await api.get('/admin/docs-screenshots');
+      const { data } = await api.get('/admin/docs-screenshots', { timeout: 120000 });
       setFiles(data.files || []);
     } catch (e) {
       setError(e?.response?.data?.error || e.message || 'Greška pri učitavanju screenshotova.');
@@ -59,7 +59,7 @@ export default function AdminScreenshots() {
     try {
       setVideosLoading(true);
       setError('');
-      const { data } = await api.get('/admin/docs-social-videos');
+      const { data } = await api.get('/admin/docs-social-videos', { timeout: 120000 });
       setVideoFormats(data.formats || []);
     } catch (e) {
       setError(e?.response?.data?.error || e.message || 'Greška pri učitavanju videa.');
@@ -78,7 +78,7 @@ export default function AdminScreenshots() {
       setLoadingUsers(true);
       setError('');
       setUsersResult(null);
-      const { data } = await api.post('/admin/screenshot-test-users');
+      const { data } = await api.post('/admin/screenshot-test-users', {}, { timeout: 180000 });
       setUsersResult(data);
     } catch (e) {
       setError(e?.response?.data?.error || e.message || 'Greška pri kreiranju testnih korisnika.');
@@ -179,7 +179,7 @@ export default function AdminScreenshots() {
                 )}
               </div>
               <a
-                href={`/docs/social/${fmt.formatDir}/`}
+                href={getAbsUrl(`/docs/social/${fmt.formatDir}/`)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sm text-indigo-700 hover:underline"
@@ -280,7 +280,7 @@ export default function AdminScreenshots() {
     try {
       setDeleteLoading(true);
       setError('');
-      await api.delete('/admin/docs-screenshots', { data: { scope: 'all', confirm: true } });
+      await api.delete('/admin/docs-screenshots', { data: { scope: 'all', confirm: true }, timeout: 180000 });
       setFiles([]);
       await refreshList();
       await refreshVideos();
