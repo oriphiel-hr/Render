@@ -19,8 +19,8 @@ export async function incrementTeamLocationLeadStats(providerUserId, job, stats 
 
   const profile = await prisma.providerProfile.findUnique({
     where: { userId: providerUserId },
-    select: { id: true, companyId: true },
     include: {
+      user: { select: { id: true } },
       teamLocations: {
         where: { isActive: true },
         select: { id: true, latitude: true, longitude: true, radiusKm: true, city: true, isPrimary: true }
@@ -29,12 +29,16 @@ export async function incrementTeamLocationLeadStats(providerUserId, job, stats 
   });
 
   if (!profile) return;
+  const profileWithUser = {
+    ...profile,
+    userId: profile.user?.id
+  };
 
-  let teamLocations = profile.teamLocations ?? [];
+  let teamLocations = profileWithUser.teamLocations ?? [];
   // Član tima nema vlastite lokacije – koristi direktorove (Tim A, Tim B…)
-  if (teamLocations.length === 0 && profile.companyId) {
+  if (teamLocations.length === 0 && profileWithUser.companyId) {
     const company = await prisma.providerProfile.findUnique({
-      where: { id: profile.companyId },
+      where: { id: profileWithUser.companyId },
       include: {
         teamLocations: {
           where: { isActive: true },

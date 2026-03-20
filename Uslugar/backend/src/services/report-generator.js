@@ -35,14 +35,6 @@ export async function generateMonthlyReport(providerId, year, month) {
       },
       include: {
         job: {
-          include: {
-            category: {
-              select: {
-                name: true,
-                icon: true
-              }
-            }
-          },
           select: {
             id: true,
             title: true,
@@ -50,7 +42,12 @@ export async function generateMonthlyReport(providerId, year, month) {
             budgetMax: true,
             city: true,
             qualityScore: true,
-            category: true
+            category: {
+              select: {
+                name: true,
+                icon: true
+              }
+            }
           }
         }
       },
@@ -176,14 +173,6 @@ export async function generateYearlyReport(providerId, year) {
       },
       include: {
         job: {
-          include: {
-            category: {
-              select: {
-                name: true,
-                icon: true
-              }
-            }
-          },
           select: {
             id: true,
             title: true,
@@ -191,7 +180,12 @@ export async function generateYearlyReport(providerId, year) {
             budgetMax: true,
             city: true,
             qualityScore: true,
-            category: true
+            category: {
+              select: {
+                name: true,
+                icon: true
+              }
+            }
           }
         }
       },
