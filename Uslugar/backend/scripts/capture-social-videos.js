@@ -51,9 +51,15 @@ const STEPS = [
   { name: 'user-dashboard', hash: '#user', role: 'korisnik' },
   { name: 'user-my-jobs', hash: '#my-jobs', role: 'korisnik' },
   { name: 'provider-leads', hash: '#leads', role: 'pružatelj' },
+  { name: 'provider-pricing', hash: '#pricing', role: null },
+  { name: 'provider-subscription', hash: '#subscription', role: 'pružatelj', waitMs: 3200 },
+  { name: 'provider-my-leads-refund', hash: '#my-leads', role: 'pružatelj', waitMs: 3200 },
   { name: 'provider-roi', hash: '#roi', role: 'pružatelj' },
+  { name: 'director-invoices', hash: '#invoices', role: 'direktor', waitMs: 3200 },
+  { name: 'director-my-leads-refund', hash: '#my-leads', role: 'direktor', waitMs: 3200 },
   { name: 'director', hash: '#director', role: 'direktor' },
   { name: 'team-my-leads', hash: '#my-leads', role: 'tim_clan' },
+  { name: 'team-chat', hash: '#chat', role: 'tim_clan', waitMs: 3200 },
   { name: 'chat', hash: '#chat', role: 'korisnik' },
 ];
 
@@ -237,15 +243,16 @@ async function runForFormat(fmtKey) {
       const url = buildUrl(step.hash);
       await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
       // Snimaj "češće screenshotove" ali sekvencijalno (bez setInterval) da ne dođe do paralelnog screenshotiranja.
+      const stepWaitMs = Number(step.waitMs || STEP_WAIT_MS);
       const start = Date.now();
       await takeShot(`${step.name}-0`);
       let k = 1;
-      while (Date.now() - start < STEP_WAIT_MS) {
-        const remaining = STEP_WAIT_MS - (Date.now() - start);
+      while (Date.now() - start < stepWaitMs) {
+        const remaining = stepWaitMs - (Date.now() - start);
         const wait = Math.min(SCREENSHOT_INTERVAL_MS, remaining);
         if (wait <= 400) break;
         await page.waitForTimeout(wait);
-        if (Date.now() - start >= STEP_WAIT_MS) break;
+        if (Date.now() - start >= stepWaitMs) break;
         await takeShot(`${step.name}-${k}`);
         k++;
       }

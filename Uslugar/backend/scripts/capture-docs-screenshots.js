@@ -24,6 +24,12 @@ const SCREENSHOTS = [
   { file: 'moji-leadovi-direktor-mock.png', hash: '#my-leads', role: 'direktor' },
   { file: 'guide-pruzatelj-5.png', hash: '#pricing', role: null },
   { file: 'guide-pruzatelj-6.png', hash: '#roi', role: 'pružatelj' },
+  // --- Financije / paketi / refund (prosireni demo)
+  { file: 'guide-finance-pricing-packages.png', hash: '#pricing', role: null },
+  { file: 'guide-finance-subscription-packages.png', hash: '#subscription', role: 'pružatelj' },
+  { file: 'guide-finance-invoices-list.png', hash: '#invoices', role: 'direktor' },
+  { file: 'guide-refund-provider-my-leads.png', hash: '#my-leads', role: 'pružatelj' },
+  { file: 'guide-refund-director-my-leads.png', hash: '#my-leads', role: 'direktor' },
   { file: 'guide-tim-1.png', hash: '#my-leads', role: 'tim_clan' },
   { file: 'moji-leadovi-team-member-mock.png', hash: '#my-leads', role: 'tim_clan' },
   { file: 'guide-tim-3.png', hash: '#chat', role: 'tim_clan' },
