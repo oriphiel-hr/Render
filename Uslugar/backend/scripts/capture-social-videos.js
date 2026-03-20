@@ -168,13 +168,44 @@ async function login(page, role) {
     console.warn(`[SKIP] Nema kredencijala za ${role}.`);
     return false;
   }
-  await page.goto(`${BASE_URL}#login`, { waitUntil: 'networkidle' });
-  await page.waitForSelector('input[name="email"], input[type="email"]', { timeout: 10000 });
-  await page.fill('input[name="email"], input[type="email"]', cred.email);
-  await page.fill('input[name="password"], input[type="password"]', cred.password);
-  await page.click('form[aria-label="Prijava forma"] button[type="submit"], button[type="submit"]');
-  await page.waitForTimeout(3000);
-  return true;
+  const emailSelector = 'input[name="email"], input[type="email"]';
+  const passSelector = 'input[name="password"], input[type="password"]';
+  const submitSelector = 'form[aria-label="Prijava forma"] button[type="submit"], button[type="submit"]';
+  const loginUrl = buildUrl('#login');
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      await page.goto(loginUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForTimeout(1200);
+
+      // Ako forma nije odmah dostupna (spor SPA mount), probaj reset auth state i ponovno učitaj.
+      const hasEmailInput = await page.locator(emailSelector).first().isVisible({ timeout: 5000 }).catch(() => false);
+      if (!hasEmailInput) {
+        await page.context().clearCookies().catch(() => {});
+        await page.evaluate(() => {
+          try { localStorage.clear(); } catch (_) {}
+          try { sessionStorage.clear(); } catch (_) {}
+        }).catch(() => {});
+        await page.goto(loginUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        await page.waitForSelector(emailSelector, { timeout: 10000 });
+      }
+
+      await page.fill(emailSelector, cred.email);
+      await page.fill(passSelector, cred.password);
+      await page.click(submitSelector);
+      await page.waitForTimeout(3000);
+      return true;
+    } catch (e) {
+      console.warn(`[LOGIN] Pokušaj ${attempt}/3 nije uspio za role=${role}: ${e.message}`);
+      if (attempt === 3) {
+        console.warn(`[SKIP] Login preskočen za ${role} nakon 3 pokušaja.`);
+        return false;
+      }
+      await page.waitForTimeout(1200);
+    }
+  }
+
+  return false;
 }
 
 async function runForFormat(fmtKey) {
