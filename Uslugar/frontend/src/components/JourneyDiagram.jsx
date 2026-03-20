@@ -1,6 +1,8 @@
 // Interaktivni "Vi ste ovdje" dijagram s Mermaid
 import React, { useEffect, useState, useRef } from 'react';
-import mermaid from 'mermaid/dist/mermaid.min.js';
+import * as mermaidLib from 'mermaid/dist/mermaid.min.js';
+
+const mermaid = mermaidLib?.default || mermaidLib?.mermaid || mermaidLib;
 
 function getMermaidConfig(isDark) {
   return {
