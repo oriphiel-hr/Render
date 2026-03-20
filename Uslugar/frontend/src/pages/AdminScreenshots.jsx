@@ -117,8 +117,8 @@ export default function AdminScreenshots() {
       setVideoResult(null);
       const { data } = await api.post(
         '/admin/generate-social-videos',
-        { videoFormat: 'all', intervalMs: 2000, stepWaitMs: 2500 },
-        { timeout: 300000 }
+        { videoFormat: 'all', intervalMs: 1800, stepWaitMs: 1800 },
+        { timeout: 900000 }
       );
       setVideoResult(data);
       await refreshVideos();
