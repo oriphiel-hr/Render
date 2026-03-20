@@ -3009,7 +3009,7 @@ export default function AdminTesting(){
                   setScreenshotTestUsersResult(null)
                   setScreenshotGenLoading(true)
                   try {
-                    const { data } = await api.post('/admin/generate-docs-screenshots', {}, { timeout: 180000 });
+                    const { data } = await api.post('/admin/generate-docs-screenshots', {}, { timeout: 600000 });
                     setScreenshotGenResult(data)
                   } catch (err) {
                     const d = err.response?.data || {}

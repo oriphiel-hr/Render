@@ -92,7 +92,7 @@ export default function AdminScreenshots() {
       setLoadingScreenshots(true);
       setError('');
       setGenResult(null);
-      const { data } = await api.post('/admin/generate-docs-screenshots', {}, { timeout: 180000 });
+      const { data } = await api.post('/admin/generate-docs-screenshots', {}, { timeout: 600000 });
       setGenResult(data);
       await refreshList();
     } catch (e) {
