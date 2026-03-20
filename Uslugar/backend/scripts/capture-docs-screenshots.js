@@ -42,6 +42,32 @@ function isTeamGuideFile(file) {
   return /^guide-tim-(1|3|4)\.png$/i.test(file) || /^moji-leadovi-team-member-mock\.png$/i.test(file);
 }
 
+async function waitForTeamGuideContent(page, file) {
+  if (!isTeamGuideFile(file)) return;
+  const timeoutMs = 12000;
+  try {
+    await page.waitForFunction((fileName) => {
+      const txt = (document.body?.innerText || '').replace(/\s+/g, ' ').trim();
+      if (!txt) return false;
+      if (fileName === 'guide-tim-1.png' || fileName === 'moji-leadovi-team-member-mock.png') {
+        // Čekaj da nestane prazan state ili da se pojavi konkretan content.
+        const hasEmptyAssigned = txt.includes('Trenutno nemate dodijeljenih leadova');
+        const hasEmptyLeads = txt.includes('Nema leadova');
+        const hasAssignedHeader = txt.includes('Leadovi dodijeljeni meni');
+        const hasLeadSignals = txt.includes('ACTIVE') || txt.includes('Dodijeljeno') || txt.includes('Klijent:');
+        return hasAssignedHeader && (!hasEmptyAssigned || !hasEmptyLeads || hasLeadSignals);
+      }
+      // guide-tim-3 / guide-tim-4 (chat)
+      const hasChatHeader = txt.includes('Nove poruke');
+      const hasEmptyChat = txt.includes('Nemate aktivnih razgovora');
+      const hasConversationSignals = txt.includes('Čeka vaš odgovor') || txt.includes('Prije') || txt.includes('Ana Horvat') || txt.includes('Chat:');
+      return hasChatHeader && (!hasEmptyChat || hasConversationSignals);
+    }, file, { timeout: timeoutMs });
+  } catch (_) {
+    // Ako timeout istekne, fallback ionako ubacuje demo sadržaj.
+  }
+}
+
 async function applyTeamGuideVisualFallback(page, file) {
   if (!/^guide-tim-(1|3|4)\.png$/i.test(file) && !/^moji-leadovi-team-member-mock\.png$/i.test(file)) return;
 
@@ -195,6 +221,7 @@ async function main() {
       const url = `${baseWithoutHash}?screenshotMode=docs&screenshotStamp=${encodeURIComponent(SCREENSHOT_STAMP)}${hashPart}`;
       await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
       await page.waitForTimeout(2000);
+      await waitForTeamGuideContent(page, file);
       await applyTeamGuideVisualFallback(page, file);
       await page.waitForTimeout(200);
 
