@@ -45,6 +45,14 @@ const Documentation = ({ setTab }) => {
   const [isTeamMember, setIsTeamMember] = useState(false);
   const [failedGuideImages, setFailedGuideImages] = useState(() => new Set());
 
+  const resolveGuideImageUrl = (src) => {
+    if (!src) return src;
+    if (src.startsWith('http')) return src;
+    const apiBase = (api?.defaults?.baseURL || '').replace(/\/api\/?$/, '');
+    if (src.startsWith('/docs/') && apiBase) return `${apiBase}${src}`;
+    return src;
+  };
+
   const docRole = getDocumentationRole();
   const verificationInfo = getVerificationInfo();
   const effectiveGuideRole = (docRole === 'pružatelj' && isTeamMember) ? 'tim_clan' : (docRole ?? selectedGuideRole);
@@ -390,7 +398,7 @@ const Documentation = ({ setTab }) => {
                         </div>
                       ) : (
                         <img
-                          src={item.image}
+                          src={resolveGuideImageUrl(item.image)}
                           alt={`Screenshot: ${item.title}`}
                           className="w-full h-auto object-contain max-h-[60vh] sm:max-h-[420px]"
                           loading="lazy"

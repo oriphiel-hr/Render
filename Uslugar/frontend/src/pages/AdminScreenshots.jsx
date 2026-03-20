@@ -24,6 +24,8 @@ export default function AdminScreenshots() {
     // Ukloni fragment (npr. #time-landing) da ne ode u browserove blob/capture modove
     const clean = maybeRel.split('#')[0];
     if (clean.startsWith('http')) return clean;
+    const apiOrigin = (api?.defaults?.baseURL || '').replace(/\/api\/?$/, '');
+    if (clean.startsWith('/docs/') && apiOrigin) return `${apiOrigin}${clean}`;
     return `${window.location.origin}${clean}`;
   };
 
@@ -140,7 +142,7 @@ export default function AdminScreenshots() {
         {items.map((f) => (
           <a
             key={f.fileName}
-            href={f.url}
+            href={getAbsUrl(f.url)}
             target="_blank"
             rel="noopener noreferrer"
             className="group rounded-lg border bg-white hover:shadow transition overflow-hidden"
@@ -148,7 +150,7 @@ export default function AdminScreenshots() {
           >
             <div className="aspect-[16/10] bg-gray-50 overflow-hidden">
               <img
-                src={f.url}
+                src={getAbsUrl(f.url)}
                 alt={f.fileName}
                 className="w-full h-full object-cover group-hover:scale-[1.01] transition"
                 loading="lazy"
@@ -191,7 +193,7 @@ export default function AdminScreenshots() {
                 {fmt.videos.map((v) => (
                   <div key={v.fileName} className="rounded border bg-white p-2">
                     <div className="text-xs text-gray-600 font-mono truncate mb-2">{v.fileName}</div>
-                    <video controls className="w-full rounded" src={v.url} />
+                    <video controls className="w-full rounded" src={getAbsUrl(v.url)} />
                     <button
                       type="button"
                       className="text-sm text-indigo-700 hover:underline mt-2 inline-block"
