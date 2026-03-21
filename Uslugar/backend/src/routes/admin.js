@@ -5880,7 +5880,7 @@ r.post('/docs-screenshots/download-zip', auth(true, ['ADMIN']), async (req, res,
 
 /**
  * DELETE /api/admin/docs-screenshots
- * scope: all | documentation | social-shots
+ * scope: all | documentation | social-shots | social-videos | social-all
  */
 r.delete('/docs-screenshots', auth(true, ['ADMIN']), async (req, res, next) => {
   try {
@@ -5895,6 +5895,7 @@ r.delete('/docs-screenshots', auth(true, ['ADMIN']), async (req, res, next) => {
 
     let deletedDocumentation = 0;
     let deletedSocialShots = 0;
+    let deletedSocialVideos = 0;
 
     if (scope === 'all' || scope === 'documentation') {
       const entries = fs.readdirSync(docsDir, { withFileTypes: true });
@@ -5919,11 +5920,33 @@ r.delete('/docs-screenshots', auth(true, ['ADMIN']), async (req, res, next) => {
       }
     }
 
+    if (scope === 'social-videos' || scope === 'social-all') {
+      if (fs.existsSync(socialDir)) {
+        const walkDirs = [socialDir];
+        while (walkDirs.length > 0) {
+          const dir = walkDirs.pop();
+          const entries = fs.readdirSync(dir, { withFileTypes: true });
+          for (const ent of entries) {
+            const abs = path.join(dir, ent.name);
+            if (ent.isDirectory()) {
+              walkDirs.push(abs);
+              continue;
+            }
+            if (/\.(webm|mp4)$/i.test(ent.name)) {
+              await fs.promises.unlink(abs).catch(() => {});
+              deletedSocialVideos++;
+            }
+          }
+        }
+      }
+    }
+
     res.json({
       success: true,
       deleted: {
         documentation: deletedDocumentation,
         socialShots: deletedSocialShots,
+        socialVideos: deletedSocialVideos,
       },
     });
   } catch (e) {

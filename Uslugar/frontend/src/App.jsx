@@ -62,7 +62,7 @@ export default function App(){
     if (typeof window === 'undefined') return null;
     const params = new URLSearchParams(window.location.search || '');
     if (params.get('screenshotMode') !== 'docs') return null;
-    return params.get('screenshotStamp') || 'nostamp';
+    return params.get('screenshotStamp') || null;
   })();
   
   // Helper funkcija za navigaciju koja provjerava da li smo u admin panelu

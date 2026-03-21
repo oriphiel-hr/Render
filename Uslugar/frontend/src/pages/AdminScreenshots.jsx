@@ -14,6 +14,7 @@ export default function AdminScreenshots() {
   const [videosLoading, setVideosLoading] = useState(false);
   const [zipLoading, setZipLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteVideosLoading, setDeleteVideosLoading] = useState(false);
   const [error, setError] = useState('');
 
   const hasFiles = files?.length > 0;
@@ -291,6 +292,22 @@ export default function AdminScreenshots() {
     }
   };
 
+  const deleteAllSocialVideos = async () => {
+    const ok = window.confirm('Obrisati SVE social video datoteke (.webm/.mp4) iz /docs/social? Ova radnja je nepovratna.');
+    if (!ok) return;
+
+    try {
+      setDeleteVideosLoading(true);
+      setError('');
+      await api.delete('/admin/docs-screenshots', { data: { scope: 'social-videos', confirm: true }, timeout: 180000 });
+      await refreshVideos();
+    } catch (e) {
+      setError(e?.response?.data?.error || e.message || 'Greška pri brisanju social videa.');
+    } finally {
+      setDeleteVideosLoading(false);
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -422,13 +439,22 @@ export default function AdminScreenshots() {
               TikTok/Reels (9:16), YouTube (16:9), Square (1:1) + česti screenshotovi tijekom snimanja.
             </div>
           </div>
-          <button
-            onClick={refreshVideos}
-            disabled={videosLoading}
-            className="px-4 py-2 border rounded hover:bg-gray-50 disabled:opacity-50"
-          >
-            {videosLoading ? 'Učitavam…' : '↻ Osvježi videe'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={deleteAllSocialVideos}
+              disabled={deleteVideosLoading}
+              className="px-3 py-1.5 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50"
+            >
+              {deleteVideosLoading ? 'Brišem videe...' : '🗑️ Obriši social videe'}
+            </button>
+            <button
+              onClick={refreshVideos}
+              disabled={videosLoading}
+              className="px-4 py-2 border rounded hover:bg-gray-50 disabled:opacity-50"
+            >
+              {videosLoading ? 'Učitavam…' : '↻ Osvježi videe'}
+            </button>
+          </div>
         </div>
         {renderVideos()}
       </div>
