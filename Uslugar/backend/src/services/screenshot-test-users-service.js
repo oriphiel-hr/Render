@@ -11,14 +11,21 @@ const DOMAIN = process.env.SCREENSHOT_TEST_DOMAIN || 'uslugar.hr';
 
 /** Definicija 4 testna korisnika: email suffix, fullName, role, za pružatelje: isDirector, companyId */
 const DEFINITIONS = [
-  { suffix: 'korisnik', fullName: 'Ana Horvat', role: 'USER' },
+  { suffix: 'korisnik', fullName: 'Milan Babić', role: 'USER' },
   { suffix: 'pružatelj', fullName: 'Marko Kovač', role: 'PROVIDER' },
   { suffix: 'direktor', fullName: 'Ivan Babić', role: 'PROVIDER', isDirector: true },
   { suffix: 'tim', fullName: 'Petra Novak', role: 'PROVIDER', isTeamMember: true },
 ];
 
 function email(suffix) {
-  return `screenshot-${suffix}@${DOMAIN}`;
+  const localBySuffix = {
+    korisnik: 'milan.babic',
+    'pružatelj': 'marko.kovac',
+    direktor: 'ivan.babic',
+    tim: 'petra.novak',
+  };
+  const localPart = localBySuffix[suffix] || `screenshot-${suffix}`;
+  return `${localPart}@${DOMAIN}`;
 }
 
 /**
@@ -42,13 +49,20 @@ export async function ensureScreenshotTestUsers() {
     });
 
     if (existing) {
+      // Održi konzistentna demo imena kroz sve snimke.
+      if (existing.fullName !== def.fullName) {
+        await prisma.user.update({
+          where: { id: existing.id },
+          data: { fullName: def.fullName },
+        });
+      }
       if (def.isDirector && existing.providerProfile) {
         directorProfileId = existing.providerProfile.id;
       }
       results.push({
         role: def.suffix,
         email: em,
-        fullName: existing.fullName,
+        fullName: def.fullName,
       });
       continue;
     }

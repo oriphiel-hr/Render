@@ -9,6 +9,7 @@ export default function AdminScreenshots() {
   const [files, setFiles] = useState([]);
   const [filesLoading, setFilesLoading] = useState(false);
   const [videoLoading, setVideoLoading] = useState(false);
+  const [videoLoadingLabel, setVideoLoadingLabel] = useState('');
   const [videoResult, setVideoResult] = useState(null);
   const [videoFormats, setVideoFormats] = useState([]);
   const [videosLoading, setVideosLoading] = useState(false);
@@ -111,14 +112,22 @@ export default function AdminScreenshots() {
     }
   };
 
-  const generateVideos = async () => {
+  const generateVideos = async (videoFormat = 'all') => {
+    const labels = {
+      all: 'TikTok/YT/FB',
+      tiktok: 'TikTok',
+      youtube: 'YouTube',
+      facebook: 'Facebook',
+    };
+    const currentLabel = labels[videoFormat] || String(videoFormat);
     try {
       setVideoLoading(true);
+      setVideoLoadingLabel(currentLabel);
       setError('');
       setVideoResult(null);
       const { data } = await api.post(
         '/admin/generate-social-videos',
-        { videoFormat: 'all', intervalMs: 1800, stepWaitMs: 1800 },
+        { videoFormat, intervalMs: 1800, stepWaitMs: 1800 },
         { timeout: 900000 }
       );
       setVideoResult(data);
@@ -133,6 +142,7 @@ export default function AdminScreenshots() {
       });
     } finally {
       setVideoLoading(false);
+      setVideoLoadingLabel('');
     }
   };
 
@@ -168,8 +178,20 @@ export default function AdminScreenshots() {
     if (!videoFormats?.length) {
       return <div className="text-sm text-gray-600">Nema videa u `/docs/social`.</div>;
     }
+
+    const getFormatOpenUrl = (fmt) => {
+      const firstVideo = fmt?.videos?.[0]?.url;
+      if (firstVideo) return getAbsUrl(firstVideo);
+      const firstShot = fmt?.shots?.[0]?.url;
+      if (firstShot) return getAbsUrl(firstShot);
+      return getAbsUrl(`/docs/social/${fmt.formatDir}/manifest.json`);
+    };
+
     return (
       <div className="space-y-8">
+        <div className="text-xs text-gray-500">
+          Pronađeno formata: {videoFormats.length}
+        </div>
         {videoFormats.map((fmt) => (
           <section key={fmt.formatDir} className="border rounded-lg p-3">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
@@ -180,12 +202,12 @@ export default function AdminScreenshots() {
                 )}
               </div>
               <a
-                href={getAbsUrl(`/docs/social/${fmt.formatDir}/`)}
+                href={getFormatOpenUrl(fmt)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sm text-indigo-700 hover:underline"
               >
-                Otvori folder
+                Otvori datoteku
               </a>
             </div>
 
@@ -347,11 +369,32 @@ export default function AdminScreenshots() {
               {loadingScreenshots ? 'Generiram…' : '📸 Generiraj screenshotove vodiča'}
             </button>
             <button
-              onClick={generateVideos}
+              onClick={() => generateVideos('all')}
               disabled={videoLoading}
               className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
             >
-              {videoLoading ? 'Snimam…' : '🎬 Generiraj social video (TikTok/YT/FB)'}
+              {videoLoading ? `Snimam ${videoLoadingLabel}…` : '🎬 Generiraj social video (TikTok/YT/FB)'}
+            </button>
+            <button
+              onClick={() => generateVideos('tiktok')}
+              disabled={videoLoading}
+              className="px-4 py-2 bg-fuchsia-600 text-white rounded hover:bg-fuchsia-700 disabled:opacity-50"
+            >
+              {videoLoading && videoLoadingLabel === 'TikTok' ? 'Snimam TikTok…' : '🎵 TikTok'}
+            </button>
+            <button
+              onClick={() => generateVideos('youtube')}
+              disabled={videoLoading}
+              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+            >
+              {videoLoading && videoLoadingLabel === 'YouTube' ? 'Snimam YouTube…' : '▶️ YouTube'}
+            </button>
+            <button
+              onClick={() => generateVideos('facebook')}
+              disabled={videoLoading}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            >
+              {videoLoading && videoLoadingLabel === 'Facebook' ? 'Snimam Facebook…' : '📘 Facebook'}
             </button>
             <button
               onClick={refreshList}

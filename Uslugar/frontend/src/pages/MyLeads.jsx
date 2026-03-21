@@ -15,7 +15,7 @@ function getDocsTeamAssignedQueueMock() {
     job: {
       title: 'Sanacija krovišta nakon nevremena',
       category: { name: 'Krovopokrivački radovi' },
-      user: { fullName: 'Ana Horvat', city: 'Zagreb' },
+      user: { fullName: 'Milan Babić', city: 'Zagreb' },
     },
     director: { companyName: 'Građevina Babić d.o.o.' },
   }];
@@ -42,7 +42,7 @@ function getDocsTeamLeadsMock() {
       budgetMax: 2800,
       category: { name: 'Građevinski radovi' },
       user: {
-        fullName: 'Ana Horvat',
+        fullName: 'Milan Babić',
         city: 'Zagreb',
         email: undefined,
         phone: undefined,

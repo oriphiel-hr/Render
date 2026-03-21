@@ -19,7 +19,7 @@ const DEMO_LEADS = [
     urgency: 'HIGH',
     distanceKm: 3,
     user: {
-      fullName: 'Ana Horvat',
+      fullName: 'Milan Babić',
       clientVerification: { phoneVerified: true, emailVerified: true, companyVerified: false },
     },
   },
@@ -36,7 +36,7 @@ const DEMO_LEADS = [
     urgency: 'NORMAL',
     distanceKm: 15,
     user: {
-      fullName: 'Ivana Kovač',
+      fullName: 'Milan Babić',
       clientVerification: { phoneVerified: true, emailVerified: true, companyVerified: true },
     },
   },
@@ -53,7 +53,7 @@ const DEMO_LEADS = [
     urgency: 'URGENT',
     distanceKm: 7,
     user: {
-      fullName: 'Marko Barić',
+      fullName: 'Milan Babić',
       clientVerification: { phoneVerified: true, emailVerified: true, companyVerified: false },
     },
   },

@@ -11,8 +11,8 @@ function getDocsTeamChatRoomsMock(currentUserId) {
     id: 'docs-room-1',
     name: 'Chat: Procjena štete i popravak dimnjaka',
     participants: [
-      { id: fallbackCurrent, fullName: 'Petra Novak', email: 'screenshot-tim@uslugar.hr', role: 'PROVIDER' },
-      { id: 'docs-ana', fullName: 'Ana Horvat', email: 'screenshot-korisnik@uslugar.hr', role: 'USER' },
+      { id: fallbackCurrent, fullName: 'Petra Novak', email: 'petra.novak@uslugar.hr', role: 'PROVIDER' },
+      { id: 'docs-ana', fullName: 'Milan Babić', email: 'milan.babic@uslugar.hr', role: 'USER' },
     ],
     job: {
       id: 'docs-job-1',
@@ -26,7 +26,7 @@ function getDocsTeamChatRoomsMock(currentUserId) {
         content: 'Pozdrav, možemo li dogovoriti izlazak na teren sutra u 10h?',
         senderId: 'docs-ana',
         createdAt: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
-        sender: { id: 'docs-ana', fullName: 'Ana Horvat' },
+        sender: { id: 'docs-ana', fullName: 'Milan Babić' },
       },
     ],
   }];

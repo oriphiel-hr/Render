@@ -112,11 +112,11 @@ async function recordEmailClickSegment(page, takeShot) {
     // Kreiraj/azuriraj korisnika s verificationToken (da klik ima smisla)
     await prisma.user.upsert({
       where: { email_role: { email: demoEmail, role: 'USER' } },
-      update: { verificationToken: token, tokenExpiresAt: new Date(Date.now() + 1000 * 60 * 60), isVerified: false, fullName: 'Video Demo Korisnik' },
+      update: { verificationToken: token, tokenExpiresAt: new Date(Date.now() + 1000 * 60 * 60), isVerified: false, fullName: 'Milan Babić' },
       create: {
         email: demoEmail,
         role: 'USER',
-        fullName: 'Video Demo Korisnik',
+        fullName: 'Milan Babić',
         passwordHash: '$2a$10$2k4mY5pQhF/2u8g3kq7g1eZB3xJ6xZtK1zQZp9pWm2p2bQb0QeY8G', // dummy; login nije potreban
         isVerified: false,
         verificationToken: token,
@@ -125,7 +125,7 @@ async function recordEmailClickSegment(page, takeShot) {
     });
 
     // Pošalji verification email (mora ići u Mailpit)
-    await sendVerificationEmail(demoEmail, 'Video Demo Korisnik', token);
+    await sendVerificationEmail(demoEmail, 'Milan Babić', token);
 
     await takeShot('email-sent');
 

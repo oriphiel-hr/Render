@@ -373,7 +373,7 @@ async function seedScenarioMatrix() {
   const demoClient = await upsertUser({
     email: demoEmail('demo-client-moderation'),
     role: 'USER',
-    fullName: 'Iva Šarić',
+    fullName: 'Milan Babić',
     phone: '+385981230001',
     city: 'Split',
   });
@@ -665,11 +665,11 @@ async function seedScenarioMatrix() {
   // 6) LeadQueue + CompanyLeadQueue
   // Uzmi postojeće director/tim profile iz screenshot korisnika ako postoje
   const directorUser = await prisma.user.findUnique({
-    where: { email_role: { email: `screenshot-direktor@${DOMAIN}`, role: 'PROVIDER' } },
+    where: { email_role: { email: `ivan.babic@${DOMAIN}`, role: 'PROVIDER' } },
     include: { providerProfile: true },
   });
   const teamUser = await prisma.user.findUnique({
-    where: { email_role: { email: `screenshot-tim@${DOMAIN}`, role: 'PROVIDER' } },
+    where: { email_role: { email: `petra.novak@${DOMAIN}`, role: 'PROVIDER' } },
     include: { providerProfile: true },
   });
   const directorProfileId = directorUser?.providerProfile?.id ?? null;

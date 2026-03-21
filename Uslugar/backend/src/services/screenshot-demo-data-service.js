@@ -14,7 +14,14 @@ import { deductCredits } from './credit-service.js';
 const DOMAIN = process.env.SCREENSHOT_TEST_DOMAIN || 'uslugar.hr';
 
 function email(suffix) {
-  return `screenshot-${suffix}@${DOMAIN}`;
+  const localBySuffix = {
+    korisnik: 'milan.babic',
+    'pružatelj': 'marko.kovac',
+    direktor: 'ivan.babic',
+    tim: 'petra.novak',
+  };
+  const localPart = localBySuffix[suffix] || `screenshot-${suffix}`;
+  return `${localPart}@${DOMAIN}`;
 }
 
 /** Ako purchaseLead ne uspije, kreiraj LeadPurchase ručno da Moji leadovi i ROI imaju podatke. */

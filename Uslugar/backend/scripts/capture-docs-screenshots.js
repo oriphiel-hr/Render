@@ -66,7 +66,7 @@ async function waitForTeamGuideContent(page, file) {
       // guide-tim-3 / guide-tim-4 (chat)
       const hasChatHeader = txt.includes('Nove poruke');
       const hasEmptyChat = txt.includes('Nemate aktivnih razgovora');
-      const hasConversationSignals = txt.includes('Čeka vaš odgovor') || txt.includes('Prije') || txt.includes('Ana Horvat') || txt.includes('Chat:');
+      const hasConversationSignals = txt.includes('Čeka vaš odgovor') || txt.includes('Prije') || txt.includes('Milan Babić') || txt.includes('Chat:');
       return hasChatHeader && (!hasEmptyChat || hasConversationSignals);
     }, file, { timeout: timeoutMs });
   } catch (_) {
@@ -88,7 +88,7 @@ async function applyTeamGuideVisualFallback(page, file) {
         assignedEmpty.innerHTML = `
           <div style="padding:10px 12px;border:1px solid #d1d5db;border-radius:10px;background:#f8fafc;">
             <div style="font-weight:700;color:#111827;margin-bottom:4px;">Sanacija krovišta nakon nevremena</div>
-            <div style="font-size:12px;color:#4b5563;">📍 Zagreb · 🏷️ Krovopokrivački radovi · Klijent: Ana Horvat</div>
+            <div style="font-size:12px;color:#4b5563;">📍 Zagreb · 🏷️ Krovopokrivački radovi · Klijent: Milan Babić</div>
             <div style="margin-top:8px;display:inline-block;font-size:12px;padding:4px 8px;border-radius:999px;background:#fef3c7;color:#92400e;font-weight:600;">Dodijeljeno</div>
           </div>
         `;
@@ -125,7 +125,7 @@ async function applyTeamGuideVisualFallback(page, file) {
               <div style="width:42px;height:42px;border-radius:9999px;background:#2563eb;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;">A</div>
               <div style="min-width:0;flex:1;">
                 <div style="display:flex;justify-content:space-between;gap:8px;">
-                  <div style="font-weight:700;color:#111827;">Ana Horvat</div>
+                  <div style="font-weight:700;color:#111827;">Milan Babić</div>
                   <div style="font-size:12px;color:#6b7280;">Prije 18 min</div>
                 </div>
                 <div style="font-size:12px;color:#6b7280;margin-top:2px;">Procjena štete i popravak dimnjaka</div>
@@ -159,12 +159,12 @@ async function applyTeamGuideVisualFallback(page, file) {
         ? `
           <div style="font-size:12px;font-weight:700;opacity:0.9;">DEMO PODACI (TIM)</div>
           <div style="margin-top:6px;font-size:14px;font-weight:700;">Dodijeljeni lead: Sanacija krovišta</div>
-          <div style="font-size:12px;opacity:0.95;margin-top:2px;">Klijent: Ana Horvat · Zagreb · Status: ASSIGNED</div>
+          <div style="font-size:12px;opacity:0.95;margin-top:2px;">Klijent: Milan Babić · Zagreb · Status: ASSIGNED</div>
           <div style="margin-top:8px;font-size:13px;">Ekskluzivni lead: Procjena štete i popravak dimnjaka</div>
         `
         : `
           <div style="font-size:12px;font-weight:700;opacity:0.9;">DEMO CHAT (TIM)</div>
-          <div style="margin-top:6px;font-size:14px;font-weight:700;">Ana Horvat</div>
+          <div style="margin-top:6px;font-size:14px;font-weight:700;">Milan Babić</div>
           <div style="font-size:13px;opacity:0.98;">"Možemo li dogovoriti izlazak na teren sutra u 10h?"</div>
         `;
       document.body.appendChild(panel);
