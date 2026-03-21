@@ -13,7 +13,7 @@ function getDocsTeamAssignedQueueMock() {
     startedAt: null,
     completedAt: null,
     job: {
-      title: 'Sanacija krovišta nakon nevremena',
+      title: 'Krov / dimnjak – manji zahvat (ploče, oluk)',
       category: { name: 'Krovopokrivački radovi' },
       user: { fullName: 'Milan Babić', city: 'Zagreb' },
     },
@@ -36,11 +36,12 @@ function getDocsTeamLeadsMock() {
     nextStepAt: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
     job: {
       id: 'docs-job-1',
-      title: 'Procjena štete i popravak dimnjaka',
-      description: 'Potrebna hitna procjena i sanacija dimnjaka nakon oluje. Pristup krovu osiguran.',
-      budgetMin: 650,
-      budgetMax: 1450,
-      category: { name: 'Građevinski radovi' },
+      title: 'Krov / dimnjak – manji zahvat (ploče, oluk)',
+      description:
+        'Curenje uz dimnjak; zamjena nekoliko ploča/spoja i kratkog komada oluka. Pristup krovu osiguran.',
+      budgetMin: 320,
+      budgetMax: 580,
+      category: { name: 'Krovopokrivački radovi' },
       user: {
         fullName: 'Milan Babić',
         city: 'Zagreb',

@@ -118,6 +118,7 @@ export default function AdminScreenshots() {
       tiktok: 'TikTok',
       youtube: 'YouTube',
       facebook: 'Facebook',
+      square: 'Kvadrat 1:1',
     };
     const currentLabel = labels[videoFormat] || String(videoFormat);
     const stopVideoLoading = () => {
@@ -133,7 +134,12 @@ export default function AdminScreenshots() {
       // Backend pokreće Playwright u pozadini (bez 15+ min HTTP čekanja)
       const { data } = await api.post(
         '/admin/generate-social-videos',
-        { videoFormat, intervalMs: 1800, stepWaitMs: 1800 },
+        {
+          videoFormat,
+          intervalMs: 650,
+          stepWaitMs: 650,
+          maxExtraShotsPerStep: 1,
+        },
         { timeout: 120000 }
       );
 
@@ -481,6 +487,13 @@ export default function AdminScreenshots() {
               {videoLoading && videoLoadingLabel === 'Facebook' ? 'Snimam Facebook…' : '📘 Facebook'}
             </button>
             <button
+              onClick={() => generateVideos('square')}
+              disabled={videoLoading}
+              className="px-4 py-2 bg-slate-600 text-white rounded hover:bg-slate-700 disabled:opacity-50"
+            >
+              {videoLoading && videoLoadingLabel === 'Kvadrat 1:1' ? 'Snimam 1:1…' : '⬜ Kvadrat (1:1)'}
+            </button>
+            <button
               onClick={refreshList}
               disabled={filesLoading}
               className="px-4 py-2 border rounded hover:bg-gray-50 disabled:opacity-50"
@@ -593,7 +606,8 @@ export default function AdminScreenshots() {
           <div>
             <div className="font-semibold">Social videi</div>
             <div className="text-sm text-gray-500">
-              TikTok/Reels (9:16), YouTube (16:9), Square (1:1) + česti screenshotovi tijekom snimanja.
+              TikTok (720×1280), YouTube (1280×720), Facebook (854×480), kvadrat (720×720) — niže rezolucije = manji i brži
+              fileovi. Gumb „Sve formate” generira samo prva tri; za 1:1 koristite gumb ispod.
             </div>
           </div>
           <div className="flex items-center gap-2">

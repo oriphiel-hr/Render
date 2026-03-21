@@ -146,30 +146,59 @@ export async function ensureScreenshotDemoData() {
     where: { userId: ana.id, isExclusive: true, leadStatus: 'AVAILABLE' },
     take: 5,
   });
-  const jobTitles = [
-    'Renovacija kupaonice – keramičar',
-    'Građevinska nadogradnja – nadzor',
-    'Fasada i izolacija kuće',
+  /** Budžeti usklađeni s opisom posla (mali / segmentirani zahvati, realna tržišna razina u EUR) */
+  const marketplaceDemoJobSpecs = [
+    {
+      title: 'Mala kupaonica (6 m²) – nova keramika',
+      description:
+        'Skidanje starih pločica, priprema podloge i lijepljenje nove keramike (keramiku kupuje klijent). Zagreb.',
+      city: 'Zagreb',
+      budgetMin: 480,
+      budgetMax: 820,
+      qualityScore: 82,
+    },
+    {
+      title: 'Fasada – lokalni popravak i hidroizolacija spoja (do ~35 m²)',
+      description:
+        'Nije cijela fasada: otvoren spoj, fugiranje i sanacija curenja na jednom dijelu kuće. Velika Gorica.',
+      city: 'Velika Gorica',
+      budgetMin: 520,
+      budgetMax: 880,
+      qualityScore: 76,
+    },
+    {
+      title: 'Električar – razvodnica i LED (dnevni boravak + hodnik)',
+      description:
+        'Zamjena postojećeg osiguračkog nosača, LED rasvjeta, 3–4 nove grupe. Zagreb.',
+      city: 'Zagreb',
+      budgetMin: 360,
+      budgetMax: 640,
+      qualityScore: 68,
+    },
   ];
-  const jobsToCreate = jobTitles.filter(
-    (t) => !existingJobs.some((j) => j.title === t)
+  const jobSpecsToCreate = marketplaceDemoJobSpecs.filter(
+    (spec) => !existingJobs.some((j) => j.title === spec.title)
   );
   const createdJobs = [];
-  for (const title of jobsToCreate) {
+  for (const spec of jobSpecsToCreate) {
+    const priceInfo = getLeadPriceForJob({
+      budgetMin: spec.budgetMin,
+      budgetMax: spec.budgetMax,
+    });
     const job = await prisma.job.create({
       data: {
         userId: ana.id,
-        title,
-        description: 'Potreban pouzdan izvođač za navedeni opseg radova. Lokacija Zagreb.',
-        city: 'Zagreb',
-        budgetMin: 700,
-        budgetMax: 1600,
+        title: spec.title,
+        description: spec.description,
+        city: spec.city,
+        budgetMin: spec.budgetMin,
+        budgetMax: spec.budgetMax,
         status: 'OPEN',
         isExclusive: true,
         leadStatus: 'AVAILABLE',
-        leadPrice: 3,
+        leadPrice: priceInfo.leadPriceCredits,
         categoryId: category.id,
-        qualityScore: 75,
+        qualityScore: spec.qualityScore,
       },
     });
     createdJobs.push(job);
@@ -224,7 +253,12 @@ export async function ensureScreenshotDemoData() {
   }
   if (purchases.length >= 2) {
     try {
-      await markLeadConverted(purchases[1].id, marko.id, 3500);
+      const convJob = await prisma.job.findUnique({ where: { id: purchases[1].jobId } });
+      const realized =
+        convJob?.budgetMin != null && convJob?.budgetMax != null
+          ? Math.round((Number(convJob.budgetMin) + Number(convJob.budgetMax)) / 2)
+          : 780;
+      await markLeadConverted(purchases[1].id, marko.id, realized);
     } catch (_) {}
   }
 
@@ -239,34 +273,49 @@ export async function ensureScreenshotDemoData() {
     const directorProfileId = director.providerProfile.id;
     const timProfileId = tim.providerProfile.id;
 
-    const timJobTitle = 'Demo: tim lead queue & chat';
-    const existingTimJob = await prisma.job.findFirst({
+    const timJobTitle = 'Krov – curenje uz dimnjak, zamjena oluka (jedan segment)';
+    const timJobSpec = { budgetMin: 330, budgetMax: 580 };
+    const timPrice = getLeadPriceForJob(timJobSpec);
+
+    let timJob = await prisma.job.findFirst({
       where: {
         userId: ana.id,
         isExclusive: true,
-        title: timJobTitle,
+        OR: [{ title: timJobTitle }, { title: 'Demo: tim lead queue & chat' }],
       },
     });
-
-    const timJob = existingTimJob
-      ? existingTimJob
-      : await prisma.job.create({
-          data: {
-            userId: ana.id,
-            title: timJobTitle,
-            description: 'Demo posao za prikaz LeadQueue + chata člana tima.',
-            city: 'Zagreb',
-            budgetMin: 800,
-            budgetMax: 1700,
-            status: 'OPEN',
-            isExclusive: true,
-            leadStatus: 'AVAILABLE',
-            leadPrice: 4,
-            categoryId: category.id,
-            qualityScore: 70,
-            moderationStatus: 'APPROVED',
-          },
-        });
+    if (timJob) {
+      timJob = await prisma.job.update({
+        where: { id: timJob.id },
+        data: {
+          title: timJobTitle,
+          description:
+            'Manji krovni zahvat: vlažnost uz dimnjak, zamjena ~6 m oluka; nije cijela krovišna površina. Demo za tim + chat.',
+          budgetMin: timJobSpec.budgetMin,
+          budgetMax: timJobSpec.budgetMax,
+          leadPrice: timPrice.leadPriceCredits,
+        },
+      });
+    } else {
+      timJob = await prisma.job.create({
+        data: {
+          userId: ana.id,
+          title: timJobTitle,
+          description:
+            'Manji krovni zahvat: vlažnost uz dimnjak, zamjena ~6 m oluka; nije cijela krovišna površina. Demo za tim + chat.',
+          city: 'Zagreb',
+          budgetMin: timJobSpec.budgetMin,
+          budgetMax: timJobSpec.budgetMax,
+          status: 'OPEN',
+          isExclusive: true,
+          leadStatus: 'AVAILABLE',
+          leadPrice: timPrice.leadPriceCredits,
+          categoryId: category.id,
+          qualityScore: 70,
+          moderationStatus: 'APPROVED',
+        },
+      });
+    }
 
     // Interni queue red (direktor -> tim)
     await prisma.companyLeadQueue.upsert({

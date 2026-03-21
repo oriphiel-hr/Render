@@ -42,10 +42,10 @@ const DEMO_DASHBOARD = {
     totalLeadsContacted: 4,
     totalLeadsConverted: 2,
     totalCreditsSpent: 28,
-    totalRevenue: 1240,
+    totalRevenue: 890,
     conversionRate: 33.3,
     roi: 118,
-    avgLeadValue: 620
+    avgLeadValue: 445
   },
   subscription: {
     plan: 'BASIC',
@@ -55,9 +55,9 @@ const DEMO_DASHBOARD = {
   },
   statusBreakdown: { CONVERTED: 2, CONTACTED: 2, ACTIVE: 2, REFUNDED: 0 },
   recentLeads: [
-    { id: 'demo-1', status: 'CONVERTED', createdAt: new Date().toISOString(), job: { title: 'Renovacija kupaonice', category: { name: 'Građevinarstvo' }, budgetMax: 1100 } },
-    { id: 'demo-2', status: 'CONTACTED', createdAt: new Date().toISOString(), job: { title: 'Fasada i izolacija', category: { name: 'Fasade' }, budgetMax: 1600 } },
-    { id: 'demo-3', status: 'ACTIVE', createdAt: new Date().toISOString(), job: { title: 'Adaptacija potkrovlja', category: { name: 'Građevinarstvo' }, budgetMax: 1300 } }
+    { id: 'demo-1', status: 'CONVERTED', createdAt: new Date().toISOString(), job: { title: 'Mala kupaonica (6 m²) – nova keramika', category: { name: 'Keramičarski radovi' }, budgetMax: 800 } },
+    { id: 'demo-2', status: 'CONTACTED', createdAt: new Date().toISOString(), job: { title: 'Fasada – lokalni popravak (do ~35 m²)', category: { name: 'Fasade' }, budgetMax: 860 } },
+    { id: 'demo-3', status: 'ACTIVE', createdAt: new Date().toISOString(), job: { title: 'Električar – razvodnica i LED', category: { name: 'Električar' }, budgetMax: 620 } }
   ],
   insights: [{ type: 'success', message: 'Vaša stopa konverzije je 33.3% – stabilan rezultat za početak.' }]
 };
@@ -592,7 +592,7 @@ export default function ROIDashboard() {
           <div>
             <p className="font-semibold mb-1">Avg Lead Value</p>
             <p>Prosječna zarada po konvertiranom leadu.</p>
-            <p className="text-green-600 dark:text-green-400 mt-1">✅ Cilj: 500€+</p>
+            <p className="text-green-600 dark:text-green-400 mt-1">✅ Cilj: ovisi o branši (mali poslovi često 300–900 €)</p>
           </div>
           <div>
             <p className="font-semibold mb-1">Credits Balance</p>

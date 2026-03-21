@@ -9,14 +9,14 @@ function getDocsTeamChatRoomsMock(currentUserId) {
   const fallbackCurrent = currentUserId || 'docs-current-user';
   return [{
     id: 'docs-room-1',
-    name: 'Chat: Procjena štete i popravak dimnjaka',
+    name: 'Chat: Krov / dimnjak – manji zahvat',
     participants: [
       { id: fallbackCurrent, fullName: 'Petra Novak', email: 'petra.novak@uslugar.hr', role: 'PROVIDER' },
       { id: 'docs-ana', fullName: 'Milan Babić', email: 'milan.babic@uslugar.hr', role: 'USER' },
     ],
     job: {
       id: 'docs-job-1',
-      title: 'Procjena štete i popravak dimnjaka',
+      title: 'Krov / dimnjak – manji zahvat (ploče, oluk)',
       status: 'OPEN',
       userId: 'docs-ana',
     },

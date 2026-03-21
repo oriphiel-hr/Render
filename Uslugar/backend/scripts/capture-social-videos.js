@@ -8,8 +8,10 @@
  *   BASE_URL, OUT_DIR (default: backend/public/docs/social)
  *   TEST_EMAIL_*, TEST_PASSWORD_* kao i za capture-docs-screenshots
  *   VIDEO_FORMAT = tiktok | youtube | facebook | square | all  (default: all)
- *   SCREENSHOT_INTERVAL_MS = 2000 (default)
- *   STEP_WAIT_MS = 2500 (default)
+ *   „all” = tiktok + youtube + facebook (bez square – brže; square eksplicitno)
+ *   SCREENSHOT_INTERVAL_MS, STEP_WAIT_MS – kraći = brže generiranje, manji video
+ *   MAX_EXTRA_SHOTS_PER_STEP – max dodatnih PNG-ova po koraku nakon početnog (default 1)
+ *   VIDEO_PACE_* – ms pauze (login, klik u mailu, prije screenshot-a); niže = življi video
  */
 import playwright from 'playwright';
 import fs from 'node:fs';
@@ -19,8 +21,20 @@ import axios from 'axios';
 const BASE_URL = process.env.BASE_URL || 'https://www.uslugar.eu';
 const OUT_DIR = process.env.OUT_DIR || path.resolve(process.cwd(), 'public', 'docs', 'social');
 const VIDEO_FORMAT = (process.env.VIDEO_FORMAT || 'all').toLowerCase();
-const SCREENSHOT_INTERVAL_MS = parseInt(process.env.SCREENSHOT_INTERVAL_MS || '2000', 10);
-const STEP_WAIT_MS = parseInt(process.env.STEP_WAIT_MS || '2500', 10);
+const SCREENSHOT_INTERVAL_MS = parseInt(process.env.SCREENSHOT_INTERVAL_MS || '900', 10);
+const STEP_WAIT_MS = parseInt(process.env.STEP_WAIT_MS || '900', 10);
+const MAX_EXTRA_SHOTS_PER_STEP = Math.max(0, parseInt(process.env.MAX_EXTRA_SHOTS_PER_STEP || '1', 10));
+
+/** Pauze u snimci – kraće = klik i prijelazi djeluju „življe”, ne kao usporena snimka */
+const VIDEO_PACE_MS = {
+  loginPageAfterGoto: Math.max(0, parseInt(process.env.VIDEO_PACE_LOGIN_PAGE_MS || '450', 10)),
+  loginAfterSubmit: Math.max(0, parseInt(process.env.VIDEO_PACE_AFTER_LOGIN_SUBMIT_MS || '900', 10)),
+  loginRetryBackoff: Math.max(0, parseInt(process.env.VIDEO_PACE_LOGIN_RETRY_MS || '500', 10)),
+  beforeScreenshot: Math.max(0, parseInt(process.env.VIDEO_PACE_BEFORE_SHOT_MS || '100', 10)),
+  screenshotRetry: Math.max(0, parseInt(process.env.VIDEO_PACE_SHOT_RETRY_MS || '350', 10)),
+  emailAfterMailView: Math.max(0, parseInt(process.env.VIDEO_PACE_EMAIL_MAILVIEW_MS || '500', 10)),
+  emailAfterVerifyClick: Math.max(0, parseInt(process.env.VIDEO_PACE_EMAIL_AFTER_CLICK_MS || '700', 10)),
+};
 const INCLUDE_EMAIL_DEMO = String(process.env.INCLUDE_EMAIL_DEMO || '').toLowerCase() === '1' ||
   String(process.env.INCLUDE_EMAIL_DEMO || '').toLowerCase() === 'true';
 
@@ -35,16 +49,16 @@ const CREDENTIALS = {
   direktor: { email: process.env.TEST_EMAIL_DIREKTOR, password: process.env.TEST_PASSWORD_DIREKTOR },
 };
 
+// Niže rezolucije = manji WebM/MP4 i brže kodiranje (i dalje dovoljno za social / preview)
 const FORMATS = {
-  // TikTok / Reels / Shorts
-  tiktok: { width: 1080, height: 1920, label: 'tiktok-9x16' },
-  // YouTube (standard)
-  youtube: { width: 1920, height: 1080, label: 'youtube-16x9' },
-  // Facebook feed-ish (works ok)
-  facebook: { width: 1280, height: 720, label: 'facebook-16x9' },
-  // Square
-  square: { width: 1080, height: 1080, label: 'square-1x1' },
+  tiktok: { width: 720, height: 1280, label: 'tiktok-9x16' },
+  youtube: { width: 1280, height: 720, label: 'youtube-16x9' },
+  facebook: { width: 854, height: 480, label: 'facebook-16x9' },
+  square: { width: 720, height: 720, label: 'square-1x1' },
 };
+
+/** Za „all” samo tri formata (bez square) – ušteda ~25% vremena; square: VIDEO_FORMAT=square */
+const FORMAT_KEYS_ALL = ['tiktok', 'youtube', 'facebook'];
 
 const STEPS = [
   { name: 'landing-login', hash: '#login', role: null },
@@ -52,11 +66,11 @@ const STEPS = [
   { name: 'user-my-jobs', hash: '#my-jobs', role: 'korisnik' },
   { name: 'provider-leads', hash: '#leads', role: 'pružatelj' },
   { name: 'provider-pricing', hash: '#pricing', role: null },
-  { name: 'provider-subscription', hash: '#subscription', role: 'pružatelj', waitMs: 3200 },
-  { name: 'provider-my-leads-refund', hash: '#my-leads', role: 'pružatelj', waitMs: 3200 },
+  { name: 'provider-subscription', hash: '#subscription', role: 'pružatelj', waitMs: 1200 },
+  { name: 'provider-my-leads-refund', hash: '#my-leads', role: 'pružatelj', waitMs: 1200 },
   { name: 'provider-roi', hash: '#roi', role: 'pružatelj' },
-  { name: 'director-invoices', hash: '#invoices', role: 'direktor', waitMs: 3200 },
-  { name: 'director-my-leads-refund', hash: '#my-leads', role: 'direktor', waitMs: 3200 },
+  { name: 'director-invoices', hash: '#invoices', role: 'direktor', waitMs: 1200 },
+  { name: 'director-my-leads-refund', hash: '#my-leads', role: 'direktor', waitMs: 1200 },
   { name: 'director', hash: '#director', role: 'direktor' },
   { name: 'team-my-leads', hash: '#my-leads', role: 'tim_clan' },
   { name: 'team-chat', hash: '#chat', role: 'tim_clan', waitMs: 3200 },
@@ -143,7 +157,7 @@ async function recordEmailClickSegment(page, takeShot) {
     // Otvori HTML preview maila (Mailpit web)
     const emailHtmlUrl = `${MAILPIT_WEB_URL}/view/${messageId}.html`;
     await page.goto(emailHtmlUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(VIDEO_PACE_MS.emailAfterMailView);
     await takeShot('email-inbox');
 
     // Klikni prvi link u mailu (verify/reset) ako postoji
@@ -151,7 +165,7 @@ async function recordEmailClickSegment(page, takeShot) {
     if (link) {
       const href = await link.getAttribute('href');
       await link.click({ timeout: 5000 }).catch(() => {});
-      await page.waitForTimeout(2500);
+      await page.waitForTimeout(VIDEO_PACE_MS.emailAfterVerifyClick);
       await takeShot('email-click-result');
       console.log('[EMAIL DEMO] Clicked:', href);
     } else {
@@ -176,7 +190,7 @@ async function login(page, role) {
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       await page.goto(loginUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-      await page.waitForTimeout(1200);
+      await page.waitForTimeout(VIDEO_PACE_MS.loginPageAfterGoto);
 
       // Ako forma nije odmah dostupna (spor SPA mount), probaj reset auth state i ponovno učitaj.
       const hasEmailInput = await page.locator(emailSelector).first().isVisible({ timeout: 5000 }).catch(() => false);
@@ -193,7 +207,7 @@ async function login(page, role) {
       await page.fill(emailSelector, cred.email);
       await page.fill(passSelector, cred.password);
       await page.click(submitSelector);
-      await page.waitForTimeout(3000);
+      await page.waitForTimeout(VIDEO_PACE_MS.loginAfterSubmit);
       return true;
     } catch (e) {
       console.warn(`[LOGIN] Pokušaj ${attempt}/3 nije uspio za role=${role}: ${e.message}`);
@@ -201,7 +215,7 @@ async function login(page, role) {
         console.warn(`[SKIP] Login preskočen za ${role} nakon 3 pokušaja.`);
         return false;
       }
-      await page.waitForTimeout(1200);
+      await page.waitForTimeout(VIDEO_PACE_MS.loginRetryBackoff);
     }
   }
 
@@ -240,12 +254,12 @@ async function runForFormat(fmtKey) {
     const p = path.join(outShots, file);
     try {
       // Moguć je spor odgovor nakon navigacije; mali delay smanjuje flaky screenshotove.
-      await page.waitForTimeout(250);
+      await page.waitForTimeout(VIDEO_PACE_MS.beforeScreenshot);
       await page.screenshot({ path: p, fullPage: false, timeout: screenshotTimeoutMs, animations: 'disabled' });
     } catch (e) {
       if (attempt <= screenshotMaxRetries) {
         console.warn(`[SHOT] Timeout (${attempt}/${screenshotMaxRetries}). retry tag=${tag} file=${file}`);
-        await page.waitForTimeout(750);
+        await page.waitForTimeout(VIDEO_PACE_MS.screenshotRetry);
         return takeShot(tag, attempt + 1);
       }
       throw e;
@@ -278,14 +292,16 @@ async function runForFormat(fmtKey) {
       const start = Date.now();
       await takeShot(`${step.name}-0`);
       let k = 1;
-      while (Date.now() - start < stepWaitMs) {
+      let extraTaken = 0;
+      while (Date.now() - start < stepWaitMs && extraTaken < MAX_EXTRA_SHOTS_PER_STEP) {
         const remaining = stepWaitMs - (Date.now() - start);
         const wait = Math.min(SCREENSHOT_INTERVAL_MS, remaining);
-        if (wait <= 400) break;
+        if (wait < 200) break;
         await page.waitForTimeout(wait);
         if (Date.now() - start >= stepWaitMs) break;
         await takeShot(`${step.name}-${k}`);
         k++;
+        extraTaken++;
       }
       console.log('OK step:', step.name, 'shots:', k);
     }
@@ -309,7 +325,8 @@ async function runForFormat(fmtKey) {
 
 async function main() {
   ensureDir(OUT_DIR);
-  const selected = VIDEO_FORMAT === 'all' ? Object.keys(FORMATS) : [VIDEO_FORMAT];
+  const selected =
+    VIDEO_FORMAT === 'all' ? FORMAT_KEYS_ALL : [VIDEO_FORMAT];
   for (const fmtKey of selected) {
     if (!FORMATS[fmtKey]) {
       console.warn('Unknown VIDEO_FORMAT:', fmtKey);

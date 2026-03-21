@@ -6070,7 +6070,13 @@ r.post('/generate-social-videos', auth(true, ['ADMIN']), async (req, res, next) 
     const userByRole = {};
     users.forEach((u) => { userByRole[u.role] = u; });
 
-    const { videoFormat = 'all', intervalMs = 2000, stepWaitMs = 2500, sync = false } = req.body || {};
+    const {
+      videoFormat = 'all',
+      intervalMs = 900,
+      stepWaitMs = 900,
+      maxExtraShotsPerStep = 1,
+      sync = false,
+    } = req.body || {};
     const env = {
       ...process.env,
       BASE_URL: baseUrl,
@@ -6078,6 +6084,7 @@ r.post('/generate-social-videos', auth(true, ['ADMIN']), async (req, res, next) 
       VIDEO_FORMAT: String(videoFormat),
       SCREENSHOT_INTERVAL_MS: String(intervalMs),
       STEP_WAIT_MS: String(stepWaitMs),
+      MAX_EXTRA_SHOTS_PER_STEP: String(maxExtraShotsPerStep),
       TEST_EMAIL_KORISNIK: userByRole.korisnik?.email,
       TEST_PASSWORD_KORISNIK: password,
       TEST_EMAIL_PRUVATELJ: userByRole.pružatelj?.email,

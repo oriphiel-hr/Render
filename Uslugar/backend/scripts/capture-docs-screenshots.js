@@ -87,7 +87,7 @@ async function applyTeamGuideVisualFallback(page, file) {
       if (assignedEmpty) {
         assignedEmpty.innerHTML = `
           <div style="padding:10px 12px;border:1px solid #d1d5db;border-radius:10px;background:#f8fafc;">
-            <div style="font-weight:700;color:#111827;margin-bottom:4px;">Sanacija krovišta nakon nevremena</div>
+            <div style="font-weight:700;color:#111827;margin-bottom:4px;">Krov / dimnjak – manji zahvat (ploče, oluk)</div>
             <div style="font-size:12px;color:#4b5563;">📍 Zagreb · 🏷️ Krovopokrivački radovi · Klijent: Milan Babić</div>
             <div style="margin-top:8px;display:inline-block;font-size:12px;padding:4px 8px;border-radius:999px;background:#fef3c7;color:#92400e;font-weight:600;">Dodijeljeno</div>
           </div>
@@ -102,9 +102,9 @@ async function applyTeamGuideVisualFallback(page, file) {
             <div style="padding:14px;border:1px solid #d1d5db;border-radius:12px;background:white;">
               <div style="display:flex;justify-content:space-between;gap:10px;">
                 <div>
-                  <div style="font-size:20px;font-weight:700;color:#111827;">Procjena štete i popravak dimnjaka</div>
-                  <div style="color:#374151;margin-top:6px;">Hitna procjena i sanacija dimnjaka nakon oluje.</div>
-                  <div style="margin-top:8px;color:#6b7280;font-size:12px;">📍 Zagreb · 💰 650-1450 EUR · 📅 ${new Date().toLocaleDateString('hr-HR')}</div>
+                  <div style="font-size:20px;font-weight:700;color:#111827;">Dimnjak – pregled i manji zahvat</div>
+                  <div style="color:#374151;margin-top:6px;">Curenje uz dimnjak; zamjena nekoliko ploča/spoja, ne cijeli krov.</div>
+                  <div style="margin-top:8px;color:#6b7280;font-size:12px;">📍 Zagreb · 💰 320-580 EUR (dimnjak, manji zahvat) · 📅 ${new Date().toLocaleDateString('hr-HR')}</div>
                 </div>
                 <div style="height:fit-content;padding:6px 10px;border-radius:999px;background:#dbeafe;color:#1e40af;font-size:12px;font-weight:700;">ACTIVE</div>
               </div>
@@ -158,7 +158,7 @@ async function applyTeamGuideVisualFallback(page, file) {
       panel.innerHTML = fileName === 'guide-tim-1.png' || fileName === 'moji-leadovi-team-member-mock.png'
         ? `
           <div style="font-size:12px;font-weight:700;opacity:0.9;">DEMO PODACI (TIM)</div>
-          <div style="margin-top:6px;font-size:14px;font-weight:700;">Dodijeljeni lead: Sanacija krovišta</div>
+          <div style="margin-top:6px;font-size:14px;font-weight:700;">Dodijeljeni lead: krov / dimnjak (manji zahvat)</div>
           <div style="font-size:12px;opacity:0.95;margin-top:2px;">Klijent: Milan Babić · Zagreb · Status: ASSIGNED</div>
           <div style="margin-top:8px;font-size:13px;">Ekskluzivni lead: Procjena štete i popravak dimnjaka</div>
         `
