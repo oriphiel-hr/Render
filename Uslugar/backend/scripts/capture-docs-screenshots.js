@@ -104,7 +104,7 @@ async function applyTeamGuideVisualFallback(page, file) {
                 <div>
                   <div style="font-size:20px;font-weight:700;color:#111827;">Procjena štete i popravak dimnjaka</div>
                   <div style="color:#374151;margin-top:6px;">Hitna procjena i sanacija dimnjaka nakon oluje.</div>
-                  <div style="margin-top:8px;color:#6b7280;font-size:12px;">📍 Zagreb · 💰 1200-2800 EUR · 📅 ${new Date().toLocaleDateString('hr-HR')}</div>
+                  <div style="margin-top:8px;color:#6b7280;font-size:12px;">📍 Zagreb · 💰 650-1450 EUR · 📅 ${new Date().toLocaleDateString('hr-HR')}</div>
                 </div>
                 <div style="height:fit-content;padding:6px 10px;border-radius:999px;background:#dbeafe;color:#1e40af;font-size:12px;font-weight:700;">ACTIVE</div>
               </div>

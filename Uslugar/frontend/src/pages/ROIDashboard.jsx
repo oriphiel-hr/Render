@@ -38,28 +38,28 @@ ChartJS.register(
 /** Demo podaci za screenshot vodiča (?screenshotMode=docs) – konzistentne, realistične brojke */
 const DEMO_DASHBOARD = {
   roi: {
-    totalLeadsPurchased: 8,
-    totalLeadsContacted: 5,
-    totalLeadsConverted: 3,
-    totalCreditsSpent: 80,
-    totalRevenue: 4200,
-    conversionRate: 37.5,
-    roi: 425,
-    avgLeadValue: 1400
+    totalLeadsPurchased: 6,
+    totalLeadsContacted: 4,
+    totalLeadsConverted: 2,
+    totalCreditsSpent: 28,
+    totalRevenue: 1240,
+    conversionRate: 33.3,
+    roi: 118,
+    avgLeadValue: 620
   },
   subscription: {
     plan: 'BASIC',
-    creditsBalance: 50,
-    lifetimeCreditsUsed: 80,
-    lifetimeLeadsConverted: 3
+    creditsBalance: 22,
+    lifetimeCreditsUsed: 28,
+    lifetimeLeadsConverted: 2
   },
-  statusBreakdown: { CONVERTED: 3, CONTACTED: 2, ACTIVE: 3, REFUNDED: 0 },
+  statusBreakdown: { CONVERTED: 2, CONTACTED: 2, ACTIVE: 2, REFUNDED: 0 },
   recentLeads: [
-    { id: 'demo-1', status: 'CONVERTED', createdAt: new Date().toISOString(), job: { title: 'Renovacija kupaonice', category: { name: 'Građevinarstvo' }, budgetMax: 1500 } },
-    { id: 'demo-2', status: 'CONTACTED', createdAt: new Date().toISOString(), job: { title: 'Fasada i izolacija', category: { name: 'Fasade' }, budgetMax: 1800 } },
-    { id: 'demo-3', status: 'ACTIVE', createdAt: new Date().toISOString(), job: { title: 'Adaptacija potkrovlja', category: { name: 'Građevinarstvo' }, budgetMax: 1400 } }
+    { id: 'demo-1', status: 'CONVERTED', createdAt: new Date().toISOString(), job: { title: 'Renovacija kupaonice', category: { name: 'Građevinarstvo' }, budgetMax: 1100 } },
+    { id: 'demo-2', status: 'CONTACTED', createdAt: new Date().toISOString(), job: { title: 'Fasada i izolacija', category: { name: 'Fasade' }, budgetMax: 1600 } },
+    { id: 'demo-3', status: 'ACTIVE', createdAt: new Date().toISOString(), job: { title: 'Adaptacija potkrovlja', category: { name: 'Građevinarstvo' }, budgetMax: 1300 } }
   ],
-  insights: [{ type: 'success', message: 'Vaša stopa konverzije je 37.5% – dobar rezultat za početak.' }]
+  insights: [{ type: 'success', message: 'Vaša stopa konverzije je 33.3% – stabilan rezultat za početak.' }]
 };
 
 export default function ROIDashboard() {
@@ -70,6 +70,16 @@ export default function ROIDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
+  const getLeadStatusLabel = (status) => {
+    switch (status) {
+      case 'ACTIVE': return 'Aktivni';
+      case 'CONTACTED': return 'Kontaktirani';
+      case 'CONVERTED': return 'Realizirani';
+      case 'REFUNDED': return 'Refundirani';
+      default: return status || 'Nepoznato';
+    }
+  };
 
   useEffect(() => {
     loadDashboard();
@@ -551,7 +561,7 @@ export default function ROIDashboard() {
                     purchase.status === 'REFUNDED' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
                     'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
                   }`}>
-                    {purchase.status}
+                    {getLeadStatusLabel(purchase.status)}
                   </span>
                   {purchase.job.budgetMax && (
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">do {purchase.job.budgetMax}€</p>

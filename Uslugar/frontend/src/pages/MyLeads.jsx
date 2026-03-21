@@ -27,7 +27,7 @@ function getDocsTeamLeadsMock() {
     jobId: 'docs-job-1',
     status: 'ACTIVE',
     contactUnlocked: false,
-    creditsSpent: 7,
+    creditsSpent: 3,
     createdAt: new Date().toISOString(),
     contactedAt: null,
     convertedAt: null,
@@ -38,8 +38,8 @@ function getDocsTeamLeadsMock() {
       id: 'docs-job-1',
       title: 'Procjena štete i popravak dimnjaka',
       description: 'Potrebna hitna procjena i sanacija dimnjaka nakon oluje. Pristup krovu osiguran.',
-      budgetMin: 1200,
-      budgetMax: 2800,
+      budgetMin: 650,
+      budgetMax: 1450,
       category: { name: 'Građevinski radovi' },
       user: {
         fullName: 'Milan Babić',
@@ -69,6 +69,17 @@ export default function MyLeads({ isDirector = false }) {
   const [newNote, setNewNote] = useState({});
   const [addingToQueueId, setAddingToQueueId] = useState(null);
   const [inQueueJobIds, setInQueueJobIds] = useState(new Set());
+
+  const getLeadStatusLabel = (status) => {
+    switch (status) {
+      case 'ACTIVE': return 'Aktivni';
+      case 'CONTACTED': return 'Kontaktirani';
+      case 'CONVERTED': return 'Realizirani';
+      case 'REFUNDED': return 'Refundirani';
+      case 'EXPIRED': return 'Istekli';
+      default: return status || 'Nepoznato';
+    }
+  };
 
   useEffect(() => {
     loadLeads();
@@ -489,7 +500,7 @@ export default function MyLeads({ isDirector = false }) {
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            {status === 'ALL' ? 'Svi' : status}
+            {status === 'ALL' ? 'Svi' : getLeadStatusLabel(status)}
           </button>
         ))}
       </div>
@@ -547,7 +558,7 @@ export default function MyLeads({ isDirector = false }) {
                 
                 <div className="flex flex-col items-end gap-2">
                   <span className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap ${getStatusColor(purchase.status)}`}>
-                    {purchase.status}
+                    {getLeadStatusLabel(purchase.status)}
                   </span>
                   {reminderBadge && (
                     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
