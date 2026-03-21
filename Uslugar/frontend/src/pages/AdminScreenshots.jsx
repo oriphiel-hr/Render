@@ -120,29 +120,113 @@ export default function AdminScreenshots() {
       facebook: 'Facebook',
     };
     const currentLabel = labels[videoFormat] || String(videoFormat);
+    const stopVideoLoading = () => {
+      setVideoLoading(false);
+      setVideoLoadingLabel('');
+    };
+
     try {
       setVideoLoading(true);
       setVideoLoadingLabel(currentLabel);
       setError('');
       setVideoResult(null);
+      // Backend pokreće Playwright u pozadini (bez 15+ min HTTP čekanja)
       const { data } = await api.post(
         '/admin/generate-social-videos',
         { videoFormat, intervalMs: 1800, stepWaitMs: 1800 },
-        { timeout: 900000 }
+        { timeout: 120000 }
       );
+
+      if (data.async && data.jobId) {
+        setVideoResult({
+          success: true,
+          pending: true,
+          jobId: data.jobId,
+          message: data.message || 'Generiranje u tijeku…',
+        });
+        const myJobId = data.jobId;
+        const started = Date.now();
+        const maxWaitMs = 90 * 60 * 1000;
+
+        const poll = async () => {
+          try {
+            const { data: st } = await api.get('/admin/generate-social-videos/status', { timeout: 60000 });
+            if (st.jobId !== myJobId) {
+              if (Date.now() - started > 180000) {
+                setVideoResult({
+                  success: false,
+                  error:
+                    'Status posla se ne poklapa s ovim pokretanjem (npr. drugi tab ili restart servera). Osvježite i pokušajte ponovno.',
+                });
+                stopVideoLoading();
+                return;
+              }
+              setTimeout(poll, 4000);
+              return;
+            }
+            if (st.status === 'running') {
+              if (Date.now() - started > maxWaitMs) {
+                setVideoResult({
+                  success: false,
+                  error: `Generiranje traje predugo (>${Math.round(maxWaitMs / 60000)} min). Provjerite logove na serveru.`,
+                });
+                stopVideoLoading();
+                return;
+              }
+              setTimeout(poll, 4000);
+              return;
+            }
+            if (st.status === 'success') {
+              setVideoResult({
+                success: true,
+                pending: false,
+                jobId: st.jobId,
+                message: 'Social videi i screenshotovi su generirani.',
+                users: st.users,
+                stdout: st.stdoutTail,
+              });
+              await refreshVideos();
+            } else if (st.status === 'error') {
+              setVideoResult({
+                success: false,
+                error: st.errorMessage || 'Generiranje social videa nije uspjelo.',
+                stdout: st.stdoutTail,
+                stderr: st.stderrTail,
+              });
+            } else {
+              setVideoResult({
+                success: false,
+                error: `Neočekivano stanje: ${st.status || 'n/a'}`,
+              });
+            }
+            stopVideoLoading();
+          } catch (err) {
+            setVideoResult({
+              success: false,
+              error: err?.response?.data?.error || err.message || 'Greška pri provjeri statusa videa.',
+            });
+            stopVideoLoading();
+          }
+        };
+        poll();
+        return;
+      }
+
       setVideoResult(data);
       await refreshVideos();
+      stopVideoLoading();
     } catch (e) {
       const d = e?.response?.data;
+      const status = e?.response?.status;
       setVideoResult({
         success: false,
         error: d?.error || e.message || 'Greška pri generiranju videa.',
+        jobId: d?.jobId,
         stdout: d?.stdout,
         stderr: d?.stderr,
+        conflict: status === 409,
       });
-    } finally {
-      setVideoLoading(false);
-      setVideoLoadingLabel('');
+      stopVideoLoading();
     }
   };
 
@@ -451,11 +535,38 @@ export default function AdminScreenshots() {
             )}
 
             {videoResult && (
-              <div className={`p-3 rounded border ${videoResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+              <div
+                className={`p-3 rounded border ${
+                  videoResult.pending
+                    ? 'bg-amber-50 border-amber-200'
+                    : videoResult.success
+                      ? 'bg-green-50 border-green-200'
+                      : 'bg-red-50 border-red-200'
+                }`}
+              >
                 <div className="font-semibold text-sm mb-1">Generiranje videa</div>
-                {videoResult.success ? (
+                {videoResult.pending ? (
+                  <>
+                    <div className="text-sm text-amber-900">{videoResult.message}</div>
+                    {videoResult.jobId && (
+                      <div className="text-xs text-amber-800 mt-1 font-mono">Job: {videoResult.jobId}</div>
+                    )}
+                    <p className="text-xs text-amber-800 mt-2">
+                      Ovo može trajati i 20–40+ minuta. Možete ostaviti tab otvoren ili kasnije kliknuti „Osvježi videe”.
+                    </p>
+                  </>
+                ) : videoResult.success ? (
                   <>
                     <div className="text-sm text-green-900">{videoResult.message}</div>
+                    {videoResult.users?.length > 0 && (
+                      <ul className="mt-2 text-xs text-green-900 space-y-1 font-mono">
+                        {videoResult.users.map((u, i) => (
+                          <li key={i}>
+                            {u.role}: {u.email} ({u.fullName})
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                     {videoResult.stdout && (
                       <pre className="mt-2 p-2 bg-black/10 rounded text-xs max-h-40 overflow-auto">{videoResult.stdout}</pre>
                     )}
@@ -463,6 +574,9 @@ export default function AdminScreenshots() {
                 ) : (
                   <>
                     <div className="text-sm text-red-900">{videoResult.error || 'Greška.'}</div>
+                    {videoResult.conflict && videoResult.jobId && (
+                      <div className="text-xs text-red-800 mt-1">Aktivni job: {videoResult.jobId}</div>
+                    )}
                     {(videoResult.stderr || videoResult.stdout) && (
                       <pre className="mt-2 p-2 bg-black/10 rounded text-xs max-h-40 overflow-auto">{videoResult.stderr || videoResult.stdout}</pre>
                     )}

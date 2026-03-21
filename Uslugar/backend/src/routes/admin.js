@@ -22,6 +22,27 @@ const PROJECT_ROOT = path.resolve(__dirname, '../../..');
 const r = Router();
 
 /**
+ * Pozadinsko generiranje social videa – izbjegava dugačke HTTP veze (browser/proxy timeout).
+ * Frontend poll-a GET /generate-social-videos/status.
+ */
+let socialVideoJob = {
+  status: 'idle',
+  jobId: null,
+  startedAt: null,
+  finishedAt: null,
+  exitCode: null,
+  stdoutTail: '',
+  stderrTail: '',
+  errorMessage: null,
+  users: null,
+};
+
+function appendOutputTail(current, chunk, maxLen = 20000) {
+  const next = current + chunk;
+  return next.length > maxLen ? next.slice(-maxLen) : next;
+}
+
+/**
  * GET /api/admin/platform-stats
  * Statistike platforme - sveobuhvatan pregled
  */
@@ -6001,11 +6022,37 @@ r.get('/docs-social-videos', auth(true, ['ADMIN']), async (req, res, next) => {
 });
 
 /**
+ * GET /api/admin/generate-social-videos/status
+ * Status pozadinskog generiranja (idle | running | success | error).
+ */
+r.get('/generate-social-videos/status', auth(true, ['ADMIN']), (req, res, next) => {
+  try {
+    res.json({
+      success: true,
+      ...socialVideoJob,
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
  * POST /api/admin/generate-social-videos
  * Pokreće Playwright skriptu za social video + češće screenshotove.
+ * Zadano: async (odmah vraća jobId; bez dugačkog HTTP čekanja).
+ * Body: { sync: true } – čeka završetak u istom zahtjevu (samo za debug; može timeoutati).
  */
 r.post('/generate-social-videos', auth(true, ['ADMIN']), async (req, res, next) => {
   try {
+    if (socialVideoJob.status === 'running') {
+      return res.status(409).json({
+        success: false,
+        error: 'Generiranje videa već je u tijeku. Pričekajte završetak ili provjerite status.',
+        jobId: socialVideoJob.jobId,
+        status: 'running',
+      });
+    }
+
     const { users, password } = await ensureScreenshotTestUsers();
     const baseUrl = process.env.FRONTEND_URL || req.get('origin') || 'https://www.uslugar.eu';
 
@@ -6023,7 +6070,7 @@ r.post('/generate-social-videos', auth(true, ['ADMIN']), async (req, res, next) 
     const userByRole = {};
     users.forEach((u) => { userByRole[u.role] = u; });
 
-    const { videoFormat = 'all', intervalMs = 2000, stepWaitMs = 2500 } = req.body || {};
+    const { videoFormat = 'all', intervalMs = 2000, stepWaitMs = 2500, sync = false } = req.body || {};
     const env = {
       ...process.env,
       BASE_URL: baseUrl,
@@ -6041,32 +6088,96 @@ r.post('/generate-social-videos', auth(true, ['ADMIN']), async (req, res, next) 
       TEST_PASSWORD_DIREKTOR: password,
     };
 
-    const child = spawn('node', [scriptPath], {
-      cwd: process.cwd(),
-      env,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
+    const jobId = `sv-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
-    let stdout = '';
-    let stderr = '';
-    child.stdout.on('data', (d) => { stdout += d.toString(); });
-    child.stderr.on('data', (d) => { stderr += d.toString(); });
+    const runSpawnAndCollect = () => {
+      const child = spawn('node', [scriptPath], {
+        cwd: process.cwd(),
+        env,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      let stdout = '';
+      let stderr = '';
+      child.stdout.on('data', (d) => {
+        const s = d.toString();
+        stdout += s;
+        if (socialVideoJob.jobId === jobId && socialVideoJob.status === 'running') {
+          socialVideoJob.stdoutTail = appendOutputTail(socialVideoJob.stdoutTail, s);
+        }
+      });
+      child.stderr.on('data', (d) => {
+        const s = d.toString();
+        stderr += s;
+        if (socialVideoJob.jobId === jobId && socialVideoJob.status === 'running') {
+          socialVideoJob.stderrTail = appendOutputTail(socialVideoJob.stderrTail, s);
+        }
+      });
+      return new Promise((resolve) => {
+        child.on('close', (code) => resolve({ code, stdout, stderr }));
+      });
+    };
 
-    const code = await new Promise((resolve) => child.on('close', resolve));
-    if (code !== 0) {
-      return res.status(500).json({
-        success: false,
-        error: 'Generiranje social videa nije uspjelo.',
-        stdout: stdout.slice(-2000),
-        stderr: stderr.slice(-2000),
+    if (sync) {
+      const { code, stdout, stderr } = await runSpawnAndCollect();
+      if (code !== 0) {
+        return res.status(500).json({
+          success: false,
+          error: 'Generiranje social videa nije uspjelo.',
+          stdout: stdout.slice(-2000),
+          stderr: stderr.slice(-2000),
+        });
+      }
+      return res.json({
+        success: true,
+        async: false,
+        message: 'Social videi i screenshotovi su generirani.',
+        users: users.map((u) => ({ role: u.role, email: u.email, fullName: u.fullName })),
+        stdout: stdout.slice(-1500),
       });
     }
 
-    res.json({
+    socialVideoJob = {
+      status: 'running',
+      jobId,
+      startedAt: new Date().toISOString(),
+      finishedAt: null,
+      exitCode: null,
+      stdoutTail: '',
+      stderrTail: '',
+      errorMessage: null,
+      users: null,
+    };
+
+    runSpawnAndCollect()
+      .then(({ code, stdout, stderr }) => {
+        if (socialVideoJob.jobId !== jobId) return;
+        socialVideoJob.exitCode = code;
+        socialVideoJob.finishedAt = new Date().toISOString();
+        if (code === 0) {
+          socialVideoJob.status = 'success';
+          socialVideoJob.users = users.map((u) => ({ role: u.role, email: u.email, fullName: u.fullName }));
+          socialVideoJob.stdoutTail = stdout.slice(-2500);
+          socialVideoJob.stderrTail = stderr.slice(-2500);
+        } else {
+          socialVideoJob.status = 'error';
+          socialVideoJob.errorMessage = 'Generiranje social videa nije uspjelo.';
+          socialVideoJob.stdoutTail = stdout.slice(-2500);
+          socialVideoJob.stderrTail = stderr.slice(-2500);
+        }
+      })
+      .catch(() => {
+        if (socialVideoJob.jobId !== jobId) return;
+        socialVideoJob.status = 'error';
+        socialVideoJob.errorMessage = 'Neočekivana greška pri generiranju videa.';
+        socialVideoJob.finishedAt = new Date().toISOString();
+      });
+
+    return res.json({
       success: true,
-      message: 'Social videi i screenshotovi su generirani.',
-      users: users.map((u) => ({ role: u.role, email: u.email, fullName: u.fullName })),
-      stdout: stdout.slice(-1500),
+      async: true,
+      jobId,
+      message:
+        'Generiranje videa je pokrenuto u pozadini. Ova stranica sama provjerava status; po završetku osvježite listu videa.',
     });
   } catch (e) {
     next(e);
