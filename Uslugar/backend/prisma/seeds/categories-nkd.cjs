@@ -28,7 +28,7 @@ const categoriesWithNKD = [
     isActive: true
   },
   {
-    name: 'Plinoinstalatér',
+    name: 'Plinoinstalater',
     description: 'Plinske instalacije, priključci, servis plinskih uređaja',
     icon: '🔥',
     nkdCode: '43.22',
@@ -133,6 +133,46 @@ const categoriesWithNKD = [
     requiresLicense: false,
     isActive: true
   },
+  {
+    name: 'Adaptacija stana',
+    description: 'Kompletna ili djelomična adaptacija stanova',
+    icon: '🏠',
+    nkdCode: '43.39',
+    requiresLicense: false,
+    isActive: true
+  },
+  {
+    name: 'Adaptacija kupaonice',
+    description: 'Renovacija kupaonica, zamjena sanitarija i keramike',
+    icon: '🛁',
+    nkdCode: '43.39',
+    requiresLicense: false,
+    isActive: true
+  },
+  {
+    name: 'Estrih',
+    description: 'Izrada cementnog i samonivelirajućeg estriha',
+    icon: '🧱',
+    nkdCode: '43.33',
+    requiresLicense: false,
+    isActive: true
+  },
+  {
+    name: 'Žbukanje',
+    description: 'Strojno i ručno žbukanje unutarnjih i vanjskih zidova',
+    icon: '🪣',
+    nkdCode: '43.31',
+    requiresLicense: false,
+    isActive: true
+  },
+  {
+    name: 'Suha gradnja (knauf)',
+    description: 'Pregradni zidovi, spušteni stropovi i obloge od knaufa',
+    icon: '📏',
+    nkdCode: '43.32',
+    requiresLicense: false,
+    isActive: true
+  },
 
   // ========================================
   // KLIMATIZACIJA I VENTILACIJA
@@ -163,9 +203,33 @@ const categoriesWithNKD = [
     requiresLicense: false,
     isActive: true
   },
+  {
+    name: 'Kamini',
+    description: 'Ugradnja i servis kamina',
+    icon: '🔥',
+    nkdCode: '43.22',
+    requiresLicense: false,
+    isActive: true
+  },
+  {
+    name: 'Peći',
+    description: 'Ugradnja i servis peći na drva, pelete i plin',
+    icon: '♨️',
+    nkdCode: '43.22',
+    requiresLicense: false,
+    isActive: true
+  },
+  {
+    name: 'Infracrveni paneli',
+    description: 'Prodaja, ugradnja i servis infracrvenih panela',
+    icon: '🌡️',
+    nkdCode: '43.22',
+    requiresLicense: false,
+    isActive: true
+  },
 
   // ========================================
-  // DOM I VRTI
+  // DOM I VRT
   // ========================================
   {
     name: 'Vrtlar',
@@ -185,7 +249,7 @@ const categoriesWithNKD = [
   },
   {
     name: 'Kamenarske usluge',
-    description: 'Obrada kamena, spomeinci, pločnici',
+    description: 'Obrada kamena, spomenici, pločnici',
     icon: '🪨',
     nkdCode: '23.70',
     requiresLicense: false,
@@ -212,6 +276,38 @@ const categoriesWithNKD = [
     description: 'Izrada terasa, nadstrešnica, pergola',
     icon: '🌿',
     nkdCode: '16.23',
+    requiresLicense: false,
+    isActive: true
+  },
+  {
+    name: 'Uređenje okućnice',
+    description: 'Planiranje i izvedba uređenja dvorišta i okućnice',
+    icon: '🏡',
+    nkdCode: '81.30',
+    requiresLicense: false,
+    isActive: true
+  },
+  {
+    name: 'Popločavanje dvorišta',
+    description: 'Postavljanje opločnika, rubnjaka i staza',
+    icon: '🧱',
+    nkdCode: '43.99',
+    requiresLicense: false,
+    isActive: true
+  },
+  {
+    name: 'Asfaltiranje',
+    description: 'Asfaltiranje prilaza, parkirališta i pristupnih puteva',
+    icon: '🛣️',
+    nkdCode: '42.11',
+    requiresLicense: false,
+    isActive: true
+  },
+  {
+    name: 'Nadstrešnice',
+    description: 'Izrada i montaža nadstrešnica za ulaze, terase i parkirna mjesta',
+    icon: '🏗️',
+    nkdCode: '43.99',
     requiresLicense: false,
     isActive: true
   },
@@ -259,7 +355,7 @@ const categoriesWithNKD = [
   // ========================================
   {
     name: 'Selidbe',
-    description: 'Seldbeni radovi, pakiranje, transport',
+    description: 'Selidbeni radovi, pakiranje i transport',
     icon: '📦',
     nkdCode: '49.42',
     requiresLicense: false,
@@ -287,7 +383,7 @@ const categoriesWithNKD = [
   // ========================================
   {
     name: 'Autoelektričar',
-    description: 'Popravak auto elektrointalacija, dijagnostika',
+    description: 'Popravak auto elektroinstalacija i dijagnostika',
     icon: '🔌',
     nkdCode: '45.20',
     requiresLicense: false,
@@ -388,7 +484,7 @@ const categoriesWithNKD = [
     isActive: true
   },
   {
-    name: 'Ugradnja rolled',
+    name: 'Ugradnja roleta',
     description: 'Rolete, tende, komarnici',
     icon: '🪟',
     nkdCode: '43.34',
@@ -396,8 +492,32 @@ const categoriesWithNKD = [
     isActive: true
   },
   {
+    name: 'Stolarija - prozori',
+    description: 'Izrada i ugradnja PVC, ALU i drvenih prozora',
+    icon: '🪟',
+    nkdCode: '43.32',
+    requiresLicense: false,
+    isActive: true
+  },
+  {
+    name: 'Stolarija - vrata',
+    description: 'Izrada i ugradnja ulaznih i unutarnjih vrata',
+    icon: '🚪',
+    nkdCode: '43.32',
+    requiresLicense: false,
+    isActive: true
+  },
+  {
+    name: 'Sjenila',
+    description: 'Montaža roleta, žaluzina, tendi i komarnika',
+    icon: '🪟',
+    nkdCode: '43.34',
+    requiresLicense: false,
+    isActive: true
+  },
+  {
     name: 'Fotografski servisi',
-    description: 'Događaji, vjenčanja, portrati',
+    description: 'Događaji, vjenčanja, portreti',
     icon: '📸',
     nkdCode: '74.20',
     requiresLicense: false,

@@ -218,6 +218,109 @@ const PROJECT_TYPES_BY_CATEGORY = {
     'Stanovanje',
     'Poslovni prostor',
     'Deep clean'
+  ],
+  // Novo dodane građevinske i okućničke kategorije
+  'Plinoinstalater': [
+    'Nova instalacija',
+    'Servis',
+    'Popravak',
+    'Atest i sigurnosna provjera'
+  ],
+  'Adaptacija stana': [
+    'Kompletna adaptacija',
+    'Djelomična adaptacija',
+    'Rušenje i priprema',
+    'Završni radovi'
+  ],
+  'Adaptacija kupaonice': [
+    'Kompletna renovacija',
+    'Zamjena sanitarija',
+    'Keramičarski radovi',
+    'Vodoinstalaterski radovi'
+  ],
+  'Estrih': [
+    'Cementni estrih',
+    'Samonivelirajući estrih',
+    'Strojna ugradnja',
+    'Sanacija estriha'
+  ],
+  'Žbukanje': [
+    'Strojno žbukanje',
+    'Ručno žbukanje',
+    'Unutarnje žbukanje',
+    'Vanjsko žbukanje'
+  ],
+  'Suha gradnja (knauf)': [
+    'Pregradni zidovi',
+    'Spušteni stropovi',
+    'Oblaganje zidova',
+    'Zvučna i toplinska izolacija'
+  ],
+  'Kamini': [
+    'Ugradnja kamina',
+    'Servis i održavanje',
+    'Sanacija dimovoda',
+    'Savjetovanje i odabir'
+  ],
+  'Peći': [
+    'Ugradnja peći',
+    'Servis peći',
+    'Čišćenje i održavanje',
+    'Zamjena postojeće peći'
+  ],
+  'Infracrveni paneli': [
+    'Nova ugradnja',
+    'Zamjena sustava grijanja',
+    'Servis i održavanje',
+    'Savjetovanje'
+  ],
+  'Stolarija - prozori': [
+    'Ugradnja novih prozora',
+    'Zamjena starih prozora',
+    'Servis i podešavanje',
+    'Brtvljenje i izolacija'
+  ],
+  'Stolarija - vrata': [
+    'Ugradnja novih vrata',
+    'Zamjena vrata',
+    'Servis i podešavanje',
+    'Sigurnosna vrata'
+  ],
+  'Sjenila': [
+    'Ugradnja roleta',
+    'Ugradnja žaluzina',
+    'Ugradnja tendi',
+    'Servis sjenila'
+  ],
+  'Ugradnja roleta': [
+    'Vanjske rolete',
+    'Unutarnje rolete',
+    'Komarnici',
+    'Servis roleta'
+  ],
+  'Uređenje okućnice': [
+    'Kompletno uređenje',
+    'Priprema terena',
+    'Sadnja i travnjak',
+    'Sustav navodnjavanja'
+  ],
+  'Popločavanje dvorišta': [
+    'Opločnici',
+    'Kamene staze',
+    'Rubnjaci',
+    'Priprema podloge'
+  ],
+  'Asfaltiranje': [
+    'Asfaltiranje prilaza',
+    'Asfaltiranje dvorišta',
+    'Asfaltiranje parkirališta',
+    'Sanacija asfalta'
+  ],
+  'Nadstrešnice': [
+    'Nadstrešnice za auto',
+    'Nadstrešnice za terasu',
+    'Metalna konstrukcija',
+    'Drvena konstrukcija'
   ]
 };
 

@@ -17,7 +17,9 @@ const RENAME_MAP = {
   'Transport robe': 'Prijevoz robe',
   'Prijevoz': 'Usluge prijevoza',
   'IT podrška': 'IT usluge',
-  'Soboslikarski radovi': 'Soboslikarstvo'  // isto kao Soboslikarstvo – jedna kategorija
+  'Soboslikarski radovi': 'Soboslikarstvo', // isto kao Soboslikarstvo – jedna kategorija
+  'Plinoinstalatér': 'Plinoinstalater',
+  'Ugradnja rolled': 'Ugradnja roleta'
 }
 
 async function seedCategories() {

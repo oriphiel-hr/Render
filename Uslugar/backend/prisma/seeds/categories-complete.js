@@ -252,7 +252,7 @@ export const categories = [
     licenseAuthority: "Hrvatska komora fizioterapeuta"
   },
   {
-    name: "Masage",
+    name: "Masaže",
     description: "Opuštajuće i terapeutske masaže",
     icon: "💆",
     nkdCode: "96.09",
