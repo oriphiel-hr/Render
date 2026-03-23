@@ -148,6 +148,7 @@ model User {
   phoneVerificationAttempts Int          @default(0) // Broj pokušaja verifikacije (max 5)
   phoneVerifiedAt           DateTime? // Kada je telefon verificiran
   city                      String?
+  marketingSource           String? // Izvor akvizicije (npr. facebook, instagram, google, direct)
   latitude                  Float? // Geolokacija
   longitude                 Float? // Geolokacija
   isVerified                Boolean      @default(false) // Verifikacija korisnika
@@ -204,6 +205,7 @@ model User {
   // This allows same email for different roles (e.g., USER and PROVIDER)
   // but prevents duplicate email within same role
   @@unique([email, role])
+  @@index([marketingSource])
 }
 
 model ProviderProfile {

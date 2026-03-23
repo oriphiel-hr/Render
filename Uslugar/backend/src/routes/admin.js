@@ -3157,6 +3157,7 @@ r.get('/users-overview', auth(true, ['ADMIN']), async (req, res, next) => {
         email: user.email,
         fullName: user.fullName,
         role: user.role,
+        marketingSource: user.marketingSource || '',
         userType,
         userRoleDetail,
         legalStatus: user.legalStatus?.name || providerProfile?.legalStatus?.name || 'N/A',
@@ -3188,7 +3189,8 @@ r.get('/users-overview', auth(true, ['ADMIN']), async (req, res, next) => {
         verified: usersOverview.filter(u => u.companyVerified).length,
         withLicenses: usersOverview.filter(u => u.licensesCount > 0).length,
         withSubscription: usersOverview.filter(u => u.subscriptionPlan).length,
-        trial: usersOverview.filter(u => u.subscriptionPlan === 'TRIAL').length
+        trial: usersOverview.filter(u => u.subscriptionPlan === 'TRIAL').length,
+        facebookLeads: usersOverview.filter(u => (u.marketingSource || '').toLowerCase() === 'facebook').length
       }
     });
   } catch (e) {

@@ -42,6 +42,7 @@ export default function UserRegister({ onSuccess }) {
   const [categorySearch, setCategorySearch] = useState('');
   const [expandedCategoryIds, setExpandedCategoryIds] = useState([]); // id-evi kategorija čije podkategorije su proširene
   const [teamInviteToken, setTeamInviteToken] = useState(null);
+  const [marketingSource, setMarketingSource] = useState('');
   
   // Auto-verification state
   const [autoVerifying, setAutoVerifying] = useState(false);
@@ -106,7 +107,8 @@ export default function UserRegister({ onSuccess }) {
     }
   };
   
-  // Pročitaj teamInvite token iz URL hash-a (npr. #register-user?teamInvite=...&email=...)
+  // Pročitaj teamInvite, email i marketing source iz URL hash-a
+  // Primjer: #register-user?teamInvite=...&email=...&src=facebook
   useEffect(() => {
     try {
       const hash = window.location.hash || '';
@@ -114,9 +116,13 @@ export default function UserRegister({ onSuccess }) {
       const params = new URLSearchParams(query);
       const invite = params.get('teamInvite');
       const emailFromUrl = params.get('email');
+      const src = params.get('src') || params.get('source') || params.get('utm_source');
       if (invite) setTeamInviteToken(invite);
       if (emailFromUrl) {
         setFormData(prev => ({ ...prev, email: emailFromUrl }));
+      }
+      if (src) {
+        setMarketingSource(src.toLowerCase());
       }
     } catch (e) {
       // ignore
@@ -316,6 +322,10 @@ export default function UserRegister({ onSuccess }) {
         phone: formData.phone,
         city: formData.city
       };
+
+      if (marketingSource) {
+        userData.marketingSource = marketingSource;
+      }
       
       // Dodaj legalStatusId, taxId, companyName samo ako je PROVIDER ili USER koji je pravna osoba
       if (effectiveUserType === 'PROVIDER' || (effectiveUserType === 'USER' && isCompany)) {
@@ -581,6 +591,11 @@ export default function UserRegister({ onSuccess }) {
   return (
     <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8">
       <div className="mb-6">
+        {marketingSource === 'facebook' && userType === 'PROVIDER' && (
+          <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+            Dobrodošli s Facebooka! Ispunite obrazac i javimo vam se s prvim koracima za aktivaciju profila.
+          </div>
+        )}
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-3xl font-bold text-gray-900">

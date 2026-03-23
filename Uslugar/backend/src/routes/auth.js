@@ -10,7 +10,7 @@ const r = Router();
 
 r.post('/register', async (req, res, next) => {
   try {
-    const { email, password, fullName, role = 'USER', phone, city, legalStatusId, taxId, companyName, teamInviteToken } = req.body;
+    const { email, password, fullName, role = 'USER', phone, city, legalStatusId, taxId, companyName, teamInviteToken, marketingSource } = req.body;
     if (!email || !password || !fullName) return res.status(400).json({ error: 'Missing fields' });
     
     // VALIDACIJA: PROVIDER pravni status (OBAVEZNO - prema zakonu)
@@ -89,6 +89,12 @@ r.post('/register', async (req, res, next) => {
       verificationToken,
       tokenExpiresAt
     };
+
+    // Akvizicijski izvor (npr. facebook) - koristan za kampanje i analitiku
+    if (typeof marketingSource === 'string' && marketingSource.trim()) {
+      const normalizedSource = marketingSource.trim().toLowerCase().slice(0, 50);
+      userData.marketingSource = normalizedSource;
+    }
     
     // Dodaj latitude i longitude ako su dostupni
     if (req.body.latitude !== undefined && req.body.latitude !== null && req.body.latitude !== '') {
