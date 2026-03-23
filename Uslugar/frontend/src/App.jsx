@@ -1024,7 +1024,7 @@ export default function App(){
         </nav>
 
         {/* Mobile Navigation */}
-        <div className="lg:hidden basis-full flex w-full min-w-0 flex-col gap-2 max-[360px]:gap-1.5">
+        <div className="lg:hidden basis-full flex w-full min-w-0">
           <div className="flex min-w-0 flex-wrap items-center gap-2 max-[360px]:gap-1.5">
             <button
               className={'px-3 py-2 max-[360px]:px-2 max-[360px]:py-1.5 border rounded ' + (tab==='user' ? 'bg-gray-900 text-white' : 'hover:bg-gray-100')}
@@ -1079,9 +1079,6 @@ export default function App(){
                 )}
               </button>
             )}
-          </div>
-          
-          <div className="flex min-w-0 items-center justify-end gap-2 max-[360px]:gap-1.5">
             {token && (() => {
               try {
                 const u = JSON.parse(localStorage.getItem('user') || '{}');
@@ -1102,7 +1099,7 @@ export default function App(){
           {/* Dark Mode Toggle - Mobile */}
           <button
             onClick={toggleDarkMode}
-            className="ml-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-sm text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 transition-colors"
+            className="px-3 py-2 max-[360px]:px-2 max-[360px]:py-1.5 border rounded hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
             title={isDarkMode ? 'Prebaci na svijetli način' : 'Prebaci na tamni način'}
             aria-label={isDarkMode ? 'Disable dark mode' : 'Enable dark mode'}
           >
