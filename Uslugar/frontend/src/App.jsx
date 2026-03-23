@@ -608,7 +608,7 @@ export default function App(){
       </a>
 
       <header
-        className="sticky top-4 z-30 mb-4 flex w-full items-center justify-between rounded-2xl border border-stone-200/90 bg-stone-50/95 px-4 py-3 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-900/80 overflow-visible"
+        className="sticky top-4 z-30 mb-4 flex w-full flex-wrap items-center justify-between gap-3 rounded-2xl border border-stone-200/90 bg-stone-50/95 px-4 py-3 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-900/80 overflow-visible lg:flex-nowrap"
         role="banner"
       >
         <Logo size="md" />
@@ -1024,42 +1024,42 @@ export default function App(){
         </nav>
 
         {/* Mobile Navigation */}
-        <div className="lg:hidden flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="lg:hidden basis-full flex w-full min-w-0 flex-col gap-2 max-[360px]:gap-1.5">
+          <div className="flex min-w-0 flex-wrap items-center gap-2 max-[360px]:gap-1.5">
             <button
-              className={'px-3 py-2 border rounded ' + (tab==='user' ? 'bg-gray-900 text-white' : 'hover:bg-gray-100')}
+              className={'px-3 py-2 max-[360px]:px-2 max-[360px]:py-1.5 border rounded ' + (tab==='user' ? 'bg-gray-900 text-white' : 'hover:bg-gray-100')}
               onClick={() => navigateToTab('user')}
             >
               🏠
             </button>
             {(!token || isProvider()) && (
               <button
-                className={'px-3 py-2 border rounded ' + (tab==='pricing' ? 'bg-orange-600 text-white' : 'border-orange-600 text-orange-600')}
+                className={'px-3 py-2 max-[360px]:px-2 max-[360px]:py-1.5 border rounded ' + (tab==='pricing' ? 'bg-orange-600 text-white' : 'border-orange-600 text-orange-600')}
                 onClick={() => navigateToTab('pricing')}
               >
                 💰
               </button>
             )}
             <button
-              className={'px-3 py-2 border rounded ' + (tab==='faq' ? 'bg-indigo-600 text-white' : 'border-indigo-600 text-indigo-600')}
+              className={'px-3 py-2 max-[360px]:px-2 max-[360px]:py-1.5 border rounded ' + (tab==='faq' ? 'bg-indigo-600 text-white' : 'border-indigo-600 text-indigo-600')}
               onClick={() => navigateToTab('faq')}
             >
               ❓
             </button>
             <button
-              className={'px-3 py-2 border rounded ' + (tab==='documentation' ? 'bg-indigo-600 text-white' : 'border-indigo-600 text-indigo-600')}
+              className={'px-3 py-2 max-[360px]:px-2 max-[360px]:py-1.5 border rounded ' + (tab==='documentation' ? 'bg-indigo-600 text-white' : 'border-indigo-600 text-indigo-600')}
               onClick={() => navigateToTab('documentation')}
             >
               📚
             </button>
             <button
-              className={'px-3 py-2 border rounded ' + (tab==='about' ? 'bg-green-600 text-white' : 'border-green-600 text-green-600')}
+              className={'px-3 py-2 max-[360px]:px-2 max-[360px]:py-1.5 border rounded ' + (tab==='about' ? 'bg-green-600 text-white' : 'border-green-600 text-green-600')}
               onClick={() => navigateToTab('about')}
             >
               🏢
             </button>
             <button
-              className={'px-3 py-2 border rounded ' + (tab==='contact' ? 'bg-blue-600 text-white' : 'border-blue-600 text-blue-600')}
+              className={'px-3 py-2 max-[360px]:px-2 max-[360px]:py-1.5 border rounded ' + (tab==='contact' ? 'bg-blue-600 text-white' : 'border-blue-600 text-blue-600')}
               onClick={() => navigateToTab('contact')}
             >
               📞
@@ -1067,7 +1067,7 @@ export default function App(){
             {/* Chat ikona - samo za korisnike usluge (pružatelji imaju Chat u Leadovi) */}
             {token && !isProviderOrBusinessUser() && (
               <button
-                className={'px-3 py-2 border rounded ' + (tab==='chat' ? 'bg-indigo-600 text-white' : 'border-indigo-600 text-indigo-600')}
+                className={'px-3 py-2 max-[360px]:px-2 max-[360px]:py-1.5 border rounded ' + (tab==='chat' ? 'bg-indigo-600 text-white' : 'border-indigo-600 text-indigo-600')}
                 onClick={() => navigateToTab('chat')}
                 aria-label="Chat"
               >
@@ -1081,7 +1081,7 @@ export default function App(){
             )}
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center justify-end gap-2 max-[360px]:gap-1.5">
             {token && (() => {
               try {
                 const u = JSON.parse(localStorage.getItem('user') || '{}');
@@ -1095,7 +1095,7 @@ export default function App(){
             })()}
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-            className="px-3 py-2 border rounded hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
+            className="px-3 py-2 max-[360px]:px-2 max-[360px]:py-1.5 border rounded hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
           >
             ☰
           </button>
