@@ -49,12 +49,12 @@ const CREDENTIALS = {
   direktor: { email: process.env.TEST_EMAIL_DIREKTOR, password: process.env.TEST_PASSWORD_DIREKTOR },
 };
 
-// Niže rezolucije = manji WebM/MP4 i brže kodiranje (i dalje dovoljno za social / preview)
+// Isti omjeri kao ciljni exporti (1080x1920, 1920x1080, 1080x1350) da sadržaj ne "curi" iz kadra pri uskom prikazu
 const FORMATS = {
-  tiktok: { width: 720, height: 1280, label: 'tiktok-9x16' },
-  youtube: { width: 1280, height: 720, label: 'youtube-16x9' },
-  facebook: { width: 854, height: 480, label: 'facebook-16x9' },
-  square: { width: 720, height: 720, label: 'square-1x1' },
+  tiktok: { width: 1080, height: 1920, label: 'tiktok-9x16' },
+  youtube: { width: 1920, height: 1080, label: 'youtube-16x9' },
+  facebook: { width: 1080, height: 1350, label: 'facebook-4-5' },
+  square: { width: 1080, height: 1080, label: 'square-1x1' },
 };
 
 /** Za „all” samo tri formata (bez square) – ušteda ~25% vremena; square: VIDEO_FORMAT=square */

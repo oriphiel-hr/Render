@@ -151,3 +151,9 @@ test-invoice-*.pdf
 
 # ── Generated documentation seed files (mogu biti veliki)
 prisma/seeds/seed-documentation-generated.js
+
+# ── Lokalno generirana FFmpeg ambient glazba (MP3 u repou ne drzimo)
+backend/scripts/generated-audio/
+
+# ── Renderani promo MP4 (ponovno generiraj Build-UslugarPromoFromManifest.ps1)
+frontend/public/promo-ai/out/

@@ -1,0 +1,50 @@
+[
+  {
+    "image": "people/promo-klijent-mobitel.png",
+    "durationSec": 4,
+    "title": "Trebate uslugu?",
+    "subtitle": "Jedan upit na Uslugaru — ponude iz cijele Hrvatske."
+  },
+  {
+    "image": "people/promo-kuha-mobitel.png",
+    "durationSec": 4,
+    "title": "Kao u stvarnom životu",
+    "subtitle": "Klijenti i izvođači koriste Uslugar svakodnevno za dogovore oko posla."
+  },
+  {
+    "image": "people/promo-pruzatelj-tablet.png",
+    "durationSec": 4,
+    "title": "Vi pružate usluge?",
+    "subtitle": "Primajte ozbiljne upite i odgovarajte kad vam odgovara."
+  },
+  {
+    "image": "guide-korisnik-2.png",
+    "durationSec": 4,
+    "title": "Sve poruke na jednom mjestu",
+    "subtitle": "Bez izgubljenih SMS-ova i e-mailova."
+  },
+  {
+    "image": "guide-pruzatelj-1.png",
+    "durationSec": 4,
+    "title": "Jasni upiti, brzi odgovori",
+    "subtitle": "Manje nejasnoća — više dogovora."
+  },
+  {
+    "image": "moji-leadovi-direktor-mock.png",
+    "durationSec": 4,
+    "title": "Za tvrtke i timove",
+    "subtitle": "Leadovi i uloge prilagođeni vašem načinu rada."
+  },
+  {
+    "image": "director-dashboard-lead-queue-mock.png",
+    "durationSec": 5,
+    "title": "Uslugar",
+    "subtitle": "Digitalna platforma za usluge u Hrvatskoj."
+  },
+  {
+    "slideType": "contact",
+    "durationSec": 6,
+    "title": "Kontakt",
+    "subtitle": "www.uslugar.eu  ·  uslugar@oriphiel.hr"
+  }
+]

@@ -151,6 +151,37 @@ export async function refundCredits(userId, amount, description = null, relatedP
 }
 
 /**
+ * Ensures a Subscription row exists for userId (unique). Concurrent create attempts
+ * must use create + P2002 fallback instead of find-then-create.
+ * @param {string} userId
+ * @param {{ trialDays?: number, trialCredits?: number }} [options]
+ */
+export async function ensureDefaultTrialSubscription(userId, options = {}) {
+  const trialDays = options.trialDays ?? 14;
+  const trialCredits = options.trialCredits ?? 8;
+  const trialExpiresAt = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000);
+  try {
+    const subscription = await prisma.subscription.create({
+      data: {
+        userId,
+        plan: 'TRIAL',
+        status: 'ACTIVE',
+        credits: 0,
+        creditsBalance: trialCredits,
+        expiresAt: trialExpiresAt
+      }
+    });
+    return { subscription, created: true };
+  } catch (e) {
+    if (e?.code === 'P2002') {
+      const subscription = await prisma.subscription.findUnique({ where: { userId } });
+      if (subscription) return { subscription, created: false };
+    }
+    throw e;
+  }
+}
+
+/**
  * Dohvati trenutni balans kredita
  */
 export async function getCreditsBalance(userId) {
@@ -163,38 +194,30 @@ export async function getCreditsBalance(userId) {
     }
   });
 
-  // Create default TRIAL subscription if doesn't exist
   if (!subscription) {
-    console.log(`[CREDITS] Creating default TRIAL subscription for user ${userId}`);
-    // TRIAL = maksimalni paket funkcionalnosti: 14 dana, 7-8 leadova
-    const trialExpiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 dana trial
-    const trialCredits = 8; // 7-8 leadova (srednja vrijednost)
-    
-    subscription = await prisma.subscription.create({
-      data: {
-        userId: userId,
-        plan: 'TRIAL',
-        status: 'ACTIVE',
-        credits: 0,
-        creditsBalance: trialCredits,
-        expiresAt: trialExpiresAt
-      },
+    console.log(`[CREDITS] Ensuring default TRIAL subscription for user ${userId}`);
+    const { created } = await ensureDefaultTrialSubscription(userId);
+    subscription = await prisma.subscription.findUnique({
+      where: { userId },
       select: {
         creditsBalance: true,
         lifetimeCreditsUsed: true,
         plan: true
       }
     });
-    
-    // Create notification
-    await prisma.notification.create({
-      data: {
-        title: 'Dobrodošli u Uslugar EXCLUSIVE!',
-        message: 'Dobili ste 5 besplatnih leadova da probate našu platformu. Nadogradite pretplatu za više.',
-        type: 'SYSTEM',
-        userId: userId
-      }
-    });
+    if (!subscription) {
+      throw new Error(`Subscription missing after ensure for user ${userId}`);
+    }
+    if (created) {
+      await prisma.notification.create({
+        data: {
+          title: 'Dobrodošli u Uslugar EXCLUSIVE!',
+          message: 'Dobili ste 5 besplatnih leadova da probate našu platformu. Nadogradite pretplatu za više.',
+          type: 'SYSTEM',
+          userId: userId
+        }
+      });
+    }
   }
 
   return {

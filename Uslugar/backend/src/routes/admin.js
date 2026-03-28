@@ -8,6 +8,7 @@ import { getPendingModeration, moderateContent, getModerationStats, reportMessag
 import { sendMonthlyReportsToAllUsers, sendMonthlyReport } from '../services/monthly-report-service.js';
 import { ensureScreenshotTestUsers } from '../services/screenshot-test-users-service.js';
 import { ensureScreenshotDemoData } from '../services/screenshot-demo-data-service.js';
+import { ensureDefaultTrialSubscription } from '../services/credit-service.js';
 import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -899,20 +900,8 @@ r.patch('/providers/:providerId/approval', auth(true, ['ADMIN']), async (req, re
         where: { userId: provider.userId }
       });
 
-      const TRIAL_CREDITS = 8; // Isti broj kao u subscriptions.js za self-service trial (7–8 leadova/ponuda)
-
       if (!existingSubscription) {
-        await prisma.subscription.create({
-          data: {
-            userId: provider.userId,
-            plan: 'TRIAL',
-            status: 'ACTIVE',
-            credits: 0,
-            creditsBalance: TRIAL_CREDITS,
-            // Set expiration to 30 days from now
-            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-          }
-        });
+        await ensureDefaultTrialSubscription(provider.userId, { trialDays: 30, trialCredits: 8 });
       }
     }
 

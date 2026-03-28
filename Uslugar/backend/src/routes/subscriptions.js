@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { auth } from '../lib/auth.js';
+import { ensureDefaultTrialSubscription } from '../services/credit-service.js';
 
 // Legacy route - deprecated, use /api/payments/create-checkout instead
 
@@ -480,23 +481,19 @@ r.get('/me', auth(true, ['PROVIDER', 'ADMIN', 'USER']), async (req, res, next) =
       where: { userId: req.user.id }
     });
 
-    // Create default subscription if doesn't exist (FREE TRIAL)
+    let trialJustCreated = false;
     if (!subscription) {
-      // TRIAL = maksimalni paket funkcionalnosti: 14 dana, 7-8 leadova, sve Premium features
-      const trialExpiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 dana trial
-      const trialCredits = 8; // 7-8 leadova (srednja vrijednost)
-      
-      subscription = await prisma.subscription.create({
-        data: {
-          userId: req.user.id,
-          plan: 'TRIAL',
-          status: 'ACTIVE',
-          credits: 0,
-          creditsBalance: trialCredits,
-          expiresAt: trialExpiresAt
-        }
-      });
-      
+      const ensured = await ensureDefaultTrialSubscription(req.user.id);
+      subscription = ensured.subscription;
+      trialJustCreated = ensured.created;
+    }
+
+    // Novi TRIAL: add-oni, engagement, notifikacija (samo kad smo stvarno kreirali red)
+    if (trialJustCreated) {
+      const trialExpiresAt =
+        subscription.expiresAt ?? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+      const trialCredits = subscription.creditsBalance ?? 8;
+
       // Automatski kreiraj add-on subscriptions za 2 kategorije i 1 regiju
       try {
         // Dohvati prve 2 aktivne kategorije

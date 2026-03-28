@@ -1,0 +1,8 @@
+file 'people/promo-klijent-mobitel.png'
+duration 3
+file 'people/promo-pruzatelj-tablet.png'
+duration 3
+file 'people/promo-tim-ured.png'
+duration 3
+file 'people/promo-kuha-mobitel.png'
+duration 3

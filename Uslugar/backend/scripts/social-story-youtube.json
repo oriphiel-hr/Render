@@ -1,0 +1,56 @@
+[
+  {
+    "image": "people/promo-klijent-mobitel.png",
+    "durationSec": 6,
+    "title": "Trebate majstora, čišćenje ili pomoć oko posla?",
+    "subtitle": "Na Uslugaru šaljete jedan upit — i dobivate ponude iz cijele Hrvatske."
+  },
+  {
+    "image": "people/promo-pruzatelj-tablet.png",
+    "durationSec": 6,
+    "title": "Pružate usluge?",
+    "subtitle": "Primajte konkretne upite, dogovarajte se u aplikaciji; manje praznih razgovora, više dogovora."
+  },
+  {
+    "image": "people/promo-tim-ured.png",
+    "durationSec": 5,
+    "title": "Timovi i tvrtke",
+    "subtitle": "Leadovi, uloge i poslovni procesi na jednoj platformi."
+  },
+  {
+    "image": "guide-korisnik-1.png",
+    "durationSec": 5,
+    "title": "Za klijente",
+    "subtitle": "Upit, poruke i ponude na jednom mjestu — jednostavno i pregledno."
+  },
+  {
+    "image": "guide-pruzatelj-2.png",
+    "durationSec": 5,
+    "title": "Za izvođače radova",
+    "subtitle": "Jasni upiti, jasne ponude; sve komunikacije ostaju u jednoj niti."
+  },
+  {
+    "image": "moji-poslovi-mock.png",
+    "durationSec": 5,
+    "title": "Pregled poslova",
+    "subtitle": "Što je aktivno, što čeka odgovor — uvijek pod kontrolom."
+  },
+  {
+    "image": "guide-finance-pricing-packages.png",
+    "durationSec": 5,
+    "title": "Cijene i paketi",
+    "subtitle": "Postavite ponudu koju klijenti mogu razumjeti na prvi pogled."
+  },
+  {
+    "image": "director-dashboard-lead-queue-mock.png",
+    "durationSec": 6,
+    "title": "Uslugar — platforma rođena u Hrvatskoj",
+    "subtitle": "Povezujemo one koji traže uslugu i one koji je pružaju, sigurno i transparentno."
+  },
+  {
+    "slideType": "contact",
+    "durationSec": 8,
+    "title": "Javite nam se",
+    "subtitle": "www.uslugar.eu  ·  uslugar@oriphiel.hr"
+  }
+]

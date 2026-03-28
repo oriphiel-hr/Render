@@ -1336,7 +1336,7 @@ export const sendContactConfirmationToUser = async (toEmail, name) => {
               Primili smo vaš upit i javit ćemo vam se u roku od 24 sata.
             </p>
             <p style="font-size: 14px; color: #888; margin-top: 20px;">
-              Ako imate hitan upit, slobodno nas nazovite na 091 561 8258.
+              Ako imate hitan upit, slobodno nas nazovite na +385 91 561 8258.
             </p>
             <p style="font-size: 12px; color: #999; text-align: center; margin-top: 30px;">
               Uslugar - Platforma za pronalaženje lokalnih pružatelja usluga<br>
