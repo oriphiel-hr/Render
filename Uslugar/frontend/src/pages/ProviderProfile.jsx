@@ -5,6 +5,7 @@ import PortfolioManager from '../components/PortfolioManager';
 import PortfolioDisplay from '../components/PortfolioDisplay';
 import LicenseManager from '../components/LicenseManager';
 import LicenseDisplay from '../components/LicenseDisplay';
+import { isProviderBusinessVerified } from '../utils/providerVerification';
 
 const getCategoryIcon = (categoryName) => {
     const iconMap = {
@@ -590,7 +591,7 @@ export default function ProviderProfile({ onSuccess, onNavigate }) {
               <div className="bg-white rounded-lg p-4 border border-blue-200">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700">Tvrtka/Obrt</span>
-                  <span className="text-xl">{(profile.badgeData?.BUSINESS?.status === 'VERIFIED' || profile.kycVerified) ? '✅' : '❌'}</span>
+                  <span className="text-xl">{isProviderBusinessVerified(profile) ? '✅' : '❌'}</span>
                 </div>
                 {(profile.badgeData?.BUSINESS?.date || profile.kycVerifiedAt) && (
                   <p className="text-xs text-gray-500">
@@ -629,7 +630,7 @@ export default function ProviderProfile({ onSuccess, onNavigate }) {
                 </div>
               )}
               
-              {(profile.badgeData?.BUSINESS?.status === 'VERIFIED' || profile.kycVerified) && (
+              {isProviderBusinessVerified(profile) && (
                 <div className="bg-white rounded-lg p-4 border border-purple-200 text-center">
                   <div className="text-3xl mb-2">🏢</div>
                   <p className="text-sm font-medium">Tvrtka/Obrt Značka</p>

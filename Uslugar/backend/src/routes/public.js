@@ -1,5 +1,9 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
+import {
+  isCompanyVerifiedForAdminOverview,
+  isProviderProfileBusinessVerified
+} from '../lib/provider-business-verified.js';
 
 const r = Router();
 
@@ -38,6 +42,7 @@ r.get('/user-types-overview', async (req, res, next) => {
             legalStatusId: true,
             companyName: true,
             kycVerified: true,
+            approvalStatus: true,
             badgeData: true,
             identityEmailVerified: true,
             identityPhoneVerified: true,
@@ -146,8 +151,8 @@ r.get('/user-types-overview', async (req, res, next) => {
           userTypes['Pružatelji usluga (Solo)'].count++;
         }
         
-        // Verificirani
-        if (clientVerification?.companyVerified) {
+        // Verificirani (ista logika kao admin / provider API)
+        if (isCompanyVerifiedForAdminOverview(user, providerProfile, clientVerification)) {
           userTypes['Verificirani pružatelji'].count++;
         }
         
@@ -235,8 +240,14 @@ r.get('/user-types-overview', async (req, res, next) => {
         totalProviders: providers.length
       },
       verification: {
-        verified: users.filter(u => u.clientVerification?.companyVerified).length,
-        notVerified: users.filter(u => !u.clientVerification?.companyVerified && (u.role === 'PROVIDER' || u.legalStatusId)).length
+        verified: users.filter(u =>
+          isCompanyVerifiedForAdminOverview(u, u.providerProfile, u.clientVerification)
+        ).length,
+        notVerified: users.filter(
+          u =>
+            !isCompanyVerifiedForAdminOverview(u, u.providerProfile, u.clientVerification) &&
+            (u.role === 'PROVIDER' || u.legalStatusId)
+        ).length
       },
       licenses: {
         withLicenses: users.filter(u => u.providerProfile?.licenses.length > 0).length,
@@ -247,17 +258,7 @@ r.get('/user-types-overview', async (req, res, next) => {
         business: {
           total: users.filter(u => {
             const profile = u.providerProfile;
-            if (!profile) return false;
-            let badgeDataObj = profile.badgeData;
-            if (typeof badgeDataObj === 'string') {
-              try {
-                badgeDataObj = JSON.parse(badgeDataObj);
-              } catch (e) {
-                badgeDataObj = null;
-              }
-            }
-            return profile.kycVerified || 
-                   (badgeDataObj && typeof badgeDataObj === 'object' && badgeDataObj.BUSINESS?.verified);
+            return profile && isProviderProfileBusinessVerified(profile);
           }).length,
           description: 'Korisnici s verificiranom tvrtkom (Sudski/Obrtni registar) - uključuje i pružatelje i tvrtke/obrte koji traže usluge'
         },

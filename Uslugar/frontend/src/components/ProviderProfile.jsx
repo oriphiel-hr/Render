@@ -3,6 +3,7 @@ import ReviewList from './ReviewList';
 import LocationMap from './LocationMap';
 import api from '../api';
 import { QRCodeSVG } from 'qrcode.react';
+import { isProviderBusinessVerified } from '../utils/providerVerification';
 
 const ProviderProfile = ({ providerId, onClose, onNavigateToMyJobs, scrollToAction }) => {
   const [provider, setProvider] = useState(null);
@@ -112,6 +113,8 @@ const ProviderProfile = ({ providerId, onClose, onNavigateToMyJobs, scrollToActi
     );
   }
 
+  const businessOk = provider ? isProviderBusinessVerified(provider) : false;
+
   if (error || !provider) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -194,7 +197,7 @@ const ProviderProfile = ({ providerId, onClose, onNavigateToMyJobs, scrollToActi
         )}
           {/* Trust labels */}
           <div className="flex flex-wrap gap-2">
-            {provider.kycVerified && (
+            {businessOk && (
               <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-xs border border-emerald-200" title="Poslovni status provjeren">
                 🟣 Poslovni status provjeren
               </span>
@@ -204,7 +207,7 @@ const ProviderProfile = ({ providerId, onClose, onNavigateToMyJobs, scrollToActi
                 🟢 OIB potvrđen (SudReg)
               </span>
             )}
-            {!provider.kycVerified && (
+            {!businessOk && (
               <span className="px-2 py-0.5 bg-orange-50 text-orange-700 rounded text-xs border border-orange-200" title="Profil u reviziji">
                 ⛔ Profil u reviziji
               </span>

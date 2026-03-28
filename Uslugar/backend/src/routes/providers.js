@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { auth } from '../lib/auth.js';
 import { uploadDocument, getImageUrl } from '../lib/upload.js';
 import { calculateDistance } from '../lib/geo-utils.js';
+import { isProviderProfileBusinessVerified } from '../lib/provider-business-verified.js';
 
 const r = Router();
 
@@ -119,7 +120,8 @@ r.get('/', async (req, res, next) => {
           latitude: pLat,
           longitude: pLon,
           city: pCity,
-          distanceKm
+          distanceKm,
+          businessVerified: isProviderProfileBusinessVerified(provider)
         };
       })
     );
@@ -136,9 +138,9 @@ r.get('/', async (req, res, next) => {
     // Verified filter
     if (verified === 'true') {
       filtered = filtered.filter(p => 
-        p.kycVerified || 
-        p.identityEmailVerified || 
-        p.identityPhoneVerified || 
+        isProviderProfileBusinessVerified(p) ||
+        p.identityEmailVerified ||
+        p.identityPhoneVerified ||
         p.identityDnsVerified
       );
     }
@@ -177,7 +179,7 @@ r.get('/', async (req, res, next) => {
 // Helper function to get badge count
 function getBadgeCount(provider) {
   let count = 0;
-  if (provider.kycVerified || (provider.badgeData && provider.badgeData.BUSINESS?.verified)) count++;
+  if (isProviderProfileBusinessVerified(provider)) count++;
   if (provider.identityEmailVerified || provider.identityPhoneVerified || provider.identityDnsVerified) count++;
   if (provider.safetyInsuranceUrl) count++;
   return count;
@@ -293,6 +295,7 @@ r.get('/me', auth(true, ['PROVIDER', 'ADMIN', 'USER']), async (req, res, next) =
       ...provider,
       ratingAvg,
       ratingCount: reviews.length,
+      businessVerified: isProviderProfileBusinessVerified(provider),
       // Include identity verification status
       identityEmailVerified: provider.identityEmailVerified || false,
       identityEmailVerifiedAt: provider.identityEmailVerifiedAt || null,
@@ -323,7 +326,12 @@ r.get('/:userId', async (req, res, next) => {
     if (!user || user.role !== 'PROVIDER') return res.status(404).json({ error: 'Provider not found' });
     // reviews summary
     const reviews = await prisma.review.findMany({ where: { toUserId: userId } });
-    res.json({ user, reviews });
+    const pp = user.providerProfile;
+    const businessVerified = isProviderProfileBusinessVerified(pp);
+    const userOut = pp
+      ? { ...user, providerProfile: { ...pp, businessVerified } }
+      : user;
+    res.json({ user: userOut, reviews, businessVerified });
   } catch (e) { next(e); }
 });
 

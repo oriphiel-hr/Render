@@ -9,6 +9,10 @@ import { sendMonthlyReportsToAllUsers, sendMonthlyReport } from '../services/mon
 import { ensureScreenshotTestUsers } from '../services/screenshot-test-users-service.js';
 import { ensureScreenshotDemoData } from '../services/screenshot-demo-data-service.js';
 import { ensureDefaultTrialSubscription } from '../services/credit-service.js';
+import {
+  isCompanyVerifiedForAdminOverview,
+  isProviderProfileBusinessVerified
+} from '../lib/provider-business-verified.js';
 import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -3115,8 +3119,12 @@ r.get('/users-overview', auth(true, ['ADMIN']), async (req, res, next) => {
           })
         : true; // Ako nema kategorija koje zahtijevaju licencu, smatra se da ima
 
-      // Status verifikacije tvrtke
-      const companyVerified = clientVerification?.companyVerified || false;
+      // Agregat za stupac „verifikacija“ — vidi lib/provider-business-verified.js
+      const companyVerified = isCompanyVerifiedForAdminOverview(
+        user,
+        providerProfile,
+        clientVerification
+      );
       const verificationStatus = user.role === 'PROVIDER' 
         ? (companyVerified ? 'Verificirano' : 'Nije verificirano')
         : (user.legalStatusId ? (companyVerified ? 'Verificirano' : 'Nije verificirano') : 'N/A');
@@ -5317,6 +5325,7 @@ r.get('/user-types-overview', auth(true, ['ADMIN']), async (req, res, next) => {
             legalStatusId: true,
             companyName: true,
             kycVerified: true,
+            approvalStatus: true,
             badgeData: true,
             identityEmailVerified: true,
             identityPhoneVerified: true,
@@ -5425,8 +5434,8 @@ r.get('/user-types-overview', auth(true, ['ADMIN']), async (req, res, next) => {
           userTypes['Pružatelji usluga (Solo)'].count++;
         }
         
-        // Verificirani
-        if (clientVerification?.companyVerified) {
+        // Verificirani (lib/provider-business-verified.js)
+        if (isCompanyVerifiedForAdminOverview(user, providerProfile, clientVerification)) {
           userTypes['Verificirani pružatelji'].count++;
         }
         
@@ -5514,8 +5523,14 @@ r.get('/user-types-overview', auth(true, ['ADMIN']), async (req, res, next) => {
         totalProviders: providers.length
       },
       verification: {
-        verified: users.filter(u => u.clientVerification?.companyVerified).length,
-        notVerified: users.filter(u => !u.clientVerification?.companyVerified && (u.role === 'PROVIDER' || u.legalStatusId)).length
+        verified: users.filter(u =>
+          isCompanyVerifiedForAdminOverview(u, u.providerProfile, u.clientVerification)
+        ).length,
+        notVerified: users.filter(
+          u =>
+            !isCompanyVerifiedForAdminOverview(u, u.providerProfile, u.clientVerification) &&
+            (u.role === 'PROVIDER' || u.legalStatusId)
+        ).length
       },
       licenses: {
         withLicenses: users.filter(u => u.providerProfile?.licenses.length > 0).length,
@@ -5526,47 +5541,15 @@ r.get('/user-types-overview', auth(true, ['ADMIN']), async (req, res, next) => {
         business: {
           total: users.filter(u => {
             const profile = u.providerProfile;
-            if (!profile) return false;
-            let badgeDataObj = profile.badgeData;
-            if (typeof badgeDataObj === 'string') {
-              try {
-                badgeDataObj = JSON.parse(badgeDataObj);
-              } catch (e) {
-                badgeDataObj = null;
-              }
-            }
-            return profile.kycVerified || 
-                   (badgeDataObj && typeof badgeDataObj === 'object' && badgeDataObj.BUSINESS?.verified);
+            return profile && isProviderProfileBusinessVerified(profile);
           }).length,
           providers: users.filter(u => {
             if (u.role !== 'PROVIDER') return false;
-            const profile = u.providerProfile;
-            if (!profile) return false;
-            let badgeDataObj = profile.badgeData;
-            if (typeof badgeDataObj === 'string') {
-              try {
-                badgeDataObj = JSON.parse(badgeDataObj);
-              } catch (e) {
-                badgeDataObj = null;
-              }
-            }
-            return profile.kycVerified || 
-                   (badgeDataObj && typeof badgeDataObj === 'object' && badgeDataObj.BUSINESS?.verified);
+            return isProviderProfileBusinessVerified(u.providerProfile);
           }).length,
           users: users.filter(u => {
             if (u.role !== 'USER') return false;
-            const profile = u.providerProfile;
-            if (!profile) return false;
-            let badgeDataObj = profile.badgeData;
-            if (typeof badgeDataObj === 'string') {
-              try {
-                badgeDataObj = JSON.parse(badgeDataObj);
-              } catch (e) {
-                badgeDataObj = null;
-              }
-            }
-            return profile.kycVerified || 
-                   (badgeDataObj && typeof badgeDataObj === 'object' && badgeDataObj.BUSINESS?.verified);
+            return isProviderProfileBusinessVerified(u.providerProfile);
           }).length,
           description: 'Korisnici s verificiranom tvrtkom (Sudski/Obrtni registar) - uključuje i pružatelje i tvrtke/obrte koji traže usluge'
         },

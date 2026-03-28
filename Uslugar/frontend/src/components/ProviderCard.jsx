@@ -1,6 +1,8 @@
 import React from 'react';
+import { isProviderBusinessVerified } from '../utils/providerVerification';
 
 const ProviderCard = ({ provider, onViewProfile, onContact }) => {
+  const businessOk = isProviderBusinessVerified(provider);
   const renderStars = (rating) => {
     const r = Number(rating) || 0;
     const stars = [];
@@ -49,7 +51,7 @@ const ProviderCard = ({ provider, onViewProfile, onContact }) => {
               </h3>
               {/* Badge System */}
               <div className="flex flex-wrap gap-1 mt-1">
-                {provider.kycVerified && (
+                {businessOk && (
                   <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs border border-green-300" title="Business Značka - Potvrđeno u javnim registrima">
                     ✓ Business
                   </span>
@@ -75,7 +77,7 @@ const ProviderCard = ({ provider, onViewProfile, onContact }) => {
           </div>
           {/* Trust labels */}
           <div className="flex flex-wrap gap-1 mt-1">
-            {provider.kycVerified && (
+            {businessOk && (
               <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-[11px] border border-emerald-200" title="Poslovni status provjeren">
                 🟣 Poslovni status provjeren
               </span>
@@ -85,7 +87,7 @@ const ProviderCard = ({ provider, onViewProfile, onContact }) => {
                 🟢 OIB potvrđen (SudReg)
               </span>
             )}
-            {!provider.kycVerified && (
+            {!businessOk && (
               <span className="px-2 py-0.5 bg-orange-50 text-orange-700 rounded text-[11px] border border-orange-200" title="Profil u reviziji">
                 ⛔ Profil u reviziji
               </span>
