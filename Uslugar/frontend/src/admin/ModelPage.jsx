@@ -1,6 +1,7 @@
 /* src/admin/ModelPage.jsx */
 import React, { useEffect, useMemo, useState } from 'react'
 import api from '@/api'
+import CategoryCoveragePanel from './CategoryCoveragePanel'
 
 // JSON primjeri za svaki model
 const MODEL_EXAMPLES = {
@@ -482,6 +483,8 @@ export default function ModelPage({ model }){
           </div>
         </div>
       </div>
+
+      {model === 'Category' && <CategoryCoveragePanel />}
 
       <details className="border rounded p-3 bg-gray-50">
         <summary className="cursor-pointer font-medium">
