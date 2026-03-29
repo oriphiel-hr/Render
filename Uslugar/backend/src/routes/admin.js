@@ -10,6 +10,10 @@ import { ensureScreenshotTestUsers } from '../services/screenshot-test-users-ser
 import { ensureScreenshotDemoData } from '../services/screenshot-demo-data-service.js';
 import { ensureDefaultTrialSubscription } from '../services/credit-service.js';
 import {
+  ensureTrialAddonsForUser,
+  ensureTrialEngagementIfMissing
+} from '../services/trial-addons-service.js';
+import {
   isCompanyVerifiedForAdminOverview,
   isProviderProfileBusinessVerified
 } from '../lib/provider-business-verified.js';
@@ -898,14 +902,23 @@ r.patch('/providers/:providerId/approval', auth(true, ['ADMIN']), async (req, re
       }
     }
 
-    // If approved, ensure they have a subscription or set them to TRIAL (with trial credits for sending offers)
+    // If approved, ensure TRIAL + trial add-oni (isti seed kao GET /subscriptions/me)
     if (status === 'APPROVED') {
-      const existingSubscription = await prisma.subscription.findUnique({
+      let sub = await prisma.subscription.findUnique({
         where: { userId: provider.userId }
       });
 
-      if (!existingSubscription) {
-        await ensureDefaultTrialSubscription(provider.userId, { trialDays: 30, trialCredits: 8 });
+      if (!sub) {
+        const ensured = await ensureDefaultTrialSubscription(provider.userId, {
+          trialDays: 30,
+          trialCredits: 8
+        });
+        sub = ensured.subscription;
+      }
+
+      if (sub && sub.plan === 'TRIAL' && sub.status === 'ACTIVE') {
+        await ensureTrialAddonsForUser(provider.userId, sub);
+        await ensureTrialEngagementIfMissing(provider.userId, sub.id);
       }
     }
 
