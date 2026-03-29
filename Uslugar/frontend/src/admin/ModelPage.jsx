@@ -160,10 +160,40 @@ function Textarea({label, value, onChange, placeholder}){
   )
 }
 
+const USER_ID_COLUMNS = new Set([
+  'userId',
+  'senderId',
+  'fromUserId',
+  'toUserId',
+  'directorId',
+  'resolvedBy'
+])
+
 // Helper function to render cell value with links
 function renderCellValue(value, colName) {
   const isObject = typeof value === 'object' && value !== null
   const isLong = typeof value === 'string' && value.length > 50
+
+  if (
+    !isObject &&
+    typeof value === 'string' &&
+    USER_ID_COLUMNS.has(colName) &&
+    value.length >= 12
+  ) {
+    return (
+      <span className="inline-flex flex-col gap-0.5 align-top">
+        <a
+          href={`/admin/User?id=${encodeURIComponent(value)}`}
+          className="text-blue-600 hover:text-blue-800 hover:underline text-sm font-medium"
+        >
+          Otvori korisnika
+        </a>
+        <span className="font-mono text-xs text-gray-500 max-w-[14rem] truncate" title={value}>
+          {value}
+        </span>
+      </span>
+    )
+  }
   
   if (isObject) {
     // Check if it's a user object

@@ -24,7 +24,7 @@ export default function AdminProviderApprovals() {
       if (err.response?.status === 401 || err.response?.status === 403) {
         setError('Nemate pristup admin panelu. Morate biti ulogirani kao admin.');
       } else {
-        setError('Failed to load pending providers');
+        setError('Učitavanje liste pružatelja nije uspjelo.');
       }
     } finally {
       setLoading(false);
@@ -230,10 +230,11 @@ export default function AdminProviderApprovals() {
                     ✕ Odbij
                   </button>
                   <button
+                    type="button"
                     onClick={() => { window.location.href = `/admin/User?id=${encodeURIComponent(provider.userId)}`; }}
                     className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                   >
-                    👤 Profil
+                    Otvori korisnika
                   </button>
                 </div>
               </div>

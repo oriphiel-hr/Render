@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '@/api';
 
 export default function AdminPayments() {
@@ -28,7 +29,7 @@ export default function AdminPayments() {
       if (err.response?.status === 401 || err.response?.status === 403) {
         setError('Nemate pristup admin panelu. Morate biti ulogirani kao admin.');
       } else {
-        setError('Failed to load payment sessions');
+        setError('Učitavanje plaćanja nije uspjelo.');
       }
     } finally {
       setLoading(false);
@@ -302,15 +303,15 @@ export default function AdminPayments() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm">
                       <div className="font-medium text-gray-900">
-                        {session.user ? (
-                          <a 
-                            href={`#user-profile?id=${session.userId}`}
+                        {session.user && session.userId ? (
+                          <Link
+                            to={`/admin/User?id=${encodeURIComponent(session.userId)}`}
                             className="text-blue-600 hover:text-blue-800 hover:underline"
                           >
                             {session.user.fullName || session.user.email}
-                          </a>
+                          </Link>
                         ) : (
-                          <span>{session.customerEmail || 'N/A'}</span>
+                          <span>{session.customerEmail || '—'}</span>
                         )}
                       </div>
                       <div className="text-gray-500 text-xs">

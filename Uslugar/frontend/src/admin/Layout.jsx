@@ -24,6 +24,7 @@ const NAVIGATION_GROUPS = [
     title: 'Korisnici i Profili',
     icon: '👥',
     items: [
+      { to: '/admin/dashboard', label: 'Početna', icon: '🏠' },
       { to: '/admin/User', label: 'Korisnici', model: 'User' },
       { to: '/admin/ProviderProfile', label: 'Profili pružatelja', model: 'ProviderProfile' },
       { to: '/admin/provider-approvals', label: 'Odobrenja pružatelja', icon: '✅' },
@@ -94,11 +95,11 @@ const NAVIGATION_GROUPS = [
     title: 'Logovi i Monitoring',
     icon: '📋',
     items: [
-      { to: '/admin/audit-logs', label: 'Audit Logs', icon: '📋' },
-      { to: '/admin/api-request-logs', label: 'API Request Logs', icon: '🌐' },
-      { to: '/admin/error-logs', label: 'Error Logs', icon: '❌' },
-      { to: '/admin/addon-event-logs', label: 'Addon Event Logs', icon: '📦' },
-      { to: '/admin/sms-logs', label: 'SMS Logs', icon: '📱' }
+      { to: '/admin/audit-logs', label: 'Zapisnik radnji (audit)', icon: '📋' },
+      { to: '/admin/api-request-logs', label: 'Zapisnici API zahtjeva', icon: '🌐' },
+      { to: '/admin/error-logs', label: 'Zapisnik grešaka', icon: '❌' },
+      { to: '/admin/addon-event-logs', label: 'Dnevnik add-on događaja', icon: '📦' },
+      { to: '/admin/sms-logs', label: 'SMS zapisnik', icon: '📱' }
     ]
   },
   {
@@ -128,12 +129,13 @@ function getPageTitle(pathname) {
   
   // Provjeri posebne stranice
   const specialPages = {
+    'dashboard': 'Početna',
     'provider-approvals': 'Odobrenja pružatelja',
     'verification-documents': 'Dokumenti za verifikaciju',
     'kyc-metrics': 'KYC Metrike',
     'platform-stats': 'Statistike platforme',
     'moderation': 'Moderacija sadržaja',
-    'sms-logs': 'SMS Logs',
+    'sms-logs': 'SMS zapisnik',
     'invoices': 'Fakture',
     'users-overview': 'Pregled korisnika',
     'documentation': 'Dokumentacija',
@@ -145,15 +147,15 @@ function getPageTitle(pathname) {
     'testing': 'Testiranje',
     'testing-blocks': 'Blokovski testovi',
     'user-types': 'Tipovi korisnika',
-    'audit-logs': 'Audit Logs',
-    'api-request-logs': 'API Request Logs',
-    'error-logs': 'Error Logs',
-    'addon-event-logs': 'Addon Event Logs',
+    'audit-logs': 'Zapisnik radnji (audit)',
+    'api-request-logs': 'Zapisnici API zahtjeva',
+    'error-logs': 'Zapisnik grešaka',
+    'addon-event-logs': 'Dnevnik add-on događaja',
     'contact-inquiries': 'Kontakt upiti',
     'ai-integrations': 'AI i integracije'
   }
   
-  return specialPages[path] || 'Admin Panel'
+  return specialPages[path] || 'Admin'
 }
 
 export default function Layout({ user, onLogout }){

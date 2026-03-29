@@ -24,6 +24,7 @@ import AdminAuditLogs from '../pages/AdminAuditLogs'
 import AdminApiRequestLogs from '../pages/AdminApiRequestLogs'
 import AdminErrorLogs from '../pages/AdminErrorLogs'
 import AdminAddonEventLogs from '../pages/AdminAddonEventLogs'
+import AdminDashboard from '../pages/AdminDashboard'
 import AdminContactInquiries from '../pages/AdminContactInquiries'
 import AdminAiIntegracije from '../pages/AdminAiIntegracije'
 import AdminScreenshots from '../pages/AdminScreenshots'
@@ -79,10 +80,10 @@ export default function AdminRouter(){
     // Admin panel rute (hash-ovi koji su dio admin panela)
     const adminHashRoutes = ['admin'];
     // Admin panel path rute (koje se koriste u BrowserRouter)
-    const adminPathRoutes = ['payments', 'provider-approvals', 'kyc-metrics', 'verification-documents', 
-                             'platform-stats', 'moderation', 'sms-logs', 'invoices', 
+    const adminPathRoutes = ['dashboard', 'payments', 'provider-approvals', 'kyc-metrics', 'verification-documents', 
+                             'platform-stats', 'moderation', 'documentation', 'sms-logs', 'invoices', 
                              'users-overview', 'cleanup', 'testing', 'testing-blocks', 'database', 'api-reference', 'user-types', 'screenshots',
-                             'audit-logs', 'api-request-logs', 'error-logs', 'addon-event-logs', 'contact-inquiries'];
+                             'audit-logs', 'api-request-logs', 'error-logs', 'addon-event-logs', 'contact-inquiries', 'ai-integrations'];
     // Dodaj sve MODELS kao admin rute
     const adminModelRoutes = MODELS.map(m => m.toLowerCase());
     
@@ -267,10 +268,11 @@ export default function AdminRouter(){
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Layout user={user} onLogout={logout} />}>
-          <Route index element={<Navigate to={`/admin/${MODELS[0]}`} replace />} />
+          <Route index element={<Navigate to="/admin/dashboard" replace />} />
           {MODELS.map(m => (
             <Route key={m} path={`/admin/${m}`} element={<ModelPage model={m} />} />
           ))}
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/payments" element={<AdminPayments />} />
           <Route path="/admin/provider-approvals" element={<AdminProviderApprovals />} />
           <Route path="/admin/kyc-metrics" element={<AdminKYCMetrics />} />
@@ -294,8 +296,8 @@ export default function AdminRouter(){
           <Route path="/admin/addon-event-logs" element={<AdminAddonEventLogs />} />
           <Route path="/admin/contact-inquiries" element={<AdminContactInquiries />} />
           <Route path="/admin/ai-integrations" element={<AdminAiIntegracije />} />
-          {/* Fallback ruta za nepoznate admin rute - redirect na prvi model */}
-          <Route path="/admin/*" element={<Navigate to={`/admin/${MODELS[0]}`} replace />} />
+          {/* Fallback ruta za nepoznate admin rute */}
+          <Route path="/admin/*" element={<Navigate to="/admin/dashboard" replace />} />
         </Route>
       </Routes>
     </BrowserRouter>

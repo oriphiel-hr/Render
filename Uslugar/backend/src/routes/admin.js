@@ -11,7 +11,9 @@ import { ensureScreenshotDemoData } from '../services/screenshot-demo-data-servi
 import { ensureDefaultTrialSubscription } from '../services/credit-service.js';
 import {
   ensureTrialAddonsForUser,
-  ensureTrialEngagementIfMissing
+  ensureTrialEngagementIfMissing,
+  backfillTrialAddonsForAllActiveTrials,
+  backfillTrialAddonsForSingleUser
 } from '../services/trial-addons-service.js';
 import {
   isCompanyVerifiedForAdminOverview,
@@ -117,6 +119,73 @@ r.get('/ai-status', auth(true, ['ADMIN']), async (req, res, next) => {
       openaiConfigured,
       leadScoringType: 'rule-based',
       documentation: '/docs/SETUP-OPENAI-API-KEY.md'
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * GET /api/admin/dashboard-summary
+ * KPI za admin početnu (brzi pregled stanja platforme)
+ */
+r.get('/dashboard-summary', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const [
+      pendingProviders,
+      usersTotal,
+      openJobs,
+      activeTrials,
+      contactInquiries7d,
+      errorLogsNew24h,
+      modStats
+    ] = await Promise.all([
+      prisma.providerProfile.count({ where: { approvalStatus: 'WAITING_FOR_APPROVAL' } }),
+      prisma.user.count(),
+      prisma.job.count({ where: { status: 'OPEN' } }),
+      prisma.subscription.count({ where: { plan: 'TRIAL', status: 'ACTIVE' } }),
+      prisma.contactInquiry.count({ where: { createdAt: { gte: since7d } } }),
+      prisma.errorLog.count({
+        where: { createdAt: { gte: since24h }, status: 'NEW' }
+      }),
+      getModerationStats()
+    ]);
+
+    const moderationPending =
+      modStats.jobs.pending +
+      modStats.reviews.pending +
+      modStats.offers.pending +
+      modStats.messages.pending;
+
+    const trialAddonCounts = await prisma.addonSubscription.groupBy({
+      by: ['userId'],
+      where: {
+        status: 'ACTIVE',
+        displayName: { startsWith: 'TRIAL:' }
+      },
+      _count: { _all: true }
+    });
+    const addonMap = Object.fromEntries(
+      trialAddonCounts.map((x) => [x.userId, x._count._all])
+    );
+    const trialRows = await prisma.subscription.findMany({
+      where: { plan: 'TRIAL', status: 'ACTIVE' },
+      select: { userId: true }
+    });
+    const trialsMissingAddons = trialRows.filter((s) => (addonMap[s.userId] || 0) < 3).length;
+
+    res.json({
+      pendingProviders,
+      usersTotal,
+      openJobs,
+      activeTrials,
+      trialsMissingAddons,
+      contactInquiriesLast7Days: contactInquiries7d,
+      errorLogsNewLast24h: errorLogsNew24h,
+      moderationPending
     });
   } catch (e) {
     next(e);
@@ -2657,11 +2726,12 @@ r.get('/audit-logs', auth(true, ['ADMIN']), async (req, res, next) => {
 /**
  * GET /api/admin/addon-event-logs
  * Pregled addon event logova (admin)
- * Query params: addonId, eventType, limit, offset, startDate, endDate
+ * Query params: addonId, eventType, userId, userEmail, limit, offset, startDate, endDate
  */
 r.get('/addon-event-logs', auth(true, ['ADMIN']), async (req, res, next) => {
   try {
-    const { addonId, eventType, limit = 50, offset = 0, startDate, endDate } = req.query;
+    const { addonId, eventType, userId, userEmail, limit = 50, offset = 0, startDate, endDate } =
+      req.query;
     
     const where = {};
     
@@ -2671,6 +2741,19 @@ r.get('/addon-event-logs', auth(true, ['ADMIN']), async (req, res, next) => {
     
     if (eventType) {
       where.eventType = eventType;
+    }
+
+    const emailTrim = typeof userEmail === 'string' ? userEmail.trim() : '';
+    if (userId || emailTrim) {
+      where.addon = {};
+      if (userId) {
+        where.addon.userId = userId;
+      }
+      if (emailTrim) {
+        where.addon.user = {
+          email: { contains: emailTrim, mode: 'insensitive' }
+        };
+      }
     }
     
     if (startDate || endDate) {
@@ -2727,6 +2810,35 @@ r.get('/addon-event-logs', auth(true, ['ADMIN']), async (req, res, next) => {
         return acc;
       }, {})
     });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * POST /api/admin/trial-addons/backfill
+ * Body (opcionalno): { userId: string } — samo taj korisnik (mora imati aktivni TRIAL).
+ * Bez bodyja / prazan userId: svi aktivni TRIAL korisnici.
+ */
+r.post('/trial-addons/backfill', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const body = req.body;
+    const wantsSingle =
+      body != null && typeof body === 'object' && Object.prototype.hasOwnProperty.call(body, 'userId');
+
+    if (wantsSingle) {
+      const raw = body.userId;
+      const singleId = typeof raw === 'string' ? raw.trim() : '';
+      const result = await backfillTrialAddonsForSingleUser(singleId);
+      return res.json({
+        success: result.ok,
+        scope: 'single',
+        ...result
+      });
+    }
+
+    const result = await backfillTrialAddonsForAllActiveTrials();
+    res.json({ success: true, scope: 'all', ...result });
   } catch (e) {
     next(e);
   }

@@ -169,3 +169,108 @@ export async function ensureTrialEngagementIfMissing(userId, subscriptionId) {
     console.error(`[TRIAL] Error creating engagement tracking:`, e);
   }
 }
+
+/**
+ * Za sve aktivne TRIAL pretplate: dopuni trial add-onove i engagement ako nedostaju.
+ * Idempotentno (ensureTrialAddonsForUser preskače ako već ima ≥3 TRIAL: add-aona).
+ */
+export async function backfillTrialAddonsForAllActiveTrials() {
+  const subs = await prisma.subscription.findMany({
+    where: { plan: 'TRIAL', status: 'ACTIVE' },
+    select: { id: true, userId: true, expiresAt: true }
+  });
+
+  let seeded = 0;
+  let unchanged = 0;
+  const errors = [];
+
+  for (const sub of subs) {
+    try {
+      const before = await prisma.addonSubscription.count({
+        where: {
+          userId: sub.userId,
+          status: 'ACTIVE',
+          displayName: { startsWith: 'TRIAL:' }
+        }
+      });
+      const { created } = await ensureTrialAddonsForUser(sub.userId, sub);
+      await ensureTrialEngagementIfMissing(sub.userId, sub.id);
+      const after = await prisma.addonSubscription.count({
+        where: {
+          userId: sub.userId,
+          status: 'ACTIVE',
+          displayName: { startsWith: 'TRIAL:' }
+        }
+      });
+      if (created || after > before) seeded += 1;
+      else unchanged += 1;
+    } catch (e) {
+      errors.push({ userId: sub.userId, message: e?.message || String(e) });
+    }
+  }
+
+  return {
+    checked: subs.length,
+    seededUsers: seeded,
+    unchangedUsers: unchanged,
+    errors
+  };
+}
+
+/**
+ * Backfill trial add-ona za jednog korisnika (mora imati aktivnu TRIAL pretplatu).
+ */
+export async function backfillTrialAddonsForSingleUser(userId) {
+  const id = typeof userId === 'string' ? userId.trim() : '';
+  if (!id) {
+    return { ok: false, reason: 'MISSING_USER_ID' };
+  }
+
+  const sub = await prisma.subscription.findUnique({
+    where: { userId: id },
+    select: { id: true, userId: true, expiresAt: true, plan: true, status: true }
+  });
+
+  if (!sub) {
+    return { ok: false, userId: id, reason: 'NO_SUBSCRIPTION' };
+  }
+
+  if (sub.plan !== 'TRIAL' || sub.status !== 'ACTIVE') {
+    return {
+      ok: false,
+      userId: id,
+      reason: 'NOT_ACTIVE_TRIAL',
+      plan: sub.plan,
+      status: sub.status
+    };
+  }
+
+  const before = await prisma.addonSubscription.count({
+    where: {
+      userId: id,
+      status: 'ACTIVE',
+      displayName: { startsWith: 'TRIAL:' }
+    }
+  });
+
+  const { created } = await ensureTrialAddonsForUser(id, sub);
+  await ensureTrialEngagementIfMissing(id, sub.id);
+
+  const after = await prisma.addonSubscription.count({
+    where: {
+      userId: id,
+      status: 'ACTIVE',
+      displayName: { startsWith: 'TRIAL:' }
+    }
+  });
+
+  const seeded = created || after > before;
+
+  return {
+    ok: true,
+    userId: id,
+    trialAddonsBefore: before,
+    trialAddonsAfter: after,
+    seeded
+  };
+}
