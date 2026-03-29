@@ -250,8 +250,7 @@ export default function App(){
 
   useEffect(() => {
     if (tab !== 'user') return;
-    
-    // Dohvati poslove s filterima (samo za prijavljene korisnike)
+
     if (token) {
       const params = {};
       if (q && String(q).trim()) params.q = String(q).trim();
@@ -266,8 +265,13 @@ export default function App(){
       if (filters.urgency) params.urgency = filters.urgency;
       if (filters.jobSize) params.jobSize = filters.jobSize;
       api.get('/jobs', { params }).then(r => setJobs(r.data)).catch(() => setJobs([]));
+    } else if (filters.categoryId) {
+      const params = { limit: 60, categoryId: filters.categoryId };
+      if (q && String(q).trim()) params.q = String(q).trim();
+      if (filters.city && String(filters.city).trim()) params.city = String(filters.city).trim();
+      api.get('/jobs', { params }).then(r => setJobs(r.data)).catch(() => setJobs([]));
     } else {
-      // Za neregistrirane korisnike - dohvati samo preview (prvih 6 najnovijih)
+      setJobs([]);
       api.get('/jobs', { params: { limit: 6 } })
         .then(r => setPreviewJobs(r.data.slice(0, 6)))
         .catch(() => setPreviewJobs([]));
@@ -393,6 +397,15 @@ export default function App(){
 
   const handleViewJobDetails = (job) => {
     setSelectedJob(job);
+  };
+
+  /** S kartice kategorije: postavi filter, idi na Traži poslove (#user), učitaj rezultate */
+  const goToJobsFilteredByCategory = (categoryId) => {
+    setFilters(prev => ({ ...prev, categoryId }));
+    setTab('user');
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   };
 
   const handleViewProviderProfile = (provider) => {
@@ -1426,6 +1439,48 @@ export default function App(){
       {tab === 'user' && (
         <section id="user" className="tab-section dark:text-gray-100" aria-labelledby="user-heading">
           <h2 id="user-heading" className="sr-only">Početna stranica</h2>
+
+          {filters.categoryId && (!token || !isProviderOrBusinessUser()) && (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                  Otvoreni poslovi
+                  {categories.find(c => c.id === filters.categoryId)?.name && (
+                    <span className="text-blue-600 dark:text-blue-400">
+                      {' '}
+                      — {categories.find(c => c.id === filters.categoryId).name}
+                    </span>
+                  )}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilters(prev => ({ ...prev, categoryId: '' }));
+                  }}
+                  className="text-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  Očisti filtar kategorije
+                </button>
+              </div>
+              {jobs.length === 0 ? (
+                <p className="text-center py-10 text-gray-600 dark:text-gray-400">
+                  Trenutačno nema otvorenih poslova u ovoj kategoriji.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {jobs.map(job => (
+                    <JobCard
+                      key={job.id}
+                      job={job}
+                      onViewDetails={handleViewJobDetails}
+                      onMakeOffer={handleMakeOffer}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Hero CTA Section - na vrhu */}
           {!token && (
             <div className="mb-6 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-6 text-white">
@@ -2152,7 +2207,7 @@ export default function App(){
                 Dinamički učitano iz baze: <span className="font-semibold text-green-600">{categories.length}</span> kategorija
               </p>
               <p className="text-sm text-gray-500">
-                Kliknite na kategoriju da vidite detalje ili filtrirate poslove
+                Gumb „Filtrirati poslove“ ili klik na podkategoriju otvara Traži poslove s odabranom kategorijom
               </p>
             </div>
 
@@ -2216,7 +2271,8 @@ export default function App(){
                           )}
                         </div>
                         <button
-                          onClick={() => setFilters(prev => ({ ...prev, categoryId: parentCategory.id }))}
+                          type="button"
+                          onClick={() => goToJobsFilteredByCategory(parentCategory.id)}
                           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                         >
                           Filtrirati poslove
@@ -2233,8 +2289,16 @@ export default function App(){
                             {filteredSub.map(subcategory => (
                               <div 
                                 key={subcategory.id} 
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    goToJobsFilteredByCategory(subcategory.id);
+                                  }
+                                }}
                                 className="bg-gray-50 border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer"
-                                onClick={() => setFilters(prev => ({ ...prev, categoryId: subcategory.id }))}
+                                onClick={() => goToJobsFilteredByCategory(subcategory.id)}
                               >
                                 <div className="text-center">
                                   <div className="text-xl mb-1">
