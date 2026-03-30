@@ -286,6 +286,44 @@ r.post('/create-checkout', auth(true, ['PROVIDER']), async (req, res, next) => {
     
     console.log('[CREATE-CHECKOUT] Creating session with metadata:', metadata);
 
+    // Označi da je plaćanje u tijeku (bez aktivacije paketa)
+    // Ne mijenjamo status ako korisnik već ima aktivnu plaćenu pretplatu.
+    try {
+      const existingSub = await prisma.subscription.findUnique({
+        where: { userId: req.user.id },
+        select: { id: true, plan: true, status: true }
+      });
+      const hasActivePaidSubscription =
+        existingSub &&
+        existingSub.plan !== 'TRIAL' &&
+        existingSub.plan !== 'BASIC' &&
+        existingSub.status === 'ACTIVE';
+
+      if (!hasActivePaidSubscription) {
+        if (existingSub) {
+          if (existingSub.status !== 'PAYMENT_PENDING') {
+            await prisma.subscription.update({
+              where: { userId: req.user.id },
+              data: { status: 'PAYMENT_PENDING' }
+            });
+          }
+        } else {
+          await prisma.subscription.create({
+            data: {
+              userId: req.user.id,
+              plan: 'BASIC',
+              status: 'PAYMENT_PENDING',
+              credits: 0,
+              creditsBalance: 0
+            }
+          });
+        }
+      }
+    } catch (pendingErr) {
+      // Ne blokiramo checkout ako pending oznaka ne uspije.
+      console.warn('[CHECKOUT] Could not set PAYMENT_PENDING status:', pendingErr.message);
+    }
+
     // Create Stripe Checkout Session
     // Ako je prorated billing i cijena je 0 (downgrade), koristimo payment mode umjesto subscription
     const isProratedDowngrade = discountType === 'prorated_downgrade' && adjustedPrice === 0;
@@ -374,6 +412,13 @@ r.post('/webhook', async (req, res, next) => {
     // Handle successful payment
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
+      // Aktivacija tek nakon potvrđene uplate.
+      if (session.payment_status !== 'paid') {
+        console.log(
+          `[PAYMENT] checkout.session.completed received without paid status (${session.payment_status}) for session ${session.id}`
+        );
+        return res.json({ received: true });
+      }
       
       const userId = session.metadata.userId;
       const plan = session.metadata.plan;
@@ -383,7 +428,7 @@ r.post('/webhook', async (req, res, next) => {
 
       console.log(`[PAYMENT] Subscription activated for user ${userId}, plan ${plan}, interval ${interval}`);
 
-      // Activate subscription (sada će automatski kreirati fakturu unutar activateSubscription)
+      // Activate subscription (tek nakon paid potvrde)
       await activateSubscription(userId, plan, credits, paymentIntentId, interval);
 
       return res.json({ received: true });
@@ -547,6 +592,11 @@ r.post('/cancel-subscription', auth(true, ['PROVIDER']), async (req, res, next) 
  * NOTE: No auth required - payment verification is enough
  */
 r.post('/activate-latest-subscription', async (req, res, next) => {
+  return res.status(410).json({
+    error: 'Endpoint deprecated',
+    message: 'Subscription activation is handled exclusively by Stripe webhook.'
+  });
+  /*
   try {
     const { payment_intent_id, user_id } = req.body;
     
@@ -610,6 +660,7 @@ r.post('/activate-latest-subscription', async (req, res, next) => {
     console.error('Auto-activation error:', error);
     next(error);
   }
+  */
 });
 
 /**
@@ -617,6 +668,11 @@ r.post('/activate-latest-subscription', async (req, res, next) => {
  * POST /api/payments/activate-by-email
  */
 r.post('/activate-by-email', async (req, res, next) => {
+  return res.status(410).json({
+    error: 'Endpoint deprecated',
+    message: 'Manual email activation is disabled. Use Stripe webhook flow.'
+  });
+  /*
   try {
     const { email, plan = 'PRO', credits = 50 } = req.body;
     
@@ -722,6 +778,7 @@ r.post('/activate-by-email', async (req, res, next) => {
       details: error
     });
   }
+  */
 });
 
 /**
@@ -729,6 +786,11 @@ r.post('/activate-by-email', async (req, res, next) => {
  * POST /api/payments/activate-subscription
  */
 r.post('/activate-subscription', auth(true, ['PROVIDER']), async (req, res, next) => {
+  return res.status(410).json({
+    error: 'Endpoint deprecated',
+    message: 'Manual activation is disabled. Subscription activates after Stripe webhook confirmation.'
+  });
+  /*
   try {
     const { session_id } = req.body;
 
@@ -762,6 +824,7 @@ r.post('/activate-subscription', auth(true, ['PROVIDER']), async (req, res, next
     console.error('Manual activation error:', error);
     next(error);
   }
+  */
 });
 
 /**
@@ -780,58 +843,12 @@ r.get('/success', async (req, res, next) => {
     const session = await stripe.checkout.sessions.retrieve(session_id);
 
     if (session.payment_status === 'paid') {
-      // Log full session object to debug
-      console.log(`[PAYMENT SUCCESS] Full session object:`, JSON.stringify(session, null, 2));
-      console.log(`[PAYMENT SUCCESS] Session metadata:`, session.metadata);
-      
-      // Activate subscription if not already activated
-      const userId = session.metadata?.userId;
-      const plan = session.metadata?.plan;
-      const credits = parseInt(session.metadata?.credits || '0');
-      
-      console.log(`[PAYMENT SUCCESS] Parsed values - userId: ${userId}, plan: ${plan}, credits: ${credits}`);
-      
-      // Check if userId is valid (CUID is always a string, not a number)
-      if (!userId || typeof userId !== 'string' || userId.length < 5) {
-        console.error('[PAYMENT SUCCESS] No valid userId found in session metadata');
-        console.error('[PAYMENT SUCCESS] Available metadata keys:', Object.keys(session.metadata || {}));
-        // Payment was successful, but metadata is missing
-        return res.json({
-          success: true,
-          message: 'Plaćanje uspješno završeno. Kontaktirajte podršku za aktivaciju pretplate.',
-          sessionId: session_id,
-          requiresManualActivation: true
-        });
-      }
-      
-      console.log('[PAYMENT SUCCESS] Metadata userId:', userId, 'type:', typeof userId);
-      
-      try {
-        // userId should be a string (cuid)
-        const userIdStr = String(userId);
-        console.log('[PAYMENT SUCCESS] Using userId as string:', userIdStr);
-        
-        // Activate subscription directly
-        await activateSubscription(userIdStr, plan, credits);
-        
-        res.json({
-          success: true,
-          message: 'Pretplata uspješno aktivirana!',
-          sessionId: session_id
-        });
-      } catch (activateError) {
-        console.error('[PAYMENT SUCCESS] Error activating subscription:', activateError);
-        console.error('[PAYMENT SUCCESS] Error message:', activateError.message);
-        console.error('[PAYMENT SUCCESS] Error stack:', activateError.stack);
-        // Return error details for debugging
-        res.status(200).json({
-          success: false,
-          message: 'Plaćanje uspješno završeno.',
-          error: activateError.message,
-          sessionId: session_id,
-          metadata: session.metadata
-        });
-      }
+      // Activation is exclusively done by webhook.
+      res.json({
+        success: true,
+        message: 'Plaćanje je evidentirano. Aktivacija paketa se dovršava automatski nakon webhook potvrde.',
+        sessionId: session_id
+      });
     } else {
       res.redirect('/subscription/plans?error=payment_pending');
     }

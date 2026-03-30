@@ -1340,6 +1340,7 @@ enum QueueResponse {
 
 enum SubscriptionStatus {
   ACTIVE // Aktivna pretplata
+  PAYMENT_PENDING // Plaćanje u tijeku (paket još nije aktivan)
   CANCELLED // Otkazana
   EXPIRED // Istekla
 }

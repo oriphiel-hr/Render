@@ -14,6 +14,12 @@ export default function Pricing({ setTab }) {
   const [showFairRuleDetail, setShowFairRuleDetail] = useState(false);
   const [billingInterval, setBillingInterval] = useState('monthly'); // 'monthly' | 'yearly'
   const [pricingStats, setPricingStats] = useState(null); // { providersCount, leadsDeliveredCount }
+  const subscriptionStatusLabel = {
+    ACTIVE: 'Aktivna',
+    PAYMENT_PENDING: 'Plaćanje u tijeku',
+    EXPIRED: 'Istekla',
+    CANCELLED: 'Otkazana'
+  };
 
   const showToast = (message, type = 'info') => {
     setToast({ message, type, isVisible: true });
@@ -320,8 +326,11 @@ export default function Pricing({ setTab }) {
         {currentSubscription && (
           <div className="mb-8 bg-green-50 dark:bg-green-900/20 border-2 border-green-500 dark:border-green-600 rounded-xl p-6 text-center">
             <h2 className="text-2xl font-bold text-green-900 dark:text-green-100 mb-2">
-              ✓ Vaš aktivni plan: <span className="text-green-700 dark:text-green-300">{currentSubscription.plan}</span>
+              ✓ Vaš plan: <span className="text-green-700 dark:text-green-300">{currentSubscription.plan}</span>
             </h2>
+            <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+              Status: <strong>{subscriptionStatusLabel[currentSubscription.status] || currentSubscription.status}</strong>
+            </p>
             {launchTrial && currentSubscription.plan === 'TRIAL' && (
               <p className="text-amber-700 dark:text-amber-300 font-semibold mb-2">
                 🚀 Launch TRIAL – besplatno dok u vašim kategorijama nema dovoljno klijenata
@@ -338,6 +347,11 @@ export default function Pricing({ setTab }) {
                 <> | Ističe: <strong>{new Date(currentSubscription.expiresAt).toLocaleDateString('hr-HR')}</strong></>
               )}
             </p>
+            {currentSubscription.status === 'PAYMENT_PENDING' && (
+              <p className="mt-3 text-sm text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-700 rounded-md px-3 py-2 inline-block">
+                Plaćanje je pokrenuto. Paket se aktivira tek nakon potvrđene uplate.
+              </p>
+            )}
           </div>
         )}
 

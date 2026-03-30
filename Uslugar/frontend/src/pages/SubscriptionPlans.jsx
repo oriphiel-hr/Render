@@ -10,6 +10,12 @@ export default function SubscriptionPlans() {
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState(null);
   const [toast, setToast] = useState({ message: '', type: 'info', isVisible: false });
+  const statusLabel = {
+    ACTIVE: 'Aktivna',
+    PAYMENT_PENDING: 'Plaćanje u tijeku',
+    EXPIRED: 'Istekla',
+    CANCELLED: 'Otkazana'
+  };
 
   useEffect(() => {
     loadData();
@@ -153,7 +159,7 @@ export default function SubscriptionPlans() {
                 })()}
               </p>
               <p className="text-sm text-blue-600 mt-1">
-                Status: <span className="font-semibold">{currentSubscription.status}</span>
+                Status: <span className="font-semibold">{statusLabel[currentSubscription.status] || currentSubscription.status}</span>
               </p>
             </div>
             {currentSubscription.expiresAt && (
@@ -195,6 +201,13 @@ export default function SubscriptionPlans() {
             <div className="mt-4 p-3 bg-red-100 border border-red-300 rounded">
               <p className="text-sm text-red-800 font-semibold">
                 ⚠️ Vaša pretplata je istekla. Nadogradite pretplatu da nastavite koristiti Uslugar EXCLUSIVE.
+              </p>
+            </div>
+          )}
+          {currentSubscription.status === 'PAYMENT_PENDING' && (
+            <div className="mt-4 p-3 bg-amber-100 border border-amber-300 rounded">
+              <p className="text-sm text-amber-800 font-semibold">
+                ⏳ Plaćanje je u tijeku. Paket će biti aktiviran nakon potvrde uplate.
               </p>
             </div>
           )}
