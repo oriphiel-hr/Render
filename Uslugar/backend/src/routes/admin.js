@@ -133,6 +133,7 @@ r.get('/dashboard-summary', auth(true, ['ADMIN']), async (req, res, next) => {
   try {
     const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const pendingThreshold = new Date(Date.now() - 30 * 60 * 1000); // 30 min
 
     const [
       pendingProviders,
@@ -141,7 +142,9 @@ r.get('/dashboard-summary', auth(true, ['ADMIN']), async (req, res, next) => {
       activeTrials,
       contactInquiries7d,
       errorLogsNew24h,
-      modStats
+      modStats,
+      subscriptionsPaymentPending,
+      subscriptionsPaymentPendingStuck
     ] = await Promise.all([
       prisma.providerProfile.count({ where: { approvalStatus: 'WAITING_FOR_APPROVAL' } }),
       prisma.user.count(),
@@ -151,7 +154,14 @@ r.get('/dashboard-summary', auth(true, ['ADMIN']), async (req, res, next) => {
       prisma.errorLog.count({
         where: { createdAt: { gte: since24h }, status: 'NEW' }
       }),
-      getModerationStats()
+      getModerationStats(),
+      prisma.subscription.count({ where: { status: 'PAYMENT_PENDING' } }),
+      prisma.subscription.count({
+        where: {
+          status: 'PAYMENT_PENDING',
+          updatedAt: { lte: pendingThreshold }
+        }
+      })
     ]);
 
     const moderationPending =
@@ -185,7 +195,9 @@ r.get('/dashboard-summary', auth(true, ['ADMIN']), async (req, res, next) => {
       trialsMissingAddons,
       contactInquiriesLast7Days: contactInquiries7d,
       errorLogsNewLast24h: errorLogsNew24h,
-      moderationPending
+      moderationPending,
+      subscriptionsPaymentPending,
+      subscriptionsPaymentPendingStuck
     });
   } catch (e) {
     next(e);

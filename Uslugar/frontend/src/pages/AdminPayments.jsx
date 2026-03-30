@@ -8,6 +8,8 @@ export default function AdminPayments() {
   const [error, setError] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [onlyStuckPending, setOnlyStuckPending] = useState(false);
+  const stuckPendingCount = sessions.filter(s => s.paymentPendingStuck).length;
 
   useEffect(() => {
     // Clear any hash fragments (like #register-provider) from URL
@@ -59,6 +61,27 @@ export default function AdminPayments() {
     }
   };
 
+  const getSubscriptionStatusBadge = (session) => {
+    if (!session?.subscriptionStatus) return null;
+    if (session.subscriptionStatus === 'PAYMENT_PENDING') {
+      return (
+        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${
+          session.paymentPendingStuck ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'
+        }`}>
+          {session.paymentPendingStuck ? 'PAYMENT_PENDING > 30 min' : 'PAYMENT_PENDING'}
+        </span>
+      );
+    }
+    if (session.subscriptionStatus === 'ACTIVE') {
+      return <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-800">ACTIVE</span>;
+    }
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-700">
+        {session.subscriptionStatus}
+      </span>
+    );
+  };
+
   // Filter sessions
   const filteredSessions = sessions.filter(session => {
     // Filter by status
@@ -66,6 +89,10 @@ export default function AdminPayments() {
       return false;
     }
     
+    if (onlyStuckPending && !session.paymentPendingStuck) {
+      return false;
+    }
+
     // Filter by search term
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
@@ -269,6 +296,17 @@ export default function AdminPayments() {
             </select>
           </div>
         </div>
+        <div className="mt-4">
+          <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              checked={onlyStuckPending}
+              onChange={(e) => setOnlyStuckPending(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+            />
+            Samo zapeli PAYMENT_PENDING (&gt; 30 min) ({stuckPendingCount})
+          </label>
+        </div>
       </div>
 
       {/* Sessions Table */}
@@ -337,6 +375,9 @@ export default function AdminPayments() {
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(session.paymentStatus)}`}>
                       {session.paymentStatus || session.status}
                     </span>
+                    <div className="mt-1">
+                      {getSubscriptionStatusBadge(session)}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {formatAmount(session.amountTotal, session.currency)}

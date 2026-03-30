@@ -1265,7 +1265,9 @@ r.get('/admin/sessions', auth(true, ['ADMIN']), async (req, res, next) => {
             where: { userId },
             select: {
               plan: true,
-              creditsBalance: true
+              creditsBalance: true,
+              status: true,
+              updatedAt: true
             }
           });
         }
@@ -1296,6 +1298,11 @@ r.get('/admin/sessions', auth(true, ['ADMIN']), async (req, res, next) => {
           amountTotal = invoice.subtotal;
         }
 
+        const paymentPendingStuck =
+          subscription?.status === 'PAYMENT_PENDING' &&
+          subscription?.updatedAt &&
+          new Date(subscription.updatedAt).getTime() <= Date.now() - 30 * 60 * 1000;
+
         return {
           id: invoice.id,
           invoiceNumber: invoice.number,
@@ -1304,6 +1311,9 @@ r.get('/admin/sessions', auth(true, ['ADMIN']), async (req, res, next) => {
           customerEmail: invoice.customer_email || (invoice.customer && typeof invoice.customer === 'object' ? invoice.customer.email : null),
           plan: plan || matchingSession?.metadata?.plan || null,
           credits: subscription?.creditsBalance || null,
+          subscriptionStatus: subscription?.status || null,
+          subscriptionUpdatedAt: subscription?.updatedAt || null,
+          paymentPendingStuck: !!paymentPendingStuck,
           paymentStatus: invoice.status === 'paid' ? 'paid' : (invoice.status === 'open' ? 'unpaid' : invoice.status),
           status: invoice.status,
           amountTotal: amountTotal, // Amount in cents

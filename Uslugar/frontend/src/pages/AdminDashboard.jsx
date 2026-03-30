@@ -111,6 +111,20 @@ export default function AdminDashboard() {
                 warn
               />
               <KpiCard
+                title="Pretplate: plaćanje u tijeku"
+                value={data.subscriptionsPaymentPending}
+                hint="Čekaju Stripe potvrdu uplate"
+                to="/admin/payments"
+                warn={false}
+              />
+              <KpiCard
+                title="Zapelo PAYMENT_PENDING > 30 min"
+                value={data.subscriptionsPaymentPendingStuck}
+                hint="Mogući webhook/naplata problem"
+                to="/admin/payments"
+                warn
+              />
+              <KpiCard
                 title="Aktivnih TRIAL pretplata"
                 value={data.activeTrials}
                 to="/admin/Subscription"
