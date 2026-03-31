@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PartnerInquiryStatus {
+  NEW
+  IN_REVIEW
+  OFFER_SENT
+  WON
+  LOST
+}
+
+enum PartnerInquirySource {
+  USLUGAR_REFERRAL
+  ORIPHIEL_DIRECT
+  OTHER
+}
+
+enum PartnerInquiryServiceType {
+  WEB
+  MARKETING
+  AUTOMATION
+  OTHER
+}
+
+enum PartnerInquiryLeadType {
+  PARTNER_INQUIRY
+  DEMO_CONFIG
+}
+
+model PartnerInquiry {
+  id          String                    @id @default(cuid())
+  fullName    String
+  email       String
+  companyName String?
+  phone       String?
+  serviceType PartnerInquiryServiceType
+  leadType    PartnerInquiryLeadType    @default(PARTNER_INQUIRY)
+  source      PartnerInquirySource      @default(OTHER)
+  status      PartnerInquiryStatus      @default(NEW)
+  message     String
+  strategySnapshot Json?
+  assignedTo  String?
+  notes       String?
+  nextActionAt DateTime?
+  clientId    String?
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
+  client      Client?                   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([source])
+  @@index([serviceType])
+  @@index([createdAt])
+  @@index([assignedTo])
+  @@index([clientId])
+}
+
+model Client {
+  id             String                @id @default(cuid())
+  name           String
+  email          String
+  companyName    String?
+  phone          String?
+  notes          String?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  inquiries      PartnerInquiry[]
+  configurations ClientConfiguration[]
+
+  @@index([email])
+  @@index([createdAt])
+}
+
+model ClientConfiguration {
+  id                 String   @id @default(cuid())
+  clientId           String
+  version            Int
+  title              String
+  status             String   @default("DRAFT")
+  sourceInquiryId    String?
+  strategySnapshot   Json
+  pricingSnapshot    Json?
+  createdBy          String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  client             Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, version])
+  @@index([clientId, createdAt])
+  @@index([status])
+}
