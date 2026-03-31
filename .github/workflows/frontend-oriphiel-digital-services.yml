@@ -1,0 +1,47 @@
+name: Oriphiel Digital Services PROD - Frontend Hostinger Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "oriphiel-digital-services/frontend/**"
+      - ".github/workflows/frontend-oriphiel-digital-services.yml"
+
+jobs:
+  deploy-oriphiel-digital-services-prod-frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: oriphiel-digital-services/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: oriphiel-digital-services/frontend
+
+      - name: Build frontend
+        env:
+          VITE_API_BASE_URL: ${{ secrets.ORIPHIEL_DIGITAL_SERVICES_PROD_VITE_API_BASE_URL }}
+        run: npm run build
+        working-directory: oriphiel-digital-services/frontend
+
+      - name: Deploy dist to Hostinger via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.ORIPHIEL_DIGITAL_SERVICES_PROD_HOSTINGER_FTP_HOST }}
+          username: ${{ secrets.ORIPHIEL_DIGITAL_SERVICES_PROD_HOSTINGER_FTP_USERNAME }}
+          password: ${{ secrets.ORIPHIEL_DIGITAL_SERVICES_PROD_HOSTINGER_FTP_PASSWORD }}
+          server-dir: ${{ secrets.ORIPHIEL_DIGITAL_SERVICES_PROD_HOSTINGER_FTP_SERVER_DIR }}/
+          local-dir: oriphiel-digital-services/frontend/dist/
+          protocol: ftp
+          port: 21
+          dangerous-clean-slate: false
