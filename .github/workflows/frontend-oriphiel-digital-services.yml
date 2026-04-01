@@ -48,4 +48,4 @@ jobs:
           local-dir: oriphiel-digital-services/frontend/dist/
           protocol: ftp
           port: 21
-          dangerous-clean-slate: true
+          dangerous-clean-slate: false
