@@ -32,6 +32,12 @@ jobs:
         run: npm run build
         working-directory: oriphiel-digital-services/frontend
 
+      - name: Verify build output
+        run: |
+          echo "Listing dist contents"
+          ls -la oriphiel-digital-services/frontend/dist
+          test -f oriphiel-digital-services/frontend/dist/index.html
+
       - name: Deploy dist to Hostinger via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
