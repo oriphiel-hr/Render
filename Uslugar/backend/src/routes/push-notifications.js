@@ -4,7 +4,8 @@ import {
   savePushSubscription,
   removePushSubscription,
   getUserPushSubscriptions,
-  getVapidPublicKey
+  getVapidPublicKey,
+  sendPushNotification
 } from '../services/push-notification-service.js';
 
 const r = Router();
@@ -24,14 +25,20 @@ r.get('/vapid-public-key', (req, res) => {
 // Subscribe to push notifications
 r.post('/subscribe', auth(true), async (req, res, next) => {
   try {
-    const { subscription } = req.body;
+    const { subscription, expoPushToken } = req.body;
     const userAgent = req.get('user-agent');
+    const normalizedSubscription = subscription || (expoPushToken
+      ? {
+          endpoint: expoPushToken,
+          keys: { p256dh: 'expo', auth: 'expo' }
+        }
+      : null);
 
-    if (!subscription || !subscription.endpoint || !subscription.keys) {
+    if (!normalizedSubscription || !normalizedSubscription.endpoint || !normalizedSubscription.keys) {
       return res.status(400).json({ error: 'Invalid subscription data' });
     }
 
-    const saved = await savePushSubscription(req.user.id, subscription, userAgent);
+    const saved = await savePushSubscription(req.user.id, normalizedSubscription, userAgent);
     res.json({ success: true, subscription: saved });
   } catch (e) {
     next(e);
@@ -59,6 +66,27 @@ r.get('/subscriptions', auth(true), async (req, res, next) => {
   try {
     const subscriptions = await getUserPushSubscriptions(req.user.id);
     res.json({ subscriptions });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Send a test push to current user
+r.post('/test-self', auth(true), async (req, res, next) => {
+  try {
+    const {
+      title = 'Uslugar test push',
+      message = 'Ako vidiš ovo, mobile push radi.',
+      type = 'TEST_PUSH'
+    } = req.body || {};
+    const result = await sendPushNotification(req.user.id, {
+      id: `test-${Date.now()}`,
+      title,
+      message,
+      type,
+      url: '/'
+    });
+    res.json({ success: true, result });
   } catch (e) {
     next(e);
   }

@@ -234,13 +234,15 @@ export async function generateInvoicePDF(invoice) {
       // COMPANY INFO (Desno)
       // ============================================
       const companyInfo = [
-        'ORIPHIEL d.o.o.',
+        'Oriphiel d.o.o.',
         'OIB: 88070789896',
+        'MB: 06036651',
+        'NKD: 62109 - Ostalo računalno programiranje',
         'Slavenskoga ulica 5',
         '10000 Zagreb',
         'Direktor: Tomislav Kranjec',
-        'Email: uslugar@oriphiel.hr',
-        'Web: https://www.uslugar.eu'
+        'IBAN: HR8223400091111305152',
+        'Banka: PRIVREDNA BANKA d.d.'
       ];
 
       let yPos = 50;

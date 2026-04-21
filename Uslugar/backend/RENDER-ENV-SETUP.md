@@ -121,7 +121,7 @@ FISCALIZATION_ENABLED=true
 ERACUN_API_URL=https://cis.porezna-uprava.hr/api/v1/fiscalization
 ERACUN_API_KEY=your-eracun-api-key
 COMPANY_OIB=88070789896
-COMPANY_NAME=ORIPHIEL d.o.o.
+COMPANY_NAME=Oriphiel d.o.o.
 COMPANY_ADDRESS=Slavenskoga ulica 5, 10000 Zagreb
 COMPANY_DIRECTOR=Tomislav Kranjec
 ```
