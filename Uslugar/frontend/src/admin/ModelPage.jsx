@@ -45,6 +45,8 @@ const MODEL_EXAMPLES = {
     latitude: 45.8150,
     longitude: 15.9819,
     status: "OPEN",
+    leadMode: "EXCLUSIVE",
+    maxOffers: null,
     urgency: "NORMAL",
     jobSize: "MEDIUM",
     deadline: "2025-12-31T23:59:59.000Z",

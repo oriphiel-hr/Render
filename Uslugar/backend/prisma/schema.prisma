@@ -370,6 +370,7 @@ model Job {
 
   // USLUGAR EXCLUSIVE polja
   leadMode           LeadMode @default(EXCLUSIVE) // Način distribucije: ekskluzivno ili više ponuda
+  maxOffers          Int? // Maksimalan broj ponuda za COMPETITIVE mode (null = bez limita)
   isExclusive        Boolean @default(true) // Ekskluzivan lead (samo 1 provider)
   leadPrice          Int?    @default(10) // Cijena u kreditima (10-20)
   assignedProvider   User?   @relation("AssignedJobs", fields: [assignedProviderId], references: [id], onDelete: SetNull)

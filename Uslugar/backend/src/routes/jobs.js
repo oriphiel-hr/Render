@@ -192,6 +192,7 @@ r.post('/', async (req, res, next) => {
     const leadModeRaw = body.leadMode ?? 'EXCLUSIVE';
     const jobSize = body.jobSize;
     const deadline = body.deadline;
+    const maxOffersRaw = body.maxOffers;
     const images = body.images ?? [];
     const contactEmail = body.contactEmail;
     const contactPhone = body.contactPhone;
@@ -279,6 +280,8 @@ r.post('/', async (req, res, next) => {
     const validJobSize = ['SMALL', 'MEDIUM', 'LARGE', 'EXTRA_LARGE'].includes(jobSize) ? jobSize : null;
     const validLeadMode = ['EXCLUSIVE', 'COMPETITIVE'].includes(leadModeRaw) ? leadModeRaw : 'EXCLUSIVE';
     const isExclusiveLead = validLeadMode === 'EXCLUSIVE';
+    const parsedMaxOffers = maxOffersRaw == null || maxOffersRaw === '' ? null : parseInt(maxOffersRaw, 10);
+    const validMaxOffers = Number.isFinite(parsedMaxOffers) && parsedMaxOffers >= 1 ? parsedMaxOffers : null;
 
     const job = await prisma.job.create({
       data: {
@@ -294,6 +297,7 @@ r.post('/', async (req, res, next) => {
         longitude: longitude ? parseFloat(longitude) : null,
         urgency: validUrgency,
         leadMode: validLeadMode,
+        maxOffers: validLeadMode === 'COMPETITIVE' ? (validMaxOffers ?? 5) : null,
         isExclusive: isExclusiveLead,
         jobSize: validJobSize,
         deadline: deadline ? new Date(deadline) : null,
@@ -383,6 +387,7 @@ r.patch('/:jobId', auth(true), async (req, res, next) => {
     const leadModeRaw = body.leadMode;
     const jobSize = body.jobSize;
     const deadline = body.deadline;
+    const maxOffersRaw = body.maxOffers;
     const images = body.images ?? [];
 
     const numericKeys = ['currentFloors', 'newFloors', 'surface', 'floors', 'plotSize', 'buildingYear', 'rooms', 'bathrooms', 'kitchens', 'walls'];
@@ -433,9 +438,18 @@ r.patch('/:jobId', auth(true), async (req, res, next) => {
     const updated = await prisma.job.update({
       where: { id: jobId },
       data: {
-        ...(leadModeRaw && ['EXCLUSIVE', 'COMPETITIVE'].includes(leadModeRaw)
-          ? { leadMode: leadModeRaw, isExclusive: leadModeRaw === 'EXCLUSIVE' }
-          : {}),
+        ...(() => {
+          const leadModeToUse = leadModeRaw && ['EXCLUSIVE', 'COMPETITIVE'].includes(leadModeRaw)
+            ? leadModeRaw
+            : job.leadMode;
+          const parsedMaxOffers = maxOffersRaw == null || maxOffersRaw === '' ? null : parseInt(maxOffersRaw, 10);
+          const validMaxOffers = Number.isFinite(parsedMaxOffers) && parsedMaxOffers >= 1 ? parsedMaxOffers : null;
+          return {
+            leadMode: leadModeToUse,
+            isExclusive: leadModeToUse === 'EXCLUSIVE',
+            maxOffers: leadModeToUse === 'COMPETITIVE' ? (validMaxOffers ?? job.maxOffers ?? 5) : null
+          };
+        })(),
         title,
         description,
         categoryId: finalCategoryId,

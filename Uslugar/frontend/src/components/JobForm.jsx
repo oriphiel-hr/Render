@@ -494,6 +494,8 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
             ? new Date(initialData.deadline).toISOString().slice(0, 10)
             : '',
           leadMode: initialData.leadMode || 'EXCLUSIVE'
+          ,
+          maxOffers: initialData.maxOffers != null ? String(initialData.maxOffers) : ''
         }
       : {
           title: '',
@@ -508,6 +510,7 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
           longitude: null,
           urgency: 'NORMAL',
           leadMode: 'EXCLUSIVE',
+          maxOffers: '',
           jobSize: '',
           deadline: '',
           contactName: '',
@@ -625,6 +628,7 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
       customFields,
       budgetMin: data.budgetMin ? parseInt(data.budgetMin) : null,
       budgetMax: data.budgetMax ? parseInt(data.budgetMax) : null,
+      maxOffers: data.maxOffers ? parseInt(data.maxOffers) : null,
       deadline: data.deadline ? new Date(data.deadline).toISOString() : null,
       latitude: location.latitude || data.latitude || null,
       longitude: location.longitude || data.longitude || null,
@@ -994,6 +998,24 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
           Ekskluzivno: jedan izvođač bez konkurencije. Više ponuda: više izvođača može poslati ponudu.
         </p>
       </div>
+
+      {watch('leadMode') === 'COMPETITIVE' && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Maksimalan broj ponuda
+          </label>
+          <input
+            {...register('maxOffers')}
+            type="number"
+            min={1}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="5"
+          />
+          <p className="mt-1 text-xs text-gray-500">
+            Kad se limit dosegne, novi izvođači više ne mogu poslati ponudu.
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>

@@ -62,6 +62,17 @@ r.post('/', auth(true, ['PROVIDER']), async (req, res, next) => {
         message: 'Nemate dovoljno kredita za slanje ponude. Nadogradite svoju pretplatu.' 
       });
     }
+
+    // COMPETITIVE mode: enforce max number of offers per job
+    if (job.leadMode === 'COMPETITIVE' && job.maxOffers && job.maxOffers > 0) {
+      const totalOffers = await prisma.offer.count({ where: { jobId } });
+      if (totalOffers >= job.maxOffers) {
+        return res.status(409).json({
+          error: 'Offer limit reached',
+          message: `Ovaj posao je primio maksimalan broj ponuda (${job.maxOffers}).`
+        });
+      }
+    }
     
     const offer = await prisma.offer.create({ 
       data: { 
