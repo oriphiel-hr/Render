@@ -193,6 +193,7 @@ r.post('/', async (req, res, next) => {
     const jobSize = body.jobSize;
     const deadline = body.deadline;
     const maxOffersRaw = body.maxOffers;
+    const competitiveOfferWindowHoursRaw = body.competitiveOfferWindowHours;
     const images = body.images ?? [];
     const contactEmail = body.contactEmail;
     const contactPhone = body.contactPhone;
@@ -282,6 +283,14 @@ r.post('/', async (req, res, next) => {
     const isExclusiveLead = validLeadMode === 'EXCLUSIVE';
     const parsedMaxOffers = maxOffersRaw == null || maxOffersRaw === '' ? null : parseInt(maxOffersRaw, 10);
     const validMaxOffers = Number.isFinite(parsedMaxOffers) && parsedMaxOffers >= 1 ? parsedMaxOffers : null;
+    const parsedWindowHours = competitiveOfferWindowHoursRaw == null || competitiveOfferWindowHoursRaw === ''
+      ? null
+      : parseInt(competitiveOfferWindowHoursRaw, 10);
+    const validWindowHours = Number.isFinite(parsedWindowHours) && parsedWindowHours >= 1 ? parsedWindowHours : null;
+    const finalWindowHours = validLeadMode === 'COMPETITIVE' ? (validWindowHours ?? 24) : null;
+    const offerWindowEndsAt = finalWindowHours
+      ? new Date(Date.now() + finalWindowHours * 60 * 60 * 1000)
+      : null;
 
     const job = await prisma.job.create({
       data: {
@@ -298,6 +307,8 @@ r.post('/', async (req, res, next) => {
         urgency: validUrgency,
         leadMode: validLeadMode,
         maxOffers: validLeadMode === 'COMPETITIVE' ? (validMaxOffers ?? 5) : null,
+        competitiveOfferWindowHours: finalWindowHours,
+        offerWindowEndsAt,
         isExclusive: isExclusiveLead,
         jobSize: validJobSize,
         deadline: deadline ? new Date(deadline) : null,
@@ -388,6 +399,7 @@ r.patch('/:jobId', auth(true), async (req, res, next) => {
     const jobSize = body.jobSize;
     const deadline = body.deadline;
     const maxOffersRaw = body.maxOffers;
+    const competitiveOfferWindowHoursRaw = body.competitiveOfferWindowHours;
     const images = body.images ?? [];
 
     const numericKeys = ['currentFloors', 'newFloors', 'surface', 'floors', 'plotSize', 'buildingYear', 'rooms', 'bathrooms', 'kitchens', 'walls'];
@@ -444,10 +456,28 @@ r.patch('/:jobId', auth(true), async (req, res, next) => {
             : job.leadMode;
           const parsedMaxOffers = maxOffersRaw == null || maxOffersRaw === '' ? null : parseInt(maxOffersRaw, 10);
           const validMaxOffers = Number.isFinite(parsedMaxOffers) && parsedMaxOffers >= 1 ? parsedMaxOffers : null;
+          const parsedWindowHours = competitiveOfferWindowHoursRaw == null || competitiveOfferWindowHoursRaw === ''
+            ? null
+            : parseInt(competitiveOfferWindowHoursRaw, 10);
+          const validWindowHours = Number.isFinite(parsedWindowHours) && parsedWindowHours >= 1 ? parsedWindowHours : null;
+          const nextWindowHours = leadModeToUse === 'COMPETITIVE'
+            ? (validWindowHours ?? job.competitiveOfferWindowHours ?? 24)
+            : null;
+          const shouldRecalculateWindowEnd = leadModeToUse === 'COMPETITIVE' && (
+            (job.leadMode !== 'COMPETITIVE') ||
+            (validWindowHours != null && validWindowHours !== job.competitiveOfferWindowHours)
+          );
+          const nextWindowEndsAt = leadModeToUse === 'COMPETITIVE'
+            ? (shouldRecalculateWindowEnd
+              ? new Date(Date.now() + nextWindowHours * 60 * 60 * 1000)
+              : (job.offerWindowEndsAt || new Date(Date.now() + nextWindowHours * 60 * 60 * 1000)))
+            : null;
           return {
             leadMode: leadModeToUse,
             isExclusive: leadModeToUse === 'EXCLUSIVE',
-            maxOffers: leadModeToUse === 'COMPETITIVE' ? (validMaxOffers ?? job.maxOffers ?? 5) : null
+            maxOffers: leadModeToUse === 'COMPETITIVE' ? (validMaxOffers ?? job.maxOffers ?? 5) : null,
+            competitiveOfferWindowHours: nextWindowHours,
+            offerWindowEndsAt: nextWindowEndsAt
           };
         })(),
         title,
@@ -487,6 +517,17 @@ r.post('/:jobId/accept/:offerId', auth(true, ['USER', 'PROVIDER']), async (req, 
       include: { user: true }
     });
     if (!offer) return res.status(404).json({ error: 'Offer not found' });
+
+    if (
+      job.leadMode === 'COMPETITIVE' &&
+      job.offerWindowEndsAt &&
+      new Date(job.offerWindowEndsAt).getTime() > Date.now()
+    ) {
+      return res.status(409).json({
+        error: 'Offer window still active',
+        message: `Prikupljanje ponuda je aktivno do ${new Date(job.offerWindowEndsAt).toLocaleString('hr-HR')}.`
+      });
+    }
     
     // PREVENT SELF-ASSIGNMENT: Check if job creator and offer provider are same company (by OIB/email)
     const jobUser = await prisma.user.findUnique({

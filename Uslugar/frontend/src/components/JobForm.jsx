@@ -495,7 +495,8 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
             : '',
           leadMode: initialData.leadMode || 'EXCLUSIVE'
           ,
-          maxOffers: initialData.maxOffers != null ? String(initialData.maxOffers) : ''
+          maxOffers: initialData.maxOffers != null ? String(initialData.maxOffers) : '',
+          competitiveOfferWindowHours: initialData.competitiveOfferWindowHours != null ? String(initialData.competitiveOfferWindowHours) : ''
         }
       : {
           title: '',
@@ -511,6 +512,7 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
           urgency: 'NORMAL',
           leadMode: 'EXCLUSIVE',
           maxOffers: '',
+          competitiveOfferWindowHours: '',
           jobSize: '',
           deadline: '',
           contactName: '',
@@ -629,6 +631,7 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
       budgetMin: data.budgetMin ? parseInt(data.budgetMin) : null,
       budgetMax: data.budgetMax ? parseInt(data.budgetMax) : null,
       maxOffers: data.maxOffers ? parseInt(data.maxOffers) : null,
+      competitiveOfferWindowHours: data.competitiveOfferWindowHours ? parseInt(data.competitiveOfferWindowHours) : null,
       deadline: data.deadline ? new Date(data.deadline).toISOString() : null,
       latitude: location.latitude || data.latitude || null,
       longitude: location.longitude || data.longitude || null,
@@ -1000,20 +1003,38 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
       </div>
 
       {watch('leadMode') === 'COMPETITIVE' && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Maksimalan broj ponuda
-          </label>
-          <input
-            {...register('maxOffers')}
-            type="number"
-            min={1}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="5"
-          />
-          <p className="mt-1 text-xs text-gray-500">
-            Kad se limit dosegne, novi izvođači više ne mogu poslati ponudu.
-          </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Maksimalan broj ponuda
+            </label>
+            <input
+              {...register('maxOffers')}
+              type="number"
+              min={1}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="5"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Kad se limit dosegne, novi izvođači više ne mogu poslati ponudu.
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              SLA prozor ponuda (sati)
+            </label>
+            <input
+              {...register('competitiveOfferWindowHours')}
+              type="number"
+              min={1}
+              max={168}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="24"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Preporuka 24-48h. Prihvaćanje ponude je moguće nakon isteka prozora.
+            </p>
+          </div>
         </div>
       )}
 
