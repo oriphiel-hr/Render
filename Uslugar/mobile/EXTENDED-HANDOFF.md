@@ -31,6 +31,9 @@
     - invoice send-email action from mobile
     - credit transaction history section with filters
     - checkout open/copy UX and local top-toast feedback
+    - app foreground checkout-return refresh for payment status edge-case handling
+- Production stabilization:
+  - `mobile/PRODUCTION-DEVICE-TEST-PASS.md` added for real-device release validation.
 - Upload outside chat:
   - Extract generic file-picker/upload helper from chat image flow.
   - Reuse in jobs/offers/profile upload screens.

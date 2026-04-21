@@ -48,6 +48,14 @@ function getCreditTypeLabel(type) {
   return labels[type] || type || '-';
 }
 
+const PLAN_COMPARISON_ROWS = [
+  { feature: 'Ekskluzivni leadovi mjesečno', BASIC: '10', PREMIUM: '25', PRO: '50' },
+  { feature: 'Refund sistem', BASIC: 'Da', PREMIUM: 'Da', PRO: 'Da' },
+  { feature: 'ROI statistika', BASIC: 'Da', PREMIUM: 'Da', PRO: 'Da' },
+  { feature: 'AI prioritet u pretrazi', BASIC: 'Ne', PREMIUM: 'Da', PRO: 'Da' },
+  { feature: 'Premium kvaliteta leadova', BASIC: 'Ne', PREMIUM: 'Ne', PRO: 'Da' }
+];
+
 export default function BillingScreen({
   billing,
   loading
@@ -156,6 +164,9 @@ export default function BillingScreen({
         {billing.subscription?.status === 'EXPIRED' && (
           <Text style={styles.metaText}>⚠️ Pretplata je istekla, potreban je novi checkout.</Text>
         )}
+        {billing.checkoutPending && (
+          <Text style={styles.metaText}>⏳ Čeka se povratak iz checkouta i potvrda uplate.</Text>
+        )}
       </View>
 
       <Text style={styles.sectionTitle}>Dostupni planovi</Text>
@@ -180,11 +191,23 @@ export default function BillingScreen({
           <Text style={styles.metaText}>Krediti: {plan.credits ?? '-'} / mj</Text>
           <Pressable
             style={[styles.button, (loading || billing.billingLoading) && styles.buttonDisabled]}
-            disabled={loading || billing.billingLoading}
+            disabled={loading || billing.billingLoading || billing.subscription?.plan === plan.name}
             onPress={() => billing.startCheckout(plan.name)}
           >
-            <Text style={styles.buttonText}>Kreni na checkout</Text>
+            <Text style={styles.buttonText}>
+              {billing.subscription?.plan === plan.name ? 'Trenutni plan' : 'Kreni na checkout'}
+            </Text>
           </Pressable>
+        </View>
+      ))}
+
+      <Text style={styles.sectionTitle}>Usporedba planova</Text>
+      {PLAN_COMPARISON_ROWS.map((row) => (
+        <View key={row.feature} style={styles.listItem}>
+          <Text style={styles.listTitle}>{row.feature}</Text>
+          <Text style={styles.metaText}>Basic: {row.BASIC}</Text>
+          <Text style={styles.metaText}>Premium: {row.PREMIUM}</Text>
+          <Text style={styles.metaText}>Pro: {row.PRO}</Text>
         </View>
       ))}
 

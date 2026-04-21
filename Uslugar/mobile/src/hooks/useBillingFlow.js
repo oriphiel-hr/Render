@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 import {
   createCheckoutSession,
   getCreditHistory,
@@ -28,6 +29,8 @@ export function useBillingFlow({
   const [creditHistoryType, setCreditHistoryType] = useState('all');
   const [checkoutUrl, setCheckoutUrl] = useState('');
   const [lastCheckoutAt, setLastCheckoutAt] = useState(null);
+  const [checkoutPending, setCheckoutPending] = useState(false);
+  const appStateRef = useRef(AppState.currentState);
 
   const canUseBilling = user?.role === 'PROVIDER' || user?.role === 'ADMIN';
 
@@ -98,6 +101,7 @@ export function useBillingFlow({
       });
       setCheckoutUrl(result?.url || '');
       setLastCheckoutAt(new Date().toISOString());
+      setCheckoutPending(true);
       setMessage(result?.url ? 'Checkout link je spreman.' : 'Checkout kreiran bez URL-a.');
     } catch (error) {
       await handleApiError(error, 'Ne mogu kreirati checkout.');
@@ -106,6 +110,32 @@ export function useBillingFlow({
       setBillingLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!token || !canUseBilling) return undefined;
+    const sub = AppState.addEventListener('change', (nextState) => {
+      const prev = appStateRef.current;
+      appStateRef.current = nextState;
+      const returnedToForeground = (prev === 'background' || prev === 'inactive') && nextState === 'active';
+      if (!returnedToForeground) return;
+      if (!checkoutPending || !lastCheckoutAt) return;
+      const elapsedMs = Date.now() - new Date(lastCheckoutAt).getTime();
+      if (elapsedMs <= 15 * 60 * 1000) {
+        loadBillingData();
+      } else {
+        setCheckoutPending(false);
+      }
+    });
+    return () => sub.remove();
+  }, [token, canUseBilling, checkoutPending, lastCheckoutAt, creditHistoryType]);
+
+  useEffect(() => {
+    if (!checkoutPending) return;
+    if (!subscription) return;
+    if (subscription.status === 'ACTIVE' || subscription.status === 'CANCELLED' || subscription.status === 'EXPIRED') {
+      setCheckoutPending(false);
+    }
+  }, [checkoutPending, subscription?.status]);
 
   const sendInvoiceEmail = async (invoiceId) => {
     if (!invoiceId) return;
@@ -169,6 +199,7 @@ export function useBillingFlow({
     creditHistoryType,
     checkoutUrl,
     lastCheckoutAt,
+    checkoutPending,
     loadBillingData,
     startCheckout,
     sendInvoiceEmail,
