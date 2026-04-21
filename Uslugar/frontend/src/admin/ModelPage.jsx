@@ -45,6 +45,10 @@ const MODEL_EXAMPLES = {
     latitude: 45.8150,
     longitude: 15.9819,
     status: "OPEN",
+    leadMode: "EXCLUSIVE",
+    maxOffers: null,
+    competitiveOfferWindowHours: null,
+    offerWindowEndsAt: null,
     urgency: "NORMAL",
     jobSize: "MEDIUM",
     deadline: "2025-12-31T23:59:59.000Z",
@@ -398,6 +402,15 @@ export default function ModelPage({ model }){
     }finally{ setLoading(false) }
   }
 
+  function applyJobLeadModeFilter(mode) {
+    const nextWhere = mode === 'ALL' ? '' : JSON.stringify({ leadMode: mode }, null, 2);
+    setWhere(nextWhere);
+    setSkip(0);
+    setTimeout(() => {
+      load();
+    }, 0);
+  }
+
   async function resetSmsAttempts(userId, userEmail){
     if(!confirm(`Resetirati SMS pokušaje za korisnika ${userEmail || userId}?`)) return
     setLoading(true); setError('')
@@ -479,6 +492,33 @@ export default function ModelPage({ model }){
           🔄 Reload
         </button>
       </div>
+
+      {model === 'Job' && (
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <span className="text-sm font-medium text-gray-700 mr-1">Lead mode filter:</span>
+          <button
+            type="button"
+            onClick={() => applyJobLeadModeFilter('ALL')}
+            className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 bg-white hover:bg-gray-50"
+          >
+            Svi
+          </button>
+          <button
+            type="button"
+            onClick={() => applyJobLeadModeFilter('EXCLUSIVE')}
+            className="px-3 py-1.5 text-sm rounded-lg bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+          >
+            Ekskluzivno
+          </button>
+          <button
+            type="button"
+            onClick={() => applyJobLeadModeFilter('COMPETITIVE')}
+            className="px-3 py-1.5 text-sm rounded-lg bg-violet-100 text-violet-800 hover:bg-violet-200"
+          >
+            Competitive
+          </button>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">

@@ -1,6 +1,9 @@
 import webpush from 'web-push';
 import { prisma } from '../lib/prisma.js';
 
+const EXPO_TOKEN_PREFIXES = ['ExponentPushToken[', 'ExpoPushToken['];
+const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
+
 // Initialize web-push with VAPID keys from environment
 // Generate keys with: npx web-push generate-vapid-keys
 const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
@@ -15,22 +18,34 @@ if (vapidPublicKey && vapidPrivateKey) {
   console.warn('   Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY in .env');
 }
 
+function isExpoPushToken(value) {
+  return EXPO_TOKEN_PREFIXES.some((prefix) => String(value || '').startsWith(prefix));
+}
+
+function isExpoSubscription(subscription) {
+  return Boolean(subscription?.endpoint && isExpoPushToken(subscription.endpoint));
+}
+
 /**
  * Save push subscription for a user
  */
 export async function savePushSubscription(userId, subscription, userAgent = null) {
   try {
     const { endpoint, keys } = subscription;
-    
-    if (!endpoint || !keys || !keys.p256dh || !keys.auth) {
+
+    const normalizedKeys = isExpoPushToken(endpoint)
+      ? { p256dh: 'expo', auth: 'expo' }
+      : keys;
+
+    if (!endpoint || !normalizedKeys || !normalizedKeys.p256dh || !normalizedKeys.auth) {
       throw new Error('Invalid subscription data');
     }
 
     const subscriptionData = {
       userId,
       endpoint,
-      p256dh: keys.p256dh,
-      auth: keys.auth,
+      p256dh: normalizedKeys.p256dh,
+      auth: normalizedKeys.auth,
       userAgent: userAgent || null,
       isActive: true,
       lastUsedAt: new Date()
@@ -132,15 +147,53 @@ async function sendPushToSubscription(subscription, payload) {
   }
 }
 
+async function sendExpoPushToSubscription(subscription, payload) {
+  try {
+    const response = await fetch(EXPO_PUSH_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'Accept-Encoding': 'gzip, deflate'
+      },
+      body: JSON.stringify({
+        to: subscription.endpoint,
+        sound: payload?.requireInteraction ? 'default' : undefined,
+        title: payload.title,
+        body: payload.body,
+        data: payload.data
+      })
+    });
+
+    const data = await response.json().catch(() => ({}));
+    const success = response.ok && data?.data?.status === 'ok';
+    if (!success) {
+      const details = data?.data?.details || {};
+      const shouldDeactivate = details?.error === 'DeviceNotRegistered';
+      if (shouldDeactivate) {
+        await prisma.pushSubscription.update({
+          where: { id: subscription.id },
+          data: { isActive: false }
+        });
+      }
+      throw new Error(data?.errors?.[0]?.message || data?.data?.message || 'Expo push send failed');
+    }
+
+    await prisma.pushSubscription.update({
+      where: { id: subscription.id },
+      data: { lastUsedAt: new Date() }
+    });
+    return true;
+  } catch (error) {
+    console.error('Error sending expo push notification:', error);
+    return false;
+  }
+}
+
 /**
  * Send push notification to a user
  */
 export async function sendPushNotification(userId, notification) {
-  if (!vapidPublicKey || !vapidPrivateKey) {
-    console.warn('⚠️  VAPID keys not configured. Skipping push notification.');
-    return { sent: 0, failed: 0 };
-  }
-
   try {
     const subscriptions = await getUserPushSubscriptions(userId);
     
@@ -168,7 +221,14 @@ export async function sendPushNotification(userId, notification) {
 
     // Send to all user's devices
     for (const subscription of subscriptions) {
-      const success = await sendPushToSubscription(subscription, payload);
+      let success = false;
+      if (isExpoSubscription(subscription)) {
+        success = await sendExpoPushToSubscription(subscription, payload);
+      } else if (vapidPublicKey && vapidPrivateKey) {
+        success = await sendPushToSubscription(subscription, payload);
+      } else {
+        console.warn('⚠️  VAPID keys not configured. Skipping WebPush subscription.');
+      }
       if (success) {
         sent++;
       } else {

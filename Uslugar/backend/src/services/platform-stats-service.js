@@ -24,7 +24,10 @@ export async function getPlatformStatistics() {
     const openJobs = await prisma.job.count({ where: { status: 'OPEN' } });
     const inProgressJobs = await prisma.job.count({ where: { status: 'IN_PROGRESS' } });
     const completedJobs = await prisma.job.count({ where: { status: 'COMPLETED' } });
-    const exclusiveJobs = await prisma.job.count({ where: { isExclusive: true } });
+    const [exclusiveJobs, competitiveJobs] = await Promise.all([
+      prisma.job.count({ where: { leadMode: 'EXCLUSIVE' } }),
+      prisma.job.count({ where: { leadMode: 'COMPETITIVE' } })
+    ]);
     
     // Statistike leadova
     const totalLeadPurchases = await prisma.leadPurchase.count();
@@ -235,6 +238,7 @@ export async function getPlatformStatistics() {
         inProgress: inProgressJobs,
         completed: completedJobs,
         exclusive: exclusiveJobs,
+        competitive: competitiveJobs,
         newThisMonth: newJobsThisMonth,
         byCategory: categoriesWithNames
       },

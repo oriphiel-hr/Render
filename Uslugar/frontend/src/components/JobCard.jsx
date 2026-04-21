@@ -65,6 +65,9 @@ const JobCard = ({ job, onViewDetails, onMakeOffer }) => {
     .filter(Boolean)
     .map(toAbsoluteUrl)
     .filter(Boolean);
+  const offersCount = job.offers?.length || 0;
+  const competitiveLimit = job.leadMode === 'COMPETITIVE' ? (job.maxOffers || null) : null;
+  const competitiveFull = competitiveLimit != null && offersCount >= competitiveLimit;
 
   return (
     <article className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden flex hover:shadow-md transition-shadow">
@@ -95,6 +98,13 @@ const JobCard = ({ job, onViewDetails, onMakeOffer }) => {
               <span>{job.category.name}</span>
             </span>
           )}
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium ${
+            job.leadMode === 'COMPETITIVE'
+              ? 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300'
+              : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
+          }`}>
+            {job.leadMode === 'COMPETITIVE' ? 'Više ponuda' : 'Ekskluzivno'}
+          </span>
           {job.city && (
             <span className="flex items-center gap-1.5">
               <svg className="w-4 h-4 shrink-0 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
@@ -140,7 +150,15 @@ const JobCard = ({ job, onViewDetails, onMakeOffer }) => {
                   ? `Do ${formatPrice(job.budgetMax)}`
                   : 'Cijena po dogovoru'}
           </span>
-          <span>{(job.offers?.length || 0)} ponuda</span>
+          <span>
+            {offersCount} ponuda
+            {competitiveLimit != null ? ` / ${competitiveLimit}` : ''}
+          </span>
+          {competitiveFull && (
+            <span className="px-2 py-0.5 rounded bg-rose-100 text-rose-700 text-xs font-medium">
+              Limit dosegnut
+            </span>
+          )}
           {job.deadline && (
             <span>Rok: {new Date(job.deadline).toLocaleDateString('hr-HR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
           )}
@@ -156,9 +174,10 @@ const JobCard = ({ job, onViewDetails, onMakeOffer }) => {
           {isProvider && job.status === 'OPEN' && (
             <button
               onClick={() => onMakeOffer(job)}
-              className="px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
+              disabled={competitiveFull}
+              className="px-4 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
             >
-              Pošalji ponudu
+              {competitiveFull ? 'Limit ponuda dosegnut' : 'Pošalji ponudu'}
             </button>
           )}
         </div>

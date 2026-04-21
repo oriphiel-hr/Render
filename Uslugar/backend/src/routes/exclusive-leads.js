@@ -63,6 +63,8 @@ r.post('/:jobId/create-payment-intent', auth(true, ['PROVIDER']), async (req, re
         title: true,
         budgetMin: true,
         budgetMax: true,
+        leadMode: true,
+        isExclusive: true,
         leadStatus: true,
         assignedProviderId: true
       }
@@ -70,6 +72,10 @@ r.post('/:jobId/create-payment-intent', auth(true, ['PROVIDER']), async (req, re
 
     if (!job) {
       return res.status(404).json({ error: 'Job not found' });
+    }
+
+    if ((job.leadMode && job.leadMode !== 'EXCLUSIVE') || job.isExclusive === false) {
+      return res.status(400).json({ error: 'This job is in competitive mode and cannot be purchased via exclusive lead flow' });
     }
 
     if (job.leadStatus !== 'AVAILABLE' || job.assignedProviderId) {

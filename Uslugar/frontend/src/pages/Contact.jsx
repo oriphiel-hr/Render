@@ -78,31 +78,19 @@ const Contact = () => {
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="text-2xl">📞</div>
+                <div className="text-2xl">🏢</div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                    Telefon
+                    Podaci o tvrtki
                   </h3>
                   <p className="text-gray-700">
-                    <a 
-                      href="tel:+385915618258" 
-                      className="inline-flex items-center gap-2 text-blue-700 hover:text-blue-900 hover:underline underline-offset-2 px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 border border-blue-100 transition-colors font-semibold"
-                      title="Nazovi"
-                    >
-                      📞 +385 91 561 8258
-                    </a>
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="text-2xl">👤</div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                    Kontakt osoba
-                  </h3>
-                  <p className="text-gray-700">
-                    Tomislav Kranjec, direktor
+                    <strong>Oriphiel d.o.o.</strong><br />
+                    <strong>OIB:</strong> 88070789896<br />
+                    <strong>MB:</strong> 06036651<br />
+                    <strong>Direktor:</strong> Tomislav Kranjec<br />
+                    <strong>Godina osnivanja:</strong> 2024<br />
+                    <strong>Veličina:</strong> Mikro poduzetnik<br />
+                    <strong>Status:</strong> Aktivan
                   </p>
                 </div>
               </div>
@@ -111,15 +99,26 @@ const Contact = () => {
                 <div className="text-2xl">💼</div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                    Naša djelatnost
+                    Djelatnost
                   </h3>
                   <p className="text-gray-700">
-                    <strong>Djelatnost:</strong> Računalno programiranje i razvoj softvera<br />
-                    <strong>Specijalizacija:</strong> Web aplikacije, mobilne aplikacije i IT savjetovanje<br />
-                    <span className="text-sm text-gray-600">
-                      Pružamo usluge razvoja web stranica, mobilnih aplikacija, 
-                      e-trgovine i IT savjetovanja za poduzeća svih veličina.
-                    </span>
+                    <strong>NKD:</strong> 62109<br />
+                    <strong>Naziv djelatnosti:</strong> Ostalo računalno programiranje
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="text-2xl">🏦</div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                    Bankovni račun
+                  </h3>
+                  <p className="text-gray-700">
+                    <strong>IBAN:</strong> HR8223400091111305152<br />
+                    <strong>Banka:</strong> PRIVREDNA BANKA d.d.<br />
+                    <strong>Status računa:</strong> Aktivan<br />
+                    <strong>Datum otvaranja:</strong> 26.11.2024.
                   </p>
                 </div>
               </div>
@@ -250,8 +249,7 @@ const Contact = () => {
               <strong>Adresa:</strong> Slavenskoga ulica 5, 10000 Zagreb, Hrvatska
             </p>
             <p className="text-gray-700">
-              <strong>Telefon:</strong>{' '}
-              <a href="tel:+385915618258" className="text-blue-600 hover:underline">+385 91 561 8258</a>
+              <strong>Tvrtka:</strong> Oriphiel d.o.o.
             </p>
           </div>
 
@@ -273,7 +271,7 @@ const Contact = () => {
             <div className="absolute top-4 left-4 bg-white bg-opacity-90 backdrop-blur-sm rounded-lg p-3 shadow-lg">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <span className="text-sm font-medium text-gray-900">Oriphiel d.o.o.</span>
+                  <span className="text-sm font-medium text-gray-900">Oriphiel d.o.o.</span>
               </div>
               <p className="text-xs text-gray-600 mt-1">
                 Slavenskoga ulica 5, Zagreb
@@ -307,7 +305,7 @@ const Contact = () => {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">📞 Telefonska podrška</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">📞 Kontakt podrška</h3>
             <p className="text-gray-700">
               Ponedjeljak - Petak: 09:00 - 17:00<br />
               Subota: 10:00 - 14:00<br />

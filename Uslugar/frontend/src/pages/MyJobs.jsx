@@ -5,6 +5,7 @@ import { createChatRoom, getChatRoom } from '../api/chat';
 import ChatRoom from '../components/ChatRoom';
 import JobForm from '../components/JobForm';
 import JobsMap from '../components/JobsMap';
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function MyJobs({ onNavigate, categories = [] }) {
   const { token } = useAuth();
@@ -19,6 +20,9 @@ export default function MyJobs({ onNavigate, categories = [] }) {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [jobsView, setJobsView] = useState('list'); // 'list' | 'map'
   const [completingJobId, setCompletingJobId] = useState(null);
+  const [jobOfferMeta, setJobOfferMeta] = useState({});
+  const [offerPaymentLinks, setOfferPaymentLinks] = useState({});
+  const [creatingOfferCheckoutId, setCreatingOfferCheckoutId] = useState(null);
   const hasAutoExpandedRef = useRef(false);
 
   useEffect(() => {
@@ -113,9 +117,41 @@ export default function MyJobs({ onNavigate, categories = [] }) {
   const loadOffers = async (jobId) => {
     try {
       const response = await api.get(`/offers/job/${jobId}`);
-      setOffers(prev => ({ ...prev, [jobId]: response.data }));
+      const data = response.data;
+      if (Array.isArray(data)) {
+        setOffers(prev => ({ ...prev, [jobId]: data }));
+        setJobOfferMeta(prev => ({ ...prev, [jobId]: {} }));
+      } else {
+        setOffers(prev => ({ ...prev, [jobId]: data.offers || [] }));
+        setJobOfferMeta(prev => ({
+          ...prev,
+          [jobId]: {
+            leadMode: data.leadMode || 'EXCLUSIVE',
+            offerWindowEndsAt: data.offerWindowEndsAt || null,
+            competitiveOfferWindowHours: data.competitiveOfferWindowHours || null
+          }
+        }));
+      }
     } catch (error) {
       console.error('Error loading offers:', error);
+    }
+  };
+
+  const createOfferPaymentCheckout = async (offerId) => {
+    try {
+      setCreatingOfferCheckoutId(offerId);
+      const response = await api.post(`/offers/${offerId}/create-payment-checkout`);
+      const checkoutUrl = response.data?.checkoutUrl;
+      if (!checkoutUrl) {
+        alert('Nije moguće generirati checkout link.');
+        return;
+      }
+      setOfferPaymentLinks(prev => ({ ...prev, [offerId]: checkoutUrl }));
+      window.open(checkoutUrl, '_blank');
+    } catch (error) {
+      alert(error.response?.data?.message || error.response?.data?.error || 'Greška pri generiranju checkout linka');
+    } finally {
+      setCreatingOfferCheckoutId(null);
     }
   };
 
@@ -578,6 +614,11 @@ export default function MyJobs({ onNavigate, categories = [] }) {
               {!isProvider && selectedJob?.id === job.id && (
                 <div className="mt-4 border-t pt-4">
                   <h4 className="font-semibold mb-3">Primljene ponude ({offers[job.id]?.length ?? job.offers?.length ?? 0})</h4>
+                  {jobOfferMeta[job.id]?.leadMode === 'COMPETITIVE' && jobOfferMeta[job.id]?.offerWindowEndsAt && (
+                    <div className="mb-3 p-3 rounded-lg bg-violet-50 border border-violet-200 text-sm text-violet-800">
+                      SLA prozor za prikupljanje ponuda traje do {new Date(jobOfferMeta[job.id].offerWindowEndsAt).toLocaleString('hr-HR')}.
+                    </div>
+                  )}
                   {((offers[job.id] || job.offers) && (offers[job.id] || job.offers).length > 0) ? (
                     <div className="space-y-3">
                       {(offers[job.id] || job.offers || []).map(offer => (
@@ -607,6 +648,28 @@ export default function MyJobs({ onNavigate, categories = [] }) {
                               </div>
                             )}
                           </div>
+                          {offer.status === 'ACCEPTED' && (
+                            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                              <button
+                                onClick={() => createOfferPaymentCheckout(offer.id)}
+                                disabled={creatingOfferCheckoutId === offer.id}
+                                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50"
+                              >
+                                {creatingOfferCheckoutId === offer.id ? 'Generiram...' : '💳 Generiraj checkout + QR'}
+                              </button>
+                              {offerPaymentLinks[offer.id] && (
+                                <div className="mt-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg inline-flex gap-4 items-center">
+                                  <QRCodeSVG value={offerPaymentLinks[offer.id]} size={96} />
+                                  <div className="text-xs text-gray-600 dark:text-gray-300 max-w-xs break-all">
+                                    <div className="font-semibold mb-1">Link za uplatu:</div>
+                                    <a href={offerPaymentLinks[offer.id]} target="_blank" rel="noreferrer" className="text-blue-600 underline">
+                                      Otvori checkout
+                                    </a>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>

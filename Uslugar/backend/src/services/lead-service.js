@@ -90,6 +90,10 @@ export async function purchaseLead(jobId, providerId, options = {}) {
     }
   }
 
+  if (job.leadMode && job.leadMode !== 'EXCLUSIVE') {
+    throw new Error('This job uses competitive offers and cannot be purchased as an exclusive lead');
+  }
+
   if (!job.isExclusive) {
     throw new Error('This job is not exclusive');
   }
@@ -978,6 +982,7 @@ export async function getAvailableLeads(providerId, filters = {}) {
 
   // Osnovni filter
   const where = {
+    leadMode: 'EXCLUSIVE',
     isExclusive: true,
     leadStatus: 'AVAILABLE',
     assignedProviderId: null,
@@ -1221,6 +1226,7 @@ export async function getMyLeads(providerId, status = null) {
     const jobs = await prisma.job.findMany({
       where: {
         id: { in: jobIds },
+        leadMode: 'EXCLUSIVE',
         isExclusive: true,
         OR: [
           { leadStatus: 'AVAILABLE' },

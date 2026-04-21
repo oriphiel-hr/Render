@@ -3,8 +3,17 @@ import { prisma } from '../lib/prisma.js';
 import { auth } from '../lib/auth.js';
 import { notifyNewOffer, notifyAcceptedOffer } from '../lib/notifications.js';
 import { deductCredit } from './subscriptions.js';
+import Stripe from 'stripe';
 
 const r = Router();
+
+let stripe = null;
+try {
+  const stripeKey = process.env.TEST_STRIPE_SECRET_KEY || '';
+  if (stripeKey) stripe = new Stripe(stripeKey);
+} catch (err) {
+  console.warn('[OFFERS] Stripe init failed:', err?.message);
+}
 
 // create offer
 r.post('/', auth(true, ['PROVIDER']), async (req, res, next) => {
@@ -62,6 +71,17 @@ r.post('/', auth(true, ['PROVIDER']), async (req, res, next) => {
         message: 'Nemate dovoljno kredita za slanje ponude. Nadogradite svoju pretplatu.' 
       });
     }
+
+    // COMPETITIVE mode: enforce max number of offers per job
+    if (job.leadMode === 'COMPETITIVE' && job.maxOffers && job.maxOffers > 0) {
+      const totalOffers = await prisma.offer.count({ where: { jobId } });
+      if (totalOffers >= job.maxOffers) {
+        return res.status(409).json({
+          error: 'Offer limit reached',
+          message: `Ovaj posao je primio maksimalan broj ponuda (${job.maxOffers}).`
+        });
+      }
+    }
     
     const offer = await prisma.offer.create({ 
       data: { 
@@ -78,7 +98,7 @@ r.post('/', auth(true, ['PROVIDER']), async (req, res, next) => {
     await deductCredit(req.user.id);
 
     // Ekskluzivan lead: slanje ponude (1 kredit) = kupnja leada za tog pružatelja → lead nestane s tržnice, pojavi se u Moji leadovi
-    if (job.isExclusive && job.leadStatus === 'AVAILABLE' && !job.assignedProviderId) {
+    if (job.leadMode !== 'COMPETITIVE' && job.isExclusive && job.leadStatus === 'AVAILABLE' && !job.assignedProviderId) {
       try {
         const existing = await prisma.leadPurchase.findFirst({
           where: { jobId, providerId: req.user.id, status: { not: 'REFUNDED' } }
@@ -156,12 +176,69 @@ r.get('/my-offers', auth(true, ['PROVIDER']), async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+function calculateOfferQualityScore(offer) {
+  const profile = offer?.user?.providerProfile;
+  if (!profile) return 0;
+
+  const ratingAvg = Number(profile.ratingAvg || 0);
+  const ratingCount = Number(profile.ratingCount || 0);
+  const responseMinutes = Number(profile.avgResponseTimeMinutes || 0);
+  const conversionRate = Number(profile.conversionRate || 0);
+  const kycBoost = profile.kycVerified ? 5 : 0;
+
+  const ratingPart = Math.min(35, (ratingAvg / 5) * 35);
+  const ratingCountPart = Math.min(10, Math.log10(ratingCount + 1) * 10);
+  const conversionPart = Math.min(35, (conversionRate / 100) * 35);
+  const responsePart = responseMinutes > 0 ? Math.max(0, 15 - Math.min(15, responseMinutes / 30)) : 8;
+
+  return Math.round(ratingPart + ratingCountPart + conversionPart + responsePart + kycBoost);
+}
+
 // list offers for a job (owner or provider self)
 r.get('/job/:jobId', auth(true), async (req, res, next) => {
   try {
     const { jobId } = req.params;
-    const offers = await prisma.offer.findMany({ where: { jobId }, include: { user: true } });
-    res.json(offers);
+    const job = await prisma.job.findUnique({
+      where: { id: jobId },
+      select: { leadMode: true, offerWindowEndsAt: true, competitiveOfferWindowHours: true }
+    });
+    const offers = await prisma.offer.findMany({
+      where: { jobId },
+      include: {
+        user: {
+          include: {
+            providerProfile: {
+              select: {
+                ratingAvg: true,
+                ratingCount: true,
+                avgResponseTimeMinutes: true,
+                conversionRate: true,
+                kycVerified: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    const rankedOffers = offers
+      .map((offer) => ({
+        ...offer,
+        qualityScore: calculateOfferQualityScore(offer)
+      }))
+      .sort((a, b) => {
+        if ((job?.leadMode || 'EXCLUSIVE') === 'COMPETITIVE') {
+          if (b.qualityScore !== a.qualityScore) return b.qualityScore - a.qualityScore;
+        }
+        return new Date(a.createdAt) - new Date(b.createdAt);
+      });
+
+    res.json({
+      offers: rankedOffers,
+      leadMode: job?.leadMode || 'EXCLUSIVE',
+      offerWindowEndsAt: job?.offerWindowEndsAt || null,
+      competitiveOfferWindowHours: job?.competitiveOfferWindowHours || null
+    });
   } catch (e) { next(e); }
 });
 
@@ -186,6 +263,17 @@ r.patch('/:offerId/accept', auth(true), async (req, res, next) => {
     // Check if user owns the job
     if (offer.job.userId !== req.user.id) {
       return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    if (
+      offer.job.leadMode === 'COMPETITIVE' &&
+      offer.job.offerWindowEndsAt &&
+      new Date(offer.job.offerWindowEndsAt).getTime() > Date.now()
+    ) {
+      return res.status(409).json({
+        error: 'Offer window still active',
+        message: `Prikupljanje ponuda je aktivno do ${new Date(offer.job.offerWindowEndsAt).toLocaleString('hr-HR')}.`
+      });
     }
     
     // PREVENT SELF-ASSIGNMENT: Check if job creator and offer provider are same company (by OIB/email)
@@ -273,6 +361,63 @@ r.patch('/:offerId/accept', auth(true), async (req, res, next) => {
       offer: result.updatedOffer,
       job: result.updatedJob,
       message: 'Ponuda prihvaćena! Kontakt informacije su sada dostupne.'
+    });
+  } catch (e) { next(e); }
+});
+
+// Create payment checkout for accepted offer
+r.post('/:offerId/create-payment-checkout', auth(true), async (req, res, next) => {
+  try {
+    if (!stripe) {
+      return res.status(503).json({ error: 'Payment system not configured' });
+    }
+
+    const { offerId } = req.params;
+    const offer = await prisma.offer.findUnique({
+      where: { id: offerId },
+      include: { job: true, user: true }
+    });
+
+    if (!offer) return res.status(404).json({ error: 'Offer not found' });
+    if (offer.job.userId !== req.user.id) return res.status(403).json({ error: 'Not authorized' });
+    if (offer.status !== 'ACCEPTED') {
+      return res.status(400).json({ error: 'Only accepted offers can be paid' });
+    }
+
+    const amountCents = Math.round(Number(offer.amount || 0) * 100);
+    if (!Number.isFinite(amountCents) || amountCents <= 0) {
+      return res.status(400).json({ error: 'Invalid offer amount for payment' });
+    }
+
+    const frontendUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'https://www.uslugar.eu';
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'payment',
+      line_items: [{
+        price_data: {
+          currency: 'eur',
+          product_data: {
+            name: `Plaćanje ponude: ${offer.job.title}`,
+            description: `Pružatelj: ${offer.user.fullName || offer.user.email || offer.userId}`
+          },
+          unit_amount: amountCents
+        },
+        quantity: 1
+      }],
+      success_url: `${frontendUrl}#my-jobs?offerPayment=success&offerId=${offer.id}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${frontendUrl}#my-jobs?offerPayment=cancel&offerId=${offer.id}`,
+      metadata: {
+        type: 'offer_payment',
+        offerId: offer.id,
+        jobId: offer.jobId,
+        clientUserId: req.user.id,
+        providerUserId: offer.userId
+      }
+    });
+
+    res.json({
+      sessionId: session.id,
+      checkoutUrl: session.url
     });
   } catch (e) { next(e); }
 });
