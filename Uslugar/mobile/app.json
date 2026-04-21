@@ -4,7 +4,21 @@
     "slug": "uslugar-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "platforms": ["ios", "android"],
-    "userInterfaceStyle": "automatic"
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "userInterfaceStyle": "automatic",
+    "android": {
+      "package": "hr.oriphiel.uslugar"
+    },
+    "ios": {
+      "bundleIdentifier": "hr.oriphiel.uslugar"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "34180a87-630c-4d48-8fcd-c481d4ba766b"
+      }
+    }
   }
 }
