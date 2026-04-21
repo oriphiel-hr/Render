@@ -78,7 +78,7 @@ r.post('/', auth(true, ['PROVIDER']), async (req, res, next) => {
     await deductCredit(req.user.id);
 
     // Ekskluzivan lead: slanje ponude (1 kredit) = kupnja leada za tog pružatelja → lead nestane s tržnice, pojavi se u Moji leadovi
-    if (job.isExclusive && job.leadStatus === 'AVAILABLE' && !job.assignedProviderId) {
+    if (job.leadMode !== 'COMPETITIVE' && job.isExclusive && job.leadStatus === 'AVAILABLE' && !job.assignedProviderId) {
       try {
         const existing = await prisma.leadPurchase.findFirst({
           where: { jobId, providerId: req.user.id, status: { not: 'REFUNDED' } }

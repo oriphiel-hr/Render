@@ -95,6 +95,13 @@ const JobCard = ({ job, onViewDetails, onMakeOffer }) => {
               <span>{job.category.name}</span>
             </span>
           )}
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium ${
+            job.leadMode === 'COMPETITIVE'
+              ? 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300'
+              : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
+          }`}>
+            {job.leadMode === 'COMPETITIVE' ? 'Više ponuda' : 'Ekskluzivno'}
+          </span>
           {job.city && (
             <span className="flex items-center gap-1.5">
               <svg className="w-4 h-4 shrink-0 text-gray-400" fill="currentColor" viewBox="0 0 20 20">

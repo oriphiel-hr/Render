@@ -369,6 +369,7 @@ model Job {
   images       String[] // Slike posla
 
   // USLUGAR EXCLUSIVE polja
+  leadMode           LeadMode @default(EXCLUSIVE) // Način distribucije: ekskluzivno ili više ponuda
   isExclusive        Boolean @default(true) // Ekskluzivan lead (samo 1 provider)
   leadPrice          Int?    @default(10) // Cijena u kreditima (10-20)
   assignedProvider   User?   @relation("AssignedJobs", fields: [assignedProviderId], references: [id], onDelete: SetNull)
@@ -493,6 +494,11 @@ enum JobStatus {
   IN_PROGRESS
   COMPLETED
   CANCELLED
+}
+
+enum LeadMode {
+  EXCLUSIVE
+  COMPETITIVE
 }
 
 enum OfferStatus {

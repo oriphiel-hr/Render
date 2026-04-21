@@ -189,6 +189,7 @@ r.post('/', async (req, res, next) => {
     const latitude = body.latitude;
     const longitude = body.longitude;
     const urgency = body.urgency ?? 'NORMAL';
+    const leadModeRaw = body.leadMode ?? 'EXCLUSIVE';
     const jobSize = body.jobSize;
     const deadline = body.deadline;
     const images = body.images ?? [];
@@ -276,6 +277,7 @@ r.post('/', async (req, res, next) => {
     
     const validUrgency = ['LOW', 'NORMAL', 'HIGH', 'URGENT'].includes(urgency) ? urgency : 'NORMAL';
     const validJobSize = ['SMALL', 'MEDIUM', 'LARGE', 'EXTRA_LARGE'].includes(jobSize) ? jobSize : null;
+    const validLeadMode = ['EXCLUSIVE', 'COMPETITIVE'].includes(leadModeRaw) ? leadModeRaw : 'EXCLUSIVE';
 
     const job = await prisma.job.create({
       data: {
@@ -290,6 +292,7 @@ r.post('/', async (req, res, next) => {
         latitude: latitude ? parseFloat(latitude) : null,
         longitude: longitude ? parseFloat(longitude) : null,
         urgency: validUrgency,
+        leadMode: validLeadMode,
         jobSize: validJobSize,
         deadline: deadline ? new Date(deadline) : null,
         images: Array.isArray(images) ? images : [],
@@ -375,6 +378,7 @@ r.patch('/:jobId', auth(true), async (req, res, next) => {
     const latitude = body.latitude;
     const longitude = body.longitude;
     const urgency = body.urgency ?? 'NORMAL';
+    const leadModeRaw = body.leadMode;
     const jobSize = body.jobSize;
     const deadline = body.deadline;
     const images = body.images ?? [];
@@ -438,6 +442,7 @@ r.patch('/:jobId', auth(true), async (req, res, next) => {
         latitude: latitude != null ? parseFloat(latitude) : job.latitude,
         longitude: longitude != null ? parseFloat(longitude) : job.longitude,
         urgency: urgency || job.urgency,
+        leadMode: leadModeRaw ? (['EXCLUSIVE', 'COMPETITIVE'].includes(leadModeRaw) ? leadModeRaw : job.leadMode) : job.leadMode,
         jobSize: jobSize ?? job.jobSize,
         deadline: deadline ? new Date(deadline) : job.deadline,
         images: Array.isArray(images) ? images : (job.images || [])

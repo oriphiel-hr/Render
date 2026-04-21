@@ -492,7 +492,8 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
           budgetMax: initialData.budgetMax != null ? String(initialData.budgetMax) : '',
           deadline: initialData.deadline
             ? new Date(initialData.deadline).toISOString().slice(0, 10)
-            : ''
+            : '',
+          leadMode: initialData.leadMode || 'EXCLUSIVE'
         }
       : {
           title: '',
@@ -506,6 +507,7 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
           latitude: null,
           longitude: null,
           urgency: 'NORMAL',
+          leadMode: 'EXCLUSIVE',
           jobSize: '',
           deadline: '',
           contactName: '',
@@ -975,6 +977,22 @@ const JobForm = ({ onSubmit, onCancel, categories = [], initialData = null }) =>
             <option value="URGENT">Hitno</option>
           </select>
         </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Način zaprimanja ponuda
+        </label>
+        <select
+          {...register('leadMode')}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          <option value="EXCLUSIVE">Ekskluzivno (1 izvođač)</option>
+          <option value="COMPETITIVE">Više ponuda (natječaj)</option>
+        </select>
+        <p className="mt-1 text-xs text-gray-500">
+          Ekskluzivno: jedan izvođač bez konkurencije. Više ponuda: više izvođača može poslati ponudu.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

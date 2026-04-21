@@ -978,6 +978,7 @@ export async function getAvailableLeads(providerId, filters = {}) {
 
   // Osnovni filter
   const where = {
+    leadMode: 'EXCLUSIVE',
     isExclusive: true,
     leadStatus: 'AVAILABLE',
     assignedProviderId: null,
