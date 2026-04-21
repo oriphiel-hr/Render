@@ -34,6 +34,10 @@ package-lock.json.*.backup
 .expo/
 .expo-shared/
 
+# Expo native (generirano prebuildom / EAS; ne commitaj lokalni android/ios osim ako namjerno koristiš CNG)
+mobile/android/
+mobile/ios/
+
 # ── Build artefakti
 dist/
 build/

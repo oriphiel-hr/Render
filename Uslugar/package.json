@@ -8,6 +8,11 @@
     "packages/*",
     "tests"
   ],
+  "overrides": {
+    "metro": "0.82.5",
+    "metro-config": "0.82.5",
+    "metro-resolver": "0.82.5"
+  },
   "scripts": {
     "build:web": "npm run build --workspace=frontend",
     "build:mobile": "npm run typecheck --workspace=mobile",
