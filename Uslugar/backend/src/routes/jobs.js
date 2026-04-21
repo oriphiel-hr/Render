@@ -278,6 +278,7 @@ r.post('/', async (req, res, next) => {
     const validUrgency = ['LOW', 'NORMAL', 'HIGH', 'URGENT'].includes(urgency) ? urgency : 'NORMAL';
     const validJobSize = ['SMALL', 'MEDIUM', 'LARGE', 'EXTRA_LARGE'].includes(jobSize) ? jobSize : null;
     const validLeadMode = ['EXCLUSIVE', 'COMPETITIVE'].includes(leadModeRaw) ? leadModeRaw : 'EXCLUSIVE';
+    const isExclusiveLead = validLeadMode === 'EXCLUSIVE';
 
     const job = await prisma.job.create({
       data: {
@@ -293,6 +294,7 @@ r.post('/', async (req, res, next) => {
         longitude: longitude ? parseFloat(longitude) : null,
         urgency: validUrgency,
         leadMode: validLeadMode,
+        isExclusive: isExclusiveLead,
         jobSize: validJobSize,
         deadline: deadline ? new Date(deadline) : null,
         images: Array.isArray(images) ? images : [],
@@ -431,6 +433,9 @@ r.patch('/:jobId', auth(true), async (req, res, next) => {
     const updated = await prisma.job.update({
       where: { id: jobId },
       data: {
+        ...(leadModeRaw && ['EXCLUSIVE', 'COMPETITIVE'].includes(leadModeRaw)
+          ? { leadMode: leadModeRaw, isExclusive: leadModeRaw === 'EXCLUSIVE' }
+          : {}),
         title,
         description,
         categoryId: finalCategoryId,
@@ -442,7 +447,6 @@ r.patch('/:jobId', auth(true), async (req, res, next) => {
         latitude: latitude != null ? parseFloat(latitude) : job.latitude,
         longitude: longitude != null ? parseFloat(longitude) : job.longitude,
         urgency: urgency || job.urgency,
-        leadMode: leadModeRaw ? (['EXCLUSIVE', 'COMPETITIVE'].includes(leadModeRaw) ? leadModeRaw : job.leadMode) : job.leadMode,
         jobSize: jobSize ?? job.jobSize,
         deadline: deadline ? new Date(deadline) : job.deadline,
         images: Array.isArray(images) ? images : (job.images || [])

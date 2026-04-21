@@ -156,6 +156,7 @@ export async function batchEvaluateNewLeads(prisma) {
     // Dohvati sve leadove koji nemaju quality score
     const jobs = await prisma.job.findMany({
       where: {
+        leadMode: 'EXCLUSIVE',
         isExclusive: true,
         qualityScore: { equals: 0 },
         leadStatus: 'AVAILABLE'
