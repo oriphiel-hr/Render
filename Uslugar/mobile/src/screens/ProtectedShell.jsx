@@ -5,6 +5,8 @@ import ChatRoomsScreen from './ChatRoomsScreen';
 import ChatRoomScreen from './ChatRoomScreen';
 import BillingScreen from './BillingScreen';
 import TopToast from '../components/TopToast';
+import BrandHeader from '../components/BrandHeader';
+import AdminLiteScreen from './AdminLiteScreen';
 
 function formatDate(dateInput) {
   if (!dateInput) return '-';
@@ -56,17 +58,32 @@ export default function ProtectedShell({
   chat,
   push,
   billing,
+  admin,
   handleRefreshProfile,
   handleLogout
 }) {
   const isProvider = user.role === 'PROVIDER';
+  const isAdmin = user.role === 'ADMIN';
   useEffect(() => {
     if (activeTab === 'profile') {
       push.refreshPushSubscriptions?.();
     }
   }, [activeTab]);
 
-  const tabs = isProvider
+  useEffect(() => {
+    if (isAdmin && !['admin', 'billing', 'chat', 'profile'].includes(activeTab)) {
+      setActiveTab('admin');
+    }
+  }, [isAdmin, activeTab]);
+
+  const tabs = isAdmin
+    ? [
+        { key: 'admin', label: 'Admin Lite' },
+        { key: 'billing', label: 'Naplata' },
+        { key: 'chat', label: 'Chat' },
+        { key: 'profile', label: 'Profil', showPushStatus: true }
+      ]
+    : isProvider
     ? [
         { key: 'jobs', label: 'Poslovi' },
         { key: 'my-offers', label: 'Moje ponude' },
@@ -85,8 +102,8 @@ export default function ProtectedShell({
   return (
     <View style={styles.card}>
       <TopToast message={message} type={inferToastType(message)} visible={!!message} />
-      <Text style={styles.title}>Uslugar Mobile</Text>
-      <Text style={styles.subtitle}>MVP shell ({isProvider ? 'PROVIDER' : 'USER'})</Text>
+      <BrandHeader />
+      <Text style={styles.subtitle}>MVP shell ({isAdmin ? 'ADMIN' : isProvider ? 'PROVIDER' : 'USER'})</Text>
 
       <View style={styles.tabRow}>
         {tabs.map((tab) => (
@@ -198,6 +215,11 @@ export default function ProtectedShell({
             </>
           )}
         </ScrollView>
+      ) : activeTab === 'admin' ? (
+        <AdminLiteScreen
+          admin={admin}
+          loading={loading}
+        />
       ) : activeTab === 'jobs' ? (
         <FlatList
           style={styles.contentArea}

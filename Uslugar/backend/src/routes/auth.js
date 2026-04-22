@@ -306,9 +306,29 @@ r.post('/login', async (req, res, next) => {
       console.log('[LOGIN] Password mismatch for:', email);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+
+    const blockedUsers = validUsers.filter((u) => u.isBlocked);
+    validUsers = validUsers.filter((u) => !u.isBlocked);
+    if (validUsers.length === 0) {
+      return res.status(403).json({
+        error: 'Account blocked',
+        message:
+          blockedUsers[0]?.blockedReason ||
+          'Vaš korisnički račun je blokiran. Kontaktirajte podršku.'
+      });
+    }
     
     // If role is specified, try to find that specific user
     if (role) {
+      const blockedWithRole = blockedUsers.find((u) => u.role === role);
+      if (blockedWithRole) {
+        return res.status(403).json({
+          error: 'Account blocked',
+          message:
+            blockedWithRole.blockedReason ||
+            'Vaš korisnički račun je blokiran. Kontaktirajte podršku.'
+        });
+      }
       const userWithRole = validUsers.find(u => u.role === role);
       if (!userWithRole) {
         return res.status(401).json({ 

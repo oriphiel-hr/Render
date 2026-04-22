@@ -3,7 +3,7 @@ import { StyleSheet } from 'react-native';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#f6f3ee',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24
@@ -11,9 +11,42 @@ export const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 420,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#fffaf2',
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
     padding: 24
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 8
+  },
+  brandMark: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0ea5e9'
+  },
+  brandMarkText: {
+    color: '#ffffff',
+    fontWeight: '800',
+    fontSize: 20
+  },
+  brandTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#111827'
+  },
+  brandSubtitle: {
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 1.4,
+    color: '#059669',
+    fontWeight: '700'
   },
   label: {
     marginTop: 12,
@@ -94,7 +127,7 @@ export const styles = StyleSheet.create({
     backgroundColor: '#e5e7eb'
   },
   tabButtonActive: {
-    backgroundColor: '#2563eb'
+    backgroundColor: '#0ea5e9'
   },
   tabButtonText: {
     color: '#1f2937',
@@ -195,7 +228,7 @@ export const styles = StyleSheet.create({
   },
   button: {
     marginTop: 16,
-    backgroundColor: '#2563eb',
+    backgroundColor: '#0ea5e9',
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: 'center'
@@ -210,7 +243,7 @@ export const styles = StyleSheet.create({
   },
   buttonSecondary: {
     marginTop: 14,
-    backgroundColor: '#374151',
+    backgroundColor: '#0f766e',
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: 'center'
@@ -228,7 +261,7 @@ export const styles = StyleSheet.create({
     fontSize: 12
   },
   pillActive: {
-    backgroundColor: '#bfdbfe'
+    backgroundColor: '#ccfbf1'
   },
   toastSuccess: {
     borderColor: '#86efac',

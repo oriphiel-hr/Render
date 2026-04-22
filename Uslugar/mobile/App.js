@@ -8,6 +8,7 @@ import { useJobsFlow } from './src/hooks/useJobsFlow';
 import { useChatFlow } from './src/hooks/useChatFlow';
 import { usePushNotifications } from './src/hooks/usePushNotifications';
 import { useBillingFlow } from './src/hooks/useBillingFlow';
+import { useAdminLiteFlow } from './src/hooks/useAdminLiteFlow';
 
 export default function App() {
   const auth = useAuthSession();
@@ -33,6 +34,14 @@ export default function App() {
     handleApiError: auth.handleApiError
   });
   const billing = useBillingFlow({
+    apiBaseUrl: auth.apiBaseUrl,
+    token: auth.token,
+    user: auth.user,
+    setLoading: auth.setLoading,
+    setMessage: auth.setMessage,
+    handleApiError: auth.handleApiError
+  });
+  const admin = useAdminLiteFlow({
     apiBaseUrl: auth.apiBaseUrl,
     token: auth.token,
     user: auth.user,
@@ -77,6 +86,7 @@ export default function App() {
           chat={chatFlow}
           push={push}
           billing={billing}
+          admin={admin}
           handleRefreshProfile={auth.handleRefreshProfile}
           handleLogout={async () => {
             jobsFlow.resetJobSelection();

@@ -9,7 +9,7 @@ export function signToken(payload) {
 }
 
 export function auth(required = true, roles = []) {
-  return (req, res, next) => {
+  return async (req, res, next) => {
     const hdr = req.headers.authorization || '';
     const token = hdr.startsWith('Bearer ') ? hdr.slice(7) : null;
     if (!token) {
@@ -18,10 +18,26 @@ export function auth(required = true, roles = []) {
     }
     try {
       const data = jwt.verify(token, SECRET);
-      if (roles.length && !roles.includes(data.role)) {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: data.id },
+        select: { id: true, role: true, isBlocked: true, blockedReason: true }
+      });
+      if (!dbUser) {
+        return res.status(401).json({ error: 'Invalid token' });
+      }
+      if (dbUser.isBlocked) {
+        return res.status(403).json({
+          error: 'Account blocked',
+          message: dbUser.blockedReason || 'Vaš korisnički račun je privremeno blokiran. Kontaktirajte podršku.'
+        });
+      }
+      if (roles.length && !roles.includes(dbUser.role)) {
         return res.status(403).json({ error: 'Forbidden' });
       }
-      req.user = data;
+      req.user = {
+        ...data,
+        role: dbUser.role
+      };
       next();
     } catch (e) {
       // Ako je auth optional, nastavi bez korisnika

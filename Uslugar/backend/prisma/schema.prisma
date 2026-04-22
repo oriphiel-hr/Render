@@ -160,6 +160,9 @@ model User {
   legalStatusId             String? // Pravni status (za firme koje traže usluge)
   taxId                     String? // OIB
   companyName               String? // Naziv firme
+  isBlocked                 Boolean      @default(false) // Admin soft block korisnika
+  blockedAt                 DateTime? // Kada je korisnik blokiran
+  blockedReason             String? // Razlog blokade
   createdAt                 DateTime     @default(now())
   updatedAt                 DateTime     @updatedAt
 
@@ -206,6 +209,7 @@ model User {
   // but prevents duplicate email within same role
   @@unique([email, role])
   @@index([marketingSource])
+  @@index([isBlocked])
 }
 
 model ProviderProfile {

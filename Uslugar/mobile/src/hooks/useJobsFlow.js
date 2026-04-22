@@ -40,6 +40,12 @@ export function useJobsFlow({
   };
 
   const loadBaseData = async () => {
+    if (user?.role === 'ADMIN') {
+      setJobs([]);
+      setMyJobs([]);
+      setMyOffers([]);
+      return;
+    }
     setLoading(true);
     try {
       if (user?.role === 'PROVIDER') {

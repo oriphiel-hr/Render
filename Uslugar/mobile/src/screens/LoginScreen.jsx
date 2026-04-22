@@ -1,6 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { styles } from '../styles';
+import BrandHeader from '../components/BrandHeader';
 
 export default function LoginScreen({
   apiBaseUrl,
@@ -15,7 +16,7 @@ export default function LoginScreen({
 }) {
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Uslugar Mobile</Text>
+      <BrandHeader />
       <Text style={styles.subtitle}>Prijava na postojeći backend</Text>
 
       <Text style={styles.label}>API base URL</Text>

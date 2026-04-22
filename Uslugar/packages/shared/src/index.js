@@ -365,3 +365,135 @@ export async function getCreditHistory({
     token
   });
 }
+
+export async function getAdminPaymentWatch({
+  apiBaseUrl,
+  token
+}) {
+  return apiRequest({
+    apiBaseUrl,
+    path: '/admin/mobile/payment-watch',
+    token
+  });
+}
+
+export async function sendAdminPaymentReminder({
+  apiBaseUrl,
+  token,
+  invoiceId
+}) {
+  return apiRequest({
+    apiBaseUrl,
+    path: `/admin/mobile/invoices/${invoiceId}/remind-payment`,
+    method: 'POST',
+    token
+  });
+}
+
+export async function getAdminPendingProviders({
+  apiBaseUrl,
+  token
+}) {
+  return apiRequest({
+    apiBaseUrl,
+    path: '/admin/providers/pending',
+    token
+  });
+}
+
+export async function setAdminProviderApproval({
+  apiBaseUrl,
+  token,
+  providerId,
+  status,
+  notes
+}) {
+  return apiRequest({
+    apiBaseUrl,
+    path: `/admin/providers/${providerId}/approval`,
+    method: 'PATCH',
+    token,
+    body: { status, notes }
+  });
+}
+
+export async function getAdminPendingRefunds({
+  apiBaseUrl,
+  token
+}) {
+  return apiRequest({
+    apiBaseUrl,
+    path: '/admin/refunds/pending',
+    token
+  });
+}
+
+export async function approveAdminLeadRefund({
+  apiBaseUrl,
+  token,
+  purchaseId,
+  adminNotes
+}) {
+  return apiRequest({
+    apiBaseUrl,
+    path: `/admin/refunds/lead/${purchaseId}/approve`,
+    method: 'POST',
+    token,
+    body: { adminNotes }
+  });
+}
+
+export async function rejectAdminLeadRefund({
+  apiBaseUrl,
+  token,
+  purchaseId,
+  reason
+}) {
+  return apiRequest({
+    apiBaseUrl,
+    path: `/admin/refunds/lead/${purchaseId}/reject`,
+    method: 'POST',
+    token,
+    body: { reason }
+  });
+}
+
+export async function getAdminBlockedUsers({
+  apiBaseUrl,
+  token,
+  limit = 30
+}) {
+  return apiRequest({
+    apiBaseUrl,
+    path: `/admin/mobile/blocked-users?limit=${limit}`,
+    token
+  });
+}
+
+export async function blockAdminUser({
+  apiBaseUrl,
+  token,
+  userId,
+  reason
+}) {
+  return apiRequest({
+    apiBaseUrl,
+    path: `/admin/mobile/users/${userId}/block`,
+    method: 'PATCH',
+    token,
+    body: { reason }
+  });
+}
+
+export async function unblockAdminUser({
+  apiBaseUrl,
+  token,
+  userId
+}) {
+  return apiRequest({
+    apiBaseUrl,
+    path: `/admin/mobile/users/${userId}/unblock`,
+    method: 'PATCH',
+    token
+  });
+}

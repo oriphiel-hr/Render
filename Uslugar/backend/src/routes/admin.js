@@ -205,6 +205,295 @@ r.get('/dashboard-summary', auth(true, ['ADMIN']), async (req, res, next) => {
 });
 
 /**
+ * GET /api/admin/mobile/payment-watch
+ * Admin Lite: naplatni nadzor (za mobilni pregled i brze intervencije)
+ */
+r.get('/mobile/payment-watch', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOf7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const pendingStuckThreshold = new Date(now.getTime() - 30 * 60 * 1000);
+
+    const [
+      paidToday,
+      paid7Days,
+      unpaidInvoicesCount,
+      overdueInvoicesCount,
+      paymentPendingCount,
+      paymentPendingStuckCount,
+      recentPaidInvoices,
+      overdueInvoices,
+      paymentPendingSubscriptions
+    ] = await Promise.all([
+      prisma.invoice.aggregate({
+        where: {
+          status: 'PAID',
+          paidAt: { gte: startOfToday }
+        },
+        _sum: { totalAmount: true },
+        _count: { _all: true }
+      }),
+      prisma.invoice.aggregate({
+        where: {
+          status: 'PAID',
+          paidAt: { gte: startOf7Days }
+        },
+        _sum: { totalAmount: true },
+        _count: { _all: true }
+      }),
+      prisma.invoice.count({
+        where: { status: { in: ['DRAFT', 'SENT'] } }
+      }),
+      prisma.invoice.count({
+        where: {
+          status: { in: ['DRAFT', 'SENT'] },
+          dueDate: { lt: now }
+        }
+      }),
+      prisma.subscription.count({
+        where: { status: 'PAYMENT_PENDING' }
+      }),
+      prisma.subscription.count({
+        where: {
+          status: 'PAYMENT_PENDING',
+          updatedAt: { lte: pendingStuckThreshold }
+        }
+      }),
+      prisma.invoice.findMany({
+        where: { status: 'PAID' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true
+            }
+          }
+        },
+        orderBy: { paidAt: 'desc' },
+        take: 12
+      }),
+      prisma.invoice.findMany({
+        where: {
+          status: { in: ['DRAFT', 'SENT'] },
+          dueDate: { lt: now }
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true
+            }
+          }
+        },
+        orderBy: { dueDate: 'asc' },
+        take: 20
+      }),
+      prisma.subscription.findMany({
+        where: { status: 'PAYMENT_PENDING' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true
+            }
+          }
+        },
+        orderBy: { updatedAt: 'asc' },
+        take: 20
+      })
+    ]);
+
+    res.json({
+      success: true,
+      kpis: {
+        paidTodayAmountCents: paidToday._sum.totalAmount || 0,
+        paidTodayInvoices: paidToday._count._all || 0,
+        paid7dAmountCents: paid7Days._sum.totalAmount || 0,
+        paid7dInvoices: paid7Days._count._all || 0,
+        unpaidInvoicesCount,
+        overdueInvoicesCount,
+        paymentPendingCount,
+        paymentPendingStuckCount
+      },
+      lists: {
+        recentPaidInvoices,
+        overdueInvoices,
+        paymentPendingSubscriptions
+      }
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * POST /api/admin/mobile/invoices/:invoiceId/remind-payment
+ * Brza admin akcija: pošalji in-app podsjetnik korisniku da dovrši uplatu.
+ */
+r.post('/mobile/invoices/:invoiceId/remind-payment', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const { invoiceId } = req.params;
+    const invoice = await prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true
+          }
+        }
+      }
+    });
+
+    if (!invoice) {
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+
+    if (!['DRAFT', 'SENT'].includes(invoice.status)) {
+      return res.status(400).json({ error: 'Reminder is allowed only for unpaid invoices.' });
+    }
+
+    await prisma.notification.create({
+      data: {
+        title: 'Podsjetnik za uplatu',
+        message: `Podsjetnik: otvorena je faktura ${invoice.invoiceNumber || invoice.id}. Molimo dovršite uplatu.`,
+        type: 'SYSTEM',
+        userId: invoice.userId
+      }
+    });
+
+    res.json({
+      success: true,
+      message: `Podsjetnik je poslan korisniku ${invoice.user?.fullName || invoice.user?.email || invoice.userId}.`
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * GET /api/admin/mobile/blocked-users
+ * Admin Lite: pregled blokiranih korisnika
+ */
+r.get('/mobile/blocked-users', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit, 10) || 30, 100);
+    const users = await prisma.user.findMany({
+      where: { isBlocked: true },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        blockedAt: true,
+        blockedReason: true
+      },
+      orderBy: { blockedAt: 'desc' },
+      take: limit
+    });
+    res.json({ success: true, users });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * PATCH /api/admin/mobile/users/:userId/block
+ * Admin Lite: soft-block korisnika
+ */
+r.patch('/mobile/users/:userId/block', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const reason = String(req.body?.reason || '').trim() || 'Blokiran od strane administratora.';
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, role: true, fullName: true, email: true, isBlocked: true }
+    });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (user.role === 'ADMIN') {
+      return res.status(400).json({ error: 'ADMIN korisnika nije dopušteno blokirati.' });
+    }
+    if (user.isBlocked) {
+      return res.status(400).json({ error: 'Korisnik je već blokiran.' });
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        isBlocked: true,
+        blockedAt: new Date(),
+        blockedReason: reason
+      }
+    });
+
+    await prisma.notification.create({
+      data: {
+        title: 'Korisnički račun blokiran',
+        message: reason,
+        type: 'SYSTEM',
+        userId
+      }
+    });
+
+    res.json({
+      success: true,
+      message: `Korisnik ${user.fullName || user.email} je blokiran.`
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * PATCH /api/admin/mobile/users/:userId/unblock
+ * Admin Lite: odblokiraj korisnika
+ */
+r.patch('/mobile/users/:userId/unblock', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, fullName: true, email: true, isBlocked: true }
+    });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (!user.isBlocked) {
+      return res.status(400).json({ error: 'Korisnik nije blokiran.' });
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        isBlocked: false,
+        blockedAt: null,
+        blockedReason: null
+      }
+    });
+
+    await prisma.notification.create({
+      data: {
+        title: 'Korisnički račun odblokiran',
+        message: 'Pristup računu je ponovno omogućen.',
+        type: 'SYSTEM',
+        userId
+      }
+    });
+
+    res.json({
+      success: true,
+      message: `Korisnik ${user.fullName || user.email} je odblokiran.`
+    });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
  * GET /api/admin/moderation/pending
  * Dohvati sadržaj koji čeka moderaciju
  * Query params: type (job|review|offer|message|all), limit, offset
