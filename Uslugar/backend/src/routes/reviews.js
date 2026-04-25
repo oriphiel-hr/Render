@@ -62,7 +62,7 @@ r.get('/user/:userId', auth(false), async (req, res, next) => {
       prisma.review.findMany({
         where,
         include: {
-          job: { select: { id: true, title: true } },
+          job: { select: { id: true, title: true, status: true } },
           from: { select: { id: true, fullName: true, email: true } }
         },
         orderBy: { createdAt: 'desc' },
@@ -71,8 +71,24 @@ r.get('/user/:userId', auth(false), async (req, res, next) => {
       }),
       prisma.review.count({ where })
     ]);
+
+    const computeSuspicious = (r) => {
+      let s = r.suspiciousScore || 0;
+      if (r.rating === 5 && (!r.comment || r.comment.length < 12)) s = Math.max(s, 25);
+      if (r.job?.status && r.job.status !== 'COMPLETED') s = Math.max(s, 15);
+      return Math.min(100, s);
+    };
+
+    const reviewsOut = reviews.map((r) => ({
+      ...r,
+      trustHints: {
+        jobCompleted: r.job?.status === 'COMPLETED',
+        proofOfService: r.job?.status === 'COMPLETED' ? 'Posao u sustavu završen' : 'Posao nije u statusu dovršeno',
+        suspiciousScore: computeSuspicious(r)
+      }
+    }));
     
-    res.json({ reviews, total, page: parseInt(page), limit: parseInt(limit) });
+    res.json({ reviews: reviewsOut, total, page: parseInt(page), limit: parseInt(limit) });
   } catch (e) { next(e); }
 });
 
@@ -164,6 +180,13 @@ r.post('/', auth(true), async (req, res, next) => {
     
     const supportEmail = process.env.CONTACT_ADMIN_EMAIL || 'support@uslugar.hr';
 
+    const initialSuspicious = (() => {
+      let s = 0;
+      if (Number(rating) === 5 && (!comment || String(comment).length < 12)) s += 25;
+      if (job.status !== 'COMPLETED') s += 15;
+      return Math.min(100, s);
+    })();
+
     const review = await prisma.review.create({
       data: { 
         jobId,
@@ -174,6 +197,7 @@ r.post('/', auth(true), async (req, res, next) => {
         isPublished: shouldPublish,
         publishedAt: shouldPublish ? now : null,
         reviewDeadline: reviewDeadline,
+        suspiciousScore: initialSuspicious,
         moderationStatus: moderationResult.moderationStatus,
         moderationNotes: moderationResult.reason || null,
         moderationAiUsed: moderationResult.aiUsed || false,

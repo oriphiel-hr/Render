@@ -37,3 +37,38 @@
 - Upload outside chat:
   - Extract generic file-picker/upload helper from chat image flow.
   - Reuse in jobs/offers/profile upload screens.
+
+## Gdje su globalni lideri jači (što još dodati)
+
+Ako želiš stvarno preteći konkurenciju, ovo ima smisla dodati (poredjano po očekivanom utjecaju):
+
+### 1) Trust layer za korisnika (must-have)
+- "Verified provider" bedževi koje korisnik odmah razumije (ID, licenca, tvrtka)
+- anti-fake review mehanika (dokaz izvršenog posla + signalizacija sumnjivih recenzija)
+- jasno prikazano: što je provjereno, što nije
+
+### 2) Instant booking / instant slot (za dio kategorija)
+- za brze usluge (npr. montaže, sitni popravci) korisnik odmah rezervira termin
+- pazi: na mobilu obično jako diže konverziju
+
+### 3) Garancija platforme / buyer protection
+- čak i mali "Uslugar Guarantee" (npr. do određenog iznosa) gradi povjerenje
+- standardiziran dispute flow uz to
+
+### 4) SLA i brzina odgovora kao ranking faktor
+- prikaz: "odgovara u X min"
+- boost u rankingu za brze i pouzdane izvođače
+- korisniku: ETA tipa "prva ponuda za ~Y min"
+
+### 5) Post-job retention za korisnika
+- "ponovi uslugu", "omiljeni izvođač", sezonski podsjetnici (klima, servis bojlera, itd.)
+- cilj: korisnik ne dođe samo jednom preko weba
+
+### 6) Standardizirani paketi usluga
+- "fiksna cijena od–do" za najčešće poslove (barem u top 10 kategorija)
+- manje nesigurnosti = veća stopa rezervacije
+
+### Plan za prva 90 dana (prijedlog)
+- **Faza 1 (2–3 tjedna):** trust bedževi + jasni profil "provjereno / neprovjereno"
+- **Faza 2 (3–4 tjedna):** instant booking za 2–3 jednostavne kategorije
+- **Faza 3 (3–4 tjedna):** buyer protection + dispute centar + SLA badge / ranking

@@ -89,6 +89,7 @@ export default function ProviderFilter({ filters, setFilters, categories, onRese
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="rating">Ocjena ⭐</option>
+            <option value="responseTime">Brzina odgovora (SLA) ⏱️</option>
             <option value="distance">Udaljenost 📍</option>
             <option value="badges">Broj badge-ova 🏅</option>
             <option value="recent">Najnoviji 📅</option>
@@ -153,6 +154,12 @@ export default function ProviderFilter({ filters, setFilters, categories, onRese
               </button>
             </div>
           )}
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-3 leading-relaxed">
+            <strong>Povjerenje X/7</strong> na karticama broji više signala (npr. SMS, licence, police).
+            Filteri <strong>„Samo verificirani”</strong> i <strong>„Samo s licencama”</strong> slijede
+            ista API pravila — „verificirani” ovdje znači poslovna provjera <em>ili</em> identitet, ne
+            cijelih 7/7.
+          </p>
         </div>
       </div>
     </div>

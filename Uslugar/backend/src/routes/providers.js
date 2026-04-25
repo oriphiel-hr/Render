@@ -113,6 +113,19 @@ r.get('/', async (req, res, next) => {
           distanceKm = 0;
         }
 
+        const etas = (provider.categories || [])
+          .map((c) => c.etaFirstOfferMinutes)
+          .filter((n) => typeof n === 'number' && n > 0);
+        const etaFirstOfferHint = etas.length ? Math.min(...etas) : null;
+        const priceGuides = (provider.categories || [])
+          .filter((c) => c.priceGuideMin != null && c.priceGuideMax != null)
+          .map((c) => ({
+            categoryId: c.id,
+            name: c.name,
+            min: c.priceGuideMin,
+            max: c.priceGuideMax
+          }));
+
         return {
           ...provider,
           ratingAvg,
@@ -121,7 +134,9 @@ r.get('/', async (req, res, next) => {
           longitude: pLon,
           city: pCity,
           distanceKm,
-          businessVerified: isProviderProfileBusinessVerified(provider)
+          businessVerified: isProviderProfileBusinessVerified(provider),
+          etaFirstOfferHint,
+          priceGuides
         };
       })
     );
@@ -166,6 +181,13 @@ r.get('/', async (req, res, next) => {
       });
     } else if (sortBy === 'recent') {
       filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    } else if (sortBy === 'responseTime') {
+      filtered.sort((a, b) => {
+        const av = a.avgResponseTimeMinutes > 0 ? a.avgResponseTimeMinutes : 999999;
+        const bv = b.avgResponseTimeMinutes > 0 ? b.avgResponseTimeMinutes : 999999;
+        if (av !== bv) return av - bv;
+        return (b.ratingAvg || 0) - (a.ratingAvg || 0);
+      });
     } else {
       filtered.sort((a, b) => (b.ratingAvg || 0) - (a.ratingAvg || 0));
     }
@@ -190,6 +212,8 @@ function getOrderBy(sortBy) {
   switch (sortBy) {
     case 'recent':
       return { createdAt: 'desc' };
+    case 'responseTime':
+      return { avgResponseTimeMinutes: 'asc' };
     case 'rating':
     default:
       return { ratingAvg: 'desc' };
@@ -320,7 +344,14 @@ r.get('/:userId', async (req, res, next) => {
       where: { id: userId },
       include: {
         legalStatus: true,
-        providerProfile: { include: { categories: true } }
+        providerProfile: {
+          include: {
+            categories: true,
+            licenses: {
+              where: { isVerified: true }
+            }
+          }
+        }
       }
     });
     if (!user || user.role !== 'PROVIDER') return res.status(404).json({ error: 'Provider not found' });

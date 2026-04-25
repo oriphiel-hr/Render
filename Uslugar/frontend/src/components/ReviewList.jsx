@@ -83,9 +83,17 @@ const ReviewList = ({ providerId, currentUserId, onReviewSubmitted }) => {
   return (
     <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">
-          Recenzije ({reviews.length})
-        </h3>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">
+            Recenzije ({reviews.length})
+          </h3>
+          {reviews.length > 0 && (
+            <p className="text-xs text-slate-600 mt-1 max-w-xl">
+              Povratne informacije vezane su uz korisnike usluge na Uslugaru. Daljnji mehanizmi
+              (dokaz izvršenog posla, otkrivanje anomalija) slijede u idućim inačicama.
+            </p>
+          )}
+        </div>
         {currentUserId && !existingReview && (
           <button
             onClick={() => setShowReviewForm(true)}
@@ -168,6 +176,20 @@ const ReviewList = ({ providerId, currentUserId, onReviewSubmitted }) => {
               
               {review.comment && (
                 <p className="text-gray-700 mt-2">{review.comment}</p>
+              )}
+              {review.trustHints && (
+                <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                  {review.trustHints.jobCompleted && (
+                    <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                      Dokaz: posao završen u sustavu
+                    </span>
+                  )}
+                  {review.trustHints.suspiciousScore >= 40 && (
+                    <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200" title="Heuristika">
+                      Potrebna pažnja (sumnjiv uzorak)
+                    </span>
+                  )}
+                </div>
               )}
             </div>
           ))}

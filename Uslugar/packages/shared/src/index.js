@@ -1,5 +1,15 @@
 export const SHARED_APP_NAME = 'Uslugar';
 
+export {
+  isProviderBusinessVerified,
+  getProviderTrustLayer,
+  TRUST_CHECK_TOTAL,
+  passesPublicVerifiedFilter,
+  passesHasVerifiedLicensesFilter,
+  getProviderVisualBadges
+} from './trust.js';
+export { COMPETITIVE_FOCUS_AREAS, NINETY_DAY_ROADMAP } from './productRoadmapHr.js';
+
 export function normalizeApiBaseUrl(url) {
   if (!url) return '';
   return String(url).replace(/\/+$/, '');
@@ -75,6 +85,23 @@ export async function getJobs({
   return apiRequest({
     apiBaseUrl,
     path: `/jobs${query}`,
+    token
+  });
+}
+
+/**
+ * Javna lista pružatelja (GET /providers). Isti parametri kao web: search, city, minRating, verified, hasLicenses, sortBy, userLat, userLon, categoryId, …
+ */
+export async function getPublicProviders({ apiBaseUrl, token, params = {} }) {
+  const q = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value == null || value === '') continue;
+    q.set(key, String(value));
+  }
+  const query = q.toString();
+  return apiRequest({
+    apiBaseUrl,
+    path: `/providers${query ? `?${query}` : ''}`,
     token
   });
 }
@@ -496,4 +523,67 @@ export async function unblockAdminUser({
     method: 'PATCH',
     token
   });
+}
+
+export async function getPublicGuarantee({ apiBaseUrl }) {
+  return apiRequest({ apiBaseUrl, path: '/public/guarantee' });
+}
+
+export async function getGrowthFavorites({ apiBaseUrl, token }) {
+  return apiRequest({ apiBaseUrl, path: '/growth/favorites', token });
+}
+
+export async function addGrowthFavorite({ apiBaseUrl, token, providerId }) {
+  return apiRequest({ apiBaseUrl, path: '/growth/favorites', method: 'POST', token, body: { providerId } });
+}
+
+export async function removeGrowthFavorite({ apiBaseUrl, token, providerId }) {
+  return apiRequest({ apiBaseUrl, path: `/growth/favorites/${encodeURIComponent(providerId)}`, method: 'DELETE', token });
+}
+
+export async function createDispute({ apiBaseUrl, token, title, description, jobId }) {
+  return apiRequest({ apiBaseUrl, path: '/growth/disputes', method: 'POST', token, body: { title, description, jobId } });
+}
+
+export async function getGrowthDisputes({ apiBaseUrl, token }) {
+  return apiRequest({ apiBaseUrl, path: '/growth/disputes', token });
+}
+
+export async function createInstantBookingRequest({
+  apiBaseUrl,
+  token,
+  providerId,
+  categoryId,
+  requestedStart,
+  message
+}) {
+  return apiRequest({
+    apiBaseUrl,
+    path: '/growth/instant-bookings',
+    method: 'POST',
+    token,
+    body: { providerId, categoryId, requestedStart, message }
+  });
+}
+
+export async function getInstantBookingRequests({ apiBaseUrl, token }) {
+  return apiRequest({ apiBaseUrl, path: '/growth/instant-bookings', token });
+}
+
+export async function createSeasonalReminder({ apiBaseUrl, token, categoryId, label, periodMonths, nextRemindAt }) {
+  return apiRequest({
+    apiBaseUrl,
+    path: '/growth/reminders',
+    method: 'POST',
+    token,
+    body: { categoryId, label, periodMonths, nextRemindAt }
+  });
+}
+
+export async function getSeasonalReminders({ apiBaseUrl, token }) {
+  return apiRequest({ apiBaseUrl, path: '/growth/reminders', token });
+}
+
+export async function deleteSeasonalReminder({ apiBaseUrl, token, id }) {
+  return apiRequest({ apiBaseUrl, path: `/growth/reminders/${encodeURIComponent(id)}`, method: 'DELETE', token });
 }

@@ -290,5 +290,57 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     color: '#1f2937',
     fontWeight: '600'
-  }
+  },
+  sortPillRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 6
+  },
+  sortPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#e5e7eb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb'
+  },
+  sortPillActive: {
+    backgroundColor: '#ccfbf1',
+    borderColor: '#0f766e'
+  },
+  sortPillText: { fontSize: 12, fontWeight: '600', color: '#374151' },
+  sortPillTextActive: { color: '#0f172a' },
+  filterRow: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  filterLabel: { flex: 1, fontSize: 13, color: '#374151' },
+  hintText: { fontSize: 11, color: '#6b7280', marginTop: 4, lineHeight: 16 },
+  inlineLoader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 10
+  },
+  trustLine: { fontSize: 12, color: '#0d9488', fontWeight: '700', marginTop: 4 },
+  providersList: {
+    marginTop: 8,
+    maxHeight: 480,
+    width: '100%'
+  },
+  providersListContent: { paddingBottom: 24 },
+  guaranteeBox: {
+    marginTop: 8,
+    marginBottom: 8,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fcd34d'
+  },
+  guaranteeTitle: { fontSize: 15, fontWeight: '800', color: '#78350f' },
+  guaranteeText: { fontSize: 12, color: '#92400e', marginTop: 4, lineHeight: 18 }
 });

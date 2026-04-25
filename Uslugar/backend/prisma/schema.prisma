@@ -204,6 +204,13 @@ model User {
   // Testing runs authored by this user (admin)
   testRuns TestRun[] @relation("TestRunAuthor")
 
+  favoriteProviders   FavoriteProvider[]   @relation("FavByUser")
+  favoritedByUsers   FavoriteProvider[]   @relation("FavTarget")
+  instantAsClient     InstantBookingRequest[] @relation("UserInstantAsClient")
+  instantAsProvider   InstantBookingRequest[] @relation("UserInstantAsProvider")
+  disputes            DisputeCase[]        @relation("UserDisputes")
+  seasonalReminders   UserSeasonalReminder[] @relation("UserReminders")
+
   // Composite unique constraint: email + role must be unique
   // This allows same email for different roles (e.g., USER and PROVIDER)
   // but prevents duplicate email within same role
@@ -353,6 +360,16 @@ model Category {
 
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
+
+  // Orijentacijski vodič cijene (EUR, cijeli broj) + instant / ETA
+  priceGuideMin            Int? // npr. 30
+  priceGuideMax            Int? // npr. 80
+  supportsInstantBooking  Boolean  @default(false) // odmah rezerviraj termin
+  etaFirstOfferMinutes     Int? // očekivana prva ponuda u kategoriji (~Y min) za prikaz
+  seasonalDefaultMonths   Int? // podsjetnik: klimatizacija svakih X mjeseci
+
+  instantBookings  InstantBookingRequest[] @relation("CategoryInstant")
+  userReminders   UserSeasonalReminder[]  @relation("CategoryReminders")
 }
 
 model Job {
@@ -402,6 +419,7 @@ model Job {
   companyLeadQueue      CompanyLeadQueue[]  @relation("CompanyJobQueue")
   notifications         Notification[]
   reviews               Review[] // Recenzije ostavljene na ovom job-u
+  disputeCases         DisputeCase[] // Parnice / sporovi vezani uz posao
   auditLogs             AuditLog[]          @relation("JobAuditLogs") // Audit logovi za otkrivanje kontakata
   chatbotSessions       ChatbotSession[]    @relation("ChatbotJob")
 
@@ -480,6 +498,9 @@ model Review {
   reportReviewedAt  DateTime? // Kada je prijava pregledana
   reportReviewNotes String? // Bilješke admina o prijavi
 
+  // Heuristike zlouporabe (0 = ok, 100 = vrlo sumnjivo) — flagging + kasnija moderacija
+  suspiciousScore    Int     @default(0)
+
   @@unique([jobId, fromUserId]) // Jedna recenzija po job-u od svake strane
   @@index([jobId])
   @@index([toUserId])
@@ -488,6 +509,80 @@ model Review {
   @@index([reviewDeadline])
   @@index([isReported])
   @@index([reportStatus])
+}
+
+enum DisputeStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  REJECTED
+}
+
+// Omiljeni pružatelji
+model FavoriteProvider {
+  id         String   @id @default(cuid())
+  userId     String
+  providerId String
+  createdAt  DateTime @default(now())
+  user       User     @relation("FavByUser", fields: [userId], references: [id], onDelete: Cascade)
+  provider   User     @relation("FavTarget", fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, providerId])
+  @@index([providerId])
+}
+
+// Garancija / kupnja: spor
+model DisputeCase {
+  id          String        @id @default(cuid())
+  userId      String
+  jobId       String?
+  title       String
+  description String
+  status      DisputeStatus @default(OPEN)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  user        User          @relation("UserDisputes", fields: [userId], references: [id], onDelete: Cascade)
+  job         Job?          @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@index([jobId])
+}
+
+// Odmah zauzmi termin (MVP: zahtjev idu pružitelju u chat/notifikacije kasnije)
+model InstantBookingRequest {
+  id             String   @id @default(cuid())
+  userId         String
+  providerId     String
+  categoryId     String
+  requestedStart DateTime
+  message        String?
+  status         String   @default("PENDING")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation("UserInstantAsClient", fields: [userId], references: [id], onDelete: Cascade)
+  provider       User     @relation("UserInstantAsProvider", fields: [providerId], references: [id], onDelete: Cascade)
+  category       Category @relation("CategoryInstant", fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([providerId, status])
+  @@index([userId])
+}
+
+// Sezonski podsjetnik (bojler, klima…)
+model UserSeasonalReminder {
+  id           String   @id @default(cuid())
+  userId       String
+  categoryId   String
+  label        String?
+  nextRemindAt DateTime
+  periodMonths Int      @default(12)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation("UserReminders", fields: [userId], references: [id], onDelete: Cascade)
+  category     Category @relation("CategoryReminders", fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([userId, nextRemindAt])
+  @@index([isActive, nextRemindAt])
 }
 
 enum Role {

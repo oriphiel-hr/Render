@@ -287,5 +287,23 @@ r.get('/user-types-overview', async (req, res, next) => {
   }
 });
 
+/**
+ * GET /api/public/guarantee
+ * Uslugar Guarantee (MVP: iz env + statični uvjeti)
+ */
+r.get('/guarantee', (req, res) => {
+  const maxEur = parseInt(process.env.GUARANTEE_MAX_EUR || '200', 10) || 200;
+  res.json({
+    name: 'Uslugar Guarantee',
+    maxAmountEur: maxEur,
+    currency: 'EUR',
+    summary: `Za odobrene sporove u sklopu tržnice, moguć je pokriće do ${maxEur} EUR ovisno o kategoriji i trajanju. Detaljna pravila: dispute centar u appu (Uslugar).`,
+    dispute: {
+      openInApp: true,
+      howTo: 'Korisnik: Profil / Naplata / ili kontakt. Opis: predmet, broj posla, željeni ishod.'
+    }
+  });
+});
+
 export default r;
 

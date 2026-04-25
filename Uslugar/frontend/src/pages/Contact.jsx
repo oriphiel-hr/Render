@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import api from '../api';
+import PlatformCompetitiveRoadmap from '../components/PlatformCompetitiveRoadmap';
 
 const Contact = () => {
+  const [guarantee, setGuarantee] = useState(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
@@ -41,6 +43,19 @@ const Contact = () => {
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
+
+  useEffect(() => {
+    let cancel = false;
+    (async () => {
+      try {
+        const res = await api.get('/public/guarantee');
+        if (!cancel && res.data) setGuarantee(res.data);
+      } catch {
+        if (!cancel) setGuarantee(null);
+      }
+    })();
+    return () => { cancel = true; };
+  }, []);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-gray-50 min-h-screen">
@@ -296,6 +311,24 @@ const Contact = () => {
             </p>
           </div>
         </div>
+      </div>
+
+      {guarantee && (
+        <div className="mt-12 max-w-5xl mx-auto bg-amber-50/90 border border-amber-200 rounded-xl p-6 sm:p-8 text-left">
+          <h2 className="text-2xl font-bold text-amber-950 mb-2">{guarantee.name || 'Uslugar Guarantee'}</h2>
+          <p className="text-amber-950/90 text-sm sm:text-base leading-relaxed">
+            {guarantee.summary}
+          </p>
+          {guarantee.maxAmountEur != null && (
+            <p className="mt-2 text-sm font-semibold text-amber-900">
+              Maksimalno pokriće (orijentacijski): {guarantee.maxAmountEur} {guarantee.currency || 'EUR'}
+            </p>
+          )}
+        </div>
+      )}
+
+      <div className="mt-12 max-w-5xl mx-auto bg-slate-50/80 border border-slate-200 rounded-xl p-6 sm:p-8">
+        <PlatformCompetitiveRoadmap />
       </div>
 
       {/* Business Hours */}

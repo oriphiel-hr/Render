@@ -48,6 +48,7 @@ import chatbotRouter from './routes/chatbot.js'
 import savedSearchesRouter from './routes/saved-searches.js'
 import jobAlertsRouter from './routes/job-alerts.js'
 import contactRouter from './routes/contact.js'
+import growthRouter from './routes/growth.js'
 import { startQueueScheduler } from './lib/queueScheduler.js'
 import { checkExpiringSubscriptions } from './lib/subscription-reminder.js'
 import { apiRequestLogger } from './lib/api-request-logger.js'
@@ -407,6 +408,7 @@ app.use('/api/chatbot', chatbotRouter)
 app.use('/api/saved-searches', savedSearchesRouter)
 app.use('/api/job-alerts', jobAlertsRouter)
 app.use('/api/contact', contactRouter)
+app.use('/api/growth', growthRouter)
 
 // basic error handler - mora biti na kraju, nakon svih ruta
 app.use((err, req, res, next) => {

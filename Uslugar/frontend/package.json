@@ -12,6 +12,7 @@
     "cap:open:android": "npx cap open android"
   },
   "dependencies": {
+    "@uslugar/shared": "0.1.0",
     "axios": "^1.7.2",
     "chart.js": "^4.5.1",
     "cors": "^2.8.5",

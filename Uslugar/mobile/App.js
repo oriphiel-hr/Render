@@ -9,6 +9,8 @@ import { useChatFlow } from './src/hooks/useChatFlow';
 import { usePushNotifications } from './src/hooks/usePushNotifications';
 import { useBillingFlow } from './src/hooks/useBillingFlow';
 import { useAdminLiteFlow } from './src/hooks/useAdminLiteFlow';
+import { usePublicProviders } from './src/hooks/usePublicProviders';
+import { useGrowthFlow } from './src/hooks/useGrowthFlow';
 
 export default function App() {
   const auth = useAuthSession();
@@ -49,6 +51,13 @@ export default function App() {
     setMessage: auth.setMessage,
     handleApiError: auth.handleApiError
   });
+  const showProvidersTab = auth.user?.role !== 'ADMIN';
+  const publicProviders = usePublicProviders({
+    apiBaseUrl: auth.apiBaseUrl,
+    token: auth.token,
+    active: Boolean(showProvidersTab && jobsFlow.activeTab === 'providers'),
+    handleApiError: auth.handleApiError
+  });
 
   if (auth.bootstrapping) {
     return (
@@ -87,6 +96,9 @@ export default function App() {
           push={push}
           billing={billing}
           admin={admin}
+          publicProviders={publicProviders}
+          showProvidersTab={showProvidersTab}
+          growth={growth}
           handleRefreshProfile={auth.handleRefreshProfile}
           handleLogout={async () => {
             jobsFlow.resetJobSelection();

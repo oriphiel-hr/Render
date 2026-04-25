@@ -1,8 +1,10 @@
 import React from 'react';
-import { isProviderBusinessVerified } from '../utils/providerVerification';
+import { getProviderTrustLayer, getProviderVisualBadges, isProviderBusinessVerified } from '@uslugar/shared';
 
 const ProviderCard = ({ provider, onViewProfile, onContact }) => {
   const businessOk = isProviderBusinessVerified(provider);
+  const trustLayer = getProviderTrustLayer(provider, provider.user);
+  const visualBadges = getProviderVisualBadges(provider, provider.user);
   const renderStars = (rating) => {
     const r = Number(rating) || 0;
     const stars = [];
@@ -50,6 +52,19 @@ const ProviderCard = ({ provider, onViewProfile, onContact }) => {
                 )}
               </h3>
               {/* Badge System */}
+              <div className="flex flex-wrap gap-1 mt-1" title="Verified provider — jasni bedževi">
+                {visualBadges.map((b) => (
+                  <span
+                    key={b.id}
+                    className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
+                      b.ok ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-gray-50 text-gray-400 border-gray-200'
+                    }`}
+                  >
+                    {b.short}
+                    {b.count != null && b.ok ? ` ·${b.count}` : ''}
+                  </span>
+                ))}
+              </div>
               <div className="flex flex-wrap gap-1 mt-1">
                 {businessOk && (
                   <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs border border-green-300" title="Business Značka - Potvrđeno u javnim registrima">
@@ -89,9 +104,15 @@ const ProviderCard = ({ provider, onViewProfile, onContact }) => {
             )}
             {!businessOk && (
               <span className="px-2 py-0.5 bg-orange-50 text-orange-700 rounded text-[11px] border border-orange-200" title="Profil u reviziji">
-                ⛔ Profil u reviziji
+                ⛔ Ograničene javne provjere
               </span>
             )}
+            <span
+              className="px-2 py-0.5 bg-slate-50 text-slate-600 rounded text-[11px] border border-slate-200"
+              title="Broj ispunjenih nezavisnih provjernih signala. Filter „Samo verificirani” u tražilici traži poslovnu provjeru ILI identitet (šire od ovog zbroja ako je npr. samo 1/7)."
+            >
+              Povjerenje: {trustLayer.verifiedCount}/{trustLayer.totalChecks}
+            </span>
           </div>
 
           {provider.bio && (
@@ -108,6 +129,22 @@ const ProviderCard = ({ provider, onViewProfile, onContact }) => {
               </span>
             ))}
           </div>
+
+          {(provider.etaFirstOfferHint != null || (provider.priceGuides && provider.priceGuides.length > 0)) && (
+            <div className="mb-3 text-xs text-slate-600 space-y-1">
+              {provider.etaFirstOfferHint != null && (
+                <p>
+                  <span className="font-semibold text-slate-800">Prva ponuda (procjena):</span> ~{provider.etaFirstOfferHint} min u odabranim kategorijama
+                </p>
+              )}
+              {provider.priceGuides?.length > 0 && (
+                <p>
+                  <span className="font-semibold text-slate-800">Fiksna cijena (od–do, EUR):</span>{' '}
+                  {provider.priceGuides.slice(0, 3).map((g) => `${g.name} ${g.min}–${g.max}`).join(' · ')}
+                </p>
+              )}
+            </div>
+          )}
 
           {provider.specialties && provider.specialties.length > 0 && (
             <div className="mb-3">

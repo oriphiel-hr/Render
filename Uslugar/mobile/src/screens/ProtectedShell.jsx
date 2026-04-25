@@ -7,6 +7,9 @@ import BillingScreen from './BillingScreen';
 import TopToast from '../components/TopToast';
 import BrandHeader from '../components/BrandHeader';
 import AdminLiteScreen from './AdminLiteScreen';
+import TrustLayerCard from '../components/TrustLayerCard';
+import ProductRoadmapTeaser from '../components/ProductRoadmapTeaser';
+import ProvidersListScreen from './ProvidersListScreen';
 
 function formatDate(dateInput) {
   if (!dateInput) return '-';
@@ -59,6 +62,9 @@ export default function ProtectedShell({
   push,
   billing,
   admin,
+  publicProviders = null,
+  showProvidersTab = false,
+  growth = null,
   handleRefreshProfile,
   handleLogout
 }) {
@@ -71,10 +77,22 @@ export default function ProtectedShell({
   }, [activeTab]);
 
   useEffect(() => {
+    if (activeTab === 'providers' && growth?.loadFavorites) {
+      growth.loadFavorites();
+    }
+  }, [activeTab, growth]);
+
+  useEffect(() => {
     if (isAdmin && !['admin', 'billing', 'chat', 'profile'].includes(activeTab)) {
       setActiveTab('admin');
     }
   }, [isAdmin, activeTab]);
+
+  useEffect(() => {
+    if (showProvidersTab === false && activeTab === 'providers') {
+      setActiveTab('jobs');
+    }
+  }, [showProvidersTab, activeTab, setActiveTab]);
 
   const tabs = isAdmin
     ? [
@@ -86,6 +104,7 @@ export default function ProtectedShell({
     : isProvider
     ? [
         { key: 'jobs', label: 'Poslovi' },
+        ...(showProvidersTab ? [{ key: 'providers', label: 'Pružatelji' }] : []),
         { key: 'my-offers', label: 'Moje ponude' },
         { key: 'billing', label: 'Naplata' },
         { key: 'chat', label: 'Chat' },
@@ -93,6 +112,7 @@ export default function ProtectedShell({
       ]
     : [
         { key: 'jobs', label: 'Poslovi' },
+        ...(showProvidersTab ? [{ key: 'providers', label: 'Pružatelji' }] : []),
         { key: 'my-jobs', label: 'Moji poslovi' },
         { key: 'billing', label: 'Naplata' },
         { key: 'chat', label: 'Chat' },
@@ -220,6 +240,18 @@ export default function ProtectedShell({
           admin={admin}
           loading={loading}
         />
+      ) : activeTab === 'providers' && showProvidersTab && publicProviders ? (
+        <ProvidersListScreen
+          providers={publicProviders.providers}
+          loading={publicProviders.loading}
+          filters={publicProviders.filters}
+          setFilters={publicProviders.setFilters}
+          searchInput={publicProviders.searchInput}
+          setSearchInput={publicProviders.setSearchInput}
+          resetFilters={publicProviders.resetFilters}
+          onReload={publicProviders.reload}
+          growth={growth}
+        />
       ) : activeTab === 'jobs' ? (
         <FlatList
           style={styles.contentArea}
@@ -285,10 +317,25 @@ export default function ProtectedShell({
               <Text style={styles.pill}>ID: {String(user.id || '-')}</Text>
             </View>
           </View>
-          <Text style={styles.label}>Detalji profila</Text>
-          <ScrollView style={styles.profileBox}>
-            <Text style={styles.profileText}>{JSON.stringify(user.providerProfile || {}, null, 2)}</Text>
-          </ScrollView>
+          {user.role === 'PROVIDER' && user.providerProfile ? (
+            <TrustLayerCard profile={user.providerProfile} user={user} />
+          ) : null}
+          {growth?.guarantee ? (
+            <View style={styles.guaranteeBox}>
+              <Text style={styles.guaranteeTitle}>{growth.guarantee.name || 'Uslugar Guarantee'}</Text>
+              <Text style={styles.guaranteeText}>{growth.guarantee.summary}</Text>
+            </View>
+          ) : null}
+          <Text style={styles.label}>Kamo Uslugar raste</Text>
+          <ProductRoadmapTeaser />
+          {typeof __DEV__ !== 'undefined' && __DEV__ ? (
+            <>
+              <Text style={styles.label}>Sirovi profil (debug)</Text>
+              <ScrollView style={styles.profileBox}>
+                <Text style={styles.profileText}>{JSON.stringify(user.providerProfile || {}, null, 2)}</Text>
+              </ScrollView>
+            </>
+          ) : null}
           <Pressable style={styles.button} onPress={handleRefreshProfile} disabled={loading}>
             <Text style={styles.buttonText}>Osvjezi profil</Text>
           </Pressable>
