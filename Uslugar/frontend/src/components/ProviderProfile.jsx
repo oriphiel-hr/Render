@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { getProviderVisualBadges } from '@uslugar/shared';
 import ReviewList from './ReviewList';
 import LocationMap from './LocationMap';
 import api from '../api';
 import { QRCodeSVG } from 'qrcode.react';
 import { isProviderBusinessVerified } from '../utils/providerVerification';
 import TrustLayerPanel from './TrustLayerPanel';
+import ProviderGrowthPanel from './ProviderGrowthPanel';
 
 const ProviderProfile = ({ providerId, onClose, onNavigateToMyJobs, scrollToAction }) => {
   const [provider, setProvider] = useState(null);
@@ -33,6 +35,11 @@ const ProviderProfile = ({ providerId, onClose, onNavigateToMyJobs, scrollToActi
       actionBoxRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [provider, scrollToAction]);
+
+  const visualBadges = useMemo(
+    () => (provider ? getProviderVisualBadges(provider, provider.user) : []),
+    [provider]
+  );
 
   const fetchProvider = async () => {
     try {
@@ -156,6 +163,24 @@ const ProviderProfile = ({ providerId, onClose, onNavigateToMyJobs, scrollToActi
                     {(provider.ratingAvg ?? 0).toFixed(1)} ({provider.ratingCount ?? 0} recenzija)
                   </span>
                 </div>
+                <div
+                  className="flex flex-wrap gap-1 mt-2"
+                  title="Kratki bedževi (tvrtka, identitet, licenca, SMS) — ista logika kao u tražilici"
+                >
+                  {visualBadges.map((b) => (
+                    <span
+                      key={b.id}
+                      className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
+                        b.ok
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                          : 'bg-gray-50 text-gray-400 border-gray-200'
+                      }`}
+                    >
+                      {b.short}
+                      {b.count != null && b.ok ? ` ·${b.count}` : ''}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
             <div className="flex items-center space-x-2">
@@ -216,6 +241,11 @@ const ProviderProfile = ({ providerId, onClose, onNavigateToMyJobs, scrollToActi
               )}
             </div>
             <TrustLayerPanel profile={provider} user={provider.user} />
+            <ProviderGrowthPanel
+              provider={provider}
+              providerUserId={providerId}
+              currentUserId={currentUserId}
+            />
           </div>
 
           {/* Lokacija na karti */}

@@ -188,6 +188,14 @@ r.get('/', async (req, res, next) => {
         if (av !== bv) return av - bv;
         return (b.ratingAvg || 0) - (a.ratingAvg || 0);
       });
+    } else if (sortBy === 'trustSla' || sortBy === 'trust_sla') {
+      const score = (p) => {
+        const rt = p.avgResponseTimeMinutes > 0 ? Math.min(180, p.avgResponseTimeMinutes) : 120;
+        const eta = p.etaFirstOfferHint != null ? Math.min(180, p.etaFirstOfferHint) : 90;
+        const rat = p.ratingAvg || 0;
+        return rat * 0.35 + (200 - eta) * 0.3 + (200 - rt) * 0.35;
+      };
+      filtered.sort((a, b) => score(b) - score(a));
     } else {
       filtered.sort((a, b) => (b.ratingAvg || 0) - (a.ratingAvg || 0));
     }
@@ -214,6 +222,9 @@ function getOrderBy(sortBy) {
       return { createdAt: 'desc' };
     case 'responseTime':
       return { avgResponseTimeMinutes: 'asc' };
+    case 'trustSla':
+    case 'trust_sla':
+      return { ratingAvg: 'desc' };
     case 'rating':
     default:
       return { ratingAvg: 'desc' };

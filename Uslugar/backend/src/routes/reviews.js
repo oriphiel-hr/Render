@@ -115,6 +115,15 @@ r.post('/', auth(true), async (req, res, next) => {
     if (!job) {
       return res.status(404).json({ error: 'Job not found' });
     }
+
+    if (job.status !== 'COMPLETED') {
+      return res.status(400).json({
+        error:
+          'Anti-fake: recenzija je dopuštena samo kada je posao u sustavu označen kao dovršen (dokaz posla u tržnici).',
+        code: 'JOB_NOT_COMPLETED',
+        jobStatus: job.status
+      });
+    }
     
     // Validacija: Provjeri da su korisnici povezani preko job-a
     let isValidReview = false;
@@ -172,12 +181,7 @@ r.post('/', auth(true), async (req, res, next) => {
         toUserId: req.user.id // Trenutni korisnik
       }
     });
-    
-    // Ako postoji recipročni review i AI je odobrio, objavi oba odmah
-    // Ako AI nije odobrio, ne objavljuj dok admin ne odobri
-    const shouldPublish = !!reciprocalReview && moderationResult.isApproved;
-    const now = new Date();
-    
+
     const supportEmail = process.env.CONTACT_ADMIN_EMAIL || 'support@uslugar.hr';
 
     const initialSuspicious = (() => {
@@ -186,6 +190,13 @@ r.post('/', auth(true), async (req, res, next) => {
       if (job.status !== 'COMPLETED') s += 15;
       return Math.min(100, s);
     })();
+
+    const forceHumanModeration = initialSuspicious >= 55;
+
+    // Ako postoji recipročni review i AI je odobrio, objavi odmah (osim ljudske moderacije sumnjivih)
+    const shouldPublish =
+      !!reciprocalReview && moderationResult.isApproved && !forceHumanModeration;
+    const now = new Date();
 
     const review = await prisma.review.create({
       data: { 
@@ -198,7 +209,9 @@ r.post('/', auth(true), async (req, res, next) => {
         publishedAt: shouldPublish ? now : null,
         reviewDeadline: reviewDeadline,
         suspiciousScore: initialSuspicious,
-        moderationStatus: moderationResult.moderationStatus,
+        moderationStatus: forceHumanModeration
+          ? 'PENDING'
+          : moderationResult.moderationStatus,
         moderationNotes: moderationResult.reason || null,
         moderationAiUsed: moderationResult.aiUsed || false,
         moderationProvider: moderationResult.moderationProvider || null,

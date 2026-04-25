@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { getProviderTrustLayer } from '@uslugar/shared';
+import { getProviderTrustLayer, describeTrustSlaSort } from '@uslugar/shared';
 
 export default function TrustLayerPanel({ profile, user, className = '' }) {
   const layer = useMemo(
@@ -14,8 +14,9 @@ export default function TrustLayerPanel({ profile, user, className = '' }) {
       <h3 className="text-base font-semibold text-slate-900">Što je jasno provjereno (Uslugar)</h3>
       <p className="text-sm text-slate-800 font-medium mt-1">{layer.headline}</p>
       <p className="text-sm text-slate-600 mt-1">{layer.subline}</p>
-      <p className="text-xs text-slate-500 mt-2">
-        {layer.verifiedCount} od {layer.totalChecks} signala trenutno ispunjeno
+      <p className="text-xs text-slate-500 mt-2" title={describeTrustSlaSort()}>
+        {layer.verifiedCount} od {layer.totalChecks} signala trenutno ispunjeno · u tražilici: sort „Povjerenje + SLA”
+        kombinira ocjenu, ETA i brzinu odgovora (vidi tooltip).
       </p>
       <ul className="mt-3 space-y-2 text-sm">
         {layer.items.map((row) => (

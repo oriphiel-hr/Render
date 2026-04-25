@@ -86,8 +86,17 @@ r.post('/disputes', auth(true), async (req, res, next) => {
         return res.status(403).json({ error: 'Niste povezani s ovim poslom' });
       }
     }
+    const respondByAt = new Date();
+    respondByAt.setDate(respondByAt.getDate() + 7);
     const d = await prisma.disputeCase.create({
-      data: { userId: req.user.id, jobId: jobId || null, title: String(title), description: String(description) }
+      data: {
+        userId: req.user.id,
+        jobId: jobId || null,
+        title: String(title),
+        description: String(description),
+        respondByAt,
+        lastTeamActionAt: new Date()
+      }
     });
     res.status(201).json(d);
   } catch (e) {
@@ -116,10 +125,122 @@ r.get('/disputes', auth(true), async (req, res, next) => {
   }
 });
 
+// GET /api/growth/disputes/:id
+r.get('/disputes/:id', auth(true), async (req, res, next) => {
+  try {
+    const row = await prisma.disputeCase.findUnique({
+      where: { id: req.params.id },
+      include: { job: { select: { id: true, title: true, status: true } } }
+    });
+    if (!row) return res.status(404).json({ error: 'Nije pronađeno' });
+    if (req.user.role === 'ADMIN') return res.json(row);
+    if (row.userId !== req.user.id) return res.status(403).json({ error: 'Pristup odbijen' });
+    return res.json(row);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// PATCH /api/growth/disputes/:id (admin: status, napomene, isplata; korisnik: nema u ovom MVP-u)
+r.patch('/disputes/:id', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const { status, mediationNotes, payoutAmountCents, payoutCurrency, resolvedAt } = req.body || {};
+    const data = {};
+    if (status) data.status = status;
+    if (mediationNotes != null) data.mediationNotes = String(mediationNotes);
+    if (payoutAmountCents != null) data.payoutAmountCents = parseInt(payoutAmountCents, 10);
+    if (payoutCurrency) data.payoutCurrency = String(payoutCurrency);
+    if (resolvedAt) data.resolvedAt = new Date(resolvedAt);
+    if (data.status === 'RESOLVED' || data.status === 'REJECTED') {
+      if (!data.resolvedAt) data.resolvedAt = new Date();
+    }
+    data.lastTeamActionAt = new Date();
+    const row = await prisma.disputeCase.update({ where: { id: req.params.id }, data });
+    res.json(row);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// GET /api/growth/availability-slots/public?providerId=&categoryId=
+r.get('/availability-slots/public', async (req, res, next) => {
+  try {
+    const { providerId, categoryId } = req.query;
+    if (!providerId || !categoryId) {
+      return res.status(400).json({ error: 'providerId i categoryId su obavezni' });
+    }
+    const now = new Date();
+    const slots = await prisma.providerAvailabilitySlot.findMany({
+      where: { providerId, categoryId, endAt: { gte: now } },
+      orderBy: { startAt: 'asc' },
+      take: 60
+    });
+    res.json(slots);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// GET /api/growth/availability-slots (moji slotovi – pružatelj)
+r.get('/availability-slots', auth(true, ['PROVIDER', 'ADMIN']), async (req, res, next) => {
+  try {
+    const uid = req.user.role === 'ADMIN' && req.query.providerId ? req.query.providerId : req.user.id;
+    const list = await prisma.providerAvailabilitySlot.findMany({
+      where: { providerId: uid, endAt: { gte: new Date(Date.now() - 86400000) } },
+      orderBy: { startAt: 'asc' },
+      take: 80,
+      include: { category: { select: { name: true } } }
+    });
+    res.json(list);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// POST /api/growth/availability-slots { categoryId, startAt, endAt }
+r.post('/availability-slots', auth(true, ['PROVIDER', 'ADMIN']), async (req, res, next) => {
+  try {
+    const { categoryId, startAt, endAt } = req.body || {};
+    if (!categoryId || !startAt || !endAt) {
+      return res.status(400).json({ error: 'categoryId, startAt, endAt su obavezni' });
+    }
+    const s = new Date(startAt);
+    const e = new Date(endAt);
+    if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime()) || e <= s) {
+      return res.status(400).json({ error: 'Nevažeći interval' });
+    }
+    const prov = await prisma.providerProfile.findUnique({
+      where: { userId: req.user.id },
+      include: { categories: true }
+    });
+    if (!prov?.categories?.some((c) => c.id === categoryId)) {
+      return res.status(400).json({ error: 'Niste u toj kategoriji' });
+    }
+    const row = await prisma.providerAvailabilitySlot.create({
+      data: { providerId: req.user.id, categoryId, startAt: s, endAt: e, capacity: 1 }
+    });
+    res.status(201).json(row);
+  } catch (e) {
+    next(e);
+  }
+});
+
+r.delete('/availability-slots/:id', auth(true, ['PROVIDER', 'ADMIN']), async (req, res, next) => {
+  try {
+    const n = await prisma.providerAvailabilitySlot.deleteMany({
+      where: { id: req.params.id, providerId: req.user.id }
+    });
+    if (n.count === 0) return res.status(404).json({ error: 'Nije pronađeno' });
+    res.json({ ok: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
 // POST /api/growth/instant-bookings
 r.post('/instant-bookings', auth(true, ['USER', 'PROVIDER']), async (req, res, next) => {
   try {
-    const { providerId, categoryId, requestedStart, message } = req.body || {};
+    const { providerId, categoryId, requestedStart, message, slotId } = req.body || {};
     if (!providerId || !categoryId || !requestedStart) {
       return res.status(400).json({ error: 'providerId, categoryId, requestedStart su obavezni' });
     }
@@ -143,13 +264,25 @@ r.post('/instant-bookings', auth(true, ['USER', 'PROVIDER']), async (req, res, n
     if (Number.isNaN(start.getTime()) || start.getTime() < Date.now() - 60_000) {
       return res.status(400).json({ error: 'Nevažeći termin' });
     }
+
+    let st = 'PENDING';
+    let boundSlot = null;
+    if (slotId) {
+      boundSlot = await prisma.providerAvailabilitySlot.findFirst({
+        where: { id: slotId, providerId, categoryId, startAt: { lte: start }, endAt: { gte: start } }
+      });
+      if (boundSlot) st = 'SLOT_BOUND';
+    }
+
     const created = await prisma.instantBookingRequest.create({
       data: {
         userId: req.user.id,
         providerId,
         categoryId,
         requestedStart: start,
-        message: message ? String(message) : null
+        message: message ? String(message) : null,
+        status: st,
+        slotId: boundSlot ? boundSlot.id : null
       }
     });
     try {
@@ -173,8 +306,21 @@ r.post('/instant-bookings', auth(true, ['USER', 'PROVIDER']), async (req, res, n
 });
 
 // GET /api/growth/instant-bookings (moji kao korisnik ili pružatelj)
+// - default USER: moji odlazni zahtjevi (kao klijent)
+// - default PROVIDER: dolazni zahtjevi (kao pružatelj)
+// - ?view=client: moji odlazni zahtjevi (i za PROVIDER — npr. tražio sam tuđu uslugu)
 r.get('/instant-bookings', auth(true, ['USER', 'PROVIDER']), async (req, res, next) => {
   try {
+    const asClientView = req.query.view === 'client' || req.query.mine === 'client';
+    if (asClientView) {
+      const list = await prisma.instantBookingRequest.findMany({
+        where: { userId: req.user.id },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        include: { category: { select: { name: true } }, provider: { select: { id: true, fullName: true } } }
+      });
+      return res.json(list);
+    }
     if (req.user.role === 'PROVIDER') {
       const list = await prisma.instantBookingRequest.findMany({
         where: { providerId: req.user.id },
@@ -191,6 +337,86 @@ r.get('/instant-bookings', auth(true, ['USER', 'PROVIDER']), async (req, res, ne
       include: { category: { select: { name: true } }, provider: { select: { id: true, fullName: true } } }
     });
     res.json(list);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// PATCH /api/growth/instant-bookings/:id (pružatelj: potvrda / odbij / kontra-termin; klijent: odustanak / potvrda kontra-termina)
+r.patch('/instant-bookings/:id', auth(true, ['USER', 'PROVIDER']), async (req, res, next) => {
+  try {
+    const { action, counterOfferStart, declineReason } = req.body || {};
+    if (!action) {
+      return res.status(400).json({ error: 'action je obavezan' });
+    }
+    const row = await prisma.instantBookingRequest.findUnique({ where: { id: req.params.id } });
+    if (!row) return res.status(404).json({ error: 'Nije pronađeno' });
+
+    const isProvider = req.user.id === row.providerId;
+    const isClient = req.user.id === row.userId;
+
+    const data = {};
+    if (isProvider) {
+      if (action === 'confirm') {
+        data.status = 'CONFIRMED';
+        data.confirmedAt = new Date();
+      } else if (action === 'decline') {
+        data.status = 'DECLINED';
+        if (declineReason) data.declineReason = String(declineReason);
+      } else if (action === 'counter' && counterOfferStart) {
+        data.status = 'COUNTER_PROPOSED';
+        data.counterOfferStart = new Date(counterOfferStart);
+      } else {
+        return res.status(400).json({ error: 'Nepoznata akcija pružatelja' });
+      }
+    } else if (isClient) {
+      if (action === 'cancel') {
+        data.status = 'CANCELLED';
+        data.clientCancelledAt = new Date();
+      } else if (action === 'accept_counter' && row.counterOfferStart) {
+        data.status = 'CONFIRMED';
+        data.confirmedAt = new Date();
+        data.requestedStart = row.counterOfferStart;
+      } else {
+        return res.status(400).json({ error: 'Nepoznata akcija klijenta' });
+      }
+    } else {
+      return res.status(403).json({ error: 'Niste strana u ovom zahtjevu' });
+    }
+
+    const updated = await prisma.instantBookingRequest.update({ where: { id: row.id }, data });
+    if (isProvider) {
+      try {
+        await prisma.notification.create({
+          data: {
+            userId: row.userId,
+            type: 'SYSTEM',
+            title: 'Ažuriranje brzog termina',
+            message: 'Pružatelj je ažurirao vaš zahtjev. Otvorite Uslugar.',
+            jobId: null,
+            offerId: null
+          }
+        });
+      } catch (err) {
+        console.warn('instant patch notify', err?.message);
+      }
+    } else {
+      try {
+        await prisma.notification.create({
+          data: {
+            userId: row.providerId,
+            type: 'SYSTEM',
+            title: 'Ažuriranje brzog termina',
+            message: 'Korisnik je ažurirao brzi zahtjev.',
+            jobId: null,
+            offerId: null
+          }
+        });
+      } catch (err) {
+        console.warn('instant patch notify', err?.message);
+      }
+    }
+    res.json(updated);
   } catch (e) {
     next(e);
   }

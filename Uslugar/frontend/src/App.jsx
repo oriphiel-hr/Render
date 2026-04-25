@@ -192,6 +192,7 @@ export default function App(){
   const [providersView, setProvidersView] = useState('list'); // 'list' | 'map'
   const [chatWaitingCount, setChatWaitingCount] = useState(0);
   const [providerMeta, setProviderMeta] = useState({ hasTeam: false, isDirector: false });
+  const [platformInsights, setPlatformInsights] = useState(null);
 
   // Mobile menu state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -356,6 +357,17 @@ export default function App(){
       clearInterval(intervalId);
     };
   }, [token, currentUserId]);
+
+  useEffect(() => {
+    if (tab !== 'providers') return;
+    const insQ = providerFilters.categoryId
+      ? `?categoryId=${encodeURIComponent(providerFilters.categoryId)}`
+      : '';
+    api
+      .get(`/public/platform-insights${insQ}`)
+      .then((r) => setPlatformInsights(r.data))
+      .catch(() => setPlatformInsights(null));
+  }, [tab, providerFilters.categoryId]);
 
   useEffect(() => {
     if (tab !== 'providers') return;
@@ -2359,6 +2371,31 @@ export default function App(){
             </div>
             
             {/* Provider Filter */}
+            {platformInsights && (platformInsights.globalEtaFirstOfferMinutes != null || (platformInsights.topCategories && platformInsights.topCategories.length > 0)) && (
+              <div className="mb-6 rounded-xl border border-sky-200 bg-sky-50/90 dark:border-sky-800 dark:bg-sky-950/40 p-4 text-left text-sm text-slate-800 dark:text-slate-200">
+                {platformInsights.globalEtaFirstOfferMinutes != null && (
+                  <p>
+                    <span className="font-semibold">Globalna procjena prve ponude (ETA):</span>{' '}
+                    ~{platformInsights.globalEtaFirstOfferMinutes} min
+                    {providerFilters.categoryId ? ' (za odabranu kategoriju iz baze)' : ' (prosjek aktivnih kategorija)'}
+                  </p>
+                )}
+                {platformInsights.topCategories?.length > 0 && (
+                  <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">
+                    <span className="font-semibold">Standardizirani orijentiri (top kategorije):</span>{' '}
+                    {platformInsights.topCategories
+                      .slice(0, 8)
+                      .map((c) => {
+                        const pr = [c.priceGuideMin, c.priceGuideMax].every((n) => n != null) ? ` ${c.priceGuideMin}–${c.priceGuideMax} €` : '';
+                        const sum = c.standardPackageSummary ? ` — ${c.standardPackageSummary}` : '';
+                        return `${c.name}${pr}${sum}`;
+                      })
+                      .join(' · ')}
+                  </p>
+                )}
+              </div>
+            )}
+
             <ProviderFilter
               filters={providerFilters}
               setFilters={setProviderFilters}

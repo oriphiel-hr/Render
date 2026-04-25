@@ -5,6 +5,7 @@ import PortfolioManager from '../components/PortfolioManager';
 import PortfolioDisplay from '../components/PortfolioDisplay';
 import LicenseManager from '../components/LicenseManager';
 import LicenseDisplay from '../components/LicenseDisplay';
+import ProviderAvailabilityPanel from '../components/ProviderAvailabilityPanel';
 import { isProviderBusinessVerified } from '../utils/providerVerification';
 
 const getCategoryIcon = (categoryName) => {
@@ -717,6 +718,8 @@ export default function ProviderProfile({ onSuccess, onNavigate }) {
           </div>
         )}
       </form>
+
+      <ProviderAvailabilityPanel categoryOptions={profile.categories || []} onDataChange={handleProfileUpdated} />
     </div>
   );
 }

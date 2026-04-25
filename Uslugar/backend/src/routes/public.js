@@ -288,6 +288,67 @@ r.get('/user-types-overview', async (req, res, next) => {
 });
 
 /**
+ * GET /api/public/platform-insights?categoryId=
+ * Globalna ETA (kategorija ili prosjek), top kategorije s paketima (standardPackageSummary + cijena)
+ */
+r.get('/platform-insights', async (req, res, next) => {
+  try {
+    const { categoryId } = req.query;
+    let globalEtaFirstOfferMinutes = null;
+    if (categoryId) {
+      const c = await prisma.category.findUnique({
+        where: { id: String(categoryId) },
+        select: { etaFirstOfferMinutes: true }
+      });
+      globalEtaFirstOfferMinutes = c?.etaFirstOfferMinutes ?? null;
+    } else {
+      const rows = await prisma.category.findMany({
+        where: { etaFirstOfferMinutes: { not: null }, isActive: true },
+        select: { etaFirstOfferMinutes: true }
+      });
+      const vals = rows.map((r) => r.etaFirstOfferMinutes).filter((n) => typeof n === 'number');
+      globalEtaFirstOfferMinutes =
+        vals.length > 0 ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+    }
+
+    let topCategories = await prisma.category.findMany({
+      where: { homepageRank: { not: null }, isActive: true },
+      orderBy: { homepageRank: 'asc' },
+      take: 10,
+      select: {
+        id: true,
+        name: true,
+        priceGuideMin: true,
+        priceGuideMax: true,
+        standardPackageSummary: true,
+        etaFirstOfferMinutes: true,
+        icon: true
+      }
+    });
+    if (topCategories.length === 0) {
+      topCategories = await prisma.category.findMany({
+        where: { isActive: true },
+        orderBy: { name: 'asc' },
+        take: 10,
+        select: {
+          id: true,
+          name: true,
+          priceGuideMin: true,
+          priceGuideMax: true,
+          standardPackageSummary: true,
+          etaFirstOfferMinutes: true,
+          icon: true
+        }
+      });
+    }
+
+    res.json({ globalEtaFirstOfferMinutes, topCategories });
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
  * GET /api/public/guarantee
  * Uslugar Guarantee (MVP: iz env + statični uvjeti)
  */

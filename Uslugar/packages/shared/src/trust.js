@@ -155,3 +155,15 @@ export function getProviderVisualBadges(profile, user) {
     { id: 'sms', short: 'SMS', ok: Boolean(u && u.phoneVerified) }
   ];
 }
+
+/** Faze spora / garancije (prikaz korisniku – operativu radi tim). */
+export const DISPUTE_WORKFLOW_PHASES = [
+  { key: 'OPEN', label: 'Zaprimljeno', hint: 'Uslugar zapisuje predmet i rok za prvi odgovor tima.' },
+  { key: 'IN_REVIEW', label: 'U analizi', hint: 'Provjera posla, komunikacija, eventualni dokazi.' },
+  { key: 'RESOLVED', label: 'Riješeno', hint: 'Ishod (npr. isplata u okviru Guarantee) — službeno u sustavu.' },
+  { key: 'REJECTED', label: 'Odbijeno / izvan opsega', hint: 'Obrazloženje; korisnik može dopunu ili vanjski postupak.' }
+];
+
+export function describeTrustSlaSort() {
+  return 'Kombinacija prosječne ocjene, procijenjenog vremena prve ponude (ETA) i prosječnog vremena odgovora pružatelja (SLA).';
+}

@@ -24,6 +24,5 @@ Nakon toga `npx prisma migrate deploy` prolazi bez greške.
 
 ## GitHub Actions (monorepo `Render/`)
 
-- Aktivni workflow za Uslugar je u **rootu repozitorija**: `.github/workflows/uslugar-prisma-migrate.yml` (putanja do koda: `Uslugar/backend/`).
-- Workflow u `Uslugar/.github/workflows/` **ne pokreće se** ako je git root npr. `Render/` – GitHub traži samo `/.github/workflows/` u korijenu.
-- U **Secrets** repozitorija postavi **`DATABASE_URL`** (isti connection string kao na Renderu) – tada na `push` na `main` job `db-migrate` pokreće `prisma migrate status` i `migrate deploy` protiv te baze.
+- Ako je git root npr. `Render/`, GitHub učitava workflowe iz **`/.github/workflows/`** u korijenu. Datoteke u `Uslugar/.github/workflows/` tada nisu same po sebi aktivne osim ako taj `Uslugar` mapa nije zasebni klon/ fork s vlastitim rootom.
+- **Migracije u produkciji** obično: lokalno ili u Render build koraku (`migrate deploy` s `DATABASE_URL`), vidi odlomak o Renderu gore.

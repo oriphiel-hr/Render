@@ -6,7 +6,9 @@ export {
   TRUST_CHECK_TOTAL,
   passesPublicVerifiedFilter,
   passesHasVerifiedLicensesFilter,
-  getProviderVisualBadges
+  getProviderVisualBadges,
+  DISPUTE_WORKFLOW_PHASES,
+  describeTrustSlaSort
 } from './trust.js';
 export { COMPETITIVE_FOCUS_AREAS, NINETY_DAY_ROADMAP } from './productRoadmapHr.js';
 
@@ -555,19 +557,46 @@ export async function createInstantBookingRequest({
   providerId,
   categoryId,
   requestedStart,
-  message
+  message,
+  slotId
 }) {
   return apiRequest({
     apiBaseUrl,
     path: '/growth/instant-bookings',
     method: 'POST',
     token,
-    body: { providerId, categoryId, requestedStart, message }
+    body: { providerId, categoryId, requestedStart, message, ...(slotId ? { slotId } : {}) }
   });
 }
 
-export async function getInstantBookingRequests({ apiBaseUrl, token }) {
-  return apiRequest({ apiBaseUrl, path: '/growth/instant-bookings', token });
+/**
+ * GET /growth/instant-bookings
+ * - bez view: USER vidi svoje odlazne; PROVIDER vidi dolazne (na webu / profilu pružatelja)
+ * - view=client: uvijek moji odlazni (i kada je korisnik PROVIDER — tražio sam tuđu uslugu)
+ */
+export async function getInstantBookingRequests({ apiBaseUrl, token, view } = {}) {
+  const q = new URLSearchParams();
+  if (view === 'client') q.set('view', 'client');
+  const qs = q.toString();
+  return apiRequest({
+    apiBaseUrl,
+    path: `/growth/instant-bookings${qs ? `?${qs}` : ''}`,
+    token
+  });
+}
+
+/** PATCH /growth/instant-bookings/:id — potvrda, odbij, kontra (pružatelj) ili cancel / accept_counter (klijent) */
+export async function patchInstantBookingRequest({ apiBaseUrl, token, id, action, counterOfferStart, declineReason }) {
+  const body = { action };
+  if (counterOfferStart != null) body.counterOfferStart = counterOfferStart;
+  if (declineReason != null) body.declineReason = declineReason;
+  return apiRequest({
+    apiBaseUrl,
+    path: `/growth/instant-bookings/${encodeURIComponent(id)}`,
+    method: 'PATCH',
+    token,
+    body
+  });
 }
 
 export async function createSeasonalReminder({ apiBaseUrl, token, categoryId, label, periodMonths, nextRemindAt }) {

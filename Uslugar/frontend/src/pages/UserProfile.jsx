@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../api';
+import ClientInstantBookingsPanel from '../components/ClientInstantBookingsPanel';
 
 // Komponenta za spremljene pretrage i job alerts
 function SavedSearchesSection() {
@@ -276,6 +277,118 @@ function SavedSearchesSection() {
   );
 }
 
+function SeasonalRemindersSection() {
+  const [list, setList] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [catId, setCatId] = useState('');
+  const [label, setLabel] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    try {
+      const [r, c] = await Promise.all([api.get('/growth/reminders'), api.get('/categories')]);
+      setList(Array.isArray(r.data) ? r.data : []);
+      setCategories(Array.isArray(c.data) ? c.data : []);
+    } catch {
+      setList([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const add = async () => {
+    if (!catId) {
+      alert('Odaberite kategoriju');
+      return;
+    }
+    try {
+      await api.post('/growth/reminders', { categoryId: catId, label: label || undefined });
+      setLabel('');
+      await load();
+    } catch (e) {
+      alert(e?.response?.data?.error || 'Greška');
+    }
+  };
+
+  const del = async (id) => {
+    if (!confirm('Ukloniti podsjetnik?')) return;
+    try {
+      await api.delete(`/growth/reminders/${id}`);
+      setList((p) => p.filter((x) => x.id !== id));
+    } catch {
+      alert('Greška');
+    }
+  };
+
+  return (
+    <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-6 mb-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-2 border-b border-emerald-200 pb-2">
+        🗓 Sezonski podsjetnici
+      </h3>
+      <p className="text-sm text-gray-600 mb-3">
+        Povezano s kategorijom — podsjetnik za ponavljanje sličnih usluga (npr. klima, bojler).
+      </p>
+      {loading ? (
+        <p className="text-sm text-gray-500">Učitavanje…</p>
+      ) : (
+        <>
+          <div className="flex flex-wrap gap-2 mb-3">
+            <select
+              className="border rounded px-2 py-1.5 text-sm flex-1 min-w-[200px]"
+              value={catId}
+              onChange={(e) => setCatId(e.target.value)}
+            >
+              <option value="">— kategorija —</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <input
+              className="border rounded px-2 py-1.5 text-sm flex-1"
+              placeholder="Napomena (opcionalno)"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+            />
+            <button
+              type="button"
+              onClick={add}
+              className="px-3 py-1.5 bg-emerald-600 text-white rounded text-sm"
+            >
+              Dodaj
+            </button>
+          </div>
+          {list.length === 0 ? (
+            <p className="text-sm text-gray-500">Nema aktivnih podsjetnika.</p>
+          ) : (
+            <ul className="space-y-2">
+              {list.map((row) => (
+                <li
+                  key={row.id}
+                  className="flex justify-between items-center p-2 bg-white rounded border border-emerald-100"
+                >
+                  <span className="text-sm">
+                    <strong>{row.label || row.category?.name}</strong> — sljedeće:{' '}
+                    {new Date(row.nextRemindAt).toLocaleDateString('hr-HR')}
+                  </span>
+                  <button type="button" onClick={() => del(row.id)} className="text-red-600 text-sm">
+                    Ukloni
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function UserProfile({ onNavigate }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -546,6 +659,10 @@ export default function UserProfile({ onNavigate }) {
 
           {/* Spremljene pretrage i Job Alerts */}
           <SavedSearchesSection />
+
+          <SeasonalRemindersSection />
+
+          <ClientInstantBookingsPanel />
 
           {/* Brzi linkovi */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">

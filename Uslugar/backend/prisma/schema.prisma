@@ -210,6 +210,7 @@ model User {
   instantAsProvider   InstantBookingRequest[] @relation("UserInstantAsProvider")
   disputes            DisputeCase[]        @relation("UserDisputes")
   seasonalReminders   UserSeasonalReminder[] @relation("UserReminders")
+  availabilitySlots   ProviderAvailabilitySlot[]
 
   // Composite unique constraint: email + role must be unique
   // This allows same email for different roles (e.g., USER and PROVIDER)
@@ -370,6 +371,11 @@ model Category {
 
   instantBookings  InstantBookingRequest[] @relation("CategoryInstant")
   userReminders   UserSeasonalReminder[]  @relation("CategoryReminders")
+  availabilitySlots ProviderAvailabilitySlot[]
+
+  // Standardizirani marketing paket (euro od–do + kratki opis) + redoslijed u „top” listi
+  standardPackageSummary String?
+  homepageRank            Int?     // manje = gore; null = nije u top listi
 }
 
 model Job {
@@ -544,27 +550,59 @@ model DisputeCase {
   user        User          @relation("UserDisputes", fields: [userId], references: [id], onDelete: Cascade)
   job         Job?          @relation(fields: [jobId], references: [id], onDelete: SetNull)
 
+  // End-to-end ticketing (MVP: polja u bazi, UI u appu; operativu radi tim)
+  respondByAt        DateTime? // rok za prvi odgovor tima
+  resolvedAt           DateTime? // zatvoren predmet
+  payoutAmountCents     Int?      // povezano s Guarantee (nisu novci na račun automatski)
+  payoutCurrency        String?   @default("EUR")
+  mediationNotes        String?   // interna bilješka (admin; ne javno)
+  lastTeamActionAt      DateTime? // zadnja promjena statusa od strane Uslugara
+
   @@index([userId, status])
   @@index([jobId])
 }
 
-// Odmah zauzmi termin (MVP: zahtjev idu pružitelju u chat/notifikacije kasnije)
+// Pružatelj: slobodni „slotovi” za instant (Calendly-light)
+model ProviderAvailabilitySlot {
+  id         String   @id @default(cuid())
+  providerId String
+  categoryId String
+  startAt    DateTime
+  endAt      DateTime
+  capacity   Int      @default(1)
+  createdAt  DateTime @default(now())
+  provider   User     @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  requests   InstantBookingRequest[]
+
+  @@index([providerId, startAt])
+}
+
+// Odmah zauzmi termin — workflow: zahtjev → (opc. kontra-termin) → potvrda → dovršeno
 model InstantBookingRequest {
-  id             String   @id @default(cuid())
-  userId         String
-  providerId     String
-  categoryId     String
-  requestedStart DateTime
-  message        String?
-  status         String   @default("PENDING")
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  user           User     @relation("UserInstantAsClient", fields: [userId], references: [id], onDelete: Cascade)
-  provider       User     @relation("UserInstantAsProvider", fields: [providerId], references: [id], onDelete: Cascade)
-  category       Category @relation("CategoryInstant", fields: [categoryId], references: [id], onDelete: Cascade)
+  id              String   @id @default(cuid())
+  userId          String
+  providerId      String
+  categoryId      String
+  requestedStart  DateTime
+  message         String?
+  status          String   @default("PENDING")
+  // PENDING | SLOT_BOUND | COUNTER_PROPOSED | CONFIRMED | DECLINED | CANCELLED | COMPLETED
+  slotId          String?
+  confirmedAt     DateTime? // klijent + pružatelj u ovom MVP-u: trenutak službene potvrde
+  counterOfferStart DateTime? // pružateljev alternativni termin
+  declineReason   String?
+  clientCancelledAt DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation("UserInstantAsClient", fields: [userId], references: [id], onDelete: Cascade)
+  provider        User     @relation("UserInstantAsProvider", fields: [providerId], references: [id], onDelete: Cascade)
+  category        Category @relation("CategoryInstant", fields: [categoryId], references: [id], onDelete: Cascade)
+  slot            ProviderAvailabilitySlot? @relation(fields: [slotId], references: [id], onDelete: SetNull)
 
   @@index([providerId, status])
   @@index([userId])
+  @@index([slotId])
 }
 
 // Sezonski podsjetnik (bojler, klima…)

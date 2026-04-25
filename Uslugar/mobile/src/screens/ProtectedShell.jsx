@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { styles } from '../styles';
 import ChatRoomsScreen from './ChatRoomsScreen';
 import ChatRoomScreen from './ChatRoomScreen';
@@ -70,11 +70,34 @@ export default function ProtectedShell({
 }) {
   const isProvider = user.role === 'PROVIDER';
   const isAdmin = user.role === 'ADMIN';
+
+  const [clientInstants, setClientInstants] = useState([]);
+  const [instantLoading, setInstantLoading] = useState(false);
+
+  const loadClientInstants = useCallback(async () => {
+    if (!growth?.listInstantAsClient) return;
+    setInstantLoading(true);
+    try {
+      const data = await growth.listInstantAsClient();
+      setClientInstants(Array.isArray(data) ? data : []);
+    } catch {
+      setClientInstants([]);
+    } finally {
+      setInstantLoading(false);
+    }
+  }, [growth]);
+
   useEffect(() => {
     if (activeTab === 'profile') {
       push.refreshPushSubscriptions?.();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'profile') {
+      loadClientInstants();
+    }
+  }, [activeTab, loadClientInstants]);
 
   useEffect(() => {
     if (activeTab === 'providers' && growth?.loadFavorites) {
@@ -324,6 +347,98 @@ export default function ProtectedShell({
             <View style={styles.guaranteeBox}>
               <Text style={styles.guaranteeTitle}>{growth.guarantee.name || 'Uslugar Guarantee'}</Text>
               <Text style={styles.guaranteeText}>{growth.guarantee.summary}</Text>
+            </View>
+          ) : null}
+          {growth?.listInstantAsClient ? (
+            <View style={styles.profileCard}>
+              <Text style={styles.sectionTitle}>Moji brzi termini (kao klijent)</Text>
+              <Text style={styles.metaText}>
+                Isti popis kao na webu (User profil) — poslani zahtjevi, uključivo ako ste pružatelj
+                tražili tuđu uslugu.
+              </Text>
+              {instantLoading ? (
+                <ActivityIndicator style={{ marginVertical: 8 }} />
+              ) : null}
+              {clientInstants.length === 0 && !instantLoading ? (
+                <Text style={styles.metaText}>Nemate poslanih zahtjeva.</Text>
+              ) : null}
+              {clientInstants.map((b) => {
+                const canCancel = ['PENDING', 'SLOT_BOUND', 'COUNTER_PROPOSED'].includes(b.status);
+                const canAcceptAlt = b.status === 'COUNTER_PROPOSED' && b.counterOfferStart;
+                return (
+                  <View
+                    key={b.id}
+                    style={{
+                      marginTop: 12,
+                      paddingTop: 10,
+                      borderTopWidth: 1,
+                      borderTopColor: '#e5e7eb'
+                    }}
+                  >
+                    <Text style={styles.listTitle}>{b.provider?.fullName || 'Pružatelj'}</Text>
+                    <Text style={styles.metaText}>
+                      {b.category?.name || 'Kategorija'} · {b.status}
+                    </Text>
+                    <Text style={styles.metaText}>
+                      Termin: {formatDate(b.requestedStart)}
+                    </Text>
+                    {b.counterOfferStart ? (
+                      <Text style={[styles.metaText, { color: '#b45309' }]}>
+                        Pružatelj predlaže: {formatDate(b.counterOfferStart)}
+                      </Text>
+                    ) : null}
+                    {b.message ? <Text style={styles.metaText}>„{b.message}”</Text> : null}
+                    <View style={styles.row}>
+                      {canCancel && growth.patchInstant ? (
+                        <Pressable
+                          style={[styles.buttonSecondary, { flex: 1, marginRight: 4 }]}
+                          onPress={() =>
+                            Alert.alert('Odustanak', 'Odustati od ovog zahtjeva?', [
+                              { text: 'Ne', style: 'cancel' },
+                              {
+                                text: 'Da',
+                                style: 'destructive',
+                                onPress: async () => {
+                                  try {
+                                    await growth.patchInstant(b.id, 'cancel');
+                                    await loadClientInstants();
+                                  } catch (e) {
+                                    Alert.alert('Greška', e?.message || 'Nije uspjelo');
+                                  }
+                                }
+                              }
+                            ])
+                          }
+                        >
+                          <Text style={styles.buttonText}>Odustani</Text>
+                        </Pressable>
+                      ) : null}
+                      {canAcceptAlt && growth.patchInstant ? (
+                        <Pressable
+                          style={[styles.button, { flex: 1, marginLeft: 4 }]}
+                          onPress={async () => {
+                            try {
+                              await growth.patchInstant(b.id, 'accept_counter');
+                              await loadClientInstants();
+                            } catch (e) {
+                              Alert.alert('Greška', e?.message || 'Nije uspjelo');
+                            }
+                          }}
+                        >
+                          <Text style={styles.buttonText}>Prihvati alternativu</Text>
+                        </Pressable>
+                      ) : null}
+                    </View>
+                  </View>
+                );
+              })}
+              <Pressable
+                style={[styles.buttonSecondary, { marginTop: 12 }]}
+                onPress={loadClientInstants}
+                disabled={instantLoading}
+              >
+                <Text style={styles.buttonText}>Osvježi brze termine</Text>
+              </Pressable>
             </View>
           ) : null}
           <Text style={styles.label}>Kamo Uslugar raste</Text>

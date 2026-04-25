@@ -58,6 +58,12 @@ export default function App() {
     active: Boolean(showProvidersTab && jobsFlow.activeTab === 'providers'),
     handleApiError: auth.handleApiError
   });
+  const growth = useGrowthFlow({
+    apiBaseUrl: auth.apiBaseUrl,
+    token: auth.token,
+    setMessage: auth.setMessage,
+    handleApiError: auth.handleApiError
+  });
 
   if (auth.bootstrapping) {
     return (

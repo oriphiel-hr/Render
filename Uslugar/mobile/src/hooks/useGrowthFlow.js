@@ -6,6 +6,7 @@ import {
   getGrowthDisputes,
   getGrowthFavorites,
   getInstantBookingRequests,
+  patchInstantBookingRequest,
   getPublicGuarantee,
   getSeasonalReminders,
   removeGrowthFavorite
@@ -110,6 +111,11 @@ export function useGrowthFlow({ apiBaseUrl, token, handleApiError, setMessage })
     submitInstant,
     submitDispute,
     listDisputes: () => getGrowthDisputes({ apiBaseUrl, token }),
-    listInstant: () => getInstantBookingRequests({ apiBaseUrl, token })
+    /** Dolazni instant (PROVIDER) ili odlazni (USER) — isto kao default GET */
+    listInstant: () => getInstantBookingRequests({ apiBaseUrl, token }),
+    /** Moji poslani zahtjevi kao klijent (i za PROVIDER — paralela s web UserProfile) */
+    listInstantAsClient: () => getInstantBookingRequests({ apiBaseUrl, token, view: 'client' }),
+    patchInstant: (id, action, extra) =>
+      patchInstantBookingRequest({ apiBaseUrl, token, id, action, ...extra })
   };
 }
