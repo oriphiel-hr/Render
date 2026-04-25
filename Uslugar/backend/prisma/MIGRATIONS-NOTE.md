@@ -21,3 +21,9 @@ Nakon toga `npx prisma migrate deploy` prolazi bez greške.
 - **Ili** samo na čistoj bazi pokreni `npx prisma migrate deploy` – primijenit će SQL iz mape migracije.
 - U monorepu root: `npm run db:migrate:backend` pokreće `migrate:deploy` u backend workspaceu.
 - **Render:** u build ili release koraku (nakon `prisma generate`) uobičajeno je `cd backend && npx prisma migrate deploy` s `DATABASE_URL` produkcije.
+
+## GitHub Actions (monorepo `Render/`)
+
+- Aktivni workflow za Uslugar je u **rootu repozitorija**: `.github/workflows/uslugar-prisma-migrate.yml` (putanja do koda: `Uslugar/backend/`).
+- Workflow u `Uslugar/.github/workflows/` **ne pokreće se** ako je git root npr. `Render/` – GitHub traži samo `/.github/workflows/` u korijenu.
+- U **Secrets** repozitorija postavi **`DATABASE_URL`** (isti connection string kao na Renderu) – tada na `push` na `main` job `db-migrate` pokreće `prisma migrate status` i `migrate deploy` protiv te baze.
