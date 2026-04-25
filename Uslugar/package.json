@@ -9,6 +9,8 @@
     "tests"
   ],
   "overrides": {
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
     "metro": "0.82.5",
     "metro-config": "0.82.5",
     "metro-resolver": "0.82.5"

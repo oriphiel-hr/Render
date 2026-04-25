@@ -67,6 +67,21 @@ Dokument za kasniju upotrebu: konkretne isporuke po temi i poslovna korist. Nije
 4. Sigurnosni audit **prije** veće ekspanzije ili nakon značajnih promjena.
 5. Podrška 24/7 kad broj korisnika i ozbiljnost posla to opravdavaju (često hibrid).
 
+### Faza rane rasti (mali budžet) — što je realno sada
+
+Gornji odlomci opisuju **kamo** ide proizvod kad stigne red; nisu nalog da se sve plati odmah. Ako **tek skupljate** prve korisnike, investitore ili opipljiv promet, smisleno je:
+
+| Tema | Skupo / kasnije | **Malo-novac sada** |
+|------|-----------------|---------------------|
+| a11y | Vanjski audit, potpuna AA | Fokus na **ključnim** tokovima (prijava, posao, plaćanje pretplate), kontrast i labeli; ostalo kasnije |
+| i18n | Potpuna višejezičnost | **Samo HR** u proizvodu, jasni engleski u pitchu / investitorskom one-pageru po potrebi |
+| Podrška | 24/7, BPO | **E-mail** + navedeno radno vrijeme, predlošci odgovora, jeftin / besplatan live-chat ako treba, incidenti ručno |
+| SEO | Agencija, tisuće stranica | **Jedan** kvalitetan grad + **jedna** kategorija, GSC, tehnički osnovi (brzina, `title`/`description`) |
+| Sigurnost | Pentest | Osvježavati ovisnosti, tajne u envu, `npm audit` / Snyk free tier, brzi pregled auth/upload ruta |
+| DSGVO | Odvjetnik + puni RoPA | Standardni **predlošci** + jasna politika, obrazac „obriši moje podatke“ preko e-maila (dok nije u appu) |
+
+**Zaključak:** Cijela lista iznad = **karta za budućnost**, ne račun za ovu fazu. Kad promet i tim porastu, vraćate se sekcijama 1–6 s više gotovine. Do tada, **rana faza = manje kliše „scale-upa”, više razgovora s korisnicima i stabilan proizvod**.
+
 ---
 
 *Ažurirajte ovaj dokument kad se odluči što je stvarno u kalendaru; veza s konkurentskim kontekstom: [COMPETITIVE-FEATURES-MATRIX.md](COMPETITIVE-FEATURES-MATRIX.md), [PLATFORM-SCOPE-STATUS.md](PLATFORM-SCOPE-STATUS.md).*
