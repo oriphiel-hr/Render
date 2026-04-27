@@ -21,6 +21,7 @@ import AdminDatabaseEditor from '../pages/AdminDatabaseEditor'
 import AdminApiReference from '../pages/AdminApiReference'
 import UserTypesOverview from '../pages/UserTypesOverview'
 import AdminAuditLogs from '../pages/AdminAuditLogs'
+import AdminAccountDeletions from '../pages/AdminAccountDeletions'
 import AdminApiRequestLogs from '../pages/AdminApiRequestLogs'
 import AdminErrorLogs from '../pages/AdminErrorLogs'
 import AdminAddonEventLogs from '../pages/AdminAddonEventLogs'
@@ -83,7 +84,7 @@ export default function AdminRouter(){
     const adminPathRoutes = ['dashboard', 'payments', 'provider-approvals', 'kyc-metrics', 'verification-documents', 
                              'platform-stats', 'moderation', 'documentation', 'sms-logs', 'invoices', 
                              'users-overview', 'cleanup', 'testing', 'testing-blocks', 'database', 'api-reference', 'user-types', 'screenshots',
-                             'audit-logs', 'api-request-logs', 'error-logs', 'addon-event-logs', 'contact-inquiries', 'ai-integrations'];
+                             'audit-logs', 'account-deletions', 'api-request-logs', 'error-logs', 'addon-event-logs', 'contact-inquiries', 'ai-integrations'];
     // Dodaj sve MODELS kao admin rute
     const adminModelRoutes = MODELS.map(m => m.toLowerCase());
     
@@ -291,6 +292,7 @@ export default function AdminRouter(){
           <Route path="/admin/user-types" element={<UserTypesOverview isAdmin={true} />} />
           <Route path="/admin/screenshots" element={<AdminScreenshots />} />
           <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
+          <Route path="/admin/account-deletions" element={<AdminAccountDeletions />} />
           <Route path="/admin/api-request-logs" element={<AdminApiRequestLogs />} />
           <Route path="/admin/error-logs" element={<AdminErrorLogs />} />
           <Route path="/admin/addon-event-logs" element={<AdminAddonEventLogs />} />

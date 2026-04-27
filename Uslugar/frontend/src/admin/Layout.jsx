@@ -96,6 +96,7 @@ const NAVIGATION_GROUPS = [
     icon: '📋',
     items: [
       { to: '/admin/audit-logs', label: 'Zapisnik radnji (audit)', icon: '📋' },
+      { to: '/admin/account-deletions', label: 'Obrisani računi', icon: '🗑️' },
       { to: '/admin/api-request-logs', label: 'Zapisnici API zahtjeva', icon: '🌐' },
       { to: '/admin/error-logs', label: 'Zapisnik grešaka', icon: '❌' },
       { to: '/admin/addon-event-logs', label: 'Dnevnik add-on događaja', icon: '📦' },
@@ -148,6 +149,7 @@ function getPageTitle(pathname) {
     'testing-blocks': 'Blokovski testovi',
     'user-types': 'Tipovi korisnika',
     'audit-logs': 'Zapisnik radnji (audit)',
+    'account-deletions': 'Obrisani računi',
     'api-request-logs': 'Zapisnici API zahtjeva',
     'error-logs': 'Zapisnik grešaka',
     'addon-event-logs': 'Dnevnik add-on događaja',

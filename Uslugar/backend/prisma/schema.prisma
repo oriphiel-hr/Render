@@ -803,6 +803,29 @@ model AuditLog {
   @@index([createdAt])
 }
 
+/// Izvor zapisa o brisanju računa (za statistiku i podršku)
+enum AccountDeletionSource {
+  SELF_SERVICE // Korisnik sam u appu / webu
+  ADMIN_PANEL // Admin obrisao u admin panelu
+}
+
+/// Zapis o obrisanom korisničkom računu (nema FK na User — ostaje nakon brisanja korisnika)
+model AccountDeletionLog {
+  id              String                 @id @default(cuid())
+  formerUserId    String /// ID korisnika prije brisanja
+  emailRedacted   String /// npr. v***@domena.hr
+  role            String
+  source          AccountDeletionSource
+  ipAddress       String?
+  userAgent       String?
+  deletedByUserId String? /// Za ADMIN_PANEL: ID admina koji je obrisao
+  createdAt       DateTime               @default(now())
+
+  @@index([createdAt])
+  @@index([source, createdAt])
+  @@index([formerUserId])
+}
+
 // Pretplate (za provajdere usluga)
 model Subscription {
   id                     String             @id @default(cuid())

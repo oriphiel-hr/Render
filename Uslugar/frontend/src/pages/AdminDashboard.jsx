@@ -31,6 +31,7 @@ const SHORTCUTS = [
   { to: '/admin/users-overview', label: 'Pregled korisnika', icon: '📊' },
   { to: '/admin/Subscription', label: 'Pretplate (tablica)', icon: '📋' },
   { to: '/admin/addon-event-logs', label: 'Dnevnik add-on događaja', icon: '📦' },
+  { to: '/admin/account-deletions', label: 'Obrisani računi', icon: '🗑️' },
   { to: '/admin/moderation', label: 'Moderacija', icon: '🛡️' },
   { to: '/admin/contact-inquiries', label: 'Kontakt upiti', icon: '📩' },
   { to: '/admin/error-logs', label: 'Zapisnik grešaka', icon: '❌' },

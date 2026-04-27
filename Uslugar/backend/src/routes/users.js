@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { auth, verifyPassword } from '../lib/auth.js';
 import { deleteUserWithRelations } from '../lib/delete-helpers.js';
 import { cancelStripeSubscriptionsForUser } from '../lib/stripe-cleanup-on-user-delete.js';
+import { getClientIp, logAccountDeletion } from '../lib/account-deletion-log.js';
 
 const r = Router();
 
@@ -603,6 +604,15 @@ r.delete('/me', auth(true), async (req, res, next) => {
     if (!match) {
       return res.status(401).json({ error: 'Netočna lozinka' });
     }
+    await logAccountDeletion({
+      formerUserId: user.id,
+      email: user.email,
+      role: user.role,
+      source: 'SELF_SERVICE',
+      ipAddress: getClientIp(req),
+      userAgent: req.get('user-agent') || null,
+      deletedByUserId: null
+    });
     await cancelStripeSubscriptionsForUser(user.id);
     await deleteUserWithRelations(user.id);
     return res.json({ success: true, message: 'Račun i povezani podaci obrisani.' });

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { auth } from '../lib/auth.js';
 import { deleteUserWithRelations } from '../lib/delete-helpers.js';
+import { getClientIp, logAccountDeletion } from '../lib/account-deletion-log.js';
 import { offerToNextInQueue } from '../lib/leadQueueManager.js';
 import { getPlatformStatistics, getMonthlyTrends, getPlatformStatsByRegion } from '../services/platform-stats-service.js';
 import { getPendingModeration, moderateContent, getModerationStats, reportMessage } from '../services/moderation-service.js';
@@ -1507,6 +1508,16 @@ Object.keys(MODELS).forEach(modelName => {
         if (user.role === 'ADMIN') {
           return res.status(400).json({ error: 'ADMIN korisnika nije moguće obrisati' });
         }
+
+        await logAccountDeletion({
+          formerUserId: id,
+          email: user.email,
+          role: user.role,
+          source: 'ADMIN_PANEL',
+          ipAddress: getClientIp(req),
+          userAgent: req.get('user-agent') || null,
+          deletedByUserId: req.user.id
+        });
         
         // Use cascade delete helper to properly delete all related data
         await deleteUserWithRelations(id);
@@ -3020,6 +3031,56 @@ r.get('/audit-logs', auth(true, ['ADMIN']), async (req, res, next) => {
       code: e.code,
       meta: e.meta
     });
+    next(e);
+  }
+});
+
+/**
+ * GET /api/admin/account-deletion-logs
+ * Pregled obrisanih računa (self-service vs admin) i zbrojevi
+ */
+r.get('/account-deletion-logs', auth(true, ['ADMIN']), async (req, res, next) => {
+  try {
+    const { source, limit = 50, offset = 0, startDate, endDate } = req.query;
+    const where = {};
+    if (source === 'SELF_SERVICE' || source === 'ADMIN_PANEL') {
+      where.source = source;
+    }
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.gte = new Date(startDate);
+      if (endDate) where.createdAt.lte = new Date(endDate);
+    }
+    const take = Math.min(parseInt(String(limit), 10) || 50, 200);
+    const skip = parseInt(String(offset), 10) || 0;
+
+    const [rows, total, bySource] = await Promise.all([
+      prisma.accountDeletionLog.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take,
+        skip
+      }),
+      prisma.accountDeletionLog.count({ where }),
+      prisma.accountDeletionLog.groupBy({
+        by: ['source'],
+        _count: { id: true }
+      })
+    ]);
+
+    const stats = {
+      SELF_SERVICE: 0,
+      ADMIN_PANEL: 0,
+      total: 0
+    };
+    for (const g of bySource) {
+      stats[g.source] = g._count.id;
+      stats.total += g._count.id;
+    }
+
+    res.json({ logs: rows, total, limit: take, offset: skip, stats });
+  } catch (e) {
+    console.error('[ADMIN] GET /account-deletion-logs', e);
     next(e);
   }
 });
