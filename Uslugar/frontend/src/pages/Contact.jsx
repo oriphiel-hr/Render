@@ -2,7 +2,21 @@ import React, { useEffect, useState } from 'react';
 import api from '../api';
 import PlatformCompetitiveRoadmap from '../components/PlatformCompetitiveRoadmap';
 
+const PUBLIC_CONTACT_EMAIL = 'uslugar@oriphiel.hr';
+
+/** Javni telefon (bio na stranici do ~ travanj 2026.; override: VITE_PUBLIC_CONTACT_PHONE s razmacima ili bez) */
+const DEFAULT_PUBLIC_PHONE = { tel: '+385915618258', label: '+385 91 561 8258' };
+function getPublicPhone () {
+  const fromEnv = import.meta.env.VITE_PUBLIC_CONTACT_PHONE;
+  if (fromEnv && String(fromEnv).trim()) {
+    const raw = String(fromEnv).trim();
+    return { tel: raw.replace(/[^\d+]/g, '') || raw, label: raw };
+  }
+  return DEFAULT_PUBLIC_PHONE;
+}
+
 const Contact = () => {
+  const publicPhone = getPublicPhone();
   const [guarantee, setGuarantee] = useState(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -88,6 +102,41 @@ const Contact = () => {
                     Slavenskoga ulica 5<br />
                     10000 Zagreb<br />
                     Hrvatska
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="text-2xl">📧</div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                    E-pošta
+                  </h3>
+                  <p className="text-gray-700">
+                    <a
+                      className="text-blue-700 hover:underline font-medium"
+                      href={`mailto:${PUBLIC_CONTACT_EMAIL}`}
+                    >
+                      {PUBLIC_CONTACT_EMAIL}
+                    </a>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="text-2xl">📞</div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                    Telefon
+                  </h3>
+                  <p className="text-gray-700">
+                    <a
+                      className="inline-flex items-center gap-2 text-blue-700 hover:text-blue-900 hover:underline underline-offset-2 px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 border border-blue-100 font-semibold"
+                      href={`tel:${publicPhone.tel}`}
+                      title="Nazovi"
+                    >
+                      📞 {publicPhone.label}
+                    </a>
                   </p>
                 </div>
               </div>
@@ -192,7 +241,7 @@ const Contact = () => {
               
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                  Telefon
+                  Vaš broj telefona <span className="text-gray-500 font-normal">(opcionalno)</span>
                 </label>
                 <input
                   type="tel"
@@ -201,7 +250,8 @@ const Contact = () => {
                   value={form.phone}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="091 123 4567"
+                  placeholder="Npr. +385 99 123 4567 (ako želite da vas zovemo natrag)"
+                  autoComplete="tel"
                 />
               </div>
 
@@ -265,6 +315,12 @@ const Contact = () => {
             </p>
             <p className="text-gray-700">
               <strong>Tvrtka:</strong> Oriphiel d.o.o.
+            </p>
+            <p className="text-gray-700 mt-1">
+              <strong>E-pošta:</strong>{' '}
+              <a className="text-blue-600 hover:underline" href={`mailto:${PUBLIC_CONTACT_EMAIL}`}>
+                {PUBLIC_CONTACT_EMAIL}
+              </a>
             </p>
           </div>
 
@@ -350,7 +406,10 @@ const Contact = () => {
             <p className="text-gray-700">
               24/7 dostupna<br />
               Odgovor u roku od 24h<br />
-              Email: support@uslugar.hr
+              E-pošta:{' '}
+              <a className="text-blue-600 hover:underline font-medium" href={`mailto:${PUBLIC_CONTACT_EMAIL}`}>
+                {PUBLIC_CONTACT_EMAIL}
+              </a>
             </p>
           </div>
           <div className="text-center">
