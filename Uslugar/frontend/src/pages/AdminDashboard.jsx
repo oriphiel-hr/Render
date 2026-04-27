@@ -38,6 +38,70 @@ const SHORTCUTS = [
   { to: '/admin/platform-stats', label: 'Statistike platforme', icon: '📈' }
 ]
 
+const OPERATIONAL_ALARMS = [
+  {
+    key: 'support_backlog',
+    title: 'Support backlog',
+    what: 'Broj otvorenih upita/tiketa koji stoje predugo bez rjesavanja.',
+    why: 'Ako stalno raste, tim kasni i povecava se rizik odlaska korisnika.',
+    source: 'moderationPending',
+    warning: 15,
+    critical: 30
+  },
+  {
+    key: 'sla_breach_rate',
+    title: 'SLA breach rate',
+    what: 'Postotak slucajeva koji su probili ciljano vrijeme odgovora/rjesavanja.',
+    why: 'Signal da treba uvesti jasne SLA-ove, prioritete i eskalacije.',
+    source: null,
+    warning: null,
+    critical: null
+  },
+  {
+    key: 'repeat_contacts',
+    title: 'Repeat contacts',
+    what: 'Isti korisnik se javlja vise puta za isti problem u kratkom roku.',
+    why: 'Obicno znaci da se problem zatvara povrsno i opet vraca.',
+    source: null,
+    warning: null,
+    critical: null
+  },
+  {
+    key: 'manual_interventions',
+    title: 'Rucne admin intervencije',
+    what: 'Koliko puta admin mora rucno popravljati tok koji bi trebao biti automatiziran.',
+    why: 'Ako raste, vrijeme je za jacu ticket automatizaciju (CRM light/puni CRM).',
+    source: 'errorLogsNewLast24h',
+    warning: 5,
+    critical: 12
+  },
+  {
+    key: 'schedule_complexity',
+    title: 'Kompleksna ponavljanja termina (RRULE signal)',
+    what: 'Zahtjevi tipa "svaki ponedjeljak", "svaki drugi tjedan", "zadnji petak".',
+    why: 'Kad ih je puno, jednokratni slotovi vise nisu dovoljni i treba RRULE.',
+    source: null,
+    warning: null,
+    critical: null
+  },
+  {
+    key: 'calendar_manual_edits',
+    title: 'Rucne korekcije kalendara',
+    what: 'Broj slucajeva gdje tim rucno prepise/prilagodi termine umjesto sustava.',
+    why: 'Direktan indikator da kalendarski model treba naprednije ponavljanje.',
+    source: null,
+    warning: null,
+    critical: null
+  }
+]
+
+function getAlarmStatus(value, warning, critical) {
+  if (typeof value !== 'number' || warning == null || critical == null) return { label: 'N/A', tone: 'bg-gray-100 text-gray-700' }
+  if (value >= critical) return { label: 'Kriticno', tone: 'bg-red-100 text-red-700' }
+  if (value >= warning) return { label: 'Upozorenje', tone: 'bg-amber-100 text-amber-700' }
+  return { label: 'OK', tone: 'bg-emerald-100 text-emerald-700' }
+}
+
 export default function AdminDashboard() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -166,6 +230,43 @@ export default function AdminDashboard() {
                   {s.label}
                 </Link>
               ))}
+            </div>
+          </section>
+
+          <section>
+            <h2 className="mb-3 text-lg font-semibold text-gray-800">Operativni alarmi (CRM / RRULE signali)</h2>
+            <p className="mb-4 text-sm text-gray-600">
+              Ova lista sluzi kao podsjetnik sto naziv znaci i kada je vrijeme za veci sustav (SLA/eskalacije ili napredni kalendar).
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {OPERATIONAL_ALARMS.map((alarm) => {
+                const rawValue = alarm.source && data ? Number(data[alarm.source] ?? 0) : null
+                const status = getAlarmStatus(rawValue, alarm.warning, alarm.critical)
+                return (
+                  <article key={alarm.key} className="rounded-xl border border-gray-200 bg-white p-4">
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <h3 className="text-sm font-semibold text-gray-900">{alarm.title}</h3>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${status.tone}`}>
+                        {status.label}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600">
+                      <span className="font-medium text-gray-700">Na sto se odnosi:</span> {alarm.what}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-600">
+                      <span className="font-medium text-gray-700">Zasto je bitno:</span> {alarm.why}
+                    </p>
+                    {rawValue != null && (
+                      <p className="mt-2 text-xs text-gray-500">
+                        Trenutna vrijednost: <span className="font-semibold text-gray-700">{rawValue}</span>
+                        {alarm.warning != null && alarm.critical != null && (
+                          <> · pragovi: upozorenje {alarm.warning}, kriticno {alarm.critical}</>
+                        )}
+                      </p>
+                    )}
+                  </article>
+                )
+              })}
             </div>
           </section>
         </>
