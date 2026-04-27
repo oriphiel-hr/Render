@@ -252,6 +252,43 @@ export const styles = StyleSheet.create({
     marginTop: 12,
     color: '#111827'
   },
+  linkButton: {
+    marginTop: 10,
+    alignSelf: 'flex-start'
+  },
+  linkButtonText: {
+    color: '#0369a1',
+    fontWeight: '600'
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    justifyContent: 'center',
+    padding: 16
+  },
+  modalCard: {
+    maxHeight: '80%',
+    borderRadius: 14,
+    backgroundColor: '#fffaf2',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    padding: 16
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 10
+  },
+  modalBody: {
+    maxHeight: 320
+  },
+  modalText: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: '#374151',
+    marginBottom: 10
+  },
   pill: {
     backgroundColor: '#e5e7eb',
     paddingHorizontal: 10,
