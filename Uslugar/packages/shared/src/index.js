@@ -78,6 +78,21 @@ export async function getCurrentUser({
   });
 }
 
+/** Brisanje vlastitog računa (treba trenutnu lozinku). ADMIN računi se ne mogu obrisati ovim putem. */
+export async function deleteMyAccount({
+  apiBaseUrl,
+  token,
+  password
+}) {
+  return apiRequest({
+    apiBaseUrl,
+    path: '/users/me',
+    method: 'DELETE',
+    token,
+    body: { password }
+  });
+}
+
 export async function getJobs({
   apiBaseUrl,
   token,

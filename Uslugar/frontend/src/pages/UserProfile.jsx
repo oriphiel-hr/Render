@@ -402,6 +402,8 @@ export default function UserProfile({ onNavigate }) {
   });
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState('');
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   useEffect(() => {
     loadUser();
@@ -484,6 +486,37 @@ export default function UserProfile({ onNavigate }) {
       setError(err.response?.data?.error || 'Greška pri ažuriranju profila.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (user?.role === 'ADMIN') {
+      setError('Brisanje admin računa nije moguće ovdje. Javite se na uslugar@oriphiel.hr');
+      return;
+    }
+    if (!window.confirm('Trajno obrisati račun i povezane podatke? Ova se radnja ne može poništiti.')) {
+      return;
+    }
+    if (!deletePassword) {
+      setError('Unesite trenutnu lozinku za potvrdu brisanja.');
+      return;
+    }
+    setDeletingAccount(true);
+    setError('');
+    setSuccess('');
+    try {
+      await api.delete('/users/me', { data: { password: deletePassword } });
+      try {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        delete api.defaults.headers.common?.Authorization;
+      } catch (_) {}
+      window.location.hash = '#login';
+      window.location.reload();
+    } catch (err) {
+      setError(err.response?.data?.error || err.message || 'Brisanje računa nije uspjelo.');
+    } finally {
+      setDeletingAccount(false);
     }
   };
 
@@ -764,6 +797,44 @@ export default function UserProfile({ onNavigate }) {
           </div>
         )}
       </form>
+
+      {user && user.role !== 'ADMIN' && (
+        <div className="mt-10 p-6 rounded-xl border-2 border-red-200 bg-red-50/80">
+          <h3 className="text-lg font-semibold text-red-900 mb-2">Brisanje računa</h3>
+          <p className="text-sm text-red-800/90 mb-4">
+            Trajno uklanja vaš korisnički račun i povezane podatke u sustavu. Unesite trenutnu
+            lozinku. Račune možete zatražiti obrisati i e-mailom (vidi{' '}
+            <a
+              className="underline text-red-900"
+              href="https://uslugar.eu/brisanje-racuna.html"
+              target="_blank"
+              rel="noreferrer"
+            >
+              upute za brisanje
+            </a>
+            ).
+          </p>
+          <div className="max-w-sm">
+            <label className="block text-sm font-medium text-red-900 mb-1">Trenutna lozinka</label>
+            <input
+              type="password"
+              autoComplete="current-password"
+              className="w-full px-3 py-2 border border-red-300 rounded-lg"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              placeholder="••••••••"
+            />
+          </div>
+          <button
+            type="button"
+            disabled={deletingAccount}
+            onClick={handleDeleteAccount}
+            className="mt-4 px-4 py-2 bg-red-700 text-white rounded-lg hover:bg-red-800 disabled:opacity-50"
+          >
+            {deletingAccount ? 'Brisanje…' : 'Trajno obriši moj račun'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

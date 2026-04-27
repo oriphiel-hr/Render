@@ -66,6 +66,7 @@ export default function ProtectedShell({
   showProvidersTab = false,
   growth = null,
   handleRefreshProfile,
+  onDeleteAccount,
   handleLogout
 }) {
   const isProvider = user.role === 'PROVIDER';
@@ -73,6 +74,7 @@ export default function ProtectedShell({
 
   const [clientInstants, setClientInstants] = useState([]);
   const [instantLoading, setInstantLoading] = useState(false);
+  const [deleteAccountPassword, setDeleteAccountPassword] = useState('');
 
   const loadClientInstants = useCallback(async () => {
     if (!growth?.listInstantAsClient) return;
@@ -454,6 +456,44 @@ export default function ProtectedShell({
           <Pressable style={styles.button} onPress={handleRefreshProfile} disabled={loading}>
             <Text style={styles.buttonText}>Osvjezi profil</Text>
           </Pressable>
+
+          {!isAdmin && typeof onDeleteAccount === 'function' ? (
+            <View style={[styles.profileCard, { borderColor: '#fecaca', borderWidth: 1 }]}>
+              <Text style={styles.sectionTitle}>Brisanje računa</Text>
+              <Text style={styles.metaText}>
+                Trajno uklanja vaš račun i povezane podatke. Unesite trenutnu lozinku radi potvrde.
+              </Text>
+              <Text style={styles.label}>Lozinka</Text>
+              <TextInput
+                style={styles.input}
+                secureTextEntry
+                value={deleteAccountPassword}
+                onChangeText={setDeleteAccountPassword}
+                placeholder="Trenutna lozinka"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <Pressable
+                style={[styles.buttonSecondary, { marginTop: 12, backgroundColor: '#b91c1c' }]}
+                disabled={loading}
+                onPress={() => {
+                  Alert.alert('Brisanje računa', 'Jeste li sigurni? Ova radnja je trajna i ne može se poništiti.', [
+                    { text: 'Odustani', style: 'cancel' },
+                    {
+                      text: 'Obriši račun',
+                      style: 'destructive',
+                      onPress: async () => {
+                        const ok = await onDeleteAccount(deleteAccountPassword);
+                        if (ok) setDeleteAccountPassword('');
+                      }
+                    }
+                  ]);
+                }}
+              >
+                <Text style={styles.buttonText}>Obriši moj račun</Text>
+              </Pressable>
+            </View>
+          ) : null}
 
           <Text style={styles.sectionTitle}>Push notifikacije (mobile)</Text>
           <View style={styles.profileCard}>

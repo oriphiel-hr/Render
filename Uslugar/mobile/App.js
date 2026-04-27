@@ -106,6 +106,14 @@ export default function App() {
           showProvidersTab={showProvidersTab}
           growth={growth}
           handleRefreshProfile={auth.handleRefreshProfile}
+          onDeleteAccount={async (password) => {
+            const ok = await auth.handleDeleteAccount(password);
+            if (ok) {
+              jobsFlow.resetJobSelection();
+              chatFlow.resetRoom();
+            }
+            return ok;
+          }}
           handleLogout={async () => {
             jobsFlow.resetJobSelection();
             chatFlow.resetRoom();

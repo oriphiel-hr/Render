@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getCurrentUser, loginWithPassword, validateLoginInput } from '@uslugar/shared';
+import { deleteMyAccount, getCurrentUser, loginWithPassword, validateLoginInput } from '@uslugar/shared';
 import { clearSession, readSession, writeSession, writeUser } from '../lib/session';
 
 export function useAuthSession() {
@@ -104,6 +104,33 @@ export function useAuthSession() {
     }
   };
 
+  const handleDeleteAccount = async (currentPassword) => {
+    if (!token) {
+      setMessage('Niste prijavljeni.');
+      return false;
+    }
+    const pw = String(currentPassword || '').trim();
+    if (!pw) {
+      setMessage('Unesite trenutnu lozinku radi potvrde brisanja.');
+      return false;
+    }
+    setLoading(true);
+    setMessage('');
+    try {
+      await deleteMyAccount({ apiBaseUrl, token, password: pw });
+      await clearSession();
+      setToken('');
+      setUser(null);
+      setPassword('');
+      return true;
+    } catch (error) {
+      setMessage(error.message || 'Brisanje racuna nije uspjelo.');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     apiBaseUrl,
     setApiBaseUrl,
@@ -123,6 +150,7 @@ export function useAuthSession() {
     handleApiError,
     handleLogin,
     handleLogout,
-    handleRefreshProfile
+    handleRefreshProfile,
+    handleDeleteAccount
   };
 }

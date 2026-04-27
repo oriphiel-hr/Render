@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
-import { auth } from '../lib/auth.js';
+import { auth, verifyPassword } from '../lib/auth.js';
+import { deleteUserWithRelations } from '../lib/delete-helpers.js';
+import { cancelStripeSubscriptionsForUser } from '../lib/stripe-cleanup-on-user-delete.js';
 
 const r = Router();
 
@@ -573,6 +575,41 @@ r.put('/me', auth(true), async (req, res, next) => {
     
     res.json(user);
   } catch (e) { next(e); }
+});
+
+/**
+ * DELETE /api/users/me
+ * Brisanje vlastitog računa (email + trenutna lozinka). Nije dozvoljeno za ADMIN.
+ */
+r.delete('/me', auth(true), async (req, res, next) => {
+  try {
+    const password = req.body?.password;
+    if (!password || String(password).length === 0) {
+      return res.status(400).json({ error: 'Potrebna je lozinka za brisanje računa' });
+    }
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { id: true, email: true, role: true, passwordHash: true }
+    });
+    if (!user) {
+      return res.status(404).json({ error: 'Korisnik nije pronađen' });
+    }
+    if (user.role === 'ADMIN') {
+      return res.status(403).json({
+        error: 'Brisanje admin računa nije moguće putem aplikacije. Kontaktirajte podršku (uslugar@oriphiel.hr).'
+      });
+    }
+    const match = await verifyPassword(password, user.passwordHash);
+    if (!match) {
+      return res.status(401).json({ error: 'Netočna lozinka' });
+    }
+    await cancelStripeSubscriptionsForUser(user.id);
+    await deleteUserWithRelations(user.id);
+    return res.json({ success: true, message: 'Račun i povezani podaci obrisani.' });
+  } catch (e) {
+    console.error('[DELETE /users/me]', e);
+    return next(e);
+  }
 });
 
 // get single user (basic info)
