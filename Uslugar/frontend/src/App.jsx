@@ -748,6 +748,25 @@ export default function App(){
             >
               Kontakt
             </button>
+            <button
+              className={
+                navLinkBase +
+                ' ' +
+                (tab === 'tools-catalog' ? navLinkActive : navLinkInactive)
+              }
+              onClick={() => {
+                if (window.location.pathname.startsWith('/admin/')) {
+                  window.location.replace('/#tools-catalog');
+                } else {
+                  window.location.hash = '#tools-catalog';
+                  setTab('tools-catalog');
+                }
+              }}
+              aria-label="Alati partnera"
+              aria-current={tab === 'tools-catalog' ? 'page' : undefined}
+            >
+              Alati partnera
+            </button>
             {/* Secondary pages grouped u dropdown */}
             <DropdownMenu title="Više" className={navLinkBase + ' ' + navLinkInactive}>
               <div className="pt-2 first:pt-0">
@@ -1195,6 +1214,16 @@ export default function App(){
                 onClick={() => { navigateToTab('contact'); setIsMobileMenuOpen(false); }}
               >
                 📞 Kontakt
+              </button>
+              <button
+                className={'w-full text-left px-3 py-2 rounded ' + (tab==='tools-catalog' ? 'bg-amber-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700')}
+                onClick={() => {
+                  window.location.hash = '#tools-catalog';
+                  setTab('tools-catalog');
+                  setIsMobileMenuOpen(false);
+                }}
+              >
+                🧰 Alati partnera
               </button>
             </div>
           </div>

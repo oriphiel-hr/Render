@@ -84,6 +84,14 @@ export default function ToolsCatalogSection({ id }) {
                 TotalTools je specijalizirani partner za profesionalne i hobi alate, pribor i opremu za radionicu,
                 gradiliste te kucne i vrtne radove.
               </p>
+              <a
+                href="https://totaltools.hr/"
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 inline-block font-semibold text-blue-700 hover:underline"
+              >
+                Posjeti totaltools.hr
+              </a>
             </div>
             <div className="rounded-lg border border-amber-300 bg-white/80 p-3 text-sm text-amber-900">
               <p className="font-semibold">Zasto odabrati TotalTools?</p>

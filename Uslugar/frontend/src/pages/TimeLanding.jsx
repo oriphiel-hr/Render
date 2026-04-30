@@ -2,6 +2,8 @@ import React from 'react'
 import ToolsCatalogSection from '../components/ToolsCatalogSection';
 
 export default function TimeLanding({ initialSection }){
+  const [showToolsBanner, setShowToolsBanner] = React.useState(true);
+
   React.useEffect(() => {
     if (!initialSection) return;
     const node = document.getElementById(initialSection);
@@ -9,8 +11,49 @@ export default function TimeLanding({ initialSection }){
     node.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [initialSection]);
 
+  React.useEffect(() => {
+    const timer = window.setTimeout(() => setShowToolsBanner(false), 8000);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   return (
     <div className="min-h-screen">
+      {showToolsBanner && (
+        <div className="sticky top-20 z-20 mx-auto mb-3 w-full max-w-6xl px-4">
+          <div className="rounded-xl border border-amber-300 bg-amber-50/95 p-3 shadow-md backdrop-blur">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm font-medium text-amber-900">
+                Novo: mini katalog alata partnera je aktivan.
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <a
+                  href="#tools-catalog"
+                  className="inline-flex items-center rounded-md bg-amber-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-amber-700"
+                >
+                  Pogledaj katalog
+                </a>
+                <a
+                  href="https://totaltools.hr/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center rounded-md border border-amber-300 bg-white px-3 py-1.5 text-sm font-semibold text-amber-800 hover:bg-amber-100"
+                >
+                  totaltools.hr
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setShowToolsBanner(false)}
+                  className="rounded-md px-2 py-1 text-sm text-amber-900 hover:bg-amber-200"
+                  aria-label="Zatvori obavijest"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-4 py-16 md:py-24">
         <div className="grid md:grid-cols-2 gap-8 items-center">
@@ -27,12 +70,18 @@ export default function TimeLanding({ initialSection }){
               <a href="#leads" className="inline-flex items-center px-5 py-3 bg-amber-600 text-white rounded-md shadow hover:bg-amber-700">
                 📩 Pošalji brzi upit
               </a>
+              <a href="#tools-catalog" className="inline-flex items-center px-5 py-3 bg-amber-100 text-amber-900 rounded-md hover:bg-amber-200">
+                🧰 Pogledaj alate partnera
+              </a>
               <a href="#register-user" className="inline-flex items-center px-5 py-3 bg-gray-100 text-gray-900 rounded-md hover:bg-gray-200">
                 👷‍♂️ Postani majstor na Uslugaru
               </a>
             </div>
             <div className="mt-4 text-sm text-gray-500">
               ⏱ Odgovor u prosjeku: <span className="font-semibold text-gray-700">27 minuta</span>
+            </div>
+            <div className="mt-2 text-sm text-gray-600">
+              Partner katalog: <a className="font-semibold text-blue-700 hover:underline" href="https://totaltools.hr/" target="_blank" rel="noreferrer">totaltools.hr</a>
             </div>
           </div>
           <div className="relative">
