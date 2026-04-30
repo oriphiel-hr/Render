@@ -1,6 +1,14 @@
 import React from 'react'
+import ToolsCatalogSection from '../components/ToolsCatalogSection';
 
-export default function TimeLanding(){
+export default function TimeLanding({ initialSection }){
+  React.useEffect(() => {
+    if (!initialSection) return;
+    const node = document.getElementById(initialSection);
+    if (!node) return;
+    node.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [initialSection]);
+
   return (
     <div className="min-h-screen">
       {/* Hero */}
@@ -146,6 +154,10 @@ export default function TimeLanding(){
           </blockquote>
         </div>
       </section>
+
+      <div className="max-w-6xl mx-auto px-4 py-4">
+        <ToolsCatalogSection id="tools-catalog" />
+      </div>
 
       {/* CTA */}
       <section className="bg-amber-600 dark:bg-amber-700">

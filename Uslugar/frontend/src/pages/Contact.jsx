@@ -29,6 +29,23 @@ const Contact = () => {
     message: ''
   });
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const fullHash = window.location.hash?.slice(1) || '';
+    const queryString = fullHash.includes('?') ? fullHash.split('?')[1] : '';
+    if (!queryString) return;
+    const params = new URLSearchParams(queryString);
+    const subject = params.get('subject');
+    const message = params.get('message');
+    if (!subject && !message) return;
+
+    setForm((prev) => ({
+      ...prev,
+      subject: subject || prev.subject,
+      message: message || prev.message,
+    }));
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);

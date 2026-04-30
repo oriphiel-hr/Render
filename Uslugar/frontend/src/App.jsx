@@ -134,7 +134,7 @@ export default function App(){
 
   // TAB: 'user' | 'admin' | 'login' | 'register-user' | 'upgrade-to-provider' | 'verify' | 'forgot-password' | 'reset-password' | 'leads' | 'my-leads' | 'roi' | 'subscription' | 'pricing' | 'providers' | 'documentation' | 'faq'
   // Note: 'register-provider' is kept in validTabs for backward compatibility but redirects to 'register-user'
-  const validTabs = ['admin', 'login', 'register-user', 'register-provider', 'provider-profile', 'user-profile', 'upgrade-to-provider', 'verify', 'forgot-password', 'reset-password', 'leads', 'my-leads', 'my-jobs', 'roi', 'subscription', 'subscription-success', 'pricing', 'providers', 'categories', 'documentation', 'faq', 'about', 'contact', 'time-landing', 'team-locations', 'invoices', 'user', 'user-types-flowcharts', 'director', 'chat'];
+  const validTabs = ['admin', 'login', 'register-user', 'register-provider', 'provider-profile', 'user-profile', 'upgrade-to-provider', 'verify', 'forgot-password', 'reset-password', 'leads', 'my-leads', 'my-jobs', 'roi', 'subscription', 'subscription-success', 'pricing', 'providers', 'categories', 'documentation', 'faq', 'about', 'contact', 'time-landing', 'tools-catalog', 'team-locations', 'invoices', 'user', 'user-types-flowcharts', 'director', 'chat'];
   const [tab, setTab] = useState(() => {
     // Provjeri pathname za admin panel (BrowserRouter koristi pathname, ne hash)
     const pathname = window.location.pathname;
@@ -480,7 +480,7 @@ export default function App(){
       const hash = window.location.hash?.slice(1).split('?')[0];
       // Obfuscated admin panel pristup: #adm -> admin
       const normalizedHash = hash === 'adm' ? 'admin' : hash;
-      const validTabs = ['admin', 'login', 'register-user', 'register-provider', 'provider-profile', 'user-profile', 'upgrade-to-provider', 'verify', 'forgot-password', 'reset-password', 'leads', 'my-leads', 'my-jobs', 'roi', 'subscription', 'subscription-success', 'pricing', 'providers', 'categories', 'documentation', 'faq', 'about', 'contact', 'time-landing', 'team-locations', 'invoices', 'user', 'user-types-flowcharts', 'director', 'chat'];
+      const validTabs = ['admin', 'login', 'register-user', 'register-provider', 'provider-profile', 'user-profile', 'upgrade-to-provider', 'verify', 'forgot-password', 'reset-password', 'leads', 'my-leads', 'my-jobs', 'roi', 'subscription', 'subscription-success', 'pricing', 'providers', 'categories', 'documentation', 'faq', 'about', 'contact', 'time-landing', 'tools-catalog', 'team-locations', 'invoices', 'user', 'user-types-flowcharts', 'director', 'chat'];
       
       // Check for provider direct link: #provider/{providerId}
       const providerMatch = normalizedHash.match(/^provider\/(.+)$/);
@@ -2067,6 +2067,12 @@ export default function App(){
       {tab === 'time-landing' && (
         <section id="time-landing" className="tab-section">
           <TimeLanding />
+        </section>
+      )}
+
+      {tab === 'tools-catalog' && (
+        <section id="tools-catalog" className="tab-section">
+          <TimeLanding initialSection="tools-catalog" />
         </section>
       )}
 

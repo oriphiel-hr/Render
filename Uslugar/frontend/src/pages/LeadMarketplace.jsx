@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { getAvailableLeads, purchaseLead, getCreditsBalance, unlockContact } from '../api/exclusive';
 import LeadsMap from '../components/LeadsMap';
+import ToolsCatalogSection from '../components/ToolsCatalogSection';
 
 // Demo leadovi za slučaj kada backend vrati 403 (npr. za screenshotove / dokumentaciju u dev okruženju)
 // Cijena = 4 EUR + 2% vrijednosti posla (prosjek budžeta), 1 kredit = 10 EUR
@@ -214,6 +215,8 @@ export default function LeadMarketplace() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
+      <ToolsCatalogSection />
+
       {/* Header sa balansam kredita */}
       <div className="mb-8 flex justify-between items-center">
         <div>
