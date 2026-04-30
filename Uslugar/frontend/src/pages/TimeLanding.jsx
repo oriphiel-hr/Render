@@ -205,7 +205,7 @@ export default function TimeLanding({ initialSection }){
       </section>
 
       <div className="max-w-6xl mx-auto px-4 py-4">
-        <ToolsCatalogSection id="tools-catalog" />
+        <ToolsCatalogSection id="tools-catalog-section" />
       </div>
 
       {/* CTA */}

@@ -2101,7 +2101,7 @@ export default function App(){
 
       {tab === 'tools-catalog' && (
         <section id="tools-catalog" className="tab-section">
-          <TimeLanding initialSection="tools-catalog" />
+          <TimeLanding initialSection="tools-catalog-section" />
         </section>
       )}
 
