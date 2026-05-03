@@ -1,8 +1,9 @@
-import { isProviderBusinessVerified } from '@uslugar/shared';
+import { isProviderBusinessVerified } from './trust.js';
 
 /**
- * Naslov i podnaslov za javnu karticu / modal (tvrtka prvo ako je postavka + verifikacija).
+ * Naslov i podnaslov za javnu karticu / listu (web + mobile).
  * @param {object} provider
+ * @returns {{ primary: string, secondary: string|null, avatarLetter: string }}
  */
 export function getProviderPublicHeadline(provider) {
   const p = provider || {};
@@ -14,7 +15,7 @@ export function getProviderPublicHeadline(provider) {
   if (mode === 'COMPANY_FIRST' && businessOk && company) {
     return {
       primary: company,
-      secondary: name,
+      secondary: name || null,
       avatarLetter: (company.charAt(0) || name.charAt(0) || '?').toUpperCase()
     };
   }

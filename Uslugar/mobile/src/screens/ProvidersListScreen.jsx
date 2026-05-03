@@ -10,7 +10,12 @@ import {
   TextInput,
   View
 } from 'react-native';
-import { getProviderTrustLayer, TRUST_CHECK_TOTAL } from '@uslugar/shared';
+import {
+  getProviderPublicHeadline,
+  getProviderTrustLayer,
+  isPublicListingMinimal,
+  TRUST_CHECK_TOTAL
+} from '@uslugar/shared';
 import { styles } from '../styles';
 
 function SortPills({ value, onChange }) {
@@ -101,9 +106,19 @@ export default function ProvidersListScreen({
       }
       renderItem={({ item }) => {
         const layer = getProviderTrustLayer(item, item.user);
+        const headline = getProviderPublicHeadline(item);
+        const minimal = isPublicListingMinimal(item);
         return (
           <View style={styles.listItem}>
-            <Text style={styles.listTitle}>{item.user?.fullName || 'Pružatelj'}</Text>
+            <Text style={styles.listTitle}>{headline.primary}</Text>
+            {headline.secondary ? (
+              <Text style={styles.metaText} numberOfLines={1}>
+                {headline.secondary}
+              </Text>
+            ) : null}
+            {minimal ? (
+              <Text style={styles.hintTextMuted}>Ograničen javni prikaz</Text>
+            ) : null}
             <Text style={styles.metaText}>
               {item.city || item.user?.city || 'Lokacija n/a'} · Ocjena {(item.ratingAvg ?? 0).toFixed(1)} (
               {item.ratingCount ?? 0})
@@ -111,6 +126,18 @@ export default function ProvidersListScreen({
             <Text style={styles.trustLine}>
               Povjerenje: {layer.verifiedCount}/{layer.totalChecks}
             </Text>
+            {item.bio ? (
+              <Text style={styles.metaText} numberOfLines={2}>
+                {item.bio}
+              </Text>
+            ) : null}
+            {Array.isArray(item.publicServiceLines) && item.publicServiceLines.length > 0 ? (
+              <Text style={styles.metaText} numberOfLines={3}>
+                {item.publicServiceLines
+                  .map((row) => (row.detail ? `${row.title}: ${row.detail}` : row.title))
+                  .join(' · ')}
+              </Text>
+            ) : null}
             {item.etaFirstOfferHint != null && (
               <Text style={styles.metaText}>Prva ponuda ~{item.etaFirstOfferHint} min (procjena kategorije)</Text>
             )}

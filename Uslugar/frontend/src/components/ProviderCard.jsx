@@ -1,6 +1,11 @@
 import React from 'react';
-import { getProviderTrustLayer, getProviderVisualBadges, isProviderBusinessVerified } from '@uslugar/shared';
-import { getProviderPublicHeadline, isPublicListingMinimal } from '../utils/providerDisplay';
+import {
+  getProviderTrustLayer,
+  getProviderVisualBadges,
+  getProviderPublicHeadline,
+  isProviderBusinessVerified,
+  isPublicListingMinimal
+} from '@uslugar/shared';
 
 const ProviderCard = ({ provider, onViewProfile, onContact }) => {
   const businessOk = isProviderBusinessVerified(provider);
@@ -59,10 +64,10 @@ const ProviderCard = ({ provider, onViewProfile, onContact }) => {
               )}
               {minimalListing && (
                 <span
-                  className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-900 border border-amber-200"
+                  className="inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] font-medium text-slate-500 dark:text-slate-400 border border-slate-200/80 dark:border-slate-600 bg-slate-50/80 dark:bg-slate-800/50"
                   title="Pružatelj je smanjio javno vidljive podatke (bez portfelja i vanjskog weba u tražilici)."
                 >
-                  Javni prikaz: ograničen
+                  Ograničen javni prikaz
                 </span>
               )}
               {/* Badge System */}

@@ -10,6 +10,7 @@ export {
   DISPUTE_WORKFLOW_PHASES,
   describeTrustSlaSort
 } from './trust.js';
+export { getProviderPublicHeadline, isPublicListingMinimal } from './providerDisplay.js';
 export { COMPETITIVE_FOCUS_AREAS, NINETY_DAY_ROADMAP } from './productRoadmapHr.js';
 
 export function normalizeApiBaseUrl(url) {

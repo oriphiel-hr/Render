@@ -5,7 +5,7 @@ import LocationMap from './LocationMap';
 import api from '../api';
 import { QRCodeSVG } from 'qrcode.react';
 import { isProviderBusinessVerified } from '../utils/providerVerification';
-import { getProviderPublicHeadline, isPublicListingMinimal } from '../utils/providerDisplay';
+import { getProviderPublicHeadline, isPublicListingMinimal } from '@uslugar/shared';
 import TrustLayerPanel from './TrustLayerPanel';
 import ProviderGrowthPanel from './ProviderGrowthPanel';
 
@@ -171,8 +171,8 @@ const ProviderProfile = ({ providerId, onClose, onNavigateToMyJobs, scrollToActi
                   <p className="text-sm text-gray-600 mt-0.5">{publicHeadline.secondary}</p>
                 ) : null}
                 {minimalListing && (
-                  <span className="inline-block mt-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-900 border border-amber-200">
-                    Javni prikaz: ograničen (bez portfelja i vanjskog weba u tražilici)
+                  <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-slate-500 border border-slate-200 bg-slate-50/90">
+                    Ograničen javni prikaz (bez portfelja i vanjskog weba u tražilici)
                   </span>
                 )}
                 <div className="flex items-center space-x-2 mt-1">

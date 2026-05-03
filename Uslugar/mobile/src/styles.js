@@ -356,6 +356,7 @@ export const styles = StyleSheet.create({
   },
   filterLabel: { flex: 1, fontSize: 13, color: '#374151' },
   hintText: { fontSize: 11, color: '#6b7280', marginTop: 4, lineHeight: 16 },
+  hintTextMuted: { fontSize: 10, color: '#94a3b8', marginTop: 2, lineHeight: 14 },
   inlineLoader: {
     flexDirection: 'row',
     alignItems: 'center',

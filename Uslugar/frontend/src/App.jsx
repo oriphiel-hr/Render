@@ -604,11 +604,10 @@ export default function App(){
    * -----------------------------------------------
    * LIJEVA STRANA (javno / glavna navigacija):
    *   - Početna, Cjenik, FAQ, Kontakt = najčešće korišteni linkovi (Cjenik samo ako nema tokena ili je korisnik PROVIDER).
-   *   - Dropdown "Više" = manje korištene informacijske stranice: Dokumentacija, O nama, Dijagrami procesa.
+   *   - Dropdown "Više" = za goste: Katalog (kategorije usluga); za sve: Dokumentacija, O nama, Dijagrami procesa; Postavke (tamni način).
    *
    * DESNA STRANA KAD KORISNIK NIJE PRIJAVLJEN (!token):
    *   - "Korisnik" = autentikacija: Prijava, Registracija.
-   *   - "Kategorije" = pregledavanje kategorija usluga.
    *
    * DESNA STRANA KAD JE KORISNIK PRIJAVLJEN (token):
    *   - "Leadovi" (dropdown) = samo ako isProviderOrBusinessUser() (PROVIDER, ADMIN ili USER s legalStatusId).
@@ -769,7 +768,30 @@ export default function App(){
             </button>
             {/* Secondary pages grouped u dropdown */}
             <DropdownMenu title="Više" className={navLinkBase + ' ' + navLinkInactive}>
-              <div className="pt-2 first:pt-0">
+              {!token && (
+                <div className="pt-2 first:pt-0">
+                  <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Katalog</div>
+                  <button
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
+                    onClick={() => {
+                      if (window.location.pathname.startsWith('/admin/')) {
+                        window.location.replace('/#categories');
+                      } else {
+                        setTab('categories');
+                      }
+                    }}
+                  >
+                    🛠️ Kategorije ({categories.length})
+                  </button>
+                </div>
+              )}
+              <div
+                className={
+                  !token
+                    ? 'pt-2 mt-1 border-t border-gray-100 dark:border-gray-700'
+                    : 'pt-2 first:pt-0'
+                }
+              >
                 <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Informacije</div>
                 <button
                   className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 transition-colors duration-150"
@@ -851,24 +873,6 @@ export default function App(){
                       }}
                     >
                       👤 Registracija
-                    </button>
-                  </div>
-                </DropdownMenu>
-
-                <DropdownMenu title="Kategorije" className={navLinkBase + ' ' + navLinkInactive}>
-                  <div className="pt-2 first:pt-0">
-                    <div className="px-4 py-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Katalog</div>
-                    <button
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-200 flex items-center gap-2 transition-colors duration-150"
-                      onClick={() => {
-                        if (window.location.pathname.startsWith('/admin/')) {
-                          window.location.replace('/#categories');
-                        } else {
-                          setTab('categories');
-                        }
-                      }}
-                    >
-                      🛠️ Kategorije ({categories.length})
                     </button>
                   </div>
                 </DropdownMenu>
@@ -1243,16 +1247,22 @@ export default function App(){
             </div>
           )}
 
-          {/* Services Section */}
+          {/* Više (katalog + dijagrami) — isti sadržaj kao desktop „Više”, vizualno diskretnije od glavnih stavki */}
           {!token && (
             <div>
-              <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Kategorije</h3>
+              <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Više</h3>
               <div className="space-y-1">
                 <button
                   className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300 transition-colors"
                   onClick={() => { setTab('categories'); setIsMobileMenuOpen(false); }}
                 >
                   🛠️ Kategorije ({categories.length})
+                </button>
+                <button
+                  className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-300 transition-colors"
+                  onClick={() => { navigateToTab('user-types-flowcharts'); setIsMobileMenuOpen(false); }}
+                >
+                  📊 Dijagrami procesa
                 </button>
               </div>
             </div>
