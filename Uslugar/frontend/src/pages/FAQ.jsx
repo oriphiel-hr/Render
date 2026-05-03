@@ -44,6 +44,10 @@ const FAQ = ({ userType = 'guest' }) => {
     {
       question: "Kako funkcionira chat sustav?",
       answer: "Možete razgovarati s pružateljem u real-time chatu vezanom uz konkretan posao. Sav dogovor i komunikacija ostaju unutar platforme."
+    },
+    {
+      question: "Smijem li kontaktirati pružatelja izvan platforme prije angažmana?",
+      answer: "Platforma je zamišljena tako da se prvi kontakt i dogovor oko posla vode kroz lead i chat. Neovlašteno zaobilazenje (npr. traženje izravnog kontakta samo da se izbjegne lead) nije u skladu s pravilima i može imati posljedice po račun."
     }
   ];
 
@@ -76,6 +80,10 @@ const FAQ = ({ userType = 'guest' }) => {
     {
       question: "Trebam li licencu za svoju djelatnost?",
       answer: "Za neke kategorije obavezna je licenca ili ovlaštenje. U svom profilu možete uploadati dokumente licenci kako bi klijenti vidjeli da ste ovlašteni za rad."
+    },
+    {
+      question: "Što su postavke „javnog prikaza” profila?",
+      answer: "Možete odabrati prikaz „tvrtka prvo” (kad je poslovna značka potvrđena), standardni prikaz ili ograničen javni ogled koji smanjuje vidljivost portfelja, vanjskog weba i duljine opisa u tražilici — kako bi se smanjilo neformalno „obilazenje” platforme prije angažmana. Možete dodati i do šest kratkih redaka o uslugama ili suradnji (npr. više djelatnosti)."
     },
     {
       question: "Kako vidim svoju ROI statistiku?",

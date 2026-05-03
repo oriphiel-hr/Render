@@ -5,6 +5,7 @@ import LocationMap from './LocationMap';
 import api from '../api';
 import { QRCodeSVG } from 'qrcode.react';
 import { isProviderBusinessVerified } from '../utils/providerVerification';
+import { getProviderPublicHeadline, isPublicListingMinimal } from '../utils/providerDisplay';
 import TrustLayerPanel from './TrustLayerPanel';
 import ProviderGrowthPanel from './ProviderGrowthPanel';
 
@@ -38,6 +39,15 @@ const ProviderProfile = ({ providerId, onClose, onNavigateToMyJobs, scrollToActi
 
   const visualBadges = useMemo(
     () => (provider ? getProviderVisualBadges(provider, provider.user) : []),
+    [provider]
+  );
+
+  const publicHeadline = useMemo(
+    () => (provider ? getProviderPublicHeadline(provider) : null),
+    [provider]
+  );
+  const minimalListing = useMemo(
+    () => (provider ? isPublicListingMinimal(provider) : false),
     [provider]
   );
 
@@ -152,11 +162,19 @@ const ProviderProfile = ({ providerId, onClose, onNavigateToMyJobs, scrollToActi
             <div className="flex items-center space-x-4">
               <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
                 <span className="text-2xl font-bold text-gray-600">
-                  {provider.user.fullName.charAt(0).toUpperCase()}
+                  {publicHeadline?.avatarLetter || '?'}
                 </span>
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">{provider.user.fullName}</h2>
+                <h2 className="text-2xl font-bold text-gray-900">{publicHeadline?.primary}</h2>
+                {publicHeadline?.secondary ? (
+                  <p className="text-sm text-gray-600 mt-0.5">{publicHeadline.secondary}</p>
+                ) : null}
+                {minimalListing && (
+                  <span className="inline-block mt-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-900 border border-amber-200">
+                    Javni prikaz: ograničen (bez portfelja i vanjskog weba u tražilici)
+                  </span>
+                )}
                 <div className="flex items-center space-x-2 mt-1">
                   {renderStars(provider.ratingAvg)}
                   <span className="text-sm text-gray-600">
@@ -221,6 +239,19 @@ const ProviderProfile = ({ providerId, onClose, onNavigateToMyJobs, scrollToActi
             </a>
           </div>
         )}
+        {Array.isArray(provider.publicServiceLines) && provider.publicServiceLines.length > 0 && (
+          <div className="rounded-lg border border-slate-200 bg-slate-50/80 p-4">
+            <h3 className="text-sm font-semibold text-slate-800 mb-2">Usluge i suradnje</h3>
+            <ul className="space-y-2 text-sm text-slate-700">
+              {provider.publicServiceLines.map((row, idx) => (
+                <li key={idx}>
+                  <span className="font-medium text-slate-900">{row.title}</span>
+                  {row.detail ? <span className="text-slate-600"> — {row.detail}</span> : null}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
           {/* Povjerenje — tablica (što je, što nije) + brze trake */}
           <div className="space-y-3">
             <div className="flex flex-wrap gap-2">
@@ -267,6 +298,9 @@ const ProviderProfile = ({ providerId, onClose, onNavigateToMyJobs, scrollToActi
             <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-2">📋 Kako angažirati ovog pružatelja?</h3>
             <p className="text-sm text-blue-800 dark:text-blue-300 mb-2">
               Ponude se <strong>ne prihvaćaju na ovom profilu</strong>. Ako ste objavili posao i primili ponudu od ovog pružatelja:
+            </p>
+            <p className="text-xs text-blue-800/90 dark:text-blue-300/90 mb-2">
+              Kontakt i dogovor oko posla trebaju ići kroz platformu (lead / chat). Neovlašteno zaobilazenje platforme nije u skladu s pravilima korištenja i može dovesti do mjera na računu.
             </p>
             <ol className="text-sm text-blue-800 dark:text-blue-300 list-decimal list-inside space-y-1 mb-3">
               <li>Idite u <strong>Moji poslovi</strong> (izbornik „Moj račun”).</li>
@@ -346,6 +380,11 @@ const ProviderProfile = ({ providerId, onClose, onNavigateToMyJobs, scrollToActi
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">O meni</h3>
               <p className="text-gray-700">{provider.bio}</p>
+              {provider.publicBioTruncated && (
+                <p className="text-xs text-amber-800 mt-2 bg-amber-50 border border-amber-100 rounded px-2 py-1 inline-block">
+                  Tekst je skraćen u javnom prikazu prema postavkama pružatelja.
+                </p>
+              )}
             </div>
           )}
 
@@ -367,7 +406,7 @@ const ProviderProfile = ({ providerId, onClose, onNavigateToMyJobs, scrollToActi
           )}
 
           {/* Specialties */}
-          {provider.specialties && provider.specialties.length > 0 && (
+          {Array.isArray(provider.specialties) && provider.specialties.length > 0 && (
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Specijalizacije</h3>
               <div className="flex flex-wrap gap-2">

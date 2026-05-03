@@ -72,10 +72,25 @@ export default function ToolsCatalogSection({ id }) {
 
           <h2 className="text-2xl font-bold text-amber-900">Alati partnera (TotalTools) - mini katalog</h2>
           <p className="mt-2 max-w-3xl text-sm text-amber-800">
-            Suradnja Uslugar i TotalTools za izvodace: prijavite se i javimo vam se s informacijama o alatima i
-            mogucim pogodnostima na Uslugar pretplati, prema vasoj djelatnosti i budzetu. Pogodnosti iz ponude odnose
-            se na korisnike koji se, u skladu s pravilima, registriraju na Uslugar. Popunjavanje ne jamci automatski
-            popust - uvjete potvrdujemo pojedinacno.
+            Suradnja{' '}
+            <a href="https://www.uslugar.eu/" target="_blank" rel="noreferrer" className="font-semibold underline hover:text-amber-900">
+              Uslugar
+            </a>{' '}
+            i{' '}
+            <a href="https://totaltools.hr/" target="_blank" rel="noreferrer" className="font-semibold underline hover:text-amber-900">
+              TotalTools
+            </a>{' '}
+            za izvođače: prijavite se i javimo vam se s informacijama o alatima i mogućim pogodnostima na Uslugar
+            pretplati, prema vašoj djelatnosti i budžetu. Pogodnosti iz ponude odnose se na korisnike koji se u skladu
+            s pravilima registriraju na{' '}
+            <a href="#register-user" className="font-semibold underline hover:text-amber-900">
+              Uslugar
+            </a>
+            . Popunjavanje ne jamči automatski popust - uvjete potvrđujemo pojedinačno. Upit možete poslati kroz{' '}
+            <a href={contactPrefillHref} className="font-semibold underline hover:text-amber-900">
+              kontakt formu
+            </a>
+            .
           </p>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             <div className="rounded-lg border border-amber-300 bg-white/80 p-3 text-sm text-amber-900">

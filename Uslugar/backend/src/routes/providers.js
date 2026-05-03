@@ -1,9 +1,15 @@
 import { Router } from 'express';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { auth } from '../lib/auth.js';
 import { uploadDocument, getImageUrl } from '../lib/upload.js';
 import { calculateDistance } from '../lib/geo-utils.js';
 import { isProviderProfileBusinessVerified } from '../lib/provider-business-verified.js';
+import {
+  normalizePublicServiceLinesInput,
+  sanitizeProviderForPublic,
+  sanitizePublicUser
+} from '../lib/public-provider-sanitize.js';
 
 const r = Router();
 
@@ -65,8 +71,6 @@ r.get('/', async (req, res, next) => {
           select: {
             id: true,
             fullName: true,
-            email: true,
-            phone: true,
             city: true,
             latitude: true,
             longitude: true
@@ -200,7 +204,7 @@ r.get('/', async (req, res, next) => {
       filtered.sort((a, b) => (b.ratingAvg || 0) - (a.ratingAvg || 0));
     }
 
-    res.json(filtered);
+    res.json(filtered.map((p) => sanitizeProviderForPublic(p)));
   } catch (e) {
     next(e);
   }
@@ -353,11 +357,19 @@ r.get('/:userId', async (req, res, next) => {
     const { userId } = req.params;
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: {
+      select: {
+        id: true,
+        role: true,
+        fullName: true,
+        city: true,
+        latitude: true,
+        longitude: true,
+        phoneVerified: true,
         legalStatus: true,
         providerProfile: {
           include: {
             categories: true,
+            legalStatus: true,
             licenses: {
               where: { isVerified: true }
             }
@@ -366,15 +378,19 @@ r.get('/:userId', async (req, res, next) => {
       }
     });
     if (!user || user.role !== 'PROVIDER') return res.status(404).json({ error: 'Provider not found' });
-    // reviews summary
+    if (!user.providerProfile) return res.status(404).json({ error: 'Provider not found' });
     const reviews = await prisma.review.findMany({ where: { toUserId: userId } });
     const pp = user.providerProfile;
     const businessVerified = isProviderProfileBusinessVerified(pp);
-    const userOut = pp
-      ? { ...user, providerProfile: { ...pp, businessVerified } }
-      : user;
+    const ppSan = sanitizeProviderForPublic({ ...pp, businessVerified });
+    const userOut = sanitizePublicUser({
+      ...user,
+      providerProfile: ppSan
+    });
     res.json({ user: userOut, reviews, businessVerified });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 });
 
 // update provider profile
@@ -396,17 +412,66 @@ r.put('/me', auth(true, ['PROVIDER', 'ADMIN', 'USER']), async (req, res, next) =
       }
     }
     
-    const { 
-      bio, 
-      serviceArea, 
-      categoryIds = [], 
-      specialties = [], 
-      experience, 
-      website, 
+    let {
+      bio,
+      serviceArea,
+      categoryIds = [],
+      categories: categoriesFromBody,
+      specialties = [],
+      experience,
+      website,
       isAvailable = true,
-      portfolio 
+      portfolio,
+      publicListingMode: modeIn,
+      publicServiceLines: publicServiceLinesRaw
     } = req.body;
-    
+
+    if ((!Array.isArray(categoryIds) || categoryIds.length === 0) && Array.isArray(categoriesFromBody)) {
+      categoryIds = categoriesFromBody
+        .map((c) => (c && typeof c === 'object' ? c.id : c))
+        .filter(Boolean);
+    }
+
+    const VALID_PUBLIC_MODES = ['STANDARD', 'COMPANY_FIRST', 'MINIMAL_DISCOVERY'];
+    const hasPublicModeKey = Object.prototype.hasOwnProperty.call(req.body, 'publicListingMode');
+    const publicListingModeValue =
+      hasPublicModeKey && VALID_PUBLIC_MODES.includes(modeIn)
+        ? modeIn
+        : hasPublicModeKey
+          ? 'STANDARD'
+          : undefined;
+
+    const hasServiceLinesKey = Object.prototype.hasOwnProperty.call(req.body, 'publicServiceLines');
+    const publicServiceLinesParsed = hasServiceLinesKey
+      ? normalizePublicServiceLinesInput(publicServiceLinesRaw)
+      : undefined;
+
+    let experienceCreate = null;
+    if (experience != null && experience !== '') {
+      const n = parseInt(String(experience), 10);
+      if (Number.isFinite(n)) experienceCreate = n;
+    }
+
+    let experienceUpdate;
+    if (experience === undefined) {
+      experienceUpdate = undefined;
+    } else if (experience === null || experience === '') {
+      experienceUpdate = null;
+    } else {
+      const n = parseInt(String(experience), 10);
+      experienceUpdate = Number.isFinite(n) ? n : undefined;
+    }
+
+    let specialtiesNorm = specialties;
+    if (typeof specialtiesNorm === 'string') {
+      specialtiesNorm = specialtiesNorm
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+    } else if (!Array.isArray(specialtiesNorm)) {
+      specialtiesNorm = [];
+    }
+
     // VALIDACIJA: Kategorije su obavezne za pružatelje
     if (categoryIds.length === 0) {
       return res.status(400).json({ 
@@ -429,25 +494,40 @@ r.put('/me', auth(true, ['PROVIDER', 'ADMIN', 'USER']), async (req, res, next) =
     
     const prof = await prisma.providerProfile.upsert({
       where: { userId: req.user.id },
-      create: { 
-        userId: req.user.id, 
-        bio: bio || '', 
+      create: {
+        userId: req.user.id,
+        bio: bio || '',
         serviceArea: serviceArea || '',
-        specialties: Array.isArray(specialties) ? specialties : [],
-        experience: experience ? parseInt(experience) : null,
+        specialties: specialtiesNorm,
+        experience: experienceCreate,
         website: website || null,
         isAvailable: Boolean(isAvailable),
-        portfolio: portfolio || null
+        portfolio: portfolio || null,
+        ...(publicListingModeValue !== undefined ? { publicListingMode: publicListingModeValue } : {}),
+        ...(hasServiceLinesKey
+          ? {
+              publicServiceLines:
+                publicServiceLinesParsed === null ? Prisma.JsonNull : publicServiceLinesParsed
+            }
+          : {}),
+        categories: { connect: categoryIds.map((id) => ({ id })) }
       },
       update: {
         bio: bio || undefined,
         serviceArea: serviceArea || undefined,
-        specialties: Array.isArray(specialties) ? specialties : undefined,
-        experience: experience ? parseInt(experience) : undefined,
+        specialties: specialtiesNorm,
+        ...(experienceUpdate !== undefined ? { experience: experienceUpdate } : {}),
         website: website || undefined,
         isAvailable: isAvailable !== undefined ? Boolean(isAvailable) : undefined,
         portfolio: portfolio || undefined,
-        categories: { set: [], connect: categoryIds.map(id => ({ id })) }
+        ...(publicListingModeValue !== undefined ? { publicListingMode: publicListingModeValue } : {}),
+        ...(hasServiceLinesKey
+          ? {
+              publicServiceLines:
+                publicServiceLinesParsed === null ? Prisma.JsonNull : publicServiceLinesParsed
+            }
+          : {}),
+        categories: { set: [], connect: categoryIds.map((id) => ({ id })) }
       }
     });
     res.json(prof);

@@ -8,6 +8,18 @@ import LicenseDisplay from '../components/LicenseDisplay';
 import ProviderAvailabilityPanel from '../components/ProviderAvailabilityPanel';
 import { isProviderBusinessVerified } from '../utils/providerVerification';
 
+const emptyServiceLineRows = () =>
+  Array.from({ length: 6 }, () => ({ title: '', detail: '' }));
+
+function serviceLinesFromProfile(json) {
+  const rows = emptyServiceLineRows();
+  if (!Array.isArray(json)) return rows;
+  json.slice(0, 6).forEach((row, i) => {
+    rows[i] = { title: String(row?.title || ''), detail: String(row?.detail || '') };
+  });
+  return rows;
+}
+
 const getCategoryIcon = (categoryName) => {
     const iconMap = {
       // Gradnja i renoviranje
@@ -320,7 +332,9 @@ export default function ProviderProfile({ onSuccess, onNavigate }) {
     specialties: '',
     experience: '',
     website: '',
-    categories: []
+    categories: [],
+    publicListingMode: 'STANDARD',
+    publicServiceLines: emptyServiceLineRows()
   });
 
   useEffect(() => {
@@ -346,10 +360,14 @@ export default function ProviderProfile({ onSuccess, onNavigate }) {
       setProfile(profileData);
       setFormData({
         bio: profileData.bio || '',
-        specialties: profileData.specialties || '',
-        experience: profileData.experience || '',
+        specialties: Array.isArray(profileData.specialties)
+          ? profileData.specialties.join(', ')
+          : profileData.specialties || '',
+        experience: profileData.experience ?? '',
         website: profileData.website || '',
-        categories: profileData.categories || []
+        categories: profileData.categories || [],
+        publicListingMode: profileData.publicListingMode || 'STANDARD',
+        publicServiceLines: serviceLinesFromProfile(profileData.publicServiceLines)
       });
     } catch (err) {
       console.error('Error loading profile:', err);
@@ -367,13 +385,38 @@ export default function ProviderProfile({ onSuccess, onNavigate }) {
     }));
   };
 
+  const updateServiceLine = (index, field, value) => {
+    setFormData((prev) => {
+      const next = [...(prev.publicServiceLines || emptyServiceLineRows())];
+      if (!next[index]) next[index] = { title: '', detail: '' };
+      next[index] = { ...next[index], [field]: value };
+      return { ...prev, publicServiceLines: next };
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
     
     try {
-      await api.put('/providers/me', formData);
+      const categoryIds = (formData.categories || []).map((c) => c.id).filter(Boolean);
+      const serviceLinesPayload = (formData.publicServiceLines || [])
+        .map((r) => ({
+          title: (r.title || '').trim(),
+          detail: (r.detail || '').trim()
+        }))
+        .filter((r) => r.title.length > 0);
+
+      await api.put('/providers/me', {
+        bio: formData.bio,
+        specialties: formData.specialties,
+        experience: formData.experience,
+        website: formData.website,
+        categoryIds,
+        publicListingMode: formData.publicListingMode,
+        publicServiceLines: serviceLinesPayload
+      });
       setSuccess('Profil je uspješno ažuriran!');
       setEditMode(false);
       await loadProfile();
@@ -492,7 +535,9 @@ export default function ProviderProfile({ onSuccess, onNavigate }) {
                   />
                 ) : (
                   <p className="px-4 py-3 bg-white border border-gray-200 rounded-lg">
-                    {profile.specialties || 'Nije uneseno'}
+                    {Array.isArray(profile.specialties)
+                      ? profile.specialties.join(', ')
+                      : profile.specialties || 'Nije uneseno'}
                   </p>
                 )}
               </div>
@@ -544,6 +589,82 @@ export default function ProviderProfile({ onSuccess, onNavigate }) {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Javni prikaz (tražilica / prije angažmana) */}
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-slate-900 mb-2 border-b border-slate-200 pb-2">
+              Javni prikaz profila
+            </h3>
+            <p className="text-sm text-slate-600 mb-4">
+              Odaberite kako vas vide klijenti u tražilici i na kratkom pregledu profila prije kupnje leada. Kontakt (email/telefon) se na tim mjestima ne prikazuje.
+            </p>
+            {editMode ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Način javnog prikaza</label>
+                  <select
+                    name="publicListingMode"
+                    value={formData.publicListingMode}
+                    onChange={handleChange}
+                    className="w-full max-w-xl px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  >
+                    <option value="STANDARD">Standard — ime i tvrtka vidljivi kao danas</option>
+                    <option value="COMPANY_FIRST">Tvrtka prvo — ako je poslovna značka potvrđena, u tražilici je u prvi plan naziv tvrtke/obrta</option>
+                    <option value="MINIMAL_DISCOVERY">Ograničen ogled — skrivaju se portfolio, vanjski web i dulji opis (smanjuje „obilazak” izvan leada)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Usluge / suradnje (do 6 redaka, opcionalno)
+                  </label>
+                  <p className="text-xs text-slate-500 mb-2">
+                    Primjer: naslov „Savjetovanje”, detalj „ISO i sigurnost”; drugi red „Hortikultura”, „Uređenje zelenih površina”.
+                  </p>
+                  <div className="space-y-2">
+                    {(formData.publicServiceLines || emptyServiceLineRows()).map((row, idx) => (
+                      <div key={idx} className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          value={row.title}
+                          onChange={(e) => updateServiceLine(idx, 'title', e.target.value)}
+                          placeholder="Naslov usluge ili suradnje"
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                          maxLength={80}
+                        />
+                        <input
+                          type="text"
+                          value={row.detail}
+                          onChange={(e) => updateServiceLine(idx, 'detail', e.target.value)}
+                          placeholder="Kratki opis (opcionalno)"
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                          maxLength={240}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2 text-sm text-slate-800">
+                <p>
+                  <span className="font-medium">Način: </span>
+                  {profile.publicListingMode === 'COMPANY_FIRST' && 'Tvrtka prvo'}
+                  {profile.publicListingMode === 'MINIMAL_DISCOVERY' && 'Ograničen javni ogled'}
+                  {(!profile.publicListingMode || profile.publicListingMode === 'STANDARD') && 'Standard'}
+                </p>
+                {Array.isArray(profile.publicServiceLines) && profile.publicServiceLines.length > 0 && (
+                  <ul className="list-disc list-inside space-y-1 mt-2">
+                    {profile.publicServiceLines.map((row, i) => (
+                      <li key={i}>
+                        <span className="font-medium">{row.title}</span>
+                        {row.detail ? <span className="text-slate-600"> — {row.detail}</span> : null}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Status Verifikacije */}
@@ -703,10 +824,14 @@ export default function ProviderProfile({ onSuccess, onNavigate }) {
                 setEditMode(false);
                 setFormData({
                   bio: profile.bio || '',
-                  specialties: profile.specialties || '',
-                  experience: profile.experience || '',
+                  specialties: Array.isArray(profile.specialties)
+                    ? profile.specialties.join(', ')
+                    : profile.specialties || '',
+                  experience: profile.experience ?? '',
                   website: profile.website || '',
-                  categories: profile.categories || []
+                  categories: profile.categories || [],
+                  publicListingMode: profile.publicListingMode || 'STANDARD',
+                  publicServiceLines: serviceLinesFromProfile(profile.publicServiceLines)
                 });
                 setError('');
                 setSuccess('');

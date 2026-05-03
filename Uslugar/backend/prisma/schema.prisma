@@ -245,6 +245,11 @@ model ProviderProfile {
   taxId         String? // OIB (porezni broj)
   companyName   String? // Naziv obrta/firme
 
+  /// Javni prikaz: brend prvo, ili smanjen sadržaj radi smanjenja „obilaska” platforme
+  publicListingMode  PublicListingMode @default(STANDARD)
+  /// Do 6 stavki: { "title": "...", "detail": "..." } — više djelatnosti / suradnje (npr. savjetovanje + hortikultura)
+  publicServiceLines Json?
+
   // USLUGAR EXCLUSIVE - Licence i limiti kategorija
   maxCategories Int               @default(5) // Max broj kategorija koje smije odabrati
   licenses      ProviderLicense[] // Licence koje posjeduje
@@ -639,6 +644,13 @@ enum JobStatus {
 enum LeadMode {
   EXCLUSIVE
   COMPETITIVE
+}
+
+/// Kako se pružatelj prikazuje javno (tražilica / profil prije angažmana)
+enum PublicListingMode {
+  STANDARD
+  COMPANY_FIRST
+  MINIMAL_DISCOVERY
 }
 
 enum OfferStatus {

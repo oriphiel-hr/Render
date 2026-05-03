@@ -1,8 +1,11 @@
 import React from 'react';
 import { getProviderTrustLayer, getProviderVisualBadges, isProviderBusinessVerified } from '@uslugar/shared';
+import { getProviderPublicHeadline, isPublicListingMinimal } from '../utils/providerDisplay';
 
 const ProviderCard = ({ provider, onViewProfile, onContact }) => {
   const businessOk = isProviderBusinessVerified(provider);
+  const headline = getProviderPublicHeadline(provider);
+  const minimalListing = isPublicListingMinimal(provider);
   const trustLayer = getProviderTrustLayer(provider, provider.user);
   const visualBadges = getProviderVisualBadges(provider, provider.user);
   const renderStars = (rating) => {
@@ -38,7 +41,7 @@ const ProviderCard = ({ provider, onViewProfile, onContact }) => {
       <div className="flex items-start space-x-4">
         <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
           <span className="text-2xl font-bold text-gray-600">
-            {provider.user.fullName.charAt(0).toUpperCase()}
+            {headline.avatarLetter}
           </span>
         </div>
         
@@ -46,11 +49,22 @@ const ProviderCard = ({ provider, onViewProfile, onContact }) => {
           <div className="flex justify-between items-start mb-2">
             <div>
               <h3 className="text-xl font-semibold text-gray-900">
-                {provider.user.fullName}
+                {headline.primary}
                 {provider.isFeatured && (
                   <span className="ml-2 text-yellow-500 text-sm">⭐ Featured</span>
                 )}
               </h3>
+              {headline.secondary && (
+                <p className="text-sm text-gray-600 mt-0.5">{headline.secondary}</p>
+              )}
+              {minimalListing && (
+                <span
+                  className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-900 border border-amber-200"
+                  title="Pružatelj je smanjio javno vidljive podatke (bez portfelja i vanjskog weba u tražilici)."
+                >
+                  Javni prikaz: ograničen
+                </span>
+              )}
               {/* Badge System */}
               <div className="flex flex-wrap gap-1 mt-1" title="Verified provider — jasni bedževi">
                 {visualBadges.map((b) => (
@@ -117,6 +131,20 @@ const ProviderCard = ({ provider, onViewProfile, onContact }) => {
 
           {provider.bio && (
             <p className="text-gray-600 mb-3 line-clamp-2">{provider.bio}</p>
+          )}
+
+          {Array.isArray(provider.publicServiceLines) && provider.publicServiceLines.length > 0 && (
+            <div className="mb-3 space-y-1">
+              <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Usluge / suradnje</p>
+              <ul className="text-sm text-slate-700 space-y-1">
+                {provider.publicServiceLines.map((row, idx) => (
+                  <li key={idx} className="flex gap-2">
+                    <span className="font-medium text-slate-800 shrink-0">{row.title}</span>
+                    {row.detail ? <span className="text-slate-600">— {row.detail}</span> : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
 
           <div className="flex flex-wrap gap-2 mb-3">
