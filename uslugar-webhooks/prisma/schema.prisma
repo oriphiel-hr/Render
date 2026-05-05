@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Kanal komunikacije (proširivo)
+enum MessageChannel {
+  MESSENGER
+  INSTAGRAM
+  WHATSAPP
+  FACEBOOK_PAGE_FEED
+  GENERIC
+}
+
+/// Sve dolazne (i po želji odlazne) poruke — univerzalni model za više izvora
+model ChannelMessage {
+  id                String         @id @default(cuid())
+  channel           MessageChannel
+  /// npr. facebook.graph, api.ingest, meta.webhook
+  source            String         @default("unknown")
+  /// Stabilni ključ niti (npr. pageId_psid ili thread_id iz vanjskog sustava)
+  externalThreadId  String?
+  /// Vanjski ID poruke (Messenger mid, itd.) — za deduplikaciju
+  externalMessageId String?
+  direction         String         @default("inbound")
+  bodyText          String?        @db.Text
+  rawPayload        Json
+  createdAt         DateTime       @default(now())
+
+  @@index([channel, externalThreadId])
+  @@index([channel, createdAt])
+  @@unique([channel, externalMessageId])
+}
+
+/// Verzionirani promptovi (samo jedan aktivan po slug + opcijski kanal)
+model PromptTemplate {
+  id          String          @id @default(cuid())
+  slug        String
+  name        String
+  body        String          @db.Text
+  version     Int
+  isActive    Boolean         @default(false)
+  /// null = vrijedi za sve kanale
+  channel     MessageChannel?
+  description String?         @db.Text
+  createdAt   DateTime        @default(now())
+
+  @@unique([slug, version])
+  @@index([slug, isActive])
+}

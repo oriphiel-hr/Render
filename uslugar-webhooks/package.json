@@ -1,0 +1,31 @@
+{
+  "name": "uslugar-webhooks",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Uslugar webhooks: više kanala (Meta i drugi), univerzalni ingest, PostgreSQL (poruke + promptovi).",
+  "main": "src/index.js",
+  "scripts": {
+    "build": "prisma generate",
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "migrate": "prisma migrate deploy",
+    "db:seed": "prisma db seed",
+    "prisma:validate": "cross-env DATABASE_URL=postgresql://validate:validate@127.0.0.1:5432/validate prisma validate",
+    "postinstall": "prisma generate"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0",
+    "prisma": "^5.22.0"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  }
+}

@@ -1,0 +1,34 @@
+# CI: uslugar-webhooks — validacija sheme i sintakse (bez baze). Za monorepo prilagodi putanje.
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Prisma schema
+        run: npm run prisma:validate
+
+      - name: Generate client
+        run: npx prisma generate
+
+      - name: Syntax check
+        run: node --check src/index.js && node --check src/routes/facebookWebhook.js && node --check src/routes/ingestApi.js
