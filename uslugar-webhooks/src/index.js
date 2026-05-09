@@ -74,13 +74,15 @@ app.use((_req, res) => {
 });
 
 app.listen(PORT, () => {
+  const mountedProfiles = parseWebhookProfiles().filter(
+    (p) => process.env[`${metaEnvPrefix(p)}_VERIFY_TOKEN`]
+  );
+  const usesMetaProfilesOnly = mountedProfiles.length > 0;
+
   console.log(`Listening on http://localhost:${PORT}`);
   console.log(`Meta webhook (default): GET/POST http://localhost:${PORT}/webhook`);
-  for (const profile of parseWebhookProfiles()) {
-    const prefix = metaEnvPrefix(profile);
-    if (process.env[`${prefix}_VERIFY_TOKEN`]) {
-      console.log(`Meta webhook (${profile}): GET/POST http://localhost:${PORT}/webhook/${profile}`);
-    }
+  for (const profile of mountedProfiles) {
+    console.log(`Meta webhook (${profile}): GET/POST http://localhost:${PORT}/webhook/${profile}`);
   }
   console.log(`Ingest API: POST http://localhost:${PORT}/api/v1/messages (header X-Ingest-Key)`);
   if (!hasAnyDatabaseUrl()) {
@@ -88,28 +90,37 @@ app.listen(PORT, () => {
       'No DATABASE_URL and no META_<PROFILE>_DATABASE_URL — webhook persistence will fail until one is set.'
     );
   } else if (!process.env.DATABASE_URL) {
-    console.warn(
-      'DATABASE_URL not set — default /webhook, ingest API, and prompts still use the default DB client; set DATABASE_URL if you use those features.'
-    );
+    if (usesMetaProfilesOnly) {
+      if (process.env.INGEST_API_KEY) {
+        console.warn(
+          'DATABASE_URL not set — /api/v1 ingest and prompts need it; set DATABASE_URL or remove INGEST_API_KEY if unused.'
+        );
+      }
+    } else {
+      console.warn(
+        'DATABASE_URL not set — default /webhook, ingest API, and prompts need the default DB client.'
+      );
+    }
   }
-  for (const profile of parseWebhookProfiles()) {
+  for (const profile of mountedProfiles) {
     const prefix = metaEnvPrefix(profile);
-    if (!process.env[`${prefix}_VERIFY_TOKEN`]) continue;
     if (!process.env[`${prefix}_APP_SECRET`]) {
       console.warn(
         `${prefix}_APP_SECRET not set — POST /webhook/${profile} accepts unsigned bodies (dev only).`
       );
     }
   }
-  if (!process.env.VERIFY_TOKEN) {
-    console.warn(
-      'VERIFY_TOKEN not set — default GET/POST /webhook uses a built-in fallback token (change in production).'
-    );
-  }
-  if (!APP_SECRET) {
-    console.warn(
-      'FACEBOOK_APP_SECRET not set — default POST /webhook only: signature not verified (dev only).'
-    );
+  if (!usesMetaProfilesOnly) {
+    if (!process.env.VERIFY_TOKEN) {
+      console.warn(
+        'VERIFY_TOKEN not set — default GET/POST /webhook uses a built-in fallback token (change in production).'
+      );
+    }
+    if (!APP_SECRET) {
+      console.warn(
+        'FACEBOOK_APP_SECRET not set — default POST /webhook only: signature not verified (dev only).'
+      );
+    }
   }
   if (!process.env.INGEST_API_KEY) {
     console.warn('INGEST_API_KEY not set — /api/v1/* returns 503 until set.');
