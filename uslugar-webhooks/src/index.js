@@ -89,18 +89,10 @@ app.listen(PORT, () => {
     console.warn(
       'No DATABASE_URL and no META_<PROFILE>_DATABASE_URL — webhook persistence will fail until one is set.'
     );
-  } else if (!process.env.DATABASE_URL) {
-    if (usesMetaProfilesOnly) {
-      if (process.env.INGEST_API_KEY) {
-        console.warn(
-          'DATABASE_URL not set — /api/v1 ingest and prompts need it; set DATABASE_URL or remove INGEST_API_KEY if unused.'
-        );
-      }
-    } else {
-      console.warn(
-        'DATABASE_URL not set — default /webhook, ingest API, and prompts need the default DB client.'
-      );
-    }
+  } else if (!process.env.DATABASE_URL && !usesMetaProfilesOnly) {
+    console.warn(
+      'DATABASE_URL not set — default /webhook, ingest API, and prompts need the default DB client.'
+    );
   }
   for (const profile of mountedProfiles) {
     const prefix = metaEnvPrefix(profile);
