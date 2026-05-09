@@ -52,15 +52,24 @@ function createFacebookWebhookRouter({ verifyToken, appSecret, logTag = 'webhook
       return res.sendStatus(403);
     }
 
+    const body = req.body;
+    const entryLen = Array.isArray(body?.entry) ? body.entry.length : 0;
+    console.log(`${tag} WEBHOOK_POST received entries=${entryLen}`);
+    if (!entryLen && body && typeof body === 'object') {
+      console.log(`${tag} WEBHOOK_POST top-level keys: ${Object.keys(body).join(', ')}`);
+    }
+
     res.status(200).send('EVENT_RECEIVED');
 
     setImmediate(async () => {
       try {
-        const rows = parseFacebookWebhook(req.body);
+        const rows = parseFacebookWebhook(body);
         const db = getPrismaForProfile(profile);
         const result = await storeMessages(rows, { prisma: db });
         if (rows.length) {
           console.log(`${tag} stored ${result.count}/${rows.length} message row(s) (duplicates skipped)`);
+        } else if (entryLen) {
+          console.log(`${tag} WEBHOOK_POST parsed 0 rows (payload shape not Messenger/feed — Instant Games uses different fields)`);
         }
       } catch (e) {
         console.error(`${tag} persist error`, e.message);
