@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const express = require('express');
 const { parseFacebookWebhook } = require('../ingest/facebook');
+const { getPrismaForProfile } = require('../lib/prisma');
 const { storeMessages } = require('../services/messageStore');
 
 function rawBodySaver(req, res, buf) {
@@ -23,9 +24,9 @@ function verifySignature(req, appSecret) {
  * Meta webhook (GET verify + POST events).
  * Mount with app.use('/webhook', router) or app.use('/webhook/instant-game', router).
  *
- * @param {{ verifyToken: string, appSecret: string, logTag?: string }} opts
+ * @param {{ verifyToken: string, appSecret: string, logTag?: string, profile?: string }} opts
  */
-function createFacebookWebhookRouter({ verifyToken, appSecret, logTag = 'webhook' }) {
+function createFacebookWebhookRouter({ verifyToken, appSecret, logTag = 'webhook', profile }) {
   const router = express.Router();
   const tag = `[${logTag}]`;
 
@@ -56,7 +57,8 @@ function createFacebookWebhookRouter({ verifyToken, appSecret, logTag = 'webhook
     setImmediate(async () => {
       try {
         const rows = parseFacebookWebhook(req.body);
-        const result = await storeMessages(rows);
+        const db = getPrismaForProfile(profile);
+        const result = await storeMessages(rows, { prisma: db });
         if (rows.length) {
           console.log(`${tag} stored ${result.count}/${rows.length} message row(s) (duplicates skipped)`);
         }

@@ -10,7 +10,7 @@ Zasebni **Node + Express + PostgreSQL** servis za **više kanala** (Meta/Faceboo
 
 | Put | Opis |
 |-----|------|
-| `GET /health` | Health check |
+| `GET /health` | Health check (`databaseUrlDefault`, `profileDatabases` po profilima) |
 | `GET /webhook` | Meta verify (`hub.verify_token` = `VERIFY_TOKEN`) |
 | `POST /webhook` | Meta događaji → `ChannelMessage` |
 | `GET/POST /webhook/<profil>` | Druga Meta aplikacija na istom Renderu — vidi **Više Meta aplikacija** |
@@ -39,7 +39,9 @@ npm start
    **`META_INSTANT_GAME_VERIFY_TOKEN`** i **`META_INSTANT_GAME_APP_SECRET`**  
    (isti verify token i App Secret kao u Meta konzoli za Callback URL koji pokazuje na taj put).
 
-3. **Callback URL** u Meta Developer konzoli za tu aplikaciju:  
+3. Opcionalno **`META_INSTANT_GAME_DATABASE_URL`** — PostgreSQL samo za poruke koje dolaze na `/webhook/instant-game`. Ako ga izostaviš, koristi se **`DATABASE_URL`**. Ista Prisma shema mora postojati na svakoj bazi (isti `migrate deploy`).
+
+4. **Callback URL** u Meta Developer konzoli za tu aplikaciju:  
    `https://<host>/webhook/instant-game`
 
 Zadani **`VERIFY_TOKEN`** / **`FACEBOOK_APP_SECRET`** i dalje vrijede za **`/webhook`** (kompatibilnost sa starim deployem).

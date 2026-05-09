@@ -3,35 +3,36 @@ require('dotenv').config();
 const express = require('express');
 const { createFacebookWebhookRouter } = require('./routes/facebookWebhook');
 const { createIngestRouter } = require('./routes/ingestApi');
+const { metaEnvPrefix, parseWebhookProfiles } = require('./lib/metaEnv');
 
 const PORT = Number(process.env.PORT) || 3000;
 const VERIFY_TOKEN = process.env.VERIFY_TOKEN || 'moj_tajni_token_123';
 const APP_SECRET = process.env.FACEBOOK_APP_SECRET || '';
 
+function hasAnyDatabaseUrl() {
+  if (process.env.DATABASE_URL) return true;
+  for (const profile of parseWebhookProfiles()) {
+    if (process.env[`${metaEnvPrefix(profile)}_DATABASE_URL`]) return true;
+  }
+  return false;
+}
+
 const app = express();
 
 app.get('/health', (_req, res) => {
+  const profiles = parseWebhookProfiles();
+  const profileDatabases = {};
+  for (const p of profiles) {
+    profileDatabases[p] = Boolean(process.env[`${metaEnvPrefix(p)}_DATABASE_URL`]);
+  }
   res.status(200).json({
     ok: true,
     service: 'uslugar-webhooks',
-    db: Boolean(process.env.DATABASE_URL)
+    db: hasAnyDatabaseUrl(),
+    databaseUrlDefault: Boolean(process.env.DATABASE_URL),
+    profileDatabases
   });
 });
-
-/**
- * Profil u META_WEBHOOK_PROFILES (npr. instant-game) → META_INSTANT_GAME_VERIFY_TOKEN, META_INSTANT_GAME_APP_SECRET
- */
-function metaEnvPrefix(profile) {
-  return 'META_' + String(profile).trim().replace(/-/g, '_').toUpperCase();
-}
-
-function parseWebhookProfiles() {
-  const raw = process.env.META_WEBHOOK_PROFILES || '';
-  return raw
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
 
 // Meta mora primiti sirovo tijelo za potpis — bez globalnog express.json() prije ovoga.
 // Specifičnije putanje prvo (npr. /webhook/instant-game), zatim zadani /webhook.
@@ -50,7 +51,8 @@ for (const profile of parseWebhookProfiles()) {
     createFacebookWebhookRouter({
       verifyToken: vTok,
       appSecret: sec,
-      logTag: `webhook:${profile}`
+      logTag: `webhook:${profile}`,
+      profile
     })
   );
 }
@@ -81,14 +83,33 @@ app.listen(PORT, () => {
     }
   }
   console.log(`Ingest API: POST http://localhost:${PORT}/api/v1/messages (header X-Ingest-Key)`);
-  if (!process.env.DATABASE_URL) {
-    console.warn('DATABASE_URL not set — persistence will fail until configured.');
+  if (!hasAnyDatabaseUrl()) {
+    console.warn(
+      'No DATABASE_URL and no META_<PROFILE>_DATABASE_URL — webhook persistence will fail until one is set.'
+    );
+  } else if (!process.env.DATABASE_URL) {
+    console.warn(
+      'DATABASE_URL not set — default /webhook, ingest API, and prompts still use the default DB client; set DATABASE_URL if you use those features.'
+    );
+  }
+  for (const profile of parseWebhookProfiles()) {
+    const prefix = metaEnvPrefix(profile);
+    if (!process.env[`${prefix}_VERIFY_TOKEN`]) continue;
+    if (!process.env[`${prefix}_APP_SECRET`]) {
+      console.warn(
+        `${prefix}_APP_SECRET not set — POST /webhook/${profile} accepts unsigned bodies (dev only).`
+      );
+    }
   }
   if (!process.env.VERIFY_TOKEN) {
-    console.warn('VERIFY_TOKEN not set — using default (change in production).');
+    console.warn(
+      'VERIFY_TOKEN not set — default GET/POST /webhook uses a built-in fallback token (change in production).'
+    );
   }
   if (!APP_SECRET) {
-    console.warn('FACEBOOK_APP_SECRET not set — default /webhook POST not signature-verified (dev only).');
+    console.warn(
+      'FACEBOOK_APP_SECRET not set — default POST /webhook only: signature not verified (dev only).'
+    );
   }
   if (!process.env.INGEST_API_KEY) {
     console.warn('INGEST_API_KEY not set — /api/v1/* returns 503 until set.');

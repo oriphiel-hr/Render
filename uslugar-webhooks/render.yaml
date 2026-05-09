@@ -22,4 +22,5 @@ services:
         fromDatabase:
           name: uslugar-webhooks-db
           property: connectionString
-      # Ručno u dashboardu: VERIFY_TOKEN, FACEBOOK_APP_SECRET, INGEST_API_KEY
+      # Ručno u dashboardu: VERIFY_TOKEN, FACEBOOK_APP_SECRET, INGEST_API_KEY,
+      # META_WEBHOOK_PROFILES, META_*_VERIFY_TOKEN, META_*_APP_SECRET, META_*_DATABASE_URL
