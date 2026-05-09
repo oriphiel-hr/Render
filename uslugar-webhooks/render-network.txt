@@ -1,0 +1,14 @@
+# Render — IP rasponi (Frankfurt / egress)
+#
+# Namjena: ako vanjski API ili firewall mora dopustiti dolazne zahtjeve koji
+# DOLAZE S ovog Render Web servisa (outbound s Rendera prema van).
+#
+# Ovo NIJE lista Meta webhook izvora — Meta validiraš X-Hub-Signature-256.
+#
+# Širi blok na AWS (AS16509) za ovaj region često uključuje 74.220.48.0/20;
+# niže su konkretne /24 koje koristimo za whitelist.
+#
+# Ažuriraj ako Render promijeni outbound raspon (Dashboard → outbound IPs po regionu).
+
+74.220.51.0/24
+74.220.59.0/24

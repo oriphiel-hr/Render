@@ -19,28 +19,35 @@ function verifySignature(req, appSecret) {
   }
 }
 
-function createFacebookWebhookRouter({ verifyToken, appSecret }) {
+/**
+ * Meta webhook (GET verify + POST events).
+ * Mount with app.use('/webhook', router) or app.use('/webhook/instant-game', router).
+ *
+ * @param {{ verifyToken: string, appSecret: string, logTag?: string }} opts
+ */
+function createFacebookWebhookRouter({ verifyToken, appSecret, logTag = 'webhook' }) {
   const router = express.Router();
+  const tag = `[${logTag}]`;
 
-  router.get('/webhook', (req, res) => {
+  router.get('/', (req, res) => {
     const mode = req.query['hub.mode'];
     const token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
 
     if (mode && token) {
       if (mode === 'subscribe' && token === verifyToken) {
-        console.log('[webhook] WEBHOOK_VERIFIED');
+        console.log(`${tag} WEBHOOK_VERIFIED`);
         return res.status(200).send(challenge);
       }
-      console.warn('[webhook] Verify failed');
+      console.warn(`${tag} Verify failed`);
       return res.sendStatus(403);
     }
     return res.sendStatus(400);
   });
 
-  router.post('/webhook', express.json({ verify: rawBodySaver }), (req, res) => {
+  router.post('/', express.json({ verify: rawBodySaver }), (req, res) => {
     if (!verifySignature(req, appSecret)) {
-      console.warn('[webhook] Invalid X-Hub-Signature-256');
+      console.warn(`${tag} Invalid X-Hub-Signature-256`);
       return res.sendStatus(403);
     }
 
@@ -51,10 +58,10 @@ function createFacebookWebhookRouter({ verifyToken, appSecret }) {
         const rows = parseFacebookWebhook(req.body);
         const result = await storeMessages(rows);
         if (rows.length) {
-          console.log(`[webhook] stored ${result.count}/${rows.length} message row(s) (duplicates skipped)`);
+          console.log(`${tag} stored ${result.count}/${rows.length} message row(s) (duplicates skipped)`);
         }
       } catch (e) {
-        console.error('[webhook] persist error', e.message);
+        console.error(`${tag} persist error`, e.message);
       }
     });
   });

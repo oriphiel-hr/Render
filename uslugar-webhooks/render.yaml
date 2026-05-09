@@ -1,5 +1,6 @@
 # Render Blueprint: Web servis + PostgreSQL
 # Ako je repo monorepo, u Render UI postavi Root Directory na `uslugar-webhooks`.
+# Outbound IP rasponi za whitelist vanjskih API-ja: vidi `render-network.txt`.
 
 databases:
   - name: uslugar-webhooks-db
