@@ -1,6 +1,26 @@
 const { prisma } = require('../lib/prisma');
 const { extractAttachmentsFromRaw } = require('./attachmentBackfill');
 
+/**
+ * Spoji zapise iz baze s ekstrakcijom iz rawPayload-a (Graph/webhook često ima URL samo u jednom od njih).
+ */
+function mergeAttachmentsForMessage(dbAttachments, rawPayload) {
+  const fromDb = Array.isArray(dbAttachments) ? dbAttachments : [];
+  const fromRaw = extractAttachmentsFromRaw(rawPayload);
+  const n = Math.max(fromDb.length, fromRaw.length);
+  if (!n) return [];
+  const out = [];
+  for (let i = 0; i < n; i += 1) {
+    const d = fromDb[i];
+    const x = fromRaw[i];
+    const kind = (d && d.kind) || (x && x.kind) || null;
+    const url = ((d && d.url) || (x && x.url) || '').trim() || null;
+    const name = (d && d.name) || (x && x.name) || null;
+    out.push({ type: kind || null, url: url || null, name: name || null });
+  }
+  return out;
+}
+
 function splitThreadId(externalThreadId) {
   const t = String(externalThreadId || '');
   const i = t.indexOf('_');
@@ -130,9 +150,7 @@ async function listMessages(q = {}) {
       pageName,
       userId: parsedUserId || null,
       userName: userName || null,
-      attachments: Array.isArray(r.attachments) && r.attachments.length
-        ? r.attachments.map((a) => ({ type: a.kind || null, url: a.url || null, name: a.name || null }))
-        : extractAttachmentsFromRaw(r.rawPayload).map((a) => ({ type: a.kind || null, url: a.url || null, name: a.name || null })),
+      attachments: mergeAttachmentsForMessage(r.attachments, r.rawPayload),
       userFirstName: firstName,
       userLastName: lastName
     };

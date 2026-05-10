@@ -81,7 +81,9 @@ async function syncMessengerHistory(opts) {
   }
 
   const base = `https://graph.facebook.com/${apiVersion}`;
-  const msgFields = 'id,message,from,to,created_time,sticker,attachments';
+  /** Eksplicitni podfieldovi attachmenta — inače Graph često ne vraća URL u listi poruka. */
+  const msgFields =
+    'id,message,from,to,created_time,sticker,attachments{id,mime_type,name,size,file_url,image_data{url},video_data{url}}';
 
   const allRows = [];
   let convUrl =

@@ -1136,7 +1136,11 @@
           }
         } else {
           block = nameLabel + typePart;
-          if (rawUrl && !isSafeHttpUrl(rawUrl)) {
+          if (!rawUrl) {
+            block +=
+              ' <span class="attachment-no-url" title="U payloadu nema HTTPS URL-a za ovaj privitak (Graph ponekad šalje samo naziv/tip). Provjeri stupac Raw.">' +
+              '(nema URL)</span>';
+          } else if (!isSafeHttpUrl(rawUrl)) {
             block +=
               ' <span class="attachment-no-url" title="URL nije prikladan za link">' +
               escapeHtml(rawUrl.slice(0, 96)) + (rawUrl.length > 96 ? '…' : '') +

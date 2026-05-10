@@ -13,11 +13,56 @@ function extractAttachmentsFromRaw(rawPayload) {
     }
   };
 
+  function pickFirstHttpUrl(obj, depth) {
+    if (depth <= 0 || !obj || typeof obj !== 'object') return null;
+    const keys = ['url', 'src', 'file_url', 'preview_url', 'reusable_url'];
+    for (const k of keys) {
+      if (typeof obj[k] === 'string' && /^https?:\/\//i.test(obj[k].trim())) {
+        return obj[k].trim();
+      }
+    }
+    if (obj.image_data && typeof obj.image_data === 'object') {
+      const u = pickFirstHttpUrl(obj.image_data, depth - 1);
+      if (u) return u;
+    }
+    if (obj.video_data && typeof obj.video_data === 'object') {
+      const u = pickFirstHttpUrl(obj.video_data, depth - 1);
+      if (u) return u;
+    }
+    return null;
+  }
+
   const add = (a) => {
     if (!a || typeof a !== 'object') return;
-    const kind = String(a.type || a.mime_type || '').trim() || null;
     const payload = a.payload && typeof a.payload === 'object' ? a.payload : {};
-    const url = String(payload.url || a.url || payload.src || '').trim() || null;
+    const kind =
+      String(a.type || a.mime_type || payload.mime_type || payload.sticker_type || '').trim() || null;
+    let url =
+      String(
+        payload.url ||
+          a.url ||
+          a.file_url ||
+          payload.src ||
+          payload.file_url ||
+          payload.preview_url ||
+          payload.reusable_url ||
+          ''
+      ).trim() || null;
+    if (!url && payload.image_data && typeof payload.image_data === 'object') {
+      url = pickFirstHttpUrl(payload.image_data, 4);
+    }
+    if (!url && payload.video_data && typeof payload.video_data === 'object') {
+      url = pickFirstHttpUrl(payload.video_data, 4);
+    }
+    if (!url && a.image_data && typeof a.image_data === 'object') {
+      url = pickFirstHttpUrl(a.image_data, 4);
+    }
+    if (!url && a.video_data && typeof a.video_data === 'object') {
+      url = pickFirstHttpUrl(a.video_data, 4);
+    }
+    if (!url) {
+      url = pickFirstHttpUrl(payload, 3) || pickFirstHttpUrl(a, 3);
+    }
     const name = String(a.name || payload.title || payload.filename || '').trim() || null;
     if (!kind && !url && !name) return;
     out.push({ kind, url, name });
