@@ -9,6 +9,7 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "migrate": "prisma migrate deploy",
+    "backfill:attachments": "node scripts/backfill-message-attachments.js",
     "db:seed": "prisma db seed",
     "prisma:validate": "cross-env DATABASE_URL=postgresql://validate:validate@127.0.0.1:5432/validate prisma validate",
     "postinstall": "prisma generate"

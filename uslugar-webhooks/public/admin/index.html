@@ -484,6 +484,17 @@
             </div>
             <button type="button" id="btn-sync-messenger">Povuci i spremi u bazu</button>
           </div>
+          <div class="row">
+            <label style="display:flex;align-items:center;gap:0.45rem;">
+              <input id="backfill-force" type="checkbox" style="width:auto;" />
+              Force refresh (ponovno izgradi i postojeće attachmente)
+            </label>
+            <label style="display:flex;align-items:center;gap:0.45rem;">
+              <input id="backfill-dry-run" type="checkbox" style="width:auto;" />
+              Dry-run (bez upisa)
+            </label>
+            <button type="button" class="secondary" id="btn-backfill-attachments">Backfill attachmenta</button>
+          </div>
           <pre id="sync-result" class="mono" style="margin-top:0.75rem;white-space:pre-wrap;display:none;"></pre>
         </div>
       </section>
@@ -1327,6 +1338,31 @@
       } finally {
         $('#btn-sync-messenger').disabled = false;
         $('#sync-token').value = '';
+      }
+    });
+    $('#btn-backfill-attachments').addEventListener('click', async () => {
+      const out = $('#sync-result');
+      const force = Boolean($('#backfill-force').checked);
+      const dryRun = Boolean($('#backfill-dry-run').checked);
+      if (force) {
+        const ok = window.confirm(
+          'Force refresh će obrisati postojeće attachment zapise i ponovno ih izgraditi iz raw payloada. Nastaviti?'
+        );
+        if (!ok) return;
+      }
+      out.style.display = 'block';
+      out.textContent = 'Pokrećem backfill attachmenta…';
+      $('#btn-backfill-attachments').disabled = true;
+      try {
+        const r = await apiPost('/backfill/attachments', { force, dryRun });
+        out.textContent = JSON.stringify(r, null, 2);
+        if (!dryRun) {
+          await loadMessages();
+        }
+      } catch (e) {
+        out.textContent = e.message || String(e);
+      } finally {
+        $('#btn-backfill-attachments').disabled = false;
       }
     });
 

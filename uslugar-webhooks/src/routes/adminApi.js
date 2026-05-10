@@ -4,6 +4,7 @@ const { prisma } = require('../lib/prisma');
 const { metaEnvPrefix, parseWebhookProfiles } = require('../lib/metaEnv');
 const { listMessages, listThreads, listPageIdPrefixes, listPageIdsWithNames, listUsers } = require('../services/messageQuery');
 const { syncMessengerHistory } = require('../services/facebookHistorySync');
+const { backfillMessageAttachments } = require('../services/attachmentBackfill');
 const { storeMessages } = require('../services/messageStore');
 const { requireAdminToken, adminCors } = require('../middleware/adminAuth');
 
@@ -87,6 +88,26 @@ function createAdminRouter() {
       });
     } catch (e) {
       console.error('[admin sync]', e.message);
+      return res.status(500).json({ error: e.message });
+    }
+  });
+
+  /**
+   * Retroaktivno popunjavanje attachment tablice iz rawPayload.
+   * POST /admin/api/backfill/attachments
+   * body: { force?: boolean, dryRun?: boolean }
+   */
+  router.post('/api/backfill/attachments', jsonBody, requireAdminToken, async (req, res) => {
+    try {
+      const { force = false, dryRun = false } = req.body || {};
+      const result = await backfillMessageAttachments({
+        prisma,
+        force: Boolean(force),
+        dryRun: Boolean(dryRun)
+      });
+      return res.json(result);
+    } catch (e) {
+      console.error('[admin backfill attachments]', e);
       return res.status(500).json({ error: e.message });
     }
   });
