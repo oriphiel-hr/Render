@@ -242,6 +242,7 @@ async function listUsers(q = {}) {
       externalThreadId: true,
       createdAt: true,
       bodyText: true,
+      direction: true,
       rawPayload: true
     },
     orderBy: { createdAt: 'desc' },
@@ -277,7 +278,12 @@ async function listUsers(q = {}) {
         userId,
         userName: rowUserName || null,
         messageCount: 0,
+        inboundCount: 0,
+        outboundCount: 0,
+        attachmentCount: 0,
+        firstAt: r.createdAt,
         lastAt: r.createdAt,
+        lastDirection: r.direction || null,
         lastText: r.bodyText || null
       };
       byUser.set(key, agg);
@@ -285,8 +291,15 @@ async function listUsers(q = {}) {
     if (!agg.userName && rowUserName) agg.userName = rowUserName;
     if (!agg.pageName && rowPageName) agg.pageName = rowPageName;
     agg.messageCount += 1;
+    if (String(r.direction || '').toLowerCase() === 'outbound') agg.outboundCount += 1;
+    else agg.inboundCount += 1;
+    agg.attachmentCount += extractAttachmentsFromRaw(r.rawPayload).length;
+    if (new Date(r.createdAt) < new Date(agg.firstAt)) {
+      agg.firstAt = r.createdAt;
+    }
     if (new Date(r.createdAt) > new Date(agg.lastAt)) {
       agg.lastAt = r.createdAt;
+      agg.lastDirection = r.direction || null;
       agg.lastText = r.bodyText || null;
     }
   }
@@ -299,10 +312,33 @@ async function listUsers(q = {}) {
       userName: u.userName || null,
       ...splitFullName(u.userName),
       messageCount: u.messageCount,
+      inboundCount: u.inboundCount || 0,
+      outboundCount: u.outboundCount || 0,
+      attachmentCount: u.attachmentCount || 0,
+      firstAt: u.firstAt,
       lastAt: u.lastAt,
-      lastText: u.lastText
+      lastDirection: u.lastDirection || null,
+      lastText: u.lastText,
+      isLead: false,
+      notes: null
     }))
     .sort((a, b) => new Date(b.lastAt) - new Date(a.lastAt));
+
+  if (list.length) {
+    const contacts = await prisma.crmContact.findMany({
+      where: {
+        OR: list.map((u) => ({ pageId: String(u.pageId), userId: String(u.userId) }))
+      },
+      select: { pageId: true, userId: true, isLead: true, notes: true }
+    });
+    const byKey = new Map(contacts.map((c) => [`${c.pageId}_${c.userId}`, c]));
+    list.forEach((u) => {
+      const c = byKey.get(`${u.pageId}_${u.userId}`);
+      if (!c) return;
+      u.isLead = Boolean(c.isLead);
+      u.notes = c.notes || null;
+    });
+  }
 
   const total = list.length;
   const slice = list.slice(offset, offset + limit);

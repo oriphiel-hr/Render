@@ -205,6 +205,84 @@
     .json-number { color: #f7c46c; }
     .json-boolean { color: #cfa8ff; }
     .json-null { color: #9aa7bd; font-style: italic; }
+    .note-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 8, 15, 0.72);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9998;
+      padding: 1rem;
+    }
+    .note-modal.open { display: flex; }
+    .note-modal-card {
+      width: min(720px, 95vw);
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.9rem;
+    }
+    #crm-note-text {
+      width: 100%;
+      min-height: 150px;
+      resize: vertical;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #0b1016;
+      color: var(--text);
+      padding: 0.6rem;
+      font: inherit;
+      margin-top: 0.5rem;
+    }
+    .stacked-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+      min-width: 0;
+    }
+    .stacked-title {
+      font-size: 0.8rem;
+      line-height: 1.25;
+      color: var(--text);
+      word-break: break-word;
+    }
+    .stacked-sub {
+      font-size: 0.72rem;
+      line-height: 1.2;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      word-break: break-all;
+    }
+    .thread-id-cell {
+      white-space: nowrap;
+      word-break: normal !important;
+    }
+    th.sortable { cursor: pointer; user-select: none; }
+    th.sortable:hover { color: var(--text); }
+    #messages-table th:nth-child(4),
+    #messages-table td:nth-child(4),
+    #messages-table th:nth-child(5),
+    #messages-table td:nth-child(5),
+    #users-table th:nth-child(1),
+    #users-table td:nth-child(1),
+    #users-table th:nth-child(2),
+    #users-table td:nth-child(2),
+    #threads-table th:nth-child(2),
+    #threads-table td:nth-child(2),
+    #threads-table th:nth-child(3),
+    #threads-table td:nth-child(3) {
+      width: 1%;
+      max-width: 180px;
+    }
+    #messages-table td:nth-child(4) .stacked-cell,
+    #messages-table td:nth-child(5) .stacked-cell,
+    #users-table td:nth-child(1) .stacked-cell,
+    #users-table td:nth-child(2) .stacked-cell,
+    #threads-table td:nth-child(2) .stacked-cell,
+    #threads-table td:nth-child(3) .stacked-cell {
+      max-width: 180px;
+    }
     nav.tabs {
       display: flex;
       gap: 0.35rem;
@@ -350,14 +428,14 @@
             <table id="messages-table">
               <thead>
                 <tr>
-                  <th>Vrijeme</th>
-                  <th>Kanal</th>
-                  <th>Smjer</th>
-                  <th>Korisnik</th>
-                  <th>Stranica</th>
-                  <th>Nit</th>
-                  <th>Tekst</th>
-                  <th>Privitci</th>
+                  <th class="sortable" data-sort-msg="createdAt">Vrijeme</th>
+                  <th class="sortable" data-sort-msg="channel">Kanal</th>
+                  <th class="sortable" data-sort-msg="direction">Smjer</th>
+                  <th class="sortable" data-sort-msg="userName">Korisnik</th>
+                  <th class="sortable" data-sort-msg="pageName">Stranica</th>
+                  <th class="sortable" data-sort-msg="externalThreadId">Nit</th>
+                  <th class="sortable" data-sort-msg="bodyText">Tekst</th>
+                  <th class="sortable" data-sort-msg="attachmentsCount">Privitci</th>
                   <th>Raw</th>
                 </tr>
               </thead>
@@ -398,11 +476,17 @@
             <table id="users-table">
               <thead>
                 <tr>
-                  <th>Korisnik (ime, prezime)</th>
-                  <th>Stranica</th>
-                  <th>Broj poruka</th>
-                  <th>Zadnja aktivnost</th>
-                  <th>Zadnji tekst</th>
+                  <th class="sortable" data-sort="userName">Korisnik (ime, prezime)</th>
+                  <th class="sortable" data-sort="pageName">Stranica</th>
+                  <th class="sortable" data-sort="isLead">Lead</th>
+                  <th class="sortable" data-sort="notes">Bilješke</th>
+                  <th class="sortable" data-sort="messageCount">Broj poruka</th>
+                  <th class="sortable" data-sort="inboundCount">Ulaz/Izlaz</th>
+                  <th class="sortable" data-sort="attachmentCount">Privitci</th>
+                  <th class="sortable" data-sort="firstAt">Prva aktivnost</th>
+                  <th class="sortable" data-sort="lastAt">Zadnja aktivnost</th>
+                  <th class="sortable" data-sort="lastDirection">Zadnji smjer</th>
+                  <th class="sortable" data-sort="lastText">Zadnji tekst</th>
                   <th>Akcija</th>
                 </tr>
               </thead>
@@ -433,12 +517,12 @@
             <table id="threads-table">
               <thead>
                 <tr>
-                  <th>Zadnja aktivnost</th>
-                  <th>Korisnik</th>
-                  <th>Stranica</th>
-                  <th>Smjer</th>
-                  <th>Zadnji tekst</th>
-                  <th>Nit</th>
+                  <th class="sortable" data-sort-thread="lastAt">Zadnja aktivnost</th>
+                  <th class="sortable" data-sort-thread="userName">Korisnik</th>
+                  <th class="sortable" data-sort-thread="pageName">Stranica</th>
+                  <th class="sortable" data-sort-thread="lastDirection">Smjer</th>
+                  <th class="sortable" data-sort-thread="lastText">Zadnji tekst</th>
+                  <th class="sortable" data-sort-thread="externalThreadId">Nit</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -550,6 +634,17 @@
       <div id="json-modal-body"><div id="json-modal-tree" class="json-tree"></div></div>
     </div>
   </div>
+  <div id="crm-note-modal" class="note-modal" aria-hidden="true">
+    <div class="note-modal-card" role="dialog" aria-modal="true" aria-labelledby="crm-note-title">
+      <h3 id="crm-note-title" style="margin:0;">Bilješka korisnika</h3>
+      <p id="crm-note-meta" class="badge" style="margin:0.35rem 0 0;"></p>
+      <textarea id="crm-note-text" placeholder="Unesi bilješku..."></textarea>
+      <div class="row" style="margin-top:0.65rem;">
+        <button type="button" id="btn-save-crm-note">Spremi</button>
+        <button type="button" class="secondary" id="btn-cancel-crm-note">Odustani</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     const STORAGE_API = 'uslugar_admin_api_base';
@@ -636,6 +731,13 @@
     let messageSearchDebounceTimer = null;
     let currentJsonModalText = '';
     let currentJsonModalValue = null;
+    let usersSortKey = 'lastAt';
+    let usersSortDir = 'desc';
+    let messagesSortKey = 'createdAt';
+    let messagesSortDir = 'desc';
+    let threadsSortKey = 'lastAt';
+    let threadsSortDir = 'desc';
+    let crmNoteContext = null;
     const PAGE_COLOR_PALETTE = [
       { bg: 'rgba(255, 99, 132, 0.16)', border: 'rgba(255, 99, 132, 0.65)', text: 'rgb(255, 195, 206)' },
       { bg: 'rgba(54, 162, 235, 0.16)', border: 'rgba(54, 162, 235, 0.65)', text: 'rgb(194, 228, 255)' },
@@ -662,6 +764,17 @@
       return name || id || '';
     }
 
+    function renderStackedLabel(primary, secondary) {
+      const title = String(primary || '').trim();
+      const sub = String(secondary || '').trim();
+      return (
+        '<span class="stacked-cell">' +
+          '<span class="stacked-title">' + escapeHtml(title || '—') + '</span>' +
+          (sub ? '<span class="stacked-sub">' + escapeHtml(sub) + '</span>' : '') +
+        '</span>'
+      );
+    }
+
     function formatListMeta(total, offset, limit, label, shownCount) {
       const safeLimit = Math.max(Number(limit) || 1, 1);
       const page = Math.floor((Number(offset) || 0) / safeLimit) + 1;
@@ -682,6 +795,121 @@
       });
     }
 
+    function sortUsersRows(rows) {
+      const list = Array.isArray(rows) ? [...rows] : [];
+      const dirMul = usersSortDir === 'asc' ? 1 : -1;
+      return list.sort((a, b) => {
+        const key = usersSortKey;
+        let av = a?.[key];
+        let bv = b?.[key];
+        if (key === 'isLead') {
+          av = a?.isLead ? 1 : 0;
+          bv = b?.isLead ? 1 : 0;
+        }
+        const aDate = av ? new Date(av) : null;
+        const bDate = bv ? new Date(bv) : null;
+        if (aDate && bDate && !Number.isNaN(aDate.getTime()) && !Number.isNaN(bDate.getTime())) {
+          return (aDate - bDate) * dirMul;
+        }
+        if (typeof av === 'number' || typeof bv === 'number') {
+          return ((Number(av) || 0) - (Number(bv) || 0)) * dirMul;
+        }
+        const as = String(av || '').toLowerCase();
+        const bs = String(bv || '').toLowerCase();
+        return as.localeCompare(bs) * dirMul;
+      });
+    }
+
+    function sortRows(rows, key, dir) {
+      const list = Array.isArray(rows) ? [...rows] : [];
+      const dirMul = dir === 'asc' ? 1 : -1;
+      return list.sort((a, b) => {
+        let av = a?.[key];
+        let bv = b?.[key];
+        if (key === 'attachmentsCount') {
+          av = Array.isArray(a?.attachments) ? a.attachments.length : 0;
+          bv = Array.isArray(b?.attachments) ? b.attachments.length : 0;
+        }
+        const aDate = av ? new Date(av) : null;
+        const bDate = bv ? new Date(bv) : null;
+        if (aDate && bDate && !Number.isNaN(aDate.getTime()) && !Number.isNaN(bDate.getTime())) {
+          return (aDate - bDate) * dirMul;
+        }
+        if (typeof av === 'number' || typeof bv === 'number') {
+          return ((Number(av) || 0) - (Number(bv) || 0)) * dirMul;
+        }
+        return String(av || '').toLowerCase().localeCompare(String(bv || '').toLowerCase()) * dirMul;
+      });
+    }
+
+    function refreshUsersHeaderSortIndicators() {
+      document.querySelectorAll('#users-table th.sortable').forEach((th) => {
+        if (!th.dataset.label) th.dataset.label = th.textContent.trim();
+        const active = th.dataset.sort === usersSortKey;
+        const arrow = active ? (usersSortDir === 'asc' ? ' ▲' : ' ▼') : '';
+        th.textContent = th.dataset.label + arrow;
+      });
+    }
+
+    function initUsersHeaderSorting() {
+      document.querySelectorAll('#users-table th.sortable').forEach((th) => {
+        th.addEventListener('click', () => {
+          const sortKey = th.dataset.sort;
+          if (!sortKey) return;
+          if (usersSortKey === sortKey) {
+            usersSortDir = usersSortDir === 'asc' ? 'desc' : 'asc';
+          } else {
+            usersSortKey = sortKey;
+            usersSortDir = (sortKey === 'lastAt' || sortKey === 'messageCount') ? 'desc' : 'asc';
+          }
+          usersOffset = 0;
+          loadUsers().catch((e) => alert(e.message));
+        });
+      });
+      refreshUsersHeaderSortIndicators();
+    }
+
+    function refreshHeaderSortIndicators(selector, attrName, key, dir) {
+      document.querySelectorAll(selector).forEach((th) => {
+        if (!th.dataset.label) th.dataset.label = th.textContent.trim();
+        const active = th.getAttribute(attrName) === key;
+        const arrow = active ? (dir === 'asc' ? ' ▲' : ' ▼') : '';
+        th.textContent = th.dataset.label + arrow;
+      });
+    }
+
+    function initMessagesHeaderSorting() {
+      document.querySelectorAll('#messages-table th.sortable').forEach((th) => {
+        th.addEventListener('click', () => {
+          const sortKey = th.getAttribute('data-sort-msg');
+          if (!sortKey) return;
+          if (messagesSortKey === sortKey) messagesSortDir = messagesSortDir === 'asc' ? 'desc' : 'asc';
+          else {
+            messagesSortKey = sortKey;
+            messagesSortDir = sortKey === 'createdAt' ? 'desc' : 'asc';
+          }
+          loadMessages().catch((e) => alert(e.message));
+        });
+      });
+      refreshHeaderSortIndicators('#messages-table th.sortable', 'data-sort-msg', messagesSortKey, messagesSortDir);
+    }
+
+    function initThreadsHeaderSorting() {
+      document.querySelectorAll('#threads-table th.sortable').forEach((th) => {
+        th.addEventListener('click', () => {
+          const sortKey = th.getAttribute('data-sort-thread');
+          if (!sortKey) return;
+          if (threadsSortKey === sortKey) threadsSortDir = threadsSortDir === 'asc' ? 'desc' : 'asc';
+          else {
+            threadsSortKey = sortKey;
+            threadsSortDir = sortKey === 'lastAt' ? 'desc' : 'asc';
+          }
+          loadThreads().catch((e) => alert(e.message));
+        });
+      });
+      refreshHeaderSortIndicators('#threads-table th.sortable', 'data-sort-thread', threadsSortKey, threadsSortDir);
+    }
+
     function openJsonModal(value) {
       currentJsonModalValue = value;
       currentJsonModalText = JSON.stringify(value, null, 2);
@@ -697,6 +925,21 @@
     function closeJsonModal() {
       $('#json-modal').classList.remove('open');
       $('#json-modal').setAttribute('aria-hidden', 'true');
+    }
+
+    function openCrmNoteModal(pageId, userId, noteText) {
+      crmNoteContext = { pageId: String(pageId || ''), userId: String(userId || '') };
+      $('#crm-note-meta').textContent = `${crmNoteContext.userId} · ${crmNoteContext.pageId}`;
+      $('#crm-note-text').value = String(noteText || '');
+      $('#crm-note-modal').classList.add('open');
+      $('#crm-note-modal').setAttribute('aria-hidden', 'false');
+      $('#crm-note-text').focus();
+    }
+
+    function closeCrmNoteModal() {
+      $('#crm-note-modal').classList.remove('open');
+      $('#crm-note-modal').setAttribute('aria-hidden', 'true');
+      crmNoteContext = null;
     }
 
     function buildPrimitiveNode(value) {
@@ -945,17 +1188,17 @@
       $('#messages-meta').textContent = formatListMeta(data.total, data.offset, data.limit, 'poruka', shown);
       const tb = $('#messages-table tbody');
       tb.innerHTML = '';
-      (data.rows || []).forEach((r) => {
+      const rows = sortRows(data.rows || [], messagesSortKey, messagesSortDir);
+      rows.forEach((r) => {
         const tr = document.createElement('tr');
         tr.innerHTML =
           '<td class="mono">' + escapeHtml(formatDateTime(r.createdAt)) + '</td>' +
           '<td><span class="pill">' + escapeHtml(r.channel) + '</span></td>' +
           '<td>' + escapeHtml(r.direction) + '</td>' +
           '<td><button type="button" class="link-btn btn-message-user-filter" data-user-id="' + escapeHtml(r.userId || '') +
-          '" data-user-name="' + escapeHtml(r.userName || '') + '"><span class="person-badge"><span class="person-dot"></span>' +
-          escapeHtml(formatUserDisplay(r.userId, r.userName)) + '</span></button></td>' +
-          '<td><span class="soft-badge page-badge">' + escapeHtml(formatPageDisplay(r.pageId, r.pageName)) + '</span></td>' +
-          '<td class="mono">' + escapeHtml(r.externalThreadId || '') + '</td>' +
+          '" data-user-name="' + escapeHtml(r.userName || '') + '">' + renderStackedLabel(r.userName || 'Korisnik', r.userId || '') + '</button></td>' +
+          '<td><span class="soft-badge page-badge">' + renderStackedLabel(r.pageName || 'Stranica', r.pageId || '') + '</span></td>' +
+          '<td class="mono thread-id-cell">' + escapeHtml(r.externalThreadId || '') + '</td>' +
           '<td>' + escapeHtml((r.bodyText || '').slice(0, 200)) + '</td>' +
           '<td>' + escapeHtml(formatAttachmentsSummary(r.attachments || [])) + '</td>' +
           '<td><button type="button" class="secondary btn-open-raw">Otvori</button></td>';
@@ -987,6 +1230,7 @@
           loadMessages().catch((e) => alert(e.message));
         });
       });
+      refreshHeaderSortIndicators('#messages-table th.sortable', 'data-sort-msg', messagesSortKey, messagesSortDir);
     }
 
     async function loadUsers() {
@@ -1003,17 +1247,26 @@
       $('#users-meta').textContent = formatListMeta(data.total, data.offset, data.limit, 'korisnika', shown);
       const tb = $('#users-table tbody');
       tb.innerHTML = '';
-      (data.rows || []).forEach((u) => {
+      const rows = sortUsersRows(data.rows || []);
+      rows.forEach((u) => {
         const tr = document.createElement('tr');
-        const userLabel = formatUserDisplay(u.userId, u.userName);
-        const pageLabel = formatPageDisplay(u.pageId, u.pageName);
+        const notesPreview = String(u.notes || '').trim();
         tr.innerHTML =
           '<td><button type="button" class="link-btn btn-user-name-filter" data-user="' + escapeHtml(u.userId || '') +
           '" data-name="' + escapeHtml(u.userName || '') + '" data-page="' + escapeHtml(u.pageId || '') +
-          '"><span class="person-badge"><span class="person-dot"></span>' + escapeHtml(userLabel) + '</span></button></td>' +
-          '<td><span class="soft-badge user-page-badge">' + escapeHtml(pageLabel) + '</span></td>' +
+          '">' + renderStackedLabel(u.userName || 'Korisnik', u.userId || '') + '</button></td>' +
+          '<td><span class="soft-badge user-page-badge">' + renderStackedLabel(u.pageName || 'Stranica', u.pageId || '') + '</span></td>' +
+          '<td><label style="display:flex;align-items:center;gap:0.35rem;"><input type="checkbox" class="crm-lead-toggle" data-user="' + escapeHtml(u.userId || '') +
+          '" data-page="' + escapeHtml(u.pageId || '') + '"' + (u.isLead ? ' checked' : '') + ' /><span>Lead</span></label></td>' +
+          '<td><button type="button" class="secondary btn-edit-note" data-user="' + escapeHtml(u.userId || '') +
+          '" data-page="' + escapeHtml(u.pageId || '') + '" data-note="' + escapeHtml(notesPreview) + '">' +
+          (notesPreview ? escapeHtml(notesPreview.slice(0, 36) + (notesPreview.length > 36 ? '…' : '')) : 'Dodaj bilješku') + '</button></td>' +
           '<td>' + escapeHtml(String(u.messageCount || 0)) + '</td>' +
+          '<td class="mono">' + escapeHtml(String(u.inboundCount || 0)) + ' / ' + escapeHtml(String(u.outboundCount || 0)) + '</td>' +
+          '<td>' + escapeHtml(String(u.attachmentCount || 0)) + '</td>' +
+          '<td class="mono">' + escapeHtml(formatDateTime(u.firstAt)) + '</td>' +
           '<td class="mono">' + escapeHtml(formatDateTime(u.lastAt)) + '</td>' +
+          '<td>' + escapeHtml(String(u.lastDirection || '')) + '</td>' +
           '<td>' + escapeHtml((u.lastText || '').slice(0, 140)) + '</td>' +
           '<td><button type="button" class="secondary btn-open-user" data-user="' + escapeHtml(u.userId) +
           '" data-page="' + escapeHtml(u.pageId || '') + '">Otvori poruke</button></td>';
@@ -1031,6 +1284,7 @@
         usersOffset = 0;
         loadUsers().catch((e) => alert(e.message));
       });
+      refreshUsersHeaderSortIndicators();
       document.querySelectorAll('.btn-open-user').forEach((btn) => {
         btn.addEventListener('click', () => {
           $('#filter-search').value = btn.dataset.user || '';
@@ -1049,6 +1303,25 @@
           loadMessages().catch((e) => alert(e.message));
         });
       });
+      document.querySelectorAll('.crm-lead-toggle').forEach((el) => {
+        el.addEventListener('change', async () => {
+          try {
+            await apiPost('/users/contact', {
+              pageId: el.dataset.page || '',
+              userId: el.dataset.user || '',
+              isLead: Boolean(el.checked)
+            });
+          } catch (e) {
+            alert(e.message);
+            el.checked = !el.checked;
+          }
+        });
+      });
+      document.querySelectorAll('.btn-edit-note').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          openCrmNoteModal(btn.dataset.page || '', btn.dataset.user || '', btn.dataset.note || '');
+        });
+      });
     }
 
     async function loadThreads() {
@@ -1056,17 +1329,16 @@
       const data = await api('/threads?channel=' + encodeURIComponent(ch) + '&limit=150');
       const tb = $('#threads-table tbody');
       tb.innerHTML = '';
-      (data.threads || []).forEach((t) => {
+      const rows = sortRows(data.threads || [], threadsSortKey, threadsSortDir);
+      rows.forEach((t) => {
         const tr = document.createElement('tr');
-        const pageLabel = formatPageDisplay(t.pageId, t.pageName);
-        const userLabel = formatUserDisplay(t.userId, t.userName);
         tr.innerHTML =
           '<td class="mono">' + escapeHtml(formatDateTime(t.lastAt)) + '</td>' +
-          '<td>' + escapeHtml(userLabel) + '</td>' +
-          '<td><span class="soft-badge thread-page-badge">' + escapeHtml(pageLabel) + '</span></td>' +
+          '<td>' + renderStackedLabel(t.userName || 'Korisnik', t.userId || '') + '</td>' +
+          '<td><span class="soft-badge thread-page-badge">' + renderStackedLabel(t.pageName || 'Stranica', t.pageId || '') + '</span></td>' +
           '<td>' + escapeHtml(String(t.lastDirection || '')) + '</td>' +
           '<td>' + escapeHtml((t.lastText || '').slice(0, 160)) + '</td>' +
-          '<td class="mono">' + escapeHtml(t.externalThreadId || '') + '</td>';
+          '<td class="mono thread-id-cell">' + escapeHtml(t.externalThreadId || '') + '</td>';
         tb.appendChild(tr);
         const badge = tr.querySelector('.thread-page-badge');
         if (badge) {
@@ -1083,6 +1355,7 @@
           loadMessages().catch((e) => alert(e.message));
         });
       });
+      refreshHeaderSortIndicators('#threads-table th.sortable', 'data-sort-thread', threadsSortKey, threadsSortDir);
     }
 
     async function loadPageIds() {
@@ -1158,6 +1431,9 @@
       $('#login-card').style.display = 'none';
       $('#app').style.display = 'block';
       buildTabs();
+      initUsersHeaderSorting();
+      initMessagesHeaderSorting();
+      initThreadsHeaderSorting();
       await loadBootstrap();
       await loadPageOptions();
       await loadMessages();
@@ -1289,9 +1565,15 @@
     $('#json-modal').addEventListener('click', (ev) => {
       if (ev.target === $('#json-modal')) closeJsonModal();
     });
+    $('#crm-note-modal').addEventListener('click', (ev) => {
+      if (ev.target === $('#crm-note-modal')) closeCrmNoteModal();
+    });
     document.addEventListener('keydown', (ev) => {
       if (ev.key === 'Escape' && $('#json-modal').classList.contains('open')) {
         closeJsonModal();
+      }
+      if (ev.key === 'Escape' && $('#crm-note-modal').classList.contains('open')) {
+        closeCrmNoteModal();
       }
     });
     $('#btn-copy-json').addEventListener('click', async () => {
@@ -1308,6 +1590,22 @@
     });
     $('#btn-expand-json').addEventListener('click', () => setJsonTreeExpansion(true));
     $('#btn-collapse-json').addEventListener('click', () => setJsonTreeExpansion(false));
+    $('#btn-cancel-crm-note').addEventListener('click', closeCrmNoteModal);
+    $('#btn-save-crm-note').addEventListener('click', async () => {
+      if (!crmNoteContext) return;
+      try {
+        await apiPost('/users/contact', {
+          pageId: crmNoteContext.pageId,
+          userId: crmNoteContext.userId,
+          notes: $('#crm-note-text').value
+        });
+        closeCrmNoteModal();
+        usersOffset = 0;
+        await loadUsers();
+      } catch (e) {
+        alert(e.message);
+      }
+    });
 
     $('#btn-sync-messenger').addEventListener('click', async () => {
       const pageId = $('#sync-page-id').value.trim();

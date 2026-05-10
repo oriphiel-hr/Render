@@ -150,6 +150,37 @@ function createAdminRouter() {
     }
   });
 
+  router.post('/api/users/contact', jsonBody, requireAdminToken, async (req, res) => {
+    try {
+      const { pageId, userId, isLead, notes } = req.body || {};
+      const safePageId = String(pageId || '').trim();
+      const safeUserId = String(userId || '').trim();
+      if (!safePageId || !safeUserId) {
+        return res.status(400).json({ error: 'pageId i userId su obavezni' });
+      }
+
+      const createData = {
+        pageId: safePageId,
+        userId: safeUserId,
+        isLead: Boolean(isLead),
+        notes: notes == null ? null : String(notes).trim() || null
+      };
+      const updateData = {};
+      if (typeof isLead === 'boolean') updateData.isLead = isLead;
+      if (notes !== undefined) updateData.notes = notes == null ? null : String(notes).trim() || null;
+
+      const contact = await prisma.crmContact.upsert({
+        where: { pageId_userId: { pageId: safePageId, userId: safeUserId } },
+        create: createData,
+        update: updateData
+      });
+      res.json({ contact });
+    } catch (e) {
+      console.error('[admin users contact]', e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   router.get('/api/threads', requireAdminToken, async (req, res) => {
     try {
       const { channel, limit } = req.query;

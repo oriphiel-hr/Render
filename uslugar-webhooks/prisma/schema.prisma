@@ -68,3 +68,18 @@ model PromptTemplate {
   @@unique([slug, version])
   @@index([slug, isActive])
 }
+
+/// CRM oznake po korisniku (kombinacija pageId + userId/PSID)
+model CrmContact {
+  id        String   @id @default(cuid())
+  pageId    String
+  userId    String
+  isLead    Boolean  @default(false)
+  notes     String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([pageId, userId])
+  @@index([pageId])
+  @@index([userId])
+}
