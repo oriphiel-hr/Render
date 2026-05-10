@@ -1,0 +1,49 @@
+# Primijeni Prisma migracije na produkcijsku (ili staging) bazu iz GitHub Actions.
+# Obavezno: Repository → Settings → Secrets and variables → Actions → New repository secret
+#   Name:  USLUGAR_WEBHOOKS_DATABASE_URL
+#   Value: isti connection string kao Render DATABASE_URL (External Database URL, s sslmode ako treba)
+
+name: uslugar-webhooks Prisma migrate
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "uslugar-webhooks/prisma/**"
+      - ".github/workflows/uslugar-webhooks-migrate.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: uslugar-webhooks-migrate
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: uslugar-webhooks
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: uslugar-webhooks/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.USLUGAR_WEBHOOKS_DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::Nedostaje GitHub secret USLUGAR_WEBHOOKS_DATABASE_URL (PostgreSQL URL kao na Renderu)."
+            exit 1
+          fi
+          npx prisma migrate deploy

@@ -66,8 +66,14 @@ npx prisma db seed
 
 ## GitHub Actions
 
-`.github/workflows/ci.yml` — validacija + generate + syntax check.  
-Za CI, Git root treba uključivati ovaj folder (ili prilagodi workflow za monorepo).
+- **`.github/workflows/uslugar-webhooks-ci.yml`** (u rootu repoa `Render/`) — validacija sheme, `prisma generate`, syntax check kad se mijenja `uslugar-webhooks/**`.
+- **`.github/workflows/uslugar-webhooks-migrate.yml`** — **`npx prisma migrate deploy`** na bazu čiji URL držiš u secretu:
+  - **Settings → Secrets and variables → Actions → New repository secret**
+  - Ime: **`USLUGAR_WEBHOOKS_DATABASE_URL`**
+  - Vrijednost: isti string kao **`DATABASE_URL`** na Renderu (External Database URL za PostgreSQL).
+  - Workflow se pokreće na **push** u `main`/`master` kad se mijenja `uslugar-webhooks/prisma/**`, ili ručno (**Actions → uslugar-webhooks Prisma migrate → Run workflow**).
+
+Migracije su idempotentne: možeš ih ostaviti i u Render **build** naredbi (`render.yaml`); ako želiš samo GitHub, ukloni `prisma migrate deploy` iz Render builda da ne dupliraš korak.
 
 ## Migracija sa starog naziva mape
 

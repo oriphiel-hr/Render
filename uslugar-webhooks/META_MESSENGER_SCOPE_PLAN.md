@@ -97,6 +97,8 @@ Ili jednokratno u **Shell** (s ispravnim `DATABASE_URL`):
 
 `npx prisma migrate deploy`
 
+Ili automatski iz **GitHub Actions**: workflow `uslugar-webhooks-migrate.yml` — postavi secret **`USLUGAR_WEBHOOKS_DATABASE_URL`** (isti URL kao `DATABASE_URL` na Renderu), pa push u `main` kad se mijenja `prisma/` ili ručno **Run workflow**.
+
 ### Retroaktivno povlačenje Messenger poruka
 
 U adminu kartica **Sinkronizacija** poziva Graph API (`/{page-id}/conversations`) uz **Page access token** s `pages_messaging`. Token se u tom trenutku šalje u JSON tijelu i **ne sprema** u env. Duplikati u odnosu na webhook poruke preskaču se preko `(channel, externalMessageId)`.
