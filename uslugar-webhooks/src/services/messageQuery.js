@@ -7,8 +7,28 @@ function splitThreadId(externalThreadId) {
   return { pageId: t.slice(0, i), userId: t.slice(i + 1) || null };
 }
 
+function parseDateStart(value) {
+  const v = String(value || '').trim();
+  if (!v) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+    return new Date(`${v}T00:00:00.000Z`);
+  }
+  const dt = new Date(v);
+  return Number.isNaN(dt.getTime()) ? null : dt;
+}
+
+function parseDateEnd(value) {
+  const v = String(value || '').trim();
+  if (!v) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+    return new Date(`${v}T23:59:59.999Z`);
+  }
+  const dt = new Date(v);
+  return Number.isNaN(dt.getTime()) ? null : dt;
+}
+
 /**
- * @param {{ channel?: string, pageIdPrefix?: string, userId?: string, q?: string, limit?: number, offset?: number }} q
+ * @param {{ channel?: string, pageIdPrefix?: string, userId?: string, q?: string, from?: string, to?: string, limit?: number, offset?: number }} q
  */
 async function listMessages(q = {}) {
   const limit = Math.min(Math.max(Number(q.limit) || 50, 1), 200);
@@ -18,6 +38,8 @@ async function listMessages(q = {}) {
   const searchTermRaw = q.q ? String(q.q).trim() : (q.userId ? String(q.userId).trim() : '');
   const searchTerm = searchTermRaw.toLowerCase();
   const hasSearch = Boolean(searchTerm);
+  const fromDate = parseDateStart(q.from);
+  const toDate = parseDateEnd(q.to);
 
   /** @type {import('@prisma/client').Prisma.ChannelMessageWhereInput} */
   const where = {};
@@ -26,12 +48,23 @@ async function listMessages(q = {}) {
   if (pageIdPrefix) {
     and.push({ externalThreadId: { startsWith: `${pageIdPrefix}_` } });
   }
+  if (fromDate || toDate) {
+    where.createdAt = {};
+    if (fromDate) where.createdAt.gte = fromDate;
+    if (toDate) where.createdAt.lte = toDate;
+  }
   if (and.length) {
     where.AND = and;
   }
 
   const rawRows = await prisma.channelMessage.findMany({
     where,
+    include: {
+      attachments: {
+        orderBy: { ordinal: 'asc' },
+        select: { kind: true, url: true, name: true, ordinal: true }
+      }
+    },
     orderBy: { createdAt: 'desc' },
     take: hasSearch ? 5000 : limit,
     skip: hasSearch ? 0 : offset
@@ -68,6 +101,9 @@ async function listMessages(q = {}) {
       pageName,
       userId: parsedUserId || null,
       userName: userName || null,
+      attachments: Array.isArray(r.attachments) && r.attachments.length
+        ? r.attachments.map((a) => ({ type: a.kind || null, url: a.url || null, name: a.name || null }))
+        : extractAttachmentsFromRaw(r.rawPayload),
       userFirstName: firstName,
       userLastName: lastName
     };
@@ -83,7 +119,10 @@ async function listMessages(q = {}) {
       const inPageName = String(r.pageName || '').toLowerCase().includes(searchTerm);
       const inBodyText = String(r.bodyText || '').toLowerCase().includes(searchTerm);
       const inThread = String(r.externalThreadId || '').toLowerCase().includes(searchTerm);
-      if (!(inUserId || inFirstName || inLastName || inFullName || inPageId || inPageName || inBodyText || inThread)) {
+      const inAttachments = (r.attachments || []).some((a) =>
+        [a.type, a.url, a.name].some((x) => String(x || '').toLowerCase().includes(searchTerm))
+      );
+      if (!(inUserId || inFirstName || inLastName || inFullName || inPageId || inPageName || inBodyText || inThread || inAttachments)) {
         return false;
       }
     }
@@ -309,6 +348,40 @@ function splitFullName(fullName) {
     lastName: parts.slice(1).join(' '),
     fullName: cleaned
   };
+}
+
+function extractAttachmentsFromRaw(rawPayload) {
+  if (!rawPayload || typeof rawPayload !== 'object') return [];
+  const out = [];
+
+  const add = (a) => {
+    if (!a || typeof a !== 'object') return;
+    const type = String(a.type || a.mime_type || '').trim() || null;
+    const payload = a.payload && typeof a.payload === 'object' ? a.payload : {};
+    const url = String(payload.url || a.url || payload.src || '').trim() || null;
+    const name = String(a.name || payload.title || payload.filename || '').trim() || null;
+    if (!type && !url && !name) return;
+    out.push({ type, url, name });
+  };
+
+  const attachments = Array.isArray(rawPayload.attachments) ? rawPayload.attachments : [];
+  attachments.forEach(add);
+
+  const messageAttachments = rawPayload.message && Array.isArray(rawPayload.message.attachments)
+    ? rawPayload.message.attachments
+    : [];
+  messageAttachments.forEach(add);
+
+  const entry = Array.isArray(rawPayload.entry) ? rawPayload.entry : [];
+  entry.forEach((e) => {
+    const messaging = Array.isArray(e?.messaging) ? e.messaging : [];
+    messaging.forEach((m) => {
+      const nested = Array.isArray(m?.message?.attachments) ? m.message.attachments : [];
+      nested.forEach(add);
+    });
+  });
+
+  return out.slice(0, 12);
 }
 
 /**

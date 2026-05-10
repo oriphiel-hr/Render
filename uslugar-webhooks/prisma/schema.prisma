@@ -30,10 +30,26 @@ model ChannelMessage {
   bodyText          String?        @db.Text
   rawPayload        Json
   createdAt         DateTime       @default(now())
+  attachments       ChannelMessageAttachment[]
 
   @@index([channel, externalThreadId])
   @@index([channel, createdAt])
   @@unique([channel, externalMessageId])
+}
+
+model ChannelMessageAttachment {
+  id               String         @id @default(cuid())
+  channelMessageId String
+  kind             String?
+  url              String?        @db.Text
+  name             String?
+  ordinal          Int            @default(0)
+  createdAt        DateTime       @default(now())
+
+  message ChannelMessage @relation(fields: [channelMessageId], references: [id], onDelete: Cascade)
+
+  @@index([channelMessageId])
+  @@unique([channelMessageId, ordinal])
 }
 
 /// Verzionirani promptovi (samo jedan aktivan po slug + opcijski kanal)

@@ -93,12 +93,14 @@ function createAdminRouter() {
 
   router.get('/api/messages', requireAdminToken, async (req, res) => {
     try {
-      const { channel, pageId, userId, q, limit, offset } = req.query;
+      const { channel, pageId, userId, q, from, to, limit, offset } = req.query;
       const result = await listMessages({
         channel: channel || undefined,
         pageIdPrefix: pageId || undefined,
         userId: userId || undefined,
         q: q || undefined,
+        from: from || undefined,
+        to: to || undefined,
         limit,
         offset
       });

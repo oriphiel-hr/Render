@@ -155,6 +155,56 @@
       max-height: 200px;
       font-size: 0.72rem;
     }
+    .json-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 8, 15, 0.72);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 1rem;
+    }
+    .json-modal.open { display: flex; }
+    .json-modal-card {
+      width: min(1000px, 96vw);
+      max-height: 88vh;
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+      display: flex;
+      flex-direction: column;
+    }
+    .json-modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.75rem 0.9rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .json-modal-head h3 { margin: 0; font-size: 0.95rem; font-weight: 600; }
+    .json-modal-actions { display: flex; gap: 0.45rem; }
+    #json-modal-body {
+      margin: 0;
+      padding: 0.85rem 1rem 1rem;
+      overflow: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.76rem;
+      line-height: 1.45;
+      color: #d6e2f3;
+      max-height: calc(88vh - 64px);
+    }
+    .json-tree details { margin-left: 0.9rem; }
+    .json-tree summary { cursor: pointer; color: #a8c4ff; }
+    .json-line { margin: 0.08rem 0; }
+    .json-line.match { background: rgba(61, 139, 253, 0.16); border-radius: 4px; }
+    .json-key { color: #7cc6ff; }
+    .json-string { color: #9ee08f; }
+    .json-number { color: #f7c46c; }
+    .json-boolean { color: #cfa8ff; }
+    .json-null { color: #9aa7bd; font-style: italic; }
     nav.tabs {
       display: flex;
       gap: 0.35rem;
@@ -262,10 +312,19 @@
               <input id="filter-search" type="text" placeholder="npr. Ivan Horvat, 2709..., Uslugar..." />
             </div>
             <div class="field">
+              <label for="filter-from">Od datuma</label>
+              <input id="filter-from" type="date" />
+            </div>
+            <div class="field">
+              <label for="filter-to">Do datuma</label>
+              <input id="filter-to" type="date" />
+            </div>
+            <div class="field">
               <label for="filter-limit">Limit</label>
               <input id="filter-limit" type="number" value="50" min="1" max="200" />
             </div>
             <button type="button" id="btn-load-messages">Učitaj</button>
+            <button type="button" class="secondary" id="btn-reset-messages">Reset filtera</button>
           </div>
           <p class="badge" id="messages-meta"></p>
           <div id="messages-page-legend" class="legend-wrap" aria-label="Legenda stranica"></div>
@@ -280,6 +339,7 @@
                   <th>Stranica</th>
                   <th>Nit</th>
                   <th>Tekst</th>
+                  <th>Privitci</th>
                   <th>Raw</th>
                 </tr>
               </thead>
@@ -312,6 +372,7 @@
               <input id="users-limit" type="number" value="50" min="1" max="200" />
             </div>
             <button type="button" id="btn-load-users">Učitaj</button>
+            <button type="button" class="secondary" id="btn-reset-users">Reset filtera</button>
           </div>
           <p class="badge" id="users-meta"></p>
           <div id="users-page-legend" class="legend-wrap" aria-label="Legenda stranica"></div>
@@ -348,6 +409,7 @@
               </select>
             </div>
             <button type="button" id="btn-load-threads">Osvježi</button>
+            <button type="button" class="secondary" id="btn-reset-threads">Reset filtera</button>
           </div>
           <div style="overflow:auto;">
             <table id="threads-table">
@@ -443,6 +505,22 @@
       </p>
     </div>
   </main>
+  <div id="json-modal" class="json-modal" aria-hidden="true">
+    <div class="json-modal-card" role="dialog" aria-modal="true" aria-labelledby="json-modal-title">
+      <div class="json-modal-head">
+        <h3 id="json-modal-title">Raw JSON</h3>
+        <div class="json-modal-actions">
+          <input id="json-search" type="search" placeholder="Pretraži JSON..." style="min-width:200px;max-width:260px;" />
+          <span id="json-search-count" class="badge"></span>
+          <button type="button" class="secondary" id="btn-expand-json">Proširi sve</button>
+          <button type="button" class="secondary" id="btn-collapse-json">Sažmi sve</button>
+          <button type="button" class="secondary" id="btn-copy-json">Kopiraj</button>
+          <button type="button" id="btn-close-json">Zatvori</button>
+        </div>
+      </div>
+      <div id="json-modal-body"><div id="json-modal-tree" class="json-tree"></div></div>
+    </div>
+  </div>
 
   <script>
     const STORAGE_API = 'uslugar_admin_api_base';
@@ -527,6 +605,19 @@
     let msgOffset = 0;
     let usersOffset = 0;
     let messageSearchDebounceTimer = null;
+    let currentJsonModalText = '';
+    let currentJsonModalValue = null;
+    const PAGE_COLOR_PALETTE = [
+      { bg: 'rgba(255, 99, 132, 0.16)', border: 'rgba(255, 99, 132, 0.65)', text: 'rgb(255, 195, 206)' },
+      { bg: 'rgba(54, 162, 235, 0.16)', border: 'rgba(54, 162, 235, 0.65)', text: 'rgb(194, 228, 255)' },
+      { bg: 'rgba(255, 206, 86, 0.16)', border: 'rgba(255, 206, 86, 0.65)', text: 'rgb(255, 237, 186)' },
+      { bg: 'rgba(75, 192, 192, 0.16)', border: 'rgba(75, 192, 192, 0.65)', text: 'rgb(191, 244, 244)' },
+      { bg: 'rgba(153, 102, 255, 0.16)', border: 'rgba(153, 102, 255, 0.65)', text: 'rgb(224, 205, 255)' },
+      { bg: 'rgba(255, 159, 64, 0.16)', border: 'rgba(255, 159, 64, 0.65)', text: 'rgb(255, 223, 185)' },
+      { bg: 'rgba(0, 200, 83, 0.16)', border: 'rgba(0, 200, 83, 0.65)', text: 'rgb(190, 255, 214)' },
+      { bg: 'rgba(233, 30, 99, 0.16)', border: 'rgba(233, 30, 99, 0.65)', text: 'rgb(255, 196, 220)' }
+    ];
+    const pageColorById = new Map();
 
     function formatPageDisplay(pageId, pageName) {
       const id = String(pageId || '').trim();
@@ -562,23 +653,141 @@
       });
     }
 
-    function hashStringToHue(s) {
-      const text = String(s || '');
-      let hash = 0;
-      for (let i = 0; i < text.length; i += 1) {
-        hash = ((hash << 5) - hash) + text.charCodeAt(i);
-        hash |= 0;
+    function openJsonModal(value) {
+      currentJsonModalValue = value;
+      currentJsonModalText = JSON.stringify(value, null, 2);
+      const treeRoot = $('#json-modal-tree');
+      treeRoot.innerHTML = '';
+      treeRoot.appendChild(buildJsonNode(value, 0, 'root'));
+      $('#json-search').value = '';
+      $('#json-search-count').textContent = '';
+      $('#json-modal').classList.add('open');
+      $('#json-modal').setAttribute('aria-hidden', 'false');
+    }
+
+    function closeJsonModal() {
+      $('#json-modal').classList.remove('open');
+      $('#json-modal').setAttribute('aria-hidden', 'true');
+    }
+
+    function buildPrimitiveNode(value) {
+      const span = document.createElement('span');
+      if (value === null) {
+        span.className = 'json-null';
+        span.textContent = 'null';
+      } else if (typeof value === 'string') {
+        span.className = 'json-string';
+        span.textContent = '"' + value + '"';
+      } else if (typeof value === 'number') {
+        span.className = 'json-number';
+        span.textContent = String(value);
+      } else if (typeof value === 'boolean') {
+        span.className = 'json-boolean';
+        span.textContent = String(value);
+      } else {
+        span.textContent = String(value);
       }
-      return Math.abs(hash) % 360;
+      return span;
+    }
+
+    function buildJsonNode(value, depth, label) {
+      const wrap = document.createElement('div');
+      wrap.className = 'json-line';
+      const isArray = Array.isArray(value);
+      const isObject = value && typeof value === 'object' && !isArray;
+      if (!isArray && !isObject) {
+        if (label !== 'root') {
+          const key = document.createElement('span');
+          key.className = 'json-key';
+          key.textContent = '"' + label + '": ';
+          wrap.appendChild(key);
+        }
+        wrap.appendChild(buildPrimitiveNode(value));
+        return wrap;
+      }
+
+      const details = document.createElement('details');
+      details.open = depth < 1;
+      const summary = document.createElement('summary');
+      if (label !== 'root') {
+        const key = document.createElement('span');
+        key.className = 'json-key';
+        key.textContent = '"' + label + '" ';
+        summary.appendChild(key);
+      }
+      const info = document.createElement('span');
+      const size = isArray ? value.length : Object.keys(value).length;
+      info.textContent = isArray ? '[array, ' + size + ']' : '{object, ' + size + '}';
+      summary.appendChild(info);
+      details.appendChild(summary);
+
+      if (isArray) {
+        value.forEach((item, idx) => {
+          details.appendChild(buildJsonNode(item, depth + 1, String(idx)));
+        });
+      } else {
+        Object.entries(value).forEach(([k, v]) => {
+          details.appendChild(buildJsonNode(v, depth + 1, k));
+        });
+      }
+      wrap.appendChild(details);
+      return wrap;
+    }
+
+    function setJsonTreeExpansion(open) {
+      document.querySelectorAll('#json-modal-tree details').forEach((d) => {
+        d.open = open;
+      });
+    }
+
+    function searchJsonTree(termRaw) {
+      const term = String(termRaw || '').trim().toLowerCase();
+      const lines = document.querySelectorAll('#json-modal-tree .json-line');
+      let hits = 0;
+      lines.forEach((line) => {
+        line.classList.remove('match');
+      });
+      if (!term) {
+        $('#json-search-count').textContent = '';
+        return;
+      }
+      lines.forEach((line) => {
+        const hay = String(line.textContent || '').toLowerCase();
+        if (hay.includes(term)) {
+          hits += 1;
+          line.classList.add('match');
+          let p = line.parentElement;
+          while (p) {
+            if (p.tagName === 'DETAILS') p.open = true;
+            p = p.parentElement;
+          }
+        }
+      });
+      $('#json-search-count').textContent = hits ? ('Pogođeno: ' + hits) : 'Nema rezultata';
+    }
+
+    function formatAttachmentsSummary(items) {
+      if (!Array.isArray(items) || !items.length) return '—';
+      const label = items.slice(0, 2)
+        .map((a) => String(a.type || a.name || 'attachment'))
+        .join(', ');
+      return items.length > 2 ? (label + ' +' + (items.length - 2)) : label;
     }
 
     function pageColorStyle(pageId) {
-      const hue = hashStringToHue(pageId || 'default');
-      return {
-        bg: 'hsla(' + hue + ', 72%, 52%, 0.14)',
-        border: 'hsla(' + hue + ', 82%, 62%, 0.55)',
-        text: 'hsl(' + hue + ', 86%, 78%)'
-      };
+      const id = String(pageId || '').trim();
+      if (!id) {
+        return {
+          bg: 'rgba(255, 255, 255, 0.06)',
+          border: 'rgba(255, 255, 255, 0.25)',
+          text: 'rgba(231, 236, 243, 0.88)'
+        };
+      }
+      if (!pageColorById.has(id)) {
+        const idx = pageColorById.size % PAGE_COLOR_PALETTE.length;
+        pageColorById.set(id, PAGE_COLOR_PALETTE[idx]);
+      }
+      return pageColorById.get(id);
     }
 
     function renderPageLegend(containerSel, rows, onClickPage) {
@@ -681,6 +890,10 @@
       if (ch) q.set('channel', ch);
       if (page) q.set('pageId', page);
       if (search) q.set('q', search);
+      const from = $('#filter-from').value;
+      const to = $('#filter-to').value;
+      if (from) q.set('from', from);
+      if (to) q.set('to', to);
       q.set('limit', limit);
       q.set('offset', String(msgOffset));
       const data = await api('/messages?' + q.toString());
@@ -690,7 +903,6 @@
       tb.innerHTML = '';
       (data.rows || []).forEach((r) => {
         const tr = document.createElement('tr');
-        const rawId = 'raw-' + Math.random().toString(36).slice(2);
         tr.innerHTML =
           '<td class="mono">' + escapeHtml(formatDateTime(r.createdAt)) + '</td>' +
           '<td><span class="pill">' + escapeHtml(r.channel) + '</span></td>' +
@@ -701,10 +913,16 @@
           '<td><span class="soft-badge page-badge">' + escapeHtml(formatPageDisplay(r.pageId, r.pageName)) + '</span></td>' +
           '<td class="mono">' + escapeHtml(r.externalThreadId || '') + '</td>' +
           '<td>' + escapeHtml((r.bodyText || '').slice(0, 200)) + '</td>' +
-          '<td><details class="raw"><summary>JSON</summary><pre id="' + rawId + '"></pre></details></td>';
+          '<td>' + escapeHtml(formatAttachmentsSummary(r.attachments || [])) + '</td>' +
+          '<td><button type="button" class="secondary btn-open-raw">Otvori</button></td>';
         tb.appendChild(tr);
-        const pre = document.getElementById(rawId);
-        if (pre) pre.textContent = JSON.stringify(r.rawPayload, null, 2);
+        const rawBtn = tr.querySelector('.btn-open-raw');
+        if (rawBtn) {
+          rawBtn.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            openJsonModal(r.rawPayload);
+          });
+        }
         const badge = tr.querySelector('.page-badge');
         if (badge) {
           const color = pageColorStyle(r.pageId || '');
@@ -861,6 +1079,27 @@
       $('#health-json').textContent = JSON.stringify(data, null, 2);
     }
 
+    function resetMessageFilters() {
+      $('#filter-channel').value = 'MESSENGER';
+      $('#filter-page').value = '';
+      $('#filter-search').value = '';
+      $('#filter-from').value = '';
+      $('#filter-to').value = '';
+      $('#filter-limit').value = '50';
+      msgOffset = 0;
+    }
+
+    function resetUsersFilters() {
+      $('#users-page').value = '';
+      $('#users-q').value = '';
+      $('#users-limit').value = '50';
+      usersOffset = 0;
+    }
+
+    function resetThreadsFilters() {
+      $('#threads-channel').value = 'MESSENGER';
+    }
+
     function escapeHtml(s) {
       return String(s)
         .replace(/&/g, '&amp;')
@@ -916,6 +1155,14 @@
       msgOffset = 0;
       loadMessages().catch((e) => alert(e.message));
     });
+    $('#filter-from').addEventListener('change', () => {
+      msgOffset = 0;
+      loadMessages().catch((e) => alert(e.message));
+    });
+    $('#filter-to').addEventListener('change', () => {
+      msgOffset = 0;
+      loadMessages().catch((e) => alert(e.message));
+    });
     $('#filter-limit').addEventListener('change', () => {
       msgOffset = 0;
       loadMessages().catch((e) => alert(e.message));
@@ -929,6 +1176,10 @@
       const lim = Number($('#filter-limit').value) || 50;
       msgOffset = Math.max(0, msgOffset - lim);
       try { await loadMessages(); } catch (e) { alert(e.message); }
+    });
+    $('#btn-reset-messages').addEventListener('click', () => {
+      resetMessageFilters();
+      loadMessages().catch((e) => alert(e.message));
     });
 
     $('#btn-load-users').addEventListener('click', async () => {
@@ -953,11 +1204,19 @@
       usersOffset = Math.max(0, usersOffset - lim);
       try { await loadUsers(); } catch (e) { alert(e.message); }
     });
+    $('#btn-reset-users').addEventListener('click', () => {
+      resetUsersFilters();
+      loadUsers().catch((e) => alert(e.message));
+    });
 
     $('#btn-load-threads').addEventListener('click', async () => {
       try { await loadThreads(); } catch (e) { alert(e.message); }
     });
     $('#threads-channel').addEventListener('change', () => {
+      loadThreads().catch((e) => alert(e.message));
+    });
+    $('#btn-reset-threads').addEventListener('click', () => {
+      resetThreadsFilters();
       loadThreads().catch((e) => alert(e.message));
     });
     $('#btn-load-pageids').addEventListener('click', async () => {
@@ -969,6 +1228,29 @@
     $('#btn-load-health').addEventListener('click', async () => {
       try { await loadHealth(); } catch (e) { alert(e.message); }
     });
+    $('#btn-close-json').addEventListener('click', closeJsonModal);
+    $('#json-modal').addEventListener('click', (ev) => {
+      if (ev.target === $('#json-modal')) closeJsonModal();
+    });
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape' && $('#json-modal').classList.contains('open')) {
+        closeJsonModal();
+      }
+    });
+    $('#btn-copy-json').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(currentJsonModalText || '');
+        $('#btn-copy-json').textContent = 'Kopirano';
+        setTimeout(() => { $('#btn-copy-json').textContent = 'Kopiraj'; }, 1000);
+      } catch (_e) {
+        alert('Kopiranje nije uspjelo.');
+      }
+    });
+    $('#json-search').addEventListener('input', () => {
+      searchJsonTree($('#json-search').value);
+    });
+    $('#btn-expand-json').addEventListener('click', () => setJsonTreeExpansion(true));
+    $('#btn-collapse-json').addEventListener('click', () => setJsonTreeExpansion(false));
 
     $('#btn-sync-messenger').addEventListener('click', async () => {
       const pageId = $('#sync-page-id').value.trim();
