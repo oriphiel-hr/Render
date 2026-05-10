@@ -186,7 +186,7 @@ function createAdminRouter() {
 
   router.post('/api/users/contact', jsonBody, requireAdminToken, async (req, res) => {
     try {
-      const { pageId, userId, isLead, notes } = req.body || {};
+      const { pageId, userId, isLead, pauseAutomation, notes } = req.body || {};
       const safePageId = String(pageId || '').trim();
       const safeUserId = String(userId || '').trim();
       if (!safePageId || !safeUserId) {
@@ -196,11 +196,13 @@ function createAdminRouter() {
       const createData = {
         pageId: safePageId,
         userId: safeUserId,
-        isLead: Boolean(isLead),
+        isLead: typeof isLead === 'boolean' ? isLead : false,
+        pauseAutomation: typeof pauseAutomation === 'boolean' ? pauseAutomation : false,
         notes: notes == null ? null : String(notes).trim() || null
       };
       const updateData = {};
       if (typeof isLead === 'boolean') updateData.isLead = isLead;
+      if (typeof pauseAutomation === 'boolean') updateData.pauseAutomation = pauseAutomation;
       if (notes !== undefined) updateData.notes = notes == null ? null : String(notes).trim() || null;
 
       const contact = await prisma.crmContact.upsert({

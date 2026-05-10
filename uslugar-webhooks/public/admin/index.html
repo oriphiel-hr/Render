@@ -403,9 +403,11 @@
             <h3 style="margin:0 0 0.35rem;font-size:0.95rem;">Pošalji Messenger odgovor</h3>
             <p class="hint" style="margin:0 0 0.65rem;">
               Ručno iz admina. Za automatski odgovor vanjski servis može: dohvatiti prompt
-              <span class="mono">GET /api/v1/prompts/active/:slug</span>, složiti tekst (LLM), pa poslati
-              <span class="mono">POST /api/v1/messenger/send</span> s headerom <span class="mono">X-Ingest-Key</span>.
-              Treba Page access token s <span class="mono">pages_messaging</span> — isto kao za sinkronizaciju; token se ne sprema na server.
+              <span class="mono">GET /api/v1/prompts/active/:slug</span>, provjeriti
+              <span class="mono">GET /api/v1/automation/paused</span> (query: pageId, userId) ili osloniti se na blokadu pri slanju, složiti tekst (LLM), pa
+              <span class="mono">POST /api/v1/messenger/send</span> s <span class="mono">X-Ingest-Key</span>.
+              U tabu <strong>Korisnici</strong> uključivanje <strong>Auto pauza</strong> traje dok ne isključiš — ne trebaš stići odmah poslati poruku; ingest slanje u tom slučaju vraća 409.
+              Page access token: <span class="mono">pages_messaging</span> — ne sprema se na server.
             </p>
             <div class="row">
               <div class="field">
@@ -546,6 +548,7 @@
                   <th class="sortable" data-sort="userName">Korisnik (ime, prezime)</th>
                   <th class="sortable" data-sort="pageName">Stranica</th>
                   <th class="sortable" data-sort="isLead">Lead</th>
+                  <th class="sortable" data-sort="pauseAutomation" title="Kad je uključeno, POST /api/v1/messenger/send ne šalje (automatika). Ručno slanje iz admina i dalje radi.">Auto pauza</th>
                   <th class="sortable" data-sort="notes">Bilješke</th>
                   <th class="sortable" data-sort="messageCount">Broj poruka</th>
                   <th class="sortable" data-sort="inboundCount">Ulaz/Izlaz</th>
@@ -891,6 +894,10 @@
         if (key === 'isLead') {
           av = a?.isLead ? 1 : 0;
           bv = b?.isLead ? 1 : 0;
+        }
+        if (key === 'pauseAutomation') {
+          av = a?.pauseAutomation ? 1 : 0;
+          bv = b?.pauseAutomation ? 1 : 0;
         }
         const aDate = av ? new Date(av) : null;
         const bDate = bv ? new Date(bv) : null;
@@ -1398,6 +1405,8 @@
           '<td><span class="soft-badge user-page-badge">' + renderStackedLabel(u.pageName || 'Stranica', u.pageId || '') + '</span></td>' +
           '<td><label style="display:flex;align-items:center;gap:0.35rem;"><input type="checkbox" class="crm-lead-toggle" data-user="' + escapeHtml(u.userId || '') +
           '" data-page="' + escapeHtml(u.pageId || '') + '"' + (u.isLead ? ' checked' : '') + ' /><span>Lead</span></label></td>' +
+          '<td><label style="display:flex;align-items:center;gap:0.35rem;"><input type="checkbox" class="crm-pause-toggle" data-user="' + escapeHtml(u.userId || '') +
+          '" data-page="' + escapeHtml(u.pageId || '') + '"' + (u.pauseAutomation ? ' checked' : '') + ' /><span>Pauza</span></label></td>' +
           '<td><button type="button" class="secondary btn-edit-note" data-user="' + escapeHtml(u.userId || '') +
           '" data-page="' + escapeHtml(u.pageId || '') + '" data-note="' + escapeHtml(notesPreview) + '">' +
           (notesPreview ? escapeHtml(notesPreview.slice(0, 36) + (notesPreview.length > 36 ? '…' : '')) : 'Dodaj bilješku') + '</button></td>' +
@@ -1450,6 +1459,20 @@
               pageId: el.dataset.page || '',
               userId: el.dataset.user || '',
               isLead: Boolean(el.checked)
+            });
+          } catch (e) {
+            alert(e.message);
+            el.checked = !el.checked;
+          }
+        });
+      });
+      document.querySelectorAll('.crm-pause-toggle').forEach((el) => {
+        el.addEventListener('change', async () => {
+          try {
+            await apiPost('/users/contact', {
+              pageId: el.dataset.page || '',
+              userId: el.dataset.user || '',
+              pauseAutomation: Boolean(el.checked)
             });
           } catch (e) {
             alert(e.message);

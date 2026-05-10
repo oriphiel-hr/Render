@@ -89,6 +89,7 @@ app.listen(PORT, () => {
   }
   console.log(`Ingest API: POST http://localhost:${PORT}/api/v1/messages (header X-Ingest-Key)`);
   console.log(`Ingest send: POST http://localhost:${PORT}/api/v1/messenger/send`);
+  console.log(`Ingest automation: GET http://localhost:${PORT}/api/v1/automation/paused?pageId=&userId=`);
   console.log(`Admin send: POST http://localhost:${PORT}/admin/api/send/messenger`);
   console.log(`Admin panel: GET http://localhost:${PORT}/admin/ (requires ADMIN_PANEL_TOKEN)`);
   if (!hasAnyDatabaseUrl()) {

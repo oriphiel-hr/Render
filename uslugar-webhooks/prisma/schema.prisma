@@ -75,6 +75,8 @@ model CrmContact {
   pageId    String
   userId    String
   isLead    Boolean  @default(false)
+  /// Kad je true, ingest POST /messenger/send ne šalje (automatika); admin ručno slanje i dalje radi.
+  pauseAutomation Boolean @default(false)
   notes     String?  @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

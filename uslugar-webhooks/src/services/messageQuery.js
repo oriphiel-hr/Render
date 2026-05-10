@@ -338,6 +338,7 @@ async function listUsers(q = {}) {
       lastDirection: u.lastDirection || null,
       lastText: u.lastText,
       isLead: false,
+      pauseAutomation: false,
       notes: null
     }))
     .sort((a, b) => new Date(b.lastAt) - new Date(a.lastAt));
@@ -347,13 +348,14 @@ async function listUsers(q = {}) {
       where: {
         OR: list.map((u) => ({ pageId: String(u.pageId), userId: String(u.userId) }))
       },
-      select: { pageId: true, userId: true, isLead: true, notes: true }
+      select: { pageId: true, userId: true, isLead: true, pauseAutomation: true, notes: true }
     });
     const byKey = new Map(contacts.map((c) => [`${c.pageId}_${c.userId}`, c]));
     list.forEach((u) => {
       const c = byKey.get(`${u.pageId}_${u.userId}`);
       if (!c) return;
       u.isLead = Boolean(c.isLead);
+      u.pauseAutomation = Boolean(c.pauseAutomation);
       u.notes = c.notes || null;
     });
   }

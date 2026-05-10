@@ -70,7 +70,30 @@ function createIngestRouter() {
   });
 
   /**
+   * Je li automatika pauzirana za nit (pageId + PSID)? Za provjeru prije LLM-a.
+   * GET /api/v1/automation/paused?pageId=&userId=
+   */
+  router.get('/automation/paused', requireApiKey, async (req, res) => {
+    try {
+      const pageId = String(req.query.pageId || '').trim();
+      const userId = String(req.query.userId || '').trim();
+      if (!pageId || !userId) {
+        return res.status(400).json({ error: 'Query parametri pageId i userId (PSID) su obavezni' });
+      }
+      const c = await prisma.crmContact.findUnique({
+        where: { pageId_userId: { pageId, userId } },
+        select: { pauseAutomation: true }
+      });
+      return res.json({ paused: Boolean(c?.pauseAutomation) });
+    } catch (e) {
+      console.error('[ingest automation paused]', e);
+      return res.status(500).json({ error: e.message });
+    }
+  });
+
+  /**
    * Šalje Messenger tekst (npr. nakon što LLM generira odgovor uz prompt iz GET /prompts/active).
+   * Blokira ako je u CRM-u uključen pauseAutomation (admin → Korisnici). Admin PUT slanje ne koristi ovaj route.
    * POST /api/v1/messenger/send
    * body: { pageId, recipientId, text, accessToken, apiVersion? }
    */
@@ -80,6 +103,18 @@ function createIngestRouter() {
       if (!pageId || !recipientId || !text || !accessToken) {
         return res.status(400).json({
           error: 'pageId, recipientId (PSID), text i accessToken su obavezni'
+        });
+      }
+      const safePage = String(pageId).trim();
+      const safePsid = String(recipientId).trim();
+      const gate = await prisma.crmContact.findUnique({
+        where: { pageId_userId: { pageId: safePage, userId: safePsid } },
+        select: { pauseAutomation: true }
+      });
+      if (gate?.pauseAutomation) {
+        return res.status(409).json({
+          error:
+            'Automatika je pauzirana za ovu nit (pauseAutomation). Isključi u adminu kod Korisnika ili pošalji ručno iz admina.'
         });
       }
       const result = await sendMessengerAndStore({
