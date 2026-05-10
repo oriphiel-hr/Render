@@ -147,15 +147,74 @@ async function listUsers(q = {}) {
  * Jedinstveni Page ID prefiksi iz thread ID-a (format pageId_psid).
  */
 async function listPageIdPrefixes() {
-  const threads = await listThreads({ channel: 'MESSENGER', limit: 500 });
-  const prefixes = new Set();
-  for (const row of threads) {
-    const t = row.externalThreadId;
-    if (!t) continue;
-    const i = t.indexOf('_');
-    if (i > 0) prefixes.add(t.slice(0, i));
-  }
-  return [...prefixes].sort();
+  const pages = await listPageIdsWithNames();
+  return pages.map((p) => p.id);
 }
 
-module.exports = { listMessages, listThreads, listPageIdPrefixes, listUsers, splitThreadId };
+function inferPageNameFromRaw(pageId, rawPayload) {
+  if (!rawPayload || typeof rawPayload !== 'object') return null;
+
+  const from = rawPayload.from;
+  if (from && String(from.id || '') === String(pageId) && from.name) {
+    return String(from.name).trim() || null;
+  }
+
+  const toData = rawPayload.to && Array.isArray(rawPayload.to.data) ? rawPayload.to.data : [];
+  for (const p of toData) {
+    if (String(p?.id || '') === String(pageId) && p?.name) {
+      return String(p.name).trim() || null;
+    }
+  }
+
+  const participants = rawPayload.participants && Array.isArray(rawPayload.participants.data)
+    ? rawPayload.participants.data
+    : [];
+  for (const p of participants) {
+    if (String(p?.id || '') === String(pageId) && p?.name) {
+      return String(p.name).trim() || null;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Jedinstveni Page ID prefiksi + inferirani naziv stranice iz raw payload-a (ako postoji).
+ */
+async function listPageIdsWithNames() {
+  const rows = await prisma.channelMessage.findMany({
+    where: {
+      channel: 'MESSENGER',
+      externalThreadId: { not: null }
+    },
+    select: {
+      externalThreadId: true,
+      rawPayload: true,
+      createdAt: true
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 5000
+  });
+
+  const byPage = new Map();
+  for (const r of rows) {
+    const t = r.externalThreadId;
+    if (!t) continue;
+    const i = t.indexOf('_');
+    if (i <= 0) continue;
+    const pageId = t.slice(0, i);
+    const existing = byPage.get(pageId);
+    const inferred = inferPageNameFromRaw(pageId, r.rawPayload);
+    if (!existing) {
+      byPage.set(pageId, { id: pageId, name: inferred || null });
+      continue;
+    }
+    if (!existing.name && inferred) {
+      existing.name = inferred;
+    }
+  }
+
+  return [...byPage.values()].sort((a, b) => String(a.id).localeCompare(String(b.id)));
+}
+
+module.exports = { listMessages, listThreads, listPageIdPrefixes, listPageIdsWithNames, listUsers, splitThreadId };

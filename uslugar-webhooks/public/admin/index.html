@@ -564,10 +564,13 @@
       const data = await api('/page-ids');
       const ul = $('#page-ids-list');
       ul.innerHTML = '';
-      (data.pageIds || []).forEach((id) => {
+      const pages = Array.isArray(data.pages) && data.pages.length
+        ? data.pages
+        : (data.pageIds || []).map((id) => ({ id, name: null }));
+      pages.forEach((p) => {
         const li = document.createElement('li');
         li.className = 'mono';
-        li.textContent = id;
+        li.textContent = p && p.name ? (p.name + ' (' + p.id + ')') : String(p.id || '');
         ul.appendChild(li);
       });
     }

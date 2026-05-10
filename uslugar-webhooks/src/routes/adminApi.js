@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const { prisma } = require('../lib/prisma');
 const { metaEnvPrefix, parseWebhookProfiles } = require('../lib/metaEnv');
-const { listMessages, listThreads, listPageIdPrefixes, listUsers } = require('../services/messageQuery');
+const { listMessages, listThreads, listPageIdPrefixes, listPageIdsWithNames, listUsers } = require('../services/messageQuery');
 const { syncMessengerHistory } = require('../services/facebookHistorySync');
 const { storeMessages } = require('../services/messageStore');
 const { requireAdminToken, adminCors } = require('../middleware/adminAuth');
@@ -138,7 +138,8 @@ function createAdminRouter() {
   router.get('/api/page-ids', requireAdminToken, async (_req, res) => {
     try {
       const pageIds = await listPageIdPrefixes();
-      res.json({ pageIds });
+      const pages = await listPageIdsWithNames();
+      res.json({ pageIds, pages });
     } catch (e) {
       console.error('[admin]', e);
       res.status(500).json({ error: e.message });
