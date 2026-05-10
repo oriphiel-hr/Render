@@ -87,6 +87,20 @@ Napomena:
 - Ako UI hostaš na drugoj domeni (npr. kopija `public/admin/` na Hostinger), na Renderu postavi **`ADMIN_PANEL_ORIGIN=https://…`** da CORS dopusti API pozive.
 - HTML je javno dostupan; podaci idu samo preko JSON API-ja uz token.
 
+### Baza: tablice ne postoje (`ChannelMessage` / `PromptTemplate`)
+
+Na Renderu **Build command** mora uključivati migracije, npr.:
+
+`npm ci && npx prisma migrate deploy && npm run build`
+
+Ili jednokratno u **Shell** (s ispravnim `DATABASE_URL`):
+
+`npx prisma migrate deploy`
+
+### Retroaktivno povlačenje Messenger poruka
+
+U adminu kartica **Sinkronizacija** poziva Graph API (`/{page-id}/conversations`) uz **Page access token** s `pages_messaging`. Token se u tom trenutku šalje u JSON tijelu i **ne sprema** u env. Duplikati u odnosu na webhook poruke preskaču se preko `(channel, externalMessageId)`.
+
 ## Kada uvoditi izostavljene scopeove
 
 - Dodavati samo kad postoji konkretan feature u kodu koji ih koristi.

@@ -111,6 +111,7 @@
     section.panel { display: none; }
     section.panel.active { display: block; }
     .badge { font-size: 0.75rem; color: var(--muted); }
+    #db-banner { border-color: var(--danger) !important; background: rgba(248, 81, 73, 0.08); }
   </style>
 </head>
 <body>
@@ -143,6 +144,11 @@
     </div>
 
     <div id="app" style="display:none;">
+      <div id="db-banner" class="card" style="display:none;">
+        <strong class="err">PostgreSQL / Prisma: tablice nisu kreirane</strong>
+        <p id="db-banner-text" class="hint" style="margin:0.5rem 0 0;"></p>
+      </div>
+
       <nav class="tabs" id="tabs"></nav>
 
       <section class="panel active" data-panel="profiles">
@@ -250,6 +256,38 @@
         </div>
       </section>
 
+      <section class="panel" data-panel="sync">
+        <div class="card">
+          <h2 style="margin-top:0;font-size:1rem;">Retroaktivno: Messenger (Graph API)</h2>
+          <p class="hint">
+            Treba <strong>Page access token</strong> s <code>pages_messaging</code> (Graph API Explorer → odaberi stranicu).
+            Token se ne sprema na server — šalje se samo u ovom zahtjevu. Meta može ograničiti dubinu povijesti.
+          </p>
+          <div class="row">
+            <div class="field">
+              <label for="sync-page-id">Page ID</label>
+              <input id="sync-page-id" type="text" placeholder="ID stranice" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label for="sync-max-conv">Max konverzacija</label>
+              <input id="sync-max-conv" type="number" value="30" min="1" max="200" />
+            </div>
+            <div class="field">
+              <label for="sync-max-msg">Max poruka ukupno</label>
+              <input id="sync-max-msg" type="number" value="3000" min="1" max="20000" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="field" style="flex:2 1 20rem;">
+              <label for="sync-token">Page access token (jednokratno)</label>
+              <input id="sync-token" type="password" autocomplete="off" placeholder="EAAG…" />
+            </div>
+            <button type="button" id="btn-sync-messenger">Povuci i spremi u bazu</button>
+          </div>
+          <pre id="sync-result" class="mono" style="margin-top:0.75rem;white-space:pre-wrap;display:none;"></pre>
+        </div>
+      </section>
+
       <section class="panel" data-panel="prompts">
         <div class="card">
           <h2 style="margin-top:0;font-size:1rem;">Prompt predlošci</h2>
@@ -315,9 +353,27 @@
       return data;
     }
 
+    async function apiPost(path, body) {
+      const base = apiBase();
+      if (!base) throw new Error('Postavi API bazu (Render URL).');
+      const url = base + '/admin/api' + path;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        credentials: 'omit'
+      });
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch { data = { error: text }; }
+      if (!res.ok) throw new Error(data.error || res.status + ' ' + text.slice(0, 200));
+      return data;
+    }
+
     const TAB_SPECS = [
       { id: 'profiles', label: 'Profili' },
       { id: 'messages', label: 'Poruke' },
+      { id: 'sync', label: 'Sinkronizacija' },
       { id: 'threads', label: 'Threadovi' },
       { id: 'pages', label: 'Page ID' },
       { id: 'prompts', label: 'Promptovi' },
@@ -351,6 +407,14 @@
 
     async function loadBootstrap() {
       const data = await api('/bootstrap');
+      const banner = $('#db-banner');
+      const btext = $('#db-banner-text');
+      if (data.databaseReady) {
+        banner.style.display = 'none';
+      } else {
+        banner.style.display = 'block';
+        btext.textContent = data.databaseHint || 'Pokreni prisma migrate deploy na produkcijskoj bazi.';
+      }
       $('#profiles-raw').textContent = 'META_WEBHOOK_PROFILES=' + (data.metaWebhookProfilesRaw || '(prazno)');
       const tb = $('#profiles-table tbody');
       tb.innerHTML = '';
@@ -505,6 +569,37 @@
     });
     $('#btn-load-health').addEventListener('click', async () => {
       try { await loadHealth(); } catch (e) { alert(e.message); }
+    });
+
+    $('#btn-sync-messenger').addEventListener('click', async () => {
+      const pageId = $('#sync-page-id').value.trim();
+      const accessToken = $('#sync-token').value.trim();
+      const maxConversations = Number($('#sync-max-conv').value) || 30;
+      const maxMessages = Number($('#sync-max-msg').value) || 3000;
+      const out = $('#sync-result');
+      if (!pageId || !accessToken) {
+        alert('Unesi Page ID i Page access token.');
+        return;
+      }
+      out.style.display = 'block';
+      out.textContent = 'Šaljem…';
+      $('#btn-sync-messenger').disabled = true;
+      try {
+        const r = await apiPost('/sync/messenger', {
+          pageId,
+          accessToken,
+          maxConversations,
+          maxMessages
+        });
+        out.textContent = JSON.stringify(r, null, 2);
+        await loadBootstrap();
+        await loadMessages();
+      } catch (e) {
+        out.textContent = e.message || String(e);
+      } finally {
+        $('#btn-sync-messenger').disabled = false;
+        $('#sync-token').value = '';
+      }
     });
 
     $('#btn-logout').addEventListener('click', () => {

@@ -54,3 +54,4 @@ jobs:
           node --check src/routes/adminApi.js
           node --check src/middleware/adminAuth.js
           node --check src/services/messageQuery.js
+          node --check src/services/facebookHistorySync.js
