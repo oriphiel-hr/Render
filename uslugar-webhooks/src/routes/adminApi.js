@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const { prisma } = require('../lib/prisma');
 const { metaEnvPrefix, parseWebhookProfiles } = require('../lib/metaEnv');
-const { listMessages, listThreads, listPageIdPrefixes } = require('../services/messageQuery');
+const { listMessages, listThreads, listPageIdPrefixes, listUsers } = require('../services/messageQuery');
 const { syncMessengerHistory } = require('../services/facebookHistorySync');
 const { storeMessages } = require('../services/messageStore');
 const { requireAdminToken, adminCors } = require('../middleware/adminAuth');
@@ -93,16 +93,33 @@ function createAdminRouter() {
 
   router.get('/api/messages', requireAdminToken, async (req, res) => {
     try {
-      const { channel, pageId, limit, offset } = req.query;
+      const { channel, pageId, userId, limit, offset } = req.query;
       const result = await listMessages({
         channel: channel || undefined,
         pageIdPrefix: pageId || undefined,
+        userId: userId || undefined,
         limit,
         offset
       });
       res.json(result);
     } catch (e) {
       console.error('[admin]', e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  router.get('/api/users', requireAdminToken, async (req, res) => {
+    try {
+      const { pageId, q, limit, offset } = req.query;
+      const result = await listUsers({
+        pageIdPrefix: pageId || undefined,
+        q: q || undefined,
+        limit,
+        offset
+      });
+      res.json(result);
+    } catch (e) {
+      console.error('[admin users]', e);
       res.status(500).json({ error: e.message });
     }
   });

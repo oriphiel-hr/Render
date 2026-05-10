@@ -1,19 +1,34 @@
 const { prisma } = require('../lib/prisma');
 
+function splitThreadId(externalThreadId) {
+  const t = String(externalThreadId || '');
+  const i = t.indexOf('_');
+  if (i <= 0) return { pageId: null, userId: null };
+  return { pageId: t.slice(0, i), userId: t.slice(i + 1) || null };
+}
+
 /**
- * @param {{ channel?: string, pageIdPrefix?: string, limit?: number, offset?: number }} q
+ * @param {{ channel?: string, pageIdPrefix?: string, userId?: string, limit?: number, offset?: number }} q
  */
 async function listMessages(q = {}) {
   const limit = Math.min(Math.max(Number(q.limit) || 50, 1), 200);
   const offset = Math.max(Number(q.offset) || 0, 0);
   const channel = q.channel ? String(q.channel).toUpperCase() : undefined;
   const pageIdPrefix = q.pageIdPrefix ? String(q.pageIdPrefix).trim() : '';
+  const userId = q.userId ? String(q.userId).trim() : '';
 
   /** @type {import('@prisma/client').Prisma.ChannelMessageWhereInput} */
   const where = {};
+  const and = [];
   if (channel) where.channel = channel;
   if (pageIdPrefix) {
-    where.externalThreadId = { startsWith: `${pageIdPrefix}_` };
+    and.push({ externalThreadId: { startsWith: `${pageIdPrefix}_` } });
+  }
+  if (userId) {
+    and.push({ externalThreadId: { endsWith: `_${userId}` } });
+  }
+  if (and.length) {
+    where.AND = and;
   }
 
   const [rows, total] = await Promise.all([
@@ -61,6 +76,74 @@ async function listThreads(q = {}) {
 }
 
 /**
+ * CRM-lite: korisnici (PSID) iz MESSENGER niti.
+ * @param {{ pageIdPrefix?: string, q?: string, limit?: number, offset?: number }} q
+ */
+async function listUsers(q = {}) {
+  const limit = Math.min(Math.max(Number(q.limit) || 50, 1), 200);
+  const offset = Math.max(Number(q.offset) || 0, 0);
+  const pageIdPrefix = q.pageIdPrefix ? String(q.pageIdPrefix).trim() : '';
+  const term = q.q ? String(q.q).trim().toLowerCase() : '';
+
+  const rows = await prisma.channelMessage.findMany({
+    where: {
+      channel: 'MESSENGER',
+      externalThreadId: { not: null }
+    },
+    select: {
+      externalThreadId: true,
+      createdAt: true,
+      bodyText: true
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 5000
+  });
+
+  const byUser = new Map();
+  for (const r of rows) {
+    const t = r.externalThreadId;
+    if (!t) continue;
+    const { pageId, userId } = splitThreadId(t);
+    if (!pageId || !userId) continue;
+    if (pageIdPrefix && pageId !== pageIdPrefix) continue;
+    if (term && !(userId.toLowerCase().includes(term) || String(pageId).toLowerCase().includes(term))) {
+      continue;
+    }
+    let agg = byUser.get(userId);
+    if (!agg) {
+      agg = {
+        userId,
+        pageIds: new Set(),
+        messageCount: 0,
+        lastAt: r.createdAt,
+        lastText: r.bodyText || null
+      };
+      byUser.set(userId, agg);
+    }
+    agg.pageIds.add(pageId);
+    agg.messageCount += 1;
+    if (new Date(r.createdAt) > new Date(agg.lastAt)) {
+      agg.lastAt = r.createdAt;
+      agg.lastText = r.bodyText || null;
+    }
+  }
+
+  const list = [...byUser.values()]
+    .map((u) => ({
+      userId: u.userId,
+      pageIds: [...u.pageIds].sort(),
+      messageCount: u.messageCount,
+      lastAt: u.lastAt,
+      lastText: u.lastText
+    }))
+    .sort((a, b) => new Date(b.lastAt) - new Date(a.lastAt));
+
+  const total = list.length;
+  const slice = list.slice(offset, offset + limit);
+  return { rows: slice, total, limit, offset };
+}
+
+/**
  * Jedinstveni Page ID prefiksi iz thread ID-a (format pageId_psid).
  */
 async function listPageIdPrefixes() {
@@ -75,4 +158,4 @@ async function listPageIdPrefixes() {
   return [...prefixes].sort();
 }
 
-module.exports = { listMessages, listThreads, listPageIdPrefixes };
+module.exports = { listMessages, listThreads, listPageIdPrefixes, listUsers, splitThreadId };

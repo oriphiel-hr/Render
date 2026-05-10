@@ -193,6 +193,10 @@
               <input id="filter-page" type="text" placeholder="npr. 123456789" />
             </div>
             <div class="field">
+              <label for="filter-user">User ID (PSID)</label>
+              <input id="filter-user" type="text" placeholder="npr. 987654321" />
+            </div>
+            <div class="field">
               <label for="filter-limit">Limit</label>
               <input id="filter-limit" type="number" value="50" min="1" max="200" />
             </div>
@@ -217,6 +221,47 @@
           <div class="row">
             <button type="button" class="secondary" id="btn-prev">Prethodna stranica</button>
             <button type="button" id="btn-next">Sljedeća stranica</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="users">
+        <div class="card">
+          <h2 style="margin-top:0;font-size:1rem;">Korisnici (CRM-lite)</h2>
+          <div class="row">
+            <div class="field">
+              <label for="users-page">Page ID</label>
+              <input id="users-page" type="text" placeholder="opcionalno" />
+            </div>
+            <div class="field">
+              <label for="users-q">Pretraga (PSID / Page ID)</label>
+              <input id="users-q" type="text" placeholder="npr. 2709..." />
+            </div>
+            <div class="field">
+              <label for="users-limit">Limit</label>
+              <input id="users-limit" type="number" value="50" min="1" max="200" />
+            </div>
+            <button type="button" id="btn-load-users">Učitaj</button>
+          </div>
+          <p class="badge" id="users-meta"></p>
+          <div style="overflow:auto;">
+            <table id="users-table">
+              <thead>
+                <tr>
+                  <th>User ID (PSID)</th>
+                  <th>Page ID</th>
+                  <th>Broj poruka</th>
+                  <th>Zadnja aktivnost</th>
+                  <th>Zadnji tekst</th>
+                  <th>Akcija</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="row">
+            <button type="button" class="secondary" id="btn-users-prev">Prethodna stranica</button>
+            <button type="button" id="btn-users-next">Sljedeća stranica</button>
           </div>
         </div>
       </section>
@@ -373,6 +418,7 @@
     const TAB_SPECS = [
       { id: 'profiles', label: 'Profili' },
       { id: 'messages', label: 'Poruke' },
+      { id: 'users', label: 'Korisnici' },
       { id: 'sync', label: 'Sinkronizacija' },
       { id: 'threads', label: 'Threadovi' },
       { id: 'pages', label: 'Page ID' },
@@ -404,6 +450,7 @@
     }
 
     let msgOffset = 0;
+    let usersOffset = 0;
 
     async function loadBootstrap() {
       const data = await api('/bootstrap');
@@ -434,10 +481,12 @@
     async function loadMessages() {
       const ch = $('#filter-channel').value;
       const page = $('#filter-page').value.trim();
+      const user = $('#filter-user').value.trim();
       const limit = $('#filter-limit').value || 50;
       const q = new URLSearchParams();
       if (ch) q.set('channel', ch);
       if (page) q.set('pageId', page);
+      if (user) q.set('userId', user);
       q.set('limit', limit);
       q.set('offset', String(msgOffset));
       const data = await api('/messages?' + q.toString());
@@ -457,6 +506,44 @@
         tb.appendChild(tr);
         const pre = document.getElementById(rawId);
         if (pre) pre.textContent = JSON.stringify(r.rawPayload, null, 2);
+      });
+    }
+
+    async function loadUsers() {
+      const page = $('#users-page').value.trim();
+      const term = $('#users-q').value.trim();
+      const limit = Number($('#users-limit').value) || 50;
+      const q = new URLSearchParams();
+      if (page) q.set('pageId', page);
+      if (term) q.set('q', term);
+      q.set('limit', String(limit));
+      q.set('offset', String(usersOffset));
+      const data = await api('/users?' + q.toString());
+      $('#users-meta').textContent =
+        'Ukupno korisnika: ' + data.total + ' · offset ' + data.offset + ' · limit ' + data.limit;
+      const tb = $('#users-table tbody');
+      tb.innerHTML = '';
+      (data.rows || []).forEach((u) => {
+        const tr = document.createElement('tr');
+        const firstPage = (u.pageIds && u.pageIds[0]) || '';
+        tr.innerHTML =
+          '<td class="mono">' + escapeHtml(u.userId) + '</td>' +
+          '<td class="mono">' + escapeHtml((u.pageIds || []).join(', ')) + '</td>' +
+          '<td>' + escapeHtml(String(u.messageCount || 0)) + '</td>' +
+          '<td class="mono">' + escapeHtml(String(u.lastAt || '')) + '</td>' +
+          '<td>' + escapeHtml((u.lastText || '').slice(0, 140)) + '</td>' +
+          '<td><button type="button" class="secondary btn-open-user" data-user="' + escapeHtml(u.userId) +
+          '" data-page="' + escapeHtml(firstPage) + '">Otvori poruke</button></td>';
+        tb.appendChild(tr);
+      });
+      document.querySelectorAll('.btn-open-user').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          $('#filter-user').value = btn.dataset.user || '';
+          $('#filter-page').value = btn.dataset.page || '';
+          msgOffset = 0;
+          activateTab('messages');
+          loadMessages().catch((e) => alert(e.message));
+        });
       });
     }
 
@@ -523,6 +610,7 @@
       buildTabs();
       await loadBootstrap();
       await loadMessages();
+      await loadUsers();
     }
 
     $('#btn-save').addEventListener('click', async () => {
@@ -556,6 +644,21 @@
       const lim = Number($('#filter-limit').value) || 50;
       msgOffset = Math.max(0, msgOffset - lim);
       try { await loadMessages(); } catch (e) { alert(e.message); }
+    });
+
+    $('#btn-load-users').addEventListener('click', async () => {
+      usersOffset = 0;
+      try { await loadUsers(); } catch (e) { alert(e.message); }
+    });
+    $('#btn-users-next').addEventListener('click', async () => {
+      const lim = Number($('#users-limit').value) || 50;
+      usersOffset += lim;
+      try { await loadUsers(); } catch (e) { alert(e.message); }
+    });
+    $('#btn-users-prev').addEventListener('click', async () => {
+      const lim = Number($('#users-limit').value) || 50;
+      usersOffset = Math.max(0, usersOffset - lim);
+      try { await loadUsers(); } catch (e) { alert(e.message); }
     });
 
     $('#btn-load-threads').addEventListener('click', async () => {
