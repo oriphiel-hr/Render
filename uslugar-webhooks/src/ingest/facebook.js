@@ -11,6 +11,7 @@ const crypto = require('crypto');
  * - messaging_feedback — ocjena / povrat nakon razgovora (ovisno o šablonu)
  * - message_edits — ispravak poslane poruke (nova verzija teksta)
  * - inbox_labels — oznake konverzacije u Inboxu (ako Meta šalje za tvoju integraciju)
+ * - calls — glasovni/video pozivi i povezani događaji (statistika; detalji u rawPayload)
  *
  * Ne pretplaćujemo ovdje: message_reads, message_deliveries (veliki volumen, rijetko korisno u bazi).
  */
@@ -130,6 +131,34 @@ function messagingEventToRow(pageId, event) {
       externalMessageId: extId,
       direction: 'inbound',
       bodyText: clip(`[feedback] ${JSON.stringify(event.feedback)}`, 2000),
+      rawPayload: event
+    };
+  }
+
+  // --- Pozivi (glas/video, dopuštenja, postavke — uglavnom za statistiku / analitiku) ---
+  const callPayload =
+    event.call != null
+      ? event.call
+      : event.calls != null
+        ? event.calls
+        : event.call_permission_reply != null
+          ? event.call_permission_reply
+          : event.call_settings_update != null
+            ? event.call_settings_update
+            : null;
+  if (callPayload != null) {
+    const extId = syntheticId('fb_call', pageId, event, {});
+    const bodyText =
+      typeof callPayload === 'string' || typeof callPayload === 'number'
+        ? `[poziv] ${callPayload}`
+        : `[poziv] ${clip(JSON.stringify(callPayload), 1800)}`;
+    return {
+      channel: 'MESSENGER',
+      source: 'facebook.graph.call',
+      externalThreadId: baseThread,
+      externalMessageId: extId,
+      direction: 'inbound',
+      bodyText: clip(bodyText, 2000),
       rawPayload: event
     };
   }

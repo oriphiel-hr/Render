@@ -19,6 +19,7 @@ Parser (`src/ingest/facebook.js`) sprema u `ChannelMessage` sažetak u `bodyText
 | `messaging_feedback` | Povrat / ocjena (`facebook.graph.feedback`) |
 | `message_edits` | Ispravak teksta (`facebook.graph.message_edit`) |
 | `inbox_labels` | Oznake konverzacije (`facebook.graph.inbox_labels`) — ako Meta šalje za tvoju integraciju |
+| `calls` (i povezano) | Pozivi / dopuštenja / postavke (`facebook.graph.call`) — sažetak u `bodyText`, analitika iz `rawPayload` |
 
 **Preskačemo** (ne idu u bazu): `message_reads`, `message_deliveries` — premali signal za volumen.
 
