@@ -8,14 +8,16 @@ function splitThreadId(externalThreadId) {
 }
 
 /**
- * @param {{ channel?: string, pageIdPrefix?: string, userId?: string, limit?: number, offset?: number }} q
+ * @param {{ channel?: string, pageIdPrefix?: string, userId?: string, q?: string, limit?: number, offset?: number }} q
  */
 async function listMessages(q = {}) {
   const limit = Math.min(Math.max(Number(q.limit) || 50, 1), 200);
   const offset = Math.max(Number(q.offset) || 0, 0);
   const channel = q.channel ? String(q.channel).toUpperCase() : undefined;
   const pageIdPrefix = q.pageIdPrefix ? String(q.pageIdPrefix).trim() : '';
-  const userId = q.userId ? String(q.userId).trim() : '';
+  const searchTermRaw = q.q ? String(q.q).trim() : (q.userId ? String(q.userId).trim() : '');
+  const searchTerm = searchTermRaw.toLowerCase();
+  const hasSearch = Boolean(searchTerm);
 
   /** @type {import('@prisma/client').Prisma.ChannelMessageWhereInput} */
   const where = {};
@@ -24,26 +26,21 @@ async function listMessages(q = {}) {
   if (pageIdPrefix) {
     and.push({ externalThreadId: { startsWith: `${pageIdPrefix}_` } });
   }
-  if (userId) {
-    and.push({ externalThreadId: { endsWith: `_${userId}` } });
-  }
   if (and.length) {
     where.AND = and;
   }
 
-  const [rows, total] = await Promise.all([
-    prisma.channelMessage.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-      skip: offset
-    }),
-    prisma.channelMessage.count({ where })
-  ]);
+  const rawRows = await prisma.channelMessage.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    take: hasSearch ? 5000 : limit,
+    skip: hasSearch ? 0 : offset
+  });
+  const dbTotal = hasSearch ? rawRows.length : await prisma.channelMessage.count({ where });
 
   const pageNameById = new Map();
   const userNameByKey = new Map();
-  for (const r of rows) {
+  for (const r of rawRows) {
     const { pageId: parsedPageId, userId: parsedUserId } = splitThreadId(r.externalThreadId);
     if (!parsedPageId || !parsedUserId) continue;
 
@@ -59,7 +56,7 @@ async function listMessages(q = {}) {
     }
   }
 
-  const enrichedRows = rows.map((r) => {
+  const enrichedRows = rawRows.map((r) => {
     const { pageId: parsedPageId, userId: parsedUserId } = splitThreadId(r.externalThreadId);
     const userKey = parsedPageId && parsedUserId ? `${parsedPageId}_${parsedUserId}` : null;
     const userName = userKey ? userNameByKey.get(userKey) || null : null;
@@ -76,7 +73,27 @@ async function listMessages(q = {}) {
     };
   });
 
-  return { rows: enrichedRows, total, limit, offset };
+  const filteredRows = enrichedRows.filter((r) => {
+    if (searchTerm) {
+      const inUserId = String(r.userId || '').toLowerCase().includes(searchTerm);
+      const inFirstName = String(r.userFirstName || '').toLowerCase().includes(searchTerm);
+      const inLastName = String(r.userLastName || '').toLowerCase().includes(searchTerm);
+      const inFullName = String(r.userName || '').toLowerCase().includes(searchTerm);
+      const inPageId = String(r.pageId || '').toLowerCase().includes(searchTerm);
+      const inPageName = String(r.pageName || '').toLowerCase().includes(searchTerm);
+      const inBodyText = String(r.bodyText || '').toLowerCase().includes(searchTerm);
+      const inThread = String(r.externalThreadId || '').toLowerCase().includes(searchTerm);
+      if (!(inUserId || inFirstName || inLastName || inFullName || inPageId || inPageName || inBodyText || inThread)) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  const rows = hasSearch ? filteredRows.slice(offset, offset + limit) : filteredRows;
+  const total = hasSearch ? filteredRows.length : dbTotal;
+
+  return { rows, total, limit, offset };
 }
 
 /**

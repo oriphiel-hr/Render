@@ -80,8 +80,67 @@
     th { color: var(--muted); font-weight: 500; }
     .mono { font-family: ui-monospace, monospace; font-size: 0.8rem; word-break: break-all; }
     .pill { display: inline-block; padding: 0.15rem 0.45rem; border-radius: 999px; font-size: 0.75rem; background: #21262d; }
+    .soft-badge {
+      display: inline-block;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 0.78rem;
+      line-height: 1.3;
+      white-space: nowrap;
+    }
+    .person-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      background: rgba(61, 139, 253, 0.08);
+      border: 1px solid rgba(61, 139, 253, 0.35);
+      font-size: 0.8rem;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .person-dot {
+      width: 0.42rem;
+      height: 0.42rem;
+      border-radius: 999px;
+      background: var(--accent);
+      opacity: 0.8;
+      flex-shrink: 0;
+    }
+    .link-btn {
+      border: 0;
+      padding: 0;
+      background: transparent;
+      color: var(--accent);
+      cursor: pointer;
+      text-align: left;
+      text-decoration: underline;
+      font-weight: 500;
+    }
     .err { color: var(--danger); }
     .ok { color: var(--ok); }
+    #messages-table tbody tr:hover,
+    #users-table tbody tr:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .legend-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin: 0.35rem 0 0.65rem;
+    }
+    .legend-item {
+      border: 1px solid transparent;
+      border-radius: 999px;
+      padding: 0.2rem 0.55rem;
+      font-size: 0.76rem;
+      line-height: 1.25;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text);
+    }
     details.raw { margin-top: 0.35rem; }
     details.raw pre {
       margin: 0.35rem 0 0;
@@ -195,8 +254,8 @@
               </select>
             </div>
             <div class="field">
-              <label for="filter-user">User ID (PSID)</label>
-              <input id="filter-user" type="text" placeholder="npr. 987654321" />
+              <label for="filter-search">Pretraga (korisnik, stranica, tekst poruke)</label>
+              <input id="filter-search" type="text" placeholder="npr. Ivan Horvat, 2709..., Uslugar..." />
             </div>
             <div class="field">
               <label for="filter-limit">Limit</label>
@@ -205,6 +264,7 @@
             <button type="button" id="btn-load-messages">Učitaj</button>
           </div>
           <p class="badge" id="messages-meta"></p>
+          <div id="messages-page-legend" class="legend-wrap" aria-label="Legenda stranica"></div>
           <div style="overflow:auto;">
             <table id="messages-table">
               <thead>
@@ -250,6 +310,7 @@
             <button type="button" id="btn-load-users">Učitaj</button>
           </div>
           <p class="badge" id="users-meta"></p>
+          <div id="users-page-legend" class="legend-wrap" aria-label="Legenda stranica"></div>
           <div style="overflow:auto;">
             <table id="users-table">
               <thead>
@@ -457,6 +518,7 @@
 
     let msgOffset = 0;
     let usersOffset = 0;
+    let messageSearchDebounceTimer = null;
 
     function formatPageDisplay(pageId, pageName) {
       const id = String(pageId || '').trim();
@@ -470,6 +532,58 @@
       const name = String(userName || '').trim();
       if (name && id) return name + ' (' + id + ')';
       return name || id || '';
+    }
+
+    function hashStringToHue(s) {
+      const text = String(s || '');
+      let hash = 0;
+      for (let i = 0; i < text.length; i += 1) {
+        hash = ((hash << 5) - hash) + text.charCodeAt(i);
+        hash |= 0;
+      }
+      return Math.abs(hash) % 360;
+    }
+
+    function pageColorStyle(pageId) {
+      const hue = hashStringToHue(pageId || 'default');
+      return {
+        bg: 'hsla(' + hue + ', 72%, 52%, 0.14)',
+        border: 'hsla(' + hue + ', 82%, 62%, 0.55)',
+        text: 'hsl(' + hue + ', 86%, 78%)'
+      };
+    }
+
+    function renderPageLegend(containerSel, rows, onClickPage) {
+      const container = $(containerSel);
+      if (!container) return;
+      const byPage = new Map();
+      (rows || []).forEach((r) => {
+        const id = String(r?.pageId || '').trim();
+        if (!id) return;
+        if (!byPage.has(id)) {
+          byPage.set(id, {
+            pageId: id,
+            pageName: String(r?.pageName || '').trim() || null,
+            count: 0
+          });
+        }
+        byPage.get(id).count += 1;
+      });
+      const list = [...byPage.values()].sort((a, b) => b.count - a.count).slice(0, 8);
+      container.innerHTML = '';
+      if (!list.length) return;
+      list.forEach((p) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'legend-item';
+        btn.textContent = formatPageDisplay(p.pageId, p.pageName) + ' · ' + p.count;
+        const color = pageColorStyle(p.pageId);
+        btn.style.background = color.bg;
+        btn.style.borderColor = color.border;
+        btn.style.color = color.text;
+        btn.addEventListener('click', () => onClickPage(p.pageId));
+        container.appendChild(btn);
+      });
     }
 
     async function loadPageOptions() {
@@ -533,12 +647,12 @@
     async function loadMessages() {
       const ch = $('#filter-channel').value;
       const page = $('#filter-page').value.trim();
-      const user = $('#filter-user').value.trim();
+      const search = $('#filter-search').value.trim();
       const limit = $('#filter-limit').value || 50;
       const q = new URLSearchParams();
       if (ch) q.set('channel', ch);
       if (page) q.set('pageId', page);
-      if (user) q.set('userId', user);
+      if (search) q.set('q', search);
       q.set('limit', limit);
       q.set('offset', String(msgOffset));
       const data = await api('/messages?' + q.toString());
@@ -552,14 +666,35 @@
           '<td class="mono">' + escapeHtml(String(r.createdAt)) + '</td>' +
           '<td><span class="pill">' + escapeHtml(r.channel) + '</span></td>' +
           '<td>' + escapeHtml(r.direction) + '</td>' +
-          '<td>' + escapeHtml(formatUserDisplay(r.userId, r.userName)) + '</td>' +
-          '<td>' + escapeHtml(formatPageDisplay(r.pageId, r.pageName)) + '</td>' +
+          '<td><button type="button" class="link-btn btn-message-user-filter" data-user-id="' + escapeHtml(r.userId || '') +
+          '" data-user-name="' + escapeHtml(r.userName || '') + '"><span class="person-badge"><span class="person-dot"></span>' +
+          escapeHtml(formatUserDisplay(r.userId, r.userName)) + '</span></button></td>' +
+          '<td><span class="soft-badge page-badge">' + escapeHtml(formatPageDisplay(r.pageId, r.pageName)) + '</span></td>' +
           '<td class="mono">' + escapeHtml(r.externalThreadId || '') + '</td>' +
           '<td>' + escapeHtml((r.bodyText || '').slice(0, 200)) + '</td>' +
           '<td><details class="raw"><summary>JSON</summary><pre id="' + rawId + '"></pre></details></td>';
         tb.appendChild(tr);
         const pre = document.getElementById(rawId);
         if (pre) pre.textContent = JSON.stringify(r.rawPayload, null, 2);
+        const badge = tr.querySelector('.page-badge');
+        if (badge) {
+          const color = pageColorStyle(r.pageId || '');
+          badge.style.background = color.bg;
+          badge.style.borderColor = color.border;
+          badge.style.color = color.text;
+        }
+      });
+      renderPageLegend('#messages-page-legend', data.rows || [], (pageId) => {
+        $('#filter-page').value = pageId || '';
+        msgOffset = 0;
+        loadMessages().catch((e) => alert(e.message));
+      });
+      document.querySelectorAll('.btn-message-user-filter').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          $('#filter-search').value = btn.dataset.userName || btn.dataset.userId || '';
+          msgOffset = 0;
+          loadMessages().catch((e) => alert(e.message));
+        });
       });
     }
 
@@ -582,18 +717,41 @@
         const userLabel = formatUserDisplay(u.userId, u.userName);
         const pageLabel = formatPageDisplay(u.pageId, u.pageName);
         tr.innerHTML =
-          '<td>' + escapeHtml(userLabel) + '</td>' +
-          '<td>' + escapeHtml(pageLabel) + '</td>' +
+          '<td><button type="button" class="link-btn btn-user-name-filter" data-user="' + escapeHtml(u.userId || '') +
+          '" data-name="' + escapeHtml(u.userName || '') + '" data-page="' + escapeHtml(u.pageId || '') +
+          '"><span class="person-badge"><span class="person-dot"></span>' + escapeHtml(userLabel) + '</span></button></td>' +
+          '<td><span class="soft-badge user-page-badge">' + escapeHtml(pageLabel) + '</span></td>' +
           '<td>' + escapeHtml(String(u.messageCount || 0)) + '</td>' +
           '<td class="mono">' + escapeHtml(String(u.lastAt || '')) + '</td>' +
           '<td>' + escapeHtml((u.lastText || '').slice(0, 140)) + '</td>' +
           '<td><button type="button" class="secondary btn-open-user" data-user="' + escapeHtml(u.userId) +
           '" data-page="' + escapeHtml(u.pageId || '') + '">Otvori poruke</button></td>';
         tb.appendChild(tr);
+        const badge = tr.querySelector('.user-page-badge');
+        if (badge) {
+          const color = pageColorStyle(u.pageId || '');
+          badge.style.background = color.bg;
+          badge.style.borderColor = color.border;
+          badge.style.color = color.text;
+        }
+      });
+      renderPageLegend('#users-page-legend', data.rows || [], (pageId) => {
+        $('#users-page').value = pageId || '';
+        usersOffset = 0;
+        loadUsers().catch((e) => alert(e.message));
       });
       document.querySelectorAll('.btn-open-user').forEach((btn) => {
         btn.addEventListener('click', () => {
-          $('#filter-user').value = btn.dataset.user || '';
+          $('#filter-search').value = btn.dataset.user || '';
+          $('#filter-page').value = btn.dataset.page || '';
+          msgOffset = 0;
+          activateTab('messages');
+          loadMessages().catch((e) => alert(e.message));
+        });
+      });
+      document.querySelectorAll('.btn-user-name-filter').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          $('#filter-search').value = btn.dataset.name || btn.dataset.user || '';
           $('#filter-page').value = btn.dataset.page || '';
           msgOffset = 0;
           activateTab('messages');
@@ -693,6 +851,13 @@
     $('#btn-load-messages').addEventListener('click', async () => {
       msgOffset = 0;
       try { await loadMessages(); } catch (e) { alert(e.message); }
+    });
+    $('#filter-search').addEventListener('input', () => {
+      if (messageSearchDebounceTimer) clearTimeout(messageSearchDebounceTimer);
+      messageSearchDebounceTimer = setTimeout(() => {
+        msgOffset = 0;
+        loadMessages().catch((e) => alert(e.message));
+      }, 300);
     });
     $('#btn-next').addEventListener('click', async () => {
       const lim = Number($('#filter-limit').value) || 50;
