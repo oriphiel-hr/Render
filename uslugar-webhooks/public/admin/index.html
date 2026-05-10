@@ -145,6 +145,38 @@
       background: transparent;
       color: var(--text);
     }
+    #messages-table .attachments-cell {
+      max-width: 14rem;
+      font-size: 0.82rem;
+      vertical-align: top;
+    }
+    .attachment-line {
+      margin: 0.2rem 0;
+      line-height: 1.35;
+    }
+    .attachment-line a {
+      color: var(--accent);
+      font-weight: 500;
+    }
+    .attachment-type {
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 400;
+    }
+    .attachment-thumb {
+      display: block;
+      margin-top: 0.35rem;
+      max-height: 64px;
+      max-width: 140px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      object-fit: cover;
+    }
+    .attachment-no-url {
+      color: var(--muted);
+      font-size: 0.75rem;
+      word-break: break-all;
+    }
     details.raw { margin-top: 0.35rem; }
     details.raw pre {
       margin: 0.35rem 0 0;
@@ -1057,12 +1089,62 @@
       $('#json-search-count').textContent = hits ? ('Pogođeno: ' + hits) : 'Nema rezultata';
     }
 
-    function formatAttachmentsSummary(items) {
+    function isSafeHttpUrl(u) {
+      if (!u || typeof u !== 'string') return false;
+      try {
+        const parsed = new URL(u.trim());
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    }
+
+    function attachmentDisplayName(a) {
+      const n = String(a?.name || '').trim();
+      if (n) return n;
+      const u = String(a?.url || '').trim();
+      if (isSafeHttpUrl(u)) {
+        try {
+          const seg = new URL(u).pathname.split('/').filter(Boolean).pop();
+          if (seg) return decodeURIComponent(seg).slice(0, 120);
+        } catch (_) { /* ignore */ }
+      }
+      const t = String(a?.type || '').trim();
+      if (t) return t;
+      return 'Privitak';
+    }
+
+    /** Vraća HTML (prazna ćelija: "—"). */
+    function renderAttachmentsCell(items) {
       if (!Array.isArray(items) || !items.length) return '—';
-      const label = items.slice(0, 2)
-        .map((a) => String(a.type || a.name || 'attachment'))
-        .join(', ');
-      return items.length > 2 ? (label + ' +' + (items.length - 2)) : label;
+      return items.map((a) => {
+        const nameLabel = escapeHtml(attachmentDisplayName(a));
+        const typeStr = String(a?.type || '').trim();
+        const typePart = typeStr
+          ? ' <span class="attachment-type">' + escapeHtml(typeStr) + '</span>'
+          : '';
+        const rawUrl = String(a?.url || '').trim();
+        let block;
+        if (isSafeHttpUrl(rawUrl)) {
+          const href = escapeHtml(rawUrl);
+          block =
+            '<a href="' + href + '" target="_blank" rel="noopener noreferrer">' + nameLabel + '</a>' +
+            typePart;
+          if (/^image\//i.test(typeStr)) {
+            block +=
+              '<br><img class="attachment-thumb" src="' + href + '" alt="" loading="lazy" referrerpolicy="no-referrer" />';
+          }
+        } else {
+          block = nameLabel + typePart;
+          if (rawUrl && !isSafeHttpUrl(rawUrl)) {
+            block +=
+              ' <span class="attachment-no-url" title="URL nije prikladan za link">' +
+              escapeHtml(rawUrl.slice(0, 96)) + (rawUrl.length > 96 ? '…' : '') +
+              '</span>';
+          }
+        }
+        return '<div class="attachment-line">' + block + '</div>';
+      }).join('');
     }
 
     function pageColorStyle(pageId) {
@@ -1219,7 +1301,7 @@
           '<td><span class="soft-badge page-badge">' + renderStackedLabel(r.pageName || 'Stranica', r.pageId || '') + '</span></td>' +
           '<td class="mono thread-id-cell">' + escapeHtml(r.externalThreadId || '') + '</td>' +
           '<td>' + escapeHtml((r.bodyText || '').slice(0, 200)) + '</td>' +
-          '<td>' + escapeHtml(formatAttachmentsSummary(r.attachments || [])) + '</td>' +
+          '<td class="attachments-cell">' + renderAttachmentsCell(r.attachments || []) + '</td>' +
           '<td><button type="button" class="secondary btn-open-raw">Otvori</button></td>';
         tb.appendChild(tr);
         const rawBtn = tr.querySelector('.btn-open-raw');
