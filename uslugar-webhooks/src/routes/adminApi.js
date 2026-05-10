@@ -93,7 +93,7 @@ function createAdminRouter() {
 
   router.get('/api/messages', requireAdminToken, async (req, res) => {
     try {
-      const { channel, pageId, userId, q, from, to, limit, offset } = req.query;
+      const { channel, pageId, userId, q, from, to, hasAttachment, attachmentType, limit, offset } = req.query;
       const result = await listMessages({
         channel: channel || undefined,
         pageIdPrefix: pageId || undefined,
@@ -101,6 +101,8 @@ function createAdminRouter() {
         q: q || undefined,
         from: from || undefined,
         to: to || undefined,
+        hasAttachment: hasAttachment || undefined,
+        attachmentType: attachmentType || undefined,
         limit,
         offset
       });

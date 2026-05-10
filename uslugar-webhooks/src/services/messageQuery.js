@@ -28,7 +28,7 @@ function parseDateEnd(value) {
 }
 
 /**
- * @param {{ channel?: string, pageIdPrefix?: string, userId?: string, q?: string, from?: string, to?: string, limit?: number, offset?: number }} q
+ * @param {{ channel?: string, pageIdPrefix?: string, userId?: string, q?: string, from?: string, to?: string, hasAttachment?: string|boolean, attachmentType?: string, limit?: number, offset?: number }} q
  */
 async function listMessages(q = {}) {
   const limit = Math.min(Math.max(Number(q.limit) || 50, 1), 200);
@@ -38,6 +38,22 @@ async function listMessages(q = {}) {
   const searchTermRaw = q.q ? String(q.q).trim() : (q.userId ? String(q.userId).trim() : '');
   const searchTerm = searchTermRaw.toLowerCase();
   const hasSearch = Boolean(searchTerm);
+  const hasAttachmentFilterRaw = q.hasAttachment;
+  const attachmentType = String(q.attachmentType || '').trim().toLowerCase();
+  const hasAttachmentFilter =
+    hasAttachmentFilterRaw === true ||
+    String(hasAttachmentFilterRaw || '').toLowerCase() === '1' ||
+    String(hasAttachmentFilterRaw || '').toLowerCase() === 'true' ||
+    String(hasAttachmentFilterRaw || '').toLowerCase() === 'with'
+      ? 'with'
+      : (
+        hasAttachmentFilterRaw === false ||
+        String(hasAttachmentFilterRaw || '').toLowerCase() === '0' ||
+        String(hasAttachmentFilterRaw || '').toLowerCase() === 'false' ||
+        String(hasAttachmentFilterRaw || '').toLowerCase() === 'without'
+          ? 'without'
+          : ''
+      );
   const fromDate = parseDateStart(q.from);
   const toDate = parseDateEnd(q.to);
 
@@ -52,6 +68,18 @@ async function listMessages(q = {}) {
     where.createdAt = {};
     if (fromDate) where.createdAt.gte = fromDate;
     if (toDate) where.createdAt.lte = toDate;
+  }
+  if (hasAttachmentFilter === 'with') {
+    where.attachments = { some: {} };
+  } else if (hasAttachmentFilter === 'without') {
+    where.attachments = { none: {} };
+  }
+  if (attachmentType) {
+    where.attachments = {
+      some: {
+        kind: { contains: attachmentType, mode: 'insensitive' }
+      }
+    };
   }
   if (and.length) {
     where.AND = and;
@@ -131,8 +159,20 @@ async function listMessages(q = {}) {
 
   const rows = hasSearch ? filteredRows.slice(offset, offset + limit) : filteredRows;
   const total = hasSearch ? filteredRows.length : dbTotal;
+  const pageMap = new Map();
+  filteredRows.forEach((r) => {
+    const id = String(r.pageId || '').trim();
+    if (!id) return;
+    if (!pageMap.has(id)) {
+      pageMap.set(id, { pageId: id, pageName: r.pageName || null, count: 0 });
+    }
+    const item = pageMap.get(id);
+    item.count += 1;
+    if (!item.pageName && r.pageName) item.pageName = r.pageName;
+  });
+  const pageStats = [...pageMap.values()].sort((a, b) => b.count - a.count);
 
-  return { rows, total, limit, offset };
+  return { rows, total, limit, offset, pageStats };
 }
 
 /**

@@ -320,6 +320,24 @@
               <input id="filter-to" type="date" />
             </div>
             <div class="field">
+              <label for="filter-attachment">Attachment</label>
+              <select id="filter-attachment">
+                <option value="">(svi)</option>
+                <option value="with">ima attachment</option>
+                <option value="without">bez attachmenta</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="filter-attachment-type">Tip attachmenta</label>
+              <select id="filter-attachment-type">
+                <option value="">(svi tipovi)</option>
+                <option value="image">image</option>
+                <option value="video">video</option>
+                <option value="audio">audio</option>
+                <option value="file">file</option>
+              </select>
+            </div>
+            <div class="field">
               <label for="filter-limit">Limit</label>
               <input id="filter-limit" type="number" value="50" min="1" max="200" />
             </div>
@@ -636,7 +654,7 @@
     function formatListMeta(total, offset, limit, label, shownCount) {
       const safeLimit = Math.max(Number(limit) || 1, 1);
       const page = Math.floor((Number(offset) || 0) / safeLimit) + 1;
-      return 'Prikazano ' + shownCount + ' od ukupno ' + total + ' ' + label + ' · stranica ' + page + ' · limit ' + safeLimit;
+      return 'Ukupno odgovara: ' + total + ' ' + label + ' · prikazano na ovoj stranici: ' + shownCount + ' · stranica ' + page + ' · limit ' + safeLimit;
     }
 
     function formatDateTime(value) {
@@ -790,23 +808,34 @@
       return pageColorById.get(id);
     }
 
-    function renderPageLegend(containerSel, rows, onClickPage) {
+    function renderPageLegend(containerSel, rowsOrStats, onClickPage) {
       const container = $(containerSel);
       if (!container) return;
-      const byPage = new Map();
-      (rows || []).forEach((r) => {
-        const id = String(r?.pageId || '').trim();
-        if (!id) return;
-        if (!byPage.has(id)) {
-          byPage.set(id, {
-            pageId: id,
-            pageName: String(r?.pageName || '').trim() || null,
-            count: 0
-          });
-        }
-        byPage.get(id).count += 1;
-      });
-      const list = [...byPage.values()].sort((a, b) => b.count - a.count).slice(0, 8);
+      const rawList = Array.isArray(rowsOrStats) ? rowsOrStats : [];
+      let list = [];
+      if (rawList.length && Object.prototype.hasOwnProperty.call(rawList[0], 'count')) {
+        list = rawList.map((r) => ({
+          pageId: String(r?.pageId || '').trim(),
+          pageName: String(r?.pageName || '').trim() || null,
+          count: Number(r?.count) || 0
+        })).filter((r) => r.pageId);
+      } else {
+        const byPage = new Map();
+        rawList.forEach((r) => {
+          const id = String(r?.pageId || '').trim();
+          if (!id) return;
+          if (!byPage.has(id)) {
+            byPage.set(id, {
+              pageId: id,
+              pageName: String(r?.pageName || '').trim() || null,
+              count: 0
+            });
+          }
+          byPage.get(id).count += 1;
+        });
+        list = [...byPage.values()];
+      }
+      list = list.sort((a, b) => b.count - a.count).slice(0, 8);
       container.innerHTML = '';
       if (!list.length) return;
       list.forEach((p) => {
@@ -892,8 +921,12 @@
       if (search) q.set('q', search);
       const from = $('#filter-from').value;
       const to = $('#filter-to').value;
+      const hasAttachment = $('#filter-attachment').value;
+      const attachmentType = $('#filter-attachment-type').value;
       if (from) q.set('from', from);
       if (to) q.set('to', to);
+      if (hasAttachment) q.set('hasAttachment', hasAttachment);
+      if (attachmentType) q.set('attachmentType', attachmentType);
       q.set('limit', limit);
       q.set('offset', String(msgOffset));
       const data = await api('/messages?' + q.toString());
@@ -931,7 +964,7 @@
           badge.style.color = color.text;
         }
       });
-      renderPageLegend('#messages-page-legend', data.rows || [], (pageId) => {
+      renderPageLegend('#messages-page-legend', data.pageStats || data.rows || [], (pageId) => {
         $('#filter-page').value = pageId || '';
         msgOffset = 0;
         loadMessages().catch((e) => alert(e.message));
@@ -1085,6 +1118,8 @@
       $('#filter-search').value = '';
       $('#filter-from').value = '';
       $('#filter-to').value = '';
+      $('#filter-attachment').value = '';
+      $('#filter-attachment-type').value = '';
       $('#filter-limit').value = '50';
       msgOffset = 0;
     }
@@ -1161,6 +1196,17 @@
     });
     $('#filter-to').addEventListener('change', () => {
       msgOffset = 0;
+      loadMessages().catch((e) => alert(e.message));
+    });
+    $('#filter-attachment').addEventListener('change', () => {
+      msgOffset = 0;
+      loadMessages().catch((e) => alert(e.message));
+    });
+    $('#filter-attachment-type').addEventListener('change', () => {
+      msgOffset = 0;
+      if ($('#filter-attachment-type').value && !$('#filter-attachment').value) {
+        $('#filter-attachment').value = 'with';
+      }
       loadMessages().catch((e) => alert(e.message));
     });
     $('#filter-limit').addEventListener('change', () => {
