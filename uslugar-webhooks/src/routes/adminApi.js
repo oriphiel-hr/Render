@@ -6,6 +6,7 @@ const { listMessages, listThreads, listPageIdPrefixes, listPageIdsWithNames, lis
 const { syncMessengerHistory } = require('../services/facebookHistorySync');
 const { backfillMessageAttachments } = require('../services/attachmentBackfill');
 const { storeMessages } = require('../services/messageStore');
+const { sendMessengerAndStore } = require('../services/messengerSend');
 const { requireAdminToken, adminCors } = require('../middleware/adminAuth');
 
 const jsonBody = express.json({ limit: '24kb' });
@@ -97,6 +98,39 @@ function createAdminRouter() {
    * POST /admin/api/backfill/attachments
    * body: { force?: boolean, dryRun?: boolean }
    */
+  /**
+   * Ručno ili iz automatike (nakon što drugi servis složi tekst iz prompta): pošalji Messenger tekst.
+   * POST /admin/api/send/messenger
+   * body: { pageId, recipientId, text, accessToken, apiVersion? }
+   */
+  router.post('/api/send/messenger', jsonBody, requireAdminToken, async (req, res) => {
+    try {
+      const { pageId, recipientId, text, accessToken, apiVersion } = req.body || {};
+      if (!pageId || !recipientId || !text || !accessToken) {
+        return res.status(400).json({
+          error: 'pageId, recipientId (PSID), text i accessToken su obavezni u JSON tijelu'
+        });
+      }
+      const result = await sendMessengerAndStore({
+        pageId: String(pageId).trim(),
+        recipientPsid: String(recipientId).trim(),
+        text: String(text),
+        pageAccessToken: String(accessToken),
+        apiVersion: apiVersion || undefined,
+        source: 'admin.send',
+        prisma
+      });
+      return res.json({
+        ok: true,
+        messageId: result.messageId,
+        recipientId: result.recipientId
+      });
+    } catch (e) {
+      console.error('[admin send messenger]', e);
+      return res.status(500).json({ error: e.message });
+    }
+  });
+
   router.post('/api/backfill/attachments', jsonBody, requireAdminToken, async (req, res) => {
     try {
       const { force = false, dryRun = false } = req.body || {};

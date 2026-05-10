@@ -1,6 +1,8 @@
 const express = require('express');
+const { prisma } = require('../lib/prisma');
 const { storeMessages } = require('../services/messageStore');
 const { getActivePromptBody } = require('../services/promptService');
+const { sendMessengerAndStore } = require('../services/messengerSend');
 
 const CHANNEL_KEYS = new Set(['MESSENGER', 'INSTAGRAM', 'WHATSAPP', 'FACEBOOK_PAGE_FEED', 'GENERIC']);
 
@@ -63,6 +65,39 @@ function createIngestRouter() {
       return res.status(201).json({ stored: result.count, externalMessageId: extMsgId });
     } catch (e) {
       console.error('[ingest]', e);
+      return res.status(500).json({ error: e.message });
+    }
+  });
+
+  /**
+   * Šalje Messenger tekst (npr. nakon što LLM generira odgovor uz prompt iz GET /prompts/active).
+   * POST /api/v1/messenger/send
+   * body: { pageId, recipientId, text, accessToken, apiVersion? }
+   */
+  router.post('/messenger/send', requireApiKey, async (req, res) => {
+    try {
+      const { pageId, recipientId, text, accessToken, apiVersion } = req.body || {};
+      if (!pageId || !recipientId || !text || !accessToken) {
+        return res.status(400).json({
+          error: 'pageId, recipientId (PSID), text i accessToken su obavezni'
+        });
+      }
+      const result = await sendMessengerAndStore({
+        pageId: String(pageId).trim(),
+        recipientPsid: String(recipientId).trim(),
+        text: String(text),
+        pageAccessToken: String(accessToken),
+        apiVersion: apiVersion || undefined,
+        source: 'api.ingest.send',
+        prisma
+      });
+      return res.json({
+        ok: true,
+        messageId: result.messageId,
+        recipientId: result.recipientId
+      });
+    } catch (e) {
+      console.error('[ingest messenger send]', e);
       return res.status(500).json({ error: e.message });
     }
   });

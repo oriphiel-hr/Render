@@ -399,6 +399,41 @@
       <section class="panel" data-panel="messages">
         <div class="card">
           <h2 style="margin-top:0;font-size:1rem;">Poruke</h2>
+          <div class="card" style="margin-bottom:0.85rem;background:rgba(19,24,32,0.85);border-style:dashed;">
+            <h3 style="margin:0 0 0.35rem;font-size:0.95rem;">Pošalji Messenger odgovor</h3>
+            <p class="hint" style="margin:0 0 0.65rem;">
+              Ručno iz admina. Za automatski odgovor vanjski servis može: dohvatiti prompt
+              <span class="mono">GET /api/v1/prompts/active/:slug</span>, složiti tekst (LLM), pa poslati
+              <span class="mono">POST /api/v1/messenger/send</span> s headerom <span class="mono">X-Ingest-Key</span>.
+              Treba Page access token s <span class="mono">pages_messaging</span> — isto kao za sinkronizaciju; token se ne sprema na server.
+            </p>
+            <div class="row">
+              <div class="field">
+                <label for="send-page-id">Page ID</label>
+                <select id="send-page-id">
+                  <option value="">— odaberi —</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="send-psid">PSID korisnika</label>
+                <input id="send-psid" type="text" placeholder="iz niti pageId_psid (dio nakon _)" autocomplete="off" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="field" style="flex:2 1 22rem;">
+                <label for="send-text">Tekst poruke</label>
+                <textarea id="send-text" rows="3" maxlength="2000" placeholder="Odgovor korisniku…"></textarea>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field" style="flex:2 1 22rem;">
+                <label for="send-token">Page access token (jednokratno)</label>
+                <input id="send-token" type="password" autocomplete="off" placeholder="EAAG…" />
+              </div>
+              <button type="button" id="btn-send-messenger">Pošalji</button>
+            </div>
+            <pre id="send-result" class="mono" style="margin:0.65rem 0 0;white-space:pre-wrap;display:none;"></pre>
+          </div>
           <div class="row">
             <div class="field">
               <label for="filter-channel">Kanal</label>
@@ -1217,7 +1252,7 @@
         ? data.pages
         : (data.pageIds || []).map((id) => ({ id, name: null }));
 
-      const selectors = ['#filter-page', '#users-page'];
+      const selectors = ['#filter-page', '#users-page', '#send-page-id'];
       selectors.forEach((sel) => {
         const el = $(sel);
         if (!el) return;
@@ -1668,6 +1703,38 @@
     $('#btn-reset-messages').addEventListener('click', () => {
       resetMessageFilters();
       loadMessages().catch((e) => alert(e.message));
+    });
+
+    $('#btn-send-messenger').addEventListener('click', async () => {
+      const pageId = $('#send-page-id').value.trim();
+      const recipientId = $('#send-psid').value.trim();
+      const text = $('#send-text').value.trim();
+      const accessToken = $('#send-token').value.trim();
+      const out = $('#send-result');
+      if (!pageId || !recipientId || !text || !accessToken) {
+        out.style.display = 'block';
+        out.textContent = 'Popuni Page ID, PSID, tekst i Page access token.';
+        return;
+      }
+      out.style.display = 'block';
+      out.textContent = 'Šaljem…';
+      $('#btn-send-messenger').disabled = true;
+      try {
+        const r = await apiPost('/send/messenger', {
+          pageId,
+          recipientId,
+          text,
+          accessToken
+        });
+        out.textContent = JSON.stringify(r, null, 2);
+        $('#send-token').value = '';
+        msgOffset = 0;
+        await loadMessages();
+      } catch (e) {
+        out.textContent = e.message || String(e);
+      } finally {
+        $('#btn-send-messenger').disabled = false;
+      }
     });
 
     $('#btn-load-users').addEventListener('click', async () => {
