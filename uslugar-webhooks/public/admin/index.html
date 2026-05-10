@@ -525,15 +525,14 @@
       tb.innerHTML = '';
       (data.rows || []).forEach((u) => {
         const tr = document.createElement('tr');
-        const firstPage = (u.pageIds && u.pageIds[0]) || '';
         tr.innerHTML =
           '<td class="mono">' + escapeHtml(u.userId) + '</td>' +
-          '<td class="mono">' + escapeHtml((u.pageIds || []).join(', ')) + '</td>' +
+          '<td class="mono">' + escapeHtml(u.pageId || '') + '</td>' +
           '<td>' + escapeHtml(String(u.messageCount || 0)) + '</td>' +
           '<td class="mono">' + escapeHtml(String(u.lastAt || '')) + '</td>' +
           '<td>' + escapeHtml((u.lastText || '').slice(0, 140)) + '</td>' +
           '<td><button type="button" class="secondary btn-open-user" data-user="' + escapeHtml(u.userId) +
-          '" data-page="' + escapeHtml(firstPage) + '">Otvori poruke</button></td>';
+          '" data-page="' + escapeHtml(u.pageId || '') + '">Otvori poruke</button></td>';
         tb.appendChild(tr);
       });
       document.querySelectorAll('.btn-open-user').forEach((btn) => {

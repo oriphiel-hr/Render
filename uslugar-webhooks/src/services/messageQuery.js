@@ -76,7 +76,7 @@ async function listThreads(q = {}) {
 }
 
 /**
- * CRM-lite: korisnici (PSID) iz MESSENGER niti.
+ * CRM-lite: korisnici po kombinaciji (pageId + PSID) iz MESSENGER niti.
  * @param {{ pageIdPrefix?: string, q?: string, limit?: number, offset?: number }} q
  */
 async function listUsers(q = {}) {
@@ -109,18 +109,18 @@ async function listUsers(q = {}) {
     if (term && !(userId.toLowerCase().includes(term) || String(pageId).toLowerCase().includes(term))) {
       continue;
     }
-    let agg = byUser.get(userId);
+    const key = `${pageId}_${userId}`;
+    let agg = byUser.get(key);
     if (!agg) {
       agg = {
+        pageId,
         userId,
-        pageIds: new Set(),
         messageCount: 0,
         lastAt: r.createdAt,
         lastText: r.bodyText || null
       };
-      byUser.set(userId, agg);
+      byUser.set(key, agg);
     }
-    agg.pageIds.add(pageId);
     agg.messageCount += 1;
     if (new Date(r.createdAt) > new Date(agg.lastAt)) {
       agg.lastAt = r.createdAt;
@@ -130,8 +130,8 @@ async function listUsers(q = {}) {
 
   const list = [...byUser.values()]
     .map((u) => ({
+      pageId: u.pageId,
       userId: u.userId,
-      pageIds: [...u.pageIds].sort(),
       messageCount: u.messageCount,
       lastAt: u.lastAt,
       lastText: u.lastText
