@@ -6,6 +6,22 @@ Ovaj dokument je kratki "single source of truth" za trenutno stanje Meta dozvola
 
 Messenger webhook + spremanje poruka u bazu + baza za AI promptove.
 
+## Webhook pretplate (Edit Page Subscriptions)
+
+Parser (`src/ingest/facebook.js`) sprema u `ChannelMessage` sažetak u `bodyText` i puni `rawPayload`. U Meta konzoli za Page pretplati:
+
+| Polje | Što snimamo |
+|-------|-------------|
+| `messages` | Tekst, privitci, echo |
+| `message_reactions` | Reakcije (`source`: `facebook.graph.reaction`) |
+| `messaging_postbacks` | Gumbi, izbornik, Get Started (`facebook.graph.postback`) |
+| `messaging_referrals` | Odakle dolazi korisnik — uz poruku ili sam referral (`facebook.graph.referral`) |
+| `messaging_feedback` | Povrat / ocjena (`facebook.graph.feedback`) |
+| `message_edits` | Ispravak teksta (`facebook.graph.message_edit`) |
+| `inbox_labels` | Oznake konverzacije (`facebook.graph.inbox_labels`) — ako Meta šalje za tvoju integraciju |
+
+**Preskačemo** (ne idu u bazu): `message_reads`, `message_deliveries` — premali signal za volumen.
+
 ## Aktivno sada (minimalni set)
 
 - `pages_messaging` — slanje/primanje Messenger poruka za Facebook Page.
