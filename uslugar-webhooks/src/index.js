@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const { createFacebookWebhookRouter } = require('./routes/facebookWebhook');
 const { createIngestRouter } = require('./routes/ingestApi');
+const { createAdminRouter } = require('./routes/adminApi');
 const { metaEnvPrefix, parseWebhookProfiles } = require('./lib/metaEnv');
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -66,6 +67,8 @@ app.use(
   })
 );
 
+app.use('/admin', createAdminRouter());
+
 app.use(express.json({ limit: '2mb' }));
 app.use('/api/v1', createIngestRouter());
 
@@ -85,6 +88,7 @@ app.listen(PORT, () => {
     console.log(`Meta webhook (${profile}): GET/POST http://localhost:${PORT}/webhook/${profile}`);
   }
   console.log(`Ingest API: POST http://localhost:${PORT}/api/v1/messages (header X-Ingest-Key)`);
+  console.log(`Admin panel: GET http://localhost:${PORT}/admin/ (requires ADMIN_PANEL_TOKEN)`);
   if (!hasAnyDatabaseUrl()) {
     console.warn(
       'No DATABASE_URL and no META_<PROFILE>_DATABASE_URL — webhook persistence will fail until one is set.'
@@ -116,5 +120,8 @@ app.listen(PORT, () => {
   }
   if (!process.env.INGEST_API_KEY) {
     console.warn('INGEST_API_KEY not set — /api/v1/* returns 503 until set.');
+  }
+  if (!process.env.ADMIN_PANEL_TOKEN) {
+    console.warn('ADMIN_PANEL_TOKEN not set — admin JSON API returns 503 until set.');
   }
 });

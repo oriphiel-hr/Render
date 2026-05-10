@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Uslugar webhooks — admin</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --card: #1a2332;
+      --text: #e7ecf3;
+      --muted: #8b9cb3;
+      --accent: #3d8bfd;
+      --border: #2a3548;
+      --danger: #f85149;
+      --ok: #3fb950;
+      font-family: "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem;
+      justify-content: space-between;
+    }
+    h1 { font-size: 1.1rem; font-weight: 600; margin: 0; }
+    .hint { color: var(--muted); font-size: 0.85rem; max-width: 42rem; }
+    main { padding: 1rem 1.25rem 2rem; max-width: 1200px; margin: 0 auto; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.1rem;
+      margin-bottom: 1rem;
+    }
+    label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 0.35rem; }
+    input, select, button {
+      font: inherit;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #0d1117;
+      color: var(--text);
+      padding: 0.5rem 0.65rem;
+    }
+    input { width: 100%; max-width: 28rem; }
+    button {
+      cursor: pointer;
+      background: var(--accent);
+      border-color: transparent;
+      color: #fff;
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+    }
+    button.secondary { background: transparent; border-color: var(--border); color: var(--text); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .row { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; margin-bottom: 0.75rem; }
+    .field { flex: 1 1 12rem; min-width: 10rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.45rem 0.5rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th { color: var(--muted); font-weight: 500; }
+    .mono { font-family: ui-monospace, monospace; font-size: 0.8rem; word-break: break-all; }
+    .pill { display: inline-block; padding: 0.15rem 0.45rem; border-radius: 999px; font-size: 0.75rem; background: #21262d; }
+    .err { color: var(--danger); }
+    .ok { color: var(--ok); }
+    details.raw { margin-top: 0.35rem; }
+    details.raw pre {
+      margin: 0.35rem 0 0;
+      padding: 0.5rem;
+      background: #0d1117;
+      border-radius: 6px;
+      overflow: auto;
+      max-height: 200px;
+      font-size: 0.72rem;
+    }
+    nav.tabs {
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    nav.tabs button {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    nav.tabs button.active {
+      border-color: var(--accent);
+      color: var(--text);
+      background: rgba(61, 139, 253, 0.12);
+    }
+    section.panel { display: none; }
+    section.panel.active { display: block; }
+    .badge { font-size: 0.75rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Uslugar webhooks — admin</h1>
+      <p class="hint">
+        Pristup samo uz token (<code>ADMIN_PANEL_TOKEN</code> na Renderu).
+        <code>META_WEBHOOK_PROFILES</code> se mijenja u envu — ovdje je samo pregled.
+      </p>
+    </div>
+  </header>
+  <main>
+    <div id="login-card" class="card">
+      <h2 style="margin-top:0;font-size:1rem;">Prijava</h2>
+      <div class="row">
+        <div class="field">
+          <label for="api-base">API baza (Render)</label>
+          <input id="api-base" type="url" placeholder="https://uslugar-webhooks.onrender.com" autocomplete="off" />
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="token">Admin token</label>
+          <input id="token" type="password" autocomplete="current-password" placeholder="Bearer token iz Render env" />
+        </div>
+        <button type="button" id="btn-save">Spremi i učitaj</button>
+      </div>
+      <p id="login-msg" class="hint"></p>
+    </div>
+
+    <div id="app" style="display:none;">
+      <nav class="tabs" id="tabs"></nav>
+
+      <section class="panel active" data-panel="profiles">
+        <div class="card">
+          <h2 style="margin-top:0;font-size:1rem;">Meta profili (<code>META_WEBHOOK_PROFILES</code>)</h2>
+          <p class="badge" id="profiles-raw"></p>
+          <div style="overflow:auto;">
+            <table id="profiles-table">
+              <thead>
+                <tr>
+                  <th>Profil</th>
+                  <th>Webhook putanja</th>
+                  <th>Env prefiks</th>
+                  <th>Verify token</th>
+                  <th>App secret</th>
+                  <th>Vlastita baza</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="messages">
+        <div class="card">
+          <h2 style="margin-top:0;font-size:1rem;">Poruke</h2>
+          <div class="row">
+            <div class="field">
+              <label for="filter-channel">Kanal</label>
+              <select id="filter-channel">
+                <option value="">(svi)</option>
+                <option value="MESSENGER" selected>MESSENGER</option>
+                <option value="FACEBOOK_PAGE_FEED">FACEBOOK_PAGE_FEED</option>
+                <option value="INSTAGRAM">INSTAGRAM</option>
+                <option value="WHATSAPP">WHATSAPP</option>
+                <option value="GENERIC">GENERIC</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="filter-page">Page ID (prefiks niti)</label>
+              <input id="filter-page" type="text" placeholder="npr. 123456789" />
+            </div>
+            <div class="field">
+              <label for="filter-limit">Limit</label>
+              <input id="filter-limit" type="number" value="50" min="1" max="200" />
+            </div>
+            <button type="button" id="btn-load-messages">Učitaj</button>
+          </div>
+          <p class="badge" id="messages-meta"></p>
+          <div style="overflow:auto;">
+            <table id="messages-table">
+              <thead>
+                <tr>
+                  <th>Vrijeme</th>
+                  <th>Kanal</th>
+                  <th>Smjer</th>
+                  <th>Nit</th>
+                  <th>Tekst</th>
+                  <th>Raw</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="row">
+            <button type="button" class="secondary" id="btn-prev">Prethodna stranica</button>
+            <button type="button" id="btn-next">Sljedeća stranica</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="threads">
+        <div class="card">
+          <h2 style="margin-top:0;font-size:1rem;">Threadovi (zadnja aktivnost)</h2>
+          <div class="row">
+            <div class="field">
+              <label for="threads-channel">Kanal</label>
+              <select id="threads-channel">
+                <option value="MESSENGER" selected>MESSENGER</option>
+              </select>
+            </div>
+            <button type="button" id="btn-load-threads">Osvježi</button>
+          </div>
+          <div style="overflow:auto;">
+            <table id="threads-table">
+              <thead>
+                <tr>
+                  <th>Zadnja poruka</th>
+                  <th>externalThreadId</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="pages">
+        <div class="card">
+          <h2 style="margin-top:0;font-size:1rem;">Page ID iz niti</h2>
+          <p class="hint">Izdvojeno iz formata <code>pageId_psid</code> za MESSENGER.</p>
+          <button type="button" id="btn-load-pageids">Osvježi</button>
+          <ul id="page-ids-list" style="margin:0.75rem 0 0; padding-left:1.2rem;"></ul>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="prompts">
+        <div class="card">
+          <h2 style="margin-top:0;font-size:1rem;">Prompt predlošci</h2>
+          <button type="button" id="btn-load-prompts">Učitaj</button>
+          <div style="overflow:auto;margin-top:0.75rem;">
+            <table id="prompts-table">
+              <thead>
+                <tr>
+                  <th>Slug</th>
+                  <th>Verzija</th>
+                  <th>Aktivan</th>
+                  <th>Kanal</th>
+                  <th>Naziv</th>
+                  <th>Tijelo (preview)</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="health">
+        <div class="card">
+          <h2 style="margin-top:0;font-size:1rem;">Zdravlje / env (bez punih tajni)</h2>
+          <button type="button" id="btn-load-health">Osvježi</button>
+          <pre id="health-json" class="mono" style="margin-top:0.75rem;white-space:pre-wrap;"></pre>
+        </div>
+      </section>
+
+      <p class="hint">
+        <button type="button" class="secondary" id="btn-logout">Odjava (obriši token u pregledniku)</button>
+      </p>
+    </div>
+  </main>
+
+  <script>
+    const STORAGE_API = 'uslugar_admin_api_base';
+    const STORAGE_TOKEN = 'uslugar_admin_token';
+
+    function $(sel) { return document.querySelector(sel); }
+
+    function apiBase() {
+      let u = ($('#api-base').value || '').trim().replace(/\/$/, '');
+      if (!u && sessionStorage.getItem(STORAGE_API)) u = sessionStorage.getItem(STORAGE_API);
+      return u;
+    }
+
+    function authHeaders() {
+      const t = $('#token').value.trim() || sessionStorage.getItem(STORAGE_TOKEN);
+      return { Authorization: 'Bearer ' + t, Accept: 'application/json' };
+    }
+
+    async function api(path) {
+      const base = apiBase();
+      if (!base) throw new Error('Postavi API bazu (Render URL).');
+      const url = base + '/admin/api' + path;
+      const res = await fetch(url, { headers: authHeaders(), credentials: 'omit' });
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch { data = { error: text }; }
+      if (!res.ok) throw new Error(data.error || res.status + ' ' + text.slice(0, 200));
+      return data;
+    }
+
+    const TAB_SPECS = [
+      { id: 'profiles', label: 'Profili' },
+      { id: 'messages', label: 'Poruke' },
+      { id: 'threads', label: 'Threadovi' },
+      { id: 'pages', label: 'Page ID' },
+      { id: 'prompts', label: 'Promptovi' },
+      { id: 'health', label: 'Zdravlje' }
+    ];
+
+    function buildTabs() {
+      const nav = $('#tabs');
+      nav.innerHTML = '';
+      TAB_SPECS.forEach((t, i) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = t.label;
+        b.dataset.tab = t.id;
+        if (i === 0) b.classList.add('active');
+        b.addEventListener('click', () => activateTab(t.id));
+        nav.appendChild(b);
+      });
+    }
+
+    function activateTab(id) {
+      document.querySelectorAll('#tabs button').forEach((b) => {
+        b.classList.toggle('active', b.dataset.tab === id);
+      });
+      document.querySelectorAll('section.panel').forEach((p) => {
+        p.classList.toggle('active', p.dataset.panel === id);
+      });
+    }
+
+    let msgOffset = 0;
+
+    async function loadBootstrap() {
+      const data = await api('/bootstrap');
+      $('#profiles-raw').textContent = 'META_WEBHOOK_PROFILES=' + (data.metaWebhookProfilesRaw || '(prazno)');
+      const tb = $('#profiles-table tbody');
+      tb.innerHTML = '';
+      (data.profiles || []).forEach((p) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td class="mono">' + escapeHtml(p.profile) + '</td>' +
+          '<td class="mono">' + escapeHtml(p.webhookPath) + '</td>' +
+          '<td class="mono">' + escapeHtml(p.envPrefix) + '</td>' +
+          '<td>' + (p.hasVerifyToken ? '<span class="ok">da</span>' : '<span class="err">ne</span>') + '</td>' +
+          '<td>' + (p.hasAppSecret ? '<span class="ok">da</span>' : '<span class="err">ne</span>') + '</td>' +
+          '<td>' + (p.usesOwnDatabase ? 'da' : 'ne') + '</td>';
+        tb.appendChild(tr);
+      });
+    }
+
+    async function loadMessages() {
+      const ch = $('#filter-channel').value;
+      const page = $('#filter-page').value.trim();
+      const limit = $('#filter-limit').value || 50;
+      const q = new URLSearchParams();
+      if (ch) q.set('channel', ch);
+      if (page) q.set('pageId', page);
+      q.set('limit', limit);
+      q.set('offset', String(msgOffset));
+      const data = await api('/messages?' + q.toString());
+      $('#messages-meta').textContent = 'Ukupno: ' + data.total + ' · offset ' + data.offset + ' · limit ' + data.limit;
+      const tb = $('#messages-table tbody');
+      tb.innerHTML = '';
+      (data.rows || []).forEach((r) => {
+        const tr = document.createElement('tr');
+        const rawId = 'raw-' + Math.random().toString(36).slice(2);
+        tr.innerHTML =
+          '<td class="mono">' + escapeHtml(String(r.createdAt)) + '</td>' +
+          '<td><span class="pill">' + escapeHtml(r.channel) + '</span></td>' +
+          '<td>' + escapeHtml(r.direction) + '</td>' +
+          '<td class="mono">' + escapeHtml(r.externalThreadId || '') + '</td>' +
+          '<td>' + escapeHtml((r.bodyText || '').slice(0, 200)) + '</td>' +
+          '<td><details class="raw"><summary>JSON</summary><pre id="' + rawId + '"></pre></details></td>';
+        tb.appendChild(tr);
+        const pre = document.getElementById(rawId);
+        if (pre) pre.textContent = JSON.stringify(r.rawPayload, null, 2);
+      });
+    }
+
+    async function loadThreads() {
+      const ch = $('#threads-channel').value;
+      const data = await api('/threads?channel=' + encodeURIComponent(ch) + '&limit=150');
+      const tb = $('#threads-table tbody');
+      tb.innerHTML = '';
+      (data.threads || []).forEach((t) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td class="mono">' + escapeHtml(String(t.lastAt)) + '</td>' +
+          '<td class="mono">' + escapeHtml(t.externalThreadId || '') + '</td>';
+        tb.appendChild(tr);
+      });
+    }
+
+    async function loadPageIds() {
+      const data = await api('/page-ids');
+      const ul = $('#page-ids-list');
+      ul.innerHTML = '';
+      (data.pageIds || []).forEach((id) => {
+        const li = document.createElement('li');
+        li.className = 'mono';
+        li.textContent = id;
+        ul.appendChild(li);
+      });
+    }
+
+    async function loadPrompts() {
+      const data = await api('/prompts');
+      const tb = $('#prompts-table tbody');
+      tb.innerHTML = '';
+      (data.prompts || []).forEach((p) => {
+        const tr = document.createElement('tr');
+        const prev = (p.body || '').replace(/\s+/g, ' ').slice(0, 120);
+        tr.innerHTML =
+          '<td class="mono">' + escapeHtml(p.slug) + '</td>' +
+          '<td>' + escapeHtml(String(p.version)) + '</td>' +
+          '<td>' + (p.isActive ? 'da' : 'ne') + '</td>' +
+          '<td>' + escapeHtml(p.channel || '') + '</td>' +
+          '<td>' + escapeHtml(p.name) + '</td>' +
+          '<td>' + escapeHtml(prev) + '</td>';
+        tb.appendChild(tr);
+      });
+    }
+
+    async function loadHealth() {
+      const data = await api('/health-summary');
+      $('#health-json').textContent = JSON.stringify(data, null, 2);
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    async function initApp() {
+      $('#login-card').style.display = 'none';
+      $('#app').style.display = 'block';
+      buildTabs();
+      await loadBootstrap();
+      await loadMessages();
+    }
+
+    $('#btn-save').addEventListener('click', async () => {
+      $('#login-msg').textContent = '';
+      const base = $('#api-base').value.trim().replace(/\/$/, '');
+      const tok = $('#token').value.trim();
+      if (!base || !tok) {
+        $('#login-msg').textContent = 'Unesi API bazu i token.';
+        return;
+      }
+      sessionStorage.setItem(STORAGE_API, base);
+      sessionStorage.setItem(STORAGE_TOKEN, tok);
+      try {
+        await api('/bootstrap');
+        await initApp();
+      } catch (e) {
+        $('#login-msg').textContent = e.message || String(e);
+      }
+    });
+
+    $('#btn-load-messages').addEventListener('click', async () => {
+      msgOffset = 0;
+      try { await loadMessages(); } catch (e) { alert(e.message); }
+    });
+    $('#btn-next').addEventListener('click', async () => {
+      const lim = Number($('#filter-limit').value) || 50;
+      msgOffset += lim;
+      try { await loadMessages(); } catch (e) { alert(e.message); }
+    });
+    $('#btn-prev').addEventListener('click', async () => {
+      const lim = Number($('#filter-limit').value) || 50;
+      msgOffset = Math.max(0, msgOffset - lim);
+      try { await loadMessages(); } catch (e) { alert(e.message); }
+    });
+
+    $('#btn-load-threads').addEventListener('click', async () => {
+      try { await loadThreads(); } catch (e) { alert(e.message); }
+    });
+    $('#btn-load-pageids').addEventListener('click', async () => {
+      try { await loadPageIds(); } catch (e) { alert(e.message); }
+    });
+    $('#btn-load-prompts').addEventListener('click', async () => {
+      try { await loadPrompts(); } catch (e) { alert(e.message); }
+    });
+    $('#btn-load-health').addEventListener('click', async () => {
+      try { await loadHealth(); } catch (e) { alert(e.message); }
+    });
+
+    $('#btn-logout').addEventListener('click', () => {
+      sessionStorage.removeItem(STORAGE_TOKEN);
+      sessionStorage.removeItem(STORAGE_API);
+      location.reload();
+    });
+
+    (async function restore() {
+      const base = sessionStorage.getItem(STORAGE_API);
+      const tok = sessionStorage.getItem(STORAGE_TOKEN);
+      if (base) $('#api-base').value = base;
+      else if (location.hostname.includes('onrender.com')) {
+        $('#api-base').value = location.origin.replace(/\/$/, '');
+      }
+      if (tok) $('#token').value = tok;
+      if (base && tok) {
+        try {
+          await api('/bootstrap');
+          await initApp();
+        } catch (e) {
+          $('#login-msg').textContent = e.message || String(e);
+        }
+      }
+    })();
+  </script>
+</body>
+</html>
