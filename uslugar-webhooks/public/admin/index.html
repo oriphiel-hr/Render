@@ -125,6 +125,10 @@
     #users-table tbody tr:hover {
       background: rgba(255, 255, 255, 0.02);
     }
+    #threads-table tbody tr:hover {
+      background: rgba(61, 139, 253, 0.07);
+      cursor: pointer;
+    }
     .legend-wrap {
       display: flex;
       flex-wrap: wrap;
@@ -349,8 +353,12 @@
             <table id="threads-table">
               <thead>
                 <tr>
-                  <th>Zadnja poruka</th>
-                  <th>externalThreadId</th>
+                  <th>Zadnja aktivnost</th>
+                  <th>Korisnik</th>
+                  <th>Stranica</th>
+                  <th>Smjer</th>
+                  <th>Zadnji tekst</th>
+                  <th>Nit</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -534,6 +542,26 @@
       return name || id || '';
     }
 
+    function formatListMeta(total, offset, limit, label, shownCount) {
+      const safeLimit = Math.max(Number(limit) || 1, 1);
+      const page = Math.floor((Number(offset) || 0) / safeLimit) + 1;
+      return 'Prikazano ' + shownCount + ' od ukupno ' + total + ' ' + label + ' · stranica ' + page + ' · limit ' + safeLimit;
+    }
+
+    function formatDateTime(value) {
+      if (!value) return '';
+      const dt = new Date(value);
+      if (Number.isNaN(dt.getTime())) return String(value);
+      return dt.toLocaleString('hr-HR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    }
+
     function hashStringToHue(s) {
       const text = String(s || '');
       let hash = 0;
@@ -656,14 +684,15 @@
       q.set('limit', limit);
       q.set('offset', String(msgOffset));
       const data = await api('/messages?' + q.toString());
-      $('#messages-meta').textContent = 'Ukupno: ' + data.total + ' · offset ' + data.offset + ' · limit ' + data.limit;
+      const shown = Array.isArray(data.rows) ? data.rows.length : 0;
+      $('#messages-meta').textContent = formatListMeta(data.total, data.offset, data.limit, 'poruka', shown);
       const tb = $('#messages-table tbody');
       tb.innerHTML = '';
       (data.rows || []).forEach((r) => {
         const tr = document.createElement('tr');
         const rawId = 'raw-' + Math.random().toString(36).slice(2);
         tr.innerHTML =
-          '<td class="mono">' + escapeHtml(String(r.createdAt)) + '</td>' +
+          '<td class="mono">' + escapeHtml(formatDateTime(r.createdAt)) + '</td>' +
           '<td><span class="pill">' + escapeHtml(r.channel) + '</span></td>' +
           '<td>' + escapeHtml(r.direction) + '</td>' +
           '<td><button type="button" class="link-btn btn-message-user-filter" data-user-id="' + escapeHtml(r.userId || '') +
@@ -708,8 +737,8 @@
       q.set('limit', String(limit));
       q.set('offset', String(usersOffset));
       const data = await api('/users?' + q.toString());
-      $('#users-meta').textContent =
-        'Ukupno korisnika: ' + data.total + ' · offset ' + data.offset + ' · limit ' + data.limit;
+      const shown = Array.isArray(data.rows) ? data.rows.length : 0;
+      $('#users-meta').textContent = formatListMeta(data.total, data.offset, data.limit, 'korisnika', shown);
       const tb = $('#users-table tbody');
       tb.innerHTML = '';
       (data.rows || []).forEach((u) => {
@@ -722,7 +751,7 @@
           '"><span class="person-badge"><span class="person-dot"></span>' + escapeHtml(userLabel) + '</span></button></td>' +
           '<td><span class="soft-badge user-page-badge">' + escapeHtml(pageLabel) + '</span></td>' +
           '<td>' + escapeHtml(String(u.messageCount || 0)) + '</td>' +
-          '<td class="mono">' + escapeHtml(String(u.lastAt || '')) + '</td>' +
+          '<td class="mono">' + escapeHtml(formatDateTime(u.lastAt)) + '</td>' +
           '<td>' + escapeHtml((u.lastText || '').slice(0, 140)) + '</td>' +
           '<td><button type="button" class="secondary btn-open-user" data-user="' + escapeHtml(u.userId) +
           '" data-page="' + escapeHtml(u.pageId || '') + '">Otvori poruke</button></td>';
@@ -767,10 +796,30 @@
       tb.innerHTML = '';
       (data.threads || []).forEach((t) => {
         const tr = document.createElement('tr');
+        const pageLabel = formatPageDisplay(t.pageId, t.pageName);
+        const userLabel = formatUserDisplay(t.userId, t.userName);
         tr.innerHTML =
-          '<td class="mono">' + escapeHtml(String(t.lastAt)) + '</td>' +
+          '<td class="mono">' + escapeHtml(formatDateTime(t.lastAt)) + '</td>' +
+          '<td>' + escapeHtml(userLabel) + '</td>' +
+          '<td><span class="soft-badge thread-page-badge">' + escapeHtml(pageLabel) + '</span></td>' +
+          '<td>' + escapeHtml(String(t.lastDirection || '')) + '</td>' +
+          '<td>' + escapeHtml((t.lastText || '').slice(0, 160)) + '</td>' +
           '<td class="mono">' + escapeHtml(t.externalThreadId || '') + '</td>';
         tb.appendChild(tr);
+        const badge = tr.querySelector('.thread-page-badge');
+        if (badge) {
+          const color = pageColorStyle(t.pageId || '');
+          badge.style.background = color.bg;
+          badge.style.borderColor = color.border;
+          badge.style.color = color.text;
+        }
+        tr.addEventListener('click', () => {
+          $('#filter-page').value = t.pageId || '';
+          $('#filter-search').value = t.externalThreadId || t.userName || t.userId || '';
+          msgOffset = 0;
+          activateTab('messages');
+          loadMessages().catch((e) => alert(e.message));
+        });
       });
     }
 
@@ -859,6 +908,18 @@
         loadMessages().catch((e) => alert(e.message));
       }, 300);
     });
+    $('#filter-page').addEventListener('change', () => {
+      msgOffset = 0;
+      loadMessages().catch((e) => alert(e.message));
+    });
+    $('#filter-channel').addEventListener('change', () => {
+      msgOffset = 0;
+      loadMessages().catch((e) => alert(e.message));
+    });
+    $('#filter-limit').addEventListener('change', () => {
+      msgOffset = 0;
+      loadMessages().catch((e) => alert(e.message));
+    });
     $('#btn-next').addEventListener('click', async () => {
       const lim = Number($('#filter-limit').value) || 50;
       msgOffset += lim;
@@ -874,6 +935,14 @@
       usersOffset = 0;
       try { await loadUsers(); } catch (e) { alert(e.message); }
     });
+    $('#users-page').addEventListener('change', () => {
+      usersOffset = 0;
+      loadUsers().catch((e) => alert(e.message));
+    });
+    $('#users-limit').addEventListener('change', () => {
+      usersOffset = 0;
+      loadUsers().catch((e) => alert(e.message));
+    });
     $('#btn-users-next').addEventListener('click', async () => {
       const lim = Number($('#users-limit').value) || 50;
       usersOffset += lim;
@@ -887,6 +956,9 @@
 
     $('#btn-load-threads').addEventListener('click', async () => {
       try { await loadThreads(); } catch (e) { alert(e.message); }
+    });
+    $('#threads-channel').addEventListener('change', () => {
+      loadThreads().catch((e) => alert(e.message));
     });
     $('#btn-load-pageids').addEventListener('click', async () => {
       try { await loadPageIds(); } catch (e) { alert(e.message); }

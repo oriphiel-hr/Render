@@ -109,7 +109,13 @@ async function listThreads(q = {}) {
       channel,
       externalThreadId: { not: null }
     },
-    select: { externalThreadId: true, createdAt: true },
+    select: {
+      externalThreadId: true,
+      createdAt: true,
+      direction: true,
+      bodyText: true,
+      rawPayload: true
+    },
     orderBy: { createdAt: 'desc' },
     take: 5000
   });
@@ -120,7 +126,17 @@ async function listThreads(q = {}) {
     const t = r.externalThreadId;
     if (!t || seen.has(t)) continue;
     seen.add(t);
-    threads.push({ externalThreadId: t, lastAt: r.createdAt });
+    const { pageId, userId } = splitThreadId(t);
+    threads.push({
+      externalThreadId: t,
+      lastAt: r.createdAt,
+      lastDirection: r.direction || null,
+      lastText: r.bodyText || null,
+      pageId,
+      userId,
+      pageName: pageId ? inferPageNameFromRaw(pageId, r.rawPayload) : null,
+      userName: pageId && userId ? inferUserNameFromRaw(pageId, userId, r.rawPayload) : null
+    });
     if (threads.length >= limit) break;
   }
 
