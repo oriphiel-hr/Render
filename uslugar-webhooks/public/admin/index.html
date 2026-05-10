@@ -534,7 +534,7 @@
       <section class="panel" data-panel="pages">
         <div class="card">
           <h2 style="margin-top:0;font-size:1rem;">Page ID iz niti</h2>
-          <p class="hint">Izdvojeno iz formata <code>pageId_psid</code> za MESSENGER.</p>
+          <p id="pageids-status" class="hint">Izdvojeno iz formata <code>pageId_psid</code> za MESSENGER. Učitava se automatski pri otvaranju taba.</p>
           <button type="button" id="btn-load-pageids">Osvježi</button>
           <ul id="page-ids-list" style="margin:0.75rem 0 0; padding-left:1.2rem;"></ul>
         </div>
@@ -736,6 +736,9 @@
       document.querySelectorAll('section.panel').forEach((p) => {
         p.classList.toggle('active', p.dataset.panel === id);
       });
+      if (id === 'pages' && $('#app').style.display !== 'none' && !pageIdsLoaded) {
+        loadPageIds();
+      }
       if (id === 'prompts' && $('#app').style.display !== 'none') {
         loadPrompts();
       }
@@ -752,6 +755,7 @@
     let messagesSortDir = 'desc';
     let threadsSortKey = 'lastAt';
     let threadsSortDir = 'desc';
+    let pageIdsLoaded = false;
     let crmNoteContext = null;
     const PAGE_COLOR_PALETTE = [
       { bg: 'rgba(255, 99, 132, 0.16)', border: 'rgba(255, 99, 132, 0.65)', text: 'rgb(255, 195, 206)' },
@@ -1374,18 +1378,30 @@
     }
 
     async function loadPageIds() {
-      const data = await api('/page-ids');
-      const ul = $('#page-ids-list');
-      ul.innerHTML = '';
-      const pages = Array.isArray(data.pages) && data.pages.length
-        ? data.pages
-        : (data.pageIds || []).map((id) => ({ id, name: null }));
-      pages.forEach((p) => {
-        const li = document.createElement('li');
-        li.className = 'mono';
-        li.textContent = p && p.name ? (p.name + ' (' + p.id + ')') : String(p.id || '');
-        ul.appendChild(li);
-      });
+      const status = $('#pageids-status');
+      status.classList.remove('err');
+      status.textContent = 'Učitavam Page ID popis…';
+      try {
+        const data = await api('/page-ids');
+        const ul = $('#page-ids-list');
+        ul.innerHTML = '';
+        const pages = Array.isArray(data.pages) && data.pages.length
+          ? data.pages
+          : (data.pageIds || []).map((id) => ({ id, name: null }));
+        pages.forEach((p) => {
+          const li = document.createElement('li');
+          li.className = 'mono';
+          li.textContent = p && p.name ? (p.name + ' (' + p.id + ')') : String(p.id || '');
+          ul.appendChild(li);
+        });
+        pageIdsLoaded = true;
+        status.textContent = pages.length
+          ? ('Učitano: ' + pages.length + ' Page ID vrijednosti iz poruka.')
+          : 'Nema pronađenih vrijednosti. Kad se poruke sinkroniziraju, popis će se pojaviti ovdje.';
+      } catch (e) {
+        status.classList.add('err');
+        status.textContent = 'Greška pri učitavanju: ' + (e.message || String(e));
+      }
     }
 
     async function loadPrompts() {
