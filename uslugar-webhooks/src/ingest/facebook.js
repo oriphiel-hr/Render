@@ -14,6 +14,9 @@ const crypto = require('crypto');
  * - calls — glasovni/video pozivi i povezani događaji (statistika; detalji u rawPayload)
  *
  * Ne pretplaćujemo ovdje: message_reads, message_deliveries (veliki volumen, rijetko korisno u bazi).
+ *
+ * Page feed (`entry.changes[]`) — komentari, objave, spominjanja itd. Pretplata u Meta konzoli (npr. `feed`,
+ * `mention`) + odgovarajuće dozvole aplikacije za čitanje Page sadržaja ako Meta traži.
  */
 
 function stableMessageId(event, pageId) {
@@ -255,6 +258,71 @@ function messagingEventToRow(pageId, event) {
   };
 }
 
+/**
+ * Page feed / Page changes webhook (komentari, reakcije na objavu, mention, …).
+ * https://developers.facebook.com/docs/graph-api/webhooks/reference/page/#fields
+ */
+function feedChangeToRow(pageId, ch) {
+  const page = pageId != null ? String(pageId) : '';
+  const fieldRaw = ch.field != null ? String(ch.field) : 'unknown';
+  const fieldKey = fieldRaw.replace(/[^a-zA-Z0-9_]/g, '_').slice(0, 64) || 'unknown';
+  const v = ch.value && typeof ch.value === 'object' ? ch.value : {};
+  const verb = v.verb != null ? String(v.verb) : '';
+  const postId = v.post_id != null ? String(v.post_id) : v.post?.id != null ? String(v.post.id) : '';
+  const commentId = v.comment_id != null ? String(v.comment_id) : '';
+  const fromId = v.from?.id != null ? String(v.from.id) : '';
+
+  const sourceByField = {
+    feed: 'facebook.graph.feed',
+    mention: 'facebook.graph.feed.mention'
+  };
+  const source =
+    sourceByField[fieldRaw] ||
+    (fieldRaw === 'comments' || fieldRaw.startsWith('comment')
+      ? 'facebook.graph.feed.comment'
+      : `facebook.graph.feed.${fieldKey}`);
+
+  const timePart = ch.time != null ? String(ch.time) : '';
+  let externalMessageId;
+  if (commentId) {
+    externalMessageId = clip(`feed_c_${commentId}_${verb || 'u'}_${timePart}`, 200);
+  } else if (postId) {
+    externalMessageId = clip(`feed_p_${postId}_${fieldKey}_${timePart}`, 200);
+  } else {
+    externalMessageId = syntheticId('fb_feed', page, ch, { field: fieldRaw });
+  }
+
+  const textBits = [
+    v.message,
+    v.text,
+    v.item,
+    v.comment_text,
+    v.post?.message,
+    v.post_message
+  ].filter((x) => x != null && String(x).trim() !== '');
+  const textContent = textBits.length ? String(textBits[0]) : '';
+
+  let bodyText = `[feed:${fieldRaw}]`;
+  if (verb) bodyText += ` · ${verb}`;
+  if (postId) bodyText += ` · post=${postId}`;
+  if (commentId) bodyText += ` · comment=${commentId}`;
+  if (fromId) bodyText += ` · from=${fromId}`;
+  if (textContent) bodyText += ` · ${clip(textContent, 600)}`;
+
+  const externalThreadId =
+    postId && page ? `${page}_${postId}` : page ? String(page) : postId ? `post_${postId}` : null;
+
+  return {
+    channel: 'FACEBOOK_PAGE_FEED',
+    source,
+    externalThreadId,
+    externalMessageId,
+    direction: 'inbound',
+    bodyText: clip(bodyText, 2000),
+    rawPayload: ch
+  };
+}
+
 function parseFacebookWebhook(body) {
   const rows = [];
   if (!body || !Array.isArray(body.entry)) return rows;
@@ -270,17 +338,7 @@ function parseFacebookWebhook(body) {
 
     const changes = entry.changes || [];
     for (const ch of changes) {
-      const v = ch.value || {};
-      const extId = v.comment_id || v.post_id || v.id || stableMessageId({ change: ch }, pageId);
-      rows.push({
-        channel: 'FACEBOOK_PAGE_FEED',
-        source: 'facebook.graph',
-        externalThreadId: pageId ? String(pageId) : null,
-        externalMessageId: String(extId).slice(0, 200),
-        direction: 'inbound',
-        bodyText: v.message || v.text || v.item || null,
-        rawPayload: ch
-      });
+      rows.push(feedChangeToRow(pageId, ch));
     }
   }
 

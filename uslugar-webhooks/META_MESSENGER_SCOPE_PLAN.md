@@ -23,6 +23,13 @@ Parser (`src/ingest/facebook.js`) sprema u `ChannelMessage` sažetak u `bodyText
 
 **Preskačemo** (ne idu u bazu): `message_reads`, `message_deliveries` — premali signal za volumen.
 
+### Page feed (objave, komentari, mention)
+
+Webhook šalje `entry[].changes[]` s poljem `field` (npr. `feed`, `mention`) i `value`. Parser sprema kanal **`FACEBOOK_PAGE_FEED`**, `source` tipa `facebook.graph.feed`, `facebook.graph.feed.comment`, `facebook.graph.feed.mention` ili `facebook.graph.feed.<field>`.
+
+- **`externalThreadId`**: po mogućnosti `pageId_postId` da nit prati objavu.
+- Za feed događaje u Meta konzoli pretplati odgovarajuća **Page** polja i osiguraj **dozvole** ako Meta traži čitanje Page sadržaja (ovisno o produkcijskom modu).
+
 ## Aktivno sada (minimalni set)
 
 - `pages_messaging` — slanje/primanje Messenger poruka za Facebook Page.
