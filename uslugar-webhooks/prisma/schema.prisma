@@ -62,6 +62,8 @@ model PromptTemplate {
   isActive    Boolean         @default(false)
   /// null = vrijedi za sve kanale
   channel     MessageChannel?
+  /// Ne primjenjuj prompt kad GET /prompts/active dobije query eventSource koji odgovara (točan string ili prefiks ako završi s *)
+  excludeSources String[]      @default([])
   description String?         @db.Text
   createdAt   DateTime        @default(now())
 

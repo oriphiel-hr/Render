@@ -10,6 +10,9 @@ Odgovaraj hrvatski, jasno i stručno.`;
 async function main() {
   await prisma.promptTemplate.deleteMany({ where: { slug: 'system.default' } });
 
+  /** feed* ne smije zahvatiti facebook.graph.feedback — koristimo prefiks s točkom */
+  const defaultExclude = ['facebook.graph.call', 'facebook.graph.reaction', 'facebook.graph.feed*'];
+
   await prisma.promptTemplate.create({
     data: {
       slug: 'system.default',
@@ -18,7 +21,9 @@ async function main() {
       version: 1,
       isActive: true,
       channel: null,
-      description: 'Globalni prompt za sve kanale; uredi u bazi ili seedu.'
+      excludeSources: defaultExclude,
+      description:
+        'Globalni prompt za sve kanale; uredi u bazi ili seedu. excludeSources: ne primjenjuj na pozive/reakcije/feed (GET prompts/active?eventSource=).'
     }
   });
 
@@ -30,6 +35,7 @@ async function main() {
       version: 2,
       isActive: true,
       channel: 'MESSENGER',
+      excludeSources: defaultExclude,
       description: 'Varijanta za Messenger; viša verzija za isti slug + kanal u logici odabira.'
     }
   });

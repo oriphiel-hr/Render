@@ -664,12 +664,12 @@
       <section class="panel" data-panel="prompts">
         <div class="card">
           <h2 style="margin-top:0;font-size:1rem;">Prompt predlošci</h2>
-          <p id="prompts-status" class="hint" style="margin:0.35rem 0 0.65rem;">Otvaranjem ovog taba učitava se lista iz baze.</p>
+          <p id="prompts-status" class="hint" style="margin:0.35rem 0 0.65rem;">Otvaranjem ovog taba učitava se lista iz baze. Polje <span class="mono">excludeSources</span> isključuje prompt za tipove događaja (npr. poziv); ingest zatim <span class="mono">GET /api/v1/prompts/active/:slug?eventSource=facebook.graph.call</span> vraća <span class="mono">skipped:true</span>.</p>
           <div class="row" style="align-items:flex-start;">
             <button type="button" id="btn-load-prompts">Osvježi tablicu</button>
             <div class="field" style="flex:2 1 28rem;min-width:min(100%, 22rem);">
               <label for="prompts-import-json">Uvoz JSON-a (niz ili <span class="mono">{ "prompts": [...] }</span>)</label>
-              <textarea id="prompts-import-json" rows="7" placeholder='[{"slug":"system.default","name":"Zadani","body":"…","version":1,"isActive":true,"channel":null}]' style="width:100%;max-width:none;font-family:ui-monospace,monospace;font-size:0.78rem;"></textarea>
+              <textarea id="prompts-import-json" rows="7" placeholder='[{"slug":"system.default","name":"Zadani","body":"…","version":1,"isActive":true,"channel":null,"excludeSources":["facebook.graph.call","facebook.graph.feed*"]}]' style="width:100%;max-width:none;font-family:ui-monospace,monospace;font-size:0.78rem;"></textarea>
             </div>
           </div>
           <div class="row">
@@ -685,6 +685,7 @@
                   <th>Verzija</th>
                   <th>Aktivan</th>
                   <th>Kanal</th>
+                  <th title="Ne primjenjuj kad je eventSource jednak ili odgovara prefiksu (završi s *)">Isključi izvore</th>
                   <th>Naziv</th>
                   <th>Tijelo (preview)</th>
                 </tr>
@@ -1569,11 +1570,16 @@
         rows.forEach((p) => {
           const tr = document.createElement('tr');
           const prev = (p.body || '').replace(/\s+/g, ' ').slice(0, 120);
+          const joinedEx = Array.isArray(p.excludeSources) ? p.excludeSources.join(', ') : '';
+          const excl = joinedEx
+            ? escapeHtml(joinedEx.length > 120 ? joinedEx.slice(0, 120) + '…' : joinedEx)
+            : '—';
           tr.innerHTML =
             '<td class="mono">' + escapeHtml(p.slug) + '</td>' +
             '<td>' + escapeHtml(String(p.version)) + '</td>' +
             '<td>' + (p.isActive ? 'da' : 'ne') + '</td>' +
             '<td>' + escapeHtml(p.channel || '') + '</td>' +
+            '<td class="mono" style="font-size:0.78rem;max-width:14rem;">' + excl + '</td>' +
             '<td>' + escapeHtml(p.name) + '</td>' +
             '<td>' + escapeHtml(prev) + '</td>';
           tb.appendChild(tr);

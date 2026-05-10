@@ -1,7 +1,7 @@
 const express = require('express');
 const { prisma } = require('../lib/prisma');
 const { storeMessages } = require('../services/messageStore');
-const { getActivePromptBody } = require('../services/promptService');
+const { resolveActivePrompt } = require('../services/promptService');
 const { sendMessengerAndStore } = require('../services/messengerSend');
 
 const CHANNEL_KEYS = new Set(['MESSENGER', 'INSTAGRAM', 'WHATSAPP', 'FACEBOOK_PAGE_FEED', 'GENERIC']);
@@ -137,15 +137,37 @@ function createIngestRouter() {
     }
   });
 
-  /** GET /api/v1/prompts/active/:slug?channel=MESSENGER */
+  /**
+   * GET /api/v1/prompts/active/:slug?channel=MESSENGER&eventSource=facebook.graph.call
+   * Ako je eventSource na excludeSources predloška, vraća skipped (automatika ne treba LLM).
+   */
   router.get('/prompts/active/:slug', requireApiKey, async (req, res) => {
     try {
       const { slug } = req.params;
       const ch = req.query.channel ? String(req.query.channel).toUpperCase() : null;
       const channelEnum = ch && CHANNEL_KEYS.has(ch) ? ch : null;
-      const body = await getActivePromptBody(slug, channelEnum);
-      if (!body) return res.status(404).json({ error: 'No active prompt for slug' });
-      return res.json({ slug, channel: channelEnum, body });
+      const eventSource = req.query.eventSource ? String(req.query.eventSource).trim() : null;
+
+      const result = await resolveActivePrompt(slug, channelEnum, eventSource);
+      if (!result.ok && result.reason === 'excluded') {
+        return res.status(200).json({
+          skipped: true,
+          reason: 'excludeSources',
+          slug,
+          channel: channelEnum,
+          eventSource: result.eventSource,
+          excludeSources: result.excludeSources
+        });
+      }
+      if (!result.ok) {
+        return res.status(404).json({ error: 'No active prompt for slug' });
+      }
+      return res.json({
+        slug,
+        channel: channelEnum,
+        body: result.body,
+        version: result.version
+      });
     } catch (e) {
       return res.status(500).json({ error: e.message });
     }

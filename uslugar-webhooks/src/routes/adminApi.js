@@ -253,7 +253,7 @@ function createAdminRouter() {
 
   /**
    * Uvoz prompt predložaka (JSON niz ili { prompts: [...] }).
-   * Svaki objekt: slug, name, body, version (obavezno); isActive, channel, description (opcionalno).
+   * Svaki objekt: slug, name, body, version (obavezno); isActive, channel, description, excludeSources (opcionalno).
    * Jedinstveni ključ (slug + version) — postojeći redovi se ažuriraju.
    */
   router.post('/api/prompts/import', jsonBody, requireAdminToken, async (req, res) => {
@@ -266,6 +266,20 @@ function createAdminRouter() {
         throw new Error(`Nepoznat kanal "${s}". Dozvoljeno: ${[...CHANNELS].join(', ')} ili prazno.`);
       }
       return s;
+    }
+
+    function parseExcludeSources(row) {
+      if (row.excludeSources === undefined) return undefined;
+      if (Array.isArray(row.excludeSources)) {
+        return row.excludeSources.map((x) => String(x).trim()).filter(Boolean);
+      }
+      if (typeof row.excludeSources === 'string') {
+        return row.excludeSources
+          .split(/[\n,]/)
+          .map((s) => s.trim())
+          .filter(Boolean);
+      }
+      return [];
     }
 
     try {
@@ -295,8 +309,10 @@ function createAdminRouter() {
         const channel = parseChannel(row.channel);
         const description = row.description != null ? String(row.description) : null;
         const createActive = row.isActive !== undefined ? Boolean(row.isActive) : false;
+        const excludeParsed = parseExcludeSources(row);
         const updateData = { name, body, channel, description };
         if (row.isActive !== undefined) updateData.isActive = Boolean(row.isActive);
+        if (excludeParsed !== undefined) updateData.excludeSources = excludeParsed;
 
         await prisma.promptTemplate.upsert({
           where: { slug_version: { slug, version } },
@@ -307,6 +323,7 @@ function createAdminRouter() {
             version,
             isActive: createActive,
             channel,
+            excludeSources: excludeParsed !== undefined ? excludeParsed : [],
             description
           },
           update: updateData
