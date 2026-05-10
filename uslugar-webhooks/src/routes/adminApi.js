@@ -215,6 +215,77 @@ function createAdminRouter() {
     }
   });
 
+  /**
+   * Uvoz prompt predložaka (JSON niz ili { prompts: [...] }).
+   * Svaki objekt: slug, name, body, version (obavezno); isActive, channel, description (opcionalno).
+   * Jedinstveni ključ (slug + version) — postojeći redovi se ažuriraju.
+   */
+  router.post('/api/prompts/import', jsonBody, requireAdminToken, async (req, res) => {
+    const CHANNELS = new Set(['MESSENGER', 'INSTAGRAM', 'WHATSAPP', 'FACEBOOK_PAGE_FEED', 'GENERIC']);
+
+    function parseChannel(val) {
+      if (val == null || val === '') return null;
+      const s = String(val).trim();
+      if (!CHANNELS.has(s)) {
+        throw new Error(`Nepoznat kanal "${s}". Dozvoljeno: ${[...CHANNELS].join(', ')} ili prazno.`);
+      }
+      return s;
+    }
+
+    try {
+      const raw = req.body;
+      let items = [];
+      if (Array.isArray(raw)) items = raw;
+      else if (raw && Array.isArray(raw.prompts)) items = raw.prompts;
+      else if (raw && Array.isArray(raw.templates)) items = raw.templates;
+      else {
+        return res.status(400).json({
+          error: 'Očekujem JSON niz promptova ili objekt { "prompts": [ ... ] }.'
+        });
+      }
+
+      let imported = 0;
+      for (const row of items) {
+        const slug = String(row.slug || '').trim();
+        const name = String(row.name || '').trim();
+        const body = row.body == null ? '' : String(row.body);
+        const version = Number.parseInt(String(row.version), 10);
+        if (!slug || !name || !Number.isFinite(version)) {
+          return res.status(400).json({
+            error: 'Svaki redak mora imati slug, name i version (broj).'
+          });
+        }
+
+        const channel = parseChannel(row.channel);
+        const description = row.description != null ? String(row.description) : null;
+        const createActive = row.isActive !== undefined ? Boolean(row.isActive) : false;
+        const updateData = { name, body, channel, description };
+        if (row.isActive !== undefined) updateData.isActive = Boolean(row.isActive);
+
+        await prisma.promptTemplate.upsert({
+          where: { slug_version: { slug, version } },
+          create: {
+            slug,
+            name,
+            body,
+            version,
+            isActive: createActive,
+            channel,
+            description
+          },
+          update: updateData
+        });
+        imported += 1;
+      }
+
+      res.json({ imported, message: `Uvezeno / ažurirano: ${imported} predložaka.` });
+    } catch (e) {
+      console.error('[admin prompts import]', e);
+      const status = e.message && e.message.includes('Nepoznat kanal') ? 400 : 500;
+      res.status(status).json({ error: e.message });
+    }
+  });
+
   router.get('/api/health-summary', requireAdminToken, (_req, res) => {
     res.json({
       databaseUrlSet: Boolean(process.env.DATABASE_URL),

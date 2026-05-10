@@ -586,7 +586,19 @@
       <section class="panel" data-panel="prompts">
         <div class="card">
           <h2 style="margin-top:0;font-size:1rem;">Prompt predlošci</h2>
-          <button type="button" id="btn-load-prompts">Učitaj</button>
+          <p id="prompts-status" class="hint" style="margin:0.35rem 0 0.65rem;">Otvaranjem ovog taba učitava se lista iz baze.</p>
+          <div class="row" style="align-items:flex-start;">
+            <button type="button" id="btn-load-prompts">Osvježi tablicu</button>
+            <div class="field" style="flex:2 1 28rem;min-width:min(100%, 22rem);">
+              <label for="prompts-import-json">Uvoz JSON-a (niz ili <span class="mono">{ "prompts": [...] }</span>)</label>
+              <textarea id="prompts-import-json" rows="7" placeholder='[{"slug":"system.default","name":"Zadani","body":"…","version":1,"isActive":true,"channel":null}]' style="width:100%;max-width:none;font-family:ui-monospace,monospace;font-size:0.78rem;"></textarea>
+            </div>
+          </div>
+          <div class="row">
+            <input type="file" id="prompts-import-file" accept=".json,application/json" style="display:none;" />
+            <button type="button" class="secondary" id="btn-prompts-pick-file">Učitaj iz datoteke</button>
+            <button type="button" id="btn-import-prompts">Spremi u bazu (uvoz)</button>
+          </div>
           <div style="overflow:auto;margin-top:0.75rem;">
             <table id="prompts-table">
               <thead>
@@ -724,6 +736,9 @@
       document.querySelectorAll('section.panel').forEach((p) => {
         p.classList.toggle('active', p.dataset.panel === id);
       });
+      if (id === 'prompts' && $('#app').style.display !== 'none') {
+        loadPrompts();
+      }
     }
 
     let msgOffset = 0;
@@ -1374,21 +1389,59 @@
     }
 
     async function loadPrompts() {
-      const data = await api('/prompts');
-      const tb = $('#prompts-table tbody');
-      tb.innerHTML = '';
-      (data.prompts || []).forEach((p) => {
-        const tr = document.createElement('tr');
-        const prev = (p.body || '').replace(/\s+/g, ' ').slice(0, 120);
-        tr.innerHTML =
-          '<td class="mono">' + escapeHtml(p.slug) + '</td>' +
-          '<td>' + escapeHtml(String(p.version)) + '</td>' +
-          '<td>' + (p.isActive ? 'da' : 'ne') + '</td>' +
-          '<td>' + escapeHtml(p.channel || '') + '</td>' +
-          '<td>' + escapeHtml(p.name) + '</td>' +
-          '<td>' + escapeHtml(prev) + '</td>';
-        tb.appendChild(tr);
-      });
+      const st = $('#prompts-status');
+      st.classList.remove('err');
+      st.textContent = 'Učitavam…';
+      try {
+        const data = await api('/prompts');
+        const tb = $('#prompts-table tbody');
+        tb.innerHTML = '';
+        const rows = data.prompts || [];
+        rows.forEach((p) => {
+          const tr = document.createElement('tr');
+          const prev = (p.body || '').replace(/\s+/g, ' ').slice(0, 120);
+          tr.innerHTML =
+            '<td class="mono">' + escapeHtml(p.slug) + '</td>' +
+            '<td>' + escapeHtml(String(p.version)) + '</td>' +
+            '<td>' + (p.isActive ? 'da' : 'ne') + '</td>' +
+            '<td>' + escapeHtml(p.channel || '') + '</td>' +
+            '<td>' + escapeHtml(p.name) + '</td>' +
+            '<td>' + escapeHtml(prev) + '</td>';
+          tb.appendChild(tr);
+        });
+        st.textContent = rows.length
+          ? 'Učitano: ' + rows.length + ' predložaka.'
+          : 'Tablica je prazna — u bazi nema PromptTemplate redaka. Koristi "Spremi u bazu (uvoz)" ispod ili na Renderu u Shellu pokreni seed: npx prisma db seed';
+      } catch (e) {
+        st.textContent = 'Greška pri učitavanju: ' + (e.message || String(e));
+        st.classList.add('err');
+      }
+    }
+
+    async function importPromptsFromTextarea() {
+      const raw = ($('#prompts-import-json').value || '').trim();
+      if (!raw) {
+        alert('Zalijepi JSON u polje ili učitaj .json datoteku.');
+        return;
+      }
+      let parsed;
+      try {
+        parsed = JSON.parse(raw);
+      } catch (e) {
+        alert('JSON nije valjan: ' + (e.message || String(e)));
+        return;
+      }
+      const st = $('#prompts-status');
+      st.classList.remove('err');
+      st.textContent = 'Uvoz…';
+      try {
+        const result = await apiPost('/prompts/import', parsed);
+        st.textContent = (result.message || 'Gotovo.') + ' Tablica je osvježena.';
+        await loadPrompts();
+      } catch (e) {
+        st.textContent = 'Uvoz nije uspio: ' + (e.message || String(e));
+        st.classList.add('err');
+      }
     }
 
     async function loadHealth() {
@@ -1555,8 +1608,30 @@
     $('#btn-load-pageids').addEventListener('click', async () => {
       try { await loadPageIds(); } catch (e) { alert(e.message); }
     });
-    $('#btn-load-prompts').addEventListener('click', async () => {
-      try { await loadPrompts(); } catch (e) { alert(e.message); }
+    $('#btn-load-prompts').addEventListener('click', () => {
+      loadPrompts();
+    });
+    $('#btn-import-prompts').addEventListener('click', () => {
+      importPromptsFromTextarea();
+    });
+    $('#btn-prompts-pick-file').addEventListener('click', () => {
+      $('#prompts-import-file').click();
+    });
+    $('#prompts-import-file').addEventListener('change', (ev) => {
+      const f = ev.target.files && ev.target.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = () => {
+        $('#prompts-import-json').value = typeof r.result === 'string' ? r.result : '';
+        $('#prompts-status').classList.remove('err');
+        $('#prompts-status').textContent = 'Datoteka učitana u polje — provjeri JSON i klikni Spremi u bazu (uvoz).';
+      };
+      r.onerror = () => {
+        $('#prompts-status').classList.add('err');
+        $('#prompts-status').textContent = 'Čitanje datoteke nije uspjelo.';
+      };
+      r.readAsText(f, 'UTF-8');
+      ev.target.value = '';
     });
     $('#btn-load-health').addEventListener('click', async () => {
       try { await loadHealth(); } catch (e) { alert(e.message); }
