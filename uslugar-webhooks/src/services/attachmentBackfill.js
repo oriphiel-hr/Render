@@ -3,6 +3,15 @@ const { prisma } = require('../lib/prisma');
 function extractAttachmentsFromRaw(rawPayload) {
   if (!rawPayload || typeof rawPayload !== 'object') return [];
   const out = [];
+  const pushFromCollection = (collection) => {
+    if (Array.isArray(collection)) {
+      collection.forEach(add);
+      return;
+    }
+    if (collection && Array.isArray(collection.data)) {
+      collection.data.forEach(add);
+    }
+  };
 
   const add = (a) => {
     if (!a || typeof a !== 'object') return;
@@ -14,20 +23,17 @@ function extractAttachmentsFromRaw(rawPayload) {
     out.push({ kind, url, name });
   };
 
-  const attachments = Array.isArray(rawPayload.attachments) ? rawPayload.attachments : [];
-  attachments.forEach(add);
+  pushFromCollection(rawPayload.attachments);
 
-  const messageAttachments = rawPayload.message && Array.isArray(rawPayload.message.attachments)
-    ? rawPayload.message.attachments
-    : [];
-  messageAttachments.forEach(add);
+  if (rawPayload.message) {
+    pushFromCollection(rawPayload.message.attachments);
+  }
 
   const entry = Array.isArray(rawPayload.entry) ? rawPayload.entry : [];
   entry.forEach((e) => {
     const messaging = Array.isArray(e?.messaging) ? e.messaging : [];
     messaging.forEach((m) => {
-      const nested = Array.isArray(m?.message?.attachments) ? m.message.attachments : [];
-      nested.forEach(add);
+      pushFromCollection(m?.message?.attachments);
     });
   });
 
@@ -45,6 +51,8 @@ async function backfillMessageAttachments(opts = {}) {
   let scanned = 0;
   let updated = 0;
   let inserted = 0;
+  let messagesWithAttachments = 0;
+  let messagesWithoutAttachments = 0;
 
   while (true) {
     const rows = await db.channelMessage.findMany({
@@ -60,6 +68,8 @@ async function backfillMessageAttachments(opts = {}) {
 
     for (const r of rows) {
       const attachments = extractAttachmentsFromRaw(r.rawPayload);
+      if (attachments.length) messagesWithAttachments += 1;
+      else messagesWithoutAttachments += 1;
       if (!attachments.length && !force) continue;
       if (!dryRun) {
         await db.$transaction(async (tx) => {
@@ -82,10 +92,10 @@ async function backfillMessageAttachments(opts = {}) {
       updated += 1;
       inserted += attachments.length;
     }
-    if (onProgress) onProgress({ scanned, updated, inserted });
+    if (onProgress) onProgress({ scanned, updated, inserted, messagesWithAttachments, messagesWithoutAttachments });
   }
 
-  return { scanned, updated, inserted, force, dryRun };
+  return { scanned, updated, inserted, messagesWithAttachments, messagesWithoutAttachments, force, dryRun };
 }
 
 module.exports = { backfillMessageAttachments, extractAttachmentsFromRaw };

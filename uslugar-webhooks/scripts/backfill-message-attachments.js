@@ -17,11 +17,17 @@ async function main() {
     force,
     dryRun,
     prisma,
-    onProgress: ({ scanned, updated, inserted }) => {
-      console.log(`[backfill] scanned=${scanned} updated=${updated} inserted=${inserted}`);
+    onProgress: ({ scanned, updated, inserted, messagesWithAttachments, messagesWithoutAttachments }) => {
+      console.log(
+        `[backfill] scanned=${scanned} updated=${updated} inserted=${inserted} ` +
+        `withAttachments=${messagesWithAttachments} withoutAttachments=${messagesWithoutAttachments}`
+      );
     }
   });
-  console.log(`[backfill] done scanned=${result.scanned} updated=${result.updated} inserted=${result.inserted}`);
+  console.log(
+    `[backfill] done scanned=${result.scanned} updated=${result.updated} inserted=${result.inserted} ` +
+    `withAttachments=${result.messagesWithAttachments} withoutAttachments=${result.messagesWithoutAttachments}`
+  );
 }
 
 main()

@@ -1,4 +1,5 @@
 const { prisma } = require('../lib/prisma');
+const { extractAttachmentsFromRaw } = require('./attachmentBackfill');
 
 function splitThreadId(externalThreadId) {
   const t = String(externalThreadId || '');
@@ -131,7 +132,7 @@ async function listMessages(q = {}) {
       userName: userName || null,
       attachments: Array.isArray(r.attachments) && r.attachments.length
         ? r.attachments.map((a) => ({ type: a.kind || null, url: a.url || null, name: a.name || null }))
-        : extractAttachmentsFromRaw(r.rawPayload),
+        : extractAttachmentsFromRaw(r.rawPayload).map((a) => ({ type: a.kind || null, url: a.url || null, name: a.name || null })),
       userFirstName: firstName,
       userLastName: lastName
     };
@@ -388,40 +389,6 @@ function splitFullName(fullName) {
     lastName: parts.slice(1).join(' '),
     fullName: cleaned
   };
-}
-
-function extractAttachmentsFromRaw(rawPayload) {
-  if (!rawPayload || typeof rawPayload !== 'object') return [];
-  const out = [];
-
-  const add = (a) => {
-    if (!a || typeof a !== 'object') return;
-    const type = String(a.type || a.mime_type || '').trim() || null;
-    const payload = a.payload && typeof a.payload === 'object' ? a.payload : {};
-    const url = String(payload.url || a.url || payload.src || '').trim() || null;
-    const name = String(a.name || payload.title || payload.filename || '').trim() || null;
-    if (!type && !url && !name) return;
-    out.push({ type, url, name });
-  };
-
-  const attachments = Array.isArray(rawPayload.attachments) ? rawPayload.attachments : [];
-  attachments.forEach(add);
-
-  const messageAttachments = rawPayload.message && Array.isArray(rawPayload.message.attachments)
-    ? rawPayload.message.attachments
-    : [];
-  messageAttachments.forEach(add);
-
-  const entry = Array.isArray(rawPayload.entry) ? rawPayload.entry : [];
-  entry.forEach((e) => {
-    const messaging = Array.isArray(e?.messaging) ? e.messaging : [];
-    messaging.forEach((m) => {
-      const nested = Array.isArray(m?.message?.attachments) ? m.message.attachments : [];
-      nested.forEach(add);
-    });
-  });
-
-  return out.slice(0, 12);
 }
 
 /**

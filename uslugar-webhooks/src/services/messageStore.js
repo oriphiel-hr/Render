@@ -1,38 +1,5 @@
 const { prisma } = require('../lib/prisma');
-
-function extractAttachmentsFromRaw(rawPayload) {
-  if (!rawPayload || typeof rawPayload !== 'object') return [];
-  const out = [];
-
-  const add = (a) => {
-    if (!a || typeof a !== 'object') return;
-    const kind = String(a.type || a.mime_type || '').trim() || null;
-    const payload = a.payload && typeof a.payload === 'object' ? a.payload : {};
-    const url = String(payload.url || a.url || payload.src || '').trim() || null;
-    const name = String(a.name || payload.title || payload.filename || '').trim() || null;
-    if (!kind && !url && !name) return;
-    out.push({ kind, url, name });
-  };
-
-  const attachments = Array.isArray(rawPayload.attachments) ? rawPayload.attachments : [];
-  attachments.forEach(add);
-
-  const messageAttachments = rawPayload.message && Array.isArray(rawPayload.message.attachments)
-    ? rawPayload.message.attachments
-    : [];
-  messageAttachments.forEach(add);
-
-  const entry = Array.isArray(rawPayload.entry) ? rawPayload.entry : [];
-  entry.forEach((e) => {
-    const messaging = Array.isArray(e?.messaging) ? e.messaging : [];
-    messaging.forEach((m) => {
-      const nested = Array.isArray(m?.message?.attachments) ? m.message.attachments : [];
-      nested.forEach(add);
-    });
-  });
-
-  return out.slice(0, 20);
-}
+const { extractAttachmentsFromRaw } = require('./attachmentBackfill');
 
 /**
  * @param {import('@prisma/client').Prisma.ChannelMessageCreateManyInput[]} rows
