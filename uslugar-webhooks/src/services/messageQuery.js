@@ -41,7 +41,42 @@ async function listMessages(q = {}) {
     prisma.channelMessage.count({ where })
   ]);
 
-  return { rows, total, limit, offset };
+  const pageNameById = new Map();
+  const userNameByKey = new Map();
+  for (const r of rows) {
+    const { pageId: parsedPageId, userId: parsedUserId } = splitThreadId(r.externalThreadId);
+    if (!parsedPageId || !parsedUserId) continue;
+
+    if (!pageNameById.has(parsedPageId)) {
+      const pageName = inferPageNameFromRaw(parsedPageId, r.rawPayload);
+      if (pageName) pageNameById.set(parsedPageId, pageName);
+    }
+
+    const userKey = `${parsedPageId}_${parsedUserId}`;
+    if (!userNameByKey.has(userKey)) {
+      const userName = inferUserNameFromRaw(parsedPageId, parsedUserId, r.rawPayload);
+      if (userName) userNameByKey.set(userKey, userName);
+    }
+  }
+
+  const enrichedRows = rows.map((r) => {
+    const { pageId: parsedPageId, userId: parsedUserId } = splitThreadId(r.externalThreadId);
+    const userKey = parsedPageId && parsedUserId ? `${parsedPageId}_${parsedUserId}` : null;
+    const userName = userKey ? userNameByKey.get(userKey) || null : null;
+    const pageName = parsedPageId ? pageNameById.get(parsedPageId) || inferPageNameFromRaw(parsedPageId, r.rawPayload) : null;
+    const { firstName, lastName } = splitFullName(userName);
+    return {
+      ...r,
+      pageId: parsedPageId || null,
+      pageName,
+      userId: parsedUserId || null,
+      userName: userName || null,
+      userFirstName: firstName,
+      userLastName: lastName
+    };
+  });
+
+  return { rows: enrichedRows, total, limit, offset };
 }
 
 /**
@@ -93,7 +128,8 @@ async function listUsers(q = {}) {
     select: {
       externalThreadId: true,
       createdAt: true,
-      bodyText: true
+      bodyText: true,
+      rawPayload: true
     },
     orderBy: { createdAt: 'desc' },
     take: 5000
@@ -106,7 +142,17 @@ async function listUsers(q = {}) {
     const { pageId, userId } = splitThreadId(t);
     if (!pageId || !userId) continue;
     if (pageIdPrefix && pageId !== pageIdPrefix) continue;
-    if (term && !(userId.toLowerCase().includes(term) || String(pageId).toLowerCase().includes(term))) {
+    const rowUserName = inferUserNameFromRaw(pageId, userId, r.rawPayload);
+    const rowPageName = inferPageNameFromRaw(pageId, r.rawPayload);
+    if (
+      term &&
+      !(
+        userId.toLowerCase().includes(term) ||
+        String(pageId).toLowerCase().includes(term) ||
+        String(rowUserName || '').toLowerCase().includes(term) ||
+        String(rowPageName || '').toLowerCase().includes(term)
+      )
+    ) {
       continue;
     }
     const key = `${pageId}_${userId}`;
@@ -114,13 +160,17 @@ async function listUsers(q = {}) {
     if (!agg) {
       agg = {
         pageId,
+        pageName: rowPageName || null,
         userId,
+        userName: rowUserName || null,
         messageCount: 0,
         lastAt: r.createdAt,
         lastText: r.bodyText || null
       };
       byUser.set(key, agg);
     }
+    if (!agg.userName && rowUserName) agg.userName = rowUserName;
+    if (!agg.pageName && rowPageName) agg.pageName = rowPageName;
     agg.messageCount += 1;
     if (new Date(r.createdAt) > new Date(agg.lastAt)) {
       agg.lastAt = r.createdAt;
@@ -131,7 +181,10 @@ async function listUsers(q = {}) {
   const list = [...byUser.values()]
     .map((u) => ({
       pageId: u.pageId,
+      pageName: u.pageName || null,
       userId: u.userId,
+      userName: u.userName || null,
+      ...splitFullName(u.userName),
       messageCount: u.messageCount,
       lastAt: u.lastAt,
       lastText: u.lastText
@@ -176,6 +229,53 @@ function inferPageNameFromRaw(pageId, rawPayload) {
   }
 
   return null;
+}
+
+function inferUserNameFromRaw(pageId, userId, rawPayload) {
+  if (!rawPayload || typeof rawPayload !== 'object' || !userId) return null;
+
+  const normalizedPageId = String(pageId || '');
+  const normalizedUserId = String(userId);
+  const candidates = [];
+
+  if (rawPayload.from && typeof rawPayload.from === 'object') {
+    candidates.push(rawPayload.from);
+  }
+
+  const toData = rawPayload.to && Array.isArray(rawPayload.to.data) ? rawPayload.to.data : [];
+  candidates.push(...toData);
+
+  const participants = rawPayload.participants && Array.isArray(rawPayload.participants.data)
+    ? rawPayload.participants.data
+    : [];
+  candidates.push(...participants);
+
+  for (const c of candidates) {
+    if (!c || typeof c !== 'object') continue;
+    const id = String(c.id || '');
+    const name = String(c.name || '').trim();
+    if (!name) continue;
+    if (id === normalizedUserId && id !== normalizedPageId) {
+      return name;
+    }
+  }
+  return null;
+}
+
+function splitFullName(fullName) {
+  const cleaned = String(fullName || '').trim();
+  if (!cleaned) {
+    return { firstName: null, lastName: null, fullName: null };
+  }
+  const parts = cleaned.split(/\s+/).filter(Boolean);
+  if (parts.length === 1) {
+    return { firstName: parts[0], lastName: null, fullName: cleaned };
+  }
+  return {
+    firstName: parts[0],
+    lastName: parts.slice(1).join(' '),
+    fullName: cleaned
+  };
 }
 
 /**

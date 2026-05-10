@@ -190,7 +190,9 @@
             </div>
             <div class="field">
               <label for="filter-page">Page ID (prefiks niti)</label>
-              <input id="filter-page" type="text" placeholder="npr. 123456789" />
+              <select id="filter-page">
+                <option value="">(sve stranice)</option>
+              </select>
             </div>
             <div class="field">
               <label for="filter-user">User ID (PSID)</label>
@@ -210,6 +212,8 @@
                   <th>Vrijeme</th>
                   <th>Kanal</th>
                   <th>Smjer</th>
+                  <th>Korisnik</th>
+                  <th>Stranica</th>
                   <th>Nit</th>
                   <th>Tekst</th>
                   <th>Raw</th>
@@ -231,10 +235,12 @@
           <div class="row">
             <div class="field">
               <label for="users-page">Page ID</label>
-              <input id="users-page" type="text" placeholder="opcionalno" />
+              <select id="users-page">
+                <option value="">(sve stranice)</option>
+              </select>
             </div>
             <div class="field">
-              <label for="users-q">Pretraga (PSID / Page ID)</label>
+              <label for="users-q">Pretraga (PSID / Page ID / ime / naziv stranice)</label>
               <input id="users-q" type="text" placeholder="npr. 2709..." />
             </div>
             <div class="field">
@@ -248,8 +254,8 @@
             <table id="users-table">
               <thead>
                 <tr>
-                  <th>User ID (PSID)</th>
-                  <th>Page ID</th>
+                  <th>Korisnik (ime, prezime)</th>
+                  <th>Stranica</th>
                   <th>Broj poruka</th>
                   <th>Zadnja aktivnost</th>
                   <th>Zadnji tekst</th>
@@ -452,6 +458,52 @@
     let msgOffset = 0;
     let usersOffset = 0;
 
+    function formatPageDisplay(pageId, pageName) {
+      const id = String(pageId || '').trim();
+      const name = String(pageName || '').trim();
+      if (name && id) return name + ' (' + id + ')';
+      return name || id || '';
+    }
+
+    function formatUserDisplay(userId, userName) {
+      const id = String(userId || '').trim();
+      const name = String(userName || '').trim();
+      if (name && id) return name + ' (' + id + ')';
+      return name || id || '';
+    }
+
+    async function loadPageOptions() {
+      const data = await api('/page-ids');
+      const pages = Array.isArray(data.pages) && data.pages.length
+        ? data.pages
+        : (data.pageIds || []).map((id) => ({ id, name: null }));
+
+      const selectors = ['#filter-page', '#users-page'];
+      selectors.forEach((sel) => {
+        const el = $(sel);
+        if (!el) return;
+        const current = el.value;
+        const firstOpt = el.querySelector('option');
+        const firstLabel = firstOpt ? firstOpt.textContent : '(sve stranice)';
+        const firstValue = firstOpt ? firstOpt.value : '';
+        el.innerHTML = '';
+        const defaultOption = document.createElement('option');
+        defaultOption.value = firstValue;
+        defaultOption.textContent = firstLabel;
+        el.appendChild(defaultOption);
+
+        pages.forEach((p) => {
+          const id = String(p?.id || '').trim();
+          if (!id) return;
+          const opt = document.createElement('option');
+          opt.value = id;
+          opt.textContent = formatPageDisplay(id, p?.name || '');
+          el.appendChild(opt);
+        });
+        if (current) el.value = current;
+      });
+    }
+
     async function loadBootstrap() {
       const data = await api('/bootstrap');
       const banner = $('#db-banner');
@@ -500,6 +552,8 @@
           '<td class="mono">' + escapeHtml(String(r.createdAt)) + '</td>' +
           '<td><span class="pill">' + escapeHtml(r.channel) + '</span></td>' +
           '<td>' + escapeHtml(r.direction) + '</td>' +
+          '<td>' + escapeHtml(formatUserDisplay(r.userId, r.userName)) + '</td>' +
+          '<td>' + escapeHtml(formatPageDisplay(r.pageId, r.pageName)) + '</td>' +
           '<td class="mono">' + escapeHtml(r.externalThreadId || '') + '</td>' +
           '<td>' + escapeHtml((r.bodyText || '').slice(0, 200)) + '</td>' +
           '<td><details class="raw"><summary>JSON</summary><pre id="' + rawId + '"></pre></details></td>';
@@ -525,9 +579,11 @@
       tb.innerHTML = '';
       (data.rows || []).forEach((u) => {
         const tr = document.createElement('tr');
+        const userLabel = formatUserDisplay(u.userId, u.userName);
+        const pageLabel = formatPageDisplay(u.pageId, u.pageName);
         tr.innerHTML =
-          '<td class="mono">' + escapeHtml(u.userId) + '</td>' +
-          '<td class="mono">' + escapeHtml(u.pageId || '') + '</td>' +
+          '<td>' + escapeHtml(userLabel) + '</td>' +
+          '<td>' + escapeHtml(pageLabel) + '</td>' +
           '<td>' + escapeHtml(String(u.messageCount || 0)) + '</td>' +
           '<td class="mono">' + escapeHtml(String(u.lastAt || '')) + '</td>' +
           '<td>' + escapeHtml((u.lastText || '').slice(0, 140)) + '</td>' +
@@ -611,6 +667,7 @@
       $('#app').style.display = 'block';
       buildTabs();
       await loadBootstrap();
+      await loadPageOptions();
       await loadMessages();
       await loadUsers();
     }
@@ -698,6 +755,7 @@
         });
         out.textContent = JSON.stringify(r, null, 2);
         await loadBootstrap();
+        await loadPageOptions();
         await loadMessages();
       } catch (e) {
         out.textContent = e.message || String(e);
