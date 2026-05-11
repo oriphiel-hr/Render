@@ -3,7 +3,7 @@ const path = require('path');
 const { prisma } = require('../lib/prisma');
 const { metaEnvPrefix, parseWebhookProfiles } = require('../lib/metaEnv');
 const { listMessages, listThreads, listPageIdPrefixes, listPageIdsWithNames, listUsers } = require('../services/messageQuery');
-const { syncMessengerHistory } = require('../services/facebookHistorySync');
+const { syncMessengerHistory, backfillGraphSyncBodyText } = require('../services/facebookHistorySync');
 const { backfillMessageAttachments } = require('../services/attachmentBackfill');
 const { storeMessages } = require('../services/messageStore');
 const { sendMessengerAndStore } = require('../services/messengerSend');
@@ -253,6 +253,22 @@ function createAdminRouter() {
       return res.json(result);
     } catch (e) {
       console.error('[admin backfill attachments]', e);
+      return res.status(500).json({ error: e.message });
+    }
+  });
+
+  /**
+   * Ponovno izračuna `bodyText` za `facebook.graph.sync` redove s praznim tekstom (npr. lajk iz Graph povijesti).
+   * POST /admin/api/backfill/graph-sync-body
+   * body: { batchSize?: number }
+   */
+  router.post('/api/backfill/graph-sync-body', jsonBody, requireAdminToken, async (req, res) => {
+    try {
+      const { batchSize } = req.body || {};
+      const result = await backfillGraphSyncBodyText(prisma, { batchSize });
+      return res.json({ ok: true, ...result });
+    } catch (e) {
+      console.error('[admin backfill graph-sync-body]', e);
       return res.status(500).json({ error: e.message });
     }
   });

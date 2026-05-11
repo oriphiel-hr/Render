@@ -24,6 +24,91 @@ function psidFromParticipants(pageId, participants) {
   return null;
 }
 
+/** Meta „tap to like“ / default thumbs sticker product IDs (Graph / Send API). */
+const KNOWN_MESSENGER_LIKE_STICKER_IDS = new Set([
+  '369239263222822',
+  '369239343222814',
+  '369239453222866',
+  '369239383222814'
+]);
+
+function clip(s, n) {
+  const t = String(s || '');
+  return t.length <= n ? t : `${t.slice(0, n)}…`;
+}
+
+function stickerIdFromGraphValue(sticker) {
+  if (sticker == null) return null;
+  if (typeof sticker === 'number' && Number.isFinite(sticker)) return String(Math.trunc(sticker));
+  if (typeof sticker === 'string') {
+    const m = sticker.match(/(?:sticker[_-]?id=|\/)(\d{12,})(?:\b|\.)/i);
+    if (m) return m[1];
+    return null;
+  }
+  if (typeof sticker === 'object') {
+    const id = sticker.sticker_id ?? sticker.id ?? sticker.sticker_product_id;
+    if (id != null) return String(id);
+  }
+  return null;
+}
+
+function attachmentStickerIds(att) {
+  const ids = [];
+  if (!att || typeof att !== 'object') return ids;
+  const p = att.payload && typeof att.payload === 'object' ? att.payload : {};
+  for (const k of ['sticker_id', 'sticker_product_id']) {
+    if (p[k] != null) ids.push(String(p[k]));
+    if (att[k] != null) ids.push(String(att[k]));
+  }
+  return ids;
+}
+
+/**
+ * Sažetak teksta za jednu Graph poruku (konverzacija /messages).
+ * Koristi se pri sinku i pri backfillu iz rawPayload.
+ */
+function bodyTextFromGraphMessage(m) {
+  let bodyText = m.message != null ? String(m.message).trim() : '';
+  bodyText = bodyText.length ? bodyText : null;
+
+  const atts = Array.isArray(m.attachments?.data) ? m.attachments.data : [];
+
+  for (const sid of [stickerIdFromGraphValue(m.sticker), ...atts.flatMap(attachmentStickerIds)]) {
+    if (sid && KNOWN_MESSENGER_LIKE_STICKER_IDS.has(sid)) {
+      return '👍 [Messenger lajk]';
+    }
+  }
+
+  if (!bodyText && m.sticker != null && m.sticker !== false) {
+    const sid = stickerIdFromGraphValue(m.sticker);
+    bodyText = sid ? `[sticker] id=${sid}` : '[sticker]';
+  }
+
+  if (!bodyText && atts.length) {
+    const types = atts
+      .map((a) => {
+        if (!a || typeof a !== 'object') return null;
+        const t = a.type != null ? String(a.type) : '';
+        const p = a.payload && typeof a.payload === 'object' ? a.payload : null;
+        if (t === 'image' && p?.sticker_id != null) return `image:sticker_id=${p.sticker_id}`;
+        return t || null;
+      })
+      .filter(Boolean);
+    bodyText = types.length ? `[privitci: ${types.join(', ')}]` : `[privitci: ${atts.length}]`;
+  }
+
+  if (!bodyText && (m.story || m.shares)) {
+    bodyText = '[dijeljenje / story bez teksta]';
+  }
+
+  if (!bodyText) {
+    bodyText =
+      '[bez teksta · Graph sync — Meta često ne šalje sticker za lajk; ako trebaš povijest, probaj webhook message_reactions]';
+  }
+
+  return clip(bodyText, 2000);
+}
+
 function rowsFromMessages(pageId, psid, messages) {
   const rows = [];
   const list = messages?.data || [];
@@ -34,11 +119,7 @@ function rowsFromMessages(pageId, psid, messages) {
     const fromId = m.from?.id != null ? String(m.from.id) : null;
     const direction = fromId === String(pageId) ? 'outbound' : 'inbound';
 
-    let bodyText = m.message != null ? String(m.message) : null;
-    if (!bodyText && m.sticker) bodyText = '[sticker]';
-    if (!bodyText && m.attachments?.data?.length) {
-      bodyText = `[attachments: ${m.attachments.data.length}]`;
-    }
+    const bodyText = bodyTextFromGraphMessage(m);
 
     let createdAt = new Date();
     if (m.created_time) {
@@ -81,9 +162,9 @@ async function syncMessengerHistory(opts) {
   }
 
   const base = `https://graph.facebook.com/${apiVersion}`;
-  /** Eksplicitni podfieldovi attachmenta — inače Graph često ne vraća URL u listi poruka. */
+  /** `payload` na attachmentu nosi sticker_id za Messenger lajk/thumb kad nema teksta. */
   const msgFields =
-    'id,message,from,to,created_time,sticker,attachments{id,mime_type,name,size,file_url,image_data{url},video_data{url}}';
+    'id,message,from,to,created_time,sticker,attachments{id,mime_type,name,size,file_url,image_data{url},video_data{url},payload}';
 
   const allRows = [];
   let convUrl =
@@ -153,4 +234,41 @@ async function syncMessengerHistory(opts) {
   return allRows;
 }
 
-module.exports = { syncMessengerHistory };
+/**
+ * Popravi `bodyText` za stare sink redove iz `rawPayload` (Graph Message objekt).
+ * @param {import('@prisma/client').PrismaClient} db
+ * @param {{ batchSize?: number }} [opts]
+ */
+async function backfillGraphSyncBodyText(db, opts = {}) {
+  const batchSize = Math.min(Math.max(Number(opts.batchSize) || 400, 50), 2000);
+  let scanned = 0;
+  let updated = 0;
+
+  while (true) {
+    const rows = await db.channelMessage.findMany({
+      where: {
+        source: 'facebook.graph.sync',
+        OR: [{ bodyText: null }, { bodyText: '' }]
+      },
+      select: { id: true, bodyText: true, rawPayload: true },
+      take: batchSize,
+      orderBy: { id: 'asc' }
+    });
+    if (!rows.length) break;
+    scanned += rows.length;
+    for (const r of rows) {
+      const raw = r.rawPayload;
+      if (!raw || typeof raw !== 'object') continue;
+      const next = bodyTextFromGraphMessage(raw);
+      if (next && next !== r.bodyText) {
+        await db.channelMessage.update({ where: { id: r.id }, data: { bodyText: next } });
+        updated += 1;
+      }
+    }
+    if (rows.length < batchSize) break;
+  }
+
+  return { scanned, updated };
+}
+
+module.exports = { syncMessengerHistory, bodyTextFromGraphMessage, backfillGraphSyncBodyText };
