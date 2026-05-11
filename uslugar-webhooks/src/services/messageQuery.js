@@ -2,14 +2,22 @@ const { Prisma } = require('@prisma/client');
 const { prisma } = require('../lib/prisma');
 const { extractAttachmentsFromRaw } = require('./attachmentBackfill');
 
-/** Outbound iz admin panela (Pošalji Messenger) — jedini signal „admin je odgovorio“. */
-const ADMIN_REPLY_SOURCE = 'admin.send';
+/**
+ * Outbound koji resetira „čeka admina“: ručno iz ovog panela, sink s Meta (Inbox), webhook echo, Send API.
+ * Ne uključuje api.ingest.* (automatika / vanjski bot).
+ */
+const ADMIN_QUEUE_CLEAR_SOURCES = [
+  'admin.send',
+  'facebook.graph.sync',
+  'facebook.graph',
+  'facebook.graph.send'
+];
 
 /** Zadnji inbound noviji od ovoga → „Novo“ (hitno) ako je unutar prozora. */
 const ADMIN_QUEUE_URGENT_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
- * Po (channel, externalThreadId): zadnji inbound, zadnji admin.send; čeka li ljudski odgovor.
+ * Po (channel, externalThreadId): zadnji inbound vs. zadnji „stranica se javila“ outbound (vidi ADMIN_QUEUE_CLEAR_SOURCES).
  * @param {import('@prisma/client').PrismaClient} db
  * @param {{ channel: string, externalThreadId: string }[]} pairs
  */
@@ -31,13 +39,17 @@ async function loadThreadAdminQueueFlags(db, pairs) {
     (p) => Prisma.sql`(m.channel::text = ${p.channel} AND m."externalThreadId" = ${p.externalThreadId})`
   );
   const whereJoined = Prisma.join(orParts, ' OR ');
+  const clearSourceSql = Prisma.join(
+    ADMIN_QUEUE_CLEAR_SOURCES.map((s) => Prisma.sql`${s}`),
+    ', '
+  );
 
   /** @type {{ ch: string, tid: string, lastInboundAt: Date | null, lastAdminSendAt: Date | null }[]} */
   const rows = await db.$queryRaw`
     SELECT m.channel::text AS ch,
            m."externalThreadId" AS tid,
            MAX(CASE WHEN LOWER(m.direction) = 'inbound' THEN m."createdAt" END) AS "lastInboundAt",
-           MAX(CASE WHEN LOWER(m.direction) = 'outbound' AND m.source = ${ADMIN_REPLY_SOURCE}
+           MAX(CASE WHEN LOWER(m.direction) = 'outbound' AND m.source IN (${clearSourceSql})
                THEN m."createdAt" END) AS "lastAdminSendAt"
     FROM "ChannelMessage" m
     WHERE ${whereJoined}

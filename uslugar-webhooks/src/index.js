@@ -5,6 +5,7 @@ const { createFacebookWebhookRouter } = require('./routes/facebookWebhook');
 const { createIngestRouter } = require('./routes/ingestApi');
 const { createAdminRouter } = require('./routes/adminApi');
 const { metaEnvPrefix, parseWebhookProfiles } = require('./lib/metaEnv');
+const { getMessengerOutboundApprovalState } = require('./services/pendingMessengerSend');
 
 const PORT = Number(process.env.PORT) || 3000;
 const VERIFY_TOKEN = process.env.VERIFY_TOKEN || 'moj_tajni_token_123';
@@ -89,10 +90,19 @@ app.listen(PORT, () => {
   }
   console.log(`Ingest API: POST http://localhost:${PORT}/api/v1/messages (header X-Ingest-Key)`);
   console.log(`Ingest send: POST http://localhost:${PORT}/api/v1/messenger/send`);
-  if (String(process.env.MESSENGER_OUTBOUND_REQUIRE_APPROVAL || '').trim()) {
-    const v = process.env.MESSENGER_OUTBOUND_REQUIRE_APPROVAL;
-    console.log(`Messenger outbound approval queue: MESSENGER_OUTBOUND_REQUIRE_APPROVAL=${v}`);
-  }
+  getMessengerOutboundApprovalState()
+    .then((s) => {
+      const src = s.fromDb !== null ? 'database' : 'environment';
+      console.log(
+        `Messenger outbound approval: effective=${s.effective} (source=${src}, env MESSENGER_OUTBOUND_REQUIRE_APPROVAL=${s.envVal})`
+      );
+    })
+    .catch(() => {
+      if (String(process.env.MESSENGER_OUTBOUND_REQUIRE_APPROVAL || '').trim()) {
+        const v = process.env.MESSENGER_OUTBOUND_REQUIRE_APPROVAL;
+        console.log(`Messenger outbound approval queue (env only): MESSENGER_OUTBOUND_REQUIRE_APPROVAL=${v}`);
+      }
+    });
   console.log(`Ingest automation: GET http://localhost:${PORT}/api/v1/automation/paused?pageId=&userId=`);
   console.log(`Admin send: POST http://localhost:${PORT}/admin/api/send/messenger`);
   console.log(`Admin panel: GET http://localhost:${PORT}/admin/ (requires ADMIN_PANEL_TOKEN)`);

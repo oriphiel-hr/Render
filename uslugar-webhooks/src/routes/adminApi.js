@@ -11,7 +11,9 @@ const {
   listPendingForAdmin,
   approvePendingSend,
   rejectPendingSend,
-  outboundApprovalRequired
+  getMessengerOutboundApprovalState,
+  setMessengerOutboundApprovalInDb,
+  clearMessengerOutboundApprovalInDb
 } = require('../services/pendingMessengerSend');
 const { requireAdminToken, adminCors } = require('../middleware/adminAuth');
 
@@ -54,6 +56,15 @@ function createAdminRouter() {
       };
     });
 
+    let approvalState = { effective: false, fromDb: null, envVal: false };
+    if (databaseReady) {
+      try {
+        approvalState = await getMessengerOutboundApprovalState();
+      } catch (_) {
+        /* ignore */
+      }
+    }
+
     res.json({
       service: 'uslugar-webhooks',
       databaseReady,
@@ -61,10 +72,62 @@ function createAdminRouter() {
       metaWebhookProfilesRaw: process.env.META_WEBHOOK_PROFILES || '',
       profiles: mounted,
       defaultWebhookPath: '/webhook',
-      messengerOutboundRequireApproval: outboundApprovalRequired(),
+      messengerOutboundRequireApproval: approvalState.effective,
+      messengerOutboundApprovalFromDatabase: approvalState.fromDb !== null,
+      /** null ako nema valjanog retka u AppSetting; inače spremljena boolean vrijednost */
+      messengerOutboundApprovalDbValue: approvalState.fromDb,
+      messengerOutboundApprovalEnvValue: approvalState.envVal,
       hint:
         'Meta Callback URL = https://<host>/webhook/<profile> — profile mora biti u META_WEBHOOK_PROFILES.'
     });
+  });
+
+  /**
+   * POST /admin/api/settings/messenger-outbound-approval
+   * body: { requireApproval: boolean } — sprema u bazu; ingest koristi ovu vrijednost umjesto env dok postoji redak.
+   */
+  router.post(
+    '/api/settings/messenger-outbound-approval',
+    jsonBody,
+    requireAdminToken,
+    async (req, res) => {
+      try {
+        const { requireApproval } = req.body || {};
+        if (typeof requireApproval !== 'boolean') {
+          return res.status(400).json({ error: 'Tijelo mora sadržavati requireApproval (boolean)' });
+        }
+        await setMessengerOutboundApprovalInDb(requireApproval);
+        const state = await getMessengerOutboundApprovalState();
+        res.json({
+          ok: true,
+          messengerOutboundRequireApproval: state.effective,
+          messengerOutboundApprovalFromDatabase: state.fromDb !== null,
+          messengerOutboundApprovalDbValue: state.fromDb,
+          messengerOutboundApprovalEnvValue: state.envVal
+        });
+      } catch (e) {
+        console.error('[admin settings messenger-outbound-approval]', e);
+        res.status(500).json({ error: e.message });
+      }
+    }
+  );
+
+  /** POST /admin/api/settings/messenger-outbound-approval/reset — briše admin postavku; ponovno vrijedi env. */
+  router.post('/api/settings/messenger-outbound-approval/reset', requireAdminToken, async (_req, res) => {
+    try {
+      await clearMessengerOutboundApprovalInDb();
+      const state = await getMessengerOutboundApprovalState();
+      res.json({
+        ok: true,
+        messengerOutboundRequireApproval: state.effective,
+        messengerOutboundApprovalFromDatabase: false,
+        messengerOutboundApprovalDbValue: null,
+        messengerOutboundApprovalEnvValue: state.envVal
+      });
+    } catch (e) {
+      console.error('[admin settings messenger-outbound-approval reset]', e);
+      res.status(500).json({ error: e.message });
+    }
   });
 
   /** GET /admin/api/messenger/pending — zahtjevi za slanje (čekaju odobrenje) */

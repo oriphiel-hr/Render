@@ -425,8 +425,10 @@
           <h2 style="margin-top:0;font-size:1rem;">Poruke</h2>
           <p class="hint" style="margin:0 0 0.65rem;">Feed događaji (<code>FACEBOOK_PAGE_FEED</code>) vide se ako <strong>Kanal</strong> postaviš na taj kanal ili <strong>(svi)</strong> — zadano je samo MESSENGER.</p>
           <p class="hint" style="margin:0 0 0.65rem;">
-            <strong>Novo</strong> / <strong>Čeka admina</strong>: zadnji inbound u niti nakon zadnjeg odgovora iz admina (<span class="mono">source=admin.send</span>).
-            <strong>Novo</strong> ako je taj inbound u zadnjih 7 dana; starije i dalje čekaju, ali bez „hitnog“ označavanja. Bot / Graph odgovori ne broje kao admin.
+            <strong>Novo</strong> / <strong>Čeka admina</strong>: zadnji inbound u niti nakon zadnjeg odlaznog odgovora stranice (admin panel, Meta Inbox / sink
+            <span class="mono">facebook.graph.sync</span>, webhook echo <span class="mono">facebook.graph</span>, Send API
+            <span class="mono">facebook.graph.send</span>). <strong>Ne</strong> broji se automatika
+            <span class="mono">api.ingest.send</span>. <strong>Novo</strong> ako je taj inbound u zadnjih 7 dana; starije i dalje čekaju, ali bez „hitnog“ označavanja.
           </p>
           <div class="card" style="margin-bottom:0.85rem;background:rgba(19,24,32,0.85);border-style:dashed;">
             <h3 style="margin:0 0 0.35rem;font-size:0.95rem;">Pošalji Messenger odgovor</h3>
@@ -435,7 +437,7 @@
               <span class="mono">GET /api/v1/prompts/active/:slug</span>, provjeriti
               <span class="mono">GET /api/v1/automation/paused</span> (query: pageId, userId) ili osloniti se na blokadu pri slanju, složiti tekst (LLM), pa
               <span class="mono">POST /api/v1/messenger/send</span> s <span class="mono">X-Ingest-Key</span>.
-              Ako je na Renderu <span class="mono">MESSENGER_OUTBOUND_REQUIRE_APPROVAL=true</span>, ingest <strong>ne šalje odmah</strong> — vraća <span class="mono">pendingApproval</span> i tekst vidiš u <strong>Zahtjevi za slanje</strong> ispod; token unosiš tek pri odobrenju.
+              Red odobrenja možeš uključiti u adminu (Poruke → <strong>Red odobrenja (ingest)</strong>) ili envom <span class="mono">MESSENGER_OUTBOUND_REQUIRE_APPROVAL=true</span> kad u bazi nema postavke. U tom načinu ingest <strong>ne šalje odmah</strong> — vraća <span class="mono">pendingApproval</span>; token unosiš tek pri odobrenju u <strong>Zahtjevi za slanje</strong>.
               Zaobilazak reda: <span class="mono">forceDirect: true</span> + token u istom bodyju.
               U tabu <strong>Korisnici</strong> uključivanje <strong>Auto pauza</strong> traje dok ne isključiš — ingest u tom slučaju vraća 409.
               Page access token: <span class="mono">pages_messaging</span> — ne sprema se na server.
@@ -467,9 +469,22 @@
             </div>
             <pre id="send-result" class="mono" style="margin:0.65rem 0 0;white-space:pre-wrap;display:none;"></pre>
           </div>
+          <div id="approval-setting-card" class="card" style="margin-bottom:0.85rem;">
+            <h3 style="margin:0 0 0.35rem;font-size:0.95rem;">Red odobrenja (ingest)</h3>
+            <p class="hint" style="margin:0 0 0.65rem;" id="approval-setting-hint"></p>
+            <div class="row" style="align-items:center;gap:0.75rem;flex-wrap:wrap;">
+              <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;">
+                <input type="checkbox" id="chk-messenger-outbound-approval" />
+                Zahtjev ide kroz „Zahtjevi za slanje” prije Meta slanja
+              </label>
+              <button type="button" id="btn-approval-setting-save">Spremi u bazu</button>
+              <button type="button" class="secondary" id="btn-approval-setting-reset" style="display:none;">Vrati na env</button>
+            </div>
+          </div>
           <div id="approval-mode-banner" class="card" style="display:none;margin-bottom:0.85rem;border-color:rgba(61,139,253,0.5);background:rgba(61,139,253,0.08);">
-            <strong>Red odobrenja uključen</strong> (<span class="mono">MESSENGER_OUTBOUND_REQUIRE_APPROVAL</span>) —
-            poruke s ingest API-ja ne idu na Meta dok ih ne odobriš u bloku <strong>Zahtjevi za slanje</strong> ispod. Za produkciju isključi env varijablu.
+            <strong>Red odobrenja uključen</strong> —
+            poruke s ingest API-ja ne idu na Meta dok ih ne odobriš u bloku <strong>Zahtjevi za slanje</strong> ispod.
+            <span id="approval-banner-source" class="hint" style="display:block;margin-top:0.35rem;"></span>
           </div>
           <div id="pending-messenger-wrap" class="card" style="margin-bottom:0.85rem;background:rgba(19,24,32,0.85);border-style:dashed;">
             <h3 style="margin:0 0 0.5rem;font-size:0.95rem;">Zahtjevi za slanje (autom. / ingest)</h3>
@@ -593,7 +608,7 @@
                   <th class="sortable" data-sort="userName">Korisnik (ime, prezime)</th>
                   <th class="sortable" data-sort="pageName">Stranica</th>
                   <th class="sortable" data-sort="isLead">Lead</th>
-                  <th class="sortable" data-sort="adminQueue" title="Novo / čeka admin odgovor (zadnji inbound nakon admin.send)">Red čekanja</th>
+                  <th class="sortable" data-sort="adminQueue" title="Novo / čeka stranicu (zadnji inbound nakon odlazne poruke osim api.ingest.send)">Red čekanja</th>
                   <th class="sortable" data-sort="pauseAutomation" title="Kad je uključeno, POST /api/v1/messenger/send ne šalje (automatika). Ručno slanje iz admina i dalje radi.">Auto pauza</th>
                   <th class="sortable" data-sort="notes">Bilješke</th>
                   <th class="sortable" data-sort="messageCount">Broj poruka</th>
@@ -1427,6 +1442,78 @@
       }
     }
 
+    function applyMessengerOutboundApprovalUi(data) {
+      const amb = $('#approval-mode-banner');
+      const chk = $('#chk-messenger-outbound-approval');
+      const hint = $('#approval-setting-hint');
+      const btnReset = $('#btn-approval-setting-reset');
+      const src = $('#approval-banner-source');
+      if (amb) amb.style.display = data.messengerOutboundRequireApproval ? 'block' : 'none';
+      if (chk) chk.checked = !!data.messengerOutboundRequireApproval;
+      if (hint) {
+        if (!data.databaseReady) {
+          hint.textContent =
+            'Baza nije spremna (migracija ili DATABASE_URL). Spremanje postavke neće raditi dok se to ne riješi.';
+        } else if (data.messengerOutboundApprovalFromDatabase) {
+          hint.textContent =
+            'Aktivna je postavka u bazi. Env MESSENGER_OUTBOUND_REQUIRE_APPROVAL=' +
+            (data.messengerOutboundApprovalEnvValue ? 'true' : 'false') +
+            ' se ne koristi dok ne klikneš „Vrati na env”.';
+        } else {
+          hint.textContent =
+            'Bez retka u bazi koristi se env: MESSENGER_OUTBOUND_REQUIRE_APPROVAL=' +
+            (data.messengerOutboundApprovalEnvValue ? 'true (red uključen)' : 'false / prazno (red isključen)') +
+            '. Označi/isključi i „Spremi u bazu” da prebaciš na trajnu admin postavku.';
+        }
+      }
+      if (btnReset) btnReset.style.display = data.messengerOutboundApprovalFromDatabase ? 'inline-block' : 'none';
+      const btnSave = $('#btn-approval-setting-save');
+      if (btnSave) btnSave.disabled = !data.databaseReady;
+      if (src) {
+        src.textContent = data.messengerOutboundApprovalFromDatabase
+          ? 'Izvor: postavka u bazi (admin).'
+          : 'Izvor: env na Renderu (nema retka u AppSetting).';
+      }
+    }
+
+    function bindOutboundApprovalSettingsOnce() {
+      const save = $('#btn-approval-setting-save');
+      const reset = $('#btn-approval-setting-reset');
+      if (save && !save.dataset.bound) {
+        save.dataset.bound = '1';
+        save.addEventListener('click', async () => {
+          const chk = $('#chk-messenger-outbound-approval');
+          if (!chk) return;
+          try {
+            await apiPost('/settings/messenger-outbound-approval', { requireApproval: chk.checked });
+            const data = await api('/bootstrap');
+            applyMessengerOutboundApprovalUi(data);
+          } catch (e) {
+            alert(e.message);
+          }
+        });
+      }
+      if (reset && !reset.dataset.bound) {
+        reset.dataset.bound = '1';
+        reset.addEventListener('click', async () => {
+          if (
+            !confirm(
+              'Obrisati admin postavku u bazi i ponovno koristiti samo MESSENGER_OUTBOUND_REQUIRE_APPROVAL s Rendera?'
+            )
+          ) {
+            return;
+          }
+          try {
+            await apiPost('/settings/messenger-outbound-approval/reset', {});
+            const data = await api('/bootstrap');
+            applyMessengerOutboundApprovalUi(data);
+          } catch (e) {
+            alert(e.message);
+          }
+        });
+      }
+    }
+
     async function loadBootstrap() {
       const data = await api('/bootstrap');
       const banner = $('#db-banner');
@@ -1437,10 +1524,7 @@
         banner.style.display = 'block';
         btext.textContent = data.databaseHint || 'Pokreni prisma migrate deploy na produkcijskoj bazi.';
       }
-      const amb = $('#approval-mode-banner');
-      if (amb) {
-        amb.style.display = data.messengerOutboundRequireApproval ? 'block' : 'none';
-      }
+      applyMessengerOutboundApprovalUi(data);
       $('#profiles-raw').textContent = 'META_WEBHOOK_PROFILES=' + (data.metaWebhookProfilesRaw || '(prazno)');
       const tb = $('#profiles-table tbody');
       tb.innerHTML = '';
@@ -1802,6 +1886,7 @@
       initMessagesHeaderSorting();
       initThreadsHeaderSorting();
       await loadBootstrap();
+      bindOutboundApprovalSettingsOnce();
       bindPendingMessengerUiOnce();
       await loadPageOptions();
       await loadMessages();

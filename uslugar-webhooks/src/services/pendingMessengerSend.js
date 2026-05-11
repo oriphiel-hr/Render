@@ -8,9 +8,61 @@ const EXPIRED = 'EXPIRED';
 
 const DEFAULT_TTL_HOURS = 48;
 
-function outboundApprovalRequired() {
-  const v = String(process.env.MESSENGER_OUTBOUND_REQUIRE_APPROVAL || '').trim().toLowerCase();
-  return v === '1' || v === 'true' || v === 'yes';
+/** @type {string} */
+const MESSENGER_OUTBOUND_APPROVAL_KEY = 'messenger_outbound_require_approval';
+
+function parseBoolString(s) {
+  const t = String(s || '').trim().toLowerCase();
+  if (t === 'true' || t === '1' || t === 'yes') return true;
+  if (t === 'false' || t === '0' || t === 'no') return false;
+  return null;
+}
+
+function envMessengerOutboundApproval() {
+  return parseBoolString(process.env.MESSENGER_OUTBOUND_REQUIRE_APPROVAL) === true;
+}
+
+/**
+ * Ako postoji redak u AppSetting, vrijedi on; inače MESSENGER_OUTBOUND_REQUIRE_APPROVAL.
+ * @param {import('@prisma/client').PrismaClient | undefined} client
+ */
+async function getMessengerOutboundApprovalState(client) {
+  const db = client || prisma;
+  let fromDb = null;
+  try {
+    const row = await db.appSetting.findUnique({ where: { key: MESSENGER_OUTBOUND_APPROVAL_KEY } });
+    if (row) fromDb = parseBoolString(row.value);
+  } catch (_) {
+    /* tablica još ne postoji ili druga greška */
+  }
+  const envVal = envMessengerOutboundApproval();
+  const effective = fromDb !== null ? fromDb : envVal;
+  return { effective, fromDb, envVal };
+}
+
+async function outboundApprovalRequired(client) {
+  const s = await getMessengerOutboundApprovalState(client);
+  return s.effective;
+}
+
+/**
+ * @param {boolean} requireApproval
+ * @param {import('@prisma/client').PrismaClient | undefined} client
+ */
+async function setMessengerOutboundApprovalInDb(requireApproval, client) {
+  const db = client || prisma;
+  const val = requireApproval ? 'true' : 'false';
+  await db.appSetting.upsert({
+    where: { key: MESSENGER_OUTBOUND_APPROVAL_KEY },
+    create: { key: MESSENGER_OUTBOUND_APPROVAL_KEY, value: val },
+    update: { value: val }
+  });
+}
+
+/** Briše admin postavku — ponovno vrijedi samo env. */
+async function clearMessengerOutboundApprovalInDb(client) {
+  const db = client || prisma;
+  await db.appSetting.deleteMany({ where: { key: MESSENGER_OUTBOUND_APPROVAL_KEY } });
 }
 
 function defaultExpiresAt() {
@@ -119,6 +171,9 @@ async function rejectPendingSend(id) {
 }
 
 module.exports = {
+  getMessengerOutboundApprovalState,
+  setMessengerOutboundApprovalInDb,
+  clearMessengerOutboundApprovalInDb,
   outboundApprovalRequired,
   createPendingSend,
   listPendingForAdmin,

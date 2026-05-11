@@ -86,6 +86,13 @@ model PendingMessengerSend {
   @@index([status, createdAt])
 }
 
+/// Ključ–vrijednost postavki aplikacije (npr. prekidač za red odobrenja ingest slanja)
+model AppSetting {
+  key       String   @id
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+}
+
 /// CRM oznake po korisniku (kombinacija pageId + userId/PSID)
 model CrmContact {
   id        String   @id @default(cuid())

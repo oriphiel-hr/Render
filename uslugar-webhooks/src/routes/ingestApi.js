@@ -98,7 +98,7 @@ function createIngestRouter() {
   /**
    * Šalje Messenger tekst (npr. nakon što LLM generira odgovor uz prompt iz GET /prompts/active).
    * Blokira ako je u CRM-u uključen pauseAutomation (admin → Korisnici). Admin PUT slanje ne koristi ovaj route.
-   * Ako je MESSENGER_OUTBOUND_REQUIRE_APPROVAL=true, ne šalje odmah: sprema zahtjev i vraća pendingApproval (token nije obavezan u tom koraku).
+   * Ako je red odobrenja uključen (admin postavka u bazi ili MESSENGER_OUTBOUND_REQUIRE_APPROVAL), ne šalje odmah: sprema zahtjev i vraća pendingApproval (token nije obavezan u tom koraku).
    * Zaobilazak reda: body.forceDirect=true (i dalje treba accessToken).
    * POST /api/v1/messenger/send
    * body: { pageId, recipientId, text, accessToken?, apiVersion?, forceDirect? }
@@ -124,7 +124,7 @@ function createIngestRouter() {
         });
       }
 
-      const needQueue = outboundApprovalRequired() && !Boolean(forceDirect);
+      const needQueue = (await outboundApprovalRequired()) && !Boolean(forceDirect);
       if (needQueue) {
         const pending = await createPendingSend({
           pageId: safePage,
@@ -145,7 +145,7 @@ function createIngestRouter() {
 
       if (!accessToken) {
         return res.status(400).json({
-          error: 'accessToken je obavezan osim u načinu s MESSENGER_OUTBOUND_REQUIRE_APPROVAL (pending).'
+          error: 'accessToken je obavezan osim u načinu s redom odobrenja (pending).'
         });
       }
 
