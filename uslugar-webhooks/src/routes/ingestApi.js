@@ -3,6 +3,10 @@ const { prisma } = require('../lib/prisma');
 const { storeMessages } = require('../services/messageStore');
 const { resolveActivePrompt } = require('../services/promptService');
 const { sendMessengerAndStore } = require('../services/messengerSend');
+const {
+  outboundApprovalRequired,
+  createPendingSend
+} = require('../services/pendingMessengerSend');
 
 const CHANNEL_KEYS = new Set(['MESSENGER', 'INSTAGRAM', 'WHATSAPP', 'FACEBOOK_PAGE_FEED', 'GENERIC']);
 
@@ -94,15 +98,17 @@ function createIngestRouter() {
   /**
    * Šalje Messenger tekst (npr. nakon što LLM generira odgovor uz prompt iz GET /prompts/active).
    * Blokira ako je u CRM-u uključen pauseAutomation (admin → Korisnici). Admin PUT slanje ne koristi ovaj route.
+   * Ako je MESSENGER_OUTBOUND_REQUIRE_APPROVAL=true, ne šalje odmah: sprema zahtjev i vraća pendingApproval (token nije obavezan u tom koraku).
+   * Zaobilazak reda: body.forceDirect=true (i dalje treba accessToken).
    * POST /api/v1/messenger/send
-   * body: { pageId, recipientId, text, accessToken, apiVersion? }
+   * body: { pageId, recipientId, text, accessToken?, apiVersion?, forceDirect? }
    */
   router.post('/messenger/send', requireApiKey, async (req, res) => {
     try {
-      const { pageId, recipientId, text, accessToken, apiVersion } = req.body || {};
-      if (!pageId || !recipientId || !text || !accessToken) {
+      const { pageId, recipientId, text, accessToken, apiVersion, forceDirect } = req.body || {};
+      if (!pageId || !recipientId || !text) {
         return res.status(400).json({
-          error: 'pageId, recipientId (PSID), text i accessToken su obavezni'
+          error: 'pageId, recipientId (PSID) i text su obavezni'
         });
       }
       const safePage = String(pageId).trim();
@@ -117,9 +123,35 @@ function createIngestRouter() {
             'Automatika je pauzirana za ovu nit (pauseAutomation). Isključi u adminu kod Korisnika ili pošalji ručno iz admina.'
         });
       }
+
+      const needQueue = outboundApprovalRequired() && !Boolean(forceDirect);
+      if (needQueue) {
+        const pending = await createPendingSend({
+          pageId: safePage,
+          recipientId: safePsid,
+          text: String(text),
+          meta: { via: 'api.ingest.send', apiVersion: apiVersion || null }
+        });
+        return res.status(200).json({
+          pendingApproval: true,
+          id: pending.id,
+          pageId: pending.pageId,
+          recipientId: pending.recipientId,
+          text: pending.text,
+          expiresAt: pending.expiresAt,
+          hint: 'Odobri u admin panelu (Zahtjevi za slanje) ili POST /admin/api/messenger/pending/:id/approve s tokenom.'
+        });
+      }
+
+      if (!accessToken) {
+        return res.status(400).json({
+          error: 'accessToken je obavezan osim u načinu s MESSENGER_OUTBOUND_REQUIRE_APPROVAL (pending).'
+        });
+      }
+
       const result = await sendMessengerAndStore({
-        pageId: String(pageId).trim(),
-        recipientPsid: String(recipientId).trim(),
+        pageId: safePage,
+        recipientPsid: safePsid,
         text: String(text),
         pageAccessToken: String(accessToken),
         apiVersion: apiVersion || undefined,

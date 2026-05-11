@@ -7,6 +7,12 @@ const { syncMessengerHistory } = require('../services/facebookHistorySync');
 const { backfillMessageAttachments } = require('../services/attachmentBackfill');
 const { storeMessages } = require('../services/messageStore');
 const { sendMessengerAndStore } = require('../services/messengerSend');
+const {
+  listPendingForAdmin,
+  approvePendingSend,
+  rejectPendingSend,
+  outboundApprovalRequired
+} = require('../services/pendingMessengerSend');
 const { requireAdminToken, adminCors } = require('../middleware/adminAuth');
 
 const jsonBody = express.json({ limit: '24kb' });
@@ -55,9 +61,44 @@ function createAdminRouter() {
       metaWebhookProfilesRaw: process.env.META_WEBHOOK_PROFILES || '',
       profiles: mounted,
       defaultWebhookPath: '/webhook',
+      messengerOutboundRequireApproval: outboundApprovalRequired(),
       hint:
         'Meta Callback URL = https://<host>/webhook/<profile> — profile mora biti u META_WEBHOOK_PROFILES.'
     });
+  });
+
+  /** GET /admin/api/messenger/pending — zahtjevi za slanje (čekaju odobrenje) */
+  router.get('/api/messenger/pending', requireAdminToken, async (_req, res) => {
+    try {
+      const items = await listPendingForAdmin();
+      res.json({ items });
+    } catch (e) {
+      console.error('[admin messenger pending list]', e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  /** POST /admin/api/messenger/pending/:id/approve body: { accessToken, apiVersion? } */
+  router.post('/api/messenger/pending/:id/approve', jsonBody, requireAdminToken, async (req, res) => {
+    try {
+      const { accessToken, apiVersion } = req.body || {};
+      const result = await approvePendingSend(req.params.id, { accessToken, apiVersion });
+      res.json({ ok: true, messageId: result.messageId, recipientId: result.recipientId });
+    } catch (e) {
+      console.error('[admin messenger pending approve]', e);
+      res.status(400).json({ error: e.message });
+    }
+  });
+
+  /** POST /admin/api/messenger/pending/:id/reject */
+  router.post('/api/messenger/pending/:id/reject', requireAdminToken, async (req, res) => {
+    try {
+      await rejectPendingSend(req.params.id);
+      res.json({ ok: true });
+    } catch (e) {
+      console.error('[admin messenger pending reject]', e);
+      res.status(400).json({ error: e.message });
+    }
   });
 
   /**

@@ -71,6 +71,21 @@ model PromptTemplate {
   @@index([slug, isActive])
 }
 
+/// Automatski odgovor na čekanju odobrenja (ingest → admin odobri → slanje)
+model PendingMessengerSend {
+  id          String   @id @default(cuid())
+  pageId      String
+  recipientId String
+  text        String   @db.Text
+  /// PENDING | SENT | REJECTED | EXPIRED
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime
+  meta        Json?
+
+  @@index([status, createdAt])
+}
+
 /// CRM oznake po korisniku (kombinacija pageId + userId/PSID)
 model CrmContact {
   id        String   @id @default(cuid())

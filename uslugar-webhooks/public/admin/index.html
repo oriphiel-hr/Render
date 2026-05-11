@@ -435,7 +435,9 @@
               <span class="mono">GET /api/v1/prompts/active/:slug</span>, provjeriti
               <span class="mono">GET /api/v1/automation/paused</span> (query: pageId, userId) ili osloniti se na blokadu pri slanju, složiti tekst (LLM), pa
               <span class="mono">POST /api/v1/messenger/send</span> s <span class="mono">X-Ingest-Key</span>.
-              U tabu <strong>Korisnici</strong> uključivanje <strong>Auto pauza</strong> traje dok ne isključiš — ne trebaš stići odmah poslati poruku; ingest slanje u tom slučaju vraća 409.
+              Ako je na Renderu <span class="mono">MESSENGER_OUTBOUND_REQUIRE_APPROVAL=true</span>, ingest <strong>ne šalje odmah</strong> — vraća <span class="mono">pendingApproval</span> i tekst vidiš u <strong>Zahtjevi za slanje</strong> ispod; token unosiš tek pri odobrenju.
+              Zaobilazak reda: <span class="mono">forceDirect: true</span> + token u istom bodyju.
+              U tabu <strong>Korisnici</strong> uključivanje <strong>Auto pauza</strong> traje dok ne isključiš — ingest u tom slučaju vraća 409.
               Page access token: <span class="mono">pages_messaging</span> — ne sprema se na server.
             </p>
             <div class="row">
@@ -464,6 +466,18 @@
               <button type="button" id="btn-send-messenger">Pošalji</button>
             </div>
             <pre id="send-result" class="mono" style="margin:0.65rem 0 0;white-space:pre-wrap;display:none;"></pre>
+          </div>
+          <div id="approval-mode-banner" class="card" style="display:none;margin-bottom:0.85rem;border-color:rgba(61,139,253,0.5);background:rgba(61,139,253,0.08);">
+            <strong>Red odobrenja uključen</strong> (<span class="mono">MESSENGER_OUTBOUND_REQUIRE_APPROVAL</span>) —
+            poruke s ingest API-ja ne idu na Meta dok ih ne odobriš u bloku <strong>Zahtjevi za slanje</strong> ispod. Za produkciju isključi env varijablu.
+          </div>
+          <div id="pending-messenger-wrap" class="card" style="margin-bottom:0.85rem;background:rgba(19,24,32,0.85);border-style:dashed;">
+            <h3 style="margin:0 0 0.5rem;font-size:0.95rem;">Zahtjevi za slanje (autom. / ingest)</h3>
+            <p class="hint" style="margin:0 0 0.65rem;">Pregled teksta; <strong>Page access token</strong> unesi pri odobrenju (jednokratno). Istek: 48 h od stvaranja.</p>
+            <div class="row" style="margin-bottom:0.65rem;">
+              <button type="button" class="secondary" id="btn-pending-refresh">Osvježi listu</button>
+            </div>
+            <div id="pending-messenger-list"></div>
           </div>
           <div class="row">
             <div class="field">
@@ -844,6 +858,9 @@
       }
       if (id === 'prompts' && $('#app').style.display !== 'none') {
         loadPrompts();
+      }
+      if (id === 'messages' && $('#app').style.display !== 'none') {
+        loadPendingMessengerSends().catch((e) => console.error(e));
       }
     }
 
@@ -1334,6 +1351,82 @@
       });
     }
 
+    async function loadPendingMessengerSends() {
+      const listEl = $('#pending-messenger-list');
+      if (!listEl) return;
+      listEl.innerHTML = '<p class="hint" style="margin:0;">Učitavam…</p>';
+      try {
+        const data = await api('/messenger/pending');
+        const items = data.items || [];
+        if (!items.length) {
+          listEl.innerHTML = '<p class="hint" style="margin:0;">Nema zahtjeva na čekanju.</p>';
+          return;
+        }
+        listEl.innerHTML = items.map((p) => {
+          const exp = p.expiresAt ? formatDateTime(p.expiresAt) : '';
+          return (
+            '<div class="pending-row card" style="margin-bottom:0.65rem;padding:0.65rem;background:#0d1117;border:1px solid var(--border);" data-id="' + escapeHtml(p.id) + '">' +
+            '<div class="mono" style="font-size:0.78rem;margin-bottom:0.35rem;">ID: ' + escapeHtml(p.id) + '</div>' +
+            '<div><strong>Page ID</strong> ' + escapeHtml(p.pageId) + ' · <strong>PSID</strong> ' + escapeHtml(p.recipientId) + '</div>' +
+            '<div class="hint" style="margin:0.25rem 0 0.35rem;">Istek: ' + escapeHtml(exp) + '</div>' +
+            '<div class="hint" style="margin-top:0.5rem;">Tekst koji će otići na Messenger</div>' +
+            '<pre class="mono" style="margin:0.35rem 0;white-space:pre-wrap;max-height:12rem;overflow:auto;">' + escapeHtml(p.text || '') + '</pre>' +
+            '<div class="row" style="align-items:flex-end;">' +
+            '<div class="field" style="flex:2 1 18rem;"><label>Page access token</label><input type="password" class="pending-token-input" autocomplete="off" placeholder="EAAG…" /></div>' +
+            '<button type="button" class="btn-approve-pending">Odobri i pošalji</button>' +
+            '<button type="button" class="secondary btn-reject-pending">Odbaci</button>' +
+            '</div></div>'
+          );
+        }).join('');
+      } catch (e) {
+        listEl.innerHTML = '<p class="err">' + escapeHtml(e.message || String(e)) + '</p>';
+      }
+    }
+
+    function bindPendingMessengerUiOnce() {
+      const wrap = $('#pending-messenger-wrap');
+      const btn = $('#btn-pending-refresh');
+      if (btn && !btn.dataset.bound) {
+        btn.dataset.bound = '1';
+        btn.addEventListener('click', () => {
+          loadPendingMessengerSends().catch((err) => alert(err.message));
+        });
+      }
+      if (wrap && !wrap.dataset.bound) {
+        wrap.dataset.bound = '1';
+        wrap.addEventListener('click', async (ev) => {
+          const row = ev.target.closest('.pending-row');
+          if (!row || !row.dataset.id) return;
+          const id = row.dataset.id;
+          if (ev.target.classList.contains('btn-approve-pending')) {
+            const inp = row.querySelector('.pending-token-input');
+            const tok = inp ? inp.value.trim() : '';
+            if (!tok) {
+              alert('Unesi Page access token za slanje.');
+              return;
+            }
+            try {
+              await apiPost('/messenger/pending/' + encodeURIComponent(id) + '/approve', { accessToken: tok });
+              if (inp) inp.value = '';
+              await loadPendingMessengerSends();
+              await loadMessages();
+            } catch (e) {
+              alert(e.message);
+            }
+          }
+          if (ev.target.classList.contains('btn-reject-pending')) {
+            if (!confirm('Odbaciti ovaj zahtjev za slanje?')) return;
+            try {
+              await apiPost('/messenger/pending/' + encodeURIComponent(id) + '/reject', {});
+              await loadPendingMessengerSends();
+            } catch (e) {
+              alert(e.message);
+            }
+          }
+        });
+      }
+    }
+
     async function loadBootstrap() {
       const data = await api('/bootstrap');
       const banner = $('#db-banner');
@@ -1343,6 +1436,10 @@
       } else {
         banner.style.display = 'block';
         btext.textContent = data.databaseHint || 'Pokreni prisma migrate deploy na produkcijskoj bazi.';
+      }
+      const amb = $('#approval-mode-banner');
+      if (amb) {
+        amb.style.display = data.messengerOutboundRequireApproval ? 'block' : 'none';
       }
       $('#profiles-raw').textContent = 'META_WEBHOOK_PROFILES=' + (data.metaWebhookProfilesRaw || '(prazno)');
       const tb = $('#profiles-table tbody');
@@ -1705,9 +1802,11 @@
       initMessagesHeaderSorting();
       initThreadsHeaderSorting();
       await loadBootstrap();
+      bindPendingMessengerUiOnce();
       await loadPageOptions();
       await loadMessages();
       await loadUsers();
+      await loadPendingMessengerSends();
     }
 
     $('#btn-save').addEventListener('click', async () => {
