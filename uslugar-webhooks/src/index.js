@@ -21,6 +21,11 @@ function hasAnyDatabaseUrl() {
 
 const app = express();
 
+app.use((req, _res, next) => {
+  console.log(`[http] ${req.method} ${req.originalUrl || req.url}`);
+  next();
+});
+
 app.get('/health', (_req, res) => {
   const profiles = parseWebhookProfiles();
   const profileDatabases = {};
@@ -73,6 +78,19 @@ app.use('/admin', createAdminRouter());
 app.use(express.json({ limit: '2mb' }));
 app.use('/api/v1', createIngestRouter());
 
+app.get('/', (_req, res) => {
+  res.status(200).json({
+    service: 'uslugar-webhooks',
+    paths: {
+      health: '/health',
+      admin: '/admin/',
+      webhookDefault: '/webhook',
+      webhookMessenger: '/webhook/messenger'
+    },
+    note: 'Meta Callback URL mora točno odgovarati jednoj od webhook putanja.'
+  });
+});
+
 app.use((_req, res) => {
   res.status(404).send('Not found');
 });
@@ -111,6 +129,8 @@ app.listen(PORT, () => {
   console.log(`Ingest automation: GET http://localhost:${PORT}/api/v1/automation/paused?pageId=&userId=`);
   console.log(`Admin send: POST http://localhost:${PORT}/admin/api/send/messenger`);
   console.log(`Admin panel: GET http://localhost:${PORT}/admin/ (requires ADMIN_PANEL_TOKEN)`);
+  console.log(`Root (info JSON): GET http://localhost:${PORT}/`);
+  console.log(`HTTP access lines: [http] METHOD path — vidi Render Logs za svaki zahtjev`);
   if (!hasAnyDatabaseUrl()) {
     console.warn(
       'No DATABASE_URL and no META_<PROFILE>_DATABASE_URL — webhook persistence will fail until one is set.'
