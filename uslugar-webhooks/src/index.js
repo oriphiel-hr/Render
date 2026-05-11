@@ -84,6 +84,11 @@ app.listen(PORT, () => {
   const usesMetaProfilesOnly = mountedProfiles.length > 0;
 
   console.log(`Listening on http://localhost:${PORT}`);
+  if (process.env.RENDER_GIT_COMMIT) {
+    console.log(`Deploy revision: ${process.env.RENDER_GIT_COMMIT}`);
+  } else {
+    console.log('Deploy revision: (lokalno — na Renderu se ispisuje RENDER_GIT_COMMIT nakon deploya)');
+  }
   console.log(`Meta webhook (default): GET/POST http://localhost:${PORT}/webhook`);
   for (const profile of mountedProfiles) {
     console.log(`Meta webhook (${profile}): GET/POST http://localhost:${PORT}/webhook/${profile}`);
