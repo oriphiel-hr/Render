@@ -28,6 +28,9 @@ app.use((req, _res, next) => {
   if (!skipNoise) {
     console.log(`[http] ${req.method} ${path}`);
   }
+  if (path.startsWith('/webhook')) {
+    console.log(`[webhook-route] ${req.method} ${path}`);
+  }
   next();
 });
 
@@ -58,7 +61,95 @@ app.get('/debug/webhook-info', (_req, res) => {
       ...mounted.map((p) => `https://<tvoj-host>/webhook/${p}`)
     ],
     mountedProfiles: mounted.length ? mounted : ['(nema META_WEBHOOK_PROFILES — samo /webhook)'],
-    verifyMetaDeveloperWebhookFieldMatchesThesePaths: true
+    verifyMetaDeveloperWebhookFieldMatchesThesePaths: true,
+    fullDiagnostic: '/debug/webhook-diagnostic'
+  });
+});
+
+/**
+ * Jedna stranica istine: što je montirano, koji URL mora biti u Meta Callback URL,
+ * zašto preglednik na /webhook daje 400, što znači koji log red.
+ */
+app.get('/debug/webhook-diagnostic', (req, res) => {
+  const proto = (req.get('x-forwarded-proto') || req.protocol || 'https').split(',')[0].trim();
+  const host = req.get('host') || 'localhost';
+  const base = `${proto}://${host}`;
+  const profiles = parseWebhookProfiles();
+  const mountedProfiles = profiles.filter((p) => process.env[`${metaEnvPrefix(p)}_VERIFY_TOKEN`]);
+
+  const profileEndpoints = mountedProfiles.map((p) => {
+    const prefix = metaEnvPrefix(p);
+    return {
+      path: `/webhook/${p}`,
+      fullUrl: `${base}/webhook/${p}`,
+      verifyTokenEnvVar: `${prefix}_VERIFY_TOKEN`,
+      verifyTokenIsSet: Boolean(process.env[`${prefix}_VERIFY_TOKEN`]),
+      appSecretEnvVar: `${prefix}_APP_SECRET`,
+      appSecretIsSet: Boolean(process.env[`${prefix}_APP_SECRET`]),
+      ifAppSecretWrong:
+        'Meta šalje X-Hub-Signature-256; ako secret ne odgovara App Secret-u u Meta konzoli za ovu aplikaciju → 403 Invalid signature (u logu i dalje vidiš [http] POST i WEBHOOK_IN).'
+    };
+  });
+
+  const defaultEndpoint = {
+    path: '/webhook',
+    fullUrl: `${base}/webhook`,
+    verifyTokenEnvVar: 'VERIFY_TOKEN',
+    verifyTokenIsSet: Boolean(process.env.VERIFY_TOKEN),
+    appSecretEnvVar: 'FACEBOOK_APP_SECRET',
+    appSecretIsSet: Boolean(process.env.FACEBOOK_APP_SECRET)
+  };
+
+  const issues = [];
+  for (const pe of profileEndpoints) {
+    if (!pe.appSecretIsSet) {
+      issues.push({
+        severity: 'high',
+        code: 'APP_SECRET_MISSING',
+        env: pe.appSecretEnvVar,
+        meaning:
+          'POST od Mete bez ispravnog potpisa na ovaj profil može dobiti 403 — Meta može i dalje prikazati „success” u UI ako je drugdje prošlo.'
+      });
+    }
+  }
+  if (!process.env.FACEBOOK_APP_SECRET && mountedProfiles.length === 0) {
+    issues.push({
+      severity: 'medium',
+      code: 'DEFAULT_WEBHOOK_SECRET',
+      meaning: 'Koristi se samo /webhook; FACEBOOK_APP_SECRET prazan → potpis se ne provjerava (dev).'
+    });
+  }
+
+  res.status(200).json({
+    title: 'Webhook dijagnostika (bez tajni)',
+    deployRevision: process.env.RENDER_GIT_COMMIT || null,
+    requestHost: host,
+    metaCallbackUrlMustMatchExactlyOneOf: [
+      ...profileEndpoints.map((x) => x.fullUrl),
+      defaultEndpoint.fullUrl
+    ],
+    noteOrder:
+      'Ako koristiš META_WEBHOOK_PROFILES=messenger, Meta Callback URL mora biti puni URL koji završava na /webhook/messenger — znak po znak kao fullUrl ispod.',
+    profileMounts: profileEndpoints,
+    defaultWebhookMount: defaultEndpoint,
+    browserGetExplains400:
+      'Otvaranje /webhook ili /webhook/messenger u adresnoj traci šalje GET bez hub.mode & hub.verify_token → ovaj servis vraća 400 Bad Request. To je normalno; Meta verify koristi GET s query parametrima.',
+    howToReadRenderLogs: {
+      '[http] POST /webhook/...': 'Zahtjev je stigao do Nodea.',
+      '[webhook-route]': 'Isti zahtjev (dupli marker za /webhook putanje).',
+      WEBHOOK_IN: 'Tijelo POST-a je pročitano (barem djelomično).',
+      'WEBHOOK_JSON_INVALID': 'Tijelo nije valjani JSON.',
+      'Invalid X-Hub-Signature-256': 'POST je stigao, ali App Secret na Renderu ≠ App Secret u Meta Developer aplikaciji.',
+      only_GET_health_or_slash:
+        'Nema POST od Mete u tom intervalu — ili Meta ne šalje na ovaj host/path, ili gledaš krivi log/vremenski prozor.'
+    },
+    selfTestWithoutMeta: {
+      step1: `POST ${base}/admin/api/debug/post-echo s headerom Authorization: Bearer <ADMIN_PANEL_TOKEN> i tijelom {}`,
+      step2: 'U Render Logs mora se pojaviti [admin-debug] POST echo — ako da, POST do Rendera radi; ako ne, problem je izvan ovog app-a.',
+      step3:
+        'Zatim usporedi Meta Callback URL s metaCallbackUrlMustMatchExactlyOneOf — mora biti identičan puni URL za tvoj profil.'
+    },
+    issuesFound: issues.length ? issues : [{ severity: 'ok', meaning: 'Nema očitih missing-secret problema za profile iznad (provjeri ručno da secret odgovara Meta app-u).' }]
   });
 });
 
@@ -106,7 +197,8 @@ app.get('/', (_req, res) => {
       health: '/health',
       admin: '/admin/',
       webhookDefault: '/webhook',
-      webhookMessenger: '/webhook/messenger'
+      webhookMessenger: '/webhook/messenger',
+      webhookDiagnostic: '/debug/webhook-diagnostic'
     },
     note: 'Meta Callback URL mora točno odgovarati jednoj od webhook putanja.'
   });
@@ -152,6 +244,7 @@ app.listen(PORT, () => {
   console.log(`Admin panel: GET http://localhost:${PORT}/admin/ (requires ADMIN_PANEL_TOKEN)`);
   console.log(`Root (info JSON): GET http://localhost:${PORT}/`);
   console.log(`Debug (bez tajni): GET http://localhost:${PORT}/debug/webhook-info`);
+  console.log(`Dijagnostika (bez tajni): GET http://localhost:${PORT}/debug/webhook-diagnostic`);
   console.log(
     `HTTP log: [http] za svaki zahtjev osim GET /health. Webhook od Mete = POST /webhook — ako u logu imaš samo GET, Meta još nije poslala POST ili Callback URL u Meta konzoli ne poklapa se s ovim servisom.`
   );

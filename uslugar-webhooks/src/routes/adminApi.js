@@ -28,6 +28,13 @@ function createAdminRouter() {
   const router = express.Router();
   router.use(adminCors);
 
+  /** POST s ADMIN_PANEL_TOKEN — ako se vidi u Render logu, POST do servisa radi (bez Mete). */
+  router.post('/api/debug/post-echo', jsonBody, requireAdminToken, (req, res) => {
+    const n = req.body != null ? JSON.stringify(req.body).length : 0;
+    console.log(`[admin-debug] POST echo ok bodyBytes~=${n}`);
+    res.json({ ok: true, receivedBodyBytesApprox: n });
+  });
+
   router.get('/api/bootstrap', requireAdminToken, async (_req, res) => {
     let databaseReady = false;
     let databaseHint = null;
