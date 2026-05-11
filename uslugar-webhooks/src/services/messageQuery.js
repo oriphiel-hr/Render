@@ -122,7 +122,7 @@ function parseDateEnd(value) {
 }
 
 /**
- * @param {{ channel?: string, pageIdPrefix?: string, userId?: string, q?: string, from?: string, to?: string, hasAttachment?: string|boolean, attachmentType?: string, limit?: number, offset?: number }} q
+ * @param {{ channel?: string, pageIdPrefix?: string, userId?: string, q?: string, source?: string, from?: string, to?: string, hasAttachment?: string|boolean, attachmentType?: string, limit?: number, offset?: number }} q
  */
 async function listMessages(q = {}) {
   const limit = Math.min(Math.max(Number(q.limit) || 50, 1), 200);
@@ -132,6 +132,7 @@ async function listMessages(q = {}) {
   const searchTermRaw = q.q ? String(q.q).trim() : (q.userId ? String(q.userId).trim() : '');
   const searchTerm = searchTermRaw.toLowerCase();
   const hasSearch = Boolean(searchTerm);
+  const sourceFilter = q.source ? String(q.source).trim() : '';
   const hasAttachmentFilterRaw = q.hasAttachment;
   const attachmentType = String(q.attachmentType || '').trim().toLowerCase();
   const hasAttachmentFilter =
@@ -155,6 +156,9 @@ async function listMessages(q = {}) {
   const where = {};
   const and = [];
   if (channel) where.channel = channel;
+  if (sourceFilter) {
+    where.source = { contains: sourceFilter, mode: 'insensitive' };
+  }
   if (pageIdPrefix) {
     and.push({ externalThreadId: { startsWith: `${pageIdPrefix}_` } });
   }
@@ -242,7 +246,8 @@ async function listMessages(q = {}) {
       const inAttachments = (r.attachments || []).some((a) =>
         [a.type, a.url, a.name].some((x) => String(x || '').toLowerCase().includes(searchTerm))
       );
-      if (!(inUserId || inFirstName || inLastName || inFullName || inPageId || inPageName || inBodyText || inThread || inAttachments)) {
+      const inSource = String(r.source || '').toLowerCase().includes(searchTerm);
+      if (!(inUserId || inFirstName || inLastName || inFullName || inPageId || inPageName || inBodyText || inThread || inAttachments || inSource)) {
         return false;
       }
     }

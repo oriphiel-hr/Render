@@ -513,7 +513,11 @@
               </select>
             </div>
             <div class="field">
-              <label for="filter-search">Pretraga (korisnik, stranica, tekst poruke)</label>
+              <label for="filter-source">Izvor (sadrži)</label>
+              <input id="filter-source" type="text" placeholder="npr. admin.send, facebook.graph.sync, api.ingest" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label for="filter-search">Pretraga (korisnik, stranica, tekst, izvor…)</label>
               <input id="filter-search" type="text" placeholder="npr. Ivan Horvat, 2709..., Uslugar..." />
             </div>
             <div class="field">
@@ -557,7 +561,7 @@
                 <tr>
                   <th class="sortable" data-sort-msg="createdAt">Vrijeme</th>
                   <th class="sortable" data-sort-msg="channel">Kanal</th>
-                  <th title="Tip zapisa (webhook / ingest)">Izvor</th>
+                  <th title="Tip zapisa (webhook / ingest). Filtar: polje „Izvor (sadrži)” u filteru iznad.">Izvor</th>
                   <th class="sortable" data-sort-msg="direction">Smjer</th>
                   <th class="sortable" data-sort-msg="adminQueue" title="Novo = čeka admin odgovor, zadnji inbound &lt; 7 dana">Red čekanja</th>
                   <th class="sortable" data-sort-msg="userName">Korisnik</th>
@@ -882,6 +886,7 @@
     let msgOffset = 0;
     let usersOffset = 0;
     let messageSearchDebounceTimer = null;
+    let messageSourceDebounceTimer = null;
     let currentJsonModalText = '';
     let currentJsonModalValue = null;
     let usersSortKey = 'lastAt';
@@ -1545,10 +1550,12 @@
       const ch = $('#filter-channel').value;
       const page = $('#filter-page').value.trim();
       const search = $('#filter-search').value.trim();
+      const sourceF = $('#filter-source').value.trim();
       const limit = $('#filter-limit').value || 50;
       const q = new URLSearchParams();
       if (ch) q.set('channel', ch);
       if (page) q.set('pageId', page);
+      if (sourceF) q.set('source', sourceF);
       if (search) q.set('q', search);
       const from = $('#filter-from').value;
       const to = $('#filter-to').value;
@@ -1851,6 +1858,7 @@
       $('#filter-channel').value = 'MESSENGER';
       $('#filter-page').value = '';
       $('#filter-search').value = '';
+      $('#filter-source').value = '';
       $('#filter-from').value = '';
       $('#filter-to').value = '';
       $('#filter-attachment').value = '';
@@ -1919,6 +1927,13 @@
     $('#filter-search').addEventListener('input', () => {
       if (messageSearchDebounceTimer) clearTimeout(messageSearchDebounceTimer);
       messageSearchDebounceTimer = setTimeout(() => {
+        msgOffset = 0;
+        loadMessages().catch((e) => alert(e.message));
+      }, 300);
+    });
+    $('#filter-source').addEventListener('input', () => {
+      if (messageSourceDebounceTimer) clearTimeout(messageSourceDebounceTimer);
+      messageSourceDebounceTimer = setTimeout(() => {
         msgOffset = 0;
         loadMessages().catch((e) => alert(e.message));
       }, 300);
