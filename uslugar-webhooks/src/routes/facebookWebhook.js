@@ -53,7 +53,18 @@ function createFacebookWebhookRouter({ verifyToken, appSecret, logTag = 'webhook
     return res.sendStatus(400);
   });
 
-  router.post('/', express.json({ verify: rawBodySaverWithHitLog }), (req, res) => {
+  const jsonParser = express.json({ verify: rawBodySaverWithHitLog, limit: '2mb' });
+
+  router.post('/', (req, res, next) => {
+    jsonParser(req, res, (err) => {
+      if (err) {
+        const n = req.rawBody?.length ?? 0;
+        console.warn(`${tag} WEBHOOK_JSON_INVALID rawBytes=${n} — ${err.message}`);
+        return res.status(400).type('text').send('Invalid JSON');
+      }
+      next();
+    });
+  }, (req, res) => {
     if (!verifySignature(req, appSecret)) {
       console.warn(`${tag} Invalid X-Hub-Signature-256 (provjeri FACEBOOK_APP_SECRET / META_*_APP_SECRET za ovaj profil)`);
       return res.sendStatus(403);
@@ -72,6 +83,9 @@ function createFacebookWebhookRouter({ verifyToken, appSecret, logTag = 'webhook
     );
     if (!entryLen && body && typeof body === 'object') {
       console.log(`${tag} WEBHOOK_POST top-level keys: ${Object.keys(body).join(', ')}`);
+      if (Array.isArray(body.entry) && body.entry.length === 0) {
+        console.log(`${tag} WEBHOOK_POST hint: prazan entry[] — nema messaging događaja (tipičan ručni test); stvarni Meta payload ima entry s messaging/standby.`);
+      }
     }
 
     res.status(200).send('EVENT_RECEIVED');
