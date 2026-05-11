@@ -1,5 +1,66 @@
+const { Prisma } = require('@prisma/client');
 const { prisma } = require('../lib/prisma');
 const { extractAttachmentsFromRaw } = require('./attachmentBackfill');
+
+/** Outbound iz admin panela (Pošalji Messenger) — jedini signal „admin je odgovorio“. */
+const ADMIN_REPLY_SOURCE = 'admin.send';
+
+/** Zadnji inbound noviji od ovoga → „Novo“ (hitno) ako je unutar prozora. */
+const ADMIN_QUEUE_URGENT_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Po (channel, externalThreadId): zadnji inbound, zadnji admin.send; čeka li ljudski odgovor.
+ * @param {import('@prisma/client').PrismaClient} db
+ * @param {{ channel: string, externalThreadId: string }[]} pairs
+ */
+async function loadThreadAdminQueueFlags(db, pairs) {
+  const out = new Map();
+  const uniq = new Map();
+  for (const p of pairs) {
+    const tid = String(p.externalThreadId || '').trim();
+    const ch = String(p.channel || '').trim();
+    if (!tid || !ch) continue;
+    const k = `${ch}|${tid}`;
+    if (!uniq.has(k)) uniq.set(k, { channel: ch, externalThreadId: tid });
+  }
+  const list = [...uniq.values()];
+  if (!list.length) return out;
+
+  const capped = list.slice(0, 250);
+  const orParts = capped.map(
+    (p) => Prisma.sql`(m.channel::text = ${p.channel} AND m."externalThreadId" = ${p.externalThreadId})`
+  );
+  const whereJoined = Prisma.join(orParts, ' OR ');
+
+  /** @type {{ ch: string, tid: string, lastInboundAt: Date | null, lastAdminSendAt: Date | null }[]} */
+  const rows = await db.$queryRaw`
+    SELECT m.channel::text AS ch,
+           m."externalThreadId" AS tid,
+           MAX(CASE WHEN LOWER(m.direction) = 'inbound' THEN m."createdAt" END) AS "lastInboundAt",
+           MAX(CASE WHEN LOWER(m.direction) = 'outbound' AND m.source = ${ADMIN_REPLY_SOURCE}
+               THEN m."createdAt" END) AS "lastAdminSendAt"
+    FROM "ChannelMessage" m
+    WHERE ${whereJoined}
+    GROUP BY m.channel, m."externalThreadId"
+  `;
+
+  const now = Date.now();
+  for (const r of rows) {
+    const k = `${r.ch}|${r.tid}`;
+    const lastIn = r.lastInboundAt ? new Date(r.lastInboundAt) : null;
+    const lastAd = r.lastAdminSendAt ? new Date(r.lastAdminSendAt) : null;
+    const needsAdminReply = Boolean(lastIn && (!lastAd || lastIn.getTime() > lastAd.getTime()));
+    const needsAdminUrgent = Boolean(
+      needsAdminReply && lastIn && now - lastIn.getTime() <= ADMIN_QUEUE_URGENT_MS
+    );
+    out.set(k, {
+      threadNeedsAdminReply: needsAdminReply,
+      threadNeedsAdminUrgent: needsAdminUrgent,
+      lastInboundAt: lastIn ? lastIn.toISOString() : null
+    });
+  }
+  return out;
+}
 
 /**
  * Spoji zapise iz baze s ekstrakcijom iz rawPayload-a (Graph/webhook često ima URL samo u jednom od njih).
@@ -177,6 +238,20 @@ async function listMessages(q = {}) {
   });
 
   const rows = hasSearch ? filteredRows.slice(offset, offset + limit) : filteredRows;
+
+  const threadPairs = rows
+    .filter((r) => r.externalThreadId)
+    .map((r) => ({ channel: String(r.channel), externalThreadId: String(r.externalThreadId) }));
+  const queueMap = await loadThreadAdminQueueFlags(prisma, threadPairs);
+  for (const r of rows) {
+    const k = r.externalThreadId ? `${r.channel}|${r.externalThreadId}` : '';
+    const q = k ? queueMap.get(k) : null;
+    r.threadNeedsAdminReply = Boolean(q?.threadNeedsAdminReply);
+    r.threadNeedsAdminUrgent = Boolean(q?.threadNeedsAdminUrgent);
+    r.threadLastInboundAt = q?.lastInboundAt || null;
+    r.adminQueueSort = r.threadNeedsAdminUrgent ? 2 : r.threadNeedsAdminReply ? 1 : 0;
+  }
+
   const total = hasSearch ? filteredRows.length : dbTotal;
   const pageMap = new Map();
   filteredRows.forEach((r) => {
@@ -362,6 +437,22 @@ async function listUsers(q = {}) {
 
   const total = list.length;
   const slice = list.slice(offset, offset + limit);
+  if (slice.length) {
+    const pq = slice.map((u) => ({
+      channel: 'MESSENGER',
+      externalThreadId: `${u.pageId}_${u.userId}`
+    }));
+    const qmap = await loadThreadAdminQueueFlags(prisma, pq);
+    for (const u of slice) {
+      const k = `MESSENGER|${u.pageId}_${u.userId}`;
+      const q = qmap.get(k);
+      u.threadNeedsAdminReply = Boolean(q?.threadNeedsAdminReply);
+      u.threadNeedsAdminUrgent = Boolean(q?.threadNeedsAdminUrgent);
+      u.threadLastInboundAt = q?.lastInboundAt || null;
+      u.adminQueueSort = u.threadNeedsAdminUrgent ? 2 : u.threadNeedsAdminReply ? 1 : 0;
+    }
+  }
+
   return { rows: slice, total, limit, offset };
 }
 

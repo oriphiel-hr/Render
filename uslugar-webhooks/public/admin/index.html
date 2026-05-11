@@ -183,6 +183,24 @@
       word-break: break-word;
       color: var(--muted);
     }
+    .queue-badge {
+      display: inline-block;
+      padding: 0.12rem 0.45rem;
+      border-radius: 5px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .queue-novo {
+      background: rgba(248, 81, 73, 0.18);
+      color: #ffb4b0;
+      border: 1px solid rgba(248, 81, 73, 0.45);
+    }
+    .queue-ceka {
+      background: rgba(139, 156, 179, 0.12);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
     details.raw { margin-top: 0.35rem; }
     details.raw pre {
       margin: 0.35rem 0 0;
@@ -406,6 +424,10 @@
         <div class="card">
           <h2 style="margin-top:0;font-size:1rem;">Poruke</h2>
           <p class="hint" style="margin:0 0 0.65rem;">Feed događaji (<code>FACEBOOK_PAGE_FEED</code>) vide se ako <strong>Kanal</strong> postaviš na taj kanal ili <strong>(svi)</strong> — zadano je samo MESSENGER.</p>
+          <p class="hint" style="margin:0 0 0.65rem;">
+            <strong>Novo</strong> / <strong>Čeka admina</strong>: zadnji inbound u niti nakon zadnjeg odgovora iz admina (<span class="mono">source=admin.send</span>).
+            <strong>Novo</strong> ako je taj inbound u zadnjih 7 dana; starije i dalje čekaju, ali bez „hitnog“ označavanja. Bot / Graph odgovori ne broje kao admin.
+          </p>
           <div class="card" style="margin-bottom:0.85rem;background:rgba(19,24,32,0.85);border-style:dashed;">
             <h3 style="margin:0 0 0.35rem;font-size:0.95rem;">Pošalji Messenger odgovor</h3>
             <p class="hint" style="margin:0 0 0.65rem;">
@@ -508,6 +530,7 @@
                   <th class="sortable" data-sort-msg="channel">Kanal</th>
                   <th title="Tip zapisa (webhook / ingest)">Izvor</th>
                   <th class="sortable" data-sort-msg="direction">Smjer</th>
+                  <th class="sortable" data-sort-msg="adminQueue" title="Novo = čeka admin odgovor, zadnji inbound &lt; 7 dana">Red čekanja</th>
                   <th class="sortable" data-sort-msg="userName">Korisnik</th>
                   <th class="sortable" data-sort-msg="pageName">Stranica</th>
                   <th class="sortable" data-sort-msg="externalThreadId">Nit</th>
@@ -556,6 +579,7 @@
                   <th class="sortable" data-sort="userName">Korisnik (ime, prezime)</th>
                   <th class="sortable" data-sort="pageName">Stranica</th>
                   <th class="sortable" data-sort="isLead">Lead</th>
+                  <th class="sortable" data-sort="adminQueue" title="Novo / čeka admin odgovor (zadnji inbound nakon admin.send)">Red čekanja</th>
                   <th class="sortable" data-sort="pauseAutomation" title="Kad je uključeno, POST /api/v1/messenger/send ne šalje (automatika). Ručno slanje iz admina i dalje radi.">Auto pauza</th>
                   <th class="sortable" data-sort="notes">Bilješke</th>
                   <th class="sortable" data-sort="messageCount">Broj poruka</th>
@@ -904,6 +928,10 @@
           av = a?.isLead ? 1 : 0;
           bv = b?.isLead ? 1 : 0;
         }
+        if (key === 'adminQueue') {
+          av = Number(a?.adminQueueSort) || 0;
+          bv = Number(b?.adminQueueSort) || 0;
+        }
         if (key === 'pauseAutomation') {
           av = a?.pauseAutomation ? 1 : 0;
           bv = b?.pauseAutomation ? 1 : 0;
@@ -922,12 +950,24 @@
       });
     }
 
+    function renderAdminQueueBadges(r) {
+      if (!r || (!r.threadNeedsAdminReply && !r.threadNeedsAdminUrgent)) return '—';
+      if (r.threadNeedsAdminUrgent) {
+        return '<span class="queue-badge queue-novo">Novo</span>';
+      }
+      return '<span class="queue-badge queue-ceka">Čeka admina</span>';
+    }
+
     function sortRows(rows, key, dir) {
       const list = Array.isArray(rows) ? [...rows] : [];
       const dirMul = dir === 'asc' ? 1 : -1;
       return list.sort((a, b) => {
         let av = a?.[key];
         let bv = b?.[key];
+        if (key === 'adminQueue') {
+          av = Number(a?.adminQueueSort) || 0;
+          bv = Number(b?.adminQueueSort) || 0;
+        }
         if (key === 'attachmentsCount') {
           av = Array.isArray(a?.attachments) ? a.attachments.length : 0;
           bv = Array.isArray(b?.attachments) ? b.attachments.length : 0;
@@ -962,7 +1002,7 @@
             usersSortDir = usersSortDir === 'asc' ? 'desc' : 'asc';
           } else {
             usersSortKey = sortKey;
-            usersSortDir = (sortKey === 'lastAt' || sortKey === 'messageCount') ? 'desc' : 'asc';
+            usersSortDir = (sortKey === 'lastAt' || sortKey === 'messageCount' || sortKey === 'adminQueue') ? 'desc' : 'asc';
           }
           usersOffset = 0;
           loadUsers().catch((e) => alert(e.message));
@@ -988,7 +1028,7 @@
           if (messagesSortKey === sortKey) messagesSortDir = messagesSortDir === 'asc' ? 'desc' : 'asc';
           else {
             messagesSortKey = sortKey;
-            messagesSortDir = sortKey === 'createdAt' ? 'desc' : 'asc';
+            messagesSortDir = sortKey === 'createdAt' || sortKey === 'adminQueue' ? 'desc' : 'asc';
           }
           loadMessages().catch((e) => alert(e.message));
         });
@@ -1352,6 +1392,7 @@
           '<td><span class="pill">' + escapeHtml(r.channel) + '</span></td>' +
           '<td class="mono source-cell">' + escapeHtml((r.source || '—').slice(0, 56)) + '</td>' +
           '<td>' + escapeHtml(r.direction) + '</td>' +
+          '<td>' + renderAdminQueueBadges(r) + '</td>' +
           '<td><button type="button" class="link-btn btn-message-user-filter" data-user-id="' + escapeHtml(r.userId || '') +
           '" data-user-name="' + escapeHtml(r.userName || '') + '">' + renderStackedLabel(r.userName || 'Korisnik', r.userId || '') + '</button></td>' +
           '<td><span class="soft-badge page-badge">' + renderStackedLabel(r.pageName || 'Stranica', r.pageId || '') + '</span></td>' +
@@ -1415,6 +1456,7 @@
           '<td><span class="soft-badge user-page-badge">' + renderStackedLabel(u.pageName || 'Stranica', u.pageId || '') + '</span></td>' +
           '<td><label style="display:flex;align-items:center;gap:0.35rem;"><input type="checkbox" class="crm-lead-toggle" data-user="' + escapeHtml(u.userId || '') +
           '" data-page="' + escapeHtml(u.pageId || '') + '"' + (u.isLead ? ' checked' : '') + ' /><span>Lead</span></label></td>' +
+          '<td>' + renderAdminQueueBadges(u) + '</td>' +
           '<td><label style="display:flex;align-items:center;gap:0.35rem;"><input type="checkbox" class="crm-pause-toggle" data-user="' + escapeHtml(u.userId || '') +
           '" data-page="' + escapeHtml(u.pageId || '') + '"' + (u.pauseAutomation ? ' checked' : '') + ' /><span>Pauza</span></label></td>' +
           '<td><button type="button" class="secondary btn-edit-note" data-user="' + escapeHtml(u.userId || '') +
