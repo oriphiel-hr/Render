@@ -15,6 +15,9 @@ const crypto = require('crypto');
  *
  * Ne pretplaćujemo ovdje: message_reads, message_deliveries (veliki volumen, rijetko korisno u bazi).
  *
+ * Kad na stranici postoji više Messenger aplikacija (Handover), dio događaja stiže u `entry.standby`
+ * umjesto u `entry.messaging` — uključujući echo iz Business Suitea. Parser obrađuje oba polja.
+ *
  * Page feed (`entry.changes[]`) — komentari, objave, spominjanja itd. Pretplata u Meta konzoli (npr. `feed`,
  * `mention`) + odgovarajuće dozvole aplikacije za čitanje Page sadržaja ako Meta traži.
  */
@@ -348,6 +351,11 @@ function feedChangeToRow(pageId, ch) {
   };
 }
 
+function tagStandbySource(row) {
+  if (!row || row.source !== 'facebook.graph') return row;
+  return { ...row, source: 'facebook.graph.standby' };
+}
+
 function parseFacebookWebhook(body) {
   const rows = [];
   if (!body || !Array.isArray(body.entry)) return rows;
@@ -355,10 +363,16 @@ function parseFacebookWebhook(body) {
   for (const entry of body.entry) {
     const pageId = entry.id;
 
-    const messaging = entry.messaging || [];
+    const messaging = Array.isArray(entry.messaging) ? entry.messaging : [];
     for (const event of messaging) {
       const row = messagingEventToRow(pageId, event);
       if (row) rows.push(row);
+    }
+
+    const standby = Array.isArray(entry.standby) ? entry.standby : [];
+    for (const event of standby) {
+      const row = messagingEventToRow(pageId, event);
+      if (row) rows.push(tagStandbySource(row));
     }
 
     const changes = entry.changes || [];
