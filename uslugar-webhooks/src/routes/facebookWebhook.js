@@ -30,6 +30,13 @@ function createFacebookWebhookRouter({ verifyToken, appSecret, logTag = 'webhook
   const router = express.Router();
   const tag = `[${logTag}]`;
 
+  function rawBodySaverWithHitLog(req, res, buf) {
+    rawBodySaver(req, res, buf);
+    if (buf?.length) {
+      console.log(`${tag} WEBHOOK_IN rawBytes=${buf.length}`);
+    }
+  }
+
   router.get('/', (req, res) => {
     const mode = req.query['hub.mode'];
     const token = req.query['hub.verify_token'];
@@ -46,15 +53,23 @@ function createFacebookWebhookRouter({ verifyToken, appSecret, logTag = 'webhook
     return res.sendStatus(400);
   });
 
-  router.post('/', express.json({ verify: rawBodySaver }), (req, res) => {
+  router.post('/', express.json({ verify: rawBodySaverWithHitLog }), (req, res) => {
     if (!verifySignature(req, appSecret)) {
-      console.warn(`${tag} Invalid X-Hub-Signature-256`);
+      console.warn(`${tag} Invalid X-Hub-Signature-256 (provjeri FACEBOOK_APP_SECRET / META_*_APP_SECRET za ovaj profil)`);
       return res.sendStatus(403);
     }
 
     const body = req.body;
     const entryLen = Array.isArray(body?.entry) ? body.entry.length : 0;
-    console.log(`${tag} WEBHOOK_POST received entries=${entryLen}`);
+    let messagingEvents = 0;
+    let standbyEvents = 0;
+    for (const e of body?.entry || []) {
+      messagingEvents += Array.isArray(e.messaging) ? e.messaging.length : 0;
+      standbyEvents += Array.isArray(e.standby) ? e.standby.length : 0;
+    }
+    console.log(
+      `${tag} WEBHOOK_POST entries=${entryLen} messaging_events=${messagingEvents} standby_events=${standbyEvents}`
+    );
     if (!entryLen && body && typeof body === 'object') {
       console.log(`${tag} WEBHOOK_POST top-level keys: ${Object.keys(body).join(', ')}`);
     }
