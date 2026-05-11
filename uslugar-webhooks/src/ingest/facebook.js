@@ -248,10 +248,37 @@ function messagingEventToRow(pageId, event) {
       };
     }
 
-    let bodyText = event.message.text != null ? String(event.message.text) : null;
-    const attachments = event.message.attachments;
+    const msg = event.message;
+    let bodyText = msg.text != null ? String(msg.text).trim() : '';
+    bodyText = bodyText.length ? bodyText : null;
+
+    const attachments = msg.attachments;
     if (!bodyText && attachments?.length) {
-      bodyText = `[privitci: ${attachments.length}]`;
+      const types = attachments
+        .map((a) => {
+          if (!a || typeof a !== 'object') return null;
+          const t = a.type != null ? String(a.type) : '';
+          const payload = a.payload && typeof a.payload === 'object' ? a.payload : null;
+          if (t === 'fallback' && payload?.title) return `fallback:${clip(String(payload.title), 48)}`;
+          return t || null;
+        })
+        .filter(Boolean);
+      bodyText = types.length
+        ? `[privitci: ${types.join(', ')}]`
+        : `[privitci: ${attachments.length}]`;
+    }
+
+    // Graph/inbox sync koristi sticker polje; webhook ponekad šalje samo sticker_id.
+    if (!bodyText && msg.sticker_id != null) {
+      bodyText = `[sticker] id=${String(msg.sticker_id)}`;
+    }
+
+    /**
+     * Meta često šalje tap „lajk” kao messages događaj bez teksta i bez attachments —
+     * pravi emoji dolazi u zasebnom webhook polju message_reactions (pretplata na Page).
+     */
+    if (!bodyText) {
+      bodyText = '[bez teksta · često lajk/reakcija — u Meta uključi pretplatu message_reactions]';
     }
 
     if (event.referral && typeof event.referral === 'object') {
@@ -266,7 +293,7 @@ function messagingEventToRow(pageId, event) {
       externalThreadId: baseThread,
       externalMessageId: stableMessageId(event, pageId),
       direction,
-      bodyText,
+      bodyText: clip(bodyText, 2000),
       rawPayload: event
     };
   }
