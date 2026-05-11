@@ -714,6 +714,23 @@
             </label>
             <button type="button" class="secondary" id="btn-backfill-attachments">Backfill attachmenta</button>
           </div>
+          <div class="card" style="margin-top:1rem;border-color:rgba(220,80,80,0.45);">
+            <h3 style="margin:0 0 0.35rem;font-size:0.95rem;">Opasna zona</h3>
+            <p class="hint" style="margin:0 0 0.65rem;">
+              <strong>Samo poruke:</strong> briše tablicu <span class="mono">ChannelMessage</span> (uključivo privitke). CRM, promptovi, čekanje slanja i admin postavke u bazi ostaju.
+              Zatim <strong>Povuci i spremi u bazu</strong> za ponovni uvoz.
+            </p>
+            <button type="button" id="btn-delete-all-messages" style="background:rgba(180,60,60,0.85);border-color:rgba(220,100,100,0.8);">
+              Obriši sve poruke iz baze
+            </button>
+            <p class="hint" style="margin:0.85rem 0 0.65rem;">
+              <strong>Sve (fabrički reset):</strong> briše i poruke, <span class="mono">CrmContact</span>, <span class="mono">PromptTemplate</span>,
+              <span class="mono">PendingMessengerSend</span>, <span class="mono">AppSetting</span> (npr. red odobrenja iz admina). Prazna baza za ovu aplikaciju — moraš ponovno uvesti prompte i postavke.
+            </p>
+            <button type="button" id="btn-delete-all-app-data" style="background:rgba(120,30,30,0.95);border-color:rgba(200,70,70,0.9);">
+              Obriši sve podatke aplikacije
+            </button>
+          </div>
           <pre id="sync-result" class="mono" style="margin-top:0.75rem;white-space:pre-wrap;display:none;"></pre>
         </div>
       </section>
@@ -2161,6 +2178,89 @@
         $('#sync-token').value = '';
       }
     });
+
+    const DELETE_ALL_MESSAGES_CONFIRM = 'DELETE_ALL_CHANNEL_MESSAGES';
+    $('#btn-delete-all-messages').addEventListener('click', async () => {
+      const ok = window.confirm(
+        'Trajno brisanje: svi zapisi u tablici ChannelMessage (s privitcima).\n' +
+          'CRM kontakti, promptovi i AppSetting ostaju.\n\n' +
+          'Nakon brisanja koristi „Povuci i spremi u bazu” za ponovni uvoz.\n\n' +
+          'Nastaviti?'
+      );
+      if (!ok) return;
+      const typed = window.prompt(
+        'Za potvrdu upiši točno (bez razmaka):\n' + DELETE_ALL_MESSAGES_CONFIRM,
+        ''
+      );
+      if (typed !== DELETE_ALL_MESSAGES_CONFIRM) {
+        alert(typed == null ? 'Otkazano.' : 'Tekst se ne podudara. Ništa nije obrisano.');
+        return;
+      }
+      const out = $('#sync-result');
+      out.style.display = 'block';
+      out.textContent = 'Brišem…';
+      const btn = $('#btn-delete-all-messages');
+      btn.disabled = true;
+      try {
+        const r = await apiPost('/messages/delete-all', { confirm: DELETE_ALL_MESSAGES_CONFIRM });
+        out.textContent = JSON.stringify(r, null, 2);
+        msgOffset = 0;
+        await loadPageOptions();
+        await loadMessages();
+        await loadThreads();
+      } catch (e) {
+        out.textContent = e.message || String(e);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    const DELETE_ALL_APP_DATA_CONFIRM = 'DELETE_ALL_APP_DATA';
+    $('#btn-delete-all-app-data').addEventListener('click', async () => {
+      const ok1 = window.confirm(
+        'PAŽNJA: brišu se SVE aplikacijske tablice u ovoj bazi:\n' +
+          '• poruke (ChannelMessage + privitci)\n' +
+          '• CRM kontakti (CrmContact)\n' +
+          '• prompt predlošci (PromptTemplate)\n' +
+          '• zahtjevi za slanje (PendingMessengerSend)\n' +
+          '• postavke u bazi (AppSetting)\n\n' +
+          'Ovo se ne može poništiti. Nastaviti?'
+      );
+      if (!ok1) return;
+      const ok2 = window.confirm('Zadnja provjera: stvarno obrisati SVE navedeno?');
+      if (!ok2) return;
+      const typed = window.prompt(
+        'Za potvrdu upiši točno (bez razmaka):\n' + DELETE_ALL_APP_DATA_CONFIRM,
+        ''
+      );
+      if (typed !== DELETE_ALL_APP_DATA_CONFIRM) {
+        alert(typed == null ? 'Otkazano.' : 'Tekst se ne podudara. Ništa nije obrisano.');
+        return;
+      }
+      const out = $('#sync-result');
+      out.style.display = 'block';
+      out.textContent = 'Brišem sve…';
+      const btn = $('#btn-delete-all-app-data');
+      btn.disabled = true;
+      try {
+        const r = await apiPost('/database/delete-all', { confirm: DELETE_ALL_APP_DATA_CONFIRM });
+        out.textContent = JSON.stringify(r, null, 2);
+        msgOffset = 0;
+        usersOffset = 0;
+        await loadBootstrap();
+        await loadPageOptions();
+        await loadMessages();
+        await loadThreads();
+        await loadUsers();
+        await loadPrompts();
+        await loadPendingMessengerSends();
+      } catch (e) {
+        out.textContent = e.message || String(e);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
     $('#btn-backfill-attachments').addEventListener('click', async () => {
       const out = $('#sync-result');
       const force = Boolean($('#backfill-force').checked);

@@ -25,10 +25,31 @@ function stableMessageId(event, pageId) {
   return `fb_${crypto.createHash('sha256').update(payload).digest('hex').slice(0, 48)}`;
 }
 
+/**
+ * Stabilni thread id: `pageId_psid`.
+ * Za Page→korisnik (message_echo, odgovor iz Inboxa) Meta šalje sender=Page, recipient=PSID —
+ * nit mora biti pageId_psid, ne pageId_pageId (što bi dalo pogrešan ključ kad je sid Page).
+ */
 function threadKey(pageId, event) {
-  const sid = event.sender?.id;
-  const rid = event.recipient?.id;
-  if (pageId && sid) return `${pageId}_${sid}`;
+  const p = pageId != null ? String(pageId) : '';
+  const sid = event.sender?.id != null ? String(event.sender.id) : '';
+  const rid = event.recipient?.id != null ? String(event.recipient.id) : '';
+  if (!p) return sid || rid || null;
+
+  const msg = event.message && typeof event.message === 'object' ? event.message : null;
+  if (msg && sid === p && rid && rid !== p) {
+    return `${p}_${rid}`;
+  }
+
+  if (sid && sid !== p) {
+    return `${p}_${sid}`;
+  }
+  if (sid === p && rid === p) {
+    return `${p}_${p}`;
+  }
+  if (rid && rid !== p) {
+    return `${p}_${rid}`;
+  }
   return sid || rid || null;
 }
 
@@ -203,8 +224,12 @@ function messagingEventToRow(pageId, event) {
 
   // --- Klasična poruka (tekst / privitci / echo) ---
   if (event.message && typeof event.message === 'object') {
+    const pStr = pageId != null ? String(pageId) : '';
+    const sidStr = event.sender?.id != null ? String(event.sender.id) : '';
+    const ridStr = event.recipient?.id != null ? String(event.recipient.id) : '';
     const isEcho = Boolean(event.message.is_echo);
-    const direction = isEcho ? 'outbound' : 'inbound';
+    const pageToUser = Boolean(sidStr === pStr && ridStr && ridStr !== pStr);
+    const direction = isEcho || pageToUser ? 'outbound' : 'inbound';
 
     if (event.message.is_edit && event.message.mid) {
       const m = event.message;

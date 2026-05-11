@@ -250,6 +250,60 @@ function createAdminRouter() {
     }
   });
 
+  /** Briše sve redove u ChannelMessage (privitci kaskadno). body: { confirm: "DELETE_ALL_CHANNEL_MESSAGES" } */
+  router.post('/api/messages/delete-all', jsonBody, requireAdminToken, async (req, res) => {
+    const expected = 'DELETE_ALL_CHANNEL_MESSAGES';
+    try {
+      const confirm = String(req.body?.confirm || '').trim();
+      if (confirm !== expected) {
+        return res.status(400).json({
+          error: `Potrebna je točna potvrda. U tijelo JSON pošalji: { "confirm": "${expected}" }`
+        });
+      }
+      const result = await prisma.channelMessage.deleteMany({});
+      console.warn(`[admin] delete-all ChannelMessage count=${result.count}`);
+      res.json({ ok: true, deleted: result.count });
+    } catch (e) {
+      console.error('[admin messages delete-all]', e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  /**
+   * Briše sve aplikacijske tablice: ChannelMessage (+ privitci), PendingMessengerSend, CrmContact,
+   * PromptTemplate, AppSetting. body: { confirm: "DELETE_ALL_APP_DATA" }
+   */
+  router.post('/api/database/delete-all', jsonBody, requireAdminToken, async (req, res) => {
+    const expected = 'DELETE_ALL_APP_DATA';
+    try {
+      const confirm = String(req.body?.confirm || '').trim();
+      if (confirm !== expected) {
+        return res.status(400).json({
+          error: `Potrebna je točna potvrda. U tijelo JSON pošalji: { "confirm": "${expected}" }`
+        });
+      }
+      const deleted = await prisma.$transaction(async (tx) => {
+        const channelMessage = await tx.channelMessage.deleteMany({});
+        const pendingMessengerSend = await tx.pendingMessengerSend.deleteMany({});
+        const crmContact = await tx.crmContact.deleteMany({});
+        const promptTemplate = await tx.promptTemplate.deleteMany({});
+        const appSetting = await tx.appSetting.deleteMany({});
+        return {
+          channelMessage: channelMessage.count,
+          pendingMessengerSend: pendingMessengerSend.count,
+          crmContact: crmContact.count,
+          promptTemplate: promptTemplate.count,
+          appSetting: appSetting.count
+        };
+      });
+      console.warn('[admin] delete-all app data', deleted);
+      res.json({ ok: true, deleted });
+    } catch (e) {
+      console.error('[admin database delete-all]', e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   router.get('/api/messages', requireAdminToken, async (req, res) => {
     try {
       const { channel, pageId, userId, q, source, from, to, hasAttachment, attachmentType, limit, offset } = req.query;
