@@ -22,7 +22,12 @@ function hasAnyDatabaseUrl() {
 const app = express();
 
 app.use((req, _res, next) => {
-  console.log(`[http] ${req.method} ${req.originalUrl || req.url}`);
+  const path = req.originalUrl || req.url || '';
+  const skipNoise =
+    req.method === 'GET' && (path === '/health' || path.startsWith('/health?'));
+  if (!skipNoise) {
+    console.log(`[http] ${req.method} ${path}`);
+  }
   next();
 });
 
@@ -38,6 +43,22 @@ app.get('/health', (_req, res) => {
     db: hasAnyDatabaseUrl(),
     databaseUrlDefault: Boolean(process.env.DATABASE_URL),
     profileDatabases
+  });
+});
+
+/** Bez tajni — za usporedbu s Meta „Callback URL”. GET jer preglednik ne šalje POST. */
+app.get('/debug/webhook-info', (_req, res) => {
+  const profiles = parseWebhookProfiles();
+  const mounted = profiles.filter((p) => process.env[`${metaEnvPrefix(p)}_VERIFY_TOKEN`]);
+  res.status(200).json({
+    hint:
+      'Meta šalje webhook kao POST (ne GET). U logu GET vidiš preglednik/monitor; POST tek kad Meta okine test ili poruku.',
+    callbackUrlsMustMatchExactlyOne: [
+      `https://<tvoj-host>/webhook`,
+      ...mounted.map((p) => `https://<tvoj-host>/webhook/${p}`)
+    ],
+    mountedProfiles: mounted.length ? mounted : ['(nema META_WEBHOOK_PROFILES — samo /webhook)'],
+    verifyMetaDeveloperWebhookFieldMatchesThesePaths: true
   });
 });
 
@@ -130,7 +151,10 @@ app.listen(PORT, () => {
   console.log(`Admin send: POST http://localhost:${PORT}/admin/api/send/messenger`);
   console.log(`Admin panel: GET http://localhost:${PORT}/admin/ (requires ADMIN_PANEL_TOKEN)`);
   console.log(`Root (info JSON): GET http://localhost:${PORT}/`);
-  console.log(`HTTP access lines: [http] METHOD path — vidi Render Logs za svaki zahtjev`);
+  console.log(`Debug (bez tajni): GET http://localhost:${PORT}/debug/webhook-info`);
+  console.log(
+    `HTTP log: [http] za svaki zahtjev osim GET /health. Webhook od Mete = POST /webhook — ako u logu imaš samo GET, Meta još nije poslala POST ili Callback URL u Meta konzoli ne poklapa se s ovim servisom.`
+  );
   if (!hasAnyDatabaseUrl()) {
     console.warn(
       'No DATABASE_URL and no META_<PROFILE>_DATABASE_URL — webhook persistence will fail until one is set.'
