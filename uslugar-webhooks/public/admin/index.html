@@ -148,6 +148,10 @@
       background: transparent;
       color: var(--text);
     }
+    #messages-table {
+      width: 100%;
+      table-layout: auto;
+    }
     #messages-table .attachments-cell {
       max-width: 14rem;
       font-size: 0.82rem;
@@ -178,9 +182,9 @@
     .msg-body-cell {
       display: flex;
       flex-wrap: wrap;
-      align-items: center;
+      align-items: flex-start;
       gap: 0.45rem;
-      max-width: 22rem;
+      min-width: 0;
     }
     .msg-sticker-preview {
       display: block;
@@ -344,8 +348,18 @@
       word-break: break-all;
     }
     .thread-id-cell {
+      max-width: 11rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
       white-space: nowrap;
+      vertical-align: top;
       word-break: normal !important;
+    }
+    #messages-table td:nth-child(9),
+    #messages-table th:nth-child(9) {
+      min-width: 20rem;
+      width: 32%;
+      vertical-align: top;
     }
     th.sortable { cursor: pointer; user-select: none; }
     th.sortable:hover { color: var(--text); }
@@ -1707,7 +1721,7 @@
           '<td><button type="button" class="link-btn btn-message-user-filter" data-user-id="' + escapeHtml(r.userId || '') +
           '" data-user-name="' + escapeHtml(r.userName || '') + '">' + renderStackedLabel(r.userName || 'Korisnik', r.userId || '') + '</button></td>' +
           '<td><span class="soft-badge page-badge">' + renderStackedLabel(r.pageName || 'Stranica', r.pageId || '') + '</span></td>' +
-          '<td class="mono thread-id-cell">' + escapeHtml(r.externalThreadId || '') + '</td>' +
+          '<td class="mono thread-id-cell" title="' + escapeHtml(r.externalThreadId || '') + '">' + escapeHtml(r.externalThreadId || '') + '</td>' +
           '<td>' + renderMessageBodyCell(r) + '</td>' +
           '<td class="attachments-cell">' + renderAttachmentsCell(r.attachments || []) + '</td>' +
           (String(r.channel || '').toUpperCase() === 'MESSENGER' && r.pageId && r.userId
@@ -1878,7 +1892,7 @@
           '<td><span class="soft-badge thread-page-badge">' + renderStackedLabel(t.pageName || 'Stranica', t.pageId || '') + '</span></td>' +
           '<td>' + escapeHtml(String(t.lastDirection || '')) + '</td>' +
           '<td>' + escapeHtml((t.lastText || '').slice(0, 160)) + '</td>' +
-          '<td class="mono thread-id-cell">' + escapeHtml(t.externalThreadId || '') + '</td>' +
+          '<td class="mono thread-id-cell" title="' + escapeHtml(t.externalThreadId || '') + '">' + escapeHtml(t.externalThreadId || '') + '</td>' +
           (canReply
             ? '<td><button type="button" class="secondary btn-thread-reply" data-page-id="' +
               escapeHtml(String(t.pageId)) +
