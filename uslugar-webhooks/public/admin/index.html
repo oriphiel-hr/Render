@@ -172,6 +172,32 @@
       border: 1px solid var(--border);
       object-fit: cover;
     }
+    .msg-body-cell {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.45rem;
+      max-width: 22rem;
+    }
+    .msg-sticker-preview {
+      display: block;
+      max-height: 56px;
+      max-width: 56px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      object-fit: contain;
+      flex-shrink: 0;
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .msg-body-text {
+      flex: 1 1 8rem;
+      min-width: 0;
+      word-break: break-word;
+    }
+    .sticker-fallback-emoji {
+      font-size: 1.75rem;
+      line-height: 1;
+    }
     .attachment-no-url {
       color: var(--muted);
       font-size: 0.75rem;
@@ -1602,7 +1628,7 @@
           '" data-user-name="' + escapeHtml(r.userName || '') + '">' + renderStackedLabel(r.userName || 'Korisnik', r.userId || '') + '</button></td>' +
           '<td><span class="soft-badge page-badge">' + renderStackedLabel(r.pageName || 'Stranica', r.pageId || '') + '</span></td>' +
           '<td class="mono thread-id-cell">' + escapeHtml(r.externalThreadId || '') + '</td>' +
-          '<td>' + escapeHtml((r.bodyText || '').slice(0, 200)) + '</td>' +
+          '<td>' + renderMessageBodyCell(r) + '</td>' +
           '<td class="attachments-cell">' + renderAttachmentsCell(r.attachments || []) + '</td>' +
           '<td><button type="button" class="secondary btn-open-raw">Otvori</button></td>';
         tb.appendChild(tr);
@@ -1901,6 +1927,49 @@
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
+    }
+
+    function safeMessengerPreviewUrl(url) {
+      if (!url || typeof url !== 'string') return null;
+      const t = url.trim();
+      try {
+        const u = new URL(t);
+        if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+        return u.href;
+      } catch {
+        return null;
+      }
+    }
+
+    /**
+     * Tekst poruke + opcionalno slika stickera iz rawPayload (Graph / webhook).
+     */
+    function renderMessageBodyCell(r) {
+      const safe = safeMessengerPreviewUrl(r.stickerPreviewUrl);
+      const txt = String(r.bodyText || '').slice(0, 200);
+      const oldLongFallback = txt.indexOf('Graph sync — Meta') !== -1;
+      const shortNoPayload = /^\[bez teksta\]$/i.test(txt.trim());
+      const parts = [];
+      if (safe) {
+        parts.push(
+          '<img class="msg-sticker-preview" src="' +
+            escapeHtml(safe) +
+            '" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async" />'
+        );
+      }
+      if (oldLongFallback) {
+        if (!safe) {
+          parts.push(
+            '<span class="msg-body-text sticker-fallback-emoji" title="Meta nije poslala URL slike stickera">👍</span>'
+          );
+        }
+      } else if (txt && !(safe && shortNoPayload)) {
+        parts.push('<span class="msg-body-text">' + escapeHtml(txt) + '</span>');
+      }
+      if (!parts.length) {
+        parts.push('<span class="muted">—</span>');
+      }
+      return '<div class="msg-body-cell">' + parts.join('') + '</div>';
     }
 
     async function initApp() {

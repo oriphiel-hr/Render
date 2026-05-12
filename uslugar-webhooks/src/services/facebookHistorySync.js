@@ -102,8 +102,7 @@ function bodyTextFromGraphMessage(m) {
   }
 
   if (!bodyText) {
-    bodyText =
-      '[bez teksta · Graph sync — Meta često ne šalje sticker za lajk; ako trebaš povijest, probaj webhook message_reactions]';
+    bodyText = '[bez teksta]';
   }
 
   return clip(bodyText, 2000);

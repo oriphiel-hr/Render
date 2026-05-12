@@ -1,6 +1,7 @@
 const { Prisma } = require('@prisma/client');
 const { prisma } = require('../lib/prisma');
 const { extractAttachmentsFromRaw } = require('./attachmentBackfill');
+const { stickerPreviewUrlFromMessengerRaw } = require('../lib/messengerStickerPreview');
 
 /**
  * Outbound koji resetira „čeka admina“: ručno iz ovog panela, sink s Meta (Inbox), webhook echo, Send API.
@@ -229,7 +230,8 @@ async function listMessages(q = {}) {
       userName: userName || null,
       attachments: mergeAttachmentsForMessage(r.attachments, r.rawPayload),
       userFirstName: firstName,
-      userLastName: lastName
+      userLastName: lastName,
+      stickerPreviewUrl: stickerPreviewUrlFromMessengerRaw(r.rawPayload)
     };
   });
 
@@ -246,8 +248,25 @@ async function listMessages(q = {}) {
       const inAttachments = (r.attachments || []).some((a) =>
         [a.type, a.url, a.name].some((x) => String(x || '').toLowerCase().includes(searchTerm))
       );
+      const inStickerPreview = String(r.stickerPreviewUrl || '')
+        .toLowerCase()
+        .includes(searchTerm);
       const inSource = String(r.source || '').toLowerCase().includes(searchTerm);
-      if (!(inUserId || inFirstName || inLastName || inFullName || inPageId || inPageName || inBodyText || inThread || inAttachments || inSource)) {
+      if (
+        !(
+          inUserId ||
+          inFirstName ||
+          inLastName ||
+          inFullName ||
+          inPageId ||
+          inPageName ||
+          inBodyText ||
+          inThread ||
+          inAttachments ||
+          inStickerPreview ||
+          inSource
+        )
+      ) {
         return false;
       }
     }
