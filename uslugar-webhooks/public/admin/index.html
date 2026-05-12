@@ -2123,14 +2123,14 @@
      */
     function renderMessageBodyCell(r) {
       const safe = safeMessengerPreviewUrl(r.stickerPreviewUrl);
-      const txt = String(r.bodyText || '').slice(0, 200);
-      const oldLongFallback = txt.indexOf('Graph sync — Meta') !== -1;
-      const shortNoPayload = /^\[bez teksta\]$/i.test(txt.trim());
+      const full = String(r.bodyText || '');
+      const oldLongFallback = full.indexOf('Graph sync — Meta') !== -1;
+      const shortNoPayload = /^\[bez teksta\]$/i.test(full.trim());
       const reactionLead = String(r.reactionEmoji || '').trim();
       const highlightReaction =
         String(r.source || '').indexOf('reaction') !== -1 ||
-        txt.replace(/^\s+/, '').startsWith('👍 [reakcija]') ||
-        txt.replace(/^\s+/, '').startsWith('👍 [bez teksta]');
+        full.replace(/^\s+/, '').startsWith('👍 [reakcija]') ||
+        full.replace(/^\s+/, '').startsWith('👍 [bez teksta]');
       const parts = [];
       if (safe) {
         parts.push(
@@ -2139,7 +2139,7 @@
             '" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async" />'
         );
       }
-      if (reactionLead && txt.indexOf(reactionLead) === -1) {
+      if (reactionLead && full.indexOf(reactionLead) === -1) {
         parts.push(
           '<span class="msg-body-text msg-reaction-line" title="Reakcija">' +
             escapeHtml(reactionLead) +
@@ -2156,9 +2156,9 @@
         parts.push(
           '<span class="msg-body-text sticker-fallback-emoji" title="Graph često ne šalje sticker za lajk">👍</span>'
         );
-      } else if (txt && !(safe && shortNoPayload)) {
+      } else if (full && !(safe && shortNoPayload)) {
         const cls = 'msg-body-text' + (highlightReaction ? ' msg-reaction-line' : '');
-        parts.push('<span class="' + cls + '">' + escapeHtml(txt) + '</span>');
+        parts.push('<span class="' + cls + '">' + escapeHtml(full) + '</span>');
       }
       if (!parts.length) {
         parts.push('<span class="muted">—</span>');
