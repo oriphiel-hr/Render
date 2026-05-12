@@ -355,6 +355,21 @@
       vertical-align: top;
       word-break: normal !important;
     }
+    #messages-table .thread-id-click {
+      cursor: pointer;
+      color: #b8d4ff;
+      text-underline-offset: 2px;
+    }
+    #messages-table .thread-id-click:hover,
+    #messages-table .thread-id-click:focus {
+      color: var(--accent);
+      text-decoration: underline;
+      outline: none;
+    }
+    #messages-table .thread-id-click:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
     #messages-table td:nth-child(9),
     #messages-table th:nth-child(9) {
       min-width: 20rem;
@@ -1683,6 +1698,24 @@
       }
     }
 
+    function filterMessagesToThread(threadId) {
+      const tid = String(threadId || '').trim();
+      if (!tid) return;
+      const u = tid.indexOf('_');
+      if (u > 0) {
+        const pageId = tid.slice(0, u);
+        const pageSel = $('#filter-page');
+        if (pageSel) {
+          const ok = [...pageSel.options].some((o) => o.value === pageId);
+          if (ok) pageSel.value = pageId;
+        }
+      }
+      $('#filter-search').value = tid;
+      msgOffset = 0;
+      activateTab('messages');
+      loadMessages().catch((e) => alert(e.message));
+    }
+
     async function loadMessages() {
       const ch = $('#filter-channel').value;
       const page = $('#filter-page').value.trim();
@@ -1721,7 +1754,13 @@
           '<td><button type="button" class="link-btn btn-message-user-filter" data-user-id="' + escapeHtml(r.userId || '') +
           '" data-user-name="' + escapeHtml(r.userName || '') + '">' + renderStackedLabel(r.userName || 'Korisnik', r.userId || '') + '</button></td>' +
           '<td><span class="soft-badge page-badge">' + renderStackedLabel(r.pageName || 'Stranica', r.pageId || '') + '</span></td>' +
-          '<td class="mono thread-id-cell" title="' + escapeHtml(r.externalThreadId || '') + '">' + escapeHtml(r.externalThreadId || '') + '</td>' +
+          '<td class="mono thread-id-cell thread-id-click" role="button" tabindex="0" title="Prikaži poruke ove niti (' +
+          escapeHtml(r.externalThreadId || '') +
+          ')" data-thread-id="' +
+          escapeHtml(r.externalThreadId || '') +
+          '">' +
+          escapeHtml(r.externalThreadId || '') +
+          '</td>' +
           '<td>' + renderMessageBodyCell(r) + '</td>' +
           '<td class="attachments-cell">' + renderAttachmentsCell(r.attachments || []) + '</td>' +
           (String(r.channel || '').toUpperCase() === 'MESSENGER' && r.pageId && r.userId
@@ -1738,6 +1777,21 @@
           rawBtn.addEventListener('click', (ev) => {
             ev.stopPropagation();
             openJsonModal(r.rawPayload);
+          });
+        }
+        const threadCell = tr.querySelector('.thread-id-click');
+        if (threadCell && threadCell.dataset.threadId) {
+          threadCell.addEventListener('click', (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            filterMessagesToThread(threadCell.dataset.threadId);
+          });
+          threadCell.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter' || ev.key === ' ') {
+              ev.preventDefault();
+              ev.stopPropagation();
+              filterMessagesToThread(threadCell.dataset.threadId);
+            }
           });
         }
         const badge = tr.querySelector('.page-badge');

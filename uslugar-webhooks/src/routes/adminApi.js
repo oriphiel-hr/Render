@@ -8,6 +8,11 @@ const { backfillMessageAttachments } = require('../services/attachmentBackfill')
 const { storeMessages } = require('../services/messageStore');
 const { sendMessengerAndStore } = require('../services/messengerSend');
 const {
+  isMessengerPageTokenConfigured,
+  refreshMessengerProfilesForWebhookRows,
+  backfillMessengerUserProfilesForPage
+} = require('../services/messengerUserProfile');
+const {
   listPendingForAdmin,
   approvePendingSend,
   rejectPendingSend,
@@ -84,6 +89,9 @@ function createAdminRouter() {
       /** null ako nema valjanog retka u AppSetting; inače spremljena boolean vrijednost */
       messengerOutboundApprovalDbValue: approvalState.fromDb,
       messengerOutboundApprovalEnvValue: approvalState.envVal,
+      messengerPageTokenConfigured: isMessengerPageTokenConfigured(),
+      messengerProfileHint:
+        'Za prikaz imena korisnika (PSID) u adminu bez parsiranja teksta poruke: postavi MESSENGER_PAGE_ACCESS_TOKEN (+ MESSENGER_PAGE_ID) ili MESSENGER_PAGE_TOKENS_JSON; nakon toga webhook sink automatski puni MessengerUserProfile. Za starije niti: POST /admin/api/messenger/refresh-user-profiles.',
       hint:
         'Meta Callback URL = https://<host>/webhook/<profile> — profile mora biti u META_WEBHOOK_PROFILES.'
     });
@@ -193,6 +201,9 @@ function createAdminRouter() {
         return res.json({ fetched: 0, stored: 0, message: 'Nema poruka ili nema pristupa konverzacijama' });
       }
       const result = await storeMessages(rows, { prisma });
+      refreshMessengerProfilesForWebhookRows(prisma, rows, { maxFetches: 40 }).catch((e) =>
+        console.warn('[admin sync] messenger profile refresh:', e.message)
+      );
       return res.json({
         fetched: rows.length,
         stored: result.count,
@@ -201,6 +212,30 @@ function createAdminRouter() {
     } catch (e) {
       console.error('[admin sync]', e.message);
       return res.status(500).json({ error: e.message });
+    }
+  });
+
+  /**
+   * Graph User Profile za PSID-eve stranice (ime kao u Meta Inboxu).
+   * POST /admin/api/messenger/refresh-user-profiles
+   * body: { pageId, accessToken, maxUsers?: number, apiVersion? }
+   */
+  router.post('/api/messenger/refresh-user-profiles', jsonBody, requireAdminToken, async (req, res) => {
+    try {
+      const { pageId, accessToken, maxUsers, apiVersion } = req.body || {};
+      if (!pageId || !accessToken) {
+        return res.status(400).json({ error: 'pageId i accessToken su obavezni u JSON tijelu' });
+      }
+      const result = await backfillMessengerUserProfilesForPage(prisma, {
+        pageId: String(pageId).trim(),
+        pageAccessToken: String(accessToken).trim(),
+        maxUsers: maxUsers != null ? Number(maxUsers) : undefined,
+        apiVersion: apiVersion || undefined
+      });
+      return res.json({ ok: true, ...result });
+    } catch (e) {
+      console.error('[admin messenger refresh-user-profiles]', e);
+      res.status(500).json({ error: e.message });
     }
   });
 

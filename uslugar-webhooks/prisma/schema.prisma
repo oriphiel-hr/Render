@@ -93,6 +93,18 @@ model AppSetting {
   updatedAt DateTime @updatedAt
 }
 
+/// Prikazno ime PSID-a s Graph API (Page token), za admin bez parsiranja bodyText-a
+model MessengerUserProfile {
+  pageId      String
+  userId      String
+  displayName String?
+  fetchedAt   DateTime @default(now())
+  fetchError  String?  @db.VarChar(500)
+
+  @@id([pageId, userId])
+  @@index([userId])
+}
+
 /// CRM oznake po korisniku (kombinacija pageId + userId/PSID)
 model CrmContact {
   id        String   @id @default(cuid())

@@ -3,6 +3,7 @@ const express = require('express');
 const { parseFacebookWebhook } = require('../ingest/facebook');
 const { getPrismaForProfile } = require('../lib/prisma');
 const { storeMessages } = require('../services/messageStore');
+const { refreshMessengerProfilesForWebhookRows } = require('../services/messengerUserProfile');
 
 function rawBodySaver(req, res, buf) {
   if (buf?.length) req.rawBody = buf;
@@ -100,6 +101,9 @@ function createFacebookWebhookRouter({ verifyToken, appSecret, logTag = 'webhook
         } else if (entryLen) {
           console.log(`${tag} WEBHOOK_POST parsed 0 rows (payload shape not Messenger/feed — Instant Games uses different fields)`);
         }
+        refreshMessengerProfilesForWebhookRows(db, rows, { maxFetches: 16 }).catch((e) =>
+          console.warn(`${tag} messenger profile refresh: ${e.message}`)
+        );
       } catch (e) {
         console.error(`${tag} persist error`, e.message);
       }

@@ -3,6 +3,7 @@ const { prisma } = require('../lib/prisma');
 const { extractAttachmentsFromRaw } = require('./attachmentBackfill');
 const { stickerPreviewUrlFromMessengerRaw } = require('../lib/messengerStickerPreview');
 const { reactionEmojiFromMessengerRaw } = require('../lib/messengerReactionEmoji');
+const { getMessengerProfileNameMap } = require('./messengerUserProfile');
 
 /**
  * Outbound koji resetira „čeka admina“: ručno iz ovog panela, sink s Meta (Inbox), webhook echo, Send API.
@@ -199,6 +200,14 @@ async function listMessages(q = {}) {
   });
   const dbTotal = hasSearch ? rawRows.length : await prisma.channelMessage.count({ where });
 
+  const messengerUserKeys = new Set();
+  for (const r of rawRows) {
+    if (String(r.channel || '').toUpperCase() !== 'MESSENGER') continue;
+    const { pageId: pid, userId: uid } = splitThreadId(r.externalThreadId);
+    if (pid && uid) messengerUserKeys.add(`${pid}_${uid}`);
+  }
+  const profileNameMap = await getMessengerProfileNameMap(prisma, [...messengerUserKeys]);
+
   const pageNameById = new Map();
   const userNameByKey = new Map();
   for (const r of rawRows) {
@@ -212,7 +221,9 @@ async function listMessages(q = {}) {
 
     const userKey = `${parsedPageId}_${parsedUserId}`;
     if (!userNameByKey.has(userKey)) {
-      const userName = inferUserNameFromRaw(parsedPageId, parsedUserId, r.rawPayload);
+      const fromRaw = inferUserNameFromRaw(parsedPageId, parsedUserId, r.rawPayload);
+      const fromProf = profileNameMap.get(userKey) || null;
+      const userName = fromProf || fromRaw;
       if (userName) userNameByKey.set(userKey, userName);
     }
   }
@@ -220,7 +231,9 @@ async function listMessages(q = {}) {
   const enrichedRows = rawRows.map((r) => {
     const { pageId: parsedPageId, userId: parsedUserId } = splitThreadId(r.externalThreadId);
     const userKey = parsedPageId && parsedUserId ? `${parsedPageId}_${parsedUserId}` : null;
-    const userName = userKey ? userNameByKey.get(userKey) || null : null;
+    const userName = userKey
+      ? profileNameMap.get(userKey) || userNameByKey.get(userKey) || null
+      : null;
     const pageName = parsedPageId ? pageNameById.get(parsedPageId) || inferPageNameFromRaw(parsedPageId, r.rawPayload) : null;
     const { firstName, lastName } = splitFullName(userName);
     return {
@@ -335,27 +348,54 @@ async function listThreads(q = {}) {
     take: 5000
   });
 
-  const seen = new Set();
-  const threads = [];
+  const byThread = new Map();
   for (const r of rows) {
     const t = r.externalThreadId;
-    if (!t || seen.has(t)) continue;
-    seen.add(t);
+    if (!t) continue;
     const { pageId, userId } = splitThreadId(t);
-    threads.push({
-      externalThreadId: t,
-      lastAt: r.createdAt,
-      lastDirection: r.direction || null,
-      lastText: r.bodyText || null,
-      pageId,
-      userId,
-      pageName: pageId ? inferPageNameFromRaw(pageId, r.rawPayload) : null,
-      userName: pageId && userId ? inferUserNameFromRaw(pageId, userId, r.rawPayload) : null
-    });
-    if (threads.length >= limit) break;
+    const pageName = pageId ? inferPageNameFromRaw(pageId, r.rawPayload) : null;
+    const userName =
+      pageId && userId ? inferUserNameFromRaw(pageId, userId, r.rawPayload) : null;
+
+    let e = byThread.get(t);
+    if (!e) {
+      byThread.set(t, {
+        externalThreadId: t,
+        lastAt: r.createdAt,
+        lastDirection: r.direction || null,
+        lastText: r.bodyText || null,
+        pageId,
+        userId,
+        pageName: pageName || null,
+        userName: userName || null
+      });
+      continue;
+    }
+    if (new Date(r.createdAt) > new Date(e.lastAt)) {
+      e.lastAt = r.createdAt;
+      e.lastDirection = r.direction || null;
+      e.lastText = r.bodyText || null;
+    }
+    if (!e.pageName && pageName) e.pageName = pageName;
+    if (!e.userName && userName) e.userName = userName;
   }
 
-  return threads;
+  const threads = [...byThread.values()]
+    .sort((a, b) => new Date(b.lastAt) - new Date(a.lastAt))
+    .slice(0, limit);
+
+  const threadKeys = threads
+    .map((t) => (t.pageId && t.userId ? `${t.pageId}_${t.userId}` : null))
+    .filter(Boolean);
+  const threadProfileMap = await getMessengerProfileNameMap(prisma, threadKeys);
+
+  return threads.map((t) => ({
+    ...t,
+    userName:
+      (t.pageId && t.userId ? threadProfileMap.get(`${t.pageId}_${t.userId}`) : null) ||
+      t.userName ||
+      null
+  }));
 }
 
 /**
@@ -384,6 +424,19 @@ async function listUsers(q = {}) {
     take: 5000
   });
 
+  const profileWhere =
+    pageIdPrefix ? { pageId: pageIdPrefix, displayName: { not: null } } : { displayName: { not: null } };
+  const profRows = await prisma.messengerUserProfile.findMany({
+    where: profileWhere,
+    select: { pageId: true, userId: true, displayName: true },
+    take: 5000
+  });
+  const profileNameMap = new Map();
+  for (const p of profRows) {
+    const n = p.displayName != null ? String(p.displayName).trim() : '';
+    if (n) profileNameMap.set(`${p.pageId}_${p.userId}`, n);
+  }
+
   const byUser = new Map();
   for (const r of rows) {
     const t = r.externalThreadId;
@@ -391,27 +444,29 @@ async function listUsers(q = {}) {
     const { pageId, userId } = splitThreadId(t);
     if (!pageId || !userId) continue;
     if (pageIdPrefix && pageId !== pageIdPrefix) continue;
+    const key = `${pageId}_${userId}`;
     const rowUserName = inferUserNameFromRaw(pageId, userId, r.rawPayload);
     const rowPageName = inferPageNameFromRaw(pageId, r.rawPayload);
+    const profName = profileNameMap.get(key) || '';
     if (
       term &&
       !(
         userId.toLowerCase().includes(term) ||
         String(pageId).toLowerCase().includes(term) ||
         String(rowUserName || '').toLowerCase().includes(term) ||
-        String(rowPageName || '').toLowerCase().includes(term)
+        String(rowPageName || '').toLowerCase().includes(term) ||
+        profName.toLowerCase().includes(term)
       )
     ) {
       continue;
     }
-    const key = `${pageId}_${userId}`;
     let agg = byUser.get(key);
     if (!agg) {
       agg = {
         pageId,
         pageName: rowPageName || null,
         userId,
-        userName: rowUserName || null,
+        userName: profileNameMap.get(key) || rowUserName || null,
         messageCount: 0,
         inboundCount: 0,
         outboundCount: 0,
@@ -423,6 +478,7 @@ async function listUsers(q = {}) {
       };
       byUser.set(key, agg);
     }
+    if (!agg.userName && profileNameMap.get(key)) agg.userName = profileNameMap.get(key);
     if (!agg.userName && rowUserName) agg.userName = rowUserName;
     if (!agg.pageName && rowPageName) agg.pageName = rowPageName;
     agg.messageCount += 1;
@@ -440,24 +496,27 @@ async function listUsers(q = {}) {
   }
 
   const list = [...byUser.values()]
-    .map((u) => ({
-      pageId: u.pageId,
-      pageName: u.pageName || null,
-      userId: u.userId,
-      userName: u.userName || null,
-      ...splitFullName(u.userName),
-      messageCount: u.messageCount,
-      inboundCount: u.inboundCount || 0,
-      outboundCount: u.outboundCount || 0,
-      attachmentCount: u.attachmentCount || 0,
-      firstAt: u.firstAt,
-      lastAt: u.lastAt,
-      lastDirection: u.lastDirection || null,
-      lastText: u.lastText,
-      isLead: false,
-      pauseAutomation: false,
-      notes: null
-    }))
+    .map((u) => {
+      const mergedName = profileNameMap.get(`${u.pageId}_${u.userId}`) || u.userName || null;
+      return {
+        pageId: u.pageId,
+        pageName: u.pageName || null,
+        userId: u.userId,
+        userName: mergedName,
+        ...splitFullName(mergedName),
+        messageCount: u.messageCount,
+        inboundCount: u.inboundCount || 0,
+        outboundCount: u.outboundCount || 0,
+        attachmentCount: u.attachmentCount || 0,
+        firstAt: u.firstAt,
+        lastAt: u.lastAt,
+        lastDirection: u.lastDirection || null,
+        lastText: u.lastText,
+        isLead: false,
+        pauseAutomation: false,
+        notes: null
+      };
+    })
     .sort((a, b) => new Date(b.lastAt) - new Date(a.lastAt));
 
   if (list.length) {
