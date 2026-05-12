@@ -2,6 +2,7 @@ const { Prisma } = require('@prisma/client');
 const { prisma } = require('../lib/prisma');
 const { extractAttachmentsFromRaw } = require('./attachmentBackfill');
 const { stickerPreviewUrlFromMessengerRaw } = require('../lib/messengerStickerPreview');
+const { reactionEmojiFromMessengerRaw } = require('../lib/messengerReactionEmoji');
 
 /**
  * Outbound koji resetira „čeka admina“: ručno iz ovog panela, sink s Meta (Inbox), webhook echo, Send API.
@@ -231,7 +232,8 @@ async function listMessages(q = {}) {
       attachments: mergeAttachmentsForMessage(r.attachments, r.rawPayload),
       userFirstName: firstName,
       userLastName: lastName,
-      stickerPreviewUrl: stickerPreviewUrlFromMessengerRaw(r.rawPayload)
+      stickerPreviewUrl: stickerPreviewUrlFromMessengerRaw(r.rawPayload),
+      reactionEmoji: reactionEmojiFromMessengerRaw(r.rawPayload)
     };
   });
 
@@ -251,6 +253,9 @@ async function listMessages(q = {}) {
       const inStickerPreview = String(r.stickerPreviewUrl || '')
         .toLowerCase()
         .includes(searchTerm);
+      const inReactionEmoji = String(r.reactionEmoji || '')
+        .toLowerCase()
+        .includes(searchTerm);
       const inSource = String(r.source || '').toLowerCase().includes(searchTerm);
       if (
         !(
@@ -264,6 +269,7 @@ async function listMessages(q = {}) {
           inThread ||
           inAttachments ||
           inStickerPreview ||
+          inReactionEmoji ||
           inSource
         )
       ) {

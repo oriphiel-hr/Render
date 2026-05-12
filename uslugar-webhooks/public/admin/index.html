@@ -194,6 +194,10 @@
       min-width: 0;
       word-break: break-word;
     }
+    .msg-reaction-line {
+      font-size: 1.35rem;
+      line-height: 1.35;
+    }
     .sticker-fallback-emoji {
       font-size: 1.75rem;
       line-height: 1;
@@ -456,8 +460,11 @@
             <span class="mono">facebook.graph.send</span>). <strong>Ne</strong> broji se automatika
             <span class="mono">api.ingest.send</span>. <strong>Novo</strong> ako je taj inbound u zadnjih 7 dana; starije i dalje čekaju, ali bez „hitnog“ označavanja.
           </p>
-          <div class="card" style="margin-bottom:0.85rem;background:rgba(19,24,32,0.85);border-style:dashed;">
+          <div id="messenger-reply-card" class="card" style="margin-bottom:0.85rem;background:rgba(19,24,32,0.85);border-style:dashed;">
             <h3 style="margin:0 0 0.35rem;font-size:0.95rem;">Pošalji Messenger odgovor</h3>
+            <p class="hint" style="margin:0 0 0.5rem;">
+              <strong>Brže:</strong> u tablici poruka ili threadova klikni <strong>Odgovori</strong> — popune se Page ID i PSID, skrola te do forme; uneseš tekst i token pa <strong>Pošalji</strong>.
+            </p>
             <p class="hint" style="margin:0 0 0.65rem;">
               Ručno iz admina. Za automatski odgovor vanjski servis može: dohvatiti prompt
               <span class="mono">GET /api/v1/prompts/active/:slug</span>, provjeriti
@@ -493,6 +500,10 @@
               </div>
               <button type="button" id="btn-send-messenger">Pošalji</button>
             </div>
+            <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.82rem;color:var(--muted);margin:0.35rem 0 0;cursor:pointer;">
+              <input type="checkbox" id="chk-remember-messenger-token" style="width:auto;" />
+              Zapamti token u ovom pregledniku (sessionStorage, do zatvaranja taba) — ne ide na server
+            </label>
             <pre id="send-result" class="mono" style="margin:0.65rem 0 0;white-space:pre-wrap;display:none;"></pre>
           </div>
           <div id="approval-setting-card" class="card" style="margin-bottom:0.85rem;">
@@ -595,6 +606,7 @@
                   <th class="sortable" data-sort-msg="externalThreadId">Nit</th>
                   <th class="sortable" data-sort-msg="bodyText">Tekst</th>
                   <th class="sortable" data-sort-msg="attachmentsCount">Privitci</th>
+                  <th>Odgovori</th>
                   <th>Raw</th>
                 </tr>
               </thead>
@@ -684,6 +696,7 @@
                   <th class="sortable" data-sort-thread="lastDirection">Smjer</th>
                   <th class="sortable" data-sort-thread="lastText">Zadnji tekst</th>
                   <th class="sortable" data-sort-thread="externalThreadId">Nit</th>
+                  <th>Odgovori</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -1589,6 +1602,70 @@
       });
     }
 
+    const MESSENGER_TOKEN_STORAGE_KEY = 'uslugar_admin_page_tokens_v1';
+
+    function readStoredMessengerTokens() {
+      try {
+        const s = sessionStorage.getItem(MESSENGER_TOKEN_STORAGE_KEY);
+        const o = s ? JSON.parse(s) : {};
+        return o && typeof o === 'object' ? o : {};
+      } catch {
+        return {};
+      }
+    }
+
+    function storeMessengerTokenForPage(pageId, token) {
+      const pid = String(pageId || '').trim();
+      const t = String(token || '').trim();
+      if (!pid || !t) return;
+      const bag = readStoredMessengerTokens();
+      bag[pid] = t;
+      try {
+        sessionStorage.setItem(MESSENGER_TOKEN_STORAGE_KEY, JSON.stringify(bag));
+      } catch (_) {}
+    }
+
+    /**
+     * Popuni formu „Pošalji Messenger odgovor” i skrolaj do nje (tab Poruke).
+     */
+    function prefillMessengerReply(pageId, userId) {
+      const pid = String(pageId || '').trim();
+      const psid = String(userId || '').trim();
+      if (!pid || !psid) {
+        alert('Nedostaje Page ID ili PSID (korisnik) za odgovor.');
+        return;
+      }
+      activateTab('messages');
+      const pageSel = $('#send-page-id');
+      if (pageSel) {
+        pageSel.value = pid;
+        if (pageSel.value !== pid) {
+          alert(
+            'Ovaj Page ID nije u padajućem popisu. Osvježi admin (Spremi i učitaj) ili pričekaj da se poruke sinkaju za tu stranicu.'
+          );
+        }
+      }
+      const psidEl = $('#send-psid');
+      if (psidEl) psidEl.value = psid;
+      const tokEl = $('#send-token');
+      if (tokEl) {
+        const bag = readStoredMessengerTokens();
+        const saved = bag[pid];
+        if (saved && typeof saved === 'string' && saved.trim()) tokEl.value = saved;
+      }
+      const ta = $('#send-text');
+      if (ta) {
+        ta.value = '';
+        ta.focus();
+      }
+      const card = $('#messenger-reply-card');
+      if (card && card.scrollIntoView) {
+        setTimeout(function () {
+          card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 80);
+      }
+    }
+
     async function loadMessages() {
       const ch = $('#filter-channel').value;
       const page = $('#filter-page').value.trim();
@@ -1630,6 +1707,13 @@
           '<td class="mono thread-id-cell">' + escapeHtml(r.externalThreadId || '') + '</td>' +
           '<td>' + renderMessageBodyCell(r) + '</td>' +
           '<td class="attachments-cell">' + renderAttachmentsCell(r.attachments || []) + '</td>' +
+          (String(r.channel || '').toUpperCase() === 'MESSENGER' && r.pageId && r.userId
+            ? '<td><button type="button" class="secondary btn-reply-message" data-page-id="' +
+              escapeHtml(String(r.pageId)) +
+              '" data-user-id="' +
+              escapeHtml(String(r.userId)) +
+              '">Odgovori</button></td>'
+            : '<td class="muted">—</td>') +
           '<td><button type="button" class="secondary btn-open-raw">Otvori</button></td>';
         tb.appendChild(tr);
         const rawBtn = tr.querySelector('.btn-open-raw');
@@ -1657,6 +1741,12 @@
           $('#filter-search').value = btn.dataset.userName || btn.dataset.userId || '';
           msgOffset = 0;
           loadMessages().catch((e) => alert(e.message));
+        });
+      });
+      document.querySelectorAll('.btn-reply-message').forEach((btn) => {
+        btn.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          prefillMessengerReply(btn.dataset.pageId, btn.dataset.userId);
         });
       });
       refreshHeaderSortIndicators('#messages-table th.sortable', 'data-sort-msg', messagesSortKey, messagesSortDir);
@@ -1777,6 +1867,7 @@
       tb.innerHTML = '';
       const rows = sortRows(data.threads || [], threadsSortKey, threadsSortDir);
       rows.forEach((t) => {
+        const canReply = String(ch || '').toUpperCase() === 'MESSENGER' && t.pageId && t.userId;
         const tr = document.createElement('tr');
         tr.innerHTML =
           '<td class="mono">' + escapeHtml(formatDateTime(t.lastAt)) + '</td>' +
@@ -1784,7 +1875,14 @@
           '<td><span class="soft-badge thread-page-badge">' + renderStackedLabel(t.pageName || 'Stranica', t.pageId || '') + '</span></td>' +
           '<td>' + escapeHtml(String(t.lastDirection || '')) + '</td>' +
           '<td>' + escapeHtml((t.lastText || '').slice(0, 160)) + '</td>' +
-          '<td class="mono thread-id-cell">' + escapeHtml(t.externalThreadId || '') + '</td>';
+          '<td class="mono thread-id-cell">' + escapeHtml(t.externalThreadId || '') + '</td>' +
+          (canReply
+            ? '<td><button type="button" class="secondary btn-thread-reply" data-page-id="' +
+              escapeHtml(String(t.pageId)) +
+              '" data-user-id="' +
+              escapeHtml(String(t.userId)) +
+              '">Odgovori</button></td>'
+            : '<td class="muted">—</td>');
         tb.appendChild(tr);
         const badge = tr.querySelector('.thread-page-badge');
         if (badge) {
@@ -1793,13 +1891,21 @@
           badge.style.borderColor = color.border;
           badge.style.color = color.text;
         }
-        tr.addEventListener('click', () => {
+        tr.addEventListener('click', (ev) => {
+          if (ev.target.closest && ev.target.closest('.btn-thread-reply')) return;
           $('#filter-page').value = t.pageId || '';
           $('#filter-search').value = t.externalThreadId || t.userName || t.userId || '';
           msgOffset = 0;
           activateTab('messages');
           loadMessages().catch((e) => alert(e.message));
         });
+        const replyBtn = tr.querySelector('.btn-thread-reply');
+        if (replyBtn) {
+          replyBtn.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            prefillMessengerReply(replyBtn.dataset.pageId, replyBtn.dataset.userId);
+          });
+        }
       });
       refreshHeaderSortIndicators('#threads-table th.sortable', 'data-sort-thread', threadsSortKey, threadsSortDir);
     }
@@ -1949,6 +2055,11 @@
       const txt = String(r.bodyText || '').slice(0, 200);
       const oldLongFallback = txt.indexOf('Graph sync — Meta') !== -1;
       const shortNoPayload = /^\[bez teksta\]$/i.test(txt.trim());
+      const reactionLead = String(r.reactionEmoji || '').trim();
+      const highlightReaction =
+        String(r.source || '').indexOf('reaction') !== -1 ||
+        txt.replace(/^\s+/, '').startsWith('👍 [reakcija]') ||
+        txt.replace(/^\s+/, '').startsWith('👍 [bez teksta]');
       const parts = [];
       if (safe) {
         parts.push(
@@ -1957,14 +2068,26 @@
             '" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async" />'
         );
       }
+      if (reactionLead && txt.indexOf(reactionLead) === -1) {
+        parts.push(
+          '<span class="msg-body-text msg-reaction-line" title="Reakcija">' +
+            escapeHtml(reactionLead) +
+            '</span>'
+        );
+      }
       if (oldLongFallback) {
         if (!safe) {
           parts.push(
             '<span class="msg-body-text sticker-fallback-emoji" title="Meta nije poslala URL slike stickera">👍</span>'
           );
         }
+      } else if (shortNoPayload && !safe) {
+        parts.push(
+          '<span class="msg-body-text sticker-fallback-emoji" title="Graph često ne šalje sticker za lajk">👍</span>'
+        );
       } else if (txt && !(safe && shortNoPayload)) {
-        parts.push('<span class="msg-body-text">' + escapeHtml(txt) + '</span>');
+        const cls = 'msg-body-text' + (highlightReaction ? ' msg-reaction-line' : '');
+        parts.push('<span class="' + cls + '">' + escapeHtml(txt) + '</span>');
       }
       if (!parts.length) {
         parts.push('<span class="muted">—</span>');
@@ -2092,7 +2215,12 @@
           accessToken
         });
         out.textContent = JSON.stringify(r, null, 2);
-        $('#send-token').value = '';
+        const remember = $('#chk-remember-messenger-token');
+        if (remember && remember.checked) {
+          storeMessengerTokenForPage(pageId, accessToken);
+        } else {
+          $('#send-token').value = '';
+        }
         msgOffset = 0;
         await loadMessages();
       } catch (e) {

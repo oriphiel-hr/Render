@@ -102,7 +102,7 @@ function bodyTextFromGraphMessage(m) {
   }
 
   if (!bodyText) {
-    bodyText = '[bez teksta]';
+    bodyText = '👍 [bez teksta]';
   }
 
   return clip(bodyText, 2000);

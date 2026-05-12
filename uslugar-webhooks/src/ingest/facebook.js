@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { reactionEmojiFromReactionObject } = require('../lib/messengerReactionEmoji');
 
 /**
  * Facebook / Messenger webhook → ChannelMessage redovi.
@@ -92,14 +93,20 @@ function messagingEventToRow(pageId, event) {
 
   const baseThread = threadKey(pageId, event);
 
-  // --- Reakcije ---
+  // --- Reakcije (message_reactions) — tip je u r.reaction ("like"), emoji često prazan ---
   if (event.reaction && typeof event.reaction === 'object') {
     const r = event.reaction;
     const mid = r.mid ? String(r.mid) : 'unknown';
     const action = r.action ? String(r.action) : 'react';
-    const emoji = r.emoji != null ? String(r.emoji) : r.reaction != null ? String(r.reaction) : '';
-    const extId = syntheticId('fb_rx', pageId, event, { mid, action, emoji });
-    const bodyText = `[reakcija] ${action}${emoji ? ` ${emoji}` : ''} · mid ${mid}`;
+    const typeKey = r.reaction != null && typeof r.reaction === 'string' ? String(r.reaction).toLowerCase().trim() : '';
+    const lead = reactionEmojiFromReactionObject(r);
+    const extId = syntheticId('fb_rx', pageId, event, { mid, action, emoji: lead || typeKey });
+    const bodyText = clip(
+      lead
+        ? `${lead} [reakcija] ${action}${typeKey ? ` (${typeKey})` : ''} · mid ${mid}`
+        : `[reakcija] ${action}${typeKey ? ` ${typeKey}` : ''} · mid ${mid}`,
+      2000
+    );
     return {
       channel: 'MESSENGER',
       source: 'facebook.graph.reaction',
@@ -273,12 +280,9 @@ function messagingEventToRow(pageId, event) {
       bodyText = `[sticker] id=${String(msg.sticker_id)}`;
     }
 
-    /**
-     * Meta često šalje tap „lajk” kao messages događaj bez teksta i bez attachments —
-     * pravi emoji dolazi u zasebnom webhook polju message_reactions (pretplata na Page).
-     */
+    /** Tap/lajk često dolazi kao prazna poruka; message_reactions daje 👍 u zasebnom događaju. */
     if (!bodyText) {
-      bodyText = '[bez teksta · često lajk/reakcija — u Meta uključi pretplatu message_reactions]';
+      bodyText = '👍 [bez teksta]';
     }
 
     if (event.referral && typeof event.referral === 'object') {
