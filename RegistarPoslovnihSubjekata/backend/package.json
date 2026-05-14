@@ -8,6 +8,7 @@
     "node": ">=18"
   },
   "scripts": {
+    "start": "node src/server.js",
     "token": "node -e \"require('dotenv').config(); require('./src/sudregToken').getSudregAccessToken().then(t=>console.log(JSON.stringify({tokenType:t.tokenType,expiresIn:t.expiresIn,accessTokenPrefix:t.accessToken.slice(0,12)+'…'}))).catch(e=>{console.error(e);process.exit(1)})\""
   },
   "dependencies": {
