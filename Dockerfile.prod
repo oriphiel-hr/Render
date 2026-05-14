@@ -1,0 +1,15 @@
+# Monorepo https://github.com/oriphiel-hr/Render — build kad je Root Directory prazan (cijeli repo).
+# Servis: registar-poslovnih-subjekata.onrender.com — Dockerfile Path: Dockerfile.prod
+# Ako u Renderu postaviš Root Directory = RegistarPoslovnihSubjekata, možeš umjesto toga koristiti Dockerfile.prod iz te mape.
+FROM node:20-alpine
+WORKDIR /app
+
+COPY RegistarPoslovnihSubjekata/backend/package.json RegistarPoslovnihSubjekata/backend/package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY RegistarPoslovnihSubjekata/backend/src ./src
+
+ENV NODE_ENV=production
+EXPOSE 3000
+
+CMD ["node", "src/server.js"]

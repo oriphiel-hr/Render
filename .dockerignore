@@ -1,0 +1,10 @@
+# Kontekst za docker build iz korijena repozitorija (samo ubrzavanje / smanjenje šuma)
+.git
+**/node_modules
+Uslugar
+uslugar-webhooks
+totaltools-importer
+Uslugar/analysis
+__endpoint_emit.py
+__endpoint_extract.py
+__endpoint_final.py
