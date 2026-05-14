@@ -1,0 +1,16 @@
+{
+  "name": "registar-poslovnih-subjekata-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sudski registar (javni API) — OAuth token i integracije",
+  "main": "src/sudregToken.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "token": "node -e \"require('dotenv').config(); require('./src/sudregToken').getSudregAccessToken().then(t=>console.log(JSON.stringify({tokenType:t.tokenType,expiresIn:t.expiresIn,accessTokenPrefix:t.accessToken.slice(0,12)+'…'}))).catch(e=>{console.error(e);process.exit(1)})\""
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  }
+}
