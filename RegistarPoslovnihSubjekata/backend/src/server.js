@@ -14,7 +14,21 @@ const path = require('path');
 const { getSudregAccessToken } = require('./sudregToken');
 
 const port = Number(process.env.PORT) || 3000;
-const publicDir = path.join(__dirname, '..', 'public');
+
+/** Render Docker (backend/): /app/public — lokalno: backend/public */
+function findIndexHtmlPath() {
+  const candidates = [
+    path.join(__dirname, '..', 'public', 'index.html'),
+    path.join(process.cwd(), 'public', 'index.html'),
+    path.join(process.cwd(), 'backend', 'public', 'index.html')
+  ];
+  for (const file of candidates) {
+    if (fs.existsSync(file)) return file;
+  }
+  return null;
+}
+
+let cachedIndexHtml = null;
 
 function sendJson(res, status, body) {
   res.writeHead(status, {
@@ -30,12 +44,25 @@ function sendText(res, status, text, contentType = 'text/plain; charset=utf-8') 
 }
 
 function serveIndexHtml(res) {
-  const file = path.join(publicDir, 'index.html');
-  fs.readFile(file, (err, data) => {
+  if (cachedIndexHtml) {
+    sendText(res, 200, cachedIndexHtml, 'text/html; charset=utf-8');
+    return;
+  }
+  const file = findIndexHtmlPath();
+  if (!file) {
+    sendText(
+      res,
+      500,
+      'index.html nije pronađen. U Dockerfile dodaj: COPY public ./public (i redeploy).'
+    );
+    return;
+  }
+  fs.readFile(file, 'utf8', (err, data) => {
     if (err) {
-      sendText(res, 500, 'index.html nije pronađen');
+      sendText(res, 500, 'index.html nije mogao biti učitan: ' + err.message);
       return;
     }
+    cachedIndexHtml = data;
     sendText(res, 200, data, 'text/html; charset=utf-8');
   });
 }
@@ -104,5 +131,8 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(port, '0.0.0.0', () => {
+  const indexPath = findIndexHtmlPath();
   console.log(`[registar-rps] listening on 0.0.0.0:${port}`);
+  if (indexPath) console.log(`[registar-rps] index.html: ${indexPath}`);
+  else console.warn('[registar-rps] index.html missing — COPY public ./public u Dockerfile.prod');
 });
