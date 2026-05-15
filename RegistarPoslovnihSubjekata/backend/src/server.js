@@ -12,6 +12,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { getSudregAccessToken } = require('./sudregToken');
+const { getSnapshots } = require('./sudregApi');
 
 const port = Number(process.env.PORT) || 3000;
 
@@ -67,6 +68,35 @@ function serveIndexHtml(res) {
   });
 }
 
+function parseQueryString(reqUrl) {
+  const i = (reqUrl || '').indexOf('?');
+  if (i < 0) return new URLSearchParams();
+  return new URLSearchParams((reqUrl || '').slice(i + 1));
+}
+
+async function handleSudregSnapshots(req, res) {
+  const q = parseQueryString(req.url);
+  try {
+    const result = await getSnapshots({
+      no_data_error: q.get('no_data_error') || undefined,
+      omit_nulls: q.get('omit_nulls') || undefined
+    });
+    sendJson(res, 200, {
+      ok: true,
+      endpoint: '/snapshots',
+      source: result.url,
+      meta: result.meta,
+      data: result.data
+    });
+  } catch (e) {
+    sendJson(res, 500, {
+      ok: false,
+      endpoint: '/snapshots',
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
+}
+
 async function handleSudregTokenInfo(res) {
   try {
     const t = await getSudregAccessToken();
@@ -110,6 +140,11 @@ const server = http.createServer((req, res) => {
 
   if (pathOnly === '/api/sudreg/token-info' && req.method === 'GET') {
     handleSudregTokenInfo(res);
+    return;
+  }
+
+  if (pathOnly === '/api/sudreg/snapshots' && req.method === 'GET') {
+    handleSudregSnapshots(req, res);
     return;
   }
 

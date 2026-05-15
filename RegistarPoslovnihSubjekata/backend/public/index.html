@@ -100,6 +100,7 @@
       <button type="button" id="btn-status">Provjeri status</button>
       <button type="button" class="secondary" id="btn-health">Health (tekst)</button>
       <button type="button" class="secondary" id="btn-sudreg">Sudreg token</button>
+      <button type="button" class="secondary" id="btn-snapshots">Snapshots</button>
     </div>
     <pre id="response" class="empty">Klikni gumb za odgovor…</pre>
     <p class="meta" id="meta"></p>
@@ -110,11 +111,13 @@
     const btnStatus = document.getElementById('btn-status');
     const btnHealth = document.getElementById('btn-health');
     const btnSudreg = document.getElementById('btn-sudreg');
+    const btnSnapshots = document.getElementById('btn-snapshots');
 
     function setBusy(busy) {
       btnStatus.disabled = busy;
       btnHealth.disabled = busy;
       btnSudreg.disabled = busy;
+      btnSnapshots.disabled = busy;
     }
 
     function show(text, isError) {
@@ -149,6 +152,7 @@
     btnStatus.addEventListener('click', () => fetchPath('/api/status', true));
     btnHealth.addEventListener('click', () => fetchPath('/health', false));
     btnSudreg.addEventListener('click', () => fetchPath('/api/sudreg/token-info', true));
+    btnSnapshots.addEventListener('click', () => fetchPath('/api/sudreg/snapshots', true));
   </script>
 </body>
 </html>
