@@ -23,17 +23,17 @@ async function getSudregAccessToken(opts = {}) {
     throw new Error('Nedostaju SUDREG_CLIENT_ID ili SUDREG_CLIENT_SECRET (ili opts.clientId / opts.clientSecret).');
   }
 
-  const body = new URLSearchParams({
-    grant_type: 'client_credentials',
-    client_id: clientId,
-    client_secret: clientSecret
-  });
+  // Sudreg dokumentacija: curl --user ClientId:ClientSecret --data "grant_type=client_credentials"
+  // (Basic auth u headeru, ne client_id/client_secret u body-ju).
+  const basic = Buffer.from(`${clientId}:${clientSecret}`, 'utf8').toString('base64');
+  const body = new URLSearchParams({ grant_type: 'client_credentials' });
 
   const res = await fetch(tokenUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
-      Accept: 'application/json'
+      Accept: 'application/json',
+      Authorization: `Basic ${basic}`
     },
     body: body.toString(),
     signal: opts.signal
