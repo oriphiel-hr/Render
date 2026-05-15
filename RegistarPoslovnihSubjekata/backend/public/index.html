@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Registar poslovnih subjekata</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --border: #2d3a4f;
+      --text: #e8eef7;
+      --muted: #8b9cb3;
+      --accent: #3d8bfd;
+      --accent-hover: #5ca0ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    main {
+      width: min(36rem, 100%);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.75rem;
+    }
+    h1 {
+      margin: 0 0 0.35rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    p.hint {
+      margin: 0 0 1.25rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-bottom: 1rem;
+    }
+    button {
+      cursor: pointer;
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.95rem;
+      padding: 0.55rem 1rem;
+      border-radius: 8px;
+    }
+    button:hover:not(:disabled) { background: var(--accent-hover); }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+    button.secondary {
+      background: transparent;
+      color: var(--text);
+      border-color: var(--border);
+    }
+    button.secondary:hover:not(:disabled) {
+      border-color: var(--muted);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    pre#response {
+      margin: 0;
+      padding: 1rem;
+      background: #0a0e14;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      overflow: auto;
+      max-height: 24rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #b8d4ff;
+    }
+    pre#response.empty { color: var(--muted); font-style: italic; }
+    .meta {
+      margin-top: 0.75rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Registar poslovnih subjekata</h1>
+    <p class="hint">Test API-ja na Renderu. Gumb šalje zahtjev i prikazuje JSON odgovor.</p>
+    <div class="actions">
+      <button type="button" id="btn-status">Provjeri status</button>
+      <button type="button" class="secondary" id="btn-health">Health (tekst)</button>
+      <button type="button" class="secondary" id="btn-sudreg">Sudreg token</button>
+    </div>
+    <pre id="response" class="empty">Klikni gumb za odgovor…</pre>
+    <p class="meta" id="meta"></p>
+  </main>
+  <script>
+    const out = document.getElementById('response');
+    const meta = document.getElementById('meta');
+    const btnStatus = document.getElementById('btn-status');
+    const btnHealth = document.getElementById('btn-health');
+    const btnSudreg = document.getElementById('btn-sudreg');
+
+    function setBusy(busy) {
+      btnStatus.disabled = busy;
+      btnHealth.disabled = busy;
+      btnSudreg.disabled = busy;
+    }
+
+    function show(text, isError) {
+      out.textContent = text;
+      out.classList.toggle('empty', !text || text.startsWith('Klikni'));
+      out.style.color = isError ? '#f5a8a8' : '#b8d4ff';
+    }
+
+    async function fetchPath(path, asJson) {
+      setBusy(true);
+      meta.textContent = '';
+      const t0 = performance.now();
+      try {
+        const res = await fetch(path, { headers: { Accept: asJson ? 'application/json' : 'text/plain' } });
+        const ms = Math.round(performance.now() - t0);
+        meta.textContent = res.status + ' ' + res.statusText + ' · ' + ms + ' ms · ' + path;
+        if (asJson) {
+          const data = await res.json();
+          show(JSON.stringify(data, null, 2), !res.ok);
+        } else {
+          const text = await res.text();
+          show(text, !res.ok);
+        }
+      } catch (e) {
+        show('Greška: ' + (e.message || String(e)), true);
+        meta.textContent = path;
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    btnStatus.addEventListener('click', () => fetchPath('/api/status', true));
+    btnHealth.addEventListener('click', () => fetchPath('/health', false));
+    btnSudreg.addEventListener('click', () => fetchPath('/api/sudreg/token-info', true));
+  </script>
+</body>
+</html>
