@@ -29,7 +29,11 @@ function findIndexHtmlPath() {
   return null;
 }
 
-let cachedIndexHtml = null;
+const HTML_HEADERS = {
+  'Content-Type': 'text/html; charset=utf-8',
+  'Cache-Control': 'no-cache, no-store, must-revalidate',
+  Pragma: 'no-cache'
+};
 
 function sendJson(res, status, body) {
   res.writeHead(status, {
@@ -45,10 +49,6 @@ function sendText(res, status, text, contentType = 'text/plain; charset=utf-8') 
 }
 
 function serveIndexHtml(res) {
-  if (cachedIndexHtml) {
-    sendText(res, 200, cachedIndexHtml, 'text/html; charset=utf-8');
-    return;
-  }
   const file = findIndexHtmlPath();
   if (!file) {
     sendText(
@@ -63,8 +63,8 @@ function serveIndexHtml(res) {
       sendText(res, 500, 'index.html nije mogao biti učitan: ' + err.message);
       return;
     }
-    cachedIndexHtml = data;
-    sendText(res, 200, data, 'text/html; charset=utf-8');
+    res.writeHead(200, HTML_HEADERS);
+    res.end(data);
   });
 }
 
@@ -154,7 +154,7 @@ const server = http.createServer((req, res) => {
       return;
     }
     if (req.method === 'HEAD') {
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.writeHead(200, HTML_HEADERS);
       res.end();
       return;
     }
