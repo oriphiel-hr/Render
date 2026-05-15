@@ -773,7 +773,15 @@
               <input id="sync-token" type="password" autocomplete="off" placeholder="EAAG…" />
             </div>
             <button type="button" id="btn-sync-messenger">Povuci i spremi u bazu</button>
+            <button type="button" class="secondary" id="btn-refresh-user-profiles-env" title="Meta Graph User Profile (ime kao u Inboxu)">
+              Osvježi imena (Graph)
+            </button>
           </div>
+          <p class="hint" style="margin:0.35rem 0 0;">
+            Imena korisnika dolaze s Meta Graph API-ja (PSID + page token u env), ne iz teksta poruke.
+            Za starije niti: upiši Page ID i klikni „Osvježi imena (Graph)“ — token mora biti u
+            <span class="mono">MESSENGER_PAGE_TOKENS_JSON</span> na Renderu.
+          </p>
           <div class="row">
             <label style="display:flex;align-items:center;gap:0.45rem;">
               <input id="backfill-force" type="checkbox" style="width:auto;" />
@@ -2412,6 +2420,28 @@
         await loadUsers();
       } catch (e) {
         alert(e.message);
+      }
+    });
+
+    $('#btn-refresh-user-profiles-env').addEventListener('click', async () => {
+      const pageId = $('#sync-page-id').value.trim() || $('#filter-page').value.trim();
+      const out = $('#sync-result');
+      if (!pageId) {
+        alert('Unesi Page ID (Sync ili filter stranice).');
+        return;
+      }
+      out.style.display = 'block';
+      out.textContent = 'Dohvaćam imena s Meta Graph API…';
+      $('#btn-refresh-user-profiles-env').disabled = true;
+      try {
+        const r = await apiPost('/messenger/refresh-user-profiles-env', { pageId, maxUsers: 300 });
+        out.textContent = JSON.stringify(r, null, 2);
+        await loadMessages();
+        await loadUsers();
+      } catch (e) {
+        out.textContent = e.message || String(e);
+      } finally {
+        $('#btn-refresh-user-profiles-env').disabled = false;
       }
     });
 

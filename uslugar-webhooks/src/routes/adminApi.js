@@ -10,7 +10,8 @@ const { sendMessengerAndStore } = require('../services/messengerSend');
 const {
   isMessengerPageTokenConfigured,
   refreshMessengerProfilesForWebhookRows,
-  backfillMessengerUserProfilesForPage
+  backfillMessengerUserProfilesForPage,
+  resolvePageAccessToken
 } = require('../services/messengerUserProfile');
 const {
   listPendingForAdmin,
@@ -235,6 +236,37 @@ function createAdminRouter() {
       return res.json({ ok: true, ...result });
     } catch (e) {
       console.error('[admin messenger refresh-user-profiles]', e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  /**
+   * Graph User Profile pomoću page tokena iz env (MESSENGER_PAGE_TOKENS_JSON / MESSENGER_PAGE_ACCESS_TOKEN).
+   * POST /admin/api/messenger/refresh-user-profiles-env
+   * body: { pageId, maxUsers?, ignoreTtl?: boolean }
+   */
+  router.post('/api/messenger/refresh-user-profiles-env', jsonBody, requireAdminToken, async (req, res) => {
+    try {
+      const { pageId, maxUsers } = req.body || {};
+      const pid = String(pageId || '').trim();
+      if (!pid) {
+        return res.status(400).json({ error: 'pageId je obavezan' });
+      }
+      const token = resolvePageAccessToken(pid);
+      if (!token) {
+        return res.status(400).json({
+          error:
+            'Nema page access tokena u env za ovaj pageId. Postavi MESSENGER_PAGE_TOKENS_JSON ili MESSENGER_PAGE_ACCESS_TOKEN (+ MESSENGER_PAGE_ID).'
+        });
+      }
+      const result = await backfillMessengerUserProfilesForPage(prisma, {
+        pageId: pid,
+        pageAccessToken: token,
+        maxUsers: maxUsers != null ? Number(maxUsers) : undefined
+      });
+      return res.json({ ok: true, ...result });
+    } catch (e) {
+      console.error('[admin messenger refresh-user-profiles-env]', e);
       res.status(500).json({ error: e.message });
     }
   });

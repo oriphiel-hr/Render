@@ -3,7 +3,11 @@ const { prisma } = require('../lib/prisma');
 const { extractAttachmentsFromRaw } = require('./attachmentBackfill');
 const { stickerPreviewUrlFromMessengerRaw } = require('../lib/messengerStickerPreview');
 const { reactionEmojiFromMessengerRaw } = require('../lib/messengerReactionEmoji');
-const { getMessengerProfileNameMap } = require('./messengerUserProfile');
+const {
+  getMessengerProfileNameMap,
+  isMessengerPageTokenConfigured,
+  refreshMessengerProfilesForKeys
+} = require('./messengerUserProfile');
 
 /**
  * Outbound koji resetira „čeka admina“: ručno iz ovog panela, sink s Meta (Inbox), webhook echo, Send API.
@@ -206,7 +210,14 @@ async function listMessages(q = {}) {
     const { pageId: pid, userId: uid } = splitThreadId(r.externalThreadId);
     if (pid && uid) messengerUserKeys.add(`${pid}_${uid}`);
   }
-  const profileNameMap = await getMessengerProfileNameMap(prisma, [...messengerUserKeys]);
+  const messengerKeysArr = [...messengerUserKeys];
+  if (messengerKeysArr.length && isMessengerPageTokenConfigured()) {
+    await refreshMessengerProfilesForKeys(prisma, messengerKeysArr, {
+      maxFetches: Math.min(messengerKeysArr.length, 40),
+      onlyMissing: true
+    });
+  }
+  const profileNameMap = await getMessengerProfileNameMap(prisma, messengerKeysArr);
 
   const pageNameById = new Map();
   const userNameByKey = new Map();
@@ -354,8 +365,7 @@ async function listThreads(q = {}) {
     if (!t) continue;
     const { pageId, userId } = splitThreadId(t);
     const pageName = pageId ? inferPageNameFromRaw(pageId, r.rawPayload) : null;
-    const userName =
-      pageId && userId ? inferUserNameFromRaw(pageId, userId, r.rawPayload) : null;
+    const userName = pageId && userId ? inferUserNameFromRaw(pageId, userId, r.rawPayload) : null;
 
     let e = byThread.get(t);
     if (!e) {
@@ -387,6 +397,12 @@ async function listThreads(q = {}) {
   const threadKeys = threads
     .map((t) => (t.pageId && t.userId ? `${t.pageId}_${t.userId}` : null))
     .filter(Boolean);
+  if (threadKeys.length && isMessengerPageTokenConfigured()) {
+    await refreshMessengerProfilesForKeys(prisma, threadKeys, {
+      maxFetches: Math.min(threadKeys.length, 40),
+      onlyMissing: true
+    });
+  }
   const threadProfileMap = await getMessengerProfileNameMap(prisma, threadKeys);
 
   return threads.map((t) => ({
@@ -493,6 +509,16 @@ async function listUsers(q = {}) {
       agg.lastDirection = r.direction || null;
       agg.lastText = r.bodyText || null;
     }
+  }
+
+  const userKeys = [...byUser.keys()];
+  if (userKeys.length && isMessengerPageTokenConfigured()) {
+    await refreshMessengerProfilesForKeys(prisma, userKeys, {
+      maxFetches: Math.min(userKeys.length, 40),
+      onlyMissing: true
+    });
+    const freshNames = await getMessengerProfileNameMap(prisma, userKeys);
+    for (const [k, n] of freshNames) profileNameMap.set(k, n);
   }
 
   const list = [...byUser.values()]

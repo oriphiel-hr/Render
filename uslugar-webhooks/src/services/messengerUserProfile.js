@@ -111,47 +111,51 @@ async function getMessengerProfileNameMap(db, keys) {
 }
 
 /**
- * Nakon webhooka / sinka: dohvat profila za niti u batchu (ograničeno radi rate limita).
+ * Graph User Profile za PSID-eve (pageId_userId ključevi).
  * @param {import('@prisma/client').PrismaClient} db
- * @param {object[]} rows — ChannelMessage redovi (channel, externalThreadId)
- * @param {{ maxFetches?: number, ttlMs?: number, ignoreTtl?: boolean }} [opts]
+ * @param {string[]} keys — format `pageId_userId`
+ * @param {{ maxFetches?: number, onlyMissing?: boolean, ttlMs?: number, failedRetryMs?: number, ignoreTtl?: boolean }} [opts]
  */
-async function refreshMessengerProfilesForWebhookRows(db, rows, opts = {}) {
-  const maxFetches = Math.min(Math.max(Number(opts.maxFetches) || 12, 1), 80);
-  const ttlMs = opts.ignoreTtl ? 0 : Math.max(Number(opts.ttlMs) || 7 * 24 * 60 * 60 * 1000, 60_000);
+async function refreshMessengerProfilesForKeys(db, keys, opts = {}) {
+  const maxFetches = Math.min(Math.max(Number(opts.maxFetches) || 20, 1), 80);
+  const onlyMissing = opts.onlyMissing !== false;
+  const ignoreTtl = Boolean(opts.ignoreTtl);
+  const ttlMs = Math.max(Number(opts.ttlMs) || 7 * 24 * 60 * 60 * 1000, 60_000);
+  const failedRetryMs = Math.max(Number(opts.failedRetryMs) || 60 * 60 * 1000, 60_000);
   const now = Date.now();
 
-  const keysDedup = new Map();
-  for (const row of rows) {
-    if (String(row.channel || '').toUpperCase() !== 'MESSENGER' || !row.externalThreadId) continue;
-    const { pageId, userId } = splitThreadKey(row.externalThreadId);
+  const dedup = new Map();
+  for (const k of keys) {
+    const { pageId, userId } = splitThreadKey(k);
     if (!pageId || !userId || userId === pageId) continue;
     const token = resolvePageAccessToken(pageId);
     if (!token) continue;
     const key = `${pageId}_${userId}`;
-    if (!keysDedup.has(key)) keysDedup.set(key, { pageId, userId, token });
+    if (!dedup.has(key)) dedup.set(key, { pageId, userId, token });
   }
 
-  let fetches = 0;
-  for (const { pageId, userId, token } of keysDedup.values()) {
-    if (fetches >= maxFetches) break;
+  let attempted = 0;
+  let profilesWithName = 0;
+  for (const { pageId, userId, token } of dedup.values()) {
+    if (attempted >= maxFetches) break;
 
     const existing = await db.messengerUserProfile.findUnique({
       where: { pageId_userId: { pageId, userId } },
       select: { displayName: true, fetchedAt: true }
     });
-    if (
-      !opts.ignoreTtl &&
-      existing?.displayName &&
-      existing.fetchedAt &&
-      now - new Date(existing.fetchedAt).getTime() < ttlMs
-    ) {
+    if (onlyMissing && existing?.displayName && String(existing.displayName).trim()) {
       continue;
+    }
+    if (!ignoreTtl && existing?.fetchedAt) {
+      const age = now - new Date(existing.fetchedAt).getTime();
+      const waitMs = existing?.displayName && String(existing.displayName).trim() ? ttlMs : failedRetryMs;
+      if (age < waitMs) continue;
     }
 
     try {
       const { name } = await fetchMessengerUserProfileFromGraph({ psid: userId, pageAccessToken: token });
-      fetches += 1;
+      attempted += 1;
+      if (name) profilesWithName += 1;
       await db.messengerUserProfile.upsert({
         where: { pageId_userId: { pageId, userId } },
         create: {
@@ -168,7 +172,7 @@ async function refreshMessengerProfilesForWebhookRows(db, rows, opts = {}) {
         }
       });
     } catch (e) {
-      fetches += 1;
+      attempted += 1;
       const errText = clip(e instanceof Error ? e.message : String(e), 500);
       await db.messengerUserProfile.upsert({
         where: { pageId_userId: { pageId, userId } },
@@ -186,6 +190,30 @@ async function refreshMessengerProfilesForWebhookRows(db, rows, opts = {}) {
       });
     }
   }
+  return { attempted, profilesWithName, keysConsidered: dedup.size };
+}
+
+/**
+ * Nakon webhooka / sinka: dohvat profila za niti u batchu (ograničeno radi rate limita).
+ * @param {import('@prisma/client').PrismaClient} db
+ * @param {object[]} rows — ChannelMessage redovi (channel, externalThreadId)
+ * @param {{ maxFetches?: number, ttlMs?: number, ignoreTtl?: boolean }} [opts]
+ */
+async function refreshMessengerProfilesForWebhookRows(db, rows, opts = {}) {
+  const keys = [];
+  for (const row of rows) {
+    if (String(row.channel || '').toUpperCase() !== 'MESSENGER' || !row.externalThreadId) continue;
+    const { pageId, userId } = splitThreadKey(row.externalThreadId);
+    if (!pageId || !userId || userId === pageId) continue;
+    keys.push(`${pageId}_${userId}`);
+  }
+  if (!keys.length) return { attempted: 0, profilesWithName: 0, keysConsidered: 0 };
+  return refreshMessengerProfilesForKeys(db, keys, {
+    maxFetches: opts.maxFetches,
+    onlyMissing: true,
+    ttlMs: opts.ttlMs,
+    ignoreTtl: opts.ignoreTtl
+  });
 }
 
 /**
@@ -277,6 +305,7 @@ module.exports = {
   isMessengerPageTokenConfigured,
   fetchMessengerUserProfileFromGraph,
   getMessengerProfileNameMap,
+  refreshMessengerProfilesForKeys,
   refreshMessengerProfilesForWebhookRows,
   backfillMessengerUserProfilesForPage,
   splitThreadKey
