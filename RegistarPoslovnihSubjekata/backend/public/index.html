@@ -82,11 +82,6 @@
       border-color: var(--muted);
       background: rgba(255, 255, 255, 0.04);
     }
-    button.sudreg {
-      background: var(--sudreg);
-      border-color: var(--sudreg);
-    }
-    button.sudreg:hover:not(:disabled) { background: var(--sudreg-hover); }
     pre#response {
       margin: 0;
       padding: 1rem;
@@ -107,25 +102,68 @@
       font-size: 0.8rem;
       color: var(--muted);
     }
+    .field-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      align-items: center;
+      margin-bottom: 0.65rem;
+    }
+    .field-row label {
+      font-size: 0.85rem;
+      color: var(--muted);
+      flex: 0 0 100%;
+    }
+    select#snapshot-select {
+      flex: 1 1 14rem;
+      min-width: 0;
+      padding: 0.55rem 0.65rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #0a0e14;
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+    select#snapshot-select:disabled { opacity: 0.55; }
+    .snapshot-detail {
+      margin: 0 0 0.75rem;
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: rgba(46, 184, 138, 0.08);
+      font-size: 0.85rem;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+    .snapshot-detail strong { color: var(--text); }
+    .snapshot-detail.empty { display: none; }
   </style>
 </head>
 <body>
   <main>
     <h1>Registar poslovnih subjekata</h1>
-    <p class="hint">Test API-ja na Renderu. Ako ne vidiš novi gumb, osvježi stranicu s <strong>Ctrl+F5</strong>.</p>
+    <p class="hint">Snimke se učitavaju pri otvaranju stranice. Osvježi s <strong>Ctrl+F5</strong> nakon deploya.</p>
     <p class="section-label">Servis</p>
     <div class="actions">
       <button type="button" id="btn-status">Provjeri status</button>
       <button type="button" class="secondary" id="btn-health">Health (tekst)</button>
     </div>
-    <p class="section-label">Sudreg API</p>
+    <p class="section-label">Sudreg API — snimke</p>
+    <div class="field-row">
+      <label for="snapshot-select">Snapshot (snapshot_id za ostale API pozive)</label>
+      <select id="snapshot-select" disabled>
+        <option value="">Učitavam snimke…</option>
+      </select>
+      <button type="button" class="secondary" id="btn-snapshots-refresh">Osvježi</button>
+    </div>
+    <div id="snapshot-detail" class="snapshot-detail empty"></div>
     <div class="actions">
       <button type="button" class="secondary" id="btn-sudreg">OAuth token</button>
-      <button type="button" class="sudreg" id="btn-snapshots">Snimke (/snapshots)</button>
+      <button type="button" class="secondary" id="btn-snapshots-json">JSON svih snimki</button>
     </div>
-    <pre id="response" class="empty">Klikni gumb za odgovor…</pre>
+    <pre id="response" class="empty">Odaberi snapshot ili klikni gumb…</pre>
     <p class="meta" id="meta"></p>
-    <p class="meta">UI v2 · <a href="/api/sudreg/snapshots" style="color:var(--sudreg);">/api/sudreg/snapshots</a></p>
+    <p class="meta">UI v3</p>
   </main>
   <script>
     const out = document.getElementById('response');
@@ -133,19 +171,129 @@
     const btnStatus = document.getElementById('btn-status');
     const btnHealth = document.getElementById('btn-health');
     const btnSudreg = document.getElementById('btn-sudreg');
-    const btnSnapshots = document.getElementById('btn-snapshots');
+    const btnSnapshotsRefresh = document.getElementById('btn-snapshots-refresh');
+    const btnSnapshotsJson = document.getElementById('btn-snapshots-json');
+    const snapshotSelect = document.getElementById('snapshot-select');
+    const snapshotDetail = document.getElementById('snapshot-detail');
+
+    const snapshotsById = {};
 
     function setBusy(busy) {
       btnStatus.disabled = busy;
       btnHealth.disabled = busy;
       btnSudreg.disabled = busy;
-      btnSnapshots.disabled = busy;
+      btnSnapshotsRefresh.disabled = busy;
+      btnSnapshotsJson.disabled = busy;
+      if (busy) snapshotSelect.disabled = true;
+      else snapshotSelect.disabled = Object.keys(snapshotsById).length === 0;
     }
 
     function show(text, isError) {
       out.textContent = text;
-      out.classList.toggle('empty', !text || text.startsWith('Klikni'));
+      out.classList.toggle('empty', !text || text.startsWith('Odaberi'));
       out.style.color = isError ? '#f5a8a8' : '#b8d4ff';
+    }
+
+    function escapeHtml(t) {
+      return String(t)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function formatSnapshotLabel(s) {
+      const id = s.id != null ? String(s.id) : '?';
+      const ts = s.timestamp ? String(s.timestamp).replace('T', ' ').slice(0, 19) : '';
+      const stale = s.staleness != null ? ' · starost ' + s.staleness : '';
+      const desc = s.description ? ' · ' + String(s.description).slice(0, 48) : '';
+      return '#' + id + (ts ? ' · ' + ts : '') + stale + desc;
+    }
+
+    function renderSnapshotDetail(s) {
+      if (!s) {
+        snapshotDetail.classList.add('empty');
+        snapshotDetail.textContent = '';
+        return;
+      }
+      snapshotDetail.classList.remove('empty');
+      snapshotDetail.innerHTML =
+        '<strong>snapshot_id:</strong> ' + escapeHtml(String(s.id)) +
+        '<br><strong>timestamp:</strong> ' + escapeHtml(String(s.timestamp || '—')) +
+        '<br><strong>available_until:</strong> ' + escapeHtml(String(s.available_until || '—')) +
+        '<br><strong>staleness:</strong> ' + escapeHtml(String(s.staleness != null ? s.staleness : '—')) +
+        (s.description ? '<br><strong>opis:</strong> ' + escapeHtml(String(s.description)) : '');
+    }
+
+    function normalizeSnapshotsList(payload) {
+      if (Array.isArray(payload)) return payload;
+      if (payload && Array.isArray(payload.data)) return payload.data;
+      return [];
+    }
+
+    function fillSnapshotDropdown(list) {
+      Object.keys(snapshotsById).forEach((k) => delete snapshotsById[k]);
+      snapshotSelect.innerHTML = '';
+      const sorted = list.slice().sort((a, b) => {
+        const sa = a.staleness != null ? Number(a.staleness) : 999;
+        const sb = b.staleness != null ? Number(b.staleness) : 999;
+        if (sa !== sb) return sa - sb;
+        return Number(b.id) - Number(a.id);
+      });
+      if (!sorted.length) {
+        snapshotSelect.appendChild(new Option('Nema snimki', ''));
+        snapshotSelect.disabled = true;
+        snapshotDetail.classList.add('empty');
+        return;
+      }
+      snapshotSelect.appendChild(new Option('— odaberi snapshot —', ''));
+      sorted.forEach((s) => {
+        const id = String(s.id);
+        snapshotsById[id] = s;
+        snapshotSelect.appendChild(new Option(formatSnapshotLabel(s), id));
+      });
+      snapshotSelect.disabled = false;
+      const newest = sorted.find((s) => Number(s.staleness) === 1) || sorted[0];
+      if (newest) {
+        snapshotSelect.value = String(newest.id);
+        onSnapshotSelected();
+      }
+    }
+
+    function onSnapshotSelected() {
+      const id = snapshotSelect.value;
+      if (!id || !snapshotsById[id]) {
+        renderSnapshotDetail(null);
+        show('Odaberi snapshot iz liste.', false);
+        return;
+      }
+      const s = snapshotsById[id];
+      renderSnapshotDetail(s);
+      show(JSON.stringify(s, null, 2), false);
+      meta.textContent = 'snapshot_id=' + id + ' (za API: ?snapshot_id=' + id + ')';
+    }
+
+    async function loadSnapshotsDropdown() {
+      snapshotSelect.disabled = true;
+      snapshotSelect.innerHTML = '<option value="">Učitavam…</option>';
+      const t0 = performance.now();
+      try {
+        const res = await fetch('/api/sudreg/snapshots', { headers: { Accept: 'application/json' } });
+        const ms = Math.round(performance.now() - t0);
+        const body = await res.json();
+        if (!res.ok || !body.ok) {
+          throw new Error(body.error || res.statusText);
+        }
+        const list = normalizeSnapshotsList(body.data);
+        fillSnapshotDropdown(list);
+        meta.textContent = 'Učitano snimki: ' + list.length + ' · ' + ms + ' ms';
+        if (!list.length) show('API je vratio prazan popis snimki.', true);
+      } catch (e) {
+        snapshotSelect.innerHTML = '<option value="">Greška učitavanja</option>';
+        snapshotSelect.disabled = true;
+        show('Greška: ' + (e.message || String(e)), true);
+        meta.textContent = '/api/sudreg/snapshots';
+      }
     }
 
     async function fetchPath(path, asJson) {
@@ -171,10 +319,14 @@
       }
     }
 
+    snapshotSelect.addEventListener('change', onSnapshotSelected);
     btnStatus.addEventListener('click', () => fetchPath('/api/status', true));
     btnHealth.addEventListener('click', () => fetchPath('/health', false));
     btnSudreg.addEventListener('click', () => fetchPath('/api/sudreg/token-info', true));
-    btnSnapshots.addEventListener('click', () => fetchPath('/api/sudreg/snapshots', true));
+    btnSnapshotsRefresh.addEventListener('click', () => loadSnapshotsDropdown());
+    btnSnapshotsJson.addEventListener('click', () => fetchPath('/api/sudreg/snapshots', true));
+
+    loadSnapshotsDropdown();
   </script>
 </body>
 </html>
