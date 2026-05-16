@@ -125,6 +125,26 @@
       font-size: 0.9rem;
     }
     select#snapshot-select:disabled { opacity: 0.55; }
+    .field-row input[type="number"] {
+      width: 6.5rem;
+      padding: 0.55rem 0.65rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #0a0e14;
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+    .field-row .inline-label {
+      flex: 0 0 auto;
+      width: auto;
+      margin-right: 0.25rem;
+    }
+    .field-row .inline-group {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex: 0 0 auto;
+    }
     .snapshot-detail {
       margin: 0 0 0.75rem;
       padding: 0.65rem 0.85rem;
@@ -161,9 +181,24 @@
       <button type="button" class="secondary" id="btn-sudreg">OAuth token</button>
       <button type="button" class="secondary" id="btn-snapshots-json">JSON svih snimki</button>
     </div>
+    <p class="section-label">Sudreg API — promjene</p>
+    <div class="field-row">
+      <label>Straničenje (GET /promjene)</label>
+      <div class="inline-group">
+        <span class="inline-label">offset</span>
+        <input type="number" id="promjene-offset" min="0" step="1" value="0" />
+      </div>
+      <div class="inline-group">
+        <span class="inline-label">limit</span>
+        <input type="number" id="promjene-limit" min="1" step="1" value="1000" />
+      </div>
+    </div>
+    <div class="actions">
+      <button type="button" id="btn-promjene">Dohvati promjene</button>
+    </div>
     <pre id="response" class="empty">Odaberi snapshot ili klikni gumb…</pre>
     <p class="meta" id="meta"></p>
-    <p class="meta">UI v3</p>
+    <p class="meta">UI v4</p>
   </main>
   <script>
     const out = document.getElementById('response');
@@ -173,6 +208,9 @@
     const btnSudreg = document.getElementById('btn-sudreg');
     const btnSnapshotsRefresh = document.getElementById('btn-snapshots-refresh');
     const btnSnapshotsJson = document.getElementById('btn-snapshots-json');
+    const btnPromjene = document.getElementById('btn-promjene');
+    const promjeneOffset = document.getElementById('promjene-offset');
+    const promjeneLimit = document.getElementById('promjene-limit');
     const snapshotSelect = document.getElementById('snapshot-select');
     const snapshotDetail = document.getElementById('snapshot-detail');
 
@@ -184,6 +222,9 @@
       btnSudreg.disabled = busy;
       btnSnapshotsRefresh.disabled = busy;
       btnSnapshotsJson.disabled = busy;
+      btnPromjene.disabled = busy;
+      promjeneOffset.disabled = busy;
+      promjeneLimit.disabled = busy;
       if (busy) snapshotSelect.disabled = true;
       else snapshotSelect.disabled = Object.keys(snapshotsById).length === 0;
     }
@@ -325,6 +366,36 @@
     btnSudreg.addEventListener('click', () => fetchPath('/api/sudreg/token-info', true));
     btnSnapshotsRefresh.addEventListener('click', () => loadSnapshotsDropdown());
     btnSnapshotsJson.addEventListener('click', () => fetchPath('/api/sudreg/snapshots', true));
+
+    function parsePromjenePaging(input, fallback) {
+      const n = Number.parseInt(String(input.value).trim(), 10);
+      if (!Number.isFinite(n) || n < 0) return fallback;
+      return n;
+    }
+
+    async function fetchPromjene() {
+      const snapshotId = snapshotSelect.value;
+      if (!snapshotId || !snapshotsById[snapshotId]) {
+        show('Odaberi snapshot u listi prije dohvata promjena.', true);
+        return;
+      }
+      const offset = parsePromjenePaging(promjeneOffset, 0);
+      const limit = parsePromjenePaging(promjeneLimit, 1000);
+      if (limit < 1) {
+        show('limit mora biti >= 1.', true);
+        return;
+      }
+      promjeneOffset.value = String(offset);
+      promjeneLimit.value = String(limit);
+      const qs = new URLSearchParams({
+        snapshot_id: snapshotId,
+        offset: String(offset),
+        limit: String(limit)
+      });
+      await fetchPath('/api/sudreg/promjene?' + qs.toString(), true);
+    }
+
+    btnPromjene.addEventListener('click', () => fetchPromjene());
 
     loadSnapshotsDropdown();
   </script>

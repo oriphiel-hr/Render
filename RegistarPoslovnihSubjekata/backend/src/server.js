@@ -12,7 +12,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { getSudregAccessToken } = require('./sudregToken');
-const { getSnapshots } = require('./sudregApi');
+const { getSnapshots, getPromjene } = require('./sudregApi');
 
 const port = Number(process.env.PORT) || 3000;
 
@@ -97,6 +97,47 @@ async function handleSudregSnapshots(req, res) {
   }
 }
 
+function parsePagingInt(value, fallback) {
+  if (value == null || value === '') return fallback;
+  const n = Number.parseInt(String(value), 10);
+  return Number.isFinite(n) && n >= 0 ? n : fallback;
+}
+
+async function handleSudregPromjene(req, res) {
+  const q = parseQueryString(req.url);
+  const snapshotId = q.get('snapshot_id');
+  if (!snapshotId) {
+    sendJson(res, 400, {
+      ok: false,
+      endpoint: '/promjene',
+      error: 'snapshot_id je obavezan (odaberi snapshot u UI).'
+    });
+    return;
+  }
+  try {
+    const result = await getPromjene({
+      snapshot_id: snapshotId,
+      offset: parsePagingInt(q.get('offset'), 0),
+      limit: parsePagingInt(q.get('limit'), 1000),
+      no_data_error: q.get('no_data_error') || undefined,
+      omit_nulls: q.get('omit_nulls') || undefined
+    });
+    sendJson(res, 200, {
+      ok: true,
+      endpoint: '/promjene',
+      source: result.url,
+      meta: result.meta,
+      data: result.data
+    });
+  } catch (e) {
+    sendJson(res, 500, {
+      ok: false,
+      endpoint: '/promjene',
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
+}
+
 async function handleSudregTokenInfo(res) {
   try {
     const t = await getSudregAccessToken();
@@ -145,6 +186,11 @@ const server = http.createServer((req, res) => {
 
   if (pathOnly === '/api/sudreg/snapshots' && req.method === 'GET') {
     handleSudregSnapshots(req, res);
+    return;
+  }
+
+  if (pathOnly === '/api/sudreg/promjene' && req.method === 'GET') {
+    handleSudregPromjene(req, res);
     return;
   }
 

@@ -78,9 +78,24 @@ async function getSnapshots(query = {}) {
   }, { signal: query.signal });
 }
 
+/**
+ * GET /promjene — popis zadnjih promjena nad subjektima.
+ * @param {{ snapshot_id?: number|string, offset?: number|string, limit?: number|string, no_data_error?: string, omit_nulls?: string, signal?: AbortSignal }} [query]
+ */
+async function getPromjene(query = {}) {
+  return fetchSudregJavni('/promjene', {
+    snapshot_id: query.snapshot_id,
+    offset: query.offset,
+    limit: query.limit,
+    no_data_error: query.no_data_error,
+    omit_nulls: query.omit_nulls
+  }, { signal: query.signal });
+}
+
 module.exports = {
   javniBaseUrl,
   fetchSudregJavni,
   getSnapshots,
+  getPromjene,
   DEFAULT_JAVNI_BASE
 };
