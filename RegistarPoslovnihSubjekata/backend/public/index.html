@@ -196,8 +196,8 @@
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v16</span></h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v16</strong>.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v17</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v17</strong>.</p>
     <p class="section-label">Servis</p>
     <div class="actions">
       <button type="button" id="btn-status">Provjeri status</button>
@@ -228,6 +228,45 @@
       <div class="actions">
         <button type="button" class="sudreg" id="btn-promjene-diff">Usporedi promjene (SCN diff)</button>
       </div>
+    </div>
+
+    <p class="section-label">Šifrarnici</p>
+    <p class="hint" style="margin-bottom: 0.65rem;">Cijeli šifrarnik u jednom odgovoru — <strong>nema</strong> offset/limit. Opcionalno: snapshot iz novije snimke.</p>
+    <div class="field-row">
+      <label for="sifrarnik-select">Šifrarnik</label>
+      <select id="sifrarnik-select" class="snapshot-select">
+        <option value="sudovi">Sudovi</option>
+        <option value="drzave">Države</option>
+        <option value="jezici">Jezici</option>
+        <option value="valute">Valute</option>
+        <option value="statusi">Statusi retka</option>
+        <option value="nacionalna_klasifikacija_djelatnosti">NKD (djelatnosti)</option>
+        <option value="vrste_pravnih_oblika">Vrste pravnih oblika</option>
+        <option value="vrste_postupaka">Vrste postupaka</option>
+        <option value="vrste_statusnih_postupaka">Vrste statusnih postupaka</option>
+        <option value="vrste_gfi_dokumenata">Vrste GFI dokumenata</option>
+        <option value="bris_pravni_oblici">BRIS pravni oblici</option>
+        <option value="bris_registri">BRIS registri</option>
+      </select>
+    </div>
+    <div class="field-row">
+      <label>Opcije</label>
+      <div class="inline-group">
+        <label class="inline-label" style="display:flex;align-items:center;gap:0.35rem;cursor:pointer;">
+          <input type="checkbox" id="sifrarnik-expand" />
+          expand_relations
+        </label>
+      </div>
+      <div class="inline-group">
+        <label class="inline-label" style="display:flex;align-items:center;gap:0.35rem;cursor:pointer;">
+          <input type="checkbox" id="sifrarnik-history" />
+          history_columns
+        </label>
+      </div>
+    </div>
+    <div class="actions">
+      <button type="button" id="btn-sifrarnik-fetch">Dohvati šifrarnik</button>
+      <button type="button" class="secondary" id="btn-sifrarnik-list">Popis šifrarnika (API)</button>
     </div>
 
     <p class="section-label">Staging na disk</p>
@@ -280,6 +319,11 @@
     const btnStagingSaveTo = document.getElementById('btn-staging-save-to');
     const btnStagingSaveDiff = document.getElementById('btn-staging-save-diff');
     const btnStagingList = document.getElementById('btn-staging-list');
+    const btnSifrarnikFetch = document.getElementById('btn-sifrarnik-fetch');
+    const btnSifrarnikList = document.getElementById('btn-sifrarnik-list');
+    const sifrarnikSelect = document.getElementById('sifrarnik-select');
+    const sifrarnikExpand = document.getElementById('sifrarnik-expand');
+    const sifrarnikHistory = document.getElementById('sifrarnik-history');
     const promjeneOffset = document.getElementById('promjene-offset');
     const promjeneLimit = document.getElementById('promjene-limit');
     const snapshotSelect = document.getElementById('snapshot-select');
@@ -301,6 +345,11 @@
       if (btnStagingSaveTo) btnStagingSaveTo.disabled = busy;
       if (btnStagingSaveDiff) btnStagingSaveDiff.disabled = busy;
       if (btnStagingList) btnStagingList.disabled = busy;
+      if (btnSifrarnikFetch) btnSifrarnikFetch.disabled = busy;
+      if (btnSifrarnikList) btnSifrarnikList.disabled = busy;
+      if (sifrarnikSelect) sifrarnikSelect.disabled = busy;
+      if (sifrarnikExpand) sifrarnikExpand.disabled = busy;
+      if (sifrarnikHistory) sifrarnikHistory.disabled = busy;
       if (btnDlFrom) btnDlFrom.disabled = busy || !snapshotFromSelect.value;
       if (btnDlTo) btnDlTo.disabled = busy || !snapshotSelect.value;
       const diffOk = snapshotFromSelect.value && snapshotSelect.value &&
@@ -646,6 +695,50 @@
     }
 
     btnPromjene.addEventListener('click', () => fetchPromjene());
+
+    async function fetchSifrarnik() {
+      const id = sifrarnikSelect ? sifrarnikSelect.value : '';
+      if (!id) {
+        show('Odaberi šifrarnik.', true);
+        return;
+      }
+      const qs = new URLSearchParams();
+      const snapshotId = snapshotSelect.value;
+      if (snapshotId && snapshotsById[snapshotId]) {
+        qs.set('snapshot_id', snapshotId);
+      }
+      if (sifrarnikExpand && sifrarnikExpand.checked) qs.set('expand_relations', 'true');
+      if (sifrarnikHistory && sifrarnikHistory.checked) qs.set('history_columns', 'true');
+      const path = '/api/sudreg/sifrarnici/' + encodeURIComponent(id) + '?' + qs.toString();
+      setBusy(true);
+      show('Dohvaćam cijeli šifrarnik /' + id + ' (bez straničenja)…', false);
+      meta.textContent = path;
+      const t0 = performance.now();
+      try {
+        const res = await fetch(path, { headers: { Accept: 'application/json' } });
+        const body = await res.json();
+        const ms = Math.round(performance.now() - t0);
+        if (!res.ok || !body.ok) {
+          throw new Error(body.error || res.statusText);
+        }
+        const rows = Array.isArray(body.data) ? body.data.length : '?';
+        meta.textContent =
+          (body.label || id) + ' · redova=' + rows +
+          (body.totalCount != null ? ' (X-Total-Count=' + body.totalCount + ')' : '') +
+          ' · ' + ms + ' ms · bez offset/limit';
+        show(JSON.stringify(body, null, 2), false);
+      } catch (e) {
+        show('Greška: ' + (e.message || String(e)), true);
+        meta.textContent = path;
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    if (btnSifrarnikFetch) btnSifrarnikFetch.addEventListener('click', () => fetchSifrarnik());
+    if (btnSifrarnikList) {
+      btnSifrarnikList.addEventListener('click', () => fetchPath('/api/sudreg/sifrarnici', true));
+    }
 
     async function fetchPromjeneDiff() {
       const fromId = snapshotFromSelect.value;

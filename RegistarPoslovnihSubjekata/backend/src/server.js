@@ -14,6 +14,7 @@ const path = require('path');
 const { getSudregAccessToken } = require('./sudregToken');
 const { getSnapshots, getPromjene } = require('./sudregApi');
 const { comparePromjeneSnapshots } = require('./sudregPromjeneDiff');
+const { listSifrarniciCatalog, getSifrarnik } = require('./sudregSifrarnici');
 const {
   getDataDir,
   saveSnapshotPromjene,
@@ -307,6 +308,50 @@ async function handleStagingSaveDiff(req, res) {
   }
 }
 
+function handleSudregSifrarniciList(res) {
+  sendJson(res, 200, {
+    ok: true,
+    endpoint: '/sifrarnici',
+    paging: false,
+    description: 'Šifrarnici se dohvaćaju cijeli u jednom odgovoru (bez offset/limit).',
+    data: listSifrarniciCatalog()
+  });
+}
+
+async function handleSudregSifrarnikFetch(req, res, sifrarnikId) {
+  const q = parseQueryString(req.url);
+  const t0 = Date.now();
+  try {
+    const result = await getSifrarnik(sifrarnikId, {
+      snapshot_id: q.get('snapshot_id') || undefined,
+      expand_relations: q.get('expand_relations') || undefined,
+      history_columns: q.get('history_columns') || undefined,
+      no_data_error: q.get('no_data_error') || '0',
+      omit_nulls: q.get('omit_nulls') || undefined
+    });
+    sendJson(res, 200, {
+      ok: true,
+      endpoint: result.path,
+      sifrarnik_id: result.sifrarnik_id,
+      label: result.label,
+      paging: false,
+      durationMs: Date.now() - t0,
+      source: result.url,
+      meta: result.meta,
+      rowCount: result.rowCount,
+      totalCount: result.totalCount,
+      data: result.data
+    });
+  } catch (e) {
+    sendJson(res, 500, {
+      ok: false,
+      endpoint: `/sifrarnici/${sifrarnikId}`,
+      durationMs: Date.now() - t0,
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
+}
+
 async function handleSudregTokenInfo(res) {
   try {
     const t = await getSudregAccessToken();
@@ -356,6 +401,17 @@ const server = http.createServer((req, res) => {
 
   if (pathOnly === '/api/sudreg/snapshots' && req.method === 'GET') {
     handleSudregSnapshots(req, res);
+    return;
+  }
+
+  if (pathOnly === '/api/sudreg/sifrarnici' && req.method === 'GET') {
+    handleSudregSifrarniciList(res);
+    return;
+  }
+
+  const sifrarnikMatch = /^\/api\/sudreg\/sifrarnici\/([^/]+)$/.exec(pathOnly);
+  if (sifrarnikMatch && req.method === 'GET') {
+    handleSudregSifrarnikFetch(req, res, decodeURIComponent(sifrarnikMatch[1]));
     return;
   }
 
