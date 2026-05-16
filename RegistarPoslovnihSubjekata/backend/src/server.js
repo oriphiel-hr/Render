@@ -13,6 +13,7 @@ const fs = require('fs');
 const path = require('path');
 const { getSudregAccessToken } = require('./sudregToken');
 const { getSnapshots, getPromjene } = require('./sudregApi');
+const { comparePromjeneSnapshots } = require('./sudregPromjeneDiff');
 
 const port = Number(process.env.PORT) || 3000;
 
@@ -138,6 +139,48 @@ async function handleSudregPromjene(req, res) {
   }
 }
 
+async function handleSudregPromjeneDiff(req, res) {
+  const q = parseQueryString(req.url);
+  const fromId = q.get('snapshot_id_from');
+  const toId = q.get('snapshot_id_to');
+  if (!fromId || !toId) {
+    sendJson(res, 400, {
+      ok: false,
+      endpoint: '/promjene/diff',
+      error: 'snapshot_id_from i snapshot_id_to su obavezni (starija i novija snimka).'
+    });
+    return;
+  }
+  if (String(fromId) === String(toId)) {
+    sendJson(res, 400, {
+      ok: false,
+      endpoint: '/promjene/diff',
+      error: 'Odaberi dvije različite snimke za usporedbu.'
+    });
+    return;
+  }
+  const t0 = Date.now();
+  try {
+    const result = await comparePromjeneSnapshots({
+      snapshot_id_from: fromId,
+      snapshot_id_to: toId
+    });
+    sendJson(res, 200, {
+      ok: true,
+      endpoint: '/promjene/diff',
+      durationMs: Date.now() - t0,
+      ...result
+    });
+  } catch (e) {
+    sendJson(res, 500, {
+      ok: false,
+      endpoint: '/promjene/diff',
+      durationMs: Date.now() - t0,
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
+}
+
 async function handleSudregTokenInfo(res) {
   try {
     const t = await getSudregAccessToken();
@@ -191,6 +234,11 @@ const server = http.createServer((req, res) => {
 
   if (pathOnly === '/api/sudreg/promjene' && req.method === 'GET') {
     handleSudregPromjene(req, res);
+    return;
+  }
+
+  if (pathOnly === '/api/sudreg/promjene/diff' && req.method === 'GET') {
+    handleSudregPromjeneDiff(req, res);
     return;
   }
 

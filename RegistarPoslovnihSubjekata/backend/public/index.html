@@ -114,7 +114,7 @@
       color: var(--muted);
       flex: 0 0 100%;
     }
-    select#snapshot-select {
+    select.snapshot-select {
       flex: 1 1 14rem;
       min-width: 0;
       padding: 0.55rem 0.65rem;
@@ -124,7 +124,7 @@
       color: var(--text);
       font-size: 0.9rem;
     }
-    select#snapshot-select:disabled { opacity: 0.55; }
+    select.snapshot-select:disabled { opacity: 0.55; }
     .field-row input[type="number"] {
       width: 6.5rem;
       padding: 0.55rem 0.65rem;
@@ -170,11 +170,17 @@
     </div>
     <p class="section-label">Sudreg API — snimke</p>
     <div class="field-row">
-      <label for="snapshot-select">Snapshot (snapshot_id za ostale API pozive)</label>
-      <select id="snapshot-select" disabled>
+      <label for="snapshot-select">Noviji snapshot (snapshot_id_to)</label>
+      <select id="snapshot-select" class="snapshot-select" disabled>
         <option value="">Učitavam snimke…</option>
       </select>
       <button type="button" class="secondary" id="btn-snapshots-refresh">Osvježi</button>
+    </div>
+    <div class="field-row">
+      <label for="snapshot-from-select">Stariji snapshot (snapshot_id_from, baza SCN)</label>
+      <select id="snapshot-from-select" class="snapshot-select" disabled>
+        <option value="">—</option>
+      </select>
     </div>
     <div id="snapshot-detail" class="snapshot-detail empty"></div>
     <div class="actions">
@@ -195,10 +201,12 @@
     </div>
     <div class="actions">
       <button type="button" id="btn-promjene">Dohvati promjene</button>
+      <button type="button" class="secondary" id="btn-promjene-diff">Razlika između snimki (SCN)</button>
     </div>
+    <p class="hint" style="margin-top: 0.5rem;">U diffu: <code>pomak</code> = pomak indeksa u sortiranom popisu (novi − stari); <code>scn_pomak</code> samo kod promjene. Offset/limit iznad vrijedi samo za pojedinačni dohvat.</p>
     <pre id="response" class="empty">Odaberi snapshot ili klikni gumb…</pre>
     <p class="meta" id="meta"></p>
-    <p class="meta">UI v4</p>
+    <p class="meta">UI v9</p>
   </main>
   <script>
     const out = document.getElementById('response');
@@ -209,12 +217,15 @@
     const btnSnapshotsRefresh = document.getElementById('btn-snapshots-refresh');
     const btnSnapshotsJson = document.getElementById('btn-snapshots-json');
     const btnPromjene = document.getElementById('btn-promjene');
+    const btnPromjeneDiff = document.getElementById('btn-promjene-diff');
     const promjeneOffset = document.getElementById('promjene-offset');
     const promjeneLimit = document.getElementById('promjene-limit');
     const snapshotSelect = document.getElementById('snapshot-select');
+    const snapshotFromSelect = document.getElementById('snapshot-from-select');
     const snapshotDetail = document.getElementById('snapshot-detail');
 
     const snapshotsById = {};
+    let snapshotsSorted = [];
 
     function setBusy(busy) {
       btnStatus.disabled = busy;
@@ -223,10 +234,17 @@
       btnSnapshotsRefresh.disabled = busy;
       btnSnapshotsJson.disabled = busy;
       btnPromjene.disabled = busy;
+      btnPromjeneDiff.disabled = busy;
       promjeneOffset.disabled = busy;
       promjeneLimit.disabled = busy;
-      if (busy) snapshotSelect.disabled = true;
-      else snapshotSelect.disabled = Object.keys(snapshotsById).length === 0;
+      const hasSnapshots = Object.keys(snapshotsById).length > 0;
+      if (busy) {
+        snapshotSelect.disabled = true;
+        snapshotFromSelect.disabled = true;
+      } else {
+        snapshotSelect.disabled = !hasSnapshots;
+        snapshotFromSelect.disabled = !hasSnapshots;
+      }
     }
 
     function show(text, isError) {
@@ -272,31 +290,54 @@
       return [];
     }
 
-    function fillSnapshotDropdown(list) {
-      Object.keys(snapshotsById).forEach((k) => delete snapshotsById[k]);
-      snapshotSelect.innerHTML = '';
-      const sorted = list.slice().sort((a, b) => {
+    function sortSnapshots(list) {
+      return list.slice().sort((a, b) => {
         const sa = a.staleness != null ? Number(a.staleness) : 999;
         const sb = b.staleness != null ? Number(b.staleness) : 999;
         if (sa !== sb) return sa - sb;
         return Number(b.id) - Number(a.id);
       });
-      if (!sorted.length) {
-        snapshotSelect.appendChild(new Option('Nema snimki', ''));
+    }
+
+    function fillSnapshotSelect(selectEl, sorted, placeholder) {
+      selectEl.innerHTML = '';
+      selectEl.appendChild(new Option(placeholder, ''));
+      sorted.forEach((s) => {
+        const id = String(s.id);
+        selectEl.appendChild(new Option(formatSnapshotLabel(s), id));
+      });
+    }
+
+    function suggestBaselineSnapshot(newerId) {
+      if (!snapshotsSorted.length) return '';
+      const idx = snapshotsSorted.findIndex((s) => String(s.id) === String(newerId));
+      const older = idx >= 0 ? snapshotsSorted[idx + 1] : snapshotsSorted[1];
+      return older ? String(older.id) : '';
+    }
+
+    function fillSnapshotDropdown(list) {
+      Object.keys(snapshotsById).forEach((k) => delete snapshotsById[k]);
+      snapshotsSorted = sortSnapshots(list);
+      if (!snapshotsSorted.length) {
+        snapshotSelect.innerHTML = '<option value="">Nema snimki</option>';
+        snapshotFromSelect.innerHTML = '<option value="">Nema snimki</option>';
         snapshotSelect.disabled = true;
+        snapshotFromSelect.disabled = true;
         snapshotDetail.classList.add('empty');
         return;
       }
-      snapshotSelect.appendChild(new Option('— odaberi snapshot —', ''));
-      sorted.forEach((s) => {
-        const id = String(s.id);
-        snapshotsById[id] = s;
-        snapshotSelect.appendChild(new Option(formatSnapshotLabel(s), id));
+      snapshotsSorted.forEach((s) => {
+        snapshotsById[String(s.id)] = s;
       });
+      fillSnapshotSelect(snapshotSelect, snapshotsSorted, '— odaberi noviju snimku —');
+      fillSnapshotSelect(snapshotFromSelect, snapshotsSorted, '— odaberi stariju snimku —');
       snapshotSelect.disabled = false;
-      const newest = sorted.find((s) => Number(s.staleness) === 1) || sorted[0];
+      snapshotFromSelect.disabled = false;
+      const newest = snapshotsSorted.find((s) => Number(s.staleness) === 1) || snapshotsSorted[0];
       if (newest) {
         snapshotSelect.value = String(newest.id);
+        const baseline = suggestBaselineSnapshot(newest.id);
+        if (baseline) snapshotFromSelect.value = baseline;
         onSnapshotSelected();
       }
     }
@@ -360,7 +401,18 @@
       }
     }
 
-    snapshotSelect.addEventListener('change', onSnapshotSelected);
+    snapshotSelect.addEventListener('change', () => {
+      const baseline = suggestBaselineSnapshot(snapshotSelect.value);
+      if (baseline && snapshotsById[baseline]) snapshotFromSelect.value = baseline;
+      onSnapshotSelected();
+    });
+    snapshotFromSelect.addEventListener('change', () => {
+      const from = snapshotFromSelect.value;
+      const to = snapshotSelect.value;
+      if (from && to) {
+        meta.textContent = 'Usporedba SCN: from #' + from + ' → to #' + to;
+      }
+    });
     btnStatus.addEventListener('click', () => fetchPath('/api/status', true));
     btnHealth.addEventListener('click', () => fetchPath('/health', false));
     btnSudreg.addEventListener('click', () => fetchPath('/api/sudreg/token-info', true));
@@ -396,6 +448,56 @@
     }
 
     btnPromjene.addEventListener('click', () => fetchPromjene());
+
+    async function fetchPromjeneDiff() {
+      const fromId = snapshotFromSelect.value;
+      const toId = snapshotSelect.value;
+      if (!fromId || !snapshotsById[fromId]) {
+        show('Odaberi stariju snimku (snapshot_id_from).', true);
+        return;
+      }
+      if (!toId || !snapshotsById[toId]) {
+        show('Odaberi noviju snimku (snapshot_id_to).', true);
+        return;
+      }
+      if (fromId === toId) {
+        show('Starija i novija snimka moraju biti različite.', true);
+        return;
+      }
+      const qs = new URLSearchParams({
+        snapshot_id_from: fromId,
+        snapshot_id_to: toId
+      });
+      setBusy(true);
+      show('Učitavam cijele setove /promjene za obje snimke, zatim SCN usporedba…', false);
+      meta.textContent = 'Puni dohvat /promjene (sve stranice) za #' + fromId + ' i #' + toId + '…';
+      const t0 = performance.now();
+      try {
+        const res = await fetch('/api/sudreg/promjene/diff?' + qs.toString(), {
+          headers: { Accept: 'application/json' }
+        });
+        const body = await res.json();
+        const ms = Math.round(performance.now() - t0);
+        if (!res.ok || !body.ok) {
+          throw new Error(body.error || res.statusText);
+        }
+        const st = body.stats || {};
+        meta.textContent =
+          'SCN diff #' + fromId + ' → #' + toId +
+          ' · novi=' + (st.noviZapisi != null ? st.noviZapisi : '?') +
+          ' · promjene=' + (st.promjene != null ? st.promjene : '?') +
+          ' · ukupno diff=' + (st.diffRows != null ? st.diffRows : '?') +
+          ' · ' + ms + ' ms';
+        show(JSON.stringify(body, null, 2), false);
+      } catch (e) {
+        show('Greška: ' + (e.message || String(e)), true);
+        meta.textContent = '/api/sudreg/promjene/diff';
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    btnPromjeneDiff.addEventListener('click', () => fetchPromjeneDiff());
 
     loadSnapshotsDropdown();
   </script>
