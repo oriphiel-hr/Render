@@ -86,6 +86,25 @@ function handleStagingDownload(req, res) {
     sendJson(res, 400, { ok: false, error: resolved.error });
     return;
   }
+  if (!fs.existsSync(resolved.filePath)) {
+    sendJson(res, 404, {
+      ok: false,
+      error: 'Datoteka ne postoji na disku. Prvo „Spremi snimku” ili „Spremi diff”.',
+      path: resolved.filePath
+    });
+    return;
+  }
+  if (req.method === 'HEAD') {
+    const stat = fs.statSync(resolved.filePath);
+    res.writeHead(200, {
+      'Content-Type': resolved.contentType,
+      'Content-Disposition': `attachment; filename="${resolved.downloadName.replace(/"/g, '')}"`,
+      'Content-Length': stat.size,
+      'Cache-Control': 'no-store'
+    });
+    res.end();
+    return;
+  }
   sendFileDownload(res, resolved.filePath, resolved.downloadName, resolved.contentType);
 }
 
@@ -355,7 +374,10 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (pathOnly === '/api/staging/download' && req.method === 'GET') {
+  if (
+    pathOnly === '/api/staging/download' &&
+    (req.method === 'GET' || req.method === 'HEAD')
+  ) {
     handleStagingDownload(req, res);
     return;
   }

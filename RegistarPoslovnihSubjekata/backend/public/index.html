@@ -185,26 +185,19 @@
       font-weight: 700;
       vertical-align: middle;
     }
-    a.dl-link {
-      display: inline-block;
-      padding: 0.5rem 0.85rem;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      color: var(--text);
-      font-size: 0.85rem;
-      text-decoration: none;
+    #dl-status {
+      margin: 0.35rem 0 0.5rem;
+      font-size: 0.82rem;
+      line-height: 1.45;
+      color: var(--muted);
     }
-    a.dl-link:hover { border-color: var(--sudreg); color: var(--sudreg-hover); }
-    a.dl-link.disabled {
-      opacity: 0.45;
-      pointer-events: none;
-    }
+    #dl-status.ready { color: var(--sudreg); }
   </style>
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v15</span></h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v15</strong>.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v16</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v16</strong>.</p>
     <p class="section-label">Servis</p>
     <div class="actions">
       <button type="button" id="btn-status">Provjeri status</button>
@@ -246,12 +239,12 @@
       <button type="button" class="secondary" id="btn-staging-list">Pregled diska</button>
     </div>
     <p class="section-label">Preuzimanje s diska</p>
-    <p class="hint" style="margin-bottom: 0.5rem;">Velike datoteke (~300k redova) — pričekaj da preglednik ponudi spremanje.</p>
+    <p id="dl-status">Učitavam snimke…</p>
     <div class="actions">
-      <a class="dl-link disabled" id="dl-from-promjene" href="#" download>Starija — promjene</a>
-      <a class="dl-link disabled" id="dl-to-promjene" href="#" download>Novija — promjene</a>
-      <a class="dl-link disabled" id="dl-diff-promjene" href="#" download>Diff — promjene</a>
-      <a class="dl-link disabled" id="dl-diff-meta" href="#" download>Diff — meta.json</a>
+      <button type="button" class="secondary" id="btn-dl-from-promjene" disabled>Starija — promjene</button>
+      <button type="button" class="secondary" id="btn-dl-to-promjene" disabled>Novija — promjene</button>
+      <button type="button" class="secondary" id="btn-dl-diff-promjene" disabled>Diff — promjene</button>
+      <button type="button" class="secondary" id="btn-dl-diff-meta" disabled>Diff — meta.json</button>
     </div>
 
     <p class="section-label">Pojedinačni dohvat /promjene</p>
@@ -308,6 +301,12 @@
       if (btnStagingSaveTo) btnStagingSaveTo.disabled = busy;
       if (btnStagingSaveDiff) btnStagingSaveDiff.disabled = busy;
       if (btnStagingList) btnStagingList.disabled = busy;
+      if (btnDlFrom) btnDlFrom.disabled = busy || !snapshotFromSelect.value;
+      if (btnDlTo) btnDlTo.disabled = busy || !snapshotSelect.value;
+      const diffOk = snapshotFromSelect.value && snapshotSelect.value &&
+        snapshotFromSelect.value !== snapshotSelect.value;
+      if (btnDlDiffPromjene) btnDlDiffPromjene.disabled = busy || !diffOk;
+      if (btnDlDiffMeta) btnDlDiffMeta.disabled = busy || !diffOk;
       promjeneOffset.disabled = busy;
       promjeneLimit.disabled = busy;
       const hasSnapshots = Object.keys(snapshotsById).length > 0;
@@ -421,54 +420,138 @@
         const baseline = suggestBaselineSnapshot(newest.id);
         if (baseline) snapshotFromSelect.value = baseline;
         renderCompareSelection();
+        updateStagingDownloadLinks();
       }
     }
+
+    const dlStatus = document.getElementById('dl-status');
+    const btnDlFrom = document.getElementById('btn-dl-from-promjene');
+    const btnDlTo = document.getElementById('btn-dl-to-promjene');
+    const btnDlDiffPromjene = document.getElementById('btn-dl-diff-promjene');
+    const btnDlDiffMeta = document.getElementById('btn-dl-diff-meta');
 
     function stagingDownloadUrl(params) {
       const qs = new URLSearchParams(params);
       return '/api/staging/download?' + qs.toString();
     }
 
-    function setDlLink(anchor, href, enabled) {
-      if (!anchor) return;
-      anchor.href = enabled ? href : '#';
-      anchor.classList.toggle('disabled', !enabled);
+    async function startStagingDownload(url, label) {
+      meta.textContent = 'Provjera: ' + label + '…';
+      show('Provjeravam postoji li datoteka na disku…', false);
+      try {
+        const head = await fetch(url, { method: 'HEAD' });
+        if (!head.ok) {
+          let errText = head.status + ' ' + head.statusText;
+          try {
+            const errBody = await fetch(url).then((r) => r.json());
+            if (errBody.error) errText = errBody.error;
+          } catch (_) { /* ignore */ }
+          show('Preuzimanje nije moguće:\n' + errText + '\n\n' + url, true);
+          meta.textContent = 'Greška preuzimanja';
+          return;
+        }
+        const size = head.headers.get('Content-Length');
+        const sizeHint = size ? ' (~' + Math.round(Number(size) / 1024 / 1024) + ' MB)' : '';
+        meta.textContent = 'Preuzimanje: ' + label + sizeHint + '…';
+        show(
+          'Pokrećem preuzimanje: ' + label + sizeHint + '\n\n' +
+          url + '\n\n' +
+          'Pričekaj dijalog za spremanje (velike datoteke: 1–5 min).',
+          false
+        );
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = url;
+        document.body.appendChild(iframe);
+        window.setTimeout(() => iframe.remove(), 300000);
+      } catch (e) {
+        show('Greška: ' + (e.message || String(e)), true);
+        meta.textContent = 'Preuzimanje';
+      }
+    }
+
+    function setDlButton(btn, enabled) {
+      if (btn) btn.disabled = !enabled;
     }
 
     function updateStagingDownloadLinks() {
       const fromId = snapshotFromSelect.value;
       const toId = snapshotSelect.value;
-      setDlLink(
-        document.getElementById('dl-from-promjene'),
-        stagingDownloadUrl({ snapshot_id: fromId, file: 'promjene' }),
-        Boolean(fromId)
-      );
-      setDlLink(
-        document.getElementById('dl-to-promjene'),
-        stagingDownloadUrl({ snapshot_id: toId, file: 'promjene' }),
-        Boolean(toId)
-      );
-      const diffOk = fromId && toId && fromId !== toId;
-      setDlLink(
-        document.getElementById('dl-diff-promjene'),
-        stagingDownloadUrl({
-          kind: 'diff',
-          snapshot_id_from: fromId,
-          snapshot_id_to: toId,
-          file: 'promjene'
-        }),
-        diffOk
-      );
-      setDlLink(
-        document.getElementById('dl-diff-meta'),
-        stagingDownloadUrl({
-          kind: 'diff',
-          snapshot_id_from: fromId,
-          snapshot_id_to: toId,
-          file: 'meta'
-        }),
-        diffOk
-      );
+      const diffOk = Boolean(fromId && toId && fromId !== toId);
+
+      setDlButton(btnDlFrom, Boolean(fromId));
+      setDlButton(btnDlTo, Boolean(toId));
+      setDlButton(btnDlDiffPromjene, diffOk);
+      setDlButton(btnDlDiffMeta, diffOk);
+
+      if (!dlStatus) return;
+      dlStatus.classList.remove('ready');
+      if (!fromId || !toId) {
+        dlStatus.textContent =
+          'Odaberi stariju i noviju snimku u listama iznad — gumbi će se aktivirati.';
+        return;
+      }
+      if (fromId === toId) {
+        dlStatus.textContent = 'Starija i novija snimka moraju biti različite.';
+        return;
+      }
+      dlStatus.classList.add('ready');
+      dlStatus.textContent =
+        'Spremno: #' + fromId + ' (starija), #' + toId + ' (novija), diff ' + fromId + '→' + toId +
+        '. Klikni gumb — pričekaj dijalog za spremanje (velike datoteke: 1–5 min).';
+    }
+
+    if (btnDlFrom) {
+      btnDlFrom.addEventListener('click', () => {
+        const id = snapshotFromSelect.value;
+        if (!id) return;
+        startStagingDownload(
+          stagingDownloadUrl({ snapshot_id: id, file: 'promjene' }),
+          'promjene_' + id + '.jsonl'
+        );
+      });
+    }
+    if (btnDlTo) {
+      btnDlTo.addEventListener('click', () => {
+        const id = snapshotSelect.value;
+        if (!id) return;
+        startStagingDownload(
+          stagingDownloadUrl({ snapshot_id: id, file: 'promjene' }),
+          'promjene_' + id + '.jsonl'
+        );
+      });
+    }
+    if (btnDlDiffPromjene) {
+      btnDlDiffPromjene.addEventListener('click', () => {
+        const fromId = snapshotFromSelect.value;
+        const toId = snapshotSelect.value;
+        if (!fromId || !toId || fromId === toId) return;
+        startStagingDownload(
+          stagingDownloadUrl({
+            kind: 'diff',
+            snapshot_id_from: fromId,
+            snapshot_id_to: toId,
+            file: 'promjene'
+          }),
+          'promjene_' + fromId + '_to_' + toId + '.jsonl'
+        );
+      });
+    }
+    if (btnDlDiffMeta) {
+      btnDlDiffMeta.addEventListener('click', () => {
+        const fromId = snapshotFromSelect.value;
+        const toId = snapshotSelect.value;
+        if (!fromId || !toId || fromId === toId) return;
+        startStagingDownload(
+          stagingDownloadUrl({
+            kind: 'diff',
+            snapshot_id_from: fromId,
+            snapshot_id_to: toId,
+            file: 'meta'
+          }),
+          'meta_' + fromId + '_to_' + toId + '.json'
+        );
+      });
     }
 
     function onSnapshotSelectionChange() {
