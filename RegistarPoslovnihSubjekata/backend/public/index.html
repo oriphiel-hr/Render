@@ -30,7 +30,7 @@
       padding: 1.5rem;
     }
     main {
-      width: min(52rem, 100%);
+      width: min(62rem, 100%);
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 12px;
@@ -185,12 +185,83 @@
       font-weight: 700;
       vertical-align: middle;
     }
+    .order-audit-panel {
+      margin: 0.75rem 0 0;
+      padding: 0.85rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #0a0e14;
+    }
+    .order-audit-panel.hidden { display: none; }
+    .order-audit-panel.ok { border-color: var(--sudreg); }
+    .order-audit-panel.warn { border-color: #c9a227; }
+    .order-audit-summary {
+      margin: 0 0 0.75rem;
+      font-size: 0.88rem;
+      line-height: 1.5;
+      color: var(--text);
+    }
+    .order-audit-summary .stat-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1.25rem;
+      margin-top: 0.35rem;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+    .order-audit-summary .badge-ok { color: var(--sudreg); font-weight: 600; }
+    .order-audit-summary .badge-warn { color: #e8c547; font-weight: 600; }
+    .order-audit-table-wrap {
+      overflow: auto;
+      max-height: 20rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    table.order-audit-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+    }
+    table.order-audit-table th,
+    table.order-audit-table td {
+      padding: 0.4rem 0.5rem;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+    table.order-audit-table th {
+      position: sticky;
+      top: 0;
+      background: #121a26;
+      color: var(--muted);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    table.order-audit-table tr:last-child td { border-bottom: none; }
+    table.order-audit-table .num { font-variant-numeric: tabular-nums; }
+    table.order-audit-table .drop { color: #f5a8a8; font-weight: 600; }
+    table.order-audit-table .kind-boundary { color: #e8c547; }
+    .order-audit-raw {
+      margin-top: 0.65rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .order-audit-raw summary { cursor: pointer; }
+    .order-audit-raw pre {
+      margin: 0.5rem 0 0;
+      padding: 0.65rem;
+      background: var(--panel);
+      border-radius: 6px;
+      font-size: 0.75rem;
+      max-height: 12rem;
+      overflow: auto;
+    }
   </style>
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v11</span></h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v11</strong>.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v13</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v13</strong>.</p>
     <p class="section-label">Servis</p>
     <div class="actions">
       <button type="button" id="btn-status">Provjeri status</button>
@@ -246,19 +317,56 @@
     </div>
     <div class="actions">
       <button type="button" id="btn-promjene">Dohvati jednu stranicu (novija snimka)</button>
+      <button type="button" class="secondary" id="btn-promjene-order-audit">Provjeri redoslijed mbs (cijela snimka)</button>
     </div>
+
+    <div id="order-audit-panel" class="order-audit-panel hidden" aria-live="polite">
+      <p class="section-label" style="margin-top:0">Redoslijed mbs u API odgovoru</p>
+      <div id="order-audit-summary" class="order-audit-summary"></div>
+      <div id="order-audit-table-wrap" class="order-audit-table-wrap hidden">
+        <table class="order-audit-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Vrsta</th>
+              <th>Str.</th>
+              <th>offset</th>
+              <th>Ind.</th>
+              <th>Preth. MBS</th>
+              <th>Tren. MBS</th>
+              <th>Pad</th>
+              <th>Preth. zapis</th>
+              <th>Tren. zapis</th>
+            </tr>
+          </thead>
+          <tbody id="order-audit-tbody"></tbody>
+        </table>
+      </div>
+      <details class="order-audit-raw" id="order-audit-raw">
+        <summary>Sirovi JSON odgovor</summary>
+        <pre id="order-audit-raw-pre"></pre>
+      </details>
+    </div>
+
     <pre id="response" class="empty">Odaberi snimke i klikni „Usporedi promjene”…</pre>
     <p class="meta" id="meta"></p>
   </main>
   <script>
     const out = document.getElementById('response');
     const meta = document.getElementById('meta');
+    const orderAuditPanel = document.getElementById('order-audit-panel');
+    const orderAuditSummary = document.getElementById('order-audit-summary');
+    const orderAuditTableWrap = document.getElementById('order-audit-table-wrap');
+    const orderAuditTbody = document.getElementById('order-audit-tbody');
+    const orderAuditRawPre = document.getElementById('order-audit-raw-pre');
+    const orderAuditRawDetails = document.getElementById('order-audit-raw');
     const btnStatus = document.getElementById('btn-status');
     const btnHealth = document.getElementById('btn-health');
     const btnSudreg = document.getElementById('btn-sudreg');
     const btnSnapshotsRefresh = document.getElementById('btn-snapshots-refresh');
     const btnSnapshotsJson = document.getElementById('btn-snapshots-json');
     const btnPromjene = document.getElementById('btn-promjene');
+    const btnPromjeneOrderAudit = document.getElementById('btn-promjene-order-audit');
     const btnPromjeneDiff = document.getElementById('btn-promjene-diff');
     const btnStagingSaveFrom = document.getElementById('btn-staging-save-from');
     const btnStagingSaveTo = document.getElementById('btn-staging-save-to');
@@ -280,6 +388,7 @@
       btnSnapshotsRefresh.disabled = busy;
       btnSnapshotsJson.disabled = busy;
       btnPromjene.disabled = busy;
+      if (btnPromjeneOrderAudit) btnPromjeneOrderAudit.disabled = busy;
       if (btnPromjeneDiff) btnPromjeneDiff.disabled = busy;
       if (btnStagingSaveFrom) btnStagingSaveFrom.disabled = busy;
       if (btnStagingSaveTo) btnStagingSaveTo.disabled = busy;
@@ -297,7 +406,103 @@
       }
     }
 
+    function hideOrderAuditPanel() {
+      if (!orderAuditPanel) return;
+      orderAuditPanel.classList.add('hidden');
+      orderAuditPanel.classList.remove('ok', 'warn');
+      if (orderAuditSummary) orderAuditSummary.innerHTML = '';
+      if (orderAuditTbody) orderAuditTbody.innerHTML = '';
+      if (orderAuditTableWrap) orderAuditTableWrap.classList.add('hidden');
+      if (orderAuditRawPre) orderAuditRawPre.textContent = '';
+    }
+
+    function formatAuditRowBrief(row) {
+      if (!row) return '—';
+      const parts = [];
+      if (row.id != null) parts.push('id ' + row.id);
+      if (row.scn != null) parts.push('scn ' + row.scn);
+      if (row.vrijeme) parts.push(String(row.vrijeme).slice(0, 19));
+      return parts.length ? parts.join(' · ') : '—';
+    }
+
+    function kindLabel(kind) {
+      if (kind === 'page_boundary') return 'Granica stranica';
+      if (kind === 'within_page') return 'Unutar stranice';
+      return kind || '—';
+    }
+
+    function renderOrderAuditPanel(body, isError) {
+      if (!orderAuditPanel || !orderAuditSummary) return;
+      hideOrderAuditPanel();
+      orderAuditPanel.classList.remove('hidden');
+      if (orderAuditRawPre) {
+        orderAuditRawPre.textContent = JSON.stringify(body, null, 2);
+      }
+      if (orderAuditRawDetails) {
+        orderAuditRawDetails.open = false;
+      }
+
+      if (isError || !body.ok) {
+        orderAuditPanel.classList.add('warn');
+        orderAuditSummary.innerHTML =
+          '<p class="badge-warn">Greška: ' + escapeHtml(body.error || 'Nepoznata greška') + '</p>';
+        out.textContent = 'Pogledaj panel iznad za detalje.';
+        out.classList.remove('empty');
+        out.style.color = '#f5a8a8';
+        return;
+      }
+
+      const violations = Array.isArray(body.violations) ? body.violations : [];
+      const within = violations.filter((v) => v.kind === 'within_page').length;
+      const boundary = violations.filter((v) => v.kind === 'page_boundary').length;
+      const ordered = body.ordered_by_mbs === true;
+
+      orderAuditPanel.classList.add(ordered ? 'ok' : 'warn');
+      orderAuditSummary.innerHTML =
+        '<p class="' + (ordered ? 'badge-ok' : 'badge-warn') + '">' +
+        (ordered
+          ? 'API odgovor je konzistentan: svi susjedni redovi idu po rastućem mbs.'
+          : 'Pronađeno ' + violations.length + ' mjesta gdje mbs pada (unutar stranice: ' + within +
+            ', granica stranica: ' + boundary + ').') +
+        (body.truncated ? ' Prikaz je skraćen na ' + violations.length + ' zapisa.' : '') +
+        '</p>' +
+        '<div class="stat-grid">' +
+        '<span>Snimka <strong>#' + escapeHtml(String(body.snapshot_id)) + '</strong></span>' +
+        '<span>Stranica API: <strong>' + escapeHtml(String(body.pages)) + '</strong></span>' +
+        '<span>Redova: <strong>' + escapeHtml(String(body.rowsRead)) + '</strong>' +
+        (body.totalCount != null ? ' / ' + escapeHtml(String(body.totalCount)) : '') + '</span>' +
+        '<span>Trajanje: <strong>' + escapeHtml(String(body.durationMs != null ? body.durationMs : '—')) + ' ms</strong></span>' +
+        '</div>';
+
+      if (!ordered && orderAuditTbody && orderAuditTableWrap) {
+        orderAuditTableWrap.classList.remove('hidden');
+        const rows = violations.map((v, i) => {
+          const kindCls = v.kind === 'page_boundary' ? ' kind-boundary' : '';
+          return '<tr>' +
+            '<td class="num">' + (i + 1) + '</td>' +
+            '<td class="' + kindCls.trim() + '">' + escapeHtml(kindLabel(v.kind)) + '</td>' +
+            '<td class="num">' + escapeHtml(String(v.page != null ? v.page : '—')) + '</td>' +
+            '<td class="num">' + escapeHtml(String(v.request_offset != null ? v.request_offset : '—')) + '</td>' +
+            '<td class="num">' + escapeHtml(String(v.index_in_page != null ? v.index_in_page : '—')) + '</td>' +
+            '<td class="num">' + escapeHtml(String(v.previous_mbs != null ? v.previous_mbs : (v.previous && v.previous.mbs))) + '</td>' +
+            '<td class="num">' + escapeHtml(String(v.current_mbs != null ? v.current_mbs : (v.current && v.current.mbs))) + '</td>' +
+            '<td class="num drop">−' + escapeHtml(String(v.mbs_drop != null ? v.mbs_drop : '—')) + '</td>' +
+            '<td>' + escapeHtml(formatAuditRowBrief(v.previous)) + '</td>' +
+            '<td>' + escapeHtml(formatAuditRowBrief(v.current)) + '</td>' +
+            '</tr>';
+        });
+        orderAuditTbody.innerHTML = rows.join('');
+      }
+
+      out.textContent = ordered
+        ? 'Redoslijed mbs je u redu — detalji u panelu iznad.'
+        : 'Pronađena kršenja redoslijeda — tablica u panelu iznad.';
+      out.classList.remove('empty');
+      out.style.color = '#b8d4ff';
+    }
+
     function show(text, isError) {
+      hideOrderAuditPanel();
       out.textContent = text;
       out.classList.toggle('empty', !text || text.startsWith('Odaberi'));
       out.style.color = isError ? '#f5a8a8' : '#b8d4ff';
@@ -429,6 +634,7 @@
     }
 
     async function fetchPath(path, asJson) {
+      hideOrderAuditPanel();
       setBusy(true);
       meta.textContent = '';
       const t0 = performance.now();
@@ -493,6 +699,43 @@
 
     btnPromjene.addEventListener('click', () => fetchPromjene());
 
+    async function fetchPromjeneOrderAudit() {
+      const snapshotId = snapshotSelect.value;
+      if (!snapshotId || !snapshotsById[snapshotId]) {
+        show('Odaberi snimku (novija) za provjeru redoslijeda.', true);
+        return;
+      }
+      setBusy(true);
+      hideOrderAuditPanel();
+      out.textContent = 'Skeniram sve stranice /promjene i tražim parove gdje mbs pada…';
+      out.classList.remove('empty');
+      out.style.color = '#b8d4ff';
+      meta.textContent = 'order-audit snapshot #' + snapshotId + '…';
+      const t0 = performance.now();
+      try {
+        const qs = new URLSearchParams({ snapshot_id: snapshotId, max: '500' });
+        const res = await fetch('/api/sudreg/promjene/order-audit?' + qs.toString(), {
+          headers: { Accept: 'application/json' }
+        });
+        const body = await res.json();
+        const ms = Math.round(performance.now() - t0);
+        body.durationMs = body.durationMs != null ? body.durationMs : ms;
+        meta.textContent =
+          (res.ok && body.ok ? 'OK' : 'Greška') + ' · ' + ms + ' ms · snapshot #' + snapshotId +
+          (body.violationCount != null ? ' · ' + body.violationCount + ' kršenja' : '');
+        renderOrderAuditPanel(body, !res.ok || !body.ok);
+      } catch (e) {
+        renderOrderAuditPanel({ ok: false, error: e.message || String(e) }, true);
+        meta.textContent = 'order-audit';
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    if (btnPromjeneOrderAudit) {
+      btnPromjeneOrderAudit.addEventListener('click', () => fetchPromjeneOrderAudit());
+    }
+
     async function fetchPromjeneDiff() {
       const fromId = snapshotFromSelect.value;
       const toId = snapshotSelect.value;
@@ -508,6 +751,7 @@
         show('Starija i novija snimka moraju biti različite.', true);
         return;
       }
+      hideOrderAuditPanel();
       const qs = new URLSearchParams({
         snapshot_id_from: fromId,
         snapshot_id_to: toId
@@ -544,6 +788,7 @@
     if (btnPromjeneDiff) btnPromjeneDiff.addEventListener('click', () => fetchPromjeneDiff());
 
     async function stagingFetch(path, busyMsg) {
+      hideOrderAuditPanel();
       setBusy(true);
       if (busyMsg) show(busyMsg, false);
       const t0 = performance.now();
