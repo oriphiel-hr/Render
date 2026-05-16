@@ -18,7 +18,8 @@ const {
   getDataDir,
   saveSnapshotPromjene,
   savePromjeneDiff,
-  listStaging
+  listStaging,
+  resolveStagingDownload
 } = require('./sudregStaging');
 
 const port = Number(process.env.PORT) || 3000;
@@ -53,6 +54,39 @@ function sendJson(res, status, body) {
 function sendText(res, status, text, contentType = 'text/plain; charset=utf-8') {
   res.writeHead(status, { 'Content-Type': contentType, 'Cache-Control': 'no-store' });
   res.end(text);
+}
+
+function sendFileDownload(res, filePath, downloadName, contentType) {
+  if (!fs.existsSync(filePath)) {
+    sendJson(res, 404, { ok: false, error: 'Datoteka ne postoji na disku.', path: filePath });
+    return;
+  }
+  const stat = fs.statSync(filePath);
+  res.writeHead(200, {
+    'Content-Type': contentType,
+    'Content-Disposition': `attachment; filename="${downloadName.replace(/"/g, '')}"`,
+    'Content-Length': stat.size,
+    'Cache-Control': 'no-store'
+  });
+  const stream = fs.createReadStream(filePath);
+  stream.on('error', (err) => {
+    if (!res.headersSent) {
+      sendJson(res, 500, { ok: false, error: err.message });
+    } else {
+      res.destroy();
+    }
+  });
+  stream.pipe(res);
+}
+
+function handleStagingDownload(req, res) {
+  const q = parseQueryString(req.url);
+  const resolved = resolveStagingDownload(q);
+  if (resolved.error) {
+    sendJson(res, 400, { ok: false, error: resolved.error });
+    return;
+  }
+  sendFileDownload(res, resolved.filePath, resolved.downloadName, resolved.contentType);
 }
 
 function serveIndexHtml(res) {
@@ -318,6 +352,11 @@ const server = http.createServer((req, res) => {
 
   if (pathOnly === '/api/staging/list' && req.method === 'GET') {
     handleStagingList(res);
+    return;
+  }
+
+  if (pathOnly === '/api/staging/download' && req.method === 'GET') {
+    handleStagingDownload(req, res);
     return;
   }
 

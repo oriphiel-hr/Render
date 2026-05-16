@@ -185,12 +185,26 @@
       font-weight: 700;
       vertical-align: middle;
     }
+    a.dl-link {
+      display: inline-block;
+      padding: 0.5rem 0.85rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 0.85rem;
+      text-decoration: none;
+    }
+    a.dl-link:hover { border-color: var(--sudreg); color: var(--sudreg-hover); }
+    a.dl-link.disabled {
+      opacity: 0.45;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v14</span></h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v14</strong>.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v15</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v15</strong>.</p>
     <p class="section-label">Servis</p>
     <div class="actions">
       <button type="button" id="btn-status">Provjeri status</button>
@@ -230,6 +244,14 @@
       <button type="button" class="secondary" id="btn-staging-save-to">Spremi novu snimku</button>
       <button type="button" class="secondary" id="btn-staging-save-diff">Spremi diff na disk</button>
       <button type="button" class="secondary" id="btn-staging-list">Pregled diska</button>
+    </div>
+    <p class="section-label">Preuzimanje s diska</p>
+    <p class="hint" style="margin-bottom: 0.5rem;">Velike datoteke (~300k redova) — pričekaj da preglednik ponudi spremanje.</p>
+    <div class="actions">
+      <a class="dl-link disabled" id="dl-from-promjene" href="#" download>Starija — promjene</a>
+      <a class="dl-link disabled" id="dl-to-promjene" href="#" download>Novija — promjene</a>
+      <a class="dl-link disabled" id="dl-diff-promjene" href="#" download>Diff — promjene</a>
+      <a class="dl-link disabled" id="dl-diff-meta" href="#" download>Diff — meta.json</a>
     </div>
 
     <p class="section-label">Pojedinačni dohvat /promjene</p>
@@ -402,8 +424,56 @@
       }
     }
 
+    function stagingDownloadUrl(params) {
+      const qs = new URLSearchParams(params);
+      return '/api/staging/download?' + qs.toString();
+    }
+
+    function setDlLink(anchor, href, enabled) {
+      if (!anchor) return;
+      anchor.href = enabled ? href : '#';
+      anchor.classList.toggle('disabled', !enabled);
+    }
+
+    function updateStagingDownloadLinks() {
+      const fromId = snapshotFromSelect.value;
+      const toId = snapshotSelect.value;
+      setDlLink(
+        document.getElementById('dl-from-promjene'),
+        stagingDownloadUrl({ snapshot_id: fromId, file: 'promjene' }),
+        Boolean(fromId)
+      );
+      setDlLink(
+        document.getElementById('dl-to-promjene'),
+        stagingDownloadUrl({ snapshot_id: toId, file: 'promjene' }),
+        Boolean(toId)
+      );
+      const diffOk = fromId && toId && fromId !== toId;
+      setDlLink(
+        document.getElementById('dl-diff-promjene'),
+        stagingDownloadUrl({
+          kind: 'diff',
+          snapshot_id_from: fromId,
+          snapshot_id_to: toId,
+          file: 'promjene'
+        }),
+        diffOk
+      );
+      setDlLink(
+        document.getElementById('dl-diff-meta'),
+        stagingDownloadUrl({
+          kind: 'diff',
+          snapshot_id_from: fromId,
+          snapshot_id_to: toId,
+          file: 'meta'
+        }),
+        diffOk
+      );
+    }
+
     function onSnapshotSelectionChange() {
       renderCompareSelection();
+      updateStagingDownloadLinks();
     }
 
     async function loadSnapshotsDropdown() {

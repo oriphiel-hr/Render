@@ -205,6 +205,56 @@ async function savePromjeneDiff(fromId, toId, opts = {}) {
   };
 }
 
+const ALLOWED_DOWNLOAD_FILES = {
+  promjene: PROMJENE_FILE,
+  meta: META_FILE
+};
+
+/**
+ * Sigurna putanja za preuzimanje (samo meta.json / promjene.jsonl u snapshots/ ili diffs/).
+ * @param {URLSearchParams} q
+ */
+function resolveStagingDownload(q) {
+  const fileKey = (q.get('file') || 'promjene').toLowerCase();
+  const fileName = ALLOWED_DOWNLOAD_FILES[fileKey];
+  if (!fileName) {
+    return { error: 'file mora biti promjene ili meta.' };
+  }
+
+  const from = q.get('snapshot_id_from') || q.get('from');
+  const to = q.get('snapshot_id_to') || q.get('to');
+  const kind = (q.get('kind') || '').toLowerCase();
+
+  if (kind === 'diff' || (from && to)) {
+    if (!from || !to) {
+      return { error: 'Za diff: snapshot_id_from i snapshot_id_to (ili from i to).' };
+    }
+    const filePath = path.join(diffDir(from, to), fileName);
+    const downloadName =
+      fileKey === 'meta'
+        ? `meta_${from}_to_${to}.json`
+        : `promjene_${from}_to_${to}.jsonl`;
+    return {
+      filePath,
+      downloadName,
+      contentType: fileKey === 'meta' ? 'application/json; charset=utf-8' : 'application/x-ndjson'
+    };
+  }
+
+  const snapshotId = q.get('snapshot_id');
+  if (!snapshotId) {
+    return { error: 'snapshot_id je obavezan (ili kind=diff s from/to).' };
+  }
+  const filePath = path.join(snapshotDir(snapshotId), fileName);
+  const downloadName =
+    fileKey === 'meta' ? `meta_${snapshotId}.json` : `promjene_${snapshotId}.jsonl`;
+  return {
+    filePath,
+    downloadName,
+    contentType: fileKey === 'meta' ? 'application/json; charset=utf-8' : 'application/x-ndjson'
+  };
+}
+
 function listStaging() {
   const root = getDataDir();
   const snapshotsRoot = path.join(root, 'snapshots');
@@ -215,8 +265,17 @@ function listStaging() {
     for (const name of fs.readdirSync(snapshotsRoot)) {
       const dir = path.join(snapshotsRoot, name);
       if (!fs.statSync(dir).isDirectory()) continue;
-      const entry = { snapshot_id: name, dir };
-      const mp = path.join(dir, META_FILE);
+      const promjeneFile = path.join(dir, PROMJENE_FILE);
+      const entry = {
+        snapshot_id: name,
+        label: `Snimka #${name}`,
+        dir,
+        files: {
+          meta: path.join(dir, META_FILE),
+          promjene: fs.existsSync(promjeneFile) ? promjeneFile : null
+        }
+      };
+      const mp = entry.files.meta;
       if (fs.existsSync(mp)) {
         try {
           entry.meta = readJson(mp);
@@ -224,7 +283,7 @@ function listStaging() {
           entry.metaError = true;
         }
       }
-      entry.has_promjene = fs.existsSync(path.join(dir, PROMJENE_FILE));
+      entry.has_promjene = fs.existsSync(promjeneFile);
       snapshots.push(entry);
     }
     snapshots.sort((a, b) => Number(b.snapshot_id) - Number(a.snapshot_id));
@@ -235,8 +294,20 @@ function listStaging() {
     for (const name of fs.readdirSync(diffsRoot)) {
       const dir = path.join(diffsRoot, name);
       if (!fs.statSync(dir).isDirectory()) continue;
-      const entry = { key: name, dir };
-      const mp = path.join(dir, META_FILE);
+      const m = /^(\d+)_to_(\d+)$/.exec(name);
+      const promjeneFile = path.join(dir, PROMJENE_FILE);
+      const entry = {
+        key: name,
+        label: m ? `Diff #${m[1]} → #${m[2]}` : `Diff ${name}`,
+        snapshot_id_from: m ? m[1] : null,
+        snapshot_id_to: m ? m[2] : null,
+        dir,
+        files: {
+          meta: path.join(dir, META_FILE),
+          promjene: fs.existsSync(promjeneFile) ? promjeneFile : null
+        }
+      };
+      const mp = entry.files.meta;
       if (fs.existsSync(mp)) {
         try {
           entry.meta = readJson(mp);
@@ -244,7 +315,7 @@ function listStaging() {
           entry.metaError = true;
         }
       }
-      entry.has_promjene = fs.existsSync(path.join(dir, PROMJENE_FILE));
+      entry.has_promjene = fs.existsSync(promjeneFile);
       diffs.push(entry);
     }
   }
@@ -261,6 +332,7 @@ module.exports = {
   saveSnapshotPromjene,
   savePromjeneDiff,
   listStaging,
+  resolveStagingDownload,
   readJsonl,
   writeJsonl
 };
