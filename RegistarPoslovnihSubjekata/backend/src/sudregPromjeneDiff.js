@@ -1,7 +1,8 @@
 /**
  * Usporedba /promjene između dviju snimki pomoću SCN-a.
  *
- * API vraća retke poredane po mbs (rastuće). Usporedba ide merge-joinom po mbs
+ * Usporedba ide merge-joinom po mbs nakon numeričkog sortiranja cijelog seta.
+ * Pojedinačne stranice API-ja nisu uvijek globalno sortirane po mbs.
  * (dva pokazivača kroz stranice), NE istim offsetom — novi MBS u novoj snimci
  * pomaknuo bi redove i offset-pariranje bi bilo krivo.
  *
@@ -35,16 +36,16 @@ function toMbsNum(row) {
   return Number.isFinite(n) ? n : null;
 }
 
-function assertSortedByMbs(rows, snapshotId, pageIndex) {
-  for (let i = 1; i < rows.length; i += 1) {
-    const prev = toMbsNum(rows[i - 1]);
-    const cur = toMbsNum(rows[i]);
-    if (prev != null && cur != null && cur < prev) {
-      throw new Error(
-        `Sudreg /promjene snapshot_id=${snapshotId} stranica ${pageIndex} nije poredana po mbs — merge usporedba nije moguća.`
-      );
-    }
-  }
+/** Numerički sort po mbs (API ponekad nije globalno sortiran po stranicama). */
+function sortPromjeneByMbs(rows) {
+  return rows.slice().sort((a, b) => {
+    const ma = toMbsNum(a);
+    const mb = toMbsNum(b);
+    if (ma == null && mb == null) return 0;
+    if (ma == null) return 1;
+    if (mb == null) return -1;
+    return ma - mb;
+  });
 }
 
 /**
@@ -78,7 +79,6 @@ class PromjeneSortedReader {
       this.totalCount = parseHeaderInt(result.meta?.xTotalCount);
     }
     const chunk = normalizePromjeneArray(result.data);
-    assertSortedByMbs(chunk, this.snapshotId, this.pages);
     this.buffer = chunk;
     this.bufferIdx = 0;
     this.rowsRead += chunk.length;
@@ -180,11 +180,13 @@ async function fetchAllPromjene(snapshotId, opts = {}) {
     rows.push(row);
   }
   reader.assertComplete();
+  const sorted = sortPromjeneByMbs(rows);
   return {
-    rows,
+    rows: sorted,
     pages: reader.pages,
-    totalCount: reader.totalCount ?? rows.length,
+    totalCount: reader.totalCount ?? sorted.length,
     complete: true,
+    sortedByMbs: true,
     meta: {}
   };
 }
@@ -306,30 +308,45 @@ async function comparePromjeneSnapshots(params) {
   const fromId = String(params.snapshot_id_from);
   const toId = String(params.snapshot_id_to);
 
-  let oldReader;
-  let newReader;
+  let baselineRows;
+  let targetRows;
+  let baselinePages;
+  let targetPages;
+  let baselineTotal;
+  let targetTotal;
 
   if (params.baseline_rows && params.target_rows) {
-    assertSortedByMbs(params.baseline_rows, fromId, 1);
-    assertSortedByMbs(params.target_rows, toId, 1);
-    oldReader = new PromjeneArrayReader(
-      params.baseline_rows,
-      fromId,
-      params.baseline_totalCount
-    );
-    newReader = new PromjeneArrayReader(params.target_rows, toId, params.target_totalCount);
+    baselineRows = sortPromjeneByMbs(params.baseline_rows);
+    targetRows = sortPromjeneByMbs(params.target_rows);
+    baselinePages = 1;
+    targetPages = 1;
+    baselineTotal = params.baseline_totalCount ?? baselineRows.length;
+    targetTotal = params.target_totalCount ?? targetRows.length;
   } else {
-    oldReader = new PromjeneSortedReader(fromId, {
-      no_data_error: '0',
-      omit_nulls: params.omit_nulls,
-      signal: params.signal
-    });
-    newReader = new PromjeneSortedReader(toId, {
-      no_data_error: '0',
-      omit_nulls: params.omit_nulls,
-      signal: params.signal
-    });
+    const [baseline, target] = await Promise.all([
+      fetchAllPromjene(fromId, {
+        no_data_error: '0',
+        omit_nulls: params.omit_nulls,
+        signal: params.signal
+      }),
+      fetchAllPromjene(toId, {
+        no_data_error: '0',
+        omit_nulls: params.omit_nulls,
+        signal: params.signal
+      })
+    ]);
+    baselineRows = baseline.rows;
+    targetRows = target.rows;
+    baselinePages = baseline.pages;
+    targetPages = target.pages;
+    baselineTotal = baseline.totalCount;
+    targetTotal = target.totalCount;
   }
+
+  const oldReader = new PromjeneArrayReader(baselineRows, fromId, baselineTotal);
+  const newReader = new PromjeneArrayReader(targetRows, toId, targetTotal);
+  oldReader.pages = baselinePages;
+  newReader.pages = targetPages;
 
   return comparePromjeneWithReaders(oldReader, newReader, fromId, toId);
 }
@@ -340,6 +357,7 @@ module.exports = {
   PromjeneArrayReader,
   comparePromjeneWithReaders,
   normalizePromjeneArray,
+  sortPromjeneByMbs,
   indexPromjeneByMbs,
   filterPromjeneDiff,
   fetchAllPromjene,

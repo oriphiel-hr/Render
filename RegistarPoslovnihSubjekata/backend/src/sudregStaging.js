@@ -5,7 +5,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { fetchAllPromjene, comparePromjeneSnapshots } = require('./sudregPromjeneDiff');
+const { fetchAllPromjene, comparePromjeneSnapshots, sortPromjeneByMbs } = require('./sudregPromjeneDiff');
 
 const PROMJENE_FILE = 'promjene.jsonl';
 const META_FILE = 'meta.json';
@@ -154,8 +154,8 @@ async function savePromjeneDiff(fromId, toId, opts = {}) {
 
   if (canUseDisk) {
     source = 'disk';
-    const baselineRows = readJsonl(fromFile);
-    const targetRows = readJsonl(toFile);
+    const baselineRows = sortPromjeneByMbs(readJsonl(fromFile));
+    const targetRows = sortPromjeneByMbs(readJsonl(toFile));
     result = await comparePromjeneSnapshots({
       snapshot_id_from: from,
       snapshot_id_to: to,
