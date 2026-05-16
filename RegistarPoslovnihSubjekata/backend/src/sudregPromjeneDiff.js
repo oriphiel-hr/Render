@@ -308,18 +308,12 @@ async function comparePromjeneWithReaders(oldReader, newReader, fromId, toId) {
   const diff = [];
   let newCount = 0;
   let updatedCount = 0;
-  let oldPos = 0;
-  let newPos = 0;
   let oldRow = await oldReader.peek();
   let newRow = await newReader.peek();
 
-  function pushDiff(row, vrsta, meta = {}) {
+  function pushDiff(row, vrsta, scnStaro = null) {
     const item = { ...row, vrsta };
-    if (meta.pozicija_staro != null) item.pozicija_staro = meta.pozicija_staro;
-    if (meta.pozicija_novo != null) item.pozicija_novo = meta.pozicija_novo;
-    if (meta.pomak != null) item.pomak = meta.pomak;
-    if (meta.scn_staro != null) item.scn_staro = meta.scn_staro;
-    if (meta.scn_pomak != null) item.scn_pomak = meta.scn_pomak;
+    if (vrsta === 'promjena' && scnStaro != null) item.scn_staro = scnStaro;
     diff.push(item);
     if (vrsta === 'novi') newCount += 1;
     else updatedCount += 1;
@@ -327,14 +321,12 @@ async function comparePromjeneWithReaders(oldReader, newReader, fromId, toId) {
 
   while (oldRow || newRow) {
     if (!oldRow) {
-      pushDiff(await newReader.advance(), 'novi', { pozicija_novo: newPos });
-      newPos += 1;
+      pushDiff(await newReader.advance(), 'novi');
       newRow = await newReader.peek();
       continue;
     }
     if (!newRow) {
       await oldReader.advance();
-      oldPos += 1;
       oldRow = await oldReader.peek();
       continue;
     }
@@ -344,44 +336,29 @@ async function comparePromjeneWithReaders(oldReader, newReader, fromId, toId) {
 
     if (om == null) {
       await oldReader.advance();
-      oldPos += 1;
       oldRow = await oldReader.peek();
       continue;
     }
     if (nm == null) {
       await newReader.advance();
-      newPos += 1;
       newRow = await newReader.peek();
       continue;
     }
 
     if (om < nm) {
       await oldReader.advance();
-      oldPos += 1;
       oldRow = await oldReader.peek();
     } else if (nm < om) {
-      pushDiff(await newReader.advance(), 'novi', {
-        pozicija_novo: newPos,
-        pomak: newPos - oldPos
-      });
-      newPos += 1;
+      pushDiff(await newReader.advance(), 'novi');
       newRow = await newReader.peek();
     } else {
       const newScn = toScn(newRow.scn);
       const oldScn = toScn(oldRow.scn);
       if (newScn != null && oldScn != null && newScn > oldScn) {
-        pushDiff(newRow, 'promjena', {
-          pozicija_staro: oldPos,
-          pozicija_novo: newPos,
-          pomak: newPos - oldPos,
-          scn_staro: oldScn,
-          scn_pomak: newScn - oldScn
-        });
+        pushDiff(newRow, 'promjena', oldScn);
       }
       await oldReader.advance();
       await newReader.advance();
-      oldPos += 1;
-      newPos += 1;
       oldRow = await oldReader.peek();
       newRow = await newReader.peek();
     }
@@ -397,7 +374,7 @@ async function comparePromjeneWithReaders(oldReader, newReader, fromId, toId) {
       algorithm: 'scn_merge_by_mbs',
       fullSets: true,
       description:
-        'Merge po mbs. vrsta: novi | promjena. pomak = pozicija_novo − pozicija_staro (0-based indeks u sortiranom /promjene). scn_pomak = scn − scn_staro.'
+        'Usporedba po mbs + SCN: novi (MBS samo u novijoj snimci) | promjena (isti MBS, veći SCN). scn_staro samo kod promjene.'
     },
     stats: {
       baselineRows: oldReader.rowsRead,
