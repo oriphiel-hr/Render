@@ -30,7 +30,7 @@
       padding: 1.5rem;
     }
     main {
-      width: min(42rem, 100%);
+      width: min(52rem, 100%);
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 12px;
@@ -157,37 +157,72 @@
     }
     .snapshot-detail strong { color: var(--text); }
     .snapshot-detail.empty { display: none; }
+    .compare-panel {
+      margin: 0 0 1rem;
+      padding: 1rem 1.1rem;
+      border-radius: 10px;
+      border: 1px solid var(--sudreg);
+      background: rgba(46, 184, 138, 0.07);
+    }
+    .compare-panel .section-label {
+      margin-top: 0;
+      color: var(--sudreg);
+    }
+    button.sudreg {
+      background: var(--sudreg);
+      border-color: var(--sudreg);
+      font-weight: 600;
+    }
+    button.sudreg:hover:not(:disabled) { background: var(--sudreg-hover); }
+    .version-tag {
+      display: inline-block;
+      margin-left: 0.5rem;
+      padding: 0.1rem 0.45rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      background: var(--sudreg);
+      color: #0a0e14;
+      font-weight: 700;
+      vertical-align: middle;
+    }
   </style>
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata</h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju stranice. Osvježi s <strong>Ctrl+F5</strong> nakon deploya.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v10</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya obavezno <strong>Ctrl+F5</strong> — u podnožju mora pisati <strong>UI v10</strong>.</p>
     <p class="section-label">Servis</p>
     <div class="actions">
       <button type="button" id="btn-status">Provjeri status</button>
       <button type="button" class="secondary" id="btn-health">Health (tekst)</button>
     </div>
-    <p class="section-label">Sudreg API — snimke</p>
-    <div class="field-row">
-      <label for="snapshot-select">Noviji snapshot (snapshot_id_to)</label>
-      <select id="snapshot-select" class="snapshot-select" disabled>
-        <option value="">Učitavam snimke…</option>
-      </select>
-      <button type="button" class="secondary" id="btn-snapshots-refresh">Osvježi</button>
-    </div>
-    <div class="field-row">
-      <label for="snapshot-from-select">Stariji snapshot (snapshot_id_from, baza SCN)</label>
-      <select id="snapshot-from-select" class="snapshot-select" disabled>
-        <option value="">—</option>
-      </select>
-    </div>
-    <div id="snapshot-detail" class="snapshot-detail empty"></div>
-    <div class="actions">
+    <p class="section-label">Sudreg API — popis snimki</p>
+    <div class="actions" style="margin-bottom: 0.75rem;">
+      <button type="button" class="secondary" id="btn-snapshots-refresh">Osvježi listu snimki</button>
       <button type="button" class="secondary" id="btn-sudreg">OAuth token</button>
       <button type="button" class="secondary" id="btn-snapshots-json">JSON svih snimki</button>
     </div>
-    <p class="section-label">Sudreg API — promjene</p>
+    <div class="compare-panel">
+      <p class="section-label">Usporedba dviju snimki</p>
+      <p class="hint" style="margin-bottom: 0.75rem;">Odaberi stariju i noviju snimku, zatim zeleni gumb.</p>
+      <div class="field-row">
+        <label for="snapshot-from-select">1. Starija snimka (baza)</label>
+        <select id="snapshot-from-select" class="snapshot-select" disabled>
+          <option value="">Učitavam…</option>
+        </select>
+      </div>
+      <div class="field-row">
+        <label for="snapshot-select">2. Novija snimka</label>
+        <select id="snapshot-select" class="snapshot-select" disabled>
+          <option value="">Učitavam snimke…</option>
+        </select>
+      </div>
+    <div id="snapshot-detail" class="snapshot-detail empty"></div>
+      <div class="actions">
+        <button type="button" class="sudreg" id="btn-promjene-diff">Usporedi promjene (SCN diff)</button>
+      </div>
+    </div>
+    <p class="section-label">Pojedinačni dohvat /promjene</p>
     <div class="field-row">
       <label>Straničenje (GET /promjene)</label>
       <div class="inline-group">
@@ -200,13 +235,10 @@
       </div>
     </div>
     <div class="actions">
-      <button type="button" id="btn-promjene">Dohvati promjene</button>
-      <button type="button" class="secondary" id="btn-promjene-diff">Razlika između snimki (SCN)</button>
+      <button type="button" id="btn-promjene">Dohvati jednu stranicu (novija snimka)</button>
     </div>
-    <p class="hint" style="margin-top: 0.5rem;">U diffu: <code>pomak</code> = pomak indeksa u sortiranom popisu (novi − stari); <code>scn_pomak</code> samo kod promjene. Offset/limit iznad vrijedi samo za pojedinačni dohvat.</p>
-    <pre id="response" class="empty">Odaberi snapshot ili klikni gumb…</pre>
+    <pre id="response" class="empty">Odaberi snimke i klikni „Usporedi promjene”…</pre>
     <p class="meta" id="meta"></p>
-    <p class="meta">UI v9</p>
   </main>
   <script>
     const out = document.getElementById('response');
@@ -234,7 +266,7 @@
       btnSnapshotsRefresh.disabled = busy;
       btnSnapshotsJson.disabled = busy;
       btnPromjene.disabled = busy;
-      btnPromjeneDiff.disabled = busy;
+      if (btnPromjeneDiff) btnPromjeneDiff.disabled = busy;
       promjeneOffset.disabled = busy;
       promjeneLimit.disabled = busy;
       const hasSnapshots = Object.keys(snapshotsById).length > 0;
@@ -269,19 +301,28 @@
       return '#' + id + (ts ? ' · ' + ts : '') + stale + desc;
     }
 
-    function renderSnapshotDetail(s) {
-      if (!s) {
+    function snapshotSummaryHtml(s, title) {
+      if (!s) return '<p><strong>' + escapeHtml(title) + ':</strong> —</p>';
+      return '<p><strong>' + escapeHtml(title) + ' (# ' + escapeHtml(String(s.id)) + '):</strong> ' +
+        escapeHtml(String(s.timestamp || '—').replace('T', ' ').slice(0, 19)) +
+        ' · starost ' + escapeHtml(String(s.staleness != null ? s.staleness : '—')) + '</p>';
+    }
+
+    function renderCompareSelection() {
+      const fromId = snapshotFromSelect.value;
+      const toId = snapshotSelect.value;
+      const fromS = fromId && snapshotsById[fromId] ? snapshotsById[fromId] : null;
+      const toS = toId && snapshotsById[toId] ? snapshotsById[toId] : null;
+      if (!fromS && !toS) {
         snapshotDetail.classList.add('empty');
         snapshotDetail.textContent = '';
         return;
       }
       snapshotDetail.classList.remove('empty');
-      snapshotDetail.innerHTML =
-        '<strong>snapshot_id:</strong> ' + escapeHtml(String(s.id)) +
-        '<br><strong>timestamp:</strong> ' + escapeHtml(String(s.timestamp || '—')) +
-        '<br><strong>available_until:</strong> ' + escapeHtml(String(s.available_until || '—')) +
-        '<br><strong>staleness:</strong> ' + escapeHtml(String(s.staleness != null ? s.staleness : '—')) +
-        (s.description ? '<br><strong>opis:</strong> ' + escapeHtml(String(s.description)) : '');
+      snapshotDetail.innerHTML = snapshotSummaryHtml(fromS, 'Starija') + snapshotSummaryHtml(toS, 'Novija');
+      if (fromId && toId) {
+        meta.textContent = 'Usporedba: #' + fromId + ' → #' + toId;
+      }
     }
 
     function normalizeSnapshotsList(payload) {
@@ -338,21 +379,12 @@
         snapshotSelect.value = String(newest.id);
         const baseline = suggestBaselineSnapshot(newest.id);
         if (baseline) snapshotFromSelect.value = baseline;
-        onSnapshotSelected();
+        renderCompareSelection();
       }
     }
 
-    function onSnapshotSelected() {
-      const id = snapshotSelect.value;
-      if (!id || !snapshotsById[id]) {
-        renderSnapshotDetail(null);
-        show('Odaberi snapshot iz liste.', false);
-        return;
-      }
-      const s = snapshotsById[id];
-      renderSnapshotDetail(s);
-      show(JSON.stringify(s, null, 2), false);
-      meta.textContent = 'snapshot_id=' + id + ' (za API: ?snapshot_id=' + id + ')';
+    function onSnapshotSelectionChange() {
+      renderCompareSelection();
     }
 
     async function loadSnapshotsDropdown() {
@@ -404,15 +436,9 @@
     snapshotSelect.addEventListener('change', () => {
       const baseline = suggestBaselineSnapshot(snapshotSelect.value);
       if (baseline && snapshotsById[baseline]) snapshotFromSelect.value = baseline;
-      onSnapshotSelected();
+      onSnapshotSelectionChange();
     });
-    snapshotFromSelect.addEventListener('change', () => {
-      const from = snapshotFromSelect.value;
-      const to = snapshotSelect.value;
-      if (from && to) {
-        meta.textContent = 'Usporedba SCN: from #' + from + ' → to #' + to;
-      }
-    });
+    snapshotFromSelect.addEventListener('change', onSnapshotSelectionChange);
     btnStatus.addEventListener('click', () => fetchPath('/api/status', true));
     btnHealth.addEventListener('click', () => fetchPath('/health', false));
     btnSudreg.addEventListener('click', () => fetchPath('/api/sudreg/token-info', true));
@@ -497,7 +523,7 @@
       }
     }
 
-    btnPromjeneDiff.addEventListener('click', () => fetchPromjeneDiff());
+    if (btnPromjeneDiff) btnPromjeneDiff.addEventListener('click', () => fetchPromjeneDiff());
 
     loadSnapshotsDropdown();
   </script>
