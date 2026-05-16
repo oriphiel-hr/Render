@@ -192,12 +192,28 @@
       color: var(--muted);
     }
     #dl-status.ready { color: var(--sudreg); }
+    .dataset-detail {
+      margin: 0 0 0.75rem;
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: rgba(61, 139, 253, 0.06);
+      font-size: 0.84rem;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+    .dataset-detail strong { color: var(--text); }
+    .dataset-detail ul {
+      margin: 0.35rem 0 0;
+      padding-left: 1.2rem;
+    }
+    .dataset-detail li { margin: 0.15rem 0; }
   </style>
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v17</span></h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v17</strong>.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v18</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v18</strong>.</p>
     <p class="section-label">Servis</p>
     <div class="actions">
       <button type="button" id="btn-status">Provjeri status</button>
@@ -228,6 +244,23 @@
       <div class="actions">
         <button type="button" class="sudreg" id="btn-promjene-diff">Usporedi promjene (SCN diff)</button>
       </div>
+    </div>
+
+    <p class="section-label">Matični podaci (odabrani skupovi)</p>
+    <p class="hint" style="margin-bottom: 0.65rem;">Samo ono što treba za import — bez podružnica, GFI i ostalog. Dohvat će doći u sljedećem koraku.</p>
+    <div class="field-row">
+      <label for="dataset-select">Skup podataka</label>
+      <select id="dataset-select" class="snapshot-select">
+        <option value="tvrtka">Tvrtka — mbs, oib, naziv, pravni oblik, status…</option>
+        <option value="sjedište">Sjedište — adresa, naselje, poštanski broj, država…</option>
+        <option value="email">Email — mbs, rbr, adresa</option>
+        <option value="djelatnost">Djelatnost — NKD, vrsta (pretežita / predmet / evidencijska)</option>
+      </select>
+    </div>
+    <div id="dataset-detail" class="dataset-detail"></div>
+    <div class="actions">
+      <button type="button" id="btn-dataset-fetch" disabled title="Uskoro">Dohvati skup (uskoro)</button>
+      <button type="button" class="secondary" id="btn-dataset-list">JSON plana skupova</button>
     </div>
 
     <p class="section-label">Šifrarnici</p>
@@ -319,6 +352,10 @@
     const btnStagingSaveTo = document.getElementById('btn-staging-save-to');
     const btnStagingSaveDiff = document.getElementById('btn-staging-save-diff');
     const btnStagingList = document.getElementById('btn-staging-list');
+    const datasetSelect = document.getElementById('dataset-select');
+    const datasetDetail = document.getElementById('dataset-detail');
+    const btnDatasetFetch = document.getElementById('btn-dataset-fetch');
+    const btnDatasetList = document.getElementById('btn-dataset-list');
     const btnSifrarnikFetch = document.getElementById('btn-sifrarnik-fetch');
     const btnSifrarnikList = document.getElementById('btn-sifrarnik-list');
     const sifrarnikSelect = document.getElementById('sifrarnik-select');
@@ -333,6 +370,54 @@
     const snapshotsById = {};
     let snapshotsSorted = [];
 
+    const DATASET_CATALOG = {
+      tvrtka: {
+        label: 'Tvrtka',
+        description: 'Osnovni podaci o subjektu — identitet i status u registru.',
+        apiPaths: ['/subjekti', '/tvrtke'],
+        alt: 'Za jedan MBS: GET /detalji_subjekta',
+        fields: ['mbs', 'oib', 'naziv / tvrtka', 'skraceni_naziv', 'pravni_oblik', 'status', 'datum_osnivanja', 'datum_brisanja']
+      },
+      'sjedište': {
+        label: 'Sjedište',
+        description: 'Adresa sjedišta subjekta.',
+        apiPaths: ['/sjedista'],
+        alt: 'GET /detalji_subjekta → sjediste',
+        fields: ['mbs', 'adresa / ulica', 'naselje', 'postanski_broj', 'drzava', 'sifra_naselja']
+      },
+      email: {
+        label: 'Email',
+        description: 'E-mail adrese — može ih biti više (rbr).',
+        apiPaths: ['/email_adrese'],
+        alt: 'GET /detalji_subjekta → email_adrese[]',
+        fields: ['mbs', 'email_adresa_rbr', 'adresa']
+      },
+      djelatnost: {
+        label: 'Djelatnost (NKD)',
+        description: 'Tri izvora u Sudreg API-ju; polje vrsta označava izvor.',
+        apiPaths: ['/pretezite_djelatnosti', '/predmeti_poslovanja', '/evidencijske_djelatnosti'],
+        alt: 'Šifrarnik NKD: /sifrarnici/nacionalna_klasifikacija_djelatnosti',
+        fields: ['mbs', 'nkd_sifra', 'djelatnost_tekst', 'vrsta: pretezita | predmet | evidencijska']
+      }
+    };
+
+    function renderDatasetDetail() {
+      if (!datasetDetail || !datasetSelect) return;
+      const id = datasetSelect.value;
+      const d = DATASET_CATALOG[id];
+      if (!d) {
+        datasetDetail.textContent = '';
+        return;
+      }
+      const paths = (d.apiPaths || []).map((p) => '<code>' + escapeHtml(p) + '</code>').join(', ');
+      const fields = (d.fields || []).map((f) => '<li>' + escapeHtml(f) + '</li>').join('');
+      datasetDetail.innerHTML =
+        '<p><strong>' + escapeHtml(d.label) + '</strong> — ' + escapeHtml(d.description) + '</p>' +
+        '<p>Sudreg: ' + paths + (d.alt ? ' · ' + escapeHtml(d.alt) : '') + '</p>' +
+        '<p><strong>Polja (plan):</strong></p><ul>' + fields + '</ul>' +
+        '<p style="margin:0.5rem 0 0;font-size:0.8rem;">Podružnice nisu uključene u MVP skup.</p>';
+    }
+
     function setBusy(busy) {
       btnStatus.disabled = busy;
       btnHealth.disabled = busy;
@@ -345,6 +430,8 @@
       if (btnStagingSaveTo) btnStagingSaveTo.disabled = busy;
       if (btnStagingSaveDiff) btnStagingSaveDiff.disabled = busy;
       if (btnStagingList) btnStagingList.disabled = busy;
+      if (btnDatasetList) btnDatasetList.disabled = busy;
+      if (datasetSelect) datasetSelect.disabled = busy;
       if (btnSifrarnikFetch) btnSifrarnikFetch.disabled = busy;
       if (btnSifrarnikList) btnSifrarnikList.disabled = busy;
       if (sifrarnikSelect) sifrarnikSelect.disabled = busy;
@@ -733,6 +820,17 @@
       } finally {
         setBusy(false);
       }
+    }
+
+    if (datasetSelect) datasetSelect.addEventListener('change', renderDatasetDetail);
+    renderDatasetDetail();
+    if (btnDatasetList) {
+      btnDatasetList.addEventListener('click', () => fetchPath('/api/sudreg/datasets', true));
+    }
+    if (btnDatasetFetch) {
+      btnDatasetFetch.addEventListener('click', () => {
+        show('Dohvat skupova podataka još nije implementiran — koristi /promjene + diff za MBS, zatim će doći puni dohvat po skupu.', false);
+      });
     }
 
     if (btnSifrarnikFetch) btnSifrarnikFetch.addEventListener('click', () => fetchSifrarnik());

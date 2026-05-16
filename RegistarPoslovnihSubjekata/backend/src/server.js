@@ -15,6 +15,7 @@ const { getSudregAccessToken } = require('./sudregToken');
 const { getSnapshots, getPromjene } = require('./sudregApi');
 const { comparePromjeneSnapshots } = require('./sudregPromjeneDiff');
 const { listSifrarniciCatalog, getSifrarnik } = require('./sudregSifrarnici');
+const { listDatasets } = require('./sudregDatasets');
 const {
   getDataDir,
   saveSnapshotPromjene,
@@ -308,6 +309,16 @@ async function handleStagingSaveDiff(req, res) {
   }
 }
 
+function handleSudregDatasetsList(res) {
+  sendJson(res, 200, {
+    ok: true,
+    endpoint: '/datasets',
+    description: 'Planirani skupovi matičnih podataka za import (funkcionalnost dohvata uskoro).',
+    excludedNote: 'Podružnice (/nazivi_podruznica, /sjedista_podruznica, …) nisu u MVP skupu.',
+    data: listDatasets()
+  });
+}
+
 function handleSudregSifrarniciList(res) {
   sendJson(res, 200, {
     ok: true,
@@ -401,6 +412,11 @@ const server = http.createServer((req, res) => {
 
   if (pathOnly === '/api/sudreg/snapshots' && req.method === 'GET') {
     handleSudregSnapshots(req, res);
+    return;
+  }
+
+  if (pathOnly === '/api/sudreg/datasets' && req.method === 'GET') {
+    handleSudregDatasetsList(res);
     return;
   }
 
