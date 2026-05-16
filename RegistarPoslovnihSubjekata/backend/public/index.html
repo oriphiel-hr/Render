@@ -212,8 +212,8 @@
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v18</span></h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v18</strong>.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v21</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v21</strong>.</p>
     <p class="section-label">Servis</p>
     <div class="actions">
       <button type="button" id="btn-status">Provjeri status</button>
@@ -247,14 +247,17 @@
     </div>
 
     <p class="section-label">Matični podaci (odabrani skupovi)</p>
-    <p class="hint" style="margin-bottom: 0.65rem;">Samo ono što treba za import — bez podružnica, GFI i ostalog. Dohvat će doći u sljedećem koraku.</p>
+    <p class="hint" style="margin-bottom: 0.65rem;">Subjekti, tvrtka, sjedište, email, djelatnosti i podružnice (sve povezane Sudreg metode). Dohvat uskoro.</p>
     <div class="field-row">
       <label for="dataset-select">Skup podataka</label>
       <select id="dataset-select" class="snapshot-select">
-        <option value="tvrtka">Tvrtka — mbs, oib, naziv, pravni oblik, status…</option>
+        <option value="subjekti">Subjekti — mbs, oib, status, datumi…</option>
+        <option value="pravni_oblici">Pravni oblik — d.o.o., j.d.o.o., kratica…</option>
+        <option value="tvrtka">Tvrtka (naziv) — /tvrtke</option>
         <option value="sjedište">Sjedište — adresa, naselje, poštanski broj, država…</option>
         <option value="email">Email — mbs, rbr, adresa</option>
         <option value="djelatnost">Djelatnost — NKD, vrsta (pretežita / predmet / evidencijska)</option>
+        <option value="podružnica">Podružnica — naziv, skraćeni naziv, sjedište, email, djelatnost</option>
       </select>
     </div>
     <div id="dataset-detail" class="dataset-detail"></div>
@@ -371,12 +374,27 @@
     let snapshotsSorted = [];
 
     const DATASET_CATALOG = {
+      subjekti: {
+        label: 'Subjekti',
+        description: 'Temeljni podaci — GET /subjekti (bez pravnog oblika).',
+        apiPaths: ['/subjekti'],
+        relatedPaths: ['/pravni_oblici'],
+        alt: 'Za jedan MBS/OIB: GET /detalji_subjekta',
+        fields: ['mbs', 'oib', 'status', 'postupak', 'datum_osnivanja', 'datum_brisanja', 'glavna_djelatnost']
+      },
+      pravni_oblici: {
+        label: 'Pravni oblik',
+        description: 'Vrsta oblika po MBS — GET /pravni_oblici (obavezno za d.o.o./j.d.o.o. …).',
+        apiPaths: ['/pravni_oblici'],
+        alt: 'expand_relations=true · šifrarnik /vrste_pravnih_oblika',
+        fields: ['mbs', 'vrsta_pravnog_oblika_id', 'naziv', 'kratica']
+      },
       tvrtka: {
-        label: 'Tvrtka',
-        description: 'Osnovni podaci o subjektu — identitet i status u registru.',
-        apiPaths: ['/subjekti', '/tvrtke'],
-        alt: 'Za jedan MBS: GET /detalji_subjekta',
-        fields: ['mbs', 'oib', 'naziv / tvrtka', 'skraceni_naziv', 'pravni_oblik', 'status', 'datum_osnivanja', 'datum_brisanja']
+        label: 'Tvrtka (naziv)',
+        description: 'Puni i skraćeni naziv — GET /tvrtke (odvojeno od /subjekti).',
+        apiPaths: ['/tvrtke'],
+        alt: 'GET /detalji_subjekta → tvrtka, skracena_tvrtka',
+        fields: ['mbs', 'tvrtka', 'skracena_tvrtka', 'jezik_id', 'status']
       },
       'sjedište': {
         label: 'Sjedište',
@@ -398,6 +416,26 @@
         apiPaths: ['/pretezite_djelatnosti', '/predmeti_poslovanja', '/evidencijske_djelatnosti'],
         alt: 'Šifrarnik NKD: /sifrarnici/nacionalna_klasifikacija_djelatnosti',
         fields: ['mbs', 'nkd_sifra', 'djelatnost_tekst', 'vrsta: pretezita | predmet | evidencijska']
+      },
+      'podružnica': {
+        label: 'Podružnica',
+        description: 'Isti MBS matice + redni broj podružnice — nema zasebnog MBS.',
+        apiPaths: [
+          '/nazivi_podruznica',
+          '/skraceni_nazivi_podruznica',
+          '/sjedista_podruznica',
+          '/email_adrese_podruznica',
+          '/djelatnosti_podruznica'
+        ],
+        alt: 'GET /detalji_subjekta → podruznice[] (zastupanje samo ovdje)',
+        resursi: [
+          { path: '/nazivi_podruznica', label: 'Naziv' },
+          { path: '/skraceni_nazivi_podruznica', label: 'Skraćeni naziv' },
+          { path: '/sjedista_podruznica', label: 'Sjedište' },
+          { path: '/email_adrese_podruznica', label: 'Email' },
+          { path: '/djelatnosti_podruznica', label: 'Djelatnost' }
+        ],
+        fields: ['mbs', 'podruznica_rbr', 'naziv', 'skraceni_naziv', 'sjedište', 'email', 'djelatnost']
       }
     };
 
@@ -410,12 +448,27 @@
         return;
       }
       const paths = (d.apiPaths || []).map((p) => '<code>' + escapeHtml(p) + '</code>').join(', ');
+      const related = (d.relatedPaths || []).length
+        ? '<p>Povezano: ' + d.relatedPaths.map((p) => '<code>' + escapeHtml(p) + '</code>').join(', ') + '</p>'
+        : '';
       const fields = (d.fields || []).map((f) => '<li>' + escapeHtml(f) + '</li>').join('');
+      let resursiHtml = '';
+      if (d.resursi && d.resursi.length) {
+        resursiHtml = '<p><strong>Metode:</strong></p><ul>' +
+          d.resursi.map((r) =>
+            '<li><code>' + escapeHtml(r.path) + '</code> — ' + escapeHtml(r.label) + '</li>'
+          ).join('') + '</ul>';
+      }
+      const mbsNote = id === 'podružnica'
+        ? '<p style="margin:0.5rem 0 0;font-size:0.8rem;">Podružnica dijeli MBS matičnog subjekta (razlikuje se <code>podruznica_rbr</code>).</p>'
+        : '';
       datasetDetail.innerHTML =
         '<p><strong>' + escapeHtml(d.label) + '</strong> — ' + escapeHtml(d.description) + '</p>' +
         '<p>Sudreg: ' + paths + (d.alt ? ' · ' + escapeHtml(d.alt) : '') + '</p>' +
+        related +
+        resursiHtml +
         '<p><strong>Polja (plan):</strong></p><ul>' + fields + '</ul>' +
-        '<p style="margin:0.5rem 0 0;font-size:0.8rem;">Podružnice nisu uključene u MVP skup.</p>';
+        mbsNote;
     }
 
     function setBusy(busy) {

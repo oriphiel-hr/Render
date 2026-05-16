@@ -314,7 +314,6 @@ function handleSudregDatasetsList(res) {
     ok: true,
     endpoint: '/datasets',
     description: 'Planirani skupovi matičnih podataka za import (funkcionalnost dohvata uskoro).',
-    excludedNote: 'Podružnice (/nazivi_podruznica, /sjedista_podruznica, …) nisu u MVP skupu.',
     data: listDatasets()
   });
 }

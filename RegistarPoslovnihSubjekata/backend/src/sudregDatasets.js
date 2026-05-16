@@ -1,29 +1,64 @@
 /**
- * Odabrani skupovi matičnih podataka (MVP import) — mapiranje na Sudreg API.
+ * Odabrani skupovi matičnih podataka — mapiranje na Sudreg API.
  * @see https://sudreg-data.gov.hr/api/javni/dokumentacija/open_api
  */
 
+const PODRUZNICA_API_PATHS = [
+  '/nazivi_podruznica',
+  '/skraceni_nazivi_podruznica',
+  '/sjedista_podruznica',
+  '/email_adrese_podruznica',
+  '/djelatnosti_podruznica'
+];
+
 const DATASETS = [
   {
-    id: 'tvrtka',
-    label: 'Tvrtka',
-    description: 'Osnovni podaci o subjektu — identitet i status u registru.',
-    apiPaths: ['/subjekti', '/tvrtke'],
-    alternative: 'Za jedan MBS: GET /detalji_subjekta (polja tvrtka, skracena_tvrtka, …)',
+    id: 'subjekti',
+    label: 'Subjekti',
+    description: 'Temeljni podaci subjekta upisa (identitet, status, datumi, sudovi). Pravni oblik nije ovdje — vidi /pravni_oblici.',
+    apiPaths: ['/subjekti'],
+    relatedPaths: ['/pravni_oblici'],
+    alternative: 'Za jedan MBS/OIB: GET /detalji_subjekta',
     paging: true,
     fields: [
       'mbs',
       'oib',
-      'naziv / tvrtka',
-      'skraceni_naziv',
-      'pravni_oblik',
       'status',
+      'postupak',
       'datum_osnivanja',
       'datum_brisanja',
       'sud_id_nadlezan',
       'sud_id_sluzba',
-      'glavna_djelatnost'
+      'glavna_djelatnost',
+      'ino_podruznica',
+      'stecajna_masa',
+      'likvidacijska_masa'
     ]
+  },
+  {
+    id: 'pravni_oblici',
+    label: 'Pravni oblik',
+    description: 'Vrsta pravnog oblika subjekta (d.o.o., j.d.o.o., d.d., …) — jedan red po MBS.',
+    apiPaths: ['/pravni_oblici'],
+    alternative: 'Šifrarnik: /vrste_pravnih_oblika · expand_relations=true za naziv i kraticu',
+    paging: true,
+    expandRelations: true,
+    fields: [
+      'mbs',
+      'vrsta_pravnog_oblika_id',
+      'vrsta_pravnog_oblika.sifra',
+      'vrsta_pravnog_oblika.naziv',
+      'vrsta_pravnog_oblika.kratica'
+    ]
+  },
+  {
+    id: 'tvrtka',
+    label: 'Tvrtka (naziv)',
+    description: 'Puni i skraćeni naziv tvrtke — odvojeno od /subjekti.',
+    apiPaths: ['/tvrtke'],
+    alternative: 'GET /detalji_subjekta → tvrtka, skracena_tvrtka',
+    paging: true,
+    fields: ['mbs', 'tvrtka', 'skracena_tvrtka', 'jezik_id', 'status']
   },
   {
     id: 'sjedište',
@@ -66,6 +101,45 @@ const DATASETS = [
       { id: 'evidencijska', label: 'Evidencijska djelatnost', path: '/evidencijske_djelatnosti' }
     ],
     fields: ['mbs', 'nkd_sifra / nacionalna_klasifikacija_djelatnosti_id', 'djelatnost_tekst', 'vrsta']
+  },
+  {
+    id: 'podružnica',
+    label: 'Podružnica',
+    description:
+      'Podaci o podružnicama — isti MBS matičnog subjekta, razlikovanje rednim brojem podružnice.',
+    apiPaths: PODRUZNICA_API_PATHS,
+    alternative:
+      'GET /detalji_subjekta → podruznice[] (ukl. zastupanje — nema zasebnog bulk endpointa)',
+    paging: true,
+    mbsNote: 'Podružnica nema zaseban MBS — koristi se mbs matice + podruznica_rbr.',
+    resursi: [
+      { id: 'naziv', label: 'Naziv podružnice', path: '/nazivi_podruznica', fields: ['mbs', 'podruznica_rbr', 'naziv', 'jezik_id'] },
+      {
+        id: 'skraceni_naziv',
+        label: 'Skraćeni naziv podružnice',
+        path: '/skraceni_nazivi_podruznica',
+        fields: ['mbs', 'podruznica_rbr', 'skraceni_naziv', 'jezik_id']
+      },
+      {
+        id: 'sjedište',
+        label: 'Sjedište podružnice',
+        path: '/sjedista_podruznica',
+        fields: ['mbs', 'podruznica_rbr', 'ulica', 'naselje', 'postanski_broj', 'drzava']
+      },
+      {
+        id: 'email',
+        label: 'Email podružnice',
+        path: '/email_adrese_podruznica',
+        fields: ['mbs', 'podruznica_rbr', 'email_adresa_rbr', 'adresa']
+      },
+      {
+        id: 'djelatnost',
+        label: 'Djelatnosti podružnice',
+        path: '/djelatnosti_podruznica',
+        fields: ['mbs', 'podruznica_rbr', 'nkd_sifra', 'djelatnost_tekst']
+      }
+    ],
+    fields: ['mbs', 'podruznica_rbr', 'naziv', 'skraceni_naziv', 'sjedište', 'email', 'djelatnost']
   }
 ];
 
@@ -77,9 +151,14 @@ function listDatasets() {
     label: d.label,
     description: d.description,
     apiPaths: d.apiPaths,
+    relatedPaths: d.relatedPaths || null,
+    expandRelations: d.expandRelations === true,
     paging: d.paging !== false,
     fields: d.fields,
     vrste: d.vrste || null,
+    resursi: d.resursi || null,
+    mbsNote: d.mbsNote || null,
+    alternative: d.alternative || null,
     planned: true
   }));
 }
@@ -88,4 +167,4 @@ function getDataset(id) {
   return BY_ID.get(String(id || '').trim()) || null;
 }
 
-module.exports = { DATASETS, listDatasets, getDataset };
+module.exports = { DATASETS, PODRUZNICA_API_PATHS, listDatasets, getDataset };
