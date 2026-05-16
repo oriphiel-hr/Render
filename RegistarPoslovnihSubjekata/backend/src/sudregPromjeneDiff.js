@@ -31,116 +31,7 @@ function toMbsNum(row) {
   return Number.isFinite(n) ? n : null;
 }
 
-function rowBrief(row) {
-  return {
-    mbs: row.mbs,
-    id: row.id,
-    scn: row.scn,
-    vrijeme: row.vrijeme
-  };
-}
-
-function checkMbsOrderViolation(previousRow, currentRow, ctx) {
-  const prevMbs = toMbsNum(previousRow);
-  const curMbs = toMbsNum(currentRow);
-  if (prevMbs == null || curMbs == null) return null;
-  if (curMbs >= prevMbs) return null;
-  return {
-    ...ctx,
-    previous_mbs: prevMbs,
-    current_mbs: curMbs,
-    mbs_drop: prevMbs - curMbs,
-    previous: rowBrief(previousRow),
-    current: rowBrief(currentRow)
-  };
-}
-
-/**
- * Dijagnostika: koji susjedni redovi u API odgovoru nisu po rastućem mbs.
- * @param {string|number} snapshotId
- * @param {{ limit?: number, maxViolations?: number, signal?: AbortSignal }} [opts]
- */
-async function auditPromjeneMbsOrder(snapshotId, opts = {}) {
-  const id = String(snapshotId);
-  const pageLimit = opts.limit ?? FULL_FETCH_PAGE_LIMIT;
-  const maxViolations = opts.maxViolations ?? 500;
-  const violations = [];
-  let offset = 0;
-  let pages = 0;
-  let totalCount = null;
-  let rowsRead = 0;
-  let globalIndex = 0;
-  let lastRowOfPrevPage = null;
-
-  while (true) {
-    const pageOffset = offset;
-    const result = await getPromjene({
-      snapshot_id: id,
-      offset,
-      limit: pageLimit,
-      no_data_error: '0',
-      signal: opts.signal
-    });
-    pages += 1;
-    if (totalCount == null) {
-      totalCount = parseHeaderInt(result.meta?.xTotalCount);
-    }
-    const chunk = normalizePromjeneArray(result.data);
-    if (chunk.length === 0) break;
-
-    for (let i = 1; i < chunk.length; i += 1) {
-      if (violations.length >= maxViolations) break;
-      const v = checkMbsOrderViolation(chunk[i - 1], chunk[i], {
-        kind: 'within_page',
-        snapshot_id: id,
-        page: pages,
-        request_offset: pageOffset,
-        index_in_page: i,
-        global_index: globalIndex + i
-      });
-      if (v) violations.push(v);
-    }
-
-    if (
-      lastRowOfPrevPage &&
-      chunk[0] &&
-      violations.length < maxViolations
-    ) {
-      const v = checkMbsOrderViolation(lastRowOfPrevPage, chunk[0], {
-        kind: 'page_boundary',
-        snapshot_id: id,
-        page: pages,
-        request_offset: pageOffset,
-        index_in_page: 0,
-        global_index: globalIndex
-      });
-      if (v) violations.push(v);
-    }
-
-    lastRowOfPrevPage = chunk[chunk.length - 1];
-    globalIndex += chunk.length;
-    rowsRead += chunk.length;
-    offset += chunk.length;
-
-    if (totalCount != null && rowsRead >= totalCount) break;
-    if (chunk.length < pageLimit) break;
-    if (violations.length >= maxViolations) break;
-  }
-
-  return {
-    snapshot_id: id,
-    pages,
-    rowsRead,
-    totalCount: totalCount ?? rowsRead,
-    complete: totalCount == null ? null : rowsRead >= totalCount,
-    ordered_by_mbs: violations.length === 0,
-    violationCount: violations.length,
-    truncated: violations.length >= maxViolations,
-    violations
-  };
-}
-
-/** Numerički sort po mbs (API ponekad nije globalno sortiran po stranicama). */
+/** Numerički sort po mbs prije SCN usporedbe. */
 function sortPromjeneByMbs(rows) {
   return rows.slice().sort((a, b) => {
     const ma = toMbsNum(a);
@@ -448,7 +339,6 @@ module.exports = {
   comparePromjeneWithReaders,
   normalizePromjeneArray,
   sortPromjeneByMbs,
-  auditPromjeneMbsOrder,
   indexPromjeneByMbs,
   filterPromjeneDiff,
   fetchAllPromjene,

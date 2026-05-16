@@ -13,7 +13,7 @@ const fs = require('fs');
 const path = require('path');
 const { getSudregAccessToken } = require('./sudregToken');
 const { getSnapshots, getPromjene } = require('./sudregApi');
-const { comparePromjeneSnapshots, auditPromjeneMbsOrder } = require('./sudregPromjeneDiff');
+const { comparePromjeneSnapshots } = require('./sudregPromjeneDiff');
 const {
   getDataDir,
   saveSnapshotPromjene,
@@ -254,33 +254,6 @@ async function handleStagingSaveDiff(req, res) {
   }
 }
 
-async function handleSudregPromjeneOrderAudit(req, res) {
-  const q = parseQueryString(req.url);
-  const snapshotId = q.get('snapshot_id');
-  if (!snapshotId) {
-    sendJson(res, 400, { ok: false, error: 'snapshot_id je obavezan.' });
-    return;
-  }
-  const maxViolations = parsePagingInt(q.get('max'), 500);
-  const t0 = Date.now();
-  try {
-    const report = await auditPromjeneMbsOrder(snapshotId, { maxViolations });
-    sendJson(res, 200, {
-      ok: true,
-      endpoint: '/promjene/order-audit',
-      durationMs: Date.now() - t0,
-      ...report
-    });
-  } catch (e) {
-    sendJson(res, 500, {
-      ok: false,
-      endpoint: '/promjene/order-audit',
-      durationMs: Date.now() - t0,
-      error: e instanceof Error ? e.message : String(e)
-    });
-  }
-}
-
 async function handleSudregTokenInfo(res) {
   try {
     const t = await getSudregAccessToken();
@@ -345,11 +318,6 @@ const server = http.createServer((req, res) => {
 
   if (pathOnly === '/api/staging/list' && req.method === 'GET') {
     handleStagingList(res);
-    return;
-  }
-
-  if (pathOnly === '/api/sudreg/promjene/order-audit' && req.method === 'GET') {
-    handleSudregPromjeneOrderAudit(req, res);
     return;
   }
 
