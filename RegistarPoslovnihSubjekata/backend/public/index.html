@@ -189,8 +189,8 @@
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v10</span></h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya obavezno <strong>Ctrl+F5</strong> — u podnožju mora pisati <strong>UI v10</strong>.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v11</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v11</strong>.</p>
     <p class="section-label">Servis</p>
     <div class="actions">
       <button type="button" id="btn-status">Provjeri status</button>
@@ -222,6 +222,16 @@
         <button type="button" class="sudreg" id="btn-promjene-diff">Usporedi promjene (SCN diff)</button>
       </div>
     </div>
+
+    <p class="section-label">Staging na disk</p>
+    <p class="hint" style="margin-bottom: 0.65rem;"><code>data/snapshots/{id}/promjene.jsonl</code> · <code>data/diffs/{stari}_to_{novi}/</code></p>
+    <div class="actions">
+      <button type="button" class="secondary" id="btn-staging-save-from">Spremi staru snimku</button>
+      <button type="button" class="secondary" id="btn-staging-save-to">Spremi novu snimku</button>
+      <button type="button" class="secondary" id="btn-staging-save-diff">Spremi diff na disk</button>
+      <button type="button" class="secondary" id="btn-staging-list">Pregled diska</button>
+    </div>
+
     <p class="section-label">Pojedinačni dohvat /promjene</p>
     <div class="field-row">
       <label>Straničenje (GET /promjene)</label>
@@ -250,6 +260,10 @@
     const btnSnapshotsJson = document.getElementById('btn-snapshots-json');
     const btnPromjene = document.getElementById('btn-promjene');
     const btnPromjeneDiff = document.getElementById('btn-promjene-diff');
+    const btnStagingSaveFrom = document.getElementById('btn-staging-save-from');
+    const btnStagingSaveTo = document.getElementById('btn-staging-save-to');
+    const btnStagingSaveDiff = document.getElementById('btn-staging-save-diff');
+    const btnStagingList = document.getElementById('btn-staging-list');
     const promjeneOffset = document.getElementById('promjene-offset');
     const promjeneLimit = document.getElementById('promjene-limit');
     const snapshotSelect = document.getElementById('snapshot-select');
@@ -267,6 +281,10 @@
       btnSnapshotsJson.disabled = busy;
       btnPromjene.disabled = busy;
       if (btnPromjeneDiff) btnPromjeneDiff.disabled = busy;
+      if (btnStagingSaveFrom) btnStagingSaveFrom.disabled = busy;
+      if (btnStagingSaveTo) btnStagingSaveTo.disabled = busy;
+      if (btnStagingSaveDiff) btnStagingSaveDiff.disabled = busy;
+      if (btnStagingList) btnStagingList.disabled = busy;
       promjeneOffset.disabled = busy;
       promjeneLimit.disabled = busy;
       const hasSnapshots = Object.keys(snapshotsById).length > 0;
@@ -524,6 +542,61 @@
     }
 
     if (btnPromjeneDiff) btnPromjeneDiff.addEventListener('click', () => fetchPromjeneDiff());
+
+    async function stagingFetch(path, busyMsg) {
+      setBusy(true);
+      if (busyMsg) show(busyMsg, false);
+      const t0 = performance.now();
+      try {
+        const res = await fetch(path, { headers: { Accept: 'application/json' } });
+        const body = await res.json();
+        const ms = Math.round(performance.now() - t0);
+        meta.textContent = (res.ok ? 'OK' : 'Greška') + ' · ' + ms + ' ms · ' + path;
+        show(JSON.stringify(body, null, 2), !res.ok || !body.ok);
+        return body;
+      } catch (e) {
+        show('Greška: ' + (e.message || String(e)), true);
+        meta.textContent = path;
+        return null;
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    if (btnStagingSaveFrom) {
+      btnStagingSaveFrom.addEventListener('click', () => {
+        const id = snapshotFromSelect.value;
+        if (!id) { show('Odaberi stariju snimku.', true); return; }
+        stagingFetch('/api/staging/save-promjene?snapshot_id=' + encodeURIComponent(id),
+          'Preuzimam i spremam /promjene za snapshot #' + id + '…');
+      });
+    }
+    if (btnStagingSaveTo) {
+      btnStagingSaveTo.addEventListener('click', () => {
+        const id = snapshotSelect.value;
+        if (!id) { show('Odaberi noviju snimku.', true); return; }
+        stagingFetch('/api/staging/save-promjene?snapshot_id=' + encodeURIComponent(id),
+          'Preuzimam i spremam /promjene za snapshot #' + id + '…');
+      });
+    }
+    if (btnStagingSaveDiff) {
+      btnStagingSaveDiff.addEventListener('click', () => {
+        const fromId = snapshotFromSelect.value;
+        const toId = snapshotSelect.value;
+        if (!fromId || !toId) { show('Odaberi obje snimke.', true); return; }
+        if (fromId === toId) { show('Snimke moraju biti različite.', true); return; }
+        const qs = new URLSearchParams({
+          snapshot_id_from: fromId,
+          snapshot_id_to: toId,
+          save_snapshots: '1'
+        });
+        stagingFetch('/api/staging/save-diff?' + qs.toString(),
+          'Spremam snimke (ako treba) i diff #' + fromId + ' → #' + toId + '…');
+      });
+    }
+    if (btnStagingList) {
+      btnStagingList.addEventListener('click', () => stagingFetch('/api/staging/list', null));
+    }
 
     loadSnapshotsDropdown();
   </script>

@@ -14,6 +14,12 @@ const path = require('path');
 const { getSudregAccessToken } = require('./sudregToken');
 const { getSnapshots, getPromjene } = require('./sudregApi');
 const { comparePromjeneSnapshots } = require('./sudregPromjeneDiff');
+const {
+  getDataDir,
+  saveSnapshotPromjene,
+  savePromjeneDiff,
+  listStaging
+} = require('./sudregStaging');
 
 const port = Number(process.env.PORT) || 3000;
 
@@ -181,6 +187,73 @@ async function handleSudregPromjeneDiff(req, res) {
   }
 }
 
+async function handleStagingList(res) {
+  try {
+    sendJson(res, 200, { ok: true, ...listStaging() });
+  } catch (e) {
+    sendJson(res, 500, { ok: false, error: e instanceof Error ? e.message : String(e) });
+  }
+}
+
+async function handleStagingSavePromjene(req, res) {
+  const q = parseQueryString(req.url);
+  const snapshotId = q.get('snapshot_id');
+  if (!snapshotId) {
+    sendJson(res, 400, { ok: false, error: 'snapshot_id je obavezan.' });
+    return;
+  }
+  const force = q.get('force') === '1';
+  const t0 = Date.now();
+  try {
+    const result = await saveSnapshotPromjene(snapshotId, { force });
+    sendJson(res, 200, {
+      ok: true,
+      durationMs: Date.now() - t0,
+      dataDir: getDataDir(),
+      ...result
+    });
+  } catch (e) {
+    sendJson(res, 500, {
+      ok: false,
+      durationMs: Date.now() - t0,
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
+}
+
+async function handleStagingSaveDiff(req, res) {
+  const q = parseQueryString(req.url);
+  const fromId = q.get('snapshot_id_from');
+  const toId = q.get('snapshot_id_to');
+  if (!fromId || !toId) {
+    sendJson(res, 400, {
+      ok: false,
+      error: 'snapshot_id_from i snapshot_id_to su obavezni.'
+    });
+    return;
+  }
+  const saveSnapshots = q.get('save_snapshots') !== '0';
+  const t0 = Date.now();
+  try {
+    const result = await savePromjeneDiff(fromId, toId, {
+      save_snapshots: saveSnapshots,
+      prefer_disk: true
+    });
+    sendJson(res, 200, {
+      ok: true,
+      durationMs: Date.now() - t0,
+      dataDir: getDataDir(),
+      ...result
+    });
+  } catch (e) {
+    sendJson(res, 500, {
+      ok: false,
+      durationMs: Date.now() - t0,
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
+}
+
 async function handleSudregTokenInfo(res) {
   try {
     const t = await getSudregAccessToken();
@@ -217,7 +290,8 @@ const server = http.createServer((req, res) => {
       sudregConfigured: Boolean(
         String(process.env.SUDREG_CLIENT_ID || '').trim() &&
           String(process.env.SUDREG_CLIENT_SECRET || '').trim()
-      )
+      ),
+      dataDir: getDataDir()
     });
     return;
   }
@@ -242,6 +316,21 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (pathOnly === '/api/staging/list' && req.method === 'GET') {
+    handleStagingList(res);
+    return;
+  }
+
+  if (pathOnly === '/api/staging/save-promjene' && req.method === 'GET') {
+    handleStagingSavePromjene(req, res);
+    return;
+  }
+
+  if (pathOnly === '/api/staging/save-diff' && req.method === 'GET') {
+    handleStagingSaveDiff(req, res);
+    return;
+  }
+
   if (pathOnly === '/' || pathOnly === '/index.html') {
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       sendText(res, 405, 'Method Not Allowed');
@@ -262,6 +351,7 @@ const server = http.createServer((req, res) => {
 server.listen(port, '0.0.0.0', () => {
   const indexPath = findIndexHtmlPath();
   console.log(`[registar-rps] listening on 0.0.0.0:${port}`);
+  console.log(`[registar-rps] staging dataDir: ${getDataDir()}`);
   if (indexPath) console.log(`[registar-rps] index.html: ${indexPath}`);
   else console.warn('[registar-rps] index.html missing — COPY public ./public u Dockerfile.prod');
 });

@@ -114,6 +114,31 @@ class PromjeneSortedReader {
   }
 }
 
+/** Čitač već učitanog sortiranog niza (npr. s diska). */
+class PromjeneArrayReader {
+  constructor(rows, snapshotId, totalCount) {
+    this.snapshotId = String(snapshotId);
+    this.buffer = rows;
+    this.bufferIdx = 0;
+    this.pages = 1;
+    this.rowsRead = rows.length;
+    this.totalCount = totalCount != null ? totalCount : rows.length;
+    this.done = false;
+  }
+
+  async peek() {
+    return this.bufferIdx < this.buffer.length ? this.buffer[this.bufferIdx] : null;
+  }
+
+  async advance() {
+    const row = await this.peek();
+    if (row) this.bufferIdx += 1;
+    return row;
+  }
+
+  assertComplete() {}
+}
+
 function indexPromjeneByMbs(rows) {
   const byMbs = new Map();
   for (const row of rows) {
@@ -164,24 +189,7 @@ async function fetchAllPromjene(snapshotId, opts = {}) {
   };
 }
 
-/**
- * Usporedba cijelih setova: merge po mbs kroz sve stranice obje snimke.
- */
-async function comparePromjeneSnapshots(params) {
-  const fromId = String(params.snapshot_id_from);
-  const toId = String(params.snapshot_id_to);
-
-  const oldReader = new PromjeneSortedReader(fromId, {
-    no_data_error: '0',
-    omit_nulls: params.omit_nulls,
-    signal: params.signal
-  });
-  const newReader = new PromjeneSortedReader(toId, {
-    no_data_error: '0',
-    omit_nulls: params.omit_nulls,
-    signal: params.signal
-  });
-
+async function comparePromjeneWithReaders(oldReader, newReader, fromId, toId) {
   const diff = [];
   let newCount = 0;
   let updatedCount = 0;
@@ -291,9 +299,46 @@ async function comparePromjeneSnapshots(params) {
   };
 }
 
+/**
+ * Usporedba cijelih setova: merge po mbs (API ili pred učitani nizovi s diska).
+ */
+async function comparePromjeneSnapshots(params) {
+  const fromId = String(params.snapshot_id_from);
+  const toId = String(params.snapshot_id_to);
+
+  let oldReader;
+  let newReader;
+
+  if (params.baseline_rows && params.target_rows) {
+    assertSortedByMbs(params.baseline_rows, fromId, 1);
+    assertSortedByMbs(params.target_rows, toId, 1);
+    oldReader = new PromjeneArrayReader(
+      params.baseline_rows,
+      fromId,
+      params.baseline_totalCount
+    );
+    newReader = new PromjeneArrayReader(params.target_rows, toId, params.target_totalCount);
+  } else {
+    oldReader = new PromjeneSortedReader(fromId, {
+      no_data_error: '0',
+      omit_nulls: params.omit_nulls,
+      signal: params.signal
+    });
+    newReader = new PromjeneSortedReader(toId, {
+      no_data_error: '0',
+      omit_nulls: params.omit_nulls,
+      signal: params.signal
+    });
+  }
+
+  return comparePromjeneWithReaders(oldReader, newReader, fromId, toId);
+}
+
 module.exports = {
   FULL_FETCH_PAGE_LIMIT,
   PromjeneSortedReader,
+  PromjeneArrayReader,
+  comparePromjeneWithReaders,
   normalizePromjeneArray,
   indexPromjeneByMbs,
   filterPromjeneDiff,
