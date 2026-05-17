@@ -6,6 +6,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const readline = require('readline');
 const { getPromjene } = require('./sudregApi');
 const { closeWriteStream } = require('./jsonlStream');
 
