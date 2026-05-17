@@ -334,5 +334,6 @@ module.exports = {
   listStaging,
   resolveStagingDownload,
   readJsonl,
-  writeJsonl
+  writeJsonl,
+  readJson
 };

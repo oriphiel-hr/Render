@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Snimka /promjene — prvo na disk (meta.json + promjene.jsonl), zatim sync u bazu.
+model StagedSnapshot {
+  id           String     @id @default(cuid())
+  snapshotId   Int        @unique
+  metaJson     Json
+  diskRelPath  String
+  rowCount     Int        @default(0)
+  savedAt      DateTime
+  dbSyncedAt   DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  promjene     Promjena[]
+
+  @@map("staged_snapshots")
+}
+
+/// SCN diff između dviju snimki — disk pa baza.
+model StagedDiff {
+  id             String     @id @default(cuid())
+  snapshotIdFrom Int
+  snapshotIdTo   Int
+  metaJson       Json
+  diskRelPath    String
+  diffRowCount   Int        @default(0)
+  savedAt        DateTime
+  dbSyncedAt     DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  promjene       Promjena[]
+
+  @@unique([snapshotIdFrom, snapshotIdTo])
+  @@map("staged_diffs")
+}
+
+/// Indeks promjena (cijela snimka ili diff red).
+model Promjena {
+  id             String          @id @default(cuid())
+  mbs            Int
+  promjenaId     BigInt
+  vrijeme        DateTime
+  scn            BigInt
+  snapshotId     Int?
+  snapshotIdFrom Int?
+  snapshotIdTo   Int?
+  vrsta          String?
+  scnStaro       BigInt?
+  stagedSnapshotId String?
+  stagedDiffId     String?
+  createdAt      DateTime        @default(now())
+  stagedSnapshot StagedSnapshot? @relation(fields: [stagedSnapshotId], references: [id], onDelete: Cascade)
+  stagedDiff     StagedDiff?     @relation(fields: [stagedDiffId], references: [id], onDelete: Cascade)
+
+  @@unique([snapshotId, promjenaId])
+  @@unique([snapshotIdFrom, snapshotIdTo, mbs])
+  @@index([snapshotId])
+  @@index([snapshotIdTo])
+  @@index([mbs])
+  @@map("promjene")
+}

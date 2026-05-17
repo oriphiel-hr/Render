@@ -24,6 +24,13 @@ const {
   listStaging,
   resolveStagingDownload
 } = require('./sudregStaging');
+const {
+  shouldSyncDb,
+  syncSnapshotPromjeneToDb,
+  syncDiffPromjeneToDb,
+  getDbStagingSummary,
+  isDatabaseConfigured
+} = require('./sudregDb');
 
 const port = Number(process.env.PORT) || 3000;
 
@@ -259,13 +266,19 @@ async function handleStagingSavePromjene(req, res) {
     return;
   }
   const force = q.get('force') === '1';
+  const syncDb = shouldSyncDb({ sync_db: q.get('sync_db') });
   const t0 = Date.now();
   try {
     const result = await saveSnapshotPromjene(snapshotId, { force });
+    let database = null;
+    if (syncDb) {
+      database = await syncSnapshotPromjeneToDb(snapshotId);
+    }
     sendJson(res, 200, {
       ok: true,
       durationMs: Date.now() - t0,
       dataDir: getDataDir(),
+      database,
       ...result
     });
   } catch (e) {
@@ -289,17 +302,72 @@ async function handleStagingSaveDiff(req, res) {
     return;
   }
   const saveSnapshots = q.get('save_snapshots') !== '0';
+  const syncDb = shouldSyncDb({ sync_db: q.get('sync_db') });
   const t0 = Date.now();
   try {
     const result = await savePromjeneDiff(fromId, toId, {
       save_snapshots: saveSnapshots,
       prefer_disk: true
     });
+    let database = null;
+    if (syncDb) {
+      database = await syncDiffPromjeneToDb(fromId, toId);
+    }
     sendJson(res, 200, {
       ok: true,
       durationMs: Date.now() - t0,
       dataDir: getDataDir(),
+      database,
       ...result
+    });
+  } catch (e) {
+    sendJson(res, 500, {
+      ok: false,
+      durationMs: Date.now() - t0,
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
+}
+
+async function handleDbStagingSummary(res) {
+  try {
+    const summary = await getDbStagingSummary();
+    sendJson(res, 200, { ok: true, ...summary });
+  } catch (e) {
+    sendJson(res, 500, {
+      ok: false,
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
+}
+
+async function handleStagingSyncDb(req, res) {
+  const q = parseQueryString(req.url);
+  const snapshotId = q.get('snapshot_id');
+  const fromId = q.get('snapshot_id_from');
+  const toId = q.get('snapshot_id_to');
+  const t0 = Date.now();
+  if (!isDatabaseConfigured()) {
+    sendJson(res, 400, { ok: false, error: 'DATABASE_URL nije postavljen.' });
+    return;
+  }
+  try {
+    let database;
+    if (fromId && toId) {
+      database = await syncDiffPromjeneToDb(fromId, toId);
+    } else if (snapshotId) {
+      database = await syncSnapshotPromjeneToDb(snapshotId);
+    } else {
+      sendJson(res, 400, {
+        ok: false,
+        error: 'snapshot_id ili snapshot_id_from + snapshot_id_to su obavezni.'
+      });
+      return;
+    }
+    sendJson(res, 200, {
+      ok: true,
+      durationMs: Date.now() - t0,
+      database
     });
   } catch (e) {
     sendJson(res, 500, {
@@ -456,6 +524,7 @@ const server = http.createServer((req, res) => {
         String(process.env.SUDREG_CLIENT_ID || '').trim() &&
           String(process.env.SUDREG_CLIENT_SECRET || '').trim()
       ),
+      databaseConfigured: isDatabaseConfigured(),
       dataDir: getDataDir()
     });
     return;
@@ -526,6 +595,16 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (pathOnly === '/api/staging/sync-db' && req.method === 'GET') {
+    handleStagingSyncDb(req, res);
+    return;
+  }
+
+  if (pathOnly === '/api/db/staging' && req.method === 'GET') {
+    handleDbStagingSummary(res);
+    return;
+  }
+
   if (pathOnly === '/' || pathOnly === '/index.html') {
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       sendText(res, 405, 'Method Not Allowed');
@@ -547,6 +626,9 @@ server.listen(port, '0.0.0.0', () => {
   const indexPath = findIndexHtmlPath();
   console.log(`[registar-rps] listening on 0.0.0.0:${port}`);
   console.log(`[registar-rps] staging dataDir: ${getDataDir()}`);
+  console.log(
+    `[registar-rps] database: ${isDatabaseConfigured() ? 'DATABASE_URL postavljen (disk → JSON → PostgreSQL)' : 'nije konfigurirano'}`
+  );
   if (indexPath) console.log(`[registar-rps] index.html: ${indexPath}`);
   else console.warn('[registar-rps] index.html missing — COPY public ./public u Dockerfile.prod');
 });

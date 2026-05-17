@@ -8,10 +8,16 @@
     "node": ">=18"
   },
   "scripts": {
-    "start": "node src/server.js",
+    "start": "node src/migrate.js && node src/server.js",
+    "migrate": "node src/migrate.js",
+    "postinstall": "prisma generate",
     "token": "node -e \"require('dotenv').config(); require('./src/sudregToken').getSudregAccessToken().then(t=>console.log(JSON.stringify({tokenType:t.tokenType,expiresIn:t.expiresIn,accessTokenPrefix:t.accessToken.slice(0,12)+'…'}))).catch(e=>{console.error(e);process.exit(1)})\""
   },
   "dependencies": {
+    "@prisma/client": "^5.22.0",
     "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "prisma": "^5.22.0"
   }
 }

@@ -212,8 +212,8 @@
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v23</span></h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v23</strong>.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v24</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v24</strong>.</p>
     <p class="section-label">Servis</p>
     <div class="actions">
       <button type="button" id="btn-status">Provjeri status</button>
@@ -334,13 +334,17 @@
       <button type="button" class="secondary" id="btn-sifrarnik-list">Popis šifrarnika (API)</button>
     </div>
 
-    <p class="section-label">Staging na disk</p>
-    <p class="hint" style="margin-bottom: 0.65rem;"><code>data/snapshots/{id}/promjene.jsonl</code> · <code>data/diffs/{stari}_to_{novi}/</code></p>
+    <p class="section-label">Staging na disk i baza</p>
+    <p class="hint" style="margin-bottom: 0.65rem;">
+      1) JSON na disk · 2) ako je <code>DATABASE_URL</code> postavljen, automatski u PostgreSQL.
+      <code>sync_db=0</code> samo disk. Promjene imaju <code>snapshot_id</code> (diff: <code>snapshot_id_to</code> + <code>from</code>).
+    </p>
     <div class="actions">
       <button type="button" class="secondary" id="btn-staging-save-from">Spremi staru snimku</button>
       <button type="button" class="secondary" id="btn-staging-save-to">Spremi novu snimku</button>
       <button type="button" class="secondary" id="btn-staging-save-diff">Spremi diff na disk</button>
       <button type="button" class="secondary" id="btn-staging-list">Pregled diska</button>
+      <button type="button" class="secondary" id="btn-staging-db">Pregled baze</button>
     </div>
     <p class="section-label">Preuzimanje s diska</p>
     <p id="dl-status">Učitavam snimke…</p>
@@ -384,6 +388,7 @@
     const btnStagingSaveTo = document.getElementById('btn-staging-save-to');
     const btnStagingSaveDiff = document.getElementById('btn-staging-save-diff');
     const btnStagingList = document.getElementById('btn-staging-list');
+    const btnStagingDb = document.getElementById('btn-staging-db');
     const datasetSelect = document.getElementById('dataset-select');
     const datasetDetail = document.getElementById('dataset-detail');
     const btnDatasetFetch = document.getElementById('btn-dataset-fetch');
@@ -550,6 +555,7 @@
       if (btnStagingSaveTo) btnStagingSaveTo.disabled = busy;
       if (btnStagingSaveDiff) btnStagingSaveDiff.disabled = busy;
       if (btnStagingList) btnStagingList.disabled = busy;
+      if (btnStagingDb) btnStagingDb.disabled = busy;
       if (btnDatasetFetch) btnDatasetFetch.disabled = busy;
       if (btnDatasetList) btnDatasetList.disabled = busy;
       if (datasetSelect) datasetSelect.disabled = busy;
@@ -1118,6 +1124,9 @@
     }
     if (btnStagingList) {
       btnStagingList.addEventListener('click', () => stagingFetch('/api/staging/list', null));
+    }
+    if (btnStagingDb) {
+      btnStagingDb.addEventListener('click', () => stagingFetch('/api/db/staging', null));
     }
 
     loadSnapshotsDropdown();
