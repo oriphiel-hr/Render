@@ -16,6 +16,7 @@ const { getSnapshots, getPromjene } = require('./sudregApi');
 const { comparePromjeneSnapshots } = require('./sudregPromjeneDiff');
 const { listSifrarniciCatalog, getSifrarnik } = require('./sudregSifrarnici');
 const { listDatasets } = require('./sudregDatasets');
+const { fetchDatasetPage, listDatasetFetchOptions } = require('./sudregDatasetFetch');
 const {
   getDataDir,
   saveSnapshotPromjene,
@@ -313,9 +314,65 @@ function handleSudregDatasetsList(res) {
   sendJson(res, 200, {
     ok: true,
     endpoint: '/datasets',
-    description: 'Planirani skupovi matičnih podataka za import (funkcionalnost dohvata uskoro).',
+    description: 'Skupovi matičnih podataka — dohvat: GET /api/sudreg/datasets/{id}',
+    fetchOptions: listDatasetFetchOptions(),
     data: listDatasets()
   });
+}
+
+async function handleSudregDatasetFetch(req, res, datasetId) {
+  const q = parseQueryString(req.url);
+  const snapshotId = q.get('snapshot_id');
+  if (!snapshotId) {
+    sendJson(res, 400, {
+      ok: false,
+      endpoint: `/datasets/${datasetId}`,
+      error: 'snapshot_id je obavezan (odaberi snimku u UI).'
+    });
+    return;
+  }
+  const t0 = Date.now();
+  try {
+    const result = await fetchDatasetPage(datasetId, {
+      snapshot_id: snapshotId,
+      offset: parsePagingInt(q.get('offset'), 0),
+      limit: parsePagingInt(q.get('limit'), 1000),
+      api_path: q.get('api_path') || undefined,
+      vrsta: q.get('vrsta') || undefined,
+      only_active: q.get('only_active') || undefined,
+      expand_relations: q.get('expand_relations') || undefined,
+      no_data_error: q.get('no_data_error') || '0',
+      omit_nulls: q.get('omit_nulls') || undefined
+    });
+    sendJson(res, 200, {
+      ok: true,
+      endpoint: result.api_path,
+      dataset_id: result.dataset_id,
+      label: result.label,
+      durationMs: Date.now() - t0,
+      source: result.url,
+      meta: result.meta,
+      rowCount: result.rowCount,
+      totalCount: result.totalCount,
+      query: {
+        snapshot_id: snapshotId,
+        offset: parsePagingInt(q.get('offset'), 0),
+        limit: parsePagingInt(q.get('limit'), 1000),
+        only_active: q.get('only_active') || (datasetId === 'subjekti' ? '1' : undefined),
+        expand_relations: q.get('expand_relations') || undefined,
+        api_path: q.get('api_path') || undefined,
+        vrsta: q.get('vrsta') || undefined
+      },
+      data: result.data
+    });
+  } catch (e) {
+    sendJson(res, 500, {
+      ok: false,
+      endpoint: `/datasets/${datasetId}`,
+      durationMs: Date.now() - t0,
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
 }
 
 function handleSudregSifrarniciList(res) {
@@ -416,6 +473,12 @@ const server = http.createServer((req, res) => {
 
   if (pathOnly === '/api/sudreg/datasets' && req.method === 'GET') {
     handleSudregDatasetsList(res);
+    return;
+  }
+
+  const datasetMatch = /^\/api\/sudreg\/datasets\/([^/]+)$/.exec(pathOnly);
+  if (datasetMatch && req.method === 'GET') {
+    handleSudregDatasetFetch(req, res, decodeURIComponent(datasetMatch[1]));
     return;
   }
 

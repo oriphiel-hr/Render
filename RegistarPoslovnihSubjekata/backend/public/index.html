@@ -212,8 +212,8 @@
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v21</span></h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v21</strong>.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v23</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v23</strong>.</p>
     <p class="section-label">Servis</p>
     <div class="actions">
       <button type="button" id="btn-status">Provjeri status</button>
@@ -247,7 +247,7 @@
     </div>
 
     <p class="section-label">Matični podaci (odabrani skupovi)</p>
-    <p class="hint" style="margin-bottom: 0.65rem;">Subjekti, tvrtka, sjedište, email, djelatnosti i podružnice (sve povezane Sudreg metode). Dohvat uskoro.</p>
+    <p class="hint" style="margin-bottom: 0.65rem;">Jedna stranica po kliku. <strong>/subjekti</strong>: zadano samo <strong>aktivni</strong> (<code>status=1</code>); što nije aktivno = <strong>neaktivno</strong> (<code>only_active=0</code>).</p>
     <div class="field-row">
       <label for="dataset-select">Skup podataka</label>
       <select id="dataset-select" class="snapshot-select">
@@ -261,8 +261,37 @@
       </select>
     </div>
     <div id="dataset-detail" class="dataset-detail"></div>
+    <div id="dataset-subpath-row" class="field-row" style="display:none;">
+      <label for="dataset-subpath">Metoda (podskup)</label>
+      <select id="dataset-subpath" class="snapshot-select"></select>
+    </div>
+    <div class="field-row">
+      <label>Straničenje</label>
+      <div class="inline-group">
+        <span class="inline-label">offset</span>
+        <input type="number" id="dataset-offset" min="0" step="1" value="0" />
+      </div>
+      <div class="inline-group">
+        <span class="inline-label">limit</span>
+        <input type="number" id="dataset-limit" min="1" step="1" value="1000" />
+      </div>
+    </div>
+    <div id="dataset-only-active-row" class="field-row" style="display:none;">
+      <label>Opcije</label>
+      <label class="inline-label" style="display:flex;align-items:center;gap:0.35rem;cursor:pointer;">
+        <input type="checkbox" id="dataset-only-active" checked />
+        only_active — samo aktivni (bez neaktivnih, status=0)
+      </label>
+    </div>
+    <div id="dataset-expand-row" class="field-row" style="display:none;">
+      <label>Opcije</label>
+      <label class="inline-label" style="display:flex;align-items:center;gap:0.35rem;cursor:pointer;">
+        <input type="checkbox" id="dataset-expand" checked />
+        expand_relations — naziv i kratica pravnog oblika
+      </label>
+    </div>
     <div class="actions">
-      <button type="button" id="btn-dataset-fetch" disabled title="Uskoro">Dohvati skup (uskoro)</button>
+      <button type="button" id="btn-dataset-fetch">Dohvati jednu stranicu</button>
       <button type="button" class="secondary" id="btn-dataset-list">JSON plana skupova</button>
     </div>
 
@@ -359,6 +388,14 @@
     const datasetDetail = document.getElementById('dataset-detail');
     const btnDatasetFetch = document.getElementById('btn-dataset-fetch');
     const btnDatasetList = document.getElementById('btn-dataset-list');
+    const datasetSubpathRow = document.getElementById('dataset-subpath-row');
+    const datasetSubpath = document.getElementById('dataset-subpath');
+    const datasetOffset = document.getElementById('dataset-offset');
+    const datasetLimit = document.getElementById('dataset-limit');
+    const datasetOnlyActiveRow = document.getElementById('dataset-only-active-row');
+    const datasetOnlyActive = document.getElementById('dataset-only-active');
+    const datasetExpandRow = document.getElementById('dataset-expand-row');
+    const datasetExpand = document.getElementById('dataset-expand');
     const btnSifrarnikFetch = document.getElementById('btn-sifrarnik-fetch');
     const btnSifrarnikList = document.getElementById('btn-sifrarnik-list');
     const sifrarnikSelect = document.getElementById('sifrarnik-select');
@@ -379,8 +416,9 @@
         description: 'Temeljni podaci — GET /subjekti (bez pravnog oblika).',
         apiPaths: ['/subjekti'],
         relatedPaths: ['/pravni_oblici'],
-        alt: 'Za jedan MBS/OIB: GET /detalji_subjekta',
-        fields: ['mbs', 'oib', 'status', 'postupak', 'datum_osnivanja', 'datum_brisanja', 'glavna_djelatnost']
+        onlyActive: true,
+        alt: 'status: 1=aktivan, 0=neaktivan (uklj. brisan). only_active=1 isključuje neaktivne.',
+        fields: ['mbs', 'oib', 'status (1/0)', 'postupak', 'datum_osnivanja', 'datum_brisanja', 'glavna_djelatnost']
       },
       pravni_oblici: {
         label: 'Pravni oblik',
@@ -412,10 +450,15 @@
       },
       djelatnost: {
         label: 'Djelatnost (NKD)',
-        description: 'Tri izvora u Sudreg API-ju; polje vrsta označava izvor.',
+        description: 'Tri izvora u Sudreg API-ju; odaberi vrstu u podskupu.',
         apiPaths: ['/pretezite_djelatnosti', '/predmeti_poslovanja', '/evidencijske_djelatnosti'],
+        subpaths: [
+          { value: 'pretezita', label: 'Pretežita — /pretezite_djelatnosti' },
+          { value: 'predmet', label: 'Predmet — /predmeti_poslovanja' },
+          { value: 'evidencijska', label: 'Evidencijska — /evidencijske_djelatnosti' }
+        ],
         alt: 'Šifrarnik NKD: /sifrarnici/nacionalna_klasifikacija_djelatnosti',
-        fields: ['mbs', 'nkd_sifra', 'djelatnost_tekst', 'vrsta: pretezita | predmet | evidencijska']
+        fields: ['mbs', 'nkd_sifra', 'djelatnost_tekst', 'vrsta']
       },
       'podružnica': {
         label: 'Podružnica',
@@ -439,8 +482,32 @@
       }
     };
 
+    function updateDatasetOptionRows() {
+      const id = datasetSelect ? datasetSelect.value : '';
+      const d = DATASET_CATALOG[id];
+      if (datasetOnlyActiveRow) {
+        datasetOnlyActiveRow.style.display = d && d.onlyActive ? '' : 'none';
+      }
+      if (datasetExpandRow) {
+        datasetExpandRow.style.display = id === 'pravni_oblici' ? '' : 'none';
+      }
+      if (datasetSubpathRow && datasetSubpath) {
+        const subs = (d && d.subpaths) || (d && d.resursi ? d.resursi.map((r) => ({ value: r.path, label: r.label + ' — ' + r.path })) : null);
+        if (subs && subs.length) {
+          datasetSubpathRow.style.display = '';
+          datasetSubpath.innerHTML = subs.map((s) =>
+            '<option value="' + escapeHtml(s.value) + '">' + escapeHtml(s.label) + '</option>'
+          ).join('');
+        } else {
+          datasetSubpathRow.style.display = 'none';
+          datasetSubpath.innerHTML = '';
+        }
+      }
+    }
+
     function renderDatasetDetail() {
       if (!datasetDetail || !datasetSelect) return;
+      updateDatasetOptionRows();
       const id = datasetSelect.value;
       const d = DATASET_CATALOG[id];
       if (!d) {
@@ -483,8 +550,14 @@
       if (btnStagingSaveTo) btnStagingSaveTo.disabled = busy;
       if (btnStagingSaveDiff) btnStagingSaveDiff.disabled = busy;
       if (btnStagingList) btnStagingList.disabled = busy;
+      if (btnDatasetFetch) btnDatasetFetch.disabled = busy;
       if (btnDatasetList) btnDatasetList.disabled = busy;
       if (datasetSelect) datasetSelect.disabled = busy;
+      if (datasetSubpath) datasetSubpath.disabled = busy;
+      if (datasetOffset) datasetOffset.disabled = busy;
+      if (datasetLimit) datasetLimit.disabled = busy;
+      if (datasetOnlyActive) datasetOnlyActive.disabled = busy;
+      if (datasetExpand) datasetExpand.disabled = busy;
       if (btnSifrarnikFetch) btnSifrarnikFetch.disabled = busy;
       if (btnSifrarnikList) btnSifrarnikList.disabled = busy;
       if (sifrarnikSelect) sifrarnikSelect.disabled = busy;
@@ -880,10 +953,61 @@
     if (btnDatasetList) {
       btnDatasetList.addEventListener('click', () => fetchPath('/api/sudreg/datasets', true));
     }
+    async function fetchDatasetPage() {
+      const id = datasetSelect ? datasetSelect.value : '';
+      if (!id) {
+        show('Odaberi skup podataka.', true);
+        return;
+      }
+      const snapshotId = snapshotSelect ? snapshotSelect.value : '';
+      if (!snapshotId) {
+        show('Odaberi noviju snimku (snapshot) u usporedbi.', true);
+        return;
+      }
+      const qs = new URLSearchParams();
+      qs.set('snapshot_id', snapshotId);
+      qs.set('offset', datasetOffset ? datasetOffset.value : '0');
+      qs.set('limit', datasetLimit ? datasetLimit.value : '1000');
+      if (id === 'subjekti' && datasetOnlyActive) {
+        qs.set('only_active', datasetOnlyActive.checked ? '1' : '0');
+      }
+      if (id === 'pravni_oblici' && datasetExpand) {
+        if (datasetExpand.checked) qs.set('expand_relations', 'true');
+      }
+      if (id === 'djelatnost' && datasetSubpath && datasetSubpath.value) {
+        qs.set('vrsta', datasetSubpath.value);
+      }
+      if (id === 'podružnica' && datasetSubpath && datasetSubpath.value) {
+        qs.set('api_path', datasetSubpath.value);
+      }
+      const path = '/api/sudreg/datasets/' + encodeURIComponent(id) + '?' + qs.toString();
+      setBusy(true);
+      show('Dohvaćam ' + id + '…', false);
+      meta.textContent = path;
+      const t0 = performance.now();
+      try {
+        const res = await fetch(path, { headers: { Accept: 'application/json' } });
+        const body = await res.json();
+        const ms = Math.round(performance.now() - t0);
+        if (!res.ok || !body.ok) {
+          throw new Error(body.error || res.statusText);
+        }
+        meta.textContent =
+          (body.label || id) + ' · ' + (body.endpoint || '') +
+          ' · redova=' + (body.rowCount != null ? body.rowCount : '?') +
+          (body.totalCount != null ? ' / ' + body.totalCount : '') +
+          ' · ' + ms + ' ms';
+        show(JSON.stringify(body, null, 2), false);
+      } catch (e) {
+        show('Greška: ' + (e.message || String(e)), true);
+        meta.textContent = path;
+      } finally {
+        setBusy(false);
+      }
+    }
+
     if (btnDatasetFetch) {
-      btnDatasetFetch.addEventListener('click', () => {
-        show('Dohvat skupova podataka još nije implementiran — koristi /promjene + diff za MBS, zatim će doći puni dohvat po skupu.', false);
-      });
+      btnDatasetFetch.addEventListener('click', () => fetchDatasetPage());
     }
 
     if (btnSifrarnikFetch) btnSifrarnikFetch.addEventListener('click', () => fetchSifrarnik());

@@ -20,6 +20,9 @@ const DATASETS = [
     relatedPaths: ['/pravni_oblici'],
     alternative: 'Za jedan MBS/OIB: GET /detalji_subjekta',
     paging: true,
+    onlyActiveDefault: true,
+    onlyActiveNote:
+      'only_active=1 (zadano): samo aktivni (status=1). 0 = uključuje i neaktivne (status=0, uklj. brisane).',
     fields: [
       'mbs',
       'oib',
@@ -159,7 +162,9 @@ function listDatasets() {
     resursi: d.resursi || null,
     mbsNote: d.mbsNote || null,
     alternative: d.alternative || null,
-    planned: true
+    onlyActiveDefault: d.onlyActiveDefault === true,
+    onlyActiveNote: d.onlyActiveNote || null,
+    planned: false
   }));
 }
 
