@@ -512,6 +512,7 @@ function parseImportAllQuery(req) {
     mode,
     sync_db: q.get('sync_db'),
     apply_temp: q.get('apply_temp'),
+    sync_promjene_db: q.get('sync_promjene_db'),
     force: q.get('force') === '1'
   };
 }
@@ -529,7 +530,8 @@ function runImportByMode(parsed, onProgress) {
       ...base,
       snapshot_id_from: parsed.fromId,
       snapshot_id_to: parsed.toId,
-      apply_temp: parsed.apply_temp
+      apply_temp: parsed.apply_temp,
+      sync_promjene_db: parsed.sync_promjene_db
     });
   }
   return runFullImport(base);

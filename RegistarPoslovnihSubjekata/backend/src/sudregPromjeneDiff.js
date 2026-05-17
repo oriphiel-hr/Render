@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
 const { getPromjene } = require('./sudregApi');
-const { closeWriteStream } = require('./jsonlStream');
+const { closeWriteStream, forEachJsonlBatch } = require('./jsonlStream');
 
 const FULL_FETCH_PAGE_LIMIT = 1000;
 
@@ -513,32 +513,123 @@ async function comparePromjeneSnapshots(params) {
   return comparePromjeneWithReaders(oldReader, newReader, fromId, toId);
 }
 
+function getJsonlBatchSize() {
+  const n = Number(process.env.JSONL_BATCH_SIZE);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 2000;
+}
+
 /**
- * SCN diff s punim sortiranjem po MBS (kao GET /promjene/diff), zapis u JSONL.
- * Disk promjene.jsonl nije sortiran po MBS — ne koristiti za merge bez sortiranja.
+ * Indeks max SCN po MBS iz baseline JSONL (jedan prolaz, ~jedan broj po MBS u RAM-u).
  */
-async function compareAndWriteDiffJsonl(fromId, toId, outFilePath, opts = {}) {
-  const compared = await comparePromjeneSnapshots({
-    snapshot_id_from: fromId,
-    snapshot_id_to: toId,
-    omit_nulls: opts.omit_nulls,
-    signal: opts.signal
+async function buildBaselineScnIndex(fromFile, opts = {}) {
+  const byMbs = new Map();
+  let rowsRead = 0;
+  const bs = getJsonlBatchSize();
+
+  await forEachJsonlBatch(fromFile, bs, async (rows) => {
+    for (const row of rows) {
+      rowsRead += 1;
+      const mbs = toMbsNum(row);
+      const scn = toScn(row.scn);
+      if (mbs == null || scn == null) continue;
+      const prev = byMbs.get(mbs);
+      if (prev == null || scn > prev) byMbs.set(mbs, scn);
+    }
+    if (opts.onProgress) {
+      opts.onProgress({ phase: 'diff-index-baseline', rowsRead });
+    }
   });
+
+  return { byMbs, rowsRead };
+}
+
+/**
+ * SCN diff streamom: indeks starije snimke + jedan prolaz novije (bez učitavanja 700k redova u RAM).
+ */
+async function comparePromjeneDiffIndexJsonl(fromFile, toFile, outFilePath, fromId, toId, opts = {}) {
+  const { byMbs, rowsRead: baselineRowsRead } = await buildBaselineScnIndex(fromFile, opts);
 
   const outDir = path.dirname(outFilePath);
   if (outDir && outDir !== '.') fs.mkdirSync(outDir, { recursive: true });
   const stream = fs.createWriteStream(outFilePath, { flags: 'w', encoding: 'utf8' });
-  for (const row of compared.data) {
-    stream.write(`${JSON.stringify(row)}\n`);
-  }
+
+  let noviCount = 0;
+  let promjenaCount = 0;
+  let diffRows = 0;
+  let targetRowsRead = 0;
+  const bs = getJsonlBatchSize();
+
+  await forEachJsonlBatch(toFile, bs, async (rows) => {
+    for (const row of rows) {
+      targetRowsRead += 1;
+      const mbs = toMbsNum(row);
+      const newScn = toScn(row.scn);
+      if (mbs == null || newScn == null) continue;
+
+      const oldScn = byMbs.get(mbs);
+      if (oldScn == null) {
+        stream.write(`${JSON.stringify({ ...row, vrsta: 'novi' })}\n`);
+        noviCount += 1;
+        diffRows += 1;
+      } else if (newScn > oldScn) {
+        stream.write(
+          `${JSON.stringify({ ...row, vrsta: 'promjena', scn_staro: oldScn })}\n`
+        );
+        promjenaCount += 1;
+        diffRows += 1;
+        byMbs.delete(mbs);
+      } else {
+        byMbs.delete(mbs);
+      }
+    }
+    if (opts.onProgress) {
+      opts.onProgress({ phase: 'diff-index-target', rowsRead: targetRowsRead });
+    }
+  });
+
   await closeWriteStream(stream);
+  byMbs.clear();
+
+  const fromStr = String(fromId);
+  const toStr = String(toId);
 
   return {
-    compare: compared.compare,
-    stats: compared.stats,
-    diffRows: compared.data.length,
-    sortedByMbs: true
+    compare: {
+      snapshot_id_from: fromStr,
+      snapshot_id_to: toStr,
+      algorithm: 'scn_index_by_mbs',
+      fullSets: true,
+      description:
+        'Indeks SCN po MBS (starija snimka) + prolaz novije: novi | promjena (scn_staro). Niska potrošnja RAM-a.'
+    },
+    stats: {
+      baselineRows: baselineRowsRead,
+      baselineTotalCount: baselineRowsRead,
+      baselinePages: 1,
+      targetRows: targetRowsRead,
+      targetTotalCount: targetRowsRead,
+      targetPages: 1,
+      diffRows,
+      noviZapisi: noviCount,
+      promjene: promjenaCount
+    },
+    diffRows
   };
+}
+
+/**
+ * Zapis diff JSONL s diska (promjene.jsonl) — stream indeks, bez punog RAM-a.
+ */
+async function compareAndWriteDiffJsonl(fromId, toId, outFilePath, opts = {}) {
+  const fromFile = opts.baseline_file;
+  const toFile = opts.target_file;
+  if (!fromFile || !toFile) {
+    throw new Error('compareAndWriteDiffJsonl zahtijeva baseline_file i target_file na disku.');
+  }
+  if (!fs.existsSync(fromFile) || !fs.existsSync(toFile)) {
+    throw new Error('promjene.jsonl za obje snimke mora postojati na disku prije diff-a.');
+  }
+  return comparePromjeneDiffIndexJsonl(fromFile, toFile, outFilePath, fromId, toId, opts);
 }
 
 /**
@@ -588,5 +679,6 @@ module.exports = {
   filterPromjeneDiff,
   fetchAllPromjene,
   comparePromjeneSnapshots,
-  compareAndWriteDiffJsonl
+  compareAndWriteDiffJsonl,
+  comparePromjeneDiffIndexJsonl
 };

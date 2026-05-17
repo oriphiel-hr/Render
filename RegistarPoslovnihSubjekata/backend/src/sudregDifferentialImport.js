@@ -157,11 +157,23 @@ async function runDifferentialImport(opts = {}) {
   emitDisk('promjene_snapshot_to', `Promjene #${toId} na disku.`, { done: true });
 
   emitDisk('promjene_diff', `SCN diff #${fromId} → #${toId}…`);
-  const diff = await savePromjeneDiff(fromId, toId, {
-    save_snapshots: false,
-    prefer_disk: true,
-    signal: opts.signal
-  });
+    const diff = await savePromjeneDiff(fromId, toId, {
+      save_snapshots: false,
+      prefer_disk: true,
+      signal: opts.signal,
+      onProgress: (ev) =>
+        emitProgress(onProgress, {
+          phase: 'disk',
+          step: 'promjene_diff',
+          message:
+            ev.phase === 'diff-index-baseline'
+              ? `Diff indeks starija: ${ev.rowsRead != null ? ev.rowsRead.toLocaleString('hr-HR') : '?'} redova…`
+              : ev.phase === 'diff-index-target'
+                ? `Diff indeks novija: ${ev.rowsRead != null ? ev.rowsRead.toLocaleString('hr-HR') : '?'} redova…`
+                : 'SCN diff…',
+          import_mode: 'diff'
+        })
+    });
   diskStepIndex += 1;
   addStep('promjene_diff', {
     snapshot_id_from: fromId,
@@ -215,9 +227,15 @@ async function runDifferentialImport(opts = {}) {
     await ensureDatabaseReady({ label: 'diff-import-db' });
     const dbT0 = Date.now();
 
-    const dbUnits = [
-      { label: 'Promjene (starija)', fn: () => syncSnapshotPromjeneToDb(fromId) },
-      { label: 'Promjene (novija)', fn: () => syncSnapshotPromjeneToDb(toId) },
+    const syncPromjeneDb = opts.sync_promjene_db === '1' || opts.sync_promjene_db === true;
+    const dbUnits = [];
+    if (syncPromjeneDb) {
+      dbUnits.push(
+        { label: 'Promjene (starija)', fn: () => syncSnapshotPromjeneToDb(fromId) },
+        { label: 'Promjene (novija)', fn: () => syncSnapshotPromjeneToDb(toId) }
+      );
+    }
+    dbUnits.push(
       { label: 'SCN diff', fn: () => syncDiffPromjeneToDb(fromId, toId) },
       {
         label: 'Subjekti (starija, aktivni)',
@@ -227,7 +245,7 @@ async function runDifferentialImport(opts = {}) {
         label: 'Subjekti (novija, aktivni)',
         fn: () => syncDatasetToDb(toId, SUBJEKTI_KEY)
       }
-    ];
+    );
     if (applyTemp) {
       dbUnits.push({
         label: 'Temp (primjena diff-a)',
@@ -264,6 +282,7 @@ async function runDifferentialImport(opts = {}) {
 
     dbDurationMs = Date.now() - dbT0;
     addStep('database_sync', {
+      sync_promjene_db: syncPromjeneDb,
       snapshots: database.snapshots.length,
       diffs: database.diffs.length,
       datasets: database.datasets.length,

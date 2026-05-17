@@ -215,12 +215,19 @@ async function savePromjeneDiff(fromId, toId, opts = {}) {
   const dir = diffDir(from, to);
   ensureDir(dir);
 
-  // Diff mora ići preko API-ja + sort po MBS (comparePromjeneSnapshots).
-  // promjene.jsonl na disku je u redoslijedu stranica API-ja — stream merge daje krivo/0 redaka.
-  const source = snapshotsOnDisk ? 'api-sorted' : 'api';
+  if (!snapshotsOnDisk) {
+    if (!promjeneExists(from)) await saveSnapshotPromjene(from, opts);
+    if (!promjeneExists(to)) await saveSnapshotPromjene(to, opts);
+  }
+
+  // Stream indeks po MBS — ne učitava cijele snimke u RAM (izbjegava OOM na Renderu).
+  const source = 'disk-index';
   const result = await compareAndWriteDiffJsonl(from, to, diffOut, {
+    baseline_file: promjenePath(from),
+    target_file: promjenePath(to),
     omit_nulls: opts.omit_nulls,
-    signal: opts.signal
+    signal: opts.signal,
+    onProgress: opts.onProgress
   });
 
   const diffMeta = {
