@@ -278,7 +278,7 @@
       <p class="section-label">Usporedba dviju snimki</p>
       <p class="hint" style="margin-bottom: 0.75rem;">
         <strong>Puno spremanje</strong>: novija snimka — svi matični skupovi; starija opcionalno (diff).
-        <strong>Diferencijalno</strong>: obje snimke (starija → novija) — diff (stream, malo RAM-a), subjekti, temp. U bazu ne ide puni /promjene (samo diff + subjekti + temp).
+        <strong>Diferencijalno</strong>: obje snimke — diff (stream indeks, malo RAM-a), aktivni subjekti, temp (samo subjekti). U bazu ne ide puni /promjene. Za slabiji Render: prvo <strong>1/2 disk</strong>, zatim <strong>2/2 baza</strong>.
       </p>
       <div class="field-row">
         <label for="snapshot-from-select">1. Starija snimka (opcionalno, diff)</label>
@@ -295,7 +295,9 @@
     <div id="snapshot-detail" class="snapshot-detail empty"></div>
       <div class="actions">
         <button type="button" class="sudreg" id="btn-import-all-full" title="Promjene + svi matični skupovi (novija snimka)">Puno (disk + baza)</button>
-        <button type="button" class="secondary" id="btn-import-all-diff" title="Promjene, diff, aktivni subjekti, temp — bez punog matičnog">Diferencijalno (disk + baza)</button>
+        <button type="button" class="secondary" id="btn-import-diff-disk" title="Promjene, SCN diff, aktivni subjekti — samo na disk">Diff 1/2 — disk</button>
+        <button type="button" class="secondary" id="btn-import-diff-db" title="Diff + subjekti + temp u PostgreSQL (nakon 1/2)">Diff 2/2 — baza</button>
+        <button type="button" class="secondary" id="btn-import-all-diff" title="Disk i baza u jednom koraku">Diff (disk + baza)</button>
         <button type="button" class="secondary" id="btn-promjene-diff">Samo SCN diff (pregled)</button>
       </div>
       <p id="import-all-hint" class="hint" style="margin-top:0.5rem;"></p>
@@ -478,6 +480,8 @@
     const btnPromjene = document.getElementById('btn-promjene');
     const btnPromjeneDiff = document.getElementById('btn-promjene-diff');
     const btnImportAllFull = document.getElementById('btn-import-all-full');
+    const btnImportDiffDisk = document.getElementById('btn-import-diff-disk');
+    const btnImportDiffDb = document.getElementById('btn-import-diff-db');
     const btnImportAllDiff = document.getElementById('btn-import-all-diff');
     const importAllHint = document.getElementById('import-all-hint');
     const importProgressPanel = document.getElementById('import-progress-panel');
@@ -1295,8 +1299,9 @@
       }
     }
 
-    function runImportAll(mode) {
+    function runImportAll(mode, diffPhase) {
       const isDiff = mode === 'diff';
+      const phase = diffPhase || 'all';
       let fromId = snapshotFromSelect.value;
       let toId = snapshotSelect.value;
       if (!isDiff && (!toId || !snapshotsById[toId]) && fromId && snapshotsById[fromId]) {
@@ -1320,6 +1325,10 @@
           show('Starija snimka mora imati manji ID od novije (#' + fromId + ' → #' + toId + ').', true);
           return;
         }
+        if (phase === 'db' && !(stagingSyncDb && stagingSyncDb.checked)) {
+          show('Za Diff 2/2 — baza uključi „Sinkroniziraj u PostgreSQL”.', true);
+          return;
+        }
       }
       const qs = new URLSearchParams({ snapshot_id_to: toId, mode: isDiff ? 'diff' : 'full' });
       const sameSnapshot = fromId && fromId === toId;
@@ -1327,16 +1336,28 @@
         qs.set('snapshot_id_from', fromId);
       }
       const syncDb = Boolean(stagingSyncDb && stagingSyncDb.checked);
-      qs.set('sync_db', syncDb ? '1' : '0');
-      if (isDiff && syncDb) qs.set('apply_temp', '1');
+      const diskOnly = isDiff && phase === 'disk';
+      const dbOnly = isDiff && phase === 'db';
+      qs.set('sync_db', diskOnly ? '0' : syncDb ? '1' : '0');
+      if (isDiff) {
+        qs.set('phase', phase);
+        if (syncDb && !diskOnly) qs.set('apply_temp', '1');
+      }
 
       setBusy(true);
-      resetImportProgress(syncDb);
+      resetImportProgress(isDiff ? !diskOnly && syncDb : syncDb);
       if (importAllHint) {
         if (isDiff) {
+          const phaseLabel =
+            phase === 'disk'
+              ? '1/2 disk'
+              : phase === 'db'
+                ? '2/2 baza'
+                : 'disk + baza';
           importAllHint.textContent =
             'Diferencijalno #' + fromId + ' → #' + toId +
-            ': promjene, diff, aktivni subjekti' + (syncDb ? ', temp tablice' : '') + '…';
+            ' (' + phaseLabel + '): promjene, diff, aktivni subjekti' +
+            (syncDb && !diskOnly ? ', temp (samo subjekti)' : '') + '…';
         } else if (sameSnapshot) {
           importAllHint.textContent =
             'Puno #' + toId + ' — diff preskočen. Svi matični skupovi…';
@@ -1347,7 +1368,13 @@
             'Puno #' + fromId + ' → #' + toId + ' + svi matični skupovi za #' + toId + '…';
         }
       }
-      show(isDiff ? 'Pokrećem diferencijalni import…' : 'Pokrećem puni import (live progress)…', false);
+      const diffStartMsg =
+        phase === 'disk'
+          ? 'Pokrećem diferencijalni import (1/2 disk)…'
+          : phase === 'db'
+            ? 'Pokrećem diferencijalni import (2/2 baza)…'
+            : 'Pokrećem diferencijalni import…';
+      show(isDiff ? diffStartMsg : 'Pokrećem puni import (live progress)…', false);
       meta.textContent = 'SSE /api/staging/import-all/stream?' + qs.toString();
 
       const t0 = performance.now();
@@ -1441,7 +1468,9 @@
     }
 
     if (btnImportAllFull) btnImportAllFull.addEventListener('click', () => runImportAll('full'));
-    if (btnImportAllDiff) btnImportAllDiff.addEventListener('click', () => runImportAll('diff'));
+    if (btnImportDiffDisk) btnImportDiffDisk.addEventListener('click', () => runImportAll('diff', 'disk'));
+    if (btnImportDiffDb) btnImportDiffDb.addEventListener('click', () => runImportAll('diff', 'db'));
+    if (btnImportAllDiff) btnImportAllDiff.addEventListener('click', () => runImportAll('diff', 'all'));
 
     function stagingDbQuerySuffix() {
       if (!stagingSyncDb || !stagingSyncDb.checked) return '&sync_db=0';
