@@ -46,7 +46,7 @@ function markRowNeaktivan(row) {
   return { ...row, status: 0 };
 }
 
-function rowKeyForRow(row) {
+function rowKeyForRow(row, indexInGroup = 0) {
   const parts = [];
   if (row.podruznica_rbr != null) parts.push(`pod${row.podruznica_rbr}`);
   if (row.email_adresa_rbr != null) parts.push(`em${row.email_adresa_rbr}`);
@@ -54,8 +54,27 @@ function rowKeyForRow(row) {
   if (row.nacionalna_klasifikacija_djelatnosti_id != null) {
     parts.push(`nkdid${row.nacionalna_klasifikacija_djelatnosti_id}`);
   }
-  if (row.jezik_id != null && row.tvrtka != null) parts.push(`j${row.jezik_id}`);
-  return parts.length > 0 ? parts.join('_') : '_';
+  if (row.jezik_id != null) parts.push(`j${row.jezik_id}`);
+  if (row.vrsta_pravnog_oblika_id != null) parts.push(`vpo${row.vrsta_pravnog_oblika_id}`);
+  if (row.djelatnost_tekst != null) parts.push(`dt${String(row.djelatnost_tekst).slice(0, 24)}`);
+  const base = parts.length > 0 ? parts.join('_') : 'r';
+  return `${base}#${indexInGroup}`;
+}
+
+/** Jedinstveni ključ prije upsert u temp_maticni (isti MBS+skup može imati više redaka). */
+function maticniUniqueKey(item) {
+  return `${item.mbs}|${item.datasetKey}|${item.rowKey}`;
+}
+
+function dedupeMaticniPending(pending) {
+  const byKey = new Map();
+  let duplicates = 0;
+  for (const item of pending) {
+    const k = maticniUniqueKey(item);
+    if (byKey.has(k)) duplicates += 1;
+    byKey.set(k, item);
+  }
+  return { rows: [...byKey.values()], duplicates };
 }
 
 function createMbsBucket() {
@@ -186,13 +205,14 @@ function buildMaticniPendingForMbs(mbs, vrsta, promjenaJson, from, to, runId, fr
     if (isNeaktivan) {
       const sourceRows = fromRows.length > 0 ? fromRows : toRows;
       if (sourceRows.length === 0) continue;
-      for (const row of sourceRows) {
+      for (let i = 0; i < sourceRows.length; i++) {
+        const row = sourceRows[i];
         const payload = key === SUBJEKTI_KEY ? markNeaktivan(row) : markRowNeaktivan(row);
         rows.push({
           applyRunId: runId,
           mbs,
           datasetKey: key,
-          rowKey: rowKeyForRow(row),
+          rowKey: rowKeyForRow(row, i),
           vrsta,
           snapshotIdFrom: from,
           snapshotIdTo: to,
@@ -208,7 +228,7 @@ function buildMaticniPendingForMbs(mbs, vrsta, promjenaJson, from, to, runId, fr
         applyRunId: runId,
         mbs,
         datasetKey: key,
-        rowKey: '_',
+        rowKey: '_0',
         vrsta,
         snapshotIdFrom: from,
         snapshotIdTo: to,
@@ -220,12 +240,13 @@ function buildMaticniPendingForMbs(mbs, vrsta, promjenaJson, from, to, runId, fr
       continue;
     }
 
-    for (const row of sourceRows) {
+    for (let i = 0; i < sourceRows.length; i++) {
+      const row = sourceRows[i];
       rows.push({
         applyRunId: runId,
         mbs,
         datasetKey: key,
-        rowKey: rowKeyForRow(row),
+        rowKey: rowKeyForRow(row, i),
         vrsta,
         snapshotIdFrom: from,
         snapshotIdTo: to,
@@ -262,7 +283,9 @@ async function createManyTempSubjektiRetry(data) {
 }
 
 async function createManyTempMaticniRetry(data) {
-  return withPrismaRetry((db) => db.tempMaticni.createMany({ data }));
+  return withPrismaRetry((db) =>
+    db.tempMaticni.createMany({ data, skipDuplicates: true })
+  );
 }
 
 /**
@@ -430,6 +453,9 @@ async function applyPromjeneDiffToTemp(params) {
     return { ok: true, skipped: true, reason: 'no_rows', applyRunId: run.id };
   }
 
+  const maticniBeforeDedupe = maticniPending.length;
+  const { rows: maticniUnique, duplicates: maticniDuplicates } = dedupeMaticniPending(maticniPending);
+
   const bs = batchSize();
   let subjektInserted = 0;
   let maticniInserted = 0;
@@ -440,14 +466,14 @@ async function applyPromjeneDiffToTemp(params) {
     subjektInserted += result.count;
   }
 
-  for (let i = 0; i < maticniPending.length; i += bs) {
-    const chunk = maticniPending.slice(i, i + bs);
+  for (let i = 0; i < maticniUnique.length; i += bs) {
+    const chunk = maticniUnique.slice(i, i + bs);
     const result = await createManyTempMaticniRetry(chunk);
     maticniInserted += result.count;
     if (params.onProgress) {
       params.onProgress({
-        done: Math.min(i + chunk.length, maticniPending.length),
-        total: maticniPending.length
+        done: Math.min(i + chunk.length, maticniUnique.length),
+        total: maticniUnique.length
       });
     }
   }
@@ -469,6 +495,8 @@ async function applyPromjeneDiffToTemp(params) {
           ...(typeof run.metaJson === 'object' && run.metaJson ? run.metaJson : {}),
           mbs_affected: mbsFilter.size,
           dataset_count: jobs.length,
+          maticni_pending_before_dedupe: maticniBeforeDedupe,
+          maticni_duplicates_collapsed: maticniDuplicates,
           inactive_skipped: !targetActive.source
         }
       }
@@ -561,5 +589,6 @@ module.exports = {
   isActiveSubjekt,
   markNeaktivan,
   markRowNeaktivan,
-  rowKeyForRow
+  rowKeyForRow,
+  dedupeMaticniPending
 };
