@@ -33,6 +33,7 @@ const {
   clearStagingDatabase,
   isDatabaseConfigured
 } = require('./sudregDb');
+const { waitForDatabase, isDatabaseConfigured: isDbConfigured } = require('./lib/prisma');
 const { runFullImport } = require('./sudregFullImport');
 const { runDifferentialImport } = require('./sudregDifferentialImport');
 const {
@@ -993,4 +994,17 @@ server.listen(port, '0.0.0.0', () => {
   );
   if (indexPath) console.log(`[registar-rps] index.html: ${indexPath}`);
   else console.warn('[registar-rps] index.html missing — COPY public ./public u Dockerfile.prod');
+
+  if (isDbConfigured()) {
+    waitForDatabase({ label: 'server-warmup' })
+      .then(() => {
+        console.log('[registar-rps] PostgreSQL veza provjerena (server spreman za sync).');
+      })
+      .catch((e) => {
+        console.warn(
+          '[registar-rps] PostgreSQL warmup nije uspio — API bez baze radi; sync/import može padati dok se baza ne oporavi:',
+          e.message || e
+        );
+      });
+  }
 });
