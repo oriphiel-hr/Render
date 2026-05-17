@@ -514,6 +514,34 @@ async function comparePromjeneSnapshots(params) {
 }
 
 /**
+ * SCN diff s punim sortiranjem po MBS (kao GET /promjene/diff), zapis u JSONL.
+ * Disk promjene.jsonl nije sortiran po MBS — ne koristiti za merge bez sortiranja.
+ */
+async function compareAndWriteDiffJsonl(fromId, toId, outFilePath, opts = {}) {
+  const compared = await comparePromjeneSnapshots({
+    snapshot_id_from: fromId,
+    snapshot_id_to: toId,
+    omit_nulls: opts.omit_nulls,
+    signal: opts.signal
+  });
+
+  const outDir = path.dirname(outFilePath);
+  if (outDir && outDir !== '.') fs.mkdirSync(outDir, { recursive: true });
+  const stream = fs.createWriteStream(outFilePath, { flags: 'w', encoding: 'utf8' });
+  for (const row of compared.data) {
+    stream.write(`${JSON.stringify(row)}\n`);
+  }
+  await closeWriteStream(stream);
+
+  return {
+    compare: compared.compare,
+    stats: compared.stats,
+    diffRows: compared.data.length,
+    sortedByMbs: true
+  };
+}
+
+/**
  * Usporedba → JSONL na disku (API ili postojeći promjene.jsonl).
  */
 async function comparePromjeneSnapshotsToJsonl(params) {
@@ -559,5 +587,6 @@ module.exports = {
   indexPromjeneByMbs,
   filterPromjeneDiff,
   fetchAllPromjene,
-  comparePromjeneSnapshots
+  comparePromjeneSnapshots,
+  compareAndWriteDiffJsonl
 };

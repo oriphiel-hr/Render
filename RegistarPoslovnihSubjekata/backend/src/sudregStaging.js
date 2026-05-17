@@ -8,7 +8,7 @@ const path = require('path');
 const readline = require('readline');
 const {
   streamPromjeneToJsonl,
-  comparePromjeneSnapshotsToJsonl
+  compareAndWriteDiffJsonl
 } = require('./sudregPromjeneDiff');
 
 const PROMJENE_FILE = 'promjene.jsonl';
@@ -169,7 +169,9 @@ async function saveSnapshotPromjene(snapshotId, opts = {}) {
         rowCount: fetched.rowCount,
         totalCount: fetched.totalCount,
         pages: fetched.pages,
-        complete: fetched.complete
+        complete: fetched.complete,
+        sorted_by_mbs: false,
+        note: 'Redoslijed stranica API-ja; za SCN diff koristi comparePromjeneSnapshots (sort u memoriji).'
       }
     }
   };
@@ -205,41 +207,21 @@ async function savePromjeneDiff(fromId, toId, opts = {}) {
 
   const fromFile = promjenePath(from);
   const toFile = promjenePath(to);
-  const canUseDisk = preferDisk && fs.existsSync(fromFile) && fs.existsSync(toFile);
+  const snapshotsOnDisk =
+    preferDisk && fs.existsSync(fromFile) && fs.existsSync(toFile);
 
   const t0 = Date.now();
-  let result;
-  let source;
-
   const diffOut = diffPromjenePath(from, to);
   const dir = diffDir(from, to);
   ensureDir(dir);
 
-  if (canUseDisk) {
-    source = 'disk';
-    const [baselineTotal, targetTotal] = await Promise.all([
-      countJsonlLines(fromFile),
-      countJsonlLines(toFile)
-    ]);
-    result = await comparePromjeneSnapshotsToJsonl({
-      snapshot_id_from: from,
-      snapshot_id_to: to,
-      outputPath: diffOut,
-      baseline_file: fromFile,
-      target_file: toFile,
-      baseline_totalCount: baselineTotal,
-      target_totalCount: targetTotal
-    });
-  } else {
-    source = 'api';
-    result = await comparePromjeneSnapshotsToJsonl({
-      snapshot_id_from: from,
-      snapshot_id_to: to,
-      outputPath: diffOut,
-      omit_nulls: opts.omit_nulls,
-      signal: opts.signal
-    });
-  }
+  // Diff mora ići preko API-ja + sort po MBS (comparePromjeneSnapshots).
+  // promjene.jsonl na disku je u redoslijedu stranica API-ja — stream merge daje krivo/0 redaka.
+  const source = snapshotsOnDisk ? 'api-sorted' : 'api';
+  const result = await compareAndWriteDiffJsonl(from, to, diffOut, {
+    omit_nulls: opts.omit_nulls,
+    signal: opts.signal
+  });
 
   const diffMeta = {
     snapshot_id_from: from,
