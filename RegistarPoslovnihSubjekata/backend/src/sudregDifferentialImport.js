@@ -19,6 +19,7 @@ const {
   isDatabaseConfigured
 } = require('./sudregDb');
 const { applyPromjeneDiffToTemp } = require('./sudregTempApply');
+const { ensureDatabaseReady } = require('./lib/prisma');
 
 const SUBJEKTI_KEY = 'subjekti';
 
@@ -211,8 +212,7 @@ async function runDifferentialImport(opts = {}) {
     if (!isDatabaseConfigured()) {
       throw new Error('sync_db=1 ali DATABASE_URL nije postavljen.');
     }
-    const { refreshPrismaConnection } = require('./lib/prisma');
-    await refreshPrismaConnection();
+    await ensureDatabaseReady({ label: 'diff-import-db' });
     const dbT0 = Date.now();
 
     const dbUnits = [

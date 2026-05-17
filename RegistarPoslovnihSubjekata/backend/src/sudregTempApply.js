@@ -4,7 +4,12 @@
  */
 
 const fs = require('fs');
-const { getPrisma, withPrismaRetry, getBatchSize, isDatabaseConfigured } = require('./lib/prisma');
+const {
+  withPrismaRetry,
+  getBatchSize,
+  isDatabaseConfigured,
+  ensureDatabaseReady
+} = require('./lib/prisma');
 const { forEachJsonlBatch } = require('./jsonlStream');
 const { listAllImportJobs } = require('./sudregDatasets');
 const {
@@ -295,6 +300,8 @@ async function applyPromjeneDiffToTemp(params) {
   if (!isDatabaseConfigured()) {
     throw new Error('DATABASE_URL nije postavljen — temp tablice zahtijevaju PostgreSQL.');
   }
+
+  await ensureDatabaseReady({ label: 'temp-apply' });
 
   const from = Number(params.snapshot_id_from);
   const to = Number(params.snapshot_id_to);

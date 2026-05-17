@@ -3,12 +3,20 @@ const { PrismaClient } = require('@prisma/client');
 /** @type {PrismaClient | null} */
 let prisma = null;
 
+/** @type {Promise<boolean> | null} */
+let dbReadyPromise = null;
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function isDatabaseConfigured() {
   return Boolean(String(process.env.DATABASE_URL || '').trim());
+}
+
+function getDefaultMaxWaitMs() {
+  const n = Number(process.env.DB_READY_MAX_WAIT_MS);
+  return Number.isFinite(n) && n > 0 ? n : 300000;
 }
 
 function getBatchSize() {
@@ -32,10 +40,32 @@ function isPrismaConnectionError(err) {
     msg.includes('etimedout') ||
     msg.includes('cannot reach database') ||
     msg.includes('can not reach database') ||
+    msg.includes("can't reach database") ||
     msg.includes('database system is starting up') ||
     msg.includes('not yet accepting connections') ||
     msg.includes('consistent recovery state')
   );
+}
+
+function markDatabaseUnavailable() {
+  dbReadyPromise = null;
+}
+
+/**
+ * Jednom čeka bazu; paralelni pozivi dijele isti promise.
+ */
+function ensureDatabaseReady(opts = {}) {
+  if (!isDatabaseConfigured()) {
+    return Promise.resolve(false);
+  }
+  if (dbReadyPromise) {
+    return dbReadyPromise;
+  }
+  dbReadyPromise = waitForDatabase(opts).catch((err) => {
+    dbReadyPromise = null;
+    throw err;
+  });
+  return dbReadyPromise;
 }
 
 function getPrisma() {
@@ -70,18 +100,14 @@ async function refreshPrismaConnection() {
 }
 
 /**
- * Čeka dok PostgreSQL ne prihvati vezu (npr. Render recovery nakon restarta).
- * @param {{ maxWaitMs?: number, intervalMs?: number, label?: string }} [opts]
+ * Čeka dok PostgreSQL ne prihvati vezu (npr. Render recovery ~30–90 s nakon restarta).
  */
 async function waitForDatabase(opts = {}) {
   if (!isDatabaseConfigured()) {
     return false;
   }
-  const maxWaitMs =
-    opts.maxWaitMs != null
-      ? opts.maxWaitMs
-      : Number(process.env.DB_READY_MAX_WAIT_MS) || 180000;
-  const intervalMs = opts.intervalMs != null ? opts.intervalMs : 2000;
+  const maxWaitMs = opts.maxWaitMs != null ? opts.maxWaitMs : getDefaultMaxWaitMs();
+  const baseInterval = opts.intervalMs != null ? opts.intervalMs : 2000;
   const label = opts.label || 'db';
   const t0 = Date.now();
   let attempt = 0;
@@ -89,6 +115,7 @@ async function waitForDatabase(opts = {}) {
   while (Date.now() - t0 < maxWaitMs) {
     attempt += 1;
     try {
+      await disconnectPrisma();
       const db = getPrisma();
       await db.$queryRaw`SELECT 1`;
       const sec = ((Date.now() - t0) / 1000).toFixed(1);
@@ -98,30 +125,32 @@ async function waitForDatabase(opts = {}) {
       if (!isPrismaConnectionError(err)) {
         throw err;
       }
-      await disconnectPrisma();
       const sec = Math.round((Date.now() - t0) / 1000);
+      const delay = Math.min(30000, baseInterval * Math.pow(2, Math.min(attempt - 1, 4)));
       console.warn(
-        `[registar-rps] PostgreSQL još nije spreman (${label}, ${sec}s, pokušaj ${attempt}): ${
-          err instanceof Error ? err.message : String(err)
+        `[registar-rps] PostgreSQL još nije spreman (${label}, ${sec}s, sljedeći pokušaj za ${Math.round(delay / 1000)}s): ${
+          err instanceof Error ? err.message.split('\n')[0] : String(err)
         }`
       );
-      await sleep(intervalMs);
+      await sleep(delay);
     }
   }
 
   throw new Error(
     `PostgreSQL nije dostupan nakon ${Math.round(maxWaitMs / 1000)}s (${label}). ` +
-      'Često uzrok: recovery nakon restarta instance — pokušaj ponovo za minutu.'
+      'Render Postgres često treba 30–90 s recovery nakon restarta — pričekaj pa ponovi.'
   );
 }
 
 /**
- * Ponovi operaciju nakon prekida veze (createMany tijekom dugog importa).
+ * Ponovi operaciju nakon prekida veze; pri prvom i svakom prekidu čeka oporavak baze.
  */
 async function withPrismaRetry(operation, opts = {}) {
-  const maxRetries = opts.maxRetries != null ? opts.maxRetries : 5;
-  const baseDelay = opts.retryDelayMs != null ? opts.retryDelayMs : 1500;
+  const maxRetries = opts.maxRetries != null ? opts.maxRetries : 10;
+  const waitMs = opts.waitMs != null ? opts.waitMs : 120000;
   let lastErr;
+
+  await ensureDatabaseReady({ label: 'prisma', maxWaitMs: waitMs });
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -131,9 +160,13 @@ async function withPrismaRetry(operation, opts = {}) {
       if (!isPrismaConnectionError(err) || attempt >= maxRetries) {
         throw err;
       }
+      markDatabaseUnavailable();
       await disconnectPrisma();
-      await sleep(baseDelay * attempt);
-      await refreshPrismaConnection();
+      console.warn(
+        `[registar-rps] Baza nedostupna (${attempt}/${maxRetries}), čekam oporavak…`
+      );
+      await waitForDatabase({ label: `retry-${attempt}`, maxWaitMs: waitMs });
+      dbReadyPromise = Promise.resolve(true);
     }
   }
   throw lastErr;
@@ -145,7 +178,10 @@ module.exports = {
   disconnectPrisma,
   refreshPrismaConnection,
   waitForDatabase,
+  ensureDatabaseReady,
+  markDatabaseUnavailable,
   withPrismaRetry,
   isPrismaConnectionError,
-  getBatchSize
+  getBatchSize,
+  getDefaultMaxWaitMs
 };

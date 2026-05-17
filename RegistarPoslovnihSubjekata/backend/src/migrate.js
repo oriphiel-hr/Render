@@ -37,7 +37,7 @@ async function main() {
   }
 
   console.log('[registar-rps] Čekam PostgreSQL prije migracija…');
-  await waitForDatabase({ label: 'migrate' });
+  await waitForDatabase({ label: 'migrate', maxWaitMs: Number(process.env.DB_READY_MAX_WAIT_MS) || 300000 });
   await runMigrateDeploy();
   await disconnectPrisma();
   console.log('[registar-rps] Prisma migracije primijenjene.');
