@@ -1,15 +1,21 @@
 # Root Directory na Renderu: RegistarPoslovnihSubjekata
 # Dockerfile Path: Dockerfile.prod
-FROM node:20-alpine
+FROM node:20-bookworm-slim
 WORKDIR /app
 
+RUN apt-get update -y \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
 COPY backend/package.json backend/package-lock.json ./
-RUN npm ci --omit=dev
+COPY backend/prisma ./prisma
+RUN npm ci
 
 COPY backend/src ./src
 COPY backend/public ./public
+RUN npx prisma generate
 
 ENV NODE_ENV=production
 EXPOSE 3000
 
-CMD ["node", "src/server.js"]
+CMD ["sh", "-c", "node src/migrate.js && node src/server.js"]

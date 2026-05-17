@@ -1,8 +1,12 @@
 # Root Directory (Render): RegistarPoslovnihSubjekata/backend
-# Dockerfile Path: Dockerfile.prod   (relativno na backend — bez dodatnog prefiksa)
-# Docker Build Context: prazno ili .
-FROM node:20-alpine
+# Dockerfile Path: Dockerfile.prod
+# Alpine + Prisma često puca na libssl.so.1.1 — koristimo Debian slim.
+FROM node:20-bookworm-slim
 WORKDIR /app
+
+RUN apt-get update -y \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json ./
 COPY prisma ./prisma
@@ -15,4 +19,4 @@ RUN npx prisma generate
 ENV NODE_ENV=production
 EXPOSE 3000
 
-CMD ["node", "src/server.js"]
+CMD ["sh", "-c", "node src/migrate.js && node src/server.js"]
