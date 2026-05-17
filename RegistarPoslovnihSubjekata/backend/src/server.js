@@ -30,6 +30,7 @@ const {
   syncSnapshotPromjeneToDb,
   syncDiffPromjeneToDb,
   getDbStagingSummary,
+  clearStagingDatabase,
   isDatabaseConfigured
 } = require('./sudregDb');
 const { runFullImport } = require('./sudregFullImport');
@@ -354,6 +355,44 @@ async function handleDbStagingSummary(res) {
   } catch (e) {
     sendJson(res, 500, {
       ok: false,
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
+}
+
+async function handleDbClear(req, res) {
+  if (!isDatabaseConfigured()) {
+    sendJson(res, 400, { ok: false, error: 'DATABASE_URL nije postavljen.' });
+    return;
+  }
+  const q = parseQueryString(req.url);
+  if (q.get('confirm') !== '1') {
+    sendJson(res, 400, {
+      ok: false,
+      error: 'Dodaj confirm=1 (namjerno brisanje svih staging redova u bazi).'
+    });
+    return;
+  }
+  const secret = String(process.env.CLEAR_DB_SECRET || '').trim();
+  if (secret) {
+    const provided = q.get('secret') || req.headers['x-clear-db-secret'] || '';
+    if (provided !== secret) {
+      sendJson(res, 403, { ok: false, error: 'Neispravan CLEAR_DB_SECRET.' });
+      return;
+    }
+  }
+  const t0 = Date.now();
+  try {
+    const result = await clearStagingDatabase();
+    sendJson(res, 200, {
+      ...result,
+      durationMs: Date.now() - t0,
+      dataDir: getDataDir()
+    });
+  } catch (e) {
+    sendJson(res, 500, {
+      ok: false,
+      durationMs: Date.now() - t0,
       error: e instanceof Error ? e.message : String(e)
     });
   }
@@ -795,6 +834,11 @@ const server = http.createServer((req, res) => {
 
   if (pathOnly === '/api/db/staging' && req.method === 'GET') {
     handleDbStagingSummary(res);
+    return;
+  }
+
+  if (pathOnly === '/api/db/clear' && (req.method === 'POST' || req.method === 'DELETE')) {
+    handleDbClear(req, res);
     return;
   }
 

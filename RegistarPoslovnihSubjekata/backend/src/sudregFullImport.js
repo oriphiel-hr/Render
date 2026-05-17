@@ -198,6 +198,8 @@ async function runFullImport(opts = {}) {
       throw new Error('sync_db=1 ali DATABASE_URL nije postavljen.');
     }
 
+    const { refreshPrismaConnection } = require('./lib/prisma');
+    await refreshPrismaConnection();
     const dbT0 = Date.now();
     const plan = await buildDbSyncPlan({
       snapshot_id_to: toId,

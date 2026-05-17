@@ -174,6 +174,15 @@
       font-weight: 600;
     }
     button.sudreg:hover:not(:disabled) { background: var(--sudreg-hover); }
+    button.danger {
+      background: transparent;
+      color: #f87171;
+      border-color: #b45454;
+    }
+    button.danger:hover:not(:disabled) {
+      background: rgba(248, 113, 113, 0.12);
+      border-color: #f87171;
+    }
     .version-tag {
       display: inline-block;
       margin-left: 0.5rem;
@@ -416,7 +425,9 @@
       <button type="button" class="secondary" id="btn-staging-sync-diff-db">Samo baza ← disk (diff)</button>
       <button type="button" class="secondary" id="btn-staging-list">Pregled diska</button>
       <button type="button" class="secondary" id="btn-staging-db">Pregled baze</button>
+      <button type="button" class="danger" id="btn-db-clear" disabled title="Briše sve redove u PostgreSQL staging tablicama">Obriši bazu (staging)</button>
     </div>
+    <p class="hint" style="margin:0 0 0.75rem;font-size:0.82rem;">„Obriši bazu” briše samo <strong>PostgreSQL</strong> (promjene, matični, meta u bazi). <strong>Disk</strong> (<code>/var/data</code>, JSONL) ostaje — možeš ponovo „Samo baza ← disk”.</p>
     <p class="section-label">Preuzimanje s diska</p>
     <p id="dl-status">Učitavam snimke…</p>
     <div class="actions">
@@ -472,6 +483,7 @@
     const btnStagingSaveDiff = document.getElementById('btn-staging-save-diff');
     const btnStagingList = document.getElementById('btn-staging-list');
     const btnStagingDb = document.getElementById('btn-staging-db');
+    const btnDbClear = document.getElementById('btn-db-clear');
     const btnStagingSyncFromDb = document.getElementById('btn-staging-sync-from-db');
     const btnStagingSyncToDb = document.getElementById('btn-staging-sync-to-db');
     const btnStagingSyncDiffDb = document.getElementById('btn-staging-sync-diff-db');
@@ -647,6 +659,7 @@
       if (btnStagingSaveDiff) btnStagingSaveDiff.disabled = busy;
       if (btnStagingList) btnStagingList.disabled = busy;
       if (btnStagingDb) btnStagingDb.disabled = busy;
+      if (btnDbClear) btnDbClear.disabled = busy || !databaseConfigured;
       if (btnStagingSyncFromDb) btnStagingSyncFromDb.disabled = busy || !databaseConfigured;
       if (btnStagingSyncToDb) btnStagingSyncToDb.disabled = busy || !databaseConfigured;
       if (btnStagingSyncDiffDb) btnStagingSyncDiffDb.disabled = busy || !databaseConfigured;
@@ -1405,6 +1418,7 @@
         if (btnStagingSyncToDb) btnStagingSyncToDb.disabled = !databaseConfigured;
         if (btnStagingSyncDiffDb) btnStagingSyncDiffDb.disabled = !databaseConfigured;
         if (stagingSyncDb) stagingSyncDb.disabled = !databaseConfigured;
+        if (btnDbClear) btnDbClear.disabled = !databaseConfigured;
       } catch (_) {
         dbStatus.textContent = 'Baza: nije moguće provjeriti /api/status.';
       }
@@ -1500,6 +1514,41 @@
     }
     if (btnStagingDb) {
       btnStagingDb.addEventListener('click', () => stagingFetch('/api/db/staging', null));
+    }
+
+    if (btnDbClear) {
+      btnDbClear.addEventListener('click', async () => {
+        if (!databaseConfigured) {
+          show('DATABASE_URL nije postavljen.', true);
+          return;
+        }
+        const ok = window.confirm(
+          'Obrisati SVE staging podatke iz PostgreSQL baze?\n\n' +
+            'Briše: promjene, matične redove, snimke/diff meta u bazi.\n' +
+            'NE briše JSON/JSONL na disku (/var/data).\n\n' +
+            'Nastaviti?'
+        );
+        if (!ok) return;
+        setBusy(true);
+        show('Brišem staging tablice u bazi…', false);
+        try {
+          const res = await fetch('/api/db/clear?confirm=1', {
+            method: 'POST',
+            headers: { Accept: 'application/json' }
+          });
+          const body = await res.json();
+          meta.textContent =
+            (res.ok && body.ok ? 'Baza ispražnjena' : 'Greška') +
+            ' · POST /api/db/clear · ' +
+            (body.durationMs != null ? body.durationMs + ' ms' : '');
+          show(JSON.stringify(body, null, 2), !res.ok || !body.ok);
+          if (res.ok && body.ok) await refreshDbStatus();
+        } catch (e) {
+          show('Greška: ' + (e.message || String(e)), true);
+        } finally {
+          setBusy(false);
+        }
+      });
     }
 
     loadSnapshotsDropdown();
