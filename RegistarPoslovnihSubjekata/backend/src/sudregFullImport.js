@@ -23,6 +23,17 @@ function emitProgress(onProgress, payload) {
   }
 }
 
+function formatDurationMs(ms) {
+  const n = Number(ms);
+  if (!Number.isFinite(n) || n < 0) return '?';
+  if (n < 1000) return `${Math.round(n)} ms`;
+  const sec = Math.floor(n / 1000);
+  if (sec < 60) return `${sec} s`;
+  const min = Math.floor(sec / 60);
+  const rem = sec % 60;
+  return rem > 0 ? `${min} min ${rem} s` : `${min} min`;
+}
+
 /**
  * @param {{ snapshot_id_to: string|number, snapshot_id_from?: string|number, sync_db?: string|boolean, force?: boolean, signal?: AbortSignal, onProgress?: (ev: object) => void }} opts
  */
@@ -73,6 +84,8 @@ async function runFullImport(opts = {}) {
   };
 
   // —— Faza 1: disk ——
+  let diskDurationMs = 0;
+  const diskT0 = Date.now();
   emitProgress(onProgress, {
     phase: 'disk',
     step: 'start',
@@ -157,17 +170,21 @@ async function runFullImport(opts = {}) {
     });
   }
 
+  diskDurationMs = Date.now() - diskT0;
   emitProgress(onProgress, {
     phase: 'disk',
     step: 'complete',
-    message: 'Disk: sve datoteke spremljene.',
+    message: `Disk: gotovo za ${formatDurationMs(diskDurationMs)}.`,
     stepIndex: diskStepTotal,
     stepTotal: diskStepTotal,
-    stepPercent: 100
+    stepPercent: 100,
+    disk_duration_ms: diskDurationMs,
+    disk_duration: formatDurationMs(diskDurationMs)
   });
 
   // —— Faza 2: baza ——
   const database = { enabled: syncDb, snapshots: [], diffs: [], datasets: [] };
+  let dbDurationMs = 0;
 
   if (!syncDb) {
     addStep('database_sync', { skipped: true, reason: 'sync_db=0 ili nema DATABASE_URL' });
@@ -181,6 +198,7 @@ async function runFullImport(opts = {}) {
       throw new Error('sync_db=1 ali DATABASE_URL nije postavljen.');
     }
 
+    const dbT0 = Date.now();
     const plan = await buildDbSyncPlan({
       snapshot_id_to: toId,
       snapshot_id_from: fromId && fromId !== toId ? fromId : undefined,
@@ -277,21 +295,31 @@ async function runFullImport(opts = {}) {
       rowsDone: rowsDoneGlobal
     });
 
+    dbDurationMs = Date.now() - dbT0;
     emitProgress(onProgress, {
       phase: 'db',
       step: 'complete',
-      message: `Baza: uvezeno ${rowsDoneGlobal.toLocaleString('hr-HR')} redova.`,
+      message: `Baza: gotovo za ${formatDurationMs(dbDurationMs)} (${rowsDoneGlobal.toLocaleString('hr-HR')} redova).`,
       rowsTotal: plan.totalRows,
       rowsDone: rowsDoneGlobal,
-      percent: 100
+      percent: 100,
+      db_duration_ms: dbDurationMs,
+      db_duration: formatDurationMs(dbDurationMs)
     });
   }
 
+  const totalDurationMs = Date.now() - t0;
   return {
     ok: true,
-    duration_ms: Date.now() - t0,
+    duration_ms: totalDurationMs,
+    duration: formatDurationMs(totalDurationMs),
+    disk_duration_ms: diskDurationMs,
+    disk_duration: formatDurationMs(diskDurationMs),
+    db_duration_ms: dbDurationMs,
+    db_duration: dbDurationMs > 0 ? formatDurationMs(dbDurationMs) : null,
     snapshot_id_to: toId,
     snapshot_id_from: fromId && fromId !== toId ? fromId : null,
+    diff_skipped: !fromId || fromId === toId,
     dataset_jobs: jobs.length,
     steps,
     database

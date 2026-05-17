@@ -267,9 +267,9 @@
     </div>
     <div class="compare-panel">
       <p class="section-label">Usporedba dviju snimki</p>
-      <p class="hint" style="margin-bottom: 0.75rem;">Odaberi snimke, zatim <strong>Spremi sve</strong> — prvo disk (JSON), zatim baza s progress barom (broj redaka s diska).</p>
+      <p class="hint" style="margin-bottom: 0.75rem;">Obavezno <strong>2. Novija snimka</strong> (promjene + matični). <strong>1. Starija</strong> opcionalno (SCN diff). Iste snimke: diff se preskače; trajanje diska prikazuje se nakon faze 1.</p>
       <div class="field-row">
-        <label for="snapshot-from-select">1. Starija snimka (baza)</label>
+        <label for="snapshot-from-select">1. Starija snimka (opcionalno, diff)</label>
         <select id="snapshot-from-select" class="snapshot-select" disabled>
           <option value="">Učitavam…</option>
         </select>
@@ -1174,6 +1174,17 @@
       return Number(n).toLocaleString('hr-HR');
     }
 
+    function fmtDuration(ms) {
+      const n = Number(ms);
+      if (!Number.isFinite(n) || n < 0) return '?';
+      if (n < 1000) return Math.round(n) + ' ms';
+      const sec = Math.floor(n / 1000);
+      if (sec < 60) return sec + ' s';
+      const min = Math.floor(sec / 60);
+      const rem = sec % 60;
+      return rem > 0 ? min + ' min ' + rem + ' s' : min + ' min';
+    }
+
     function setBar(barEl, trackEl, pct) {
       const p = Math.max(0, Math.min(100, Number(pct) || 0));
       if (barEl) barEl.style.width = p + '%';
@@ -1214,7 +1225,13 @@
         }
         if (ev.step === 'complete') pct = 100;
         setBar(progressDiskBar, progressDiskTrack, pct);
-        if (progressDiskLabel && ev.message) progressDiskLabel.textContent = ev.message;
+        if (progressDiskLabel) {
+          let diskLabel = ev.message || 'Disk…';
+          if (ev.step === 'complete' && ev.disk_duration_ms != null) {
+            diskLabel = 'Disk: gotovo za ' + (ev.disk_duration || fmtDuration(ev.disk_duration_ms));
+          }
+          progressDiskLabel.textContent = diskLabel;
+        }
         if (ev.step === 'complete' && syncDb && progressDbBlock) {
           progressDbBlock.hidden = false;
           if (progressDbLabel) progressDbLabel.textContent = 'Brojim redove na disku…';
@@ -1229,6 +1246,10 @@
         if (ev.rowsTotal != null && ev.rowsDone != null) {
           label += ' (' + fmtNum(ev.rowsDone) + ' / ' + fmtNum(ev.rowsTotal) + ' redova)';
         }
+        if (ev.step === 'complete' && ev.db_duration_ms != null) {
+          label = 'Baza: gotovo za ' + (ev.db_duration || fmtDuration(ev.db_duration_ms));
+          if (ev.rowsDone != null) label += ' · ' + fmtNum(ev.rowsDone) + ' redova';
+        }
         if (progressDbLabel) progressDbLabel.textContent = label;
         if (ev.step === 'complete') setBar(progressDbBar, progressDbTrack, 100);
       }
@@ -1239,18 +1260,20 @@
     }
 
     function runImportAll() {
-      const fromId = snapshotFromSelect.value;
-      const toId = snapshotSelect.value;
+      let fromId = snapshotFromSelect.value;
+      let toId = snapshotSelect.value;
+      if ((!toId || !snapshotsById[toId]) && fromId && snapshotsById[fromId]) {
+        toId = fromId;
+        fromId = '';
+      }
       if (!toId || !snapshotsById[toId]) {
-        show('Odaberi noviju snimku (točka 2).', true);
+        show('Odaberi noviju snimku (točka 2), ili samo stariju ako želiš jednu snimku.', true);
         return;
       }
       const qs = new URLSearchParams({ snapshot_id_to: toId });
-      if (fromId && snapshotsById[fromId] && fromId !== toId) {
+      const sameSnapshot = fromId && fromId === toId;
+      if (fromId && snapshotsById[fromId] && !sameSnapshot) {
         qs.set('snapshot_id_from', fromId);
-      } else if (fromId && fromId === toId) {
-        show('Starija i novija snimka moraju biti različite za diff.', true);
-        return;
       }
       const syncDb = Boolean(stagingSyncDb && stagingSyncDb.checked);
       qs.set('sync_db', syncDb ? '1' : '0');
@@ -1258,8 +1281,16 @@
       setBusy(true);
       resetImportProgress(syncDb);
       if (importAllHint) {
-        importAllHint.textContent =
-          '1) Disk — svi API pozivi i JSON datoteke. 2) Baza — upis prema broju redaka na disku.';
+        if (sameSnapshot) {
+          importAllHint.textContent =
+            'Iste snimke (#' + toId + ') — diff preskočen. Spremam promjene i matične podatke…';
+        } else if (!fromId) {
+          importAllHint.textContent =
+            'Samo snimka #' + toId + ' (bez diff-a). Disk pa baza — trajanje diska prikazuje se nakon faze 1.';
+        } else {
+          importAllHint.textContent =
+            'Diff #' + fromId + ' → #' + toId + '. Disk pa baza — ukupno trajanje diska na kraju faze 1.';
+        }
       }
       show('Pokrećem puni import (live progress)…', false);
       meta.textContent = 'SSE /api/staging/import-all/stream?' + qs.toString();
@@ -1284,12 +1315,31 @@
           const ms = Math.round(performance.now() - t0);
           const steps = Array.isArray(data.steps) ? data.steps.length : 0;
           const db = data.database || {};
-          meta.textContent =
-            'Import završen · koraka=' + steps +
-            (data.dataset_jobs != null ? ' · skupova=' + data.dataset_jobs : '') +
-            (data.duration_ms != null ? ' · ' + data.duration_ms + ' ms' : ' · ' + ms + ' ms');
+          let metaLine =
+            'Import završen · ukupno ' +
+            (data.duration ? data.duration : fmtDuration(data.duration_ms != null ? data.duration_ms : ms));
+          if (data.disk_duration_ms != null) {
+            metaLine += ' · disk ' + (data.disk_duration || fmtDuration(data.disk_duration_ms));
+          }
+          if (data.db_duration_ms != null && data.db_duration_ms > 0) {
+            metaLine += ' · baza ' + (data.db_duration || fmtDuration(data.db_duration_ms));
+          }
+          metaLine +=
+            ' · koraka=' + steps +
+            (data.dataset_jobs != null ? ' · skupova=' + data.dataset_jobs : '');
+          meta.textContent = metaLine;
           if (importAllHint) {
-            importAllHint.textContent = 'Gotovo. Provjeri „Pregled diska” ili „Pregled baze”.';
+            const diskPart =
+              data.disk_duration_ms != null
+                ? 'Disk: ' + (data.disk_duration || fmtDuration(data.disk_duration_ms))
+                : '';
+            const dbPart =
+              data.db_duration_ms != null && data.db_duration_ms > 0
+                ? 'Baza: ' + (data.db_duration || fmtDuration(data.db_duration_ms))
+                : '';
+            importAllHint.textContent = [diskPart, dbPart, 'Gotovo — pregled diska / baze.']
+              .filter(Boolean)
+              .join(' · ');
           }
           if (data.database && data.database.enabled) {
             meta.textContent +=

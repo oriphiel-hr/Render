@@ -391,6 +391,8 @@ module.exports = {
   snapshotDir,
   diffDir,
   promjenePath,
+  diffPromjenePath,
+  diffMetaPath,
   promjeneExists,
   saveSnapshotPromjene,
   savePromjeneDiff,
