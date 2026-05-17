@@ -106,3 +106,67 @@ model MaticniRed {
   @@index([mbs])
   @@map("maticni_redovi")
 }
+
+/// Priprema primjene promjena — ne dira staging tablice (promjene, maticni_redovi, …).
+model TempApplyRun {
+  id               String        @id @default(cuid())
+  snapshotIdFrom   Int
+  snapshotIdTo     Int
+  status           String        @default("running")
+  diffRows         Int           @default(0)
+  noviCount        Int           @default(0)
+  promjenaCount    Int           @default(0)
+  neaktivniCount   Int           @default(0)
+  subjektRowCount  Int           @default(0)
+  maticniRowCount  Int           @default(0)
+  baselineSource   String?
+  targetSource     String?
+  metaJson         Json?
+  createdAt        DateTime      @default(now())
+  completedAt      DateTime?
+  subjekti         TempSubjekt[]
+  maticni          TempMaticni[]
+
+  @@unique([snapshotIdFrom, snapshotIdTo])
+  @@index([snapshotIdTo])
+  @@map("temp_apply_runs")
+}
+
+/// Jedan MBS iz diff-a (novi/promjena/neaktivan) — pokretač za sve matične skupove.
+model TempSubjekt {
+  id               String       @id @default(cuid())
+  applyRunId       String
+  mbs              Int
+  vrsta            String
+  snapshotIdFrom   Int
+  snapshotIdTo     Int
+  payload          Json
+  promjenaJson     Json?
+  createdAt        DateTime     @default(now())
+  applyRun         TempApplyRun @relation(fields: [applyRunId], references: [id], onDelete: Cascade)
+
+  @@unique([applyRunId, mbs])
+  @@index([snapshotIdTo, vrsta])
+  @@index([mbs])
+  @@map("temp_subjekti")
+}
+
+/// Matični red u pripremi — svi skupovi s MBS (subjekti, tvrtke, sjedišta, …).
+model TempMaticni {
+  id               String       @id @default(cuid())
+  applyRunId       String
+  mbs              Int
+  datasetKey       String
+  rowKey           String       @default("_")
+  vrsta            String
+  snapshotIdFrom   Int
+  snapshotIdTo     Int
+  payload          Json
+  createdAt        DateTime     @default(now())
+  applyRun         TempApplyRun @relation(fields: [applyRunId], references: [id], onDelete: Cascade)
+
+  @@unique([applyRunId, mbs, datasetKey, rowKey])
+  @@index([snapshotIdTo, datasetKey])
+  @@index([mbs])
+  @@map("temp_maticni")
+}

@@ -276,7 +276,10 @@
     </div>
     <div class="compare-panel">
       <p class="section-label">Usporedba dviju snimki</p>
-      <p class="hint" style="margin-bottom: 0.75rem;">Obavezno <strong>2. Novija snimka</strong> (promjene + matični). <strong>1. Starija</strong> opcionalno (SCN diff). Iste snimke: diff se preskače; trajanje diska prikazuje se nakon faze 1.</p>
+      <p class="hint" style="margin-bottom: 0.75rem;">
+        <strong>Puno spremanje</strong>: novija snimka — svi matični skupovi; starija opcionalno (diff).
+        <strong>Diferencijalno</strong>: obavezno obje snimke (starija → novija) — promjene, SCN diff, aktivni subjekti, temp tablice.
+      </p>
       <div class="field-row">
         <label for="snapshot-from-select">1. Starija snimka (opcionalno, diff)</label>
         <select id="snapshot-from-select" class="snapshot-select" disabled>
@@ -291,7 +294,8 @@
       </div>
     <div id="snapshot-detail" class="snapshot-detail empty"></div>
       <div class="actions">
-        <button type="button" class="sudreg" id="btn-import-all">Spremi sve (disk + baza)</button>
+        <button type="button" class="sudreg" id="btn-import-all-full" title="Promjene + svi matični skupovi (novija snimka)">Puno (disk + baza)</button>
+        <button type="button" class="secondary" id="btn-import-all-diff" title="Promjene, diff, aktivni subjekti, temp — bez punog matičnog">Diferencijalno (disk + baza)</button>
         <button type="button" class="secondary" id="btn-promjene-diff">Samo SCN diff (pregled)</button>
       </div>
       <p id="import-all-hint" class="hint" style="margin-top:0.5rem;"></p>
@@ -314,7 +318,7 @@
     </div>
 
     <p class="section-label">Matični podaci (odabrani skupovi)</p>
-    <p class="hint" style="margin-bottom: 0.65rem;">Za sve skupove odjednom koristi <strong>Spremi sve</strong> gore. Ispod: ručno jedna stranica (debug). <strong>/subjekti</strong>: zadano samo <strong>aktivni</strong> (<code>status=1</code>).</p>
+    <p class="hint" style="margin-bottom: 0.65rem;">Za sve skupove: <strong>Puno (disk + baza)</strong>. Za inkrement: <strong>Diferencijalno</strong> (obje snimke). Ispod: ručno jedna stranica. <strong>/subjekti</strong>: zadano samo <strong>aktivni</strong> (<code>status=1</code>).</p>
     <div class="field-row">
       <label for="dataset-select">Skup podataka</label>
       <select id="dataset-select" class="snapshot-select">
@@ -413,6 +417,10 @@
         <input type="checkbox" id="staging-sync-db" checked />
         Nakon diska spremi i u bazu (zahtijeva <code>DATABASE_URL</code>)
       </label>
+      <label class="inline-label" style="display:flex;align-items:center;gap:0.35rem;cursor:pointer;">
+        <input type="checkbox" id="staging-apply-temp" />
+        Nakon diff-a upiši u <strong>temp</strong> (svi matični skupovi s MBS)
+      </label>
     </div>
     <div class="actions">
       <button type="button" class="secondary" id="btn-staging-save-from">API → disk (+ baza)</button>
@@ -425,6 +433,8 @@
       <button type="button" class="secondary" id="btn-staging-sync-diff-db">Samo baza ← disk (diff)</button>
       <button type="button" class="secondary" id="btn-staging-list">Pregled diska</button>
       <button type="button" class="secondary" id="btn-staging-db">Pregled baze</button>
+      <button type="button" class="secondary" id="btn-temp-apply" disabled title="SCN diff → temp (svi skupovi s MBS, ne dira staging)">Diff → temp tablice</button>
+      <button type="button" class="secondary" id="btn-temp-db">Pregled temp</button>
       <button type="button" class="danger" id="btn-db-clear" disabled title="Briše sve redove u PostgreSQL staging tablicama">Obriši bazu (staging)</button>
     </div>
     <p class="hint" style="margin:0 0 0.75rem;font-size:0.82rem;">„Obriši bazu” briše samo <strong>PostgreSQL</strong> (promjene, matični, meta u bazi). <strong>Disk</strong> (<code>/var/data</code>, JSONL) ostaje — možeš ponovo „Samo baza ← disk”.</p>
@@ -467,7 +477,8 @@
     const btnSnapshotsJson = document.getElementById('btn-snapshots-json');
     const btnPromjene = document.getElementById('btn-promjene');
     const btnPromjeneDiff = document.getElementById('btn-promjene-diff');
-    const btnImportAll = document.getElementById('btn-import-all');
+    const btnImportAllFull = document.getElementById('btn-import-all-full');
+    const btnImportAllDiff = document.getElementById('btn-import-all-diff');
     const importAllHint = document.getElementById('import-all-hint');
     const importProgressPanel = document.getElementById('import-progress-panel');
     const progressDiskBlock = document.getElementById('progress-disk-block');
@@ -483,6 +494,9 @@
     const btnStagingSaveDiff = document.getElementById('btn-staging-save-diff');
     const btnStagingList = document.getElementById('btn-staging-list');
     const btnStagingDb = document.getElementById('btn-staging-db');
+    const btnTempApply = document.getElementById('btn-temp-apply');
+    const btnTempDb = document.getElementById('btn-temp-db');
+    const stagingApplyTemp = document.getElementById('staging-apply-temp');
     const btnDbClear = document.getElementById('btn-db-clear');
     const btnStagingSyncFromDb = document.getElementById('btn-staging-sync-from-db');
     const btnStagingSyncToDb = document.getElementById('btn-staging-sync-to-db');
@@ -653,12 +667,19 @@
       btnSnapshotsJson.disabled = busy;
       btnPromjene.disabled = busy;
       if (btnPromjeneDiff) btnPromjeneDiff.disabled = busy;
-      if (btnImportAll) btnImportAll.disabled = busy;
+      if (btnImportAllFull) btnImportAllFull.disabled = busy;
+      if (btnImportAllDiff) {
+        const f = snapshotFromSelect.value;
+        const t = snapshotSelect.value;
+        const diffImportOk = f && t && f !== t && Number(f) < Number(t);
+        btnImportAllDiff.disabled = busy || !diffImportOk;
+      }
       if (btnStagingSaveFrom) btnStagingSaveFrom.disabled = busy;
       if (btnStagingSaveTo) btnStagingSaveTo.disabled = busy;
       if (btnStagingSaveDiff) btnStagingSaveDiff.disabled = busy;
       if (btnStagingList) btnStagingList.disabled = busy;
       if (btnStagingDb) btnStagingDb.disabled = busy;
+      if (btnTempDb) btnTempDb.disabled = busy || !databaseConfigured;
       if (btnDbClear) btnDbClear.disabled = busy || !databaseConfigured;
       if (btnStagingSyncFromDb) btnStagingSyncFromDb.disabled = busy || !databaseConfigured;
       if (btnStagingSyncToDb) btnStagingSyncToDb.disabled = busy || !databaseConfigured;
@@ -683,6 +704,8 @@
         snapshotFromSelect.value !== snapshotSelect.value;
       if (btnDlDiffPromjene) btnDlDiffPromjene.disabled = busy || !diffOk;
       if (btnDlDiffMeta) btnDlDiffMeta.disabled = busy || !diffOk;
+      if (btnTempApply) btnTempApply.disabled = busy || !diffOk || !databaseConfigured;
+      if (stagingApplyTemp) stagingApplyTemp.disabled = busy || !databaseConfigured;
       promjeneOffset.disabled = busy;
       promjeneLimit.disabled = busy;
       const hasSnapshots = Object.keys(snapshotsById).length > 0;
@@ -1272,40 +1295,59 @@
       }
     }
 
-    function runImportAll() {
+    function runImportAll(mode) {
+      const isDiff = mode === 'diff';
       let fromId = snapshotFromSelect.value;
       let toId = snapshotSelect.value;
-      if ((!toId || !snapshotsById[toId]) && fromId && snapshotsById[fromId]) {
+      if (!isDiff && (!toId || !snapshotsById[toId]) && fromId && snapshotsById[fromId]) {
         toId = fromId;
         fromId = '';
       }
       if (!toId || !snapshotsById[toId]) {
-        show('Odaberi noviju snimku (točka 2), ili samo stariju ako želiš jednu snimku.', true);
+        show('Odaberi noviju snimku (točka 2)' + (isDiff ? ' i stariju (točka 1).' : ', ili samo stariju za puni import.'), true);
         return;
       }
-      const qs = new URLSearchParams({ snapshot_id_to: toId });
+      if (isDiff) {
+        if (!fromId || !snapshotsById[fromId]) {
+          show('Diferencijalno: odaberi stariju snimku (točka 1) i noviju (točka 2).', true);
+          return;
+        }
+        if (fromId === toId) {
+          show('Starija i novija snimka moraju biti različite.', true);
+          return;
+        }
+        if (Number(fromId) >= Number(toId)) {
+          show('Starija snimka mora imati manji ID od novije (#' + fromId + ' → #' + toId + ').', true);
+          return;
+        }
+      }
+      const qs = new URLSearchParams({ snapshot_id_to: toId, mode: isDiff ? 'diff' : 'full' });
       const sameSnapshot = fromId && fromId === toId;
       if (fromId && snapshotsById[fromId] && !sameSnapshot) {
         qs.set('snapshot_id_from', fromId);
       }
       const syncDb = Boolean(stagingSyncDb && stagingSyncDb.checked);
       qs.set('sync_db', syncDb ? '1' : '0');
+      if (isDiff && syncDb) qs.set('apply_temp', '1');
 
       setBusy(true);
       resetImportProgress(syncDb);
       if (importAllHint) {
-        if (sameSnapshot) {
+        if (isDiff) {
           importAllHint.textContent =
-            'Iste snimke (#' + toId + ') — diff preskočen. Spremam promjene i matične podatke…';
+            'Diferencijalno #' + fromId + ' → #' + toId +
+            ': promjene, diff, aktivni subjekti' + (syncDb ? ', temp tablice' : '') + '…';
+        } else if (sameSnapshot) {
+          importAllHint.textContent =
+            'Puno #' + toId + ' — diff preskočen. Svi matični skupovi…';
         } else if (!fromId) {
-          importAllHint.textContent =
-            'Samo snimka #' + toId + ' (bez diff-a). Disk pa baza — trajanje diska prikazuje se nakon faze 1.';
+          importAllHint.textContent = 'Puno #' + toId + ' (bez diff-a). Svi matični skupovi…';
         } else {
           importAllHint.textContent =
-            'Diff #' + fromId + ' → #' + toId + '. Disk pa baza — ukupno trajanje diska na kraju faze 1.';
+            'Puno #' + fromId + ' → #' + toId + ' + svi matični skupovi za #' + toId + '…';
         }
       }
-      show('Pokrećem puni import (live progress)…', false);
+      show(isDiff ? 'Pokrećem diferencijalni import…' : 'Pokrećem puni import (live progress)…', false);
       meta.textContent = 'SSE /api/staging/import-all/stream?' + qs.toString();
 
       const t0 = performance.now();
@@ -1329,7 +1371,8 @@
           const steps = Array.isArray(data.steps) ? data.steps.length : 0;
           const db = data.database || {};
           let metaLine =
-            'Import završen · ukupno ' +
+            (data.import_mode === 'diff' ? 'Diferencijalno' : 'Puni import') +
+            ' završen · ukupno ' +
             (data.duration ? data.duration : fmtDuration(data.duration_ms != null ? data.duration_ms : ms));
           if (data.disk_duration_ms != null) {
             metaLine += ' · disk ' + (data.disk_duration || fmtDuration(data.disk_duration_ms));
@@ -1359,6 +1402,12 @@
               ' · baza: promjene=' + (db.snapshots ? db.snapshots.length : 0) +
               ', diff=' + (db.diffs ? db.diffs.length : 0) +
               ', skupova=' + (db.datasets ? db.datasets.length : 0);
+            if (db.tempApply && db.tempApply.counts) {
+              const c = db.tempApply.counts;
+              meta.textContent +=
+                ' · temp MBS=' + (c.mbsAffected != null ? c.mbsAffected : '?') +
+                ', maticni=' + (c.tempMaticni != null ? c.tempMaticni : '?');
+            }
           }
           setBar(progressDiskBar, progressDiskTrack, 100);
           if (syncDb) setBar(progressDbBar, progressDbTrack, 100);
@@ -1391,7 +1440,8 @@
       };
     }
 
-    if (btnImportAll) btnImportAll.addEventListener('click', () => runImportAll());
+    if (btnImportAllFull) btnImportAllFull.addEventListener('click', () => runImportAll('full'));
+    if (btnImportAllDiff) btnImportAllDiff.addEventListener('click', () => runImportAll('diff'));
 
     function stagingDbQuerySuffix() {
       if (!stagingSyncDb || !stagingSyncDb.checked) return '&sync_db=0';
@@ -1474,6 +1524,7 @@
           save_snapshots: '1'
         });
         qs.set('sync_db', stagingSyncDb && stagingSyncDb.checked ? '1' : '0');
+        if (stagingApplyTemp && stagingApplyTemp.checked) qs.set('apply_temp', '1');
         stagingFetch('/api/staging/save-diff?' + qs.toString(),
           'Spremam snimke (ako treba) i diff #' + fromId + ' → #' + toId + '…');
       });
@@ -1514,6 +1565,26 @@
     }
     if (btnStagingDb) {
       btnStagingDb.addEventListener('click', () => stagingFetch('/api/db/staging', null));
+    }
+    if (btnTempApply) {
+      btnTempApply.addEventListener('click', () => {
+        const fromId = snapshotFromSelect.value;
+        const toId = snapshotSelect.value;
+        if (!fromId || !toId) { show('Odaberi obje snimke (starija → novija).', true); return; }
+        if (Number(fromId) >= Number(toId)) {
+          show('Starija snimka mora imati manji ID od novije (#' + fromId + ' → #' + toId + ').', true);
+          return;
+        }
+        if (!databaseConfigured) { show('DATABASE_URL nije postavljen.', true); return; }
+        stagingFetch(
+          '/api/db/temp/apply-diff?snapshot_id_from=' + encodeURIComponent(fromId) +
+            '&snapshot_id_to=' + encodeURIComponent(toId),
+          'Primjenjujem diff u temp tablice #' + fromId + ' → #' + toId + '…'
+        );
+      });
+    }
+    if (btnTempDb) {
+      btnTempDb.addEventListener('click', () => stagingFetch('/api/db/temp', null));
     }
 
     if (btnDbClear) {

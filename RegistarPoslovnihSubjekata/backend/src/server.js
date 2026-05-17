@@ -34,6 +34,12 @@ const {
   isDatabaseConfigured
 } = require('./sudregDb');
 const { runFullImport } = require('./sudregFullImport');
+const { runDifferentialImport } = require('./sudregDifferentialImport');
+const {
+  applyPromjeneDiffToTemp,
+  getTempApplySummary,
+  clearTempTables
+} = require('./sudregTempApply');
 
 const port = Number(process.env.PORT) || 3000;
 
@@ -332,13 +338,90 @@ async function handleStagingSaveDiff(req, res) {
     if (syncDb) {
       database = await syncDiffPromjeneToDb(fromId, toId);
     }
+    let tempApply = null;
+    const applyTemp = q.get('apply_temp') === '1';
+    if (applyTemp && isDatabaseConfigured()) {
+      tempApply = await applyPromjeneDiffToTemp({
+        snapshot_id_from: fromId,
+        snapshot_id_to: toId
+      });
+    }
     sendJson(res, 200, {
       ok: true,
       durationMs: Date.now() - t0,
       dataDir: getDataDir(),
       database,
+      tempApply,
       ...result
     });
+  } catch (e) {
+    sendJson(res, 500, {
+      ok: false,
+      durationMs: Date.now() - t0,
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
+}
+
+async function handleTempApplyDiff(req, res) {
+  const q = parseQueryString(req.url);
+  const fromId = q.get('snapshot_id_from');
+  const toId = q.get('snapshot_id_to');
+  if (!fromId || !toId) {
+    sendJson(res, 400, {
+      ok: false,
+      error: 'snapshot_id_from i snapshot_id_to su obavezni (starija → novija).'
+    });
+    return;
+  }
+  const t0 = Date.now();
+  try {
+    const result = await applyPromjeneDiffToTemp({
+      snapshot_id_from: fromId,
+      snapshot_id_to: toId
+    });
+    sendJson(res, 200, {
+      durationMs: Date.now() - t0,
+      ...result
+    });
+  } catch (e) {
+    sendJson(res, 500, {
+      ok: false,
+      durationMs: Date.now() - t0,
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
+}
+
+async function handleTempSummary(res) {
+  try {
+    const summary = await getTempApplySummary();
+    sendJson(res, 200, { ok: true, ...summary });
+  } catch (e) {
+    sendJson(res, 500, {
+      ok: false,
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
+}
+
+async function handleTempClear(req, res) {
+  if (!isDatabaseConfigured()) {
+    sendJson(res, 400, { ok: false, error: 'DATABASE_URL nije postavljen.' });
+    return;
+  }
+  const q = parseQueryString(req.url);
+  if (q.get('confirm') !== '1') {
+    sendJson(res, 400, {
+      ok: false,
+      error: 'Dodaj confirm=1 za brisanje temp_apply_runs i temp_subjekti.'
+    });
+    return;
+  }
+  const t0 = Date.now();
+  try {
+    const result = await clearTempTables();
+    sendJson(res, 200, { ...result, durationMs: Date.now() - t0 });
   } catch (e) {
     sendJson(res, 500, {
       ok: false,
@@ -402,15 +485,53 @@ function parseImportAllQuery(req) {
   const q = parseQueryString(req.url);
   const toId = q.get('snapshot_id_to') || q.get('snapshot_id');
   const fromId = q.get('snapshot_id_from');
+  const mode = (q.get('mode') || 'full').toLowerCase();
   if (!toId) {
     return { error: 'snapshot_id_to (ili snapshot_id) je obavezan — novija snimka.' };
+  }
+  if (mode !== 'full' && mode !== 'diff') {
+    return { error: 'mode mora biti full ili diff.' };
+  }
+  if (mode === 'diff') {
+    if (!fromId) {
+      return { error: 'Diferencijalni import (mode=diff) zahtijeva snapshot_id_from (starija snimka).' };
+    }
+    if (String(fromId) === String(toId)) {
+      return { error: 'Za mode=diff odaberi dvije različite snimke.' };
+    }
+    if (Number(fromId) >= Number(toId)) {
+      return {
+        error: `Za mode=diff snapshot_id_from (${fromId}) mora biti manji od snapshot_id_to (${toId}).`
+      };
+    }
   }
   return {
     toId,
     fromId: fromId || undefined,
+    mode,
     sync_db: q.get('sync_db'),
+    apply_temp: q.get('apply_temp'),
     force: q.get('force') === '1'
   };
+}
+
+function runImportByMode(parsed, onProgress) {
+  const base = {
+    snapshot_id_to: parsed.toId,
+    snapshot_id_from: parsed.fromId,
+    sync_db: parsed.sync_db,
+    force: parsed.force,
+    onProgress
+  };
+  if (parsed.mode === 'diff') {
+    return runDifferentialImport({
+      ...base,
+      snapshot_id_from: parsed.fromId,
+      snapshot_id_to: parsed.toId,
+      apply_temp: parsed.apply_temp
+    });
+  }
+  return runFullImport(base);
 }
 
 async function handleStagingImportAll(req, res) {
@@ -421,12 +542,7 @@ async function handleStagingImportAll(req, res) {
   }
   const t0 = Date.now();
   try {
-    const result = await runFullImport({
-      snapshot_id_to: parsed.toId,
-      snapshot_id_from: parsed.fromId,
-      sync_db: parsed.sync_db,
-      force: parsed.force
-    });
+    const result = await runImportByMode(parsed);
     sendJson(res, 200, {
       ok: true,
       durationMs: Date.now() - t0,
@@ -456,14 +572,8 @@ async function handleStagingImportAllStream(req, res) {
   });
 
   try {
-    const result = await runFullImport({
-      snapshot_id_to: parsed.toId,
-      snapshot_id_from: parsed.fromId,
-      sync_db: parsed.sync_db,
-      force: parsed.force,
-      onProgress: (ev) => {
-        if (!closed) send(ev);
-      }
+    const result = await runImportByMode(parsed, (ev) => {
+      if (!closed) send(ev);
     });
     if (!closed) {
       send({
@@ -829,6 +939,21 @@ const server = http.createServer((req, res) => {
 
   if (pathOnly === '/api/staging/import-all/stream' && req.method === 'GET') {
     handleStagingImportAllStream(req, res);
+    return;
+  }
+
+  if (pathOnly === '/api/db/temp/apply-diff' && req.method === 'GET') {
+    handleTempApplyDiff(req, res);
+    return;
+  }
+
+  if (pathOnly === '/api/db/temp' && req.method === 'GET') {
+    handleTempSummary(res);
+    return;
+  }
+
+  if (pathOnly === '/api/db/temp/clear' && (req.method === 'POST' || req.method === 'DELETE')) {
+    handleTempClear(req, res);
     return;
   }
 

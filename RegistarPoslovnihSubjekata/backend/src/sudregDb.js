@@ -452,13 +452,17 @@ async function getDbStagingSummary() {
     return { configured: false };
   }
   const db = getPrisma();
-  const [snapshots, diffs, promjenaCount, datasetCount, maticniCount] = await Promise.all([
-    db.stagedSnapshot.count(),
-    db.stagedDiff.count(),
-    db.promjena.count(),
-    db.stagedDataset.count(),
-    db.maticniRed.count()
-  ]);
+  const [snapshots, diffs, promjenaCount, datasetCount, maticniCount, tempRuns, tempSubjekti, tempMaticni] =
+    await Promise.all([
+      db.stagedSnapshot.count(),
+      db.stagedDiff.count(),
+      db.promjena.count(),
+      db.stagedDataset.count(),
+      db.maticniRed.count(),
+      db.tempApplyRun.count(),
+      db.tempSubjekt.count(),
+      db.tempMaticni.count()
+    ]);
   const latestSnapshots = await db.stagedSnapshot.findMany({
     orderBy: { snapshotId: 'desc' },
     take: 10,
@@ -472,7 +476,16 @@ async function getDbStagingSummary() {
   });
   return {
     configured: true,
-    counts: { snapshots, diffs, promjene: promjenaCount, datasets: datasetCount, maticni_redovi: maticniCount },
+    counts: {
+      snapshots,
+      diffs,
+      promjene: promjenaCount,
+      datasets: datasetCount,
+      maticni_redovi: maticniCount,
+      temp_apply_runs: tempRuns,
+      temp_subjekti: tempSubjekti,
+      temp_maticni: tempMaticni
+    },
     latestSnapshots
   };
 }

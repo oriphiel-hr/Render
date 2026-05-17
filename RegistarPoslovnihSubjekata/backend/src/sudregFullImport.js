@@ -313,6 +313,7 @@ async function runFullImport(opts = {}) {
   const totalDurationMs = Date.now() - t0;
   return {
     ok: true,
+    import_mode: 'full',
     duration_ms: totalDurationMs,
     duration: formatDurationMs(totalDurationMs),
     disk_duration_ms: diskDurationMs,
