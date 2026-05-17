@@ -18,7 +18,7 @@ RUN npx prisma generate
 
 ENV NODE_ENV=production
 # Render starter ~512MB — stream import; mali rezervni heap
-ENV NODE_OPTIONS=--max-old-space-size=460 --expose-gc
+ENV NODE_OPTIONS="--max-old-space-size=460 --expose-gc"
 EXPOSE 3000
 
 CMD ["sh", "-c", "node src/migrate.js && node src/server.js"]
