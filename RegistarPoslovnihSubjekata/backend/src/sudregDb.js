@@ -5,6 +5,7 @@
 const path = require('path');
 const { getPrisma, isDatabaseConfigured } = require('./lib/prisma');
 const fs = require('fs');
+const { forEachJsonlBatch } = require('./jsonlStream');
 const {
   getDataDir,
   readJson,
@@ -103,7 +104,7 @@ async function syncSnapshotPromjeneToDb(snapshotId, opts = {}) {
     ? readJson(metaPath(snapshotId))
     : { snapshot_id: id };
 
-  const rows = readJsonl(jsonlFile);
+  const rowsOnDisk = await countJsonlLines(jsonlFile);
   const db = getPrisma();
   const diskRel = relDiskPath(jsonlFile);
   const savedAt = metaObj.saved_at ? new Date(metaObj.saved_at) : new Date();
@@ -114,30 +115,43 @@ async function syncSnapshotPromjeneToDb(snapshotId, opts = {}) {
       snapshotId: id,
       metaJson: metaObj,
       diskRelPath: diskRel,
-      rowCount: rows.length,
+      rowCount: rowsOnDisk,
       savedAt
     },
     update: {
       metaJson: metaObj,
       diskRelPath: diskRel,
-      rowCount: rows.length,
+      rowCount: rowsOnDisk,
       savedAt
     }
   });
 
   await db.promjena.deleteMany({ where: { stagedSnapshotId: staged.id } });
 
-  const mapped = [];
-  for (const row of rows) {
-    const m = mapSnapshotPromjenaRow(row, id, staged.id);
-    if (m) mapped.push(m);
-  }
+  let rowsMapped = 0;
+  let rowsInserted = 0;
+  let processed = 0;
 
-  const inserted = await insertPromjeneBatched(mapped, opts.onProgress);
+  await forEachJsonlBatch(jsonlFile, BATCH_SIZE, async (rows) => {
+    const mapped = [];
+    for (const row of rows) {
+      const m = mapSnapshotPromjenaRow(row, id, staged.id);
+      if (m) mapped.push(m);
+    }
+    if (mapped.length > 0) {
+      const result = await db.promjena.createMany({ data: mapped, skipDuplicates: true });
+      rowsInserted += result.count;
+    }
+    rowsMapped += mapped.length;
+    processed += rows.length;
+    if (opts.onProgress) {
+      opts.onProgress({ done: processed, total: rowsOnDisk, inserted: rowsInserted });
+    }
+  });
 
   await db.stagedSnapshot.update({
     where: { id: staged.id },
-    data: { dbSyncedAt: new Date(), rowCount: mapped.length }
+    data: { dbSyncedAt: new Date(), rowCount: rowsMapped }
   });
 
   return {
@@ -145,10 +159,10 @@ async function syncSnapshotPromjeneToDb(snapshotId, opts = {}) {
     snapshot_id: id,
     stagedSnapshotId: staged.id,
     diskRelPath: diskRel,
-    rowsOnDisk: rows.length,
-    rowsMapped: mapped.length,
-    rowsInserted: inserted,
-    rowsForProgress: mapped.length
+    rowsOnDisk,
+    rowsMapped,
+    rowsInserted,
+    rowsForProgress: rowsOnDisk
   };
 }
 
@@ -163,7 +177,7 @@ async function syncDiffPromjeneToDb(fromId, toId, opts = {}) {
     ? readJson(diffMetaPath(fromId, toId))
     : { snapshot_id_from: from, snapshot_id_to: to };
 
-  const rows = readJsonl(jsonlFile);
+  const rowsOnDisk = await countJsonlLines(jsonlFile);
   const db = getPrisma();
   const diskRel = relDiskPath(jsonlFile);
   const savedAt = metaObj.saved_at ? new Date(metaObj.saved_at) : new Date();
@@ -177,30 +191,43 @@ async function syncDiffPromjeneToDb(fromId, toId, opts = {}) {
       snapshotIdTo: to,
       metaJson: metaObj,
       diskRelPath: diskRel,
-      diffRowCount: rows.length,
+      diffRowCount: rowsOnDisk,
       savedAt
     },
     update: {
       metaJson: metaObj,
       diskRelPath: diskRel,
-      diffRowCount: rows.length,
+      diffRowCount: rowsOnDisk,
       savedAt
     }
   });
 
   await db.promjena.deleteMany({ where: { stagedDiffId: staged.id } });
 
-  const mapped = [];
-  for (const row of rows) {
-    const m = mapDiffPromjenaRow(row, from, to, staged.id);
-    if (m) mapped.push(m);
-  }
+  let rowsMapped = 0;
+  let rowsInserted = 0;
+  let processed = 0;
 
-  const inserted = await insertPromjeneBatched(mapped, opts.onProgress);
+  await forEachJsonlBatch(jsonlFile, BATCH_SIZE, async (rows) => {
+    const mapped = [];
+    for (const row of rows) {
+      const m = mapDiffPromjenaRow(row, from, to, staged.id);
+      if (m) mapped.push(m);
+    }
+    if (mapped.length > 0) {
+      const result = await db.promjena.createMany({ data: mapped, skipDuplicates: true });
+      rowsInserted += result.count;
+    }
+    rowsMapped += mapped.length;
+    processed += rows.length;
+    if (opts.onProgress) {
+      opts.onProgress({ done: processed, total: rowsOnDisk, inserted: rowsInserted });
+    }
+  });
 
   await db.stagedDiff.update({
     where: { id: staged.id },
-    data: { dbSyncedAt: new Date(), diffRowCount: mapped.length }
+    data: { dbSyncedAt: new Date(), diffRowCount: rowsMapped }
   });
 
   return {
@@ -209,10 +236,10 @@ async function syncDiffPromjeneToDb(fromId, toId, opts = {}) {
     snapshot_id_to: to,
     stagedDiffId: staged.id,
     diskRelPath: diskRel,
-    rowsOnDisk: rows.length,
-    rowsMapped: mapped.length,
-    rowsInserted: inserted,
-    rowsForProgress: mapped.length
+    rowsOnDisk,
+    rowsMapped,
+    rowsInserted,
+    rowsForProgress: rowsOnDisk
   };
 }
 
@@ -251,7 +278,7 @@ async function syncDatasetToDb(snapshotId, datasetKey, opts = {}) {
   const metaFile = path.join(datasetsDir(snapId), `${key.replace(/[^a-zA-Z0-9._-]+/g, '_')}.meta.json`);
   const metaObj = fs.existsSync(metaFile) ? readJson(metaFile) : { dataset_key: key };
 
-  const rows = readJsonl(jsonlFile);
+  const rowsOnDisk = await countJsonlLines(jsonlFile);
   const db = getPrisma();
   const diskRel = relDiskPath(jsonlFile);
   const savedAt = metaObj.saved_at ? new Date(metaObj.saved_at) : new Date();
@@ -267,7 +294,7 @@ async function syncDatasetToDb(snapshotId, datasetKey, opts = {}) {
       label: metaObj.label || key,
       metaJson: metaObj,
       diskRelPath: diskRel,
-      rowCount: rows.length,
+      rowCount: rowsOnDisk,
       savedAt,
       stagedSnapshotId: stagedSnap?.id || null
     },
@@ -276,7 +303,7 @@ async function syncDatasetToDb(snapshotId, datasetKey, opts = {}) {
       label: metaObj.label || key,
       metaJson: metaObj,
       diskRelPath: diskRel,
-      rowCount: rows.length,
+      rowCount: rowsOnDisk,
       savedAt,
       stagedSnapshotId: stagedSnap?.id || null
     }
@@ -284,12 +311,24 @@ async function syncDatasetToDb(snapshotId, datasetKey, opts = {}) {
 
   await db.maticniRed.deleteMany({ where: { stagedDatasetId: staged.id } });
 
-  const mapped = rows.map((row) => mapMaticniRow(row, snapId, key, staged.id));
-  const inserted = await insertMaticniBatched(mapped, opts.onProgress);
+  let rowsInserted = 0;
+  let processed = 0;
+
+  await forEachJsonlBatch(jsonlFile, BATCH_SIZE, async (rows) => {
+    const mapped = rows.map((row) => mapMaticniRow(row, snapId, key, staged.id));
+    if (mapped.length > 0) {
+      const result = await db.maticniRed.createMany({ data: mapped });
+      rowsInserted += result.count;
+    }
+    processed += rows.length;
+    if (opts.onProgress) {
+      opts.onProgress({ done: processed, total: rowsOnDisk, inserted: rowsInserted });
+    }
+  });
 
   await db.stagedDataset.update({
     where: { id: staged.id },
-    data: { dbSyncedAt: new Date(), rowCount: mapped.length }
+    data: { dbSyncedAt: new Date(), rowCount: rowsOnDisk }
   });
 
   return {
@@ -297,9 +336,9 @@ async function syncDatasetToDb(snapshotId, datasetKey, opts = {}) {
     snapshot_id: snapId,
     dataset_key: key,
     stagedDatasetId: staged.id,
-    rowsOnDisk: rows.length,
-    rowsInserted: inserted,
-    rowsForProgress: mapped.length
+    rowsOnDisk,
+    rowsInserted,
+    rowsForProgress: rowsOnDisk
   };
 }
 

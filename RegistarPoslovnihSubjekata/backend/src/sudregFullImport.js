@@ -3,11 +3,12 @@
  */
 
 const { listAllImportJobs } = require('./sudregDatasets');
-const { fetchAllDatasetPages } = require('./sudregDatasetFetch');
+const { fetchAllDatasetPagesToJsonl } = require('./sudregDatasetFetch');
 const {
   saveSnapshotPromjene,
   savePromjeneDiff,
-  saveDatasetJsonl
+  writeDatasetMeta,
+  datasetFilePath
 } = require('./sudregStaging');
 const {
   shouldSyncDb,
@@ -126,28 +127,32 @@ async function runFullImport(opts = {}) {
     emitDisk(`dataset:${job.datasetKey}`, `API → disk: ${job.datasetKey}…`, {
       datasetKey: job.datasetKey
     });
-    const fetched = await fetchAllDatasetPages(job, toId, { signal: opts.signal });
-    const saved = saveDatasetJsonl(toId, job.datasetKey, fetched.rows, {
+    const outFile = datasetFilePath(toId, job.datasetKey);
+    const fetched = await fetchAllDatasetPagesToJsonl(job, toId, outFile, {
+      signal: opts.signal
+    });
+    const saved = writeDatasetMeta(toId, job.datasetKey, outFile, {
       api_path: fetched.apiPath,
       label: fetched.label,
       pages: fetched.pages,
-      totalCount: fetched.totalCount
+      totalCount: fetched.totalCount,
+      rowCount: fetched.rowCount
     });
     datasets.push({
       datasetKey: job.datasetKey,
       apiPath: fetched.apiPath,
-      rowCount: fetched.rows.length,
+      rowCount: fetched.rowCount,
       disk: saved.filePath
     });
     diskStepIndex += 1;
     addStep(`dataset:${job.datasetKey}`, {
       api_path: fetched.apiPath,
-      rowCount: fetched.rows.length,
+      rowCount: fetched.rowCount,
       pages: fetched.pages
     });
-    emitDisk(`dataset:${job.datasetKey}`, `${job.datasetKey}: ${fetched.rows.length} redova na disku.`, {
+    emitDisk(`dataset:${job.datasetKey}`, `${job.datasetKey}: ${fetched.rowCount} redova na disku.`, {
       datasetKey: job.datasetKey,
-      rowCount: fetched.rows.length,
+      rowCount: fetched.rowCount,
       done: true
     });
   }

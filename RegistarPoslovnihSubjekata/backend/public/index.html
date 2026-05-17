@@ -1316,7 +1316,11 @@
       es.onerror = () => {
         if (es.readyState === EventSource.CLOSED) return;
         es.close();
-        show('Veza prekinuta (timeout ili greška servera).', true);
+        show(
+          'Veza prekinuta — server se vjerojatno restartao (npr. nedostatak RAM-a na Renderu). ' +
+            'Pokušaj ponovo; veći plan ili manji import po koracima.',
+          true
+        );
         meta.textContent = '/api/staging/import-all/stream';
         if (importAllHint) importAllHint.textContent = '';
         hideImportProgress();

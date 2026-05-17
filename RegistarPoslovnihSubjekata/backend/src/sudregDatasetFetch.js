@@ -2,7 +2,10 @@
  * Dohvat stranice podataka za skupove iz sudregDatasets (GET /api/javni/...).
  */
 
+const fs = require('fs');
+const path = require('path');
 const { fetchSudregJavni } = require('./sudregApi');
+const { closeWriteStream } = require('./jsonlStream');
 const { getDataset, listAllImportJobs, PODRUZNICA_API_PATHS } = require('./sudregDatasets');
 
 const FULL_FETCH_PAGE_LIMIT = 1000;
@@ -160,6 +163,70 @@ async function fetchAllDatasetPages(job, snapshotId, opts = {}) {
   };
 }
 
+/**
+ * Stranice → JSONL na disk (bez držanja cijelog skupa u RAM).
+ */
+async function fetchAllDatasetPagesToJsonl(job, snapshotId, filePath, opts = {}) {
+  const entry = getDataset(job.datasetId);
+  if (!entry) {
+    throw new Error(`Nepoznat skup: ${job.datasetId}`);
+  }
+
+  const outDir = path.dirname(filePath);
+  if (outDir && outDir !== '.') fs.mkdirSync(outDir, { recursive: true });
+
+  const queryExtra = { ...job.query, ...opts, snapshot_id: snapshotId };
+  const apiPath = resolveApiPath(entry, queryExtra);
+  const stream = fs.createWriteStream(filePath, { flags: 'w', encoding: 'utf8' });
+  let offset = 0;
+  let pages = 0;
+  let totalCount = null;
+  let rowCount = 0;
+
+  while (true) {
+    const sudregQuery = buildSudregQuery(entry, apiPath, {
+      ...queryExtra,
+      offset,
+      limit: FULL_FETCH_PAGE_LIMIT,
+      no_data_error: '0'
+    });
+    const result = await fetchSudregJavni(apiPath, sudregQuery, { signal: opts.signal });
+    pages += 1;
+    if (totalCount == null) {
+      totalCount = parseHeaderInt(result.meta?.xTotalCount);
+    }
+    const chunk = Array.isArray(result.data) ? result.data : result.data ? [result.data] : [];
+    for (const row of chunk) {
+      stream.write(`${JSON.stringify(row)}\n`);
+      rowCount += 1;
+    }
+    if (chunk.length === 0) break;
+    offset += chunk.length;
+    if (totalCount != null && rowCount >= totalCount) break;
+    if (chunk.length < FULL_FETCH_PAGE_LIMIT) break;
+  }
+
+  await closeWriteStream(stream);
+
+  if (totalCount != null && rowCount !== totalCount) {
+    throw new Error(
+      `Sudreg ${apiPath} snapshot_id=${snapshotId}: zapisano ${rowCount}, očekivano ${totalCount}.`
+    );
+  }
+
+  return {
+    datasetKey: job.datasetKey,
+    datasetId: job.datasetId,
+    apiPath,
+    label: job.label,
+    rowCount,
+    pages,
+    totalCount: totalCount ?? rowCount,
+    complete: true,
+    filePath
+  };
+}
+
 function listDatasetFetchOptions() {
   return {
     subjekti: {
@@ -177,6 +244,7 @@ function listDatasetFetchOptions() {
 module.exports = {
   fetchDatasetPage,
   fetchAllDatasetPages,
+  fetchAllDatasetPagesToJsonl,
   resolveApiPath,
   DJELATNOST_PATH_BY_VRSTA,
   listDatasetFetchOptions,

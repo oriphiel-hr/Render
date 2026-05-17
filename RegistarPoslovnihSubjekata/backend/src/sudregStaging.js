@@ -6,7 +6,10 @@
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
-const { fetchAllPromjene, comparePromjeneSnapshots, sortPromjeneByMbs } = require('./sudregPromjeneDiff');
+const {
+  streamPromjeneToJsonl,
+  comparePromjeneSnapshotsToJsonl
+} = require('./sudregPromjeneDiff');
 
 const PROMJENE_FILE = 'promjene.jsonl';
 const META_FILE = 'meta.json';
@@ -58,15 +61,27 @@ function saveDatasetJsonl(snapshotId, datasetKey, rows, metaExtra = {}) {
   const filePath = datasetFilePath(snapshotId, datasetKey);
   ensureDir(path.dirname(filePath));
   writeJsonl(filePath, rows);
+  return writeDatasetMeta(snapshotId, datasetKey, filePath, {
+    rowCount: rows.length,
+    ...metaExtra
+  });
+}
+
+/** Meta nakon streamanog JSONL (rowCount već poznat). */
+function writeDatasetMeta(snapshotId, datasetKey, filePath, metaExtra = {}) {
+  const rowCount = metaExtra.rowCount != null ? metaExtra.rowCount : 0;
   const meta = {
     snapshot_id: String(snapshotId),
     dataset_key: datasetKey,
     saved_at: new Date().toISOString(),
-    rowCount: rows.length,
+    rowCount,
     file: path.basename(filePath),
     ...metaExtra
   };
-  const metaFile = path.join(datasetsDir(snapshotId), `${String(datasetKey).replace(/[^a-zA-Z0-9._-]+/g, '_')}.meta.json`);
+  const metaFile = path.join(
+    datasetsDir(snapshotId),
+    `${String(datasetKey).replace(/[^a-zA-Z0-9._-]+/g, '_')}.meta.json`
+  );
   writeJson(metaFile, meta);
   return { filePath, meta, metaFile };
 }
@@ -137,14 +152,12 @@ async function saveSnapshotPromjene(snapshotId, opts = {}) {
   }
 
   const t0 = Date.now();
-  const fetched = await fetchAllPromjene(id, {
+  ensureDir(dir);
+  const fetched = await streamPromjeneToJsonl(id, outFile, {
     no_data_error: '0',
     omit_nulls: opts.omit_nulls,
     signal: opts.signal
   });
-
-  ensureDir(dir);
-  writeJsonl(outFile, fetched.rows);
 
   const meta = {
     snapshot_id: id,
@@ -153,7 +166,7 @@ async function saveSnapshotPromjene(snapshotId, opts = {}) {
     endpoints: {
       promjene: {
         file: PROMJENE_FILE,
-        rowCount: fetched.rows.length,
+        rowCount: fetched.rowCount,
         totalCount: fetched.totalCount,
         pages: fetched.pages,
         complete: fetched.complete
@@ -198,31 +211,35 @@ async function savePromjeneDiff(fromId, toId, opts = {}) {
   let result;
   let source;
 
+  const diffOut = diffPromjenePath(from, to);
+  const dir = diffDir(from, to);
+  ensureDir(dir);
+
   if (canUseDisk) {
     source = 'disk';
-    const baselineRows = sortPromjeneByMbs(readJsonl(fromFile));
-    const targetRows = sortPromjeneByMbs(readJsonl(toFile));
-    result = await comparePromjeneSnapshots({
+    const [baselineTotal, targetTotal] = await Promise.all([
+      countJsonlLines(fromFile),
+      countJsonlLines(toFile)
+    ]);
+    result = await comparePromjeneSnapshotsToJsonl({
       snapshot_id_from: from,
       snapshot_id_to: to,
-      baseline_rows: baselineRows,
-      baseline_totalCount: baselineRows.length,
-      target_rows: targetRows,
-      target_totalCount: targetRows.length
+      outputPath: diffOut,
+      baseline_file: fromFile,
+      target_file: toFile,
+      baseline_totalCount: baselineTotal,
+      target_totalCount: targetTotal
     });
   } else {
     source = 'api';
-    result = await comparePromjeneSnapshots({
+    result = await comparePromjeneSnapshotsToJsonl({
       snapshot_id_from: from,
       snapshot_id_to: to,
+      outputPath: diffOut,
       omit_nulls: opts.omit_nulls,
       signal: opts.signal
     });
   }
-
-  const dir = diffDir(from, to);
-  ensureDir(dir);
-  writeJsonl(diffPromjenePath(from, to), result.data);
 
   const diffMeta = {
     snapshot_id_from: from,
@@ -247,7 +264,7 @@ async function savePromjeneDiff(fromId, toId, opts = {}) {
     source,
     compare: result.compare,
     stats: result.stats,
-    diffRows: result.data.length
+    diffRows: result.diffRows ?? result.stats?.diffRows ?? 0
   };
 }
 
@@ -385,5 +402,6 @@ module.exports = {
   readJson,
   datasetsDir,
   datasetFilePath,
-  saveDatasetJsonl
+  saveDatasetJsonl,
+  writeDatasetMeta
 };

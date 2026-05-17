@@ -4,7 +4,10 @@
  * @see Upute za razvojne inženjere v3.0.0
  */
 
+const fs = require('fs');
+const path = require('path');
 const { getPromjene } = require('./sudregApi');
+const { closeWriteStream } = require('./jsonlStream');
 
 const FULL_FETCH_PAGE_LIMIT = 1000;
 
@@ -110,6 +113,54 @@ class PromjeneSortedReader {
   }
 }
 
+/** Čitač promjene.jsonl s diska (sortirano po mbs — red po red). */
+class PromjeneJsonlReader {
+  constructor(filePath, snapshotId, totalCount = null) {
+    this.snapshotId = String(snapshotId);
+    this.filePath = filePath;
+    this.totalCount = totalCount;
+    this.pages = 1;
+    this.rowsRead = 0;
+    this.done = false;
+    this._pending = null;
+    this._rl = readline.createInterface({
+      input: fs.createReadStream(filePath, { encoding: 'utf8' }),
+      crlfDelay: Infinity
+    });
+    this._iter = this._rl[Symbol.asyncIterator]();
+  }
+
+  async _readNext() {
+    while (true) {
+      const { value, done } = await this._iter.next();
+      if (done) {
+        this.done = true;
+        return null;
+      }
+      if (!value.trim()) continue;
+      this.rowsRead += 1;
+      return JSON.parse(value);
+    }
+  }
+
+  async peek() {
+    if (this._pending === undefined) {
+      this._pending = await this._readNext();
+    }
+    return this._pending;
+  }
+
+  async advance() {
+    const row = await this.peek();
+    this._pending = undefined;
+    return row;
+  }
+
+  assertComplete() {
+    if (!this._rl.closed) this._rl.close();
+  }
+}
+
 /** Čitač već učitanog sortiranog niza (npr. s diska). */
 class PromjeneArrayReader {
   constructor(rows, snapshotId, totalCount) {
@@ -166,7 +217,40 @@ function filterPromjeneDiff(baselineByMbs, targetRows) {
   return diff;
 }
 
-/** Dohvat cijelog seta (test / rezervni put). */
+/** API → promjene.jsonl bez držanja cijelog seta u RAM. */
+async function streamPromjeneToJsonl(snapshotId, filePath, opts = {}) {
+  const dir = path.dirname(filePath);
+  if (dir) fs.mkdirSync(dir, { recursive: true });
+
+  const reader = new PromjeneSortedReader(snapshotId, opts);
+  const stream = fs.createWriteStream(filePath, { flags: 'w', encoding: 'utf8' });
+  let rowCount = 0;
+
+  while (true) {
+    const row = await reader.advance();
+    if (!row) break;
+    stream.write(`${JSON.stringify(row)}\n`);
+    rowCount += 1;
+  }
+  reader.assertComplete();
+  await closeWriteStream(stream);
+
+  const totalCount = reader.totalCount ?? rowCount;
+  if (totalCount != null && rowCount !== totalCount) {
+    throw new Error(
+      `Sudreg /promjene snapshot_id=${snapshotId}: zapisano ${rowCount}, očekivano ${totalCount}.`
+    );
+  }
+
+  return {
+    rowCount,
+    pages: reader.pages,
+    totalCount,
+    complete: true
+  };
+}
+
+/** Dohvat cijelog seta (test / rezervni put — troši puno RAM-a). */
 async function fetchAllPromjene(snapshotId, opts = {}) {
   const reader = new PromjeneSortedReader(snapshotId, opts);
   const rows = [];
@@ -192,6 +276,102 @@ async function fetchAllPromjene(snapshotId, opts = {}) {
     complete: true,
     sortedByMbs: true,
     meta: { lastOffsetUsed: reader.offset }
+  };
+}
+
+/**
+ * Stream SCN diff u JSONL (bez držanja cijelog diff niza u memoriji).
+ */
+async function comparePromjeneWithReadersToJsonl(oldReader, newReader, fromId, toId, outFilePath) {
+  const outDir = path.dirname(outFilePath);
+  if (outDir && outDir !== '.') fs.mkdirSync(outDir, { recursive: true });
+  const stream = fs.createWriteStream(outFilePath, { flags: 'w', encoding: 'utf8' });
+  let newCount = 0;
+  let updatedCount = 0;
+  let diffRows = 0;
+
+  const writeDiff = (row, vrsta, scnStaro = null) => {
+    const item = { ...row, vrsta };
+    if (vrsta === 'promjena' && scnStaro != null) item.scn_staro = scnStaro;
+    stream.write(`${JSON.stringify(item)}\n`);
+    diffRows += 1;
+    if (vrsta === 'novi') newCount += 1;
+    else updatedCount += 1;
+  };
+
+  let oldRow = await oldReader.peek();
+  let newRow = await newReader.peek();
+
+  while (oldRow || newRow) {
+    if (!oldRow) {
+      writeDiff(await newReader.advance(), 'novi');
+      newRow = await newReader.peek();
+      continue;
+    }
+    if (!newRow) {
+      await oldReader.advance();
+      oldRow = await oldReader.peek();
+      continue;
+    }
+
+    const om = toMbsNum(oldRow);
+    const nm = toMbsNum(newRow);
+
+    if (om == null) {
+      await oldReader.advance();
+      oldRow = await oldReader.peek();
+      continue;
+    }
+    if (nm == null) {
+      await newReader.advance();
+      newRow = await newReader.peek();
+      continue;
+    }
+
+    if (om < nm) {
+      await oldReader.advance();
+      oldRow = await oldReader.peek();
+    } else if (nm < om) {
+      writeDiff(await newReader.advance(), 'novi');
+      newRow = await newReader.peek();
+    } else {
+      const newScn = toScn(newRow.scn);
+      const oldScn = toScn(oldRow.scn);
+      if (newScn != null && oldScn != null && newScn > oldScn) {
+        writeDiff(newRow, 'promjena', oldScn);
+      }
+      await oldReader.advance();
+      await newReader.advance();
+      oldRow = await oldReader.peek();
+      newRow = await newReader.peek();
+    }
+  }
+
+  oldReader.assertComplete();
+  newReader.assertComplete();
+  await closeWriteStream(stream);
+
+  return {
+    compare: {
+      snapshot_id_from: fromId,
+      snapshot_id_to: toId,
+      algorithm: 'scn_merge_by_mbs',
+      fullSets: true,
+      description:
+        'Usporedba po mbs + SCN: novi (MBS samo u novijoj snimci) | promjena (isti MBS, veći SCN). scn_staro samo kod promjene.'
+    },
+    stats: {
+      baselineRows: oldReader.rowsRead,
+      baselineTotalCount: oldReader.totalCount ?? oldReader.rowsRead,
+      baselinePages: oldReader.pages,
+      targetRows: newReader.rowsRead,
+      targetTotalCount: newReader.totalCount ?? newReader.rowsRead,
+      targetPages: newReader.pages,
+      diffRows,
+      noviZapisi: newCount,
+      promjene: updatedCount
+    },
+    diffRows
   };
 }
 
@@ -332,11 +512,47 @@ async function comparePromjeneSnapshots(params) {
   return comparePromjeneWithReaders(oldReader, newReader, fromId, toId);
 }
 
+/**
+ * Usporedba → JSONL na disku (API ili postojeći promjene.jsonl).
+ */
+async function comparePromjeneSnapshotsToJsonl(params) {
+  const fromId = String(params.snapshot_id_from);
+  const toId = String(params.snapshot_id_to);
+  const outFilePath = params.outputPath;
+  if (!outFilePath) {
+    throw new Error('outputPath je obavezan za comparePromjeneSnapshotsToJsonl.');
+  }
+
+  let result;
+  if (params.baseline_file && params.target_file) {
+    const oldReader = new PromjeneJsonlReader(params.baseline_file, fromId, params.baseline_totalCount);
+    const newReader = new PromjeneJsonlReader(params.target_file, toId, params.target_totalCount);
+    result = await comparePromjeneWithReadersToJsonl(oldReader, newReader, fromId, toId, outFilePath);
+  } else {
+    const oldReader = new PromjeneSortedReader(fromId, {
+      no_data_error: '0',
+      omit_nulls: params.omit_nulls,
+      signal: params.signal
+    });
+    const newReader = new PromjeneSortedReader(toId, {
+      no_data_error: '0',
+      omit_nulls: params.omit_nulls,
+      signal: params.signal
+    });
+    result = await comparePromjeneWithReadersToJsonl(oldReader, newReader, fromId, toId, outFilePath);
+  }
+  return result;
+}
+
 module.exports = {
   FULL_FETCH_PAGE_LIMIT,
   PromjeneSortedReader,
+  PromjeneJsonlReader,
   PromjeneArrayReader,
   comparePromjeneWithReaders,
+  comparePromjeneWithReadersToJsonl,
+  comparePromjeneSnapshotsToJsonl,
+  streamPromjeneToJsonl,
   normalizePromjeneArray,
   sortPromjeneByMbs,
   indexPromjeneByMbs,
