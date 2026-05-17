@@ -12,6 +12,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { getSudregAccessToken } = require('./sudregToken');
+const { getFetchTimeoutMs, getRetryCount } = require('./sudregHttp');
 const { getSnapshots, getPromjene } = require('./sudregApi');
 const { comparePromjeneSnapshots } = require('./sudregPromjeneDiff');
 const { listSifrarniciCatalog, getSifrarnik } = require('./sudregSifrarnici');
@@ -612,6 +613,75 @@ async function handleSudregTokenInfo(res) {
   }
 }
 
+/** Dijagnostika mreže prema Sudregu (token + mali GET /snapshots). */
+async function handleSudregConnectivity(res) {
+  const steps = [];
+  const clientId = String(process.env.SUDREG_CLIENT_ID || '').trim();
+  const clientSecret = String(process.env.SUDREG_CLIENT_SECRET || '').trim();
+
+  steps.push({
+    step: 'env',
+    ok: Boolean(clientId && clientSecret),
+    detail: clientId && clientSecret ? 'SUDREG_CLIENT_ID i SECRET postavljeni' : 'Nedostaje SUDREG_CLIENT_ID ili SUDREG_CLIENT_SECRET'
+  });
+
+  if (!clientId || !clientSecret) {
+    sendJson(res, 500, { ok: false, steps });
+    return;
+  }
+
+  try {
+    const t0 = Date.now();
+    await getSudregAccessToken();
+    steps.push({
+      step: 'oauth_token',
+      ok: true,
+      durationMs: Date.now() - t0,
+      detail: 'OAuth token OK'
+    });
+  } catch (e) {
+    steps.push({
+      step: 'oauth_token',
+      ok: false,
+      error: e instanceof Error ? e.message : String(e)
+    });
+    sendJson(res, 500, { ok: false, steps, fetchTimeoutMs: getFetchTimeoutMs(), fetchRetries: getRetryCount() });
+    return;
+  }
+
+  try {
+    const t0 = Date.now();
+    const result = await getSnapshots({ no_data_error: '0' });
+    const rows = Array.isArray(result.data) ? result.data.length : 0;
+    steps.push({
+      step: 'javni_snapshots',
+      ok: true,
+      durationMs: Date.now() - t0,
+      detail: `GET /snapshots OK, redova=${rows}`,
+      xSecondsElapsed: result.meta?.xSecondsElapsed
+    });
+    sendJson(res, 200, {
+      ok: true,
+      steps,
+      fetchTimeoutMs: getFetchTimeoutMs(),
+      fetchRetries: getRetryCount(),
+      message: 'Veza prema Sudreg API-ju radi.'
+    });
+  } catch (e) {
+    steps.push({
+      step: 'javni_snapshots',
+      ok: false,
+      error: e instanceof Error ? e.message : String(e)
+    });
+    sendJson(res, 500, {
+      ok: false,
+      steps,
+      fetchTimeoutMs: getFetchTimeoutMs(),
+      fetchRetries: getRetryCount()
+    });
+  }
+}
+
 const server = http.createServer((req, res) => {
   const pathOnly = (req.url || '').split('?')[0] || '/';
 
@@ -631,13 +701,20 @@ const server = http.createServer((req, res) => {
           String(process.env.SUDREG_CLIENT_SECRET || '').trim()
       ),
       databaseConfigured: isDatabaseConfigured(),
-      dataDir: getDataDir()
+      dataDir: getDataDir(),
+      sudregFetchTimeoutMs: getFetchTimeoutMs(),
+      sudregFetchRetries: getRetryCount()
     });
     return;
   }
 
   if (pathOnly === '/api/sudreg/token-info' && req.method === 'GET') {
     handleSudregTokenInfo(res);
+    return;
+  }
+
+  if (pathOnly === '/api/sudreg/connectivity' && req.method === 'GET') {
+    handleSudregConnectivity(res);
     return;
   }
 

@@ -262,6 +262,7 @@
     <div class="actions" style="margin-bottom: 0.75rem;">
       <button type="button" class="secondary" id="btn-snapshots-refresh">Osvježi listu snimki</button>
       <button type="button" class="secondary" id="btn-sudreg">OAuth token</button>
+      <button type="button" class="secondary" id="btn-sudreg-connectivity">Test Sudreg veze</button>
       <button type="button" class="secondary" id="btn-snapshots-json">JSON svih snimki</button>
     </div>
     <div class="compare-panel">
@@ -450,6 +451,7 @@
     const btnStatus = document.getElementById('btn-status');
     const btnHealth = document.getElementById('btn-health');
     const btnSudreg = document.getElementById('btn-sudreg');
+    const btnSudregConnectivity = document.getElementById('btn-sudreg-connectivity');
     const btnSnapshotsRefresh = document.getElementById('btn-snapshots-refresh');
     const btnSnapshotsJson = document.getElementById('btn-snapshots-json');
     const btnPromjene = document.getElementById('btn-promjene');
@@ -634,6 +636,7 @@
       btnStatus.disabled = busy;
       btnHealth.disabled = busy;
       btnSudreg.disabled = busy;
+      if (btnSudregConnectivity) btnSudregConnectivity.disabled = busy;
       btnSnapshotsRefresh.disabled = busy;
       btnSnapshotsJson.disabled = busy;
       btnPromjene.disabled = busy;
@@ -974,6 +977,9 @@
     btnStatus.addEventListener('click', () => fetchPath('/api/status', true));
     btnHealth.addEventListener('click', () => fetchPath('/health', false));
     btnSudreg.addEventListener('click', () => fetchPath('/api/sudreg/token-info', true));
+    if (btnSudregConnectivity) {
+      btnSudregConnectivity.addEventListener('click', () => fetchPath('/api/sudreg/connectivity', true));
+    }
     btnSnapshotsRefresh.addEventListener('click', () => loadSnapshotsDropdown());
     btnSnapshotsJson.addEventListener('click', () => fetchPath('/api/sudreg/snapshots', true));
 

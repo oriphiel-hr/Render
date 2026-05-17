@@ -4,6 +4,7 @@
  */
 
 const { getSudregAccessToken, sudregAuthorizationHeader } = require('./sudregToken');
+const { sudregFetch } = require('./sudregHttp');
 
 const DEFAULT_JAVNI_BASE = 'https://sudreg-data.gov.hr/api/javni';
 
@@ -28,15 +29,20 @@ async function fetchSudregJavni(path, query = {}, opts = {}) {
 
   const { accessToken, tokenType } = await getSudregAccessToken({ signal: opts.signal });
 
-  const res = await fetch(url.toString(), {
-    method: 'GET',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      Authorization: sudregAuthorizationHeader(accessToken, tokenType)
+  const urlStr = url.toString();
+  const res = await sudregFetch(
+    urlStr,
+    {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        Authorization: sudregAuthorizationHeader(accessToken, tokenType)
+      },
+      signal: opts.signal
     },
-    signal: opts.signal
-  });
+    { label: `Sudreg GET ${normalized}` }
+  );
 
   const text = await res.text();
   let data;

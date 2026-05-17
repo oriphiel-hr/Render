@@ -8,6 +8,8 @@
  * - SUDREG_TOKEN_URL (default: https://sudreg-data.gov.hr/api/oauth/token)
  */
 
+const { sudregFetch } = require('./sudregHttp');
+
 const DEFAULT_TOKEN_URL = 'https://sudreg-data.gov.hr/api/oauth/token';
 
 /**
@@ -28,16 +30,20 @@ async function getSudregAccessToken(opts = {}) {
   const basic = Buffer.from(`${clientId}:${clientSecret}`, 'utf8').toString('base64');
   const body = new URLSearchParams({ grant_type: 'client_credentials' });
 
-  const res = await fetch(tokenUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      Accept: 'application/json',
-      Authorization: `Basic ${basic}`
+  const res = await sudregFetch(
+    tokenUrl,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
+        Authorization: `Basic ${basic}`
+      },
+      body: body.toString(),
+      signal: opts.signal
     },
-    body: body.toString(),
-    signal: opts.signal
-  });
+    { label: 'Sudreg OAuth token' }
+  );
 
   const data = await res.json().catch(() => ({}));
 
