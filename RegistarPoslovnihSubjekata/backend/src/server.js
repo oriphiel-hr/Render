@@ -31,6 +31,7 @@ const {
   getDbStagingSummary,
   isDatabaseConfigured
 } = require('./sudregDb');
+const { runFullImport } = require('./sudregFullImport');
 
 const port = Number(process.env.PORT) || 3000;
 
@@ -53,12 +54,28 @@ const HTML_HEADERS = {
   Pragma: 'no-cache'
 };
 
+function jsonReplacer(_key, value) {
+  return typeof value === 'bigint' ? value.toString() : value;
+}
+
 function sendJson(res, status, body) {
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store'
   });
-  res.end(JSON.stringify(body, null, 2));
+  res.end(JSON.stringify(body, jsonReplacer, 2));
+}
+
+function beginSse(res) {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream; charset=utf-8',
+    'Cache-Control': 'no-cache, no-store',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no'
+  });
+  return (payload) => {
+    res.write(`data: ${JSON.stringify(payload, jsonReplacer)}\n\n`);
+  };
 }
 
 function sendText(res, status, text, contentType = 'text/plain; charset=utf-8') {
@@ -341,6 +358,95 @@ async function handleDbStagingSummary(res) {
   }
 }
 
+function parseImportAllQuery(req) {
+  const q = parseQueryString(req.url);
+  const toId = q.get('snapshot_id_to') || q.get('snapshot_id');
+  const fromId = q.get('snapshot_id_from');
+  if (!toId) {
+    return { error: 'snapshot_id_to (ili snapshot_id) je obavezan — novija snimka.' };
+  }
+  return {
+    toId,
+    fromId: fromId || undefined,
+    sync_db: q.get('sync_db'),
+    force: q.get('force') === '1'
+  };
+}
+
+async function handleStagingImportAll(req, res) {
+  const parsed = parseImportAllQuery(req);
+  if (parsed.error) {
+    sendJson(res, 400, { ok: false, error: parsed.error });
+    return;
+  }
+  const t0 = Date.now();
+  try {
+    const result = await runFullImport({
+      snapshot_id_to: parsed.toId,
+      snapshot_id_from: parsed.fromId,
+      sync_db: parsed.sync_db,
+      force: parsed.force
+    });
+    sendJson(res, 200, {
+      ok: true,
+      durationMs: Date.now() - t0,
+      dataDir: getDataDir(),
+      ...result
+    });
+  } catch (e) {
+    sendJson(res, 500, {
+      ok: false,
+      durationMs: Date.now() - t0,
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
+}
+
+async function handleStagingImportAllStream(req, res) {
+  const parsed = parseImportAllQuery(req);
+  if (parsed.error) {
+    sendJson(res, 400, { ok: false, error: parsed.error });
+    return;
+  }
+  const send = beginSse(res);
+  const t0 = Date.now();
+  let closed = false;
+  req.on('close', () => {
+    closed = true;
+  });
+
+  try {
+    const result = await runFullImport({
+      snapshot_id_to: parsed.toId,
+      snapshot_id_from: parsed.fromId,
+      sync_db: parsed.sync_db,
+      force: parsed.force,
+      onProgress: (ev) => {
+        if (!closed) send(ev);
+      }
+    });
+    if (!closed) {
+      send({
+        type: 'done',
+        ok: true,
+        durationMs: Date.now() - t0,
+        dataDir: getDataDir(),
+        ...result
+      });
+    }
+  } catch (e) {
+    if (!closed) {
+      send({
+        type: 'error',
+        ok: false,
+        durationMs: Date.now() - t0,
+        error: e instanceof Error ? e.message : String(e)
+      });
+    }
+  }
+  if (!closed) res.end();
+}
+
 async function handleStagingSyncDb(req, res) {
   const q = parseQueryString(req.url);
   const snapshotId = q.get('snapshot_id');
@@ -597,6 +703,16 @@ const server = http.createServer((req, res) => {
 
   if (pathOnly === '/api/staging/sync-db' && req.method === 'GET') {
     handleStagingSyncDb(req, res);
+    return;
+  }
+
+  if (pathOnly === '/api/staging/import-all' && req.method === 'GET') {
+    handleStagingImportAll(req, res);
+    return;
+  }
+
+  if (pathOnly === '/api/staging/import-all/stream' && req.method === 'GET') {
+    handleStagingImportAllStream(req, res);
     return;
   }
 

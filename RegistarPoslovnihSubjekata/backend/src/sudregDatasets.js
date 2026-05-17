@@ -172,4 +172,50 @@ function getDataset(id) {
   return BY_ID.get(String(id || '').trim()) || null;
 }
 
-module.exports = { DATASETS, PODRUZNICA_API_PATHS, listDatasets, getDataset };
+/** Svi Sudreg pozivi za puni import (bez ručnog odabira po metodi). */
+function listAllImportJobs() {
+  const jobs = [];
+  for (const d of DATASETS) {
+    if (d.id === 'djelatnost') {
+      for (const v of d.vrste || []) {
+        jobs.push({
+          datasetKey: `djelatnost:${v.id}`,
+          datasetId: 'djelatnost',
+          apiPath: v.path,
+          label: `${d.label} — ${v.label}`,
+          query: { vrsta: v.id }
+        });
+      }
+      continue;
+    }
+    if (d.id === 'podružnica') {
+      for (const r of d.resursi || []) {
+        const slug = r.path.replace(/^\//, '').replace(/\//g, '_');
+        jobs.push({
+          datasetKey: `podruznica:${slug}`,
+          datasetId: 'podružnica',
+          apiPath: r.path,
+          label: `${d.label} — ${r.label}`,
+          query: { api_path: r.path }
+        });
+      }
+      continue;
+    }
+    jobs.push({
+      datasetKey: d.id,
+      datasetId: d.id,
+      apiPath: d.apiPaths[0],
+      label: d.label,
+      query: {}
+    });
+  }
+  return jobs;
+}
+
+module.exports = {
+  DATASETS,
+  PODRUZNICA_API_PATHS,
+  listDatasets,
+  getDataset,
+  listAllImportJobs
+};

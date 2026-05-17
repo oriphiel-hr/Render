@@ -20,6 +20,7 @@ model StagedSnapshot {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   promjene     Promjena[]
+  datasets     StagedDataset[]
 
   @@map("staged_snapshots")
 }
@@ -66,4 +67,42 @@ model Promjena {
   @@index([snapshotIdTo])
   @@index([mbs])
   @@map("promjene")
+}
+
+/// Jedan Sudreg endpoint (subjekti, tvrtke, …) — JSONL na disku pa redovi u bazi.
+model StagedDataset {
+  id           String       @id @default(cuid())
+  snapshotId   Int
+  datasetKey   String
+  apiPath      String
+  label        String
+  metaJson     Json
+  diskRelPath  String
+  rowCount     Int          @default(0)
+  savedAt      DateTime
+  dbSyncedAt   DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  stagedSnapshot StagedSnapshot? @relation(fields: [stagedSnapshotId], references: [id], onDelete: Cascade)
+  stagedSnapshotId String?
+  rows         MaticniRed[]
+
+  @@unique([snapshotId, datasetKey])
+  @@index([snapshotId])
+  @@map("staged_datasets")
+}
+
+model MaticniRed {
+  id               String        @id @default(cuid())
+  snapshotId       Int
+  datasetKey       String
+  mbs              Int?
+  payload          Json
+  stagedDatasetId  String
+  createdAt        DateTime      @default(now())
+  stagedDataset    StagedDataset @relation(fields: [stagedDatasetId], references: [id], onDelete: Cascade)
+
+  @@index([snapshotId, datasetKey])
+  @@index([mbs])
+  @@map("maticni_redovi")
 }

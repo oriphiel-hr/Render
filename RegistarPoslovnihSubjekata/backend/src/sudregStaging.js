@@ -5,6 +5,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const readline = require('readline');
 const { fetchAllPromjene, comparePromjeneSnapshots, sortPromjeneByMbs } = require('./sudregPromjeneDiff');
 
 const PROMJENE_FILE = 'promjene.jsonl';
@@ -44,6 +45,32 @@ function diffPromjenePath(fromId, toId) {
   return path.join(diffDir(fromId, toId), PROMJENE_FILE);
 }
 
+function datasetsDir(snapshotId) {
+  return path.join(snapshotDir(snapshotId), 'datasets');
+}
+
+function datasetFilePath(snapshotId, datasetKey) {
+  const safe = String(datasetKey).replace(/[^a-zA-Z0-9._-]+/g, '_');
+  return path.join(datasetsDir(snapshotId), `${safe}.jsonl`);
+}
+
+function saveDatasetJsonl(snapshotId, datasetKey, rows, metaExtra = {}) {
+  const filePath = datasetFilePath(snapshotId, datasetKey);
+  ensureDir(path.dirname(filePath));
+  writeJsonl(filePath, rows);
+  const meta = {
+    snapshot_id: String(snapshotId),
+    dataset_key: datasetKey,
+    saved_at: new Date().toISOString(),
+    rowCount: rows.length,
+    file: path.basename(filePath),
+    ...metaExtra
+  };
+  const metaFile = path.join(datasetsDir(snapshotId), `${String(datasetKey).replace(/[^a-zA-Z0-9._-]+/g, '_')}.meta.json`);
+  writeJson(metaFile, meta);
+  return { filePath, meta, metaFile };
+}
+
 function promjeneExists(snapshotId) {
   return fs.existsSync(promjenePath(snapshotId));
 }
@@ -68,6 +95,25 @@ function readJsonl(filePath) {
   const text = fs.readFileSync(filePath, 'utf8').trim();
   if (!text) return [];
   return text.split('\n').map((line) => JSON.parse(line));
+}
+
+/** Broj nepraznih JSONL redaka (bez učitavanja cijele datoteke u memoriju). */
+function countJsonlLines(filePath) {
+  if (!fs.existsSync(filePath)) return 0;
+  const stat = fs.statSync(filePath);
+  if (stat.size === 0) return 0;
+  let count = 0;
+  const rl = readline.createInterface({
+    input: fs.createReadStream(filePath, { encoding: 'utf8' }),
+    crlfDelay: Infinity
+  });
+  return new Promise((resolve, reject) => {
+    rl.on('line', (line) => {
+      if (line.trim()) count += 1;
+    });
+    rl.on('close', () => resolve(count));
+    rl.on('error', reject);
+  });
 }
 
 /**
@@ -334,6 +380,10 @@ module.exports = {
   listStaging,
   resolveStagingDownload,
   readJsonl,
+  countJsonlLines,
   writeJsonl,
-  readJson
+  readJson,
+  datasetsDir,
+  datasetFilePath,
+  saveDatasetJsonl
 };

@@ -208,12 +208,51 @@
       padding-left: 1.2rem;
     }
     .dataset-detail li { margin: 0.15rem 0; }
+    #import-progress-panel {
+      margin: 0.75rem 0 0;
+      padding: 0.85rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: rgba(46, 184, 138, 0.06);
+    }
+    #import-progress-panel[hidden] { display: none; }
+    .progress-block { margin-bottom: 0.85rem; }
+    .progress-block:last-child { margin-bottom: 0; }
+    .progress-block .progress-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin: 0 0 0.35rem;
+    }
+    .progress-track {
+      height: 10px;
+      border-radius: 5px;
+      background: #0a0e14;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 4px;
+      transition: width 0.25s ease;
+    }
+    .progress-fill.disk { background: linear-gradient(90deg, #3d8bfd, #5ca0ff); }
+    .progress-fill.db { background: linear-gradient(90deg, var(--sudreg), var(--sudreg-hover)); }
+    .progress-label {
+      margin: 0.35rem 0 0;
+      font-size: 0.82rem;
+      color: var(--text);
+      line-height: 1.4;
+    }
   </style>
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v24</span></h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v24</strong>.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v27</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v27</strong>.</p>
     <p class="section-label">Servis</p>
     <div class="actions">
       <button type="button" id="btn-status">Provjeri status</button>
@@ -227,7 +266,7 @@
     </div>
     <div class="compare-panel">
       <p class="section-label">Usporedba dviju snimki</p>
-      <p class="hint" style="margin-bottom: 0.75rem;">Odaberi stariju i noviju snimku, zatim zeleni gumb.</p>
+      <p class="hint" style="margin-bottom: 0.75rem;">Odaberi snimke, zatim <strong>Spremi sve</strong> — prvo disk (JSON), zatim baza s progress barom (broj redaka s diska).</p>
       <div class="field-row">
         <label for="snapshot-from-select">1. Starija snimka (baza)</label>
         <select id="snapshot-from-select" class="snapshot-select" disabled>
@@ -242,12 +281,30 @@
       </div>
     <div id="snapshot-detail" class="snapshot-detail empty"></div>
       <div class="actions">
-        <button type="button" class="sudreg" id="btn-promjene-diff">Usporedi promjene (SCN diff)</button>
+        <button type="button" class="sudreg" id="btn-import-all">Spremi sve (disk + baza)</button>
+        <button type="button" class="secondary" id="btn-promjene-diff">Samo SCN diff (pregled)</button>
+      </div>
+      <p id="import-all-hint" class="hint" style="margin-top:0.5rem;"></p>
+      <div id="import-progress-panel" hidden>
+        <div class="progress-block" id="progress-disk-block">
+          <p class="progress-title">1. Disk (JSON / JSONL)</p>
+          <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="progress-disk-track">
+            <div class="progress-fill disk" id="progress-disk-bar"></div>
+          </div>
+          <p class="progress-label" id="progress-disk-label">Čekam…</p>
+        </div>
+        <div class="progress-block" id="progress-db-block" hidden>
+          <p class="progress-title">2. Baza (PostgreSQL)</p>
+          <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="progress-db-track">
+            <div class="progress-fill db" id="progress-db-bar"></div>
+          </div>
+          <p class="progress-label" id="progress-db-label">Čekam završetak diska…</p>
+        </div>
       </div>
     </div>
 
     <p class="section-label">Matični podaci (odabrani skupovi)</p>
-    <p class="hint" style="margin-bottom: 0.65rem;">Jedna stranica po kliku. <strong>/subjekti</strong>: zadano samo <strong>aktivni</strong> (<code>status=1</code>); što nije aktivno = <strong>neaktivno</strong> (<code>only_active=0</code>).</p>
+    <p class="hint" style="margin-bottom: 0.65rem;">Za sve skupove odjednom koristi <strong>Spremi sve</strong> gore. Ispod: ručno jedna stranica (debug). <strong>/subjekti</strong>: zadano samo <strong>aktivni</strong> (<code>status=1</code>).</p>
     <div class="field-row">
       <label for="dataset-select">Skup podataka</label>
       <select id="dataset-select" class="snapshot-select">
@@ -335,14 +392,27 @@
     </div>
 
     <p class="section-label">Staging na disk i baza</p>
-    <p class="hint" style="margin-bottom: 0.65rem;">
-      1) JSON na disk · 2) ako je <code>DATABASE_URL</code> postavljen, automatski u PostgreSQL.
-      <code>sync_db=0</code> samo disk. Promjene imaju <code>snapshot_id</code> (diff: <code>snapshot_id_to</code> + <code>from</code>).
+    <p class="hint" style="margin-bottom: 0.5rem;">
+      Redoslijed: <strong>1) JSON na disk</strong> · <strong>2) PostgreSQL</strong> (ako je uključeno).
+      U bazi: <code>snapshot_id</code>; diff: <code>snapshot_id_from</code> / <code>snapshot_id_to</code>.
     </p>
+    <p id="db-status" class="hint" style="margin-bottom: 0.65rem;">Baza: provjeravam…</p>
+    <div class="field-row">
+      <label>Opcije</label>
+      <label class="inline-label" style="display:flex;align-items:center;gap:0.35rem;cursor:pointer;">
+        <input type="checkbox" id="staging-sync-db" checked />
+        Nakon diska spremi i u bazu (zahtijeva <code>DATABASE_URL</code>)
+      </label>
+    </div>
     <div class="actions">
-      <button type="button" class="secondary" id="btn-staging-save-from">Spremi staru snimku</button>
-      <button type="button" class="secondary" id="btn-staging-save-to">Spremi novu snimku</button>
-      <button type="button" class="secondary" id="btn-staging-save-diff">Spremi diff na disk</button>
+      <button type="button" class="secondary" id="btn-staging-save-from">API → disk (+ baza)</button>
+      <button type="button" class="secondary" id="btn-staging-save-to">API → disk (+ baza)</button>
+      <button type="button" class="secondary" id="btn-staging-save-diff">API → diff (+ baza)</button>
+    </div>
+    <div class="actions">
+      <button type="button" class="secondary" id="btn-staging-sync-from-db">Samo baza ← disk (starija)</button>
+      <button type="button" class="secondary" id="btn-staging-sync-to-db">Samo baza ← disk (novija)</button>
+      <button type="button" class="secondary" id="btn-staging-sync-diff-db">Samo baza ← disk (diff)</button>
       <button type="button" class="secondary" id="btn-staging-list">Pregled diska</button>
       <button type="button" class="secondary" id="btn-staging-db">Pregled baze</button>
     </div>
@@ -384,11 +454,28 @@
     const btnSnapshotsJson = document.getElementById('btn-snapshots-json');
     const btnPromjene = document.getElementById('btn-promjene');
     const btnPromjeneDiff = document.getElementById('btn-promjene-diff');
+    const btnImportAll = document.getElementById('btn-import-all');
+    const importAllHint = document.getElementById('import-all-hint');
+    const importProgressPanel = document.getElementById('import-progress-panel');
+    const progressDiskBlock = document.getElementById('progress-disk-block');
+    const progressDiskBar = document.getElementById('progress-disk-bar');
+    const progressDiskTrack = document.getElementById('progress-disk-track');
+    const progressDiskLabel = document.getElementById('progress-disk-label');
+    const progressDbBlock = document.getElementById('progress-db-block');
+    const progressDbBar = document.getElementById('progress-db-bar');
+    const progressDbTrack = document.getElementById('progress-db-track');
+    const progressDbLabel = document.getElementById('progress-db-label');
     const btnStagingSaveFrom = document.getElementById('btn-staging-save-from');
     const btnStagingSaveTo = document.getElementById('btn-staging-save-to');
     const btnStagingSaveDiff = document.getElementById('btn-staging-save-diff');
     const btnStagingList = document.getElementById('btn-staging-list');
     const btnStagingDb = document.getElementById('btn-staging-db');
+    const btnStagingSyncFromDb = document.getElementById('btn-staging-sync-from-db');
+    const btnStagingSyncToDb = document.getElementById('btn-staging-sync-to-db');
+    const btnStagingSyncDiffDb = document.getElementById('btn-staging-sync-diff-db');
+    const stagingSyncDb = document.getElementById('staging-sync-db');
+    const dbStatus = document.getElementById('db-status');
+    let databaseConfigured = false;
     const datasetSelect = document.getElementById('dataset-select');
     const datasetDetail = document.getElementById('dataset-detail');
     const btnDatasetFetch = document.getElementById('btn-dataset-fetch');
@@ -551,11 +638,16 @@
       btnSnapshotsJson.disabled = busy;
       btnPromjene.disabled = busy;
       if (btnPromjeneDiff) btnPromjeneDiff.disabled = busy;
+      if (btnImportAll) btnImportAll.disabled = busy;
       if (btnStagingSaveFrom) btnStagingSaveFrom.disabled = busy;
       if (btnStagingSaveTo) btnStagingSaveTo.disabled = busy;
       if (btnStagingSaveDiff) btnStagingSaveDiff.disabled = busy;
       if (btnStagingList) btnStagingList.disabled = busy;
       if (btnStagingDb) btnStagingDb.disabled = busy;
+      if (btnStagingSyncFromDb) btnStagingSyncFromDb.disabled = busy || !databaseConfigured;
+      if (btnStagingSyncToDb) btnStagingSyncToDb.disabled = busy || !databaseConfigured;
+      if (btnStagingSyncDiffDb) btnStagingSyncDiffDb.disabled = busy || !databaseConfigured;
+      if (stagingSyncDb) stagingSyncDb.disabled = busy || !databaseConfigured;
       if (btnDatasetFetch) btnDatasetFetch.disabled = busy;
       if (btnDatasetList) btnDatasetList.disabled = busy;
       if (datasetSelect) datasetSelect.disabled = busy;
@@ -1071,6 +1163,193 @@
 
     if (btnPromjeneDiff) btnPromjeneDiff.addEventListener('click', () => fetchPromjeneDiff());
 
+    function fmtNum(n) {
+      if (n == null || Number.isNaN(Number(n))) return '?';
+      return Number(n).toLocaleString('hr-HR');
+    }
+
+    function setBar(barEl, trackEl, pct) {
+      const p = Math.max(0, Math.min(100, Number(pct) || 0));
+      if (barEl) barEl.style.width = p + '%';
+      if (trackEl) {
+        trackEl.setAttribute('aria-valuenow', String(Math.round(p)));
+        trackEl.setAttribute('aria-valuetext', Math.round(p) + '%');
+      }
+    }
+
+    function resetImportProgress(syncDb) {
+      if (importProgressPanel) importProgressPanel.hidden = false;
+      if (progressDiskBlock) progressDiskBlock.hidden = false;
+      if (progressDbBlock) progressDbBlock.hidden = !syncDb;
+      setBar(progressDiskBar, progressDiskTrack, 0);
+      setBar(progressDbBar, progressDbTrack, 0);
+      if (progressDiskLabel) progressDiskLabel.textContent = 'Faza 1: spremanje na disk…';
+      if (progressDbLabel) {
+        progressDbLabel.textContent = syncDb
+          ? 'Faza 2: čeka završetak diska…'
+          : 'Baza isključena (samo disk).';
+      }
+    }
+
+    function hideImportProgress() {
+      if (importProgressPanel) importProgressPanel.hidden = true;
+    }
+
+    function applyImportProgress(ev) {
+      if (!ev || ev.type !== 'progress') return;
+      const syncDb = stagingSyncDb && stagingSyncDb.checked;
+      if (importProgressPanel) importProgressPanel.hidden = false;
+
+      if (ev.phase === 'disk') {
+        if (progressDbBlock && ev.step !== 'complete') progressDbBlock.hidden = true;
+        let pct = ev.stepPercent != null ? ev.stepPercent : 0;
+        if (ev.stepTotal && ev.stepIndex != null) {
+          pct = Math.round((ev.stepIndex / ev.stepTotal) * 100);
+        }
+        if (ev.step === 'complete') pct = 100;
+        setBar(progressDiskBar, progressDiskTrack, pct);
+        if (progressDiskLabel && ev.message) progressDiskLabel.textContent = ev.message;
+        if (ev.step === 'complete' && syncDb && progressDbBlock) {
+          progressDbBlock.hidden = false;
+          if (progressDbLabel) progressDbLabel.textContent = 'Brojim redove na disku…';
+        }
+      }
+
+      if (ev.phase === 'db' && syncDb) {
+        if (progressDbBlock) progressDbBlock.hidden = false;
+        const pct = ev.percent != null ? ev.percent : 0;
+        setBar(progressDbBar, progressDbTrack, pct);
+        let label = ev.message || 'Upis u bazu…';
+        if (ev.rowsTotal != null && ev.rowsDone != null) {
+          label += ' (' + fmtNum(ev.rowsDone) + ' / ' + fmtNum(ev.rowsTotal) + ' redova)';
+        }
+        if (progressDbLabel) progressDbLabel.textContent = label;
+        if (ev.step === 'complete') setBar(progressDbBar, progressDbTrack, 100);
+      }
+
+      if (ev.phase === 'db' && ev.step === 'skipped') {
+        if (progressDbBlock) progressDbBlock.hidden = true;
+      }
+    }
+
+    function runImportAll() {
+      const fromId = snapshotFromSelect.value;
+      const toId = snapshotSelect.value;
+      if (!toId || !snapshotsById[toId]) {
+        show('Odaberi noviju snimku (točka 2).', true);
+        return;
+      }
+      const qs = new URLSearchParams({ snapshot_id_to: toId });
+      if (fromId && snapshotsById[fromId] && fromId !== toId) {
+        qs.set('snapshot_id_from', fromId);
+      } else if (fromId && fromId === toId) {
+        show('Starija i novija snimka moraju biti različite za diff.', true);
+        return;
+      }
+      const syncDb = Boolean(stagingSyncDb && stagingSyncDb.checked);
+      qs.set('sync_db', syncDb ? '1' : '0');
+
+      setBusy(true);
+      resetImportProgress(syncDb);
+      if (importAllHint) {
+        importAllHint.textContent =
+          '1) Disk — svi API pozivi i JSON datoteke. 2) Baza — upis prema broju redaka na disku.';
+      }
+      show('Pokrećem puni import (live progress)…', false);
+      meta.textContent = 'SSE /api/staging/import-all/stream?' + qs.toString();
+
+      const t0 = performance.now();
+      const url = '/api/staging/import-all/stream?' + qs.toString();
+      const es = new EventSource(url);
+
+      es.onmessage = (msg) => {
+        let data;
+        try {
+          data = JSON.parse(msg.data);
+        } catch (_) {
+          return;
+        }
+        if (data.type === 'progress') {
+          applyImportProgress(data);
+          return;
+        }
+        if (data.type === 'done') {
+          es.close();
+          const ms = Math.round(performance.now() - t0);
+          const steps = Array.isArray(data.steps) ? data.steps.length : 0;
+          const db = data.database || {};
+          meta.textContent =
+            'Import završen · koraka=' + steps +
+            (data.dataset_jobs != null ? ' · skupova=' + data.dataset_jobs : '') +
+            (data.duration_ms != null ? ' · ' + data.duration_ms + ' ms' : ' · ' + ms + ' ms');
+          if (importAllHint) {
+            importAllHint.textContent = 'Gotovo. Provjeri „Pregled diska” ili „Pregled baze”.';
+          }
+          if (data.database && data.database.enabled) {
+            meta.textContent +=
+              ' · baza: promjene=' + (db.snapshots ? db.snapshots.length : 0) +
+              ', diff=' + (db.diffs ? db.diffs.length : 0) +
+              ', skupova=' + (db.datasets ? db.datasets.length : 0);
+          }
+          setBar(progressDiskBar, progressDiskTrack, 100);
+          if (syncDb) setBar(progressDbBar, progressDbTrack, 100);
+          show(JSON.stringify(data, null, 2), false);
+          setBusy(false);
+          return;
+        }
+        if (data.type === 'error') {
+          es.close();
+          show('Greška: ' + (data.error || 'nepoznato'), true);
+          meta.textContent = '/api/staging/import-all/stream';
+          if (importAllHint) importAllHint.textContent = '';
+          hideImportProgress();
+          setBusy(false);
+        }
+      };
+
+      es.onerror = () => {
+        if (es.readyState === EventSource.CLOSED) return;
+        es.close();
+        show('Veza prekinuta (timeout ili greška servera).', true);
+        meta.textContent = '/api/staging/import-all/stream';
+        if (importAllHint) importAllHint.textContent = '';
+        hideImportProgress();
+        setBusy(false);
+      };
+    }
+
+    if (btnImportAll) btnImportAll.addEventListener('click', () => runImportAll());
+
+    function stagingDbQuerySuffix() {
+      if (!stagingSyncDb || !stagingSyncDb.checked) return '&sync_db=0';
+      return '&sync_db=1';
+    }
+
+    function formatDatabaseMeta(db) {
+      if (!db || !db.ok) return '';
+      return ' · baza: uvezeno ' + (db.rowsInserted != null ? db.rowsInserted : '?') +
+        ' redova (snapshot ' + (db.snapshot_id != null ? db.snapshot_id : db.snapshot_id_to) + ')';
+    }
+
+    async function refreshDbStatus() {
+      if (!dbStatus) return;
+      try {
+        const res = await fetch('/api/status', { headers: { Accept: 'application/json' } });
+        const body = await res.json();
+        databaseConfigured = Boolean(body.databaseConfigured);
+        dbStatus.textContent = databaseConfigured
+          ? 'Baza: DATABASE_URL postavljen — spremanje u PostgreSQL je dostupno.'
+          : 'Baza: DATABASE_URL nije postavljen — dostupno je samo spremanje na disk.';
+        dbStatus.style.color = databaseConfigured ? 'var(--sudreg)' : 'var(--muted)';
+        if (btnStagingSyncFromDb) btnStagingSyncFromDb.disabled = !databaseConfigured;
+        if (btnStagingSyncToDb) btnStagingSyncToDb.disabled = !databaseConfigured;
+        if (btnStagingSyncDiffDb) btnStagingSyncDiffDb.disabled = !databaseConfigured;
+        if (stagingSyncDb) stagingSyncDb.disabled = !databaseConfigured;
+      } catch (_) {
+        dbStatus.textContent = 'Baza: nije moguće provjeriti /api/status.';
+      }
+    }
+
     async function stagingFetch(path, busyMsg) {
       setBusy(true);
       if (busyMsg) show(busyMsg, false);
@@ -1079,7 +1358,9 @@
         const res = await fetch(path, { headers: { Accept: 'application/json' } });
         const body = await res.json();
         const ms = Math.round(performance.now() - t0);
-        meta.textContent = (res.ok ? 'OK' : 'Greška') + ' · ' + ms + ' ms · ' + path;
+        let metaLine = (res.ok ? 'OK' : 'Greška') + ' · ' + ms + ' ms · ' + path;
+        if (body.database) metaLine += formatDatabaseMeta(body.database);
+        meta.textContent = metaLine;
         show(JSON.stringify(body, null, 2), !res.ok || !body.ok);
         return body;
       } catch (e) {
@@ -1095,7 +1376,7 @@
       btnStagingSaveFrom.addEventListener('click', () => {
         const id = snapshotFromSelect.value;
         if (!id) { show('Odaberi stariju snimku.', true); return; }
-        stagingFetch('/api/staging/save-promjene?snapshot_id=' + encodeURIComponent(id),
+        stagingFetch('/api/staging/save-promjene?snapshot_id=' + encodeURIComponent(id) + stagingDbQuerySuffix(),
           'Preuzimam i spremam /promjene za snapshot #' + id + '…');
       });
     }
@@ -1103,7 +1384,7 @@
       btnStagingSaveTo.addEventListener('click', () => {
         const id = snapshotSelect.value;
         if (!id) { show('Odaberi noviju snimku.', true); return; }
-        stagingFetch('/api/staging/save-promjene?snapshot_id=' + encodeURIComponent(id),
+        stagingFetch('/api/staging/save-promjene?snapshot_id=' + encodeURIComponent(id) + stagingDbQuerySuffix(),
           'Preuzimam i spremam /promjene za snapshot #' + id + '…');
       });
     }
@@ -1118,8 +1399,40 @@
           snapshot_id_to: toId,
           save_snapshots: '1'
         });
+        qs.set('sync_db', stagingSyncDb && stagingSyncDb.checked ? '1' : '0');
         stagingFetch('/api/staging/save-diff?' + qs.toString(),
           'Spremam snimke (ako treba) i diff #' + fromId + ' → #' + toId + '…');
+      });
+    }
+    if (btnStagingSyncFromDb) {
+      btnStagingSyncFromDb.addEventListener('click', () => {
+        const id = snapshotFromSelect.value;
+        if (!id) { show('Odaberi stariju snimku.', true); return; }
+        if (!databaseConfigured) { show('DATABASE_URL nije postavljen na serveru.', true); return; }
+        stagingFetch('/api/staging/sync-db?snapshot_id=' + encodeURIComponent(id),
+          'Učitavam promjene s diska u bazu (snapshot #' + id + ')…');
+      });
+    }
+    if (btnStagingSyncToDb) {
+      btnStagingSyncToDb.addEventListener('click', () => {
+        const id = snapshotSelect.value;
+        if (!id) { show('Odaberi noviju snimku.', true); return; }
+        if (!databaseConfigured) { show('DATABASE_URL nije postavljen na serveru.', true); return; }
+        stagingFetch('/api/staging/sync-db?snapshot_id=' + encodeURIComponent(id),
+          'Učitavam promjene s diska u bazu (snapshot #' + id + ')…');
+      });
+    }
+    if (btnStagingSyncDiffDb) {
+      btnStagingSyncDiffDb.addEventListener('click', () => {
+        const fromId = snapshotFromSelect.value;
+        const toId = snapshotSelect.value;
+        if (!fromId || !toId) { show('Odaberi obje snimke.', true); return; }
+        if (!databaseConfigured) { show('DATABASE_URL nije postavljen na serveru.', true); return; }
+        stagingFetch(
+          '/api/staging/sync-db?snapshot_id_from=' + encodeURIComponent(fromId) +
+            '&snapshot_id_to=' + encodeURIComponent(toId),
+          'Učitavam diff s diska u bazu #' + fromId + ' → #' + toId + '…'
+        );
       });
     }
     if (btnStagingList) {
@@ -1130,6 +1443,7 @@
     }
 
     loadSnapshotsDropdown();
+    refreshDbStatus();
   </script>
 </body>
 </html>

@@ -3,7 +3,9 @@
  */
 
 const { fetchSudregJavni } = require('./sudregApi');
-const { getDataset, PODRUZNICA_API_PATHS } = require('./sudregDatasets');
+const { getDataset, listAllImportJobs, PODRUZNICA_API_PATHS } = require('./sudregDatasets');
+
+const FULL_FETCH_PAGE_LIMIT = 1000;
 
 const DJELATNOST_PATH_BY_VRSTA = {
   pretezita: '/pretezite_djelatnosti',
@@ -104,6 +106,60 @@ function parseHeaderInt(value) {
   return Number.isFinite(n) && n >= 0 ? n : null;
 }
 
+/**
+ * Dohvat cijelog strančenog skupa za jedan endpoint.
+ */
+async function fetchAllDatasetPages(job, snapshotId, opts = {}) {
+  const entry = getDataset(job.datasetId);
+  if (!entry) {
+    throw new Error(`Nepoznat skup: ${job.datasetId}`);
+  }
+
+  const queryExtra = { ...job.query, ...opts, snapshot_id: snapshotId };
+  const apiPath = resolveApiPath(entry, queryExtra);
+  const rows = [];
+  let offset = 0;
+  let pages = 0;
+  let totalCount = null;
+
+  while (true) {
+    const sudregQuery = buildSudregQuery(entry, apiPath, {
+      ...queryExtra,
+      offset,
+      limit: FULL_FETCH_PAGE_LIMIT,
+      no_data_error: '0'
+    });
+    const result = await fetchSudregJavni(apiPath, sudregQuery, { signal: opts.signal });
+    pages += 1;
+    if (totalCount == null) {
+      totalCount = parseHeaderInt(result.meta?.xTotalCount);
+    }
+    const chunk = Array.isArray(result.data) ? result.data : result.data ? [result.data] : [];
+    rows.push(...chunk);
+    if (chunk.length === 0) break;
+    offset += chunk.length;
+    if (totalCount != null && rows.length >= totalCount) break;
+    if (chunk.length < FULL_FETCH_PAGE_LIMIT) break;
+  }
+
+  if (totalCount != null && rows.length !== totalCount) {
+    throw new Error(
+      `Sudreg ${apiPath} snapshot_id=${snapshotId}: dohvaćeno ${rows.length}, očekivano ${totalCount}.`
+    );
+  }
+
+  return {
+    datasetKey: job.datasetKey,
+    datasetId: job.datasetId,
+    apiPath,
+    label: job.label,
+    rows,
+    pages,
+    totalCount: totalCount ?? rows.length,
+    complete: true
+  };
+}
+
 function listDatasetFetchOptions() {
   return {
     subjekti: {
@@ -120,7 +176,9 @@ function listDatasetFetchOptions() {
 
 module.exports = {
   fetchDatasetPage,
+  fetchAllDatasetPages,
   resolveApiPath,
   DJELATNOST_PATH_BY_VRSTA,
-  listDatasetFetchOptions
+  listDatasetFetchOptions,
+  listAllImportJobs
 };
