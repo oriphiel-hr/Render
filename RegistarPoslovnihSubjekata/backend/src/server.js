@@ -995,7 +995,7 @@ server.listen(port, '0.0.0.0', () => {
   if (indexPath) console.log(`[registar-rps] index.html: ${indexPath}`);
   else console.warn('[registar-rps] index.html missing — COPY public ./public u Dockerfile.prod');
 
-  if (isDbConfigured()) {
+  if (isDatabaseConfigured()) {
     ensureDatabaseReady({ label: 'server-warmup' })
       .then(() => {
         console.log('[registar-rps] PostgreSQL spreman za sync/temp operacije.');
