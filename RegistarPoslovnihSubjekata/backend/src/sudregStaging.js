@@ -419,6 +419,82 @@ function listStaging() {
   return { dataDir: root, snapshots, diffs };
 }
 
+function isSafeSnapshotId(snapshotId) {
+  return /^\d+$/.test(String(snapshotId || '').trim());
+}
+
+function rmDirRecursive(dirPath) {
+  if (!fs.existsSync(dirPath)) return false;
+  fs.rmSync(dirPath, { recursive: true, force: true });
+  return true;
+}
+
+/**
+ * Obriši snimku s diska (snapshots/{id}) i sve diff mape koje je referenciraju.
+ * Ne dira PostgreSQL.
+ */
+function deleteSnapshotFromDisk(snapshotId) {
+  const id = String(snapshotId).trim();
+  if (!isSafeSnapshotId(id)) {
+    throw new Error('snapshot_id mora biti numerički ID (npr. 1165).');
+  }
+
+  const root = getDataDir();
+  const snapDir = snapshotDir(id);
+  const snapRel = path.relative(root, snapDir).split(path.sep).join('/');
+  const snapExisted = fs.existsSync(snapDir);
+
+  const deletedDiffs = [];
+  const diffsRoot = path.join(root, 'diffs');
+  if (fs.existsSync(diffsRoot)) {
+    for (const name of fs.readdirSync(diffsRoot)) {
+      const m = /^(\d+)_to_(\d+)$/.exec(name);
+      if (!m) continue;
+      if (m[1] !== id && m[2] !== id) continue;
+      const diffPath = path.join(diffsRoot, name);
+      if (fs.statSync(diffPath).isDirectory()) {
+        rmDirRecursive(diffPath);
+        deletedDiffs.push({
+          key: name,
+          snapshot_id_from: m[1],
+          snapshot_id_to: m[2]
+        });
+      }
+    }
+  }
+
+  let snapshotRemoved = false;
+  if (snapExisted) {
+    rmDirRecursive(snapDir);
+    snapshotRemoved = !fs.existsSync(snapDir);
+  }
+
+  if (!snapExisted && deletedDiffs.length === 0) {
+    return {
+      ok: true,
+      skipped: true,
+      reason: 'not_found',
+      snapshot_id: id,
+      message: `Snimka #${id} nije na disku.`
+    };
+  }
+
+  return {
+    ok: true,
+    skipped: false,
+    snapshot_id: id,
+    snapshot_removed: snapshotRemoved,
+    snapshot_existed: snapExisted,
+    disk_rel_path: snapRel,
+    deleted_diffs: deletedDiffs,
+    message:
+      snapshotRemoved
+        ? `Snimka #${id} obrisana s diska` +
+          (deletedDiffs.length ? ` (+ ${deletedDiffs.length} diff mapa).` : '.')
+        : `Snimka #${id} nije pronađena; obrisano ${deletedDiffs.length} diff mapa.`
+  };
+}
+
 /**
  * Normalizirani popis snimki na disku za UI (padajući izbornik kao API).
  */
@@ -468,6 +544,8 @@ module.exports = {
   savePromjeneDiff,
   listStaging,
   listDiskSnapshotsForUi,
+  deleteSnapshotFromDisk,
+  isSafeSnapshotId,
   resolveStagingDownload,
   readJsonl,
   countJsonlLines,

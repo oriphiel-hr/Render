@@ -380,6 +380,14 @@
           </table>
         </div>
         <p class="hint" style="margin:0.45rem 0 0;font-size:0.78rem;">Klik na red: postavi noviju snimku (2). Za izvor „Snimke na disku” koristi padajuće liste.</p>
+        <div class="actions" style="margin-top:0.5rem;">
+          <button type="button" class="danger" id="btn-delete-snapshot-disk" title="Briše snapshots/{id} i povezane diff mape na disku — ne dira PostgreSQL">
+            Obriši noviju snimku s diska
+          </button>
+          <button type="button" class="danger secondary" id="btn-delete-snapshot-from-disk" title="Briše stariju snimku (točka 1) s diska">
+            Obriši stariju s diska
+          </button>
+        </div>
       </div>
       <div class="field-row">
         <label for="snapshot-from-select">1. Starija snimka (opcionalno, diff)</label>
@@ -584,6 +592,8 @@
     const btnSudregConnectivity = document.getElementById('btn-sudreg-connectivity');
     const btnSnapshotsRefresh = document.getElementById('btn-snapshots-refresh');
     const btnDiskSnapshotsRefresh = document.getElementById('btn-disk-snapshots-refresh');
+    const btnDeleteSnapshotDisk = document.getElementById('btn-delete-snapshot-disk');
+    const btnDeleteSnapshotFromDisk = document.getElementById('btn-delete-snapshot-from-disk');
     const btnSnapshotsJson = document.getElementById('btn-snapshots-json');
     const snapshotSourceApi = document.getElementById('snapshot-source-api');
     const snapshotSourceDisk = document.getElementById('snapshot-source-disk');
@@ -786,6 +796,9 @@
       btnSudreg.disabled = busy;
       if (btnSudregConnectivity) btnSudregConnectivity.disabled = busy;
       btnSnapshotsRefresh.disabled = busy;
+      if (btnDiskSnapshotsRefresh) btnDiskSnapshotsRefresh.disabled = busy;
+      if (btnDeleteSnapshotDisk) btnDeleteSnapshotDisk.disabled = busy;
+      if (btnDeleteSnapshotFromDisk) btnDeleteSnapshotFromDisk.disabled = busy;
       btnSnapshotsJson.disabled = busy;
       btnPromjene.disabled = busy;
       if (btnPromjeneDiff) btnPromjeneDiff.disabled = busy;
@@ -1343,6 +1356,72 @@
     btnSnapshotsRefresh.addEventListener('click', () => loadSnapshotsFromSource());
     if (btnDiskSnapshotsRefresh) {
       btnDiskSnapshotsRefresh.addEventListener('click', () => loadDiskSnapshotsPanel());
+    }
+
+    async function deleteSnapshotFromDiskUi(snapshotId, label) {
+      const id = String(snapshotId || '').trim();
+      if (!id) {
+        show('Odaberi snimku u listi (točka 1 ili 2).', true);
+        return;
+      }
+      const onDisk = diskSnapshotsById[id];
+      const ok = window.confirm(
+        'Obrisati snimku #' +
+          id +
+          ' (' +
+          (label || 'odabrana') +
+          ') s diska?\n\n' +
+          'Briše mapu snapshots/' +
+          id +
+          '/ (promjene, meta, datasets) i sve diff mape koje uključuju #' +
+          id +
+          '.\n\n' +
+          'PostgreSQL (baza) se NE briše — samo datoteke na disku.' +
+          (onDisk ? '' : '\n\nUpozorenje: snimka nije u tablici diska (možda već obrisana).')
+      );
+      if (!ok) return;
+      setBusy(true);
+      show('Brišem snimku #' + id + ' s diska…', false);
+      try {
+        const res = await fetch(
+          '/api/staging/snapshots/delete?snapshot_id=' +
+            encodeURIComponent(id) +
+            '&confirm=1',
+          { method: 'DELETE', headers: { Accept: 'application/json' } }
+        );
+        const body = await res.json();
+        meta.textContent =
+          (res.ok ? 'Obrisano' : 'Greška') + ' · /api/staging/snapshots/delete';
+        show(JSON.stringify(body, null, 2), !res.ok || !body.ok);
+        if (res.ok && body.ok) {
+          delete snapshotsById[id];
+          delete diskSnapshotsById[id];
+          if (snapshotSelect.value === id) snapshotSelect.value = '';
+          if (snapshotFromSelect.value === id) snapshotFromSelect.value = '';
+          await loadDiskSnapshotsPanel();
+          if (getSnapshotSource() === 'disk') {
+            await loadDiskSnapshotsDropdown();
+          } else {
+            await loadSnapshotsDropdown();
+          }
+          onSnapshotSelectionChange();
+        }
+      } catch (e) {
+        show('Greška: ' + (e.message || String(e)), true);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    if (btnDeleteSnapshotDisk) {
+      btnDeleteSnapshotDisk.addEventListener('click', () =>
+        deleteSnapshotFromDiskUi(snapshotSelect.value, 'novija')
+      );
+    }
+    if (btnDeleteSnapshotFromDisk) {
+      btnDeleteSnapshotFromDisk.addEventListener('click', () =>
+        deleteSnapshotFromDiskUi(snapshotFromSelect.value, 'starija')
+      );
     }
     if (snapshotSourceApi) {
       snapshotSourceApi.addEventListener('change', () => {

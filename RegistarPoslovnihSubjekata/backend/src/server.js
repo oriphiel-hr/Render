@@ -24,6 +24,7 @@ const {
   savePromjeneDiff,
   listStaging,
   listDiskSnapshotsForUi,
+  deleteSnapshotFromDisk,
   resolveStagingDownload
 } = require('./sudregStaging');
 const {
@@ -302,6 +303,37 @@ async function handleStagingSnapshots(res) {
     });
   } catch (e) {
     sendJson(res, 500, { ok: false, error: e instanceof Error ? e.message : String(e) });
+  }
+}
+
+async function handleStagingDeleteSnapshot(req, res) {
+  const q = parseQueryString(req.url);
+  if (q.get('confirm') !== '1') {
+    sendJson(res, 400, {
+      ok: false,
+      error: 'Dodaj confirm=1 (namjerno brisanje snimke s diska).'
+    });
+    return;
+  }
+  const snapshotId = q.get('snapshot_id');
+  if (!snapshotId) {
+    sendJson(res, 400, { ok: false, error: 'snapshot_id je obavezan.' });
+    return;
+  }
+  const t0 = Date.now();
+  try {
+    const result = deleteSnapshotFromDisk(snapshotId);
+    sendJson(res, 200, {
+      durationMs: Date.now() - t0,
+      dataDir: getDataDir(),
+      ...result
+    });
+  } catch (e) {
+    sendJson(res, 500, {
+      ok: false,
+      durationMs: Date.now() - t0,
+      error: e instanceof Error ? e.message : String(e)
+    });
   }
 }
 
@@ -999,6 +1031,14 @@ const server = http.createServer((req, res) => {
 
   if (pathOnly === '/api/staging/list' && req.method === 'GET') {
     handleStagingList(res);
+    return;
+  }
+
+  if (
+    pathOnly === '/api/staging/snapshots/delete' &&
+    (req.method === 'DELETE' || req.method === 'POST' || req.method === 'GET')
+  ) {
+    handleStagingDeleteSnapshot(req, res);
     return;
   }
 
