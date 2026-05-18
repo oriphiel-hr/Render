@@ -322,6 +322,7 @@ function listStaging() {
         snapshot_id: name,
         label: `Snimka #${name}`,
         dir,
+        disk_rel_path: path.relative(root, dir).split(path.sep).join('/'),
         files: {
           meta: path.join(dir, META_FILE),
           promjene: fs.existsSync(promjeneFile) ? promjeneFile : null
@@ -336,6 +337,49 @@ function listStaging() {
         }
       }
       entry.has_promjene = fs.existsSync(promjeneFile);
+      if (entry.has_promjene) {
+        try {
+          entry.promjene_size_bytes = fs.statSync(promjeneFile).size;
+        } catch (_) {
+          entry.promjene_size_bytes = null;
+        }
+      }
+      const dsDir = path.join(dir, 'datasets');
+      const datasets = [];
+      if (fs.existsSync(dsDir)) {
+        for (const df of fs.readdirSync(dsDir)) {
+          if (!df.endsWith('.meta.json')) continue;
+          const metaFile = path.join(dsDir, df);
+          try {
+            const dm = readJson(metaFile);
+            const jsonlName = df.replace(/\.meta\.json$/, '.jsonl');
+            const jsonlPath = path.join(dsDir, jsonlName);
+            const hasFile = fs.existsSync(jsonlPath);
+            datasets.push({
+              dataset_key: dm.dataset_key || jsonlName.replace(/\.jsonl$/, ''),
+              row_count: dm.rowCount != null ? Number(dm.rowCount) : null,
+              saved_at: dm.saved_at || null,
+              has_file: hasFile,
+              size_bytes: hasFile ? fs.statSync(jsonlPath).size : 0
+            });
+          } catch (_) {
+            datasets.push({ dataset_key: df, parse_error: true });
+          }
+        }
+        datasets.sort((a, b) =>
+          String(a.dataset_key || '').localeCompare(String(b.dataset_key || ''))
+        );
+      }
+      entry.datasets = datasets;
+      entry.saved_at =
+        entry.meta?.saved_at ||
+        entry.meta?.endpoints?.promjene?.saved_at ||
+        datasets[0]?.saved_at ||
+        null;
+      entry.promjene_row_count =
+        entry.meta?.endpoints?.promjene?.rowCount != null
+          ? Number(entry.meta.endpoints.promjene.rowCount)
+          : null;
       snapshots.push(entry);
     }
     snapshots.sort((a, b) => Number(b.snapshot_id) - Number(a.snapshot_id));
@@ -375,6 +419,42 @@ function listStaging() {
   return { dataDir: root, snapshots, diffs };
 }
 
+/**
+ * Normalizirani popis snimki na disku za UI (padajući izbornik kao API).
+ */
+function listDiskSnapshotsForUi() {
+  const { snapshots, dataDir } = listStaging();
+  return snapshots.map((entry) => {
+    const id = entry.snapshot_id;
+    const promRows = entry.promjene_row_count;
+    const dsCount = Array.isArray(entry.datasets) ? entry.datasets.length : 0;
+    const parts = [];
+    if (entry.has_promjene) {
+      parts.push(
+        promRows != null
+          ? `promjene ${promRows.toLocaleString('hr-HR')}`
+          : 'promjene ✓'
+      );
+    }
+    if (dsCount > 0) parts.push(`${dsCount} skupova`);
+    return {
+      id,
+      snapshot_id: id,
+      source: 'disk',
+      label: entry.label,
+      description: parts.length ? parts.join(' · ') : 'prazno / samo meta',
+      timestamp: entry.saved_at || null,
+      staleness: null,
+      has_promjene: Boolean(entry.has_promjene),
+      promjene_row_count: promRows,
+      promjene_size_bytes: entry.promjene_size_bytes ?? null,
+      datasets: entry.datasets || [],
+      disk_rel_path: entry.disk_rel_path,
+      meta: entry.meta || null
+    };
+  });
+}
+
 module.exports = {
   getDataDir,
   snapshotDir,
@@ -387,6 +467,7 @@ module.exports = {
   saveSnapshotPromjene,
   savePromjeneDiff,
   listStaging,
+  listDiskSnapshotsForUi,
   resolveStagingDownload,
   readJsonl,
   countJsonlLines,

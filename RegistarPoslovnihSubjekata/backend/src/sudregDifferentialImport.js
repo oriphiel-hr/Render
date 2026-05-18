@@ -144,8 +144,7 @@ async function runDifferentialImport(opts = {}) {
   const applyTemp =
     opts.apply_temp === '0' || opts.apply_temp === false ? false : syncDb;
 
-  const onlySubjekti =
-    opts.only_subjekti === '0' || opts.only_subjekti === false ? false : true;
+  const onlySubjekti = opts.only_subjekti === '1' || opts.only_subjekti === true;
 
   const steps = [];
   const t0 = Date.now();

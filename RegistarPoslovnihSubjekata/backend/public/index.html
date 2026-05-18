@@ -164,6 +164,75 @@
       border: 1px solid var(--sudreg);
       background: rgba(46, 184, 138, 0.07);
     }
+    .snapshot-source-row .inline-group label {
+      font-size: 0.88rem;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .disk-snapshots-panel {
+      margin: 0 0 0.85rem;
+      padding: 0.75rem 0.9rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: rgba(10, 14, 20, 0.55);
+      font-size: 0.82rem;
+    }
+    .disk-snapshots-panel.empty { display: none; }
+    .disk-snapshots-panel h4 {
+      margin: 0 0 0.5rem;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .disk-snapshots-table-wrap {
+      overflow-x: auto;
+      max-height: 14rem;
+      overflow-y: auto;
+    }
+    table.disk-snapshots-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+    table.disk-snapshots-table th,
+    table.disk-snapshots-table td {
+      padding: 0.35rem 0.5rem;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+    table.disk-snapshots-table th {
+      color: var(--muted);
+      font-weight: 500;
+      position: sticky;
+      top: 0;
+      background: #0a0e14;
+    }
+    table.disk-snapshots-table tr[data-snapshot-id] {
+      cursor: pointer;
+    }
+    table.disk-snapshots-table tr[data-snapshot-id]:hover {
+      background: rgba(46, 184, 138, 0.1);
+    }
+    table.disk-snapshots-table tr.selected {
+      background: rgba(46, 184, 138, 0.18);
+    }
+    .badge-disk {
+      display: inline-block;
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      background: rgba(100, 140, 200, 0.25);
+      color: #9ec5ff;
+    }
+    .badge-api {
+      display: inline-block;
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      background: rgba(46, 184, 138, 0.2);
+      color: var(--sudreg);
+    }
     .compare-panel .section-label {
       margin-top: 0;
       color: var(--sudreg);
@@ -269,7 +338,8 @@
     </div>
     <p class="section-label">Sudreg API — popis snimki</p>
     <div class="actions" style="margin-bottom: 0.75rem;">
-      <button type="button" class="secondary" id="btn-snapshots-refresh">Osvježi listu snimki</button>
+      <button type="button" class="secondary" id="btn-snapshots-refresh">Osvježi popis snimki</button>
+      <button type="button" class="secondary" id="btn-disk-snapshots-refresh">Osvježi snimke na disku</button>
       <button type="button" class="secondary" id="btn-sudreg">OAuth token</button>
       <button type="button" class="secondary" id="btn-sudreg-connectivity">Test Sudreg veze</button>
       <button type="button" class="secondary" id="btn-snapshots-json">JSON svih snimki</button>
@@ -278,8 +348,39 @@
       <p class="section-label">Usporedba dviju snimki</p>
       <p class="hint" style="margin-bottom: 0.75rem;">
         <strong>Puno spremanje</strong>: novija snimka — svi matični skupovi; starija opcionalno (diff).
-        <strong>Diferencijalno</strong>: obje snimke — diff (stream indeks, malo RAM-a), aktivni subjekti, temp (samo subjekti). U bazu ne ide puni /promjene. Za slabiji Render: prvo <strong>1/2 disk</strong>, zatim <strong>2/2 baza</strong>.
+        <strong>Diferencijalno</strong>: promjene, diff, aktivni subjekti. Temp: svi matični skupovi s MBS ako su na disku/bazi (inače prvo <strong>Puno</strong> za obje snimke). Za Render: <strong>1/2 disk</strong> pa <strong>2/2 baza</strong>.
       </p>
+      <div class="field-row snapshot-source-row">
+        <label>Izvor za odabir snimke</label>
+        <div class="inline-group">
+          <label class="inline-label">
+            <input type="radio" name="snapshot-source" id="snapshot-source-api" value="api" checked />
+            Sudreg API
+          </label>
+          <label class="inline-label">
+            <input type="radio" name="snapshot-source" id="snapshot-source-disk" value="disk" />
+            Snimke na disku
+          </label>
+        </div>
+      </div>
+      <div id="disk-snapshots-panel" class="disk-snapshots-panel">
+        <h4>Snimke na disku <span class="badge-disk">staging</span></h4>
+        <p id="disk-snapshots-summary" class="hint" style="margin:0 0 0.5rem;">Učitavam…</p>
+        <div class="disk-snapshots-table-wrap">
+          <table class="disk-snapshots-table" id="disk-snapshots-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Promjene</th>
+                <th>Matični skupovi</th>
+                <th>Spremljeno</th>
+              </tr>
+            </thead>
+            <tbody id="disk-snapshots-tbody"></tbody>
+          </table>
+        </div>
+        <p class="hint" style="margin:0.45rem 0 0;font-size:0.78rem;">Klik na red: postavi noviju snimku (2). Za izvor „Snimke na disku” koristi padajuće liste.</p>
+      </div>
       <div class="field-row">
         <label for="snapshot-from-select">1. Starija snimka (opcionalno, diff)</label>
         <select id="snapshot-from-select" class="snapshot-select" disabled>
@@ -423,6 +524,10 @@
         <input type="checkbox" id="staging-apply-temp" />
         Nakon diff-a upiši u <strong>temp</strong> (svi matični skupovi s MBS)
       </label>
+      <label class="inline-label" style="display:flex;align-items:center;gap:0.35rem;cursor:pointer;">
+        <input type="checkbox" id="temp-only-subjekti" />
+        Temp: <strong>samo subjekti</strong> (manje RAM; ostali skupovi preskočeni)
+      </label>
     </div>
     <div class="actions">
       <button type="button" class="secondary" id="btn-staging-save-from">API → disk (+ baza)</button>
@@ -437,9 +542,11 @@
       <button type="button" class="secondary" id="btn-staging-db">Pregled baze</button>
       <button type="button" class="secondary" id="btn-temp-apply" disabled title="SCN diff → temp (svi skupovi s MBS, ne dira staging)">Diff → temp tablice</button>
       <button type="button" class="secondary" id="btn-temp-db">Pregled temp</button>
+      <button type="button" class="secondary" id="btn-indeks-rebuild" disabled title="subjekti_indeks iz diska (subjekti + tvrtka + pravni oblik)">Rebuild indeks</button>
+      <button type="button" class="secondary" id="btn-indeks-search" disabled title="GET /api/db/subjekti-indeks">Pretraži indeks</button>
       <button type="button" class="danger" id="btn-db-clear" disabled title="Briše sve redove u PostgreSQL staging tablicama">Obriši bazu (staging)</button>
     </div>
-    <p class="hint" style="margin:0 0 0.75rem;font-size:0.82rem;">„Obriši bazu” briše samo <strong>PostgreSQL</strong> (promjene, matični, meta u bazi). <strong>Disk</strong> (<code>/var/data</code>, JSONL) ostaje — možeš ponovo „Samo baza ← disk”.</p>
+    <p class="hint" style="margin:0 0 0.75rem;font-size:0.82rem;">„Obriši bazu” briše samo <strong>PostgreSQL</strong> (promjene, matični, meta u bazi). <strong>Disk</strong> (<code>/var/data</code>, JSONL) ostaje — možeš ponovo „Samo baza ← disk”. Tablica <strong>subjekti_indeks</strong> puni se pri syncu (subjekti/tvrtka/pravni oblik) — stupci za pretragu: OIB, status, naziv, pravni oblik, datum brisanja, postupak, djelatnost, sud.</p>
     <p class="section-label">Preuzimanje s diska</p>
     <p id="dl-status">Učitavam snimke…</p>
     <div class="actions">
@@ -476,7 +583,13 @@
     const btnSudreg = document.getElementById('btn-sudreg');
     const btnSudregConnectivity = document.getElementById('btn-sudreg-connectivity');
     const btnSnapshotsRefresh = document.getElementById('btn-snapshots-refresh');
+    const btnDiskSnapshotsRefresh = document.getElementById('btn-disk-snapshots-refresh');
     const btnSnapshotsJson = document.getElementById('btn-snapshots-json');
+    const snapshotSourceApi = document.getElementById('snapshot-source-api');
+    const snapshotSourceDisk = document.getElementById('snapshot-source-disk');
+    const diskSnapshotsPanel = document.getElementById('disk-snapshots-panel');
+    const diskSnapshotsSummary = document.getElementById('disk-snapshots-summary');
+    const diskSnapshotsTbody = document.getElementById('disk-snapshots-tbody');
     const btnPromjene = document.getElementById('btn-promjene');
     const btnPromjeneDiff = document.getElementById('btn-promjene-diff');
     const btnImportAllFull = document.getElementById('btn-import-all-full');
@@ -500,7 +613,10 @@
     const btnStagingDb = document.getElementById('btn-staging-db');
     const btnTempApply = document.getElementById('btn-temp-apply');
     const btnTempDb = document.getElementById('btn-temp-db');
+    const btnIndeksRebuild = document.getElementById('btn-indeks-rebuild');
+    const btnIndeksSearch = document.getElementById('btn-indeks-search');
     const stagingApplyTemp = document.getElementById('staging-apply-temp');
+    const tempOnlySubjekti = document.getElementById('temp-only-subjekti');
     const btnDbClear = document.getElementById('btn-db-clear');
     const btnStagingSyncFromDb = document.getElementById('btn-staging-sync-from-db');
     const btnStagingSyncToDb = document.getElementById('btn-staging-sync-to-db');
@@ -533,6 +649,8 @@
 
     const snapshotsById = {};
     let snapshotsSorted = [];
+    const diskSnapshotsById = {};
+    let diskSnapshotsSorted = [];
 
     const DATASET_CATALOG = {
       subjekti: {
@@ -684,6 +802,8 @@
       if (btnStagingList) btnStagingList.disabled = busy;
       if (btnStagingDb) btnStagingDb.disabled = busy;
       if (btnTempDb) btnTempDb.disabled = busy || !databaseConfigured;
+      if (btnIndeksRebuild) btnIndeksRebuild.disabled = busy || !databaseConfigured;
+      if (btnIndeksSearch) btnIndeksSearch.disabled = busy || !databaseConfigured;
       if (btnDbClear) btnDbClear.disabled = busy || !databaseConfigured;
       if (btnStagingSyncFromDb) btnStagingSyncFromDb.disabled = busy || !databaseConfigured;
       if (btnStagingSyncToDb) btnStagingSyncToDb.disabled = busy || !databaseConfigured;
@@ -736,8 +856,26 @@
         .replace(/"/g, '&quot;');
     }
 
+    function getSnapshotSource() {
+      return snapshotSourceDisk && snapshotSourceDisk.checked ? 'disk' : 'api';
+    }
+
+    function formatBytes(n) {
+      const b = Number(n);
+      if (!Number.isFinite(b) || b <= 0) return '—';
+      if (b < 1024) return b + ' B';
+      if (b < 1024 * 1024) return Math.round(b / 1024) + ' KB';
+      return (b / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
     function formatSnapshotLabel(s) {
       const id = s.id != null ? String(s.id) : '?';
+      const badge = s.source === 'disk' ? '[disk] ' : '';
+      if (s.source === 'disk') {
+        const desc = s.description ? ' · ' + String(s.description).slice(0, 56) : '';
+        const ts = s.timestamp ? String(s.timestamp).replace('T', ' ').slice(0, 19) : '';
+        return badge + '#' + id + (ts ? ' · ' + ts : '') + desc;
+      }
       const ts = s.timestamp ? String(s.timestamp).replace('T', ' ').slice(0, 19) : '';
       const stale = s.staleness != null ? ' · starost ' + s.staleness : '';
       const desc = s.description ? ' · ' + String(s.description).slice(0, 48) : '';
@@ -746,9 +884,48 @@
 
     function snapshotSummaryHtml(s, title) {
       if (!s) return '<p><strong>' + escapeHtml(title) + ':</strong> —</p>';
-      return '<p><strong>' + escapeHtml(title) + ' (# ' + escapeHtml(String(s.id)) + '):</strong> ' +
+      if (s.source === 'disk') {
+        const prom =
+          s.has_promjene
+            ? s.promjene_row_count != null
+              ? s.promjene_row_count.toLocaleString('hr-HR') + ' redova'
+              : 'da' + (s.promjene_size_bytes ? ' (' + formatBytes(s.promjene_size_bytes) + ')' : '')
+            : 'ne';
+        const ds = Array.isArray(s.datasets) ? s.datasets.length : 0;
+        const dsList =
+          ds > 0
+            ? s.datasets
+                .slice(0, 8)
+                .map((d) => escapeHtml(d.dataset_key) + (d.row_count != null ? ' (' + d.row_count + ')' : ''))
+                .join(', ') + (ds > 8 ? '…' : '')
+            : '—';
+        return (
+          '<p><strong>' +
+          escapeHtml(title) +
+          ' (# ' +
+          escapeHtml(String(s.id)) +
+          ')</strong> <span class="badge-disk">disk</span><br>' +
+          'Promjene: ' +
+          escapeHtml(prom) +
+          ' · Skupovi: ' +
+          ds +
+          (dsList !== '—' ? ' — ' + dsList : '') +
+          '<br>Spremljeno: ' +
+          escapeHtml(String(s.timestamp || '—').replace('T', ' ').slice(0, 19)) +
+          '</p>'
+        );
+      }
+      return (
+        '<p><strong>' +
+        escapeHtml(title) +
+        ' (# ' +
+        escapeHtml(String(s.id)) +
+        ')</strong> <span class="badge-api">API</span> ' +
         escapeHtml(String(s.timestamp || '—').replace('T', ' ').slice(0, 19)) +
-        ' · starost ' + escapeHtml(String(s.staleness != null ? s.staleness : '—')) + '</p>';
+        ' · starost ' +
+        escapeHtml(String(s.staleness != null ? s.staleness : '—')) +
+        '</p>'
+      );
     }
 
     function renderCompareSelection() {
@@ -781,6 +958,10 @@
         if (sa !== sb) return sa - sb;
         return Number(b.id) - Number(a.id);
       });
+    }
+
+    function sortDiskSnapshots(list) {
+      return list.slice().sort((a, b) => Number(b.id) - Number(a.id));
     }
 
     function fillSnapshotSelect(selectEl, sorted, placeholder) {
@@ -817,13 +998,146 @@
       fillSnapshotSelect(snapshotFromSelect, snapshotsSorted, '— odaberi stariju snimku —');
       snapshotSelect.disabled = false;
       snapshotFromSelect.disabled = false;
-      const newest = snapshotsSorted.find((s) => Number(s.staleness) === 1) || snapshotsSorted[0];
+      const newest =
+        getSnapshotSource() === 'disk'
+          ? snapshotsSorted[0]
+          : snapshotsSorted.find((s) => Number(s.staleness) === 1) || snapshotsSorted[0];
       if (newest) {
         snapshotSelect.value = String(newest.id);
         const baseline = suggestBaselineSnapshot(newest.id);
         if (baseline) snapshotFromSelect.value = baseline;
         renderCompareSelection();
         updateStagingDownloadLinks();
+        highlightDiskTableSelection();
+      }
+    }
+
+    function highlightDiskTableSelection() {
+      if (!diskSnapshotsTbody) return;
+      const toId = snapshotSelect.value;
+      const fromId = snapshotFromSelect.value;
+      diskSnapshotsTbody.querySelectorAll('tr[data-snapshot-id]').forEach((tr) => {
+        const id = tr.getAttribute('data-snapshot-id');
+        tr.classList.toggle('selected', id === toId || id === fromId);
+      });
+    }
+
+    function renderDiskSnapshotsTable(list, dataDir) {
+      if (!diskSnapshotsTbody || !diskSnapshotsSummary) return;
+      diskSnapshotsTbody.innerHTML = '';
+      if (!list.length) {
+        diskSnapshotsSummary.textContent =
+          'Nema snimki u ' + (dataDir || 'data') + '/snapshots/. Spremi promjene (API → disk).';
+        if (diskSnapshotsPanel) diskSnapshotsPanel.classList.add('empty');
+        return;
+      }
+      if (diskSnapshotsPanel) diskSnapshotsPanel.classList.remove('empty');
+      diskSnapshotsSummary.textContent =
+        list.length +
+        ' snimki na disku' +
+        (dataDir ? ' · ' + dataDir : '') +
+        (getSnapshotSource() === 'disk' ? ' · izvor padajućih lista: disk' : ' · izvor padajućih lista: API');
+      list.forEach((s) => {
+        const id = String(s.id);
+        const promCell = s.has_promjene
+          ? s.promjene_row_count != null
+            ? s.promjene_row_count.toLocaleString('hr-HR')
+            : '✓'
+          : '—';
+        const promExtra =
+          s.promjene_size_bytes != null ? ' (' + formatBytes(s.promjene_size_bytes) + ')' : '';
+        const ds = Array.isArray(s.datasets) ? s.datasets : [];
+        const dsCell =
+          ds.length === 0
+            ? '—'
+            : ds
+                .map((d) => d.dataset_key + (d.row_count != null ? ':' + d.row_count : ''))
+                .join(', ');
+        const tr = document.createElement('tr');
+        tr.setAttribute('data-snapshot-id', id);
+        tr.innerHTML =
+          '<td><strong>#' +
+          escapeHtml(id) +
+          '</strong></td>' +
+          '<td>' +
+          escapeHtml(promCell + promExtra) +
+          '</td>' +
+          '<td title="' +
+          escapeHtml(dsCell) +
+          '">' +
+          escapeHtml(ds.length ? ds.length + ' (' + dsCell.slice(0, 80) + (dsCell.length > 80 ? '…' : '') + ')' : '—') +
+          '</td>' +
+          '<td>' +
+          escapeHtml(s.timestamp ? String(s.timestamp).replace('T', ' ').slice(0, 19) : '—') +
+          '</td>';
+        tr.addEventListener('click', () => {
+          if (getSnapshotSource() === 'disk') {
+            snapshotSelect.value = id;
+            const baseline = suggestBaselineSnapshot(id);
+            if (baseline) snapshotFromSelect.value = baseline;
+          } else {
+            snapshotSelect.value = id;
+          }
+          onSnapshotSelectionChange();
+        });
+        diskSnapshotsTbody.appendChild(tr);
+      });
+      highlightDiskTableSelection();
+    }
+
+    async function loadDiskSnapshotsPanel() {
+      if (!diskSnapshotsSummary) return;
+      diskSnapshotsSummary.textContent = 'Učitavam snimke s diska…';
+      try {
+        const res = await fetch('/api/staging/snapshots', { headers: { Accept: 'application/json' } });
+        const body = await res.json();
+        if (!res.ok || !body.ok) throw new Error(body.error || res.statusText);
+        const list = Array.isArray(body.snapshots) ? body.snapshots : [];
+        Object.keys(diskSnapshotsById).forEach((k) => delete diskSnapshotsById[k]);
+        diskSnapshotsSorted = sortDiskSnapshots(list);
+        diskSnapshotsSorted.forEach((s) => {
+          diskSnapshotsById[String(s.id)] = s;
+        });
+        renderDiskSnapshotsTable(diskSnapshotsSorted, body.dataDir);
+      } catch (e) {
+        if (diskSnapshotsSummary) {
+          diskSnapshotsSummary.textContent = 'Greška: ' + (e.message || String(e));
+        }
+      }
+    }
+
+    async function loadDiskSnapshotsDropdown() {
+      snapshotSelect.disabled = true;
+      snapshotFromSelect.disabled = true;
+      snapshotSelect.innerHTML = '<option value="">Učitavam disk…</option>';
+      const t0 = performance.now();
+      try {
+        const res = await fetch('/api/staging/snapshots', { headers: { Accept: 'application/json' } });
+        const ms = Math.round(performance.now() - t0);
+        const body = await res.json();
+        if (!res.ok || !body.ok) throw new Error(body.error || res.statusText);
+        const list = Array.isArray(body.snapshots) ? body.snapshots : [];
+        list.forEach((s) => {
+          s.source = 'disk';
+        });
+        fillSnapshotDropdown(list);
+        renderDiskSnapshotsTable(sortDiskSnapshots(list), body.dataDir);
+        meta.textContent =
+          'Disk: ' + list.length + ' snimki · ' + ms + ' ms · /api/staging/snapshots';
+        if (!list.length) show('Na disku nema snimki — prvo API → disk.', true);
+      } catch (e) {
+        snapshotSelect.innerHTML = '<option value="">Greška učitavanja diska</option>';
+        show('Greška (disk): ' + (e.message || String(e)), true);
+        meta.textContent = '/api/staging/snapshots';
+      }
+    }
+
+    async function loadSnapshotsFromSource() {
+      if (getSnapshotSource() === 'disk') {
+        await loadDiskSnapshotsDropdown();
+      } else {
+        await loadSnapshotsDropdown();
+        await loadDiskSnapshotsPanel();
       }
     }
 
@@ -960,11 +1274,13 @@
     function onSnapshotSelectionChange() {
       renderCompareSelection();
       updateStagingDownloadLinks();
+      highlightDiskTableSelection();
     }
 
     async function loadSnapshotsDropdown() {
       snapshotSelect.disabled = true;
-      snapshotSelect.innerHTML = '<option value="">Učitavam…</option>';
+      snapshotFromSelect.disabled = true;
+      snapshotSelect.innerHTML = '<option value="">Učitavam API…</option>';
       const t0 = performance.now();
       try {
         const res = await fetch('/api/sudreg/snapshots', { headers: { Accept: 'application/json' } });
@@ -974,9 +1290,13 @@
           throw new Error(body.error || res.statusText);
         }
         const list = normalizeSnapshotsList(body.data);
+        list.forEach((s) => {
+          s.source = 'api';
+        });
         fillSnapshotDropdown(list);
-        meta.textContent = 'Učitano snimki: ' + list.length + ' · ' + ms + ' ms';
+        meta.textContent = 'API: ' + list.length + ' snimki · ' + ms + ' ms';
         if (!list.length) show('API je vratio prazan popis snimki.', true);
+        await loadDiskSnapshotsPanel();
       } catch (e) {
         snapshotSelect.innerHTML = '<option value="">Greška učitavanja</option>';
         snapshotSelect.disabled = true;
@@ -1020,7 +1340,20 @@
     if (btnSudregConnectivity) {
       btnSudregConnectivity.addEventListener('click', () => fetchPath('/api/sudreg/connectivity', true));
     }
-    btnSnapshotsRefresh.addEventListener('click', () => loadSnapshotsDropdown());
+    btnSnapshotsRefresh.addEventListener('click', () => loadSnapshotsFromSource());
+    if (btnDiskSnapshotsRefresh) {
+      btnDiskSnapshotsRefresh.addEventListener('click', () => loadDiskSnapshotsPanel());
+    }
+    if (snapshotSourceApi) {
+      snapshotSourceApi.addEventListener('change', () => {
+        if (snapshotSourceApi.checked) loadSnapshotsDropdown();
+      });
+    }
+    if (snapshotSourceDisk) {
+      snapshotSourceDisk.addEventListener('change', () => {
+        if (snapshotSourceDisk.checked) loadDiskSnapshotsDropdown();
+      });
+    }
     btnSnapshotsJson.addEventListener('click', () => fetchPath('/api/sudreg/snapshots', true));
 
     function parsePromjenePaging(input, fallback) {
@@ -1342,6 +1675,7 @@
       if (isDiff) {
         qs.set('phase', phase);
         if (syncDb && !diskOnly) qs.set('apply_temp', '1');
+        if (tempOnlySubjekti && tempOnlySubjekti.checked) qs.set('only_subjekti', '1');
       }
 
       setBusy(true);
@@ -1357,7 +1691,11 @@
           importAllHint.textContent =
             'Diferencijalno #' + fromId + ' → #' + toId +
             ' (' + phaseLabel + '): promjene, diff, aktivni subjekti' +
-            (syncDb && !diskOnly ? ', temp (samo subjekti)' : '') + '…';
+            (syncDb && !diskOnly
+              ? ', temp (' +
+                (tempOnlySubjekti && tempOnlySubjekti.checked ? 'samo subjekti' : 'svi matični skupovi') +
+                ')'
+              : '') + '…';
         } else if (sameSnapshot) {
           importAllHint.textContent =
             'Puno #' + toId + ' — diff preskočen. Svi matični skupovi…';
@@ -1498,6 +1836,8 @@
         if (btnStagingSyncDiffDb) btnStagingSyncDiffDb.disabled = !databaseConfigured;
         if (stagingSyncDb) stagingSyncDb.disabled = !databaseConfigured;
         if (btnDbClear) btnDbClear.disabled = !databaseConfigured;
+        if (btnIndeksRebuild) btnIndeksRebuild.disabled = !databaseConfigured;
+        if (btnIndeksSearch) btnIndeksSearch.disabled = !databaseConfigured;
       } catch (_) {
         dbStatus.textContent = 'Baza: nije moguće provjeriti /api/status.';
       }
@@ -1605,15 +1945,41 @@
           return;
         }
         if (!databaseConfigured) { show('DATABASE_URL nije postavljen.', true); return; }
-        stagingFetch(
+        let tempUrl =
           '/api/db/temp/apply-diff?snapshot_id_from=' + encodeURIComponent(fromId) +
-            '&snapshot_id_to=' + encodeURIComponent(toId),
-          'Primjenjujem diff u temp tablice #' + fromId + ' → #' + toId + '…'
+          '&snapshot_id_to=' + encodeURIComponent(toId);
+        if (tempOnlySubjekti && tempOnlySubjekti.checked) tempUrl += '&only_subjekti=1';
+        stagingFetch(
+          tempUrl,
+          'Primjenjujem diff u temp tablice #' + fromId + ' → #' + toId +
+            (tempOnlySubjekti && tempOnlySubjekti.checked ? ' (samo subjekti)…' : ' (svi skupovi)…')
         );
       });
     }
     if (btnTempDb) {
       btnTempDb.addEventListener('click', () => stagingFetch('/api/db/temp', null));
+    }
+    if (btnIndeksRebuild) {
+      btnIndeksRebuild.addEventListener('click', () => {
+        const snapId = snapshotSelect.value;
+        if (!snapId) { show('Odaberi noviju snimku za rebuild indeksa.', true); return; }
+        if (!databaseConfigured) { show('DATABASE_URL nije postavljen.', true); return; }
+        stagingFetch(
+          '/api/db/subjekti-indeks/rebuild?snapshot_id=' + encodeURIComponent(snapId),
+          'Rebuild subjekti_indeks za snimku #' + snapId + '…'
+        );
+      });
+    }
+    if (btnIndeksSearch) {
+      btnIndeksSearch.addEventListener('click', () => {
+        const snapId = snapshotSelect.value;
+        if (!snapId) { show('Odaberi snimku za pretragu indeksa.', true); return; }
+        const naziv = window.prompt('Naziv (min. 2 znaka, prazno = preskoči):', '');
+        if (naziv === null) return;
+        let url = '/api/db/subjekti-indeks?snapshot_id=' + encodeURIComponent(snapId) + '&status=1&limit=20';
+        if (naziv.trim().length >= 2) url += '&naziv=' + encodeURIComponent(naziv.trim());
+        stagingFetch(url, 'Pretraga subjekti_indeks…');
+      });
     }
 
     if (btnDbClear) {
@@ -1651,7 +2017,7 @@
       });
     }
 
-    loadSnapshotsDropdown();
+    loadSnapshotsFromSource();
     refreshDbStatus();
   </script>
 </body>

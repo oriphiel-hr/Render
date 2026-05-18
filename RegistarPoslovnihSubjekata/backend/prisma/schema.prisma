@@ -107,6 +107,33 @@ model MaticniRed {
   @@map("maticni_redovi")
 }
 
+/// Denormalizirani subjekti za brzu pretragu (iz subjekti + tvrtka + pravni_oblici).
+model SubjektIndeks {
+  id                      String    @id @default(cuid())
+  snapshotId              Int
+  mbs                     Int
+  oib                     Int?
+  status                  Int?
+  naziv                   String?
+  skracenaTvrtka          String?   @map("skracena_tvrtka")
+  vrstaPravnogOblikaId    Int?      @map("vrsta_pravnog_oblika_id")
+  vrstaPravnogOblikaSifra String?   @map("vrsta_pravnog_oblika_sifra")
+  vrstaPravnogOblikaNaziv String?   @map("vrsta_pravnog_oblika_naziv")
+  datumBrisanja           DateTime? @map("datum_brisanja") @db.Date
+  postupak                String?
+  glavnaDjelatnost        String?   @map("glavna_djelatnost")
+  sudIdNadlezan           Int?      @map("sud_id_nadlezan")
+  syncedAt                DateTime  @default(now()) @map("synced_at")
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  @@unique([snapshotId, mbs])
+  @@index([snapshotId, status])
+  @@index([snapshotId, oib])
+  @@index([snapshotId, naziv])
+  @@map("subjekti_indeks")
+}
+
 /// Priprema primjene promjena — ne dira staging tablice (promjene, maticni_redovi, …).
 model TempApplyRun {
   id               String        @id @default(cuid())

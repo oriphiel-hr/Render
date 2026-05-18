@@ -12,6 +12,7 @@ const {
 } = require('./lib/prisma');
 const { forEachJsonlBatch } = require('./jsonlStream');
 const { listAllImportJobs } = require('./sudregDatasets');
+const { syncSubjektIndeksForMbsSet } = require('./sudregSubjektIndeks');
 const {
   diffPromjenePath,
   diffMetaPath,
@@ -447,6 +448,22 @@ async function indexAllDatasetsForMbs(snapshotId, mbsFilter, jobs) {
   return { index, sources };
 }
 
+function subjektPayloadForMbs(mbs, info, subjektiTo, subjektiFrom) {
+  if (info.vrsta === 'neaktivan') {
+    return markNeaktivan(
+      info.baselineRow ||
+        subjektiFrom.get(mbs) ||
+        subjektiTo.get(mbs) ||
+        { mbs, status: 0 }
+    );
+  }
+  return (
+    subjektiTo.get(mbs) ||
+    subjektiFrom.get(mbs) ||
+    { mbs, status: 1, _temp: { needs_fetch: true, promjena: info.promjenaJson } }
+  );
+}
+
 async function createManyTempSubjektiRetry(data) {
   return withPrismaRetry((db) => db.tempSubjekt.createMany({ data }));
 }
@@ -488,7 +505,7 @@ async function applyPromjeneDiffToTemp(params) {
   const diffMeta = fs.existsSync(diffMetaPath(from, to)) ? readJson(diffMetaPath(from, to)) : null;
   const diffStats = diffMeta?.stats || {};
   const onlySubjekti =
-    params.only_subjekti === '0' || params.only_subjekti === false ? false : true;
+    params.only_subjekti === '1' || params.only_subjekti === true;
   const jobs = onlySubjekti ? subjektiOnlyJobs() : listAllImportJobs();
 
   await withPrismaRetry((db) =>
@@ -562,28 +579,10 @@ async function applyPromjeneDiffToTemp(params) {
     };
   }
 
-  let toIndex = new Map();
-  let fromIndex = new Map();
-  let subjektiTo = new Map();
-  let subjektiFrom = new Map();
-
-  if (onlySubjekti) {
-    [subjektiTo, subjektiFrom] = await Promise.all([
-      loadSubjektiRowsForMbsSet(to, changedMbs),
-      loadSubjektiRowsForMbsSet(from, changedMbs)
-    ]);
-    toIndex.set(SUBJEKTI_KEY, subjektiTo);
-    fromIndex.set(SUBJEKTI_KEY, subjektiFrom);
-  } else {
-    const [toIndexed, fromIndexed] = await Promise.all([
-      changedMbs.size > 0
-        ? indexAllDatasetsForMbs(to, changedMbs, jobs)
-        : Promise.resolve({ index: new Map() }),
-      indexAllDatasetsForMbs(from, mbsFilter, jobs)
-    ]);
-    toIndex = toIndexed.index;
-    fromIndex = fromIndexed.index;
-  }
+  const [subjektiTo, subjektiFrom] = await Promise.all([
+    loadSubjektiRowsForMbsSet(to, changedMbs),
+    loadSubjektiRowsForMbsSet(from, changedMbs)
+  ]);
 
   const bs = batchSize();
   let subjektInserted = 0;
@@ -594,6 +593,8 @@ async function applyPromjeneDiffToTemp(params) {
   const maticniDedupe = new Map();
   let processed = 0;
   const totalAffected = mbsFilter.size;
+  /** @type {Array<{ datasetKey: string, rows: number }>} */
+  const datasetRowCounts = [];
 
   const flushSubjekti = async () => {
     if (subjektBatch.length === 0) return;
@@ -611,21 +612,19 @@ async function applyPromjeneDiffToTemp(params) {
     maticniInserted += result.count;
   };
 
-  for (const [mbs, info] of affected) {
-    let maticniRows;
-    if (onlySubjekti) {
-      const subPayload =
-        info.vrsta === 'neaktivan'
-          ? markNeaktivan(
-              info.baselineRow ||
-                subjektiFrom.get(mbs) ||
-                subjektiTo.get(mbs) ||
-                { mbs, status: 0 }
-            )
-          : subjektiTo.get(mbs) ||
-            subjektiFrom.get(mbs) ||
-            { mbs, status: 1, _temp: { needs_fetch: true, promjena: info.promjenaJson } };
-      maticniRows = [
+  const pushMaticniRows = (maticniRows) => {
+    maticniBeforeDedupe += maticniRows.length;
+    for (const row of maticniRows) {
+      const k = maticniUniqueKey(row);
+      if (maticniDedupe.has(k)) maticniDuplicates += 1;
+      maticniDedupe.set(k, row);
+    }
+  };
+
+  if (onlySubjekti) {
+    for (const [mbs, info] of affected) {
+      const subPayload = subjektPayloadForMbs(mbs, info, subjektiTo, subjektiFrom);
+      pushMaticniRows([
         {
           applyRunId: run.id,
           mbs,
@@ -636,7 +635,7 @@ async function applyPromjeneDiffToTemp(params) {
           snapshotIdTo: to,
           payload: subPayload
         }
-      ];
+      ]);
       subjektBatch.push({
         applyRunId: run.id,
         mbs,
@@ -646,51 +645,104 @@ async function applyPromjeneDiffToTemp(params) {
         payload: subPayload,
         promjenaJson: info.promjenaJson
       });
-    } else {
-      maticniRows = buildMaticniPendingForMbs(
-        mbs,
-        info.vrsta,
-        info.promjenaJson,
-        from,
-        to,
-        run.id,
-        fromIndex,
-        toIndex,
-        jobs
-      );
-      const subPayload =
-        toIndex.get(SUBJEKTI_KEY)?.get(mbs)?.[0] ||
-        fromIndex.get(SUBJEKTI_KEY)?.get(mbs)?.[0] ||
-        info.baselineRow ||
-        { mbs, status: info.vrsta === 'neaktivan' ? 0 : 1 };
+      processed += 1;
+      if (subjektBatch.length >= bs) await flushSubjekti();
+      if (maticniDedupe.size >= MATICNI_FLUSH_ROWS) await flushMaticni();
+      if (params.onProgress && processed % 500 === 0) {
+        params.onProgress({ done: processed, total: totalAffected });
+      }
+    }
+    datasetRowCounts.push({ datasetKey: SUBJEKTI_KEY, rows: maticniBeforeDedupe });
+  } else {
+    let jobIndex = 0;
+    for (const job of jobs) {
+      jobIndex += 1;
+      const key = job.datasetKey;
+      const toIndexed =
+        changedMbs.size > 0
+          ? await indexDatasetRowsByMbs(to, key, changedMbs)
+          : { byMbs: createMbsBucket(), source: null };
+      const fromIndexed = await indexDatasetRowsByMbs(from, key, mbsFilter);
+      let fromByMbs = fromIndexed.byMbs;
+      if (fromByMbs.size === 0) {
+        const db = await indexDatasetRowsByMbsFromDb(from, key, mbsFilter);
+        fromByMbs = db.byMbs;
+      }
+      let toByMbs = toIndexed.byMbs;
+      if (toByMbs.size === 0 && changedMbs.size > 0) {
+        const db = await indexDatasetRowsByMbsFromDb(to, key, changedMbs);
+        toByMbs = db.byMbs;
+      }
+
+      const rowsBeforeJob = maticniBeforeDedupe;
+      const miniTo = new Map([[key, toByMbs]]);
+      const miniFrom = new Map([[key, fromByMbs]]);
+
+      for (const [mbs, info] of affected) {
+        pushMaticniRows(
+          buildMaticniPendingForMbs(
+            mbs,
+            info.vrsta,
+            info.promjenaJson,
+            from,
+            to,
+            run.id,
+            miniFrom,
+            miniTo,
+            [job]
+          )
+        );
+        if (maticniDedupe.size >= MATICNI_FLUSH_ROWS) await flushMaticni();
+      }
+
+      const jobRows = maticniBeforeDedupe - rowsBeforeJob;
+      if (jobRows > 0) {
+        datasetRowCounts.push({ datasetKey: key, rows: jobRows });
+      }
+
+      if (params.onProgress) {
+        params.onProgress({
+          phase: 'dataset',
+          datasetKey: key,
+          jobIndex,
+          jobTotal: jobs.length,
+          done: jobIndex,
+          total: jobs.length
+        });
+      }
+      if (typeof global.gc === 'function') global.gc();
+    }
+
+    for (const [mbs, info] of affected) {
+      const subPayload = subjektPayloadForMbs(mbs, info, subjektiTo, subjektiFrom);
       subjektBatch.push({
         applyRunId: run.id,
         mbs,
         vrsta: info.vrsta,
         snapshotIdFrom: from,
         snapshotIdTo: to,
-        payload: info.vrsta === 'neaktivan' ? markNeaktivan(subPayload) : subPayload,
+        payload: subPayload,
         promjenaJson: info.promjenaJson
       });
-    }
-
-    maticniBeforeDedupe += maticniRows.length;
-    for (const row of maticniRows) {
-      const k = maticniUniqueKey(row);
-      if (maticniDedupe.has(k)) maticniDuplicates += 1;
-      maticniDedupe.set(k, row);
-    }
-
-    processed += 1;
-    if (subjektBatch.length >= bs) await flushSubjekti();
-    if (maticniDedupe.size >= MATICNI_FLUSH_ROWS) await flushMaticni();
-    if (params.onProgress && processed % 500 === 0) {
-      params.onProgress({ done: processed, total: totalAffected });
+      processed += 1;
+      if (subjektBatch.length >= bs) await flushSubjekti();
     }
   }
 
   await flushSubjekti();
   await flushMaticni();
+
+  const nonSubjektiDatasets = datasetRowCounts.filter(
+    (d) => d.datasetKey !== SUBJEKTI_KEY && d.rows > 0
+  );
+  const extraWarnings = [];
+  if (!onlySubjekti && nonSubjektiDatasets.length === 0) {
+    extraWarnings.push(
+      'U temp_maticni nema redaka iz ostalih skupova (tvrtke, sjedišta, …). ' +
+        'Diferencijalni import ne preuzima te JSONL datoteke — pokreni Puno (disk + baza) za obje snimke ' +
+        'ili „Samo baza ← disk” ako su matični već na disku.'
+    );
+  }
 
   if (subjektInserted === 0 && maticniInserted === 0) {
     await withPrismaRetry((db) =>
@@ -700,6 +752,16 @@ async function applyPromjeneDiffToTemp(params) {
       })
     );
     return { ok: true, skipped: true, reason: 'no_rows', applyRunId: run.id };
+  }
+
+  let subjektIndeks = null;
+  try {
+    subjektIndeks = await syncSubjektIndeksForMbsSet(to, mbsFilter);
+  } catch (e) {
+    subjektIndeks = {
+      ok: false,
+      error: e instanceof Error ? e.message : String(e)
+    };
   }
 
   await withPrismaRetry((db) =>
@@ -722,7 +784,9 @@ async function applyPromjeneDiffToTemp(params) {
           only_subjekti: onlySubjekti,
           maticni_pending_before_dedupe: maticniBeforeDedupe,
           maticni_duplicates_collapsed: maticniDuplicates,
-          inactive_skipped: !inactive.targetSource
+          inactive_skipped: !inactive.targetSource,
+          dataset_row_counts: datasetRowCounts,
+          subjekt_indeks: subjektIndeks
         }
       }
     })
@@ -747,11 +811,16 @@ async function applyPromjeneDiffToTemp(params) {
     baselineSource: inactive.baselineSource,
     targetSource: inactive.targetSource,
     onlySubjekti,
-    warnings: !inactive.targetSource
-      ? [
-          `Nema aktivnih ${SUBJEKTI_KEY} za snimku #${to} — neaktivni (brisani) subjekti nisu izračunati.`
-        ]
-      : []
+    datasetRowCounts,
+    subjektIndeks,
+    warnings: [
+      ...(!inactive.targetSource
+        ? [
+            `Nema aktivnih ${SUBJEKTI_KEY} za snimku #${to} — neaktivni (brisani) subjekti nisu izračunati.`
+          ]
+        : []),
+      ...extraWarnings
+    ]
   };
 }
 

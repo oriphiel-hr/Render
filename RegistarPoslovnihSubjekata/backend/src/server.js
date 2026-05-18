@@ -23,6 +23,7 @@ const {
   saveSnapshotPromjene,
   savePromjeneDiff,
   listStaging,
+  listDiskSnapshotsForUi,
   resolveStagingDownload
 } = require('./sudregStaging');
 const {
@@ -41,6 +42,11 @@ const {
   getTempApplySummary,
   clearTempTables
 } = require('./sudregTempApply');
+const {
+  searchSubjektIndeks,
+  getSubjektIndeksSummary,
+  rebuildSubjektIndeksFromSubjekti
+} = require('./sudregSubjektIndeks');
 
 const port = Number(process.env.PORT) || 3000;
 
@@ -284,6 +290,21 @@ async function handleStagingList(res) {
   }
 }
 
+async function handleStagingSnapshots(res) {
+  try {
+    const staging = listStaging();
+    sendJson(res, 200, {
+      ok: true,
+      dataDir: staging.dataDir,
+      count: staging.snapshots.length,
+      snapshots: listDiskSnapshotsForUi(),
+      diffs: staging.diffs
+    });
+  } catch (e) {
+    sendJson(res, 500, { ok: false, error: e instanceof Error ? e.message : String(e) });
+  }
+}
+
 async function handleStagingSavePromjene(req, res) {
   const q = parseQueryString(req.url);
   const snapshotId = q.get('snapshot_id');
@@ -342,9 +363,11 @@ async function handleStagingSaveDiff(req, res) {
     let tempApply = null;
     const applyTemp = q.get('apply_temp') === '1';
     if (applyTemp && isDatabaseConfigured()) {
+      const onlySubjekti = q.get('only_subjekti');
       tempApply = await applyPromjeneDiffToTemp({
         snapshot_id_from: fromId,
-        snapshot_id_to: toId
+        snapshot_id_to: toId,
+        only_subjekti: onlySubjekti === '1' || onlySubjekti === 'true'
       });
     }
     sendJson(res, 200, {
@@ -377,9 +400,11 @@ async function handleTempApplyDiff(req, res) {
   }
   const t0 = Date.now();
   try {
+    const onlySubjekti = q.get('only_subjekti');
     const result = await applyPromjeneDiffToTemp({
       snapshot_id_from: fromId,
-      snapshot_id_to: toId
+      snapshot_id_to: toId,
+      only_subjekti: onlySubjekti === '1' || onlySubjekti === 'true'
     });
     sendJson(res, 200, {
       durationMs: Date.now() - t0,
@@ -401,6 +426,63 @@ async function handleTempSummary(res) {
   } catch (e) {
     sendJson(res, 500, {
       ok: false,
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
+}
+
+async function handleSubjektIndeks(req, res) {
+  if (!isDatabaseConfigured()) {
+    sendJson(res, 400, { ok: false, error: 'DATABASE_URL nije postavljen.' });
+    return;
+  }
+  const q = parseQueryString(req.url);
+  const t0 = Date.now();
+  try {
+    if (q.get('snapshot_id')) {
+      const result = await searchSubjektIndeks({
+        snapshot_id: q.get('snapshot_id'),
+        mbs: q.get('mbs'),
+        oib: q.get('oib'),
+        status: q.get('status'),
+        naziv: q.get('naziv'),
+        limit: q.get('limit'),
+        offset: q.get('offset')
+      });
+      sendJson(res, 200, { ok: true, durationMs: Date.now() - t0, ...result });
+      return;
+    }
+    const summary = await getSubjektIndeksSummary();
+    sendJson(res, 200, { ok: true, durationMs: Date.now() - t0, ...summary });
+  } catch (e) {
+    sendJson(res, 500, {
+      ok: false,
+      durationMs: Date.now() - t0,
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
+}
+
+async function handleSubjektIndeksRebuild(req, res) {
+  if (!isDatabaseConfigured()) {
+    sendJson(res, 400, { ok: false, error: 'DATABASE_URL nije postavljen.' });
+    return;
+  }
+  const q = parseQueryString(req.url);
+  const snapshotId = q.get('snapshot_id');
+  if (!snapshotId) {
+    sendJson(res, 400, { ok: false, error: 'snapshot_id je obavezan.' });
+    return;
+  }
+  const t0 = Date.now();
+  try {
+    await ensureDatabaseReady({ label: 'subjekti-indeks-rebuild' });
+    const result = await rebuildSubjektIndeksFromSubjekti(snapshotId);
+    sendJson(res, 200, { ok: true, durationMs: Date.now() - t0, ...result });
+  } catch (e) {
+    sendJson(res, 500, {
+      ok: false,
+      durationMs: Date.now() - t0,
       error: e instanceof Error ? e.message : String(e)
     });
   }
@@ -920,6 +1002,11 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (pathOnly === '/api/staging/snapshots' && req.method === 'GET') {
+    handleStagingSnapshots(res);
+    return;
+  }
+
   if (
     pathOnly === '/api/staging/download' &&
     (req.method === 'GET' || req.method === 'HEAD')
@@ -955,6 +1042,16 @@ const server = http.createServer((req, res) => {
 
   if (pathOnly === '/api/db/temp/apply-diff' && req.method === 'GET') {
     handleTempApplyDiff(req, res);
+    return;
+  }
+
+  if (pathOnly === '/api/db/subjekti-indeks/rebuild' && req.method === 'GET') {
+    handleSubjektIndeksRebuild(req, res);
+    return;
+  }
+
+  if (pathOnly === '/api/db/subjekti-indeks' && req.method === 'GET') {
+    handleSubjektIndeks(req, res);
     return;
   }
 

@@ -24,6 +24,7 @@ const {
   datasetFilePath,
   datasetsDir
 } = require('./sudregStaging');
+const { syncSubjektIndeksAfterDataset } = require('./sudregSubjektIndeks');
 
 function batchSize() {
   return getBatchSize();
@@ -341,6 +342,18 @@ async function syncDatasetToDb(snapshotId, datasetKey, opts = {}) {
     })
   );
 
+  let subjektIndeks = null;
+  try {
+    subjektIndeks = await syncSubjektIndeksAfterDataset(snapId, key, {
+      onProgress: opts.onProgress
+    });
+  } catch (e) {
+    subjektIndeks = {
+      ok: false,
+      error: e instanceof Error ? e.message : String(e)
+    };
+  }
+
   return {
     ok: true,
     snapshot_id: snapId,
@@ -348,7 +361,8 @@ async function syncDatasetToDb(snapshotId, datasetKey, opts = {}) {
     stagedDatasetId: staged.id,
     rowsOnDisk,
     rowsInserted,
-    rowsForProgress: rowsOnDisk
+    rowsForProgress: rowsOnDisk,
+    subjektIndeks
   };
 }
 
@@ -426,6 +440,7 @@ async function clearStagingDatabase() {
   await withPrismaRetry(async (db) => {
     await db.$executeRawUnsafe(`
       TRUNCATE TABLE
+        subjekti_indeks,
         maticni_redovi,
         promjene,
         staged_datasets,
@@ -452,17 +467,27 @@ async function getDbStagingSummary() {
     return { configured: false };
   }
   const db = getPrisma();
-  const [snapshots, diffs, promjenaCount, datasetCount, maticniCount, tempRuns, tempSubjekti, tempMaticni] =
-    await Promise.all([
-      db.stagedSnapshot.count(),
-      db.stagedDiff.count(),
-      db.promjena.count(),
-      db.stagedDataset.count(),
-      db.maticniRed.count(),
-      db.tempApplyRun.count(),
-      db.tempSubjekt.count(),
-      db.tempMaticni.count()
-    ]);
+  const [
+    snapshots,
+    diffs,
+    promjenaCount,
+    datasetCount,
+    maticniCount,
+    subjektIndeksCount,
+    tempRuns,
+    tempSubjekti,
+    tempMaticni
+  ] = await Promise.all([
+    db.stagedSnapshot.count(),
+    db.stagedDiff.count(),
+    db.promjena.count(),
+    db.stagedDataset.count(),
+    db.maticniRed.count(),
+    db.subjektIndeks.count(),
+    db.tempApplyRun.count(),
+    db.tempSubjekt.count(),
+    db.tempMaticni.count()
+  ]);
   const latestSnapshots = await db.stagedSnapshot.findMany({
     orderBy: { snapshotId: 'desc' },
     take: 10,
@@ -482,6 +507,7 @@ async function getDbStagingSummary() {
       promjene: promjenaCount,
       datasets: datasetCount,
       maticni_redovi: maticniCount,
+      subjekti_indeks: subjektIndeksCount,
       temp_apply_runs: tempRuns,
       temp_subjekti: tempSubjekti,
       temp_maticni: tempMaticni
