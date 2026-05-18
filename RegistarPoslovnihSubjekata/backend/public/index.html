@@ -343,6 +343,21 @@
       <button type="button" class="secondary" id="btn-sudreg">OAuth token</button>
       <button type="button" class="secondary" id="btn-sudreg-connectivity">Test Sudreg veze</button>
       <button type="button" class="secondary" id="btn-snapshots-json">JSON svih snimki</button>
+      <button type="button" class="sudreg" id="btn-save-all-snapshots-disk" title="Svi snapshot_id s API-ja: promjene + svi matični skupovi; postojeći JSONL se preskaču">
+        Snimi sve snimke na disk
+      </button>
+    </div>
+    <p class="hint" style="margin:0 0 0.75rem;font-size:0.82rem;">
+      <strong>Snimi sve snimke na disk</strong>: za svaki <code>snapshot_id</code> s Sudreg API-ja preuzima
+      <code>promjene.jsonl</code> i sve matične skupove (subjekti, tvrtka, sjedišta, …). Ako datoteka već postoji na disku, preskače se.
+      Može trajati dugo — prati progress ispod.
+    </p>
+    <div id="bulk-save-progress-panel" class="disk-snapshots-panel" hidden style="margin-bottom:0.75rem;">
+      <h4>Masovno spremanje na disk</h4>
+      <div class="progress-track" role="progressbar" style="margin:0.4rem 0;">
+        <div class="progress-fill disk" id="bulk-save-progress-bar" style="width:0%"></div>
+      </div>
+      <p class="progress-label" id="bulk-save-progress-label">Čekam…</p>
     </div>
     <div class="compare-panel">
       <p class="section-label">Usporedba dviju snimki</p>
@@ -592,6 +607,10 @@
     const btnSudregConnectivity = document.getElementById('btn-sudreg-connectivity');
     const btnSnapshotsRefresh = document.getElementById('btn-snapshots-refresh');
     const btnDiskSnapshotsRefresh = document.getElementById('btn-disk-snapshots-refresh');
+    const btnSaveAllSnapshotsDisk = document.getElementById('btn-save-all-snapshots-disk');
+    const bulkSaveProgressPanel = document.getElementById('bulk-save-progress-panel');
+    const bulkSaveProgressBar = document.getElementById('bulk-save-progress-bar');
+    const bulkSaveProgressLabel = document.getElementById('bulk-save-progress-label');
     const btnDeleteSnapshotDisk = document.getElementById('btn-delete-snapshot-disk');
     const btnDeleteSnapshotFromDisk = document.getElementById('btn-delete-snapshot-from-disk');
     const btnSnapshotsJson = document.getElementById('btn-snapshots-json');
@@ -797,6 +816,7 @@
       if (btnSudregConnectivity) btnSudregConnectivity.disabled = busy;
       btnSnapshotsRefresh.disabled = busy;
       if (btnDiskSnapshotsRefresh) btnDiskSnapshotsRefresh.disabled = busy;
+      if (btnSaveAllSnapshotsDisk) btnSaveAllSnapshotsDisk.disabled = busy;
       if (btnDeleteSnapshotDisk) btnDeleteSnapshotDisk.disabled = busy;
       if (btnDeleteSnapshotFromDisk) btnDeleteSnapshotFromDisk.disabled = busy;
       btnSnapshotsJson.disabled = busy;
@@ -1356,6 +1376,120 @@
     btnSnapshotsRefresh.addEventListener('click', () => loadSnapshotsFromSource());
     if (btnDiskSnapshotsRefresh) {
       btnDiskSnapshotsRefresh.addEventListener('click', () => loadDiskSnapshotsPanel());
+    }
+
+    let bulkSaveEventSource = null;
+
+    function resetBulkSaveProgress() {
+      if (bulkSaveProgressPanel) bulkSaveProgressPanel.hidden = false;
+      const track = bulkSaveProgressBar && bulkSaveProgressBar.parentElement;
+      setBar(bulkSaveProgressBar, track, 0);
+      if (bulkSaveProgressLabel) bulkSaveProgressLabel.textContent = 'Pokrećem…';
+    }
+
+    function applyBulkSaveProgress(ev) {
+      if (!ev || ev.type !== 'progress') return;
+      const track = bulkSaveProgressBar && bulkSaveProgressBar.parentElement;
+      let pct = 0;
+      if (ev.snapshot_percent != null) pct = ev.snapshot_percent;
+      else if (ev.snapshot_index != null && ev.snapshot_total) {
+        pct = Math.round((ev.snapshot_index / ev.snapshot_total) * 100);
+      }
+      if (ev.phase === 'bulk' && ev.step === 'snapshot_done' && ev.snapshot_index != null && ev.snapshot_total) {
+        pct = Math.round((ev.snapshot_index / ev.snapshot_total) * 100);
+      }
+      setBar(bulkSaveProgressBar, track, pct);
+      if (bulkSaveProgressLabel && ev.message) {
+        bulkSaveProgressLabel.textContent = ev.message;
+      }
+    }
+
+    function runBulkSaveAllSnapshotsToDisk() {
+      if (bulkSaveEventSource) {
+        bulkSaveEventSource.close();
+        bulkSaveEventSource = null;
+      }
+      const ok = window.confirm(
+        'Preuzeti sve snimke s Sudreg API-ja na disk?\n\n' +
+          'Za svaki snapshot_id: promjene + svi matični skupovi. Postojeće JSONL datoteke se preskaču.\n\n' +
+          'Može trajati jako dugo i potrošiti puno API poziva.'
+      );
+      if (!ok) return;
+
+      setBusy(true);
+      resetBulkSaveProgress();
+      show('Masovno spremanje snimki na disk (live progress)…', false);
+      meta.textContent = '/api/staging/save-all-snapshots/stream';
+
+      const t0 = performance.now();
+      const es = new EventSource('/api/staging/save-all-snapshots/stream');
+      bulkSaveEventSource = es;
+
+      es.onmessage = (msg) => {
+        let data;
+        try {
+          data = JSON.parse(msg.data);
+        } catch (_) {
+          return;
+        }
+        if (data.type === 'progress') {
+          applyBulkSaveProgress(data);
+          return;
+        }
+        if (data.type === 'done') {
+          es.close();
+          bulkSaveEventSource = null;
+          const ms = Math.round(performance.now() - t0);
+          const track = bulkSaveProgressBar && bulkSaveProgressBar.parentElement;
+          setBar(bulkSaveProgressBar, track, 100);
+          if (bulkSaveProgressLabel) {
+            const s = data.summary || {};
+            bulkSaveProgressLabel.textContent =
+              'Gotovo · ' +
+              (data.duration || fmtDuration(data.duration_ms != null ? data.duration_ms : ms)) +
+              ' · snimki=' +
+              (data.snapshot_count != null ? data.snapshot_count : '?') +
+              ' · promjene spremljeno/preskočeno=' +
+              (s.promjene_saved != null ? s.promjene_saved : '?') +
+              '/' +
+              (s.promjene_skipped != null ? s.promjene_skipped : '?') +
+              ' · skupova spremljeno/preskočeno=' +
+              (s.datasets_saved != null ? s.datasets_saved : '?') +
+              '/' +
+              (s.datasets_skipped != null ? s.datasets_skipped : '?') +
+              (s.errors ? ' · grešaka=' + s.errors : '');
+          }
+          meta.textContent =
+            '/api/staging/save-all-snapshots/stream · ' +
+            (data.ok ? 'OK' : 'završeno s greškama');
+          show(JSON.stringify(data, null, 2), !data.ok);
+          loadDiskSnapshotsPanel();
+          setBusy(false);
+          return;
+        }
+        if (data.type === 'error') {
+          es.close();
+          bulkSaveEventSource = null;
+          show('Greška: ' + (data.error || 'nepoznato'), true);
+          meta.textContent = '/api/staging/save-all-snapshots/stream';
+          if (bulkSaveProgressLabel) bulkSaveProgressLabel.textContent = 'Greška.';
+          setBusy(false);
+        }
+      };
+
+      es.onerror = () => {
+        if (es.readyState === EventSource.CLOSED) return;
+        es.close();
+        bulkSaveEventSource = null;
+        show('Veza prekinuta — server se možda restartao. Pokušaj ponovo.', true);
+        meta.textContent = '/api/staging/save-all-snapshots/stream';
+        if (bulkSaveProgressLabel) bulkSaveProgressLabel.textContent = 'Prekinuto.';
+        setBusy(false);
+      };
+    }
+
+    if (btnSaveAllSnapshotsDisk) {
+      btnSaveAllSnapshotsDisk.addEventListener('click', runBulkSaveAllSnapshotsToDisk);
     }
 
     async function deleteSnapshotFromDiskUi(snapshotId, label) {

@@ -90,6 +90,16 @@ function promjeneExists(snapshotId) {
   return fs.existsSync(promjenePath(snapshotId));
 }
 
+function datasetFileExists(snapshotId, datasetKey) {
+  const filePath = datasetFilePath(snapshotId, datasetKey);
+  if (!fs.existsSync(filePath)) return false;
+  try {
+    return fs.statSync(filePath).size > 0;
+  } catch (_) {
+    return false;
+  }
+}
+
 function writeJson(filePath, obj) {
   ensureDir(path.dirname(filePath));
   fs.writeFileSync(filePath, JSON.stringify(obj, null, 2), 'utf8');
@@ -184,6 +194,46 @@ async function saveSnapshotPromjene(snapshotId, opts = {}) {
     dir,
     promjenePath: outFile,
     meta
+  };
+}
+
+/**
+ * Jedan matični skup → JSONL na disk; preskoči ako datoteka već postoji.
+ */
+async function saveDatasetToDiskIfMissing(snapshotId, job, opts = {}) {
+  const { fetchAllDatasetPagesToJsonl } = require('./sudregDatasetFetch');
+  const id = String(snapshotId);
+  const outFile = datasetFilePath(id, job.datasetKey);
+
+  if (datasetFileExists(id, job.datasetKey) && !opts.force) {
+    return {
+      ok: true,
+      skipped: true,
+      snapshot_id: id,
+      dataset_key: job.datasetKey,
+      filePath: outFile
+    };
+  }
+
+  const fetched = await fetchAllDatasetPagesToJsonl(job, id, outFile, {
+    signal: opts.signal
+  });
+  writeDatasetMeta(id, job.datasetKey, outFile, {
+    api_path: fetched.apiPath,
+    label: fetched.label,
+    pages: fetched.pages,
+    totalCount: fetched.totalCount,
+    rowCount: fetched.rowCount
+  });
+
+  return {
+    ok: true,
+    skipped: false,
+    snapshot_id: id,
+    dataset_key: job.datasetKey,
+    rowCount: fetched.rowCount,
+    pages: fetched.pages,
+    filePath: outFile
   };
 }
 
@@ -540,7 +590,9 @@ module.exports = {
   diffPromjenePath,
   diffMetaPath,
   promjeneExists,
+  datasetFileExists,
   saveSnapshotPromjene,
+  saveDatasetToDiskIfMissing,
   savePromjeneDiff,
   listStaging,
   listDiskSnapshotsForUi,

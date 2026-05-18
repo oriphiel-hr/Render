@@ -38,6 +38,7 @@ const {
 const { ensureDatabaseReady } = require('./lib/prisma');
 const { runFullImport } = require('./sudregFullImport');
 const { runDifferentialImport } = require('./sudregDifferentialImport');
+const { runBulkSaveAllSnapshotsToDisk } = require('./sudregBulkDiskSave');
 const {
   applyPromjeneDiffToTemp,
   getTempApplySummary,
@@ -722,6 +723,76 @@ async function handleStagingImportAllStream(req, res) {
   if (!closed) res.end();
 }
 
+function parseBulkSaveQuery(req) {
+  const q = parseQueryString(req.url);
+  const idsRaw = q.get('snapshot_ids');
+  const snapshot_ids = idsRaw
+    ? idsRaw
+        .split(/[,;\s]+/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : undefined;
+  return {
+    force: q.get('force') === '1',
+    snapshot_ids
+  };
+}
+
+async function handleBulkSaveAllSnapshots(req, res) {
+  const opts = parseBulkSaveQuery(req);
+  const t0 = Date.now();
+  try {
+    const result = await runBulkSaveAllSnapshotsToDisk(opts);
+    sendJson(res, 200, {
+      durationMs: Date.now() - t0,
+      ...result
+    });
+  } catch (e) {
+    sendJson(res, 500, {
+      ok: false,
+      durationMs: Date.now() - t0,
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
+}
+
+async function handleBulkSaveAllSnapshotsStream(req, res) {
+  const opts = parseBulkSaveQuery(req);
+  const send = beginSse(res);
+  const t0 = Date.now();
+  let closed = false;
+  req.on('close', () => {
+    closed = true;
+  });
+
+  try {
+    const result = await runBulkSaveAllSnapshotsToDisk({
+      ...opts,
+      onProgress: (ev) => {
+        if (!closed) send(ev);
+      }
+    });
+    if (!closed) {
+      send({
+        type: 'done',
+        ok: result.ok,
+        durationMs: Date.now() - t0,
+        ...result
+      });
+    }
+  } catch (e) {
+    if (!closed) {
+      send({
+        type: 'error',
+        ok: false,
+        durationMs: Date.now() - t0,
+        error: e instanceof Error ? e.message : String(e)
+      });
+    }
+  }
+  if (!closed) res.end();
+}
+
 async function handleStagingSyncDb(req, res) {
   const q = parseQueryString(req.url);
   const snapshotId = q.get('snapshot_id');
@@ -1077,6 +1148,16 @@ const server = http.createServer((req, res) => {
 
   if (pathOnly === '/api/staging/import-all/stream' && req.method === 'GET') {
     handleStagingImportAllStream(req, res);
+    return;
+  }
+
+  if (pathOnly === '/api/staging/save-all-snapshots/stream' && req.method === 'GET') {
+    handleBulkSaveAllSnapshotsStream(req, res);
+    return;
+  }
+
+  if (pathOnly === '/api/staging/save-all-snapshots' && req.method === 'GET') {
+    handleBulkSaveAllSnapshots(req, res);
     return;
   }
 
