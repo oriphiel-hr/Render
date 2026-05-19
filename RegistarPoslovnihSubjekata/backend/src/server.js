@@ -39,6 +39,12 @@ const { ensureDatabaseReady } = require('./lib/prisma');
 const { runFullImport } = require('./sudregFullImport');
 const { runDifferentialImport } = require('./sudregDifferentialImport');
 const { runBulkSaveAllSnapshotsToDisk } = require('./sudregBulkDiskSave');
+const { runSaveAdjacentPromjeneDiffs } = require('./sudregAdjacentDiffs');
+const {
+  validateSnapshotMbsOrder,
+  validateMbsOrderInJsonl
+} = require('./sudregMbsOrderValidate');
+const { datasetFilePath, promjenePath } = require('./sudregStaging');
 const {
   applyPromjeneDiffToTemp,
   getTempApplySummary,
@@ -738,6 +744,110 @@ function parseBulkSaveQuery(req) {
   };
 }
 
+function parseAdjacentDiffsQuery(req) {
+  const q = parseQueryString(req.url);
+  const idsRaw = q.get('snapshot_ids');
+  const snapshot_ids = idsRaw
+    ? idsRaw
+        .split(/[,;\s]+/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : undefined;
+  const sourceRaw = (q.get('source') || 'api').toLowerCase();
+  return {
+    force: q.get('force') === '1',
+    save_snapshots: q.get('save_snapshots') !== '0',
+    source: sourceRaw === 'disk' ? 'disk' : 'api',
+    snapshot_ids
+  };
+}
+
+async function handleSaveAdjacentDiffs(req, res) {
+  const opts = parseAdjacentDiffsQuery(req);
+  const t0 = Date.now();
+  try {
+    const result = await runSaveAdjacentPromjeneDiffs(opts);
+    sendJson(res, 200, { durationMs: Date.now() - t0, ...result });
+  } catch (e) {
+    sendJson(res, 500, {
+      ok: false,
+      durationMs: Date.now() - t0,
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
+}
+
+async function handleSaveAdjacentDiffsStream(req, res) {
+  const opts = parseAdjacentDiffsQuery(req);
+  const send = beginSse(res);
+  const t0 = Date.now();
+  let closed = false;
+  req.on('close', () => {
+    closed = true;
+  });
+
+  try {
+    const result = await runSaveAdjacentPromjeneDiffs({
+      ...opts,
+      onProgress: (ev) => {
+        if (!closed) send(ev);
+      }
+    });
+    if (!closed) {
+      send({
+        type: 'done',
+        ok: result.ok,
+        durationMs: Date.now() - t0,
+        ...result
+      });
+    }
+  } catch (e) {
+    if (!closed) {
+      send({
+        type: 'error',
+        ok: false,
+        durationMs: Date.now() - t0,
+        error: e instanceof Error ? e.message : String(e)
+      });
+    }
+  }
+  if (!closed) res.end();
+}
+
+async function handleValidateMbsOrder(req, res) {
+  const q = parseQueryString(req.url);
+  const snapshotId = q.get('snapshot_id');
+  const datasetKey = q.get('dataset_key');
+  if (!snapshotId || !/^\d+$/.test(String(snapshotId).trim())) {
+    sendJson(res, 400, { ok: false, error: 'snapshot_id je obavezan (samo znamenke).' });
+    return;
+  }
+  const t0 = Date.now();
+  try {
+    if (datasetKey) {
+      const key = String(datasetKey).trim();
+      const filePath =
+        key === 'promjene' ? promjenePath(snapshotId) : datasetFilePath(snapshotId, key);
+      const result = await validateMbsOrderInJsonl(filePath);
+      sendJson(res, 200, {
+        durationMs: Date.now() - t0,
+        snapshot_id: String(snapshotId),
+        dataset_key: key,
+        ...result
+      });
+      return;
+    }
+    const result = await validateSnapshotMbsOrder(snapshotId);
+    sendJson(res, 200, { durationMs: Date.now() - t0, ...result });
+  } catch (e) {
+    sendJson(res, 500, {
+      ok: false,
+      durationMs: Date.now() - t0,
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
+}
+
 async function handleBulkSaveAllSnapshots(req, res) {
   const opts = parseBulkSaveQuery(req);
   const t0 = Date.now();
@@ -1148,6 +1258,21 @@ const server = http.createServer((req, res) => {
 
   if (pathOnly === '/api/staging/import-all/stream' && req.method === 'GET') {
     handleStagingImportAllStream(req, res);
+    return;
+  }
+
+  if (pathOnly === '/api/staging/validate-mbs-order' && req.method === 'GET') {
+    handleValidateMbsOrder(req, res);
+    return;
+  }
+
+  if (pathOnly === '/api/staging/save-adjacent-diffs/stream' && req.method === 'GET') {
+    handleSaveAdjacentDiffsStream(req, res);
+    return;
+  }
+
+  if (pathOnly === '/api/staging/save-adjacent-diffs' && req.method === 'GET') {
+    handleSaveAdjacentDiffs(req, res);
     return;
   }
 

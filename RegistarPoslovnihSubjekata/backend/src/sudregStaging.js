@@ -68,6 +68,23 @@ function saveDatasetJsonl(snapshotId, datasetKey, rows, metaExtra = {}) {
 }
 
 /** Meta nakon streamanog JSONL (rowCount već poznat). */
+function datasetMetaPath(snapshotId, datasetKey) {
+  return path.join(
+    datasetsDir(snapshotId),
+    `${String(datasetKey).replace(/[^a-zA-Z0-9._-]+/g, '_')}.meta.json`
+  );
+}
+
+function readDatasetMeta(snapshotId, datasetKey) {
+  const metaFile = datasetMetaPath(snapshotId, datasetKey);
+  if (!fs.existsSync(metaFile)) return null;
+  try {
+    return readJson(metaFile);
+  } catch (_) {
+    return null;
+  }
+}
+
 function writeDatasetMeta(snapshotId, datasetKey, filePath, metaExtra = {}) {
   const rowCount = metaExtra.rowCount != null ? metaExtra.rowCount : 0;
   const meta = {
@@ -78,16 +95,57 @@ function writeDatasetMeta(snapshotId, datasetKey, filePath, metaExtra = {}) {
     file: path.basename(filePath),
     ...metaExtra
   };
-  const metaFile = path.join(
-    datasetsDir(snapshotId),
-    `${String(datasetKey).replace(/[^a-zA-Z0-9._-]+/g, '_')}.meta.json`
-  );
+  const metaFile = datasetMetaPath(snapshotId, datasetKey);
   writeJson(metaFile, meta);
   return { filePath, meta, metaFile };
 }
 
+async function attachMbsOrderToDatasetMeta(snapshotId, datasetKey, filePath, metaExtra = {}) {
+  const { validateMbsOrderInJsonl, mbsOrderMetaSlice } = require('./sudregMbsOrderValidate');
+  const existing = readDatasetMeta(snapshotId, datasetKey) || {};
+  const validation = await validateMbsOrderInJsonl(filePath);
+  const mbs_order = {
+    checked_at: new Date().toISOString(),
+    ...mbsOrderMetaSlice(validation)
+  };
+  writeDatasetMeta(snapshotId, datasetKey, filePath, {
+    ...existing,
+    ...metaExtra,
+    mbs_order
+  });
+  return { validation, mbs_order };
+}
+
+async function attachMbsOrderToPromjeneMeta(snapshotId, existingMeta = null) {
+  const { validateMbsOrderInJsonl, mbsOrderMetaSlice } = require('./sudregMbsOrderValidate');
+  const id = String(snapshotId);
+  const outFile = promjenePath(id);
+  const validation = await validateMbsOrderInJsonl(outFile);
+  const mbs_order = {
+    checked_at: new Date().toISOString(),
+    ...mbsOrderMetaSlice(validation)
+  };
+  const meta = existingMeta ? { ...existingMeta } : readJson(metaPath(id));
+  if (!meta.endpoints) meta.endpoints = {};
+  if (!meta.endpoints.promjene) meta.endpoints.promjene = {};
+  meta.endpoints.promjene.mbs_order = mbs_order;
+  meta.endpoints.promjene.sorted_by_mbs = validation.ok === true;
+  writeJson(metaPath(id), meta);
+  return { validation, mbs_order, meta };
+}
+
 function promjeneExists(snapshotId) {
   return fs.existsSync(promjenePath(snapshotId));
+}
+
+function diffPromjeneExists(fromId, toId) {
+  const filePath = diffPromjenePath(fromId, toId);
+  if (!fs.existsSync(filePath)) return false;
+  try {
+    return fs.statSync(filePath).size > 0;
+  } catch (_) {
+    return false;
+  }
 }
 
 function datasetFileExists(snapshotId, datasetKey) {
@@ -150,14 +208,21 @@ async function saveSnapshotPromjene(snapshotId, opts = {}) {
   const outFile = promjenePath(id);
 
   if (promjeneExists(id) && !opts.force) {
-    const meta = readJson(metaPath(id));
+    let meta = readJson(metaPath(id));
+    let mbs_order = meta?.endpoints?.promjene?.mbs_order;
+    if (opts.validate_mbs !== false && fs.existsSync(outFile)) {
+      const attached = await attachMbsOrderToPromjeneMeta(id, meta);
+      meta = attached.meta;
+      mbs_order = attached.mbs_order;
+    }
     return {
       ok: true,
       skipped: true,
       snapshot_id: id,
       dir,
       promjenePath: outFile,
-      meta
+      meta,
+      mbs_order
     };
   }
 
@@ -168,6 +233,9 @@ async function saveSnapshotPromjene(snapshotId, opts = {}) {
     omit_nulls: opts.omit_nulls,
     signal: opts.signal
   });
+
+  const { validateMbsOrderInJsonl, mbsOrderMetaSlice } = require('./sudregMbsOrderValidate');
+  const mbsValidation = await validateMbsOrderInJsonl(outFile);
 
   const meta = {
     snapshot_id: id,
@@ -180,8 +248,12 @@ async function saveSnapshotPromjene(snapshotId, opts = {}) {
         totalCount: fetched.totalCount,
         pages: fetched.pages,
         complete: fetched.complete,
-        sorted_by_mbs: false,
-        note: 'Redoslijed stranica API-ja; za SCN diff koristi comparePromjeneSnapshots (sort u memoriji).'
+        sorted_by_mbs: mbsValidation.ok === true,
+        note: 'Redoslijed stranica API-ja; za SCN diff koristi comparePromjeneSnapshots (sort u memoriji).',
+        mbs_order: {
+          checked_at: new Date().toISOString(),
+          ...mbsOrderMetaSlice(mbsValidation)
+        }
       }
     }
   };
@@ -193,7 +265,8 @@ async function saveSnapshotPromjene(snapshotId, opts = {}) {
     snapshot_id: id,
     dir,
     promjenePath: outFile,
-    meta
+    meta,
+    mbs_order: meta.endpoints.promjene.mbs_order
   };
 }
 
@@ -206,25 +279,38 @@ async function saveDatasetToDiskIfMissing(snapshotId, job, opts = {}) {
   const outFile = datasetFilePath(id, job.datasetKey);
 
   if (datasetFileExists(id, job.datasetKey) && !opts.force) {
+    let mbs_order;
+    if (opts.validate_mbs !== false) {
+      const attached = await attachMbsOrderToDatasetMeta(id, job.datasetKey, outFile);
+      mbs_order = attached.mbs_order;
+    }
     return {
       ok: true,
       skipped: true,
       snapshot_id: id,
       dataset_key: job.datasetKey,
-      filePath: outFile
+      filePath: outFile,
+      mbs_order
     };
   }
 
   const fetched = await fetchAllDatasetPagesToJsonl(job, id, outFile, {
     signal: opts.signal
   });
-  writeDatasetMeta(id, job.datasetKey, outFile, {
+  const metaExtra = {
     api_path: fetched.apiPath,
     label: fetched.label,
     pages: fetched.pages,
     totalCount: fetched.totalCount,
     rowCount: fetched.rowCount
-  });
+  };
+  let mbs_order;
+  if (opts.validate_mbs !== false) {
+    const attached = await attachMbsOrderToDatasetMeta(id, job.datasetKey, outFile, metaExtra);
+    mbs_order = attached.mbs_order;
+  } else {
+    writeDatasetMeta(id, job.datasetKey, outFile, metaExtra);
+  }
 
   return {
     ok: true,
@@ -233,7 +319,8 @@ async function saveDatasetToDiskIfMissing(snapshotId, job, opts = {}) {
     dataset_key: job.datasetKey,
     rowCount: fetched.rowCount,
     pages: fetched.pages,
-    filePath: outFile
+    filePath: outFile,
+    mbs_order
   };
 }
 
@@ -248,6 +335,31 @@ async function savePromjeneDiff(fromId, toId, opts = {}) {
 
   if (from === to) {
     throw new Error('snapshot_id_from i snapshot_id_to moraju biti različiti.');
+  }
+
+  if (!opts.force && diffPromjeneExists(from, to)) {
+    let meta = null;
+    const mp = diffMetaPath(from, to);
+    if (fs.existsSync(mp)) {
+      try {
+        meta = readJson(mp);
+      } catch (_) {
+        meta = null;
+      }
+    }
+    return {
+      ok: true,
+      skipped: true,
+      snapshot_id_from: from,
+      snapshot_id_to: to,
+      dir: diffDir(from, to),
+      promjenePath: diffPromjenePath(from, to),
+      metaPath: mp,
+      source: meta?.source || 'disk',
+      compare: meta?.compare,
+      stats: meta?.stats,
+      diffRows: meta?.stats?.diffRows ?? null
+    };
   }
 
   if (saveMissing) {
@@ -410,7 +522,8 @@ function listStaging() {
               row_count: dm.rowCount != null ? Number(dm.rowCount) : null,
               saved_at: dm.saved_at || null,
               has_file: hasFile,
-              size_bytes: hasFile ? fs.statSync(jsonlPath).size : 0
+              size_bytes: hasFile ? fs.statSync(jsonlPath).size : 0,
+              mbs_order: dm.mbs_order || null
             });
           } catch (_) {
             datasets.push({ dataset_key: df, parse_error: true });
@@ -590,6 +703,7 @@ module.exports = {
   diffPromjenePath,
   diffMetaPath,
   promjeneExists,
+  diffPromjeneExists,
   datasetFileExists,
   saveSnapshotPromjene,
   saveDatasetToDiskIfMissing,

@@ -86,15 +86,40 @@ async function saveOneSnapshotToDisk(snapshotId, opts = {}) {
   }
 
   const skippedDatasets = datasets.filter((d) => d.skipped).length;
+
+  emitProgress(onProgress, {
+    phase: 'snapshot',
+    step: 'mbs_validate',
+    message: `Snimka #${id}: provjera MBS redoslijeda…`,
+    snapshot_id: id
+  });
+
+  const { validateSnapshotMbsOrder } = require('./sudregMbsOrderValidate');
+  const mbs_order = await validateSnapshotMbsOrder(id, {
+    signal: opts.signal,
+    onProgress
+  });
+
+  emitProgress(onProgress, {
+    phase: 'snapshot',
+    step: 'mbs_validate_done',
+    message: `Snimka #${id}: MBS redoslijed — ${mbs_order.ok ? 'OK' : mbs_order.failed_count + ' grešaka'}`,
+    snapshot_id: id,
+    mbs_ok: mbs_order.ok,
+    mbs_failed: mbs_order.failed_count
+  });
+
   return {
     snapshot_id: id,
     promjene: {
       skipped: promjene.skipped,
-      rowCount: promjene.meta?.endpoints?.promjene?.rowCount
+      rowCount: promjene.meta?.endpoints?.promjene?.rowCount,
+      mbs_order: promjene.mbs_order
     },
     datasets,
     datasets_saved: datasets.length - skippedDatasets,
-    datasets_skipped: skippedDatasets
+    datasets_skipped: skippedDatasets,
+    mbs_order
   };
 }
 
