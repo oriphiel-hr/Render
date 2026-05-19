@@ -48,6 +48,30 @@ function diffPromjenePath(fromId, toId) {
   return path.join(diffDir(fromId, toId), PROMJENE_FILE);
 }
 
+function diffDatasetsDir(fromId, toId) {
+  return path.join(diffDir(fromId, toId), 'datasets');
+}
+
+function diffDatasetFilePath(fromId, toId, datasetKey) {
+  const safe = String(datasetKey).replace(/[^a-zA-Z0-9._-]+/g, '_');
+  return path.join(diffDatasetsDir(fromId, toId), `${safe}.jsonl`);
+}
+
+function diffDatasetMetaPath(fromId, toId, datasetKey) {
+  const safe = String(datasetKey).replace(/[^a-zA-Z0-9._-]+/g, '_');
+  return path.join(diffDatasetsDir(fromId, toId), `${safe}.meta.json`);
+}
+
+function diffDatasetFileExists(fromId, toId, datasetKey) {
+  const filePath = diffDatasetFilePath(fromId, toId, datasetKey);
+  if (!fs.existsSync(filePath)) return false;
+  try {
+    return fs.statSync(filePath).size > 0;
+  } catch (_) {
+    return false;
+  }
+}
+
 function datasetsDir(snapshotId) {
   return path.join(snapshotDir(snapshotId), 'datasets');
 }
@@ -347,6 +371,15 @@ async function savePromjeneDiff(fromId, toId, opts = {}) {
         meta = null;
       }
     }
+    let maticni_diffs = null;
+    if (opts.save_maticni_diffs !== false && opts.save_maticni_diffs !== '0') {
+      const { saveMaticniDiffsToDisk } = require('./sudregMaticniDiff');
+      maticni_diffs = await saveMaticniDiffsToDisk(from, to, {
+        force: opts.force,
+        signal: opts.signal,
+        onProgress: opts.onProgress
+      });
+    }
     return {
       ok: true,
       skipped: true,
@@ -358,7 +391,8 @@ async function savePromjeneDiff(fromId, toId, opts = {}) {
       source: meta?.source || 'disk',
       compare: meta?.compare,
       stats: meta?.stats,
-      diffRows: meta?.stats?.diffRows ?? null
+      diffRows: meta?.stats?.diffRows ?? null,
+      maticni_diffs
     };
   }
 
@@ -407,6 +441,23 @@ async function savePromjeneDiff(fromId, toId, opts = {}) {
   };
   writeJson(diffMetaPath(from, to), diffMeta);
 
+  let maticni_diffs = null;
+  if (opts.save_maticni_diffs !== false && opts.save_maticni_diffs !== '0') {
+    const { saveMaticniDiffsToDisk } = require('./sudregMaticniDiff');
+    maticni_diffs = await saveMaticniDiffsToDisk(from, to, {
+      force: opts.force,
+      signal: opts.signal,
+      onProgress: opts.onProgress
+    });
+    if (maticni_diffs && !maticni_diffs.skipped) {
+      try {
+        diffMeta = readJson(diffMetaPath(from, to));
+      } catch (_) {
+        /* keep previous */
+      }
+    }
+  }
+
   return {
     ok: true,
     dir,
@@ -415,7 +466,8 @@ async function savePromjeneDiff(fromId, toId, opts = {}) {
     source,
     compare: result.compare,
     stats: result.stats,
-    diffRows: result.diffRows ?? result.stats?.diffRows ?? 0
+    diffRows: result.diffRows ?? result.stats?.diffRows ?? 0,
+    maticni_diffs
   };
 }
 
@@ -430,18 +482,30 @@ const ALLOWED_DOWNLOAD_FILES = {
  */
 function resolveStagingDownload(q) {
   const fileKey = (q.get('file') || 'promjene').toLowerCase();
-  const fileName = ALLOWED_DOWNLOAD_FILES[fileKey];
-  if (!fileName) {
-    return { error: 'file mora biti promjene ili meta.' };
-  }
-
   const from = q.get('snapshot_id_from') || q.get('from');
   const to = q.get('snapshot_id_to') || q.get('to');
   const kind = (q.get('kind') || '').toLowerCase();
+  const datasetKey = q.get('dataset_key') || q.get('dataset');
 
   if (kind === 'diff' || (from && to)) {
     if (!from || !to) {
       return { error: 'Za diff: snapshot_id_from i snapshot_id_to (ili from i to).' };
+    }
+    if (fileKey === 'dataset') {
+      if (!datasetKey) {
+        return { error: 'Za file=dataset dodaj dataset_key (npr. subjekti, tvrtka).' };
+      }
+      const safe = String(datasetKey).replace(/[^a-zA-Z0-9._-]+/g, '_');
+      const filePath = diffDatasetFilePath(from, to, datasetKey);
+      return {
+        filePath,
+        downloadName: `diff_${safe}_${from}_to_${to}.jsonl`,
+        contentType: 'application/x-ndjson'
+      };
+    }
+    const fileName = ALLOWED_DOWNLOAD_FILES[fileKey];
+    if (!fileName) {
+      return { error: 'file mora biti promjene, meta ili dataset (+ dataset_key).' };
     }
     const filePath = path.join(diffDir(from, to), fileName);
     const downloadName =
@@ -453,6 +517,11 @@ function resolveStagingDownload(q) {
       downloadName,
       contentType: fileKey === 'meta' ? 'application/json; charset=utf-8' : 'application/x-ndjson'
     };
+  }
+
+  const fileName = ALLOWED_DOWNLOAD_FILES[fileKey];
+  if (!fileName) {
+    return { error: 'file mora biti promjene ili meta.' };
   }
 
   const snapshotId = q.get('snapshot_id');
@@ -631,6 +700,10 @@ function listDiskDiffsForUi() {
     const toSnap = snapById.get(to);
     const onDisk = Boolean(existing?.has_promjene);
     const bothPromjene = Boolean(fromSnap?.has_promjene && toSnap?.has_promjene);
+    const dsItems = existing?.meta?.datasets?.items;
+    const maticniCount = Array.isArray(dsItems)
+      ? dsItems.filter((i) => i && !i.skipped && (i.rowCount > 0 || i.filePath)).length
+      : 0;
     return {
       key: `${from}_to_${to}`,
       snapshot_id_from: from,
@@ -651,7 +724,9 @@ function listDiskDiffsForUi() {
       novi_zapisi: existing?.novi_zapisi ?? null,
       promjene_count: existing?.promjene_count ?? null,
       promjene_size_bytes: existing?.promjene_size_bytes ?? null,
-      saved_at: existing?.saved_at ?? null
+      saved_at: existing?.saved_at ?? null,
+      maticni_datasets: maticniCount,
+      neaktivni_mbs: existing?.meta?.datasets?.neaktivni_mbs ?? null
     };
   }
 
@@ -799,6 +874,9 @@ module.exports = {
   metaPath,
   diffPromjenePath,
   diffMetaPath,
+  diffDatasetsDir,
+  diffDatasetFilePath,
+  diffDatasetFileExists,
   promjeneExists,
   diffPromjeneExists,
   datasetFileExists,
@@ -815,6 +893,7 @@ module.exports = {
   countJsonlLines,
   writeJsonl,
   readJson,
+  writeJson,
   datasetsDir,
   datasetFilePath,
   saveDatasetJsonl,

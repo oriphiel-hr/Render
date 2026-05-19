@@ -378,6 +378,33 @@ async function handleStagingSavePromjene(req, res) {
   }
 }
 
+async function handleStagingSaveMaticniDiffs(req, res) {
+  const q = parseQueryString(req.url);
+  const fromId = q.get('snapshot_id_from');
+  const toId = q.get('snapshot_id_to');
+  if (!fromId || !toId) {
+    sendJson(res, 400, {
+      ok: false,
+      error: 'snapshot_id_from i snapshot_id_to su obavezni.'
+    });
+    return;
+  }
+  const t0 = Date.now();
+  try {
+    const { saveMaticniDiffsToDisk } = require('./sudregMaticniDiff');
+    const result = await saveMaticniDiffsToDisk(fromId, toId, {
+      force: q.get('force') === '1'
+    });
+    sendJson(res, 200, { durationMs: Date.now() - t0, ...result });
+  } catch (e) {
+    sendJson(res, 500, {
+      ok: false,
+      durationMs: Date.now() - t0,
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
+}
+
 async function handleStagingSaveDiff(req, res) {
   const q = parseQueryString(req.url);
   const fromId = q.get('snapshot_id_from');
@@ -1245,6 +1272,11 @@ const server = http.createServer((req, res) => {
 
   if (pathOnly === '/api/staging/save-diff' && req.method === 'GET') {
     handleStagingSaveDiff(req, res);
+    return;
+  }
+
+  if (pathOnly === '/api/staging/save-maticni-diffs' && req.method === 'GET') {
+    handleStagingSaveMaticniDiffs(req, res);
     return;
   }
 

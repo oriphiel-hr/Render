@@ -38,7 +38,7 @@ function isActiveSubjekt(row) {
 }
 
 function markNeaktivan(payload) {
-  const next = { ...payload, status: 0 };
+  const next = { ...payload, status: 0, aktiv: 0 };
   if (next.datum_brisanja == null && payload.datum_brisanja == null) {
     next.datum_brisanja = new Date().toISOString().slice(0, 10);
   }
@@ -885,5 +885,9 @@ module.exports = {
   markNeaktivan,
   markRowNeaktivan,
   rowKeyForRow,
-  dedupeMaticniPending
+  dedupeMaticniPending,
+  toMbs,
+  appendNeaktivniToAffected,
+  indexAllDatasetsForMbs,
+  SUBJEKTI_KEY
 };

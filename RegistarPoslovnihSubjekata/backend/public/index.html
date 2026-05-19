@@ -449,6 +449,7 @@
                 <th>Diff redova</th>
                 <th>Novi / promjene</th>
                 <th>Status</th>
+                <th>Matični diff</th>
                 <th>Spremljeno</th>
               </tr>
             </thead>
@@ -1223,6 +1224,13 @@
           : d.can_generate
             ? 'čeka generiranje'
             : '—';
+        const maticniCell =
+          d.maticni_datasets != null && d.maticni_datasets > 0
+            ? d.maticni_datasets + ' skupova' +
+              (d.neaktivni_mbs != null ? ' · neakt. ' + d.neaktivni_mbs : '')
+            : d.on_disk
+              ? '—'
+              : '—';
         const saved = d.saved_at
           ? String(d.saved_at).replace('T', ' ').slice(0, 19)
           : '—';
@@ -1253,6 +1261,9 @@
           escapeHtml(title) +
           '">' +
           escapeHtml(status) +
+          '</td>' +
+          '<td title="JSONL u diffs/…/datasets/">' +
+          escapeHtml(maticniCell) +
           '</td>' +
           '<td>' +
           escapeHtml(saved) +

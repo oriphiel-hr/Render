@@ -163,7 +163,8 @@ async function runDifferentialImport(opts = {}) {
       'promjene_snapshot_to',
       'promjene_diff',
       'subjekti_snapshot_from',
-      'subjekti_snapshot_to'
+      'subjekti_snapshot_to',
+      'maticni_diff'
     ];
     const diskStepTotal = diskStepNames.length;
     let diskStepIndex = 0;
@@ -257,6 +258,39 @@ async function runDifferentialImport(opts = {}) {
     diskStepIndex += 1;
     addStep('subjekti_snapshot_to', { snapshot_id: toId, rowCount: subTo.rowCount });
     emitDisk('subjekti_snapshot_to', `Subjekti #${toId}: ${subTo.rowCount} redova.`, { done: true });
+
+    maybeGc(onProgress, 'Prije diff matičnih skupova');
+
+    emitDisk('maticni_diff', `Diff matičnih skupova #${fromId} → #${toId}…`);
+    const { saveMaticniDiffsToDisk } = require('./sudregMaticniDiff');
+    const maticniDiff = await saveMaticniDiffsToDisk(fromId, toId, {
+      force: opts.force,
+      signal: opts.signal,
+      onProgress: (ev) =>
+        emitProgress(onProgress, {
+          phase: 'disk',
+          step: 'maticni_diff',
+          message: ev.message || 'Diff matični skupovi…',
+          import_mode: 'diff',
+          import_phase: phase,
+          dataset_key: ev.dataset_key
+        })
+    });
+    addStep('maticni_diff', {
+      snapshot_id_from: fromId,
+      snapshot_id_to: toId,
+      skipped: maticniDiff.skipped,
+      mbs_count: maticniDiff.mbs_count,
+      neaktivni_mbs: maticniDiff.neaktivni_mbs,
+      datasets: maticniDiff.datasets
+    });
+    emitDisk(
+      'maticni_diff',
+      `Matični diff: ${maticniDiff.mbs_count != null ? maticniDiff.mbs_count + ' MBS' : 'gotovo'}` +
+        (maticniDiff.neaktivni_mbs != null ? `, neaktivni ${maticniDiff.neaktivni_mbs}` : '') +
+        '.',
+      { done: true }
+    );
 
     diskDurationMs = Date.now() - diskT0;
     emitProgress(onProgress, {
