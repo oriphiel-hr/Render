@@ -24,6 +24,7 @@ const {
   savePromjeneDiff,
   listStaging,
   listDiskSnapshotsForUi,
+  listDiskDiffsForUi,
   deleteSnapshotFromDisk,
   resolveStagingDownload
 } = require('./sudregStaging');
@@ -306,7 +307,8 @@ async function handleStagingSnapshots(res) {
       dataDir: staging.dataDir,
       count: staging.snapshots.length,
       snapshots: listDiskSnapshotsForUi(),
-      diffs: staging.diffs
+      diffs: staging.diffs,
+      disk_diffs: listDiskDiffsForUi()
     });
   } catch (e) {
     sendJson(res, 500, { ok: false, error: e instanceof Error ? e.message : String(e) });

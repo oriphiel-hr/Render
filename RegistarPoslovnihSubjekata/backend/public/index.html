@@ -217,6 +217,38 @@
     table.disk-snapshots-table tr.selected {
       background: rgba(46, 184, 138, 0.18);
     }
+    table.disk-snapshots-table tr.diff-row-missing {
+      opacity: 0.72;
+      color: var(--muted);
+    }
+    table.disk-snapshots-table tr.diff-row-missing td {
+      color: var(--muted);
+    }
+    table.disk-snapshots-table tr.diff-row-active {
+      cursor: pointer;
+    }
+    table.disk-snapshots-table tr.diff-row-active:hover {
+      background: rgba(91, 156, 255, 0.12);
+    }
+    table.disk-snapshots-table tr.diff-row-active.selected {
+      background: rgba(91, 156, 255, 0.2);
+    }
+    table.disk-snapshots-table input[type="checkbox"] {
+      width: 1rem;
+      height: 1rem;
+      cursor: pointer;
+      accent-color: var(--accent);
+    }
+    table.disk-snapshots-table input[type="checkbox"]:disabled {
+      opacity: 0.28;
+      cursor: not-allowed;
+      filter: grayscale(0.5);
+    }
+    .diff-panel-sep {
+      margin: 0.75rem 0 0.5rem;
+      border: 0;
+      border-top: 1px solid var(--border);
+    }
     .badge-disk {
       display: inline-block;
       padding: 0.1rem 0.35rem;
@@ -403,6 +435,37 @@
           </table>
         </div>
         <p class="hint" style="margin:0.45rem 0 0;font-size:0.78rem;">Klik na red: postavi noviju snimku (2). Za izvor „Snimke na disku” koristi padajuće liste.</p>
+        <hr class="diff-panel-sep" />
+        <h4 style="margin:0 0 0.35rem;font-size:0.88rem;font-weight:600;">Diff promjena na disku</h4>
+        <p id="disk-diffs-summary" class="hint" style="margin:0 0 0.5rem;">Učitavam diff-ove…</p>
+        <div class="disk-snapshots-table-wrap">
+          <table class="disk-snapshots-table" id="disk-diffs-table">
+            <thead>
+              <tr>
+                <th style="width:2.2rem;" title="Označi za preuzimanje (samo generirani diff)">
+                  <input type="checkbox" id="disk-diffs-select-all" disabled title="Označi sve dostupne" />
+                </th>
+                <th>Par</th>
+                <th>Diff redova</th>
+                <th>Novi / promjene</th>
+                <th>Status</th>
+                <th>Spremljeno</th>
+              </tr>
+            </thead>
+            <tbody id="disk-diffs-tbody"></tbody>
+          </table>
+        </div>
+        <p class="hint" style="margin:0.45rem 0 0;font-size:0.78rem;">
+          Zasjenjeni checkbox: diff još nije na disku. Klik na red s diffom postavlja stariju/noviju snimku.
+        </p>
+        <div class="actions" style="margin-top:0.5rem;flex-wrap:wrap;">
+          <button type="button" class="secondary" id="btn-dl-selected-diff-promjene" disabled>
+            Preuzmi označene — promjene
+          </button>
+          <button type="button" class="secondary" id="btn-dl-selected-diff-meta" disabled>
+            Preuzmi označene — meta
+          </button>
+        </div>
         <div class="actions" style="margin-top:0.5rem;">
           <button type="button" class="danger" id="btn-delete-snapshot-disk" title="Briše snapshots/{id} i povezane diff mape na disku — ne dira PostgreSQL">
             Obriši noviju snimku s diska
@@ -690,6 +753,13 @@
     let snapshotsSorted = [];
     const diskSnapshotsById = {};
     let diskSnapshotsSorted = [];
+    const diskDiffsByKey = {};
+    let diskDiffsSorted = [];
+    const diskDiffsTbody = document.getElementById('disk-diffs-tbody');
+    const diskDiffsSummary = document.getElementById('disk-diffs-summary');
+    const diskDiffsSelectAll = document.getElementById('disk-diffs-select-all');
+    const btnDlSelectedDiffPromjene = document.getElementById('btn-dl-selected-diff-promjene');
+    const btnDlSelectedDiffMeta = document.getElementById('btn-dl-selected-diff-meta');
 
     const DATASET_CATALOG = {
       subjekti: {
@@ -829,6 +899,11 @@
       if (btnValidateMbsOrder) btnValidateMbsOrder.disabled = busy;
       if (btnSaveAllSnapshotsDisk) btnSaveAllSnapshotsDisk.disabled = busy;
       if (btnSaveAdjacentDiffs) btnSaveAdjacentDiffs.disabled = busy;
+      if (busy) {
+        if (btnDlSelectedDiffPromjene) btnDlSelectedDiffPromjene.disabled = true;
+        if (btnDlSelectedDiffMeta) btnDlSelectedDiffMeta.disabled = true;
+        if (diskDiffsSelectAll) diskDiffsSelectAll.disabled = true;
+      }
       if (btnDeleteSnapshotDisk) btnDeleteSnapshotDisk.disabled = busy;
       if (btnDeleteSnapshotFromDisk) btnDeleteSnapshotFromDisk.disabled = busy;
       btnSnapshotsJson.disabled = busy;
@@ -884,6 +959,7 @@
       } else {
         snapshotSelect.disabled = !hasSnapshots;
         snapshotFromSelect.disabled = !hasSnapshots;
+        updateDiskDiffDownloadButtons();
       }
     }
 
@@ -1065,6 +1141,177 @@
         const id = tr.getAttribute('data-snapshot-id');
         tr.classList.toggle('selected', id === toId || id === fromId);
       });
+      highlightDiskDiffSelection();
+    }
+
+    function highlightDiskDiffSelection() {
+      if (!diskDiffsTbody) return;
+      const toId = snapshotSelect.value;
+      const fromId = snapshotFromSelect.value;
+      diskDiffsTbody.querySelectorAll('tr[data-diff-key]').forEach((tr) => {
+        const f = tr.getAttribute('data-from');
+        const t = tr.getAttribute('data-to');
+        tr.classList.toggle('selected', f === fromId && t === toId);
+      });
+    }
+
+    function getSelectedDiskDiffs() {
+      if (!diskDiffsTbody) return [];
+      const out = [];
+      diskDiffsTbody.querySelectorAll('input.disk-diff-cb:checked').forEach((cb) => {
+        const key = cb.getAttribute('data-diff-key');
+        if (key && diskDiffsByKey[key]) out.push(diskDiffsByKey[key]);
+      });
+      return out;
+    }
+
+    function updateDiskDiffDownloadButtons() {
+      const selected = getSelectedDiskDiffs();
+      const n = selected.length;
+      if (btnDlSelectedDiffPromjene) btnDlSelectedDiffPromjene.disabled = n === 0;
+      if (btnDlSelectedDiffMeta) btnDlSelectedDiffMeta.disabled = n === 0;
+    }
+
+    function renderDiskDiffsTable(rows) {
+      if (!diskDiffsTbody || !diskDiffsSummary) return;
+      diskDiffsTbody.innerHTML = '';
+      const list = Array.isArray(rows) ? rows : [];
+      const onDisk = list.filter((d) => d.on_disk).length;
+      const missing = list.filter((d) => !d.on_disk).length;
+      if (!list.length) {
+        diskDiffsSummary.textContent =
+          'Nema susjednih parova snimki — trebaju barem dvije snimke na disku.';
+        if (diskDiffsSelectAll) {
+          diskDiffsSelectAll.disabled = true;
+          diskDiffsSelectAll.checked = false;
+        }
+        updateDiskDiffDownloadButtons();
+        return;
+      }
+      diskDiffsSummary.textContent =
+        list.length +
+        ' parova' +
+        (onDisk ? ' · ' + onDisk + ' diff na disku' : '') +
+        (missing ? ' · ' + missing + ' još nije generirano' : '');
+
+      const selectableCount = list.filter((d) => d.selectable).length;
+      if (diskDiffsSelectAll) {
+        diskDiffsSelectAll.disabled = selectableCount === 0;
+        diskDiffsSelectAll.checked = false;
+      }
+
+      list.forEach((d) => {
+        const from = String(d.snapshot_id_from);
+        const to = String(d.snapshot_id_to);
+        const tr = document.createElement('tr');
+        tr.setAttribute('data-diff-key', d.key);
+        tr.setAttribute('data-from', from);
+        tr.setAttribute('data-to', to);
+        if (!d.on_disk) tr.classList.add('diff-row-missing');
+        else tr.classList.add('diff-row-active');
+
+        const diffCell =
+          d.diff_rows != null ? d.diff_rows.toLocaleString('hr-HR') : '—';
+        const npCell =
+          d.novi_zapisi != null && d.promjene_count != null
+            ? d.novi_zapisi.toLocaleString('hr-HR') +
+              ' / ' +
+              d.promjene_count.toLocaleString('hr-HR')
+            : '—';
+        const status = d.on_disk
+          ? '✓ na disku' + (d.adjacent === false ? ' (nesusjedno)' : '')
+          : d.can_generate
+            ? 'čeka generiranje'
+            : '—';
+        const saved = d.saved_at
+          ? String(d.saved_at).replace('T', ' ').slice(0, 19)
+          : '—';
+        const parLabel = '#' + from + ' → #' + to;
+        const title = d.missing_reason || '';
+
+        tr.innerHTML =
+          '<td><input type="checkbox" class="disk-diff-cb" data-diff-key="' +
+          escapeHtml(d.key) +
+          '" ' +
+          (d.selectable ? '' : 'disabled ') +
+          '/></td>' +
+          '<td><strong title="' +
+          escapeHtml(title) +
+          '">' +
+          escapeHtml(parLabel) +
+          '</strong></td>' +
+          '<td>' +
+          escapeHtml(diffCell) +
+          (d.promjene_size_bytes != null
+            ? ' <span class="hint">(' + escapeHtml(formatBytes(d.promjene_size_bytes)) + ')</span>'
+            : '') +
+          '</td>' +
+          '<td>' +
+          escapeHtml(npCell) +
+          '</td>' +
+          '<td title="' +
+          escapeHtml(title) +
+          '">' +
+          escapeHtml(status) +
+          '</td>' +
+          '<td>' +
+          escapeHtml(saved) +
+          '</td>';
+
+        const cb = tr.querySelector('input.disk-diff-cb');
+        if (cb) {
+          cb.addEventListener('click', (ev) => ev.stopPropagation());
+          cb.addEventListener('change', updateDiskDiffDownloadButtons);
+        }
+        if (d.on_disk) {
+          tr.addEventListener('click', () => {
+            snapshotFromSelect.value = from;
+            snapshotSelect.value = to;
+            onSnapshotSelectionChange();
+          });
+        }
+        diskDiffsTbody.appendChild(tr);
+      });
+      highlightDiskDiffSelection();
+      updateDiskDiffDownloadButtons();
+    }
+
+    async function downloadSelectedDiskDiffs(fileKind) {
+      const selected = getSelectedDiskDiffs();
+      if (!selected.length) {
+        show('Označi barem jedan diff na disku (checkbox).', true);
+        return;
+      }
+      const file = fileKind === 'meta' ? 'meta' : 'promjene';
+      show(
+        'Preuzimam ' +
+          selected.length +
+          ' datoteka (' +
+          file +
+          ')… Pričekaj dijalog za svaku.',
+        false
+      );
+      for (let i = 0; i < selected.length; i += 1) {
+        const d = selected[i];
+        const label =
+          (file === 'meta' ? 'meta_' : 'promjene_') +
+          d.snapshot_id_from +
+          '_to_' +
+          d.snapshot_id_to +
+          (file === 'meta' ? '.json' : '.jsonl');
+        await startStagingDownload(
+          stagingDownloadUrl({
+            kind: 'diff',
+            snapshot_id_from: d.snapshot_id_from,
+            snapshot_id_to: d.snapshot_id_to,
+            file: file
+          }),
+          label
+        );
+        if (i < selected.length - 1) {
+          await new Promise((r) => setTimeout(r, 800));
+        }
+      }
     }
 
     function renderDiskSnapshotsTable(list, dataDir) {
@@ -1144,9 +1391,19 @@
           diskSnapshotsById[String(s.id)] = s;
         });
         renderDiskSnapshotsTable(diskSnapshotsSorted, body.dataDir);
+        const diffList = Array.isArray(body.disk_diffs) ? body.disk_diffs : [];
+        Object.keys(diskDiffsByKey).forEach((k) => delete diskDiffsByKey[k]);
+        diskDiffsSorted = diffList;
+        diffList.forEach((d) => {
+          diskDiffsByKey[d.key] = d;
+        });
+        renderDiskDiffsTable(diffList);
       } catch (e) {
         if (diskSnapshotsSummary) {
           diskSnapshotsSummary.textContent = 'Greška: ' + (e.message || String(e));
+        }
+        if (diskDiffsSummary) {
+          diskDiffsSummary.textContent = 'Greška učitavanja diff-ova.';
         }
       }
     }
@@ -1166,7 +1423,19 @@
           s.source = 'disk';
         });
         fillSnapshotDropdown(list);
-        renderDiskSnapshotsTable(sortDiskSnapshots(list), body.dataDir);
+        const sorted = sortDiskSnapshots(list);
+        sorted.forEach((s) => {
+          diskSnapshotsById[String(s.id)] = s;
+        });
+        diskSnapshotsSorted = sorted;
+        renderDiskSnapshotsTable(sorted, body.dataDir);
+        const diffList = Array.isArray(body.disk_diffs) ? body.disk_diffs : [];
+        Object.keys(diskDiffsByKey).forEach((k) => delete diskDiffsByKey[k]);
+        diskDiffsSorted = diffList;
+        diffList.forEach((d) => {
+          diskDiffsByKey[d.key] = d;
+        });
+        renderDiskDiffsTable(diffList);
         meta.textContent =
           'Disk: ' + list.length + ' snimki · ' + ms + ' ms · /api/staging/snapshots';
         if (!list.length) show('Na disku nema snimki — prvo API → disk.', true);
@@ -1313,6 +1582,27 @@
           }),
           'meta_' + fromId + '_to_' + toId + '.json'
         );
+      });
+    }
+    if (diskDiffsSelectAll) {
+      diskDiffsSelectAll.addEventListener('change', () => {
+        const checked = diskDiffsSelectAll.checked;
+        if (diskDiffsTbody) {
+          diskDiffsTbody.querySelectorAll('input.disk-diff-cb:not(:disabled)').forEach((cb) => {
+            cb.checked = checked;
+          });
+        }
+        updateDiskDiffDownloadButtons();
+      });
+    }
+    if (btnDlSelectedDiffPromjene) {
+      btnDlSelectedDiffPromjene.addEventListener('click', () => {
+        downloadSelectedDiskDiffs('promjene');
+      });
+    }
+    if (btnDlSelectedDiffMeta) {
+      btnDlSelectedDiffMeta.addEventListener('click', () => {
+        downloadSelectedDiskDiffs('meta');
       });
     }
 

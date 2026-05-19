@@ -575,11 +575,108 @@ function listStaging() {
         }
       }
       entry.has_promjene = fs.existsSync(promjeneFile);
+      if (entry.has_promjene && promjeneFile) {
+        try {
+          entry.promjene_size_bytes = fs.statSync(promjeneFile).size;
+        } catch (_) {
+          entry.promjene_size_bytes = null;
+        }
+      }
+      if (entry.meta?.stats) {
+        entry.diff_rows =
+          entry.meta.stats.diffRows != null ? Number(entry.meta.stats.diffRows) : null;
+        entry.novi_zapisi =
+          entry.meta.stats.noviZapisi != null ? Number(entry.meta.stats.noviZapisi) : null;
+        entry.promjene_count =
+          entry.meta.stats.promjene != null ? Number(entry.meta.stats.promjene) : null;
+      }
+      entry.saved_at = entry.meta?.saved_at || null;
       diffs.push(entry);
     }
+    diffs.sort((a, b) => {
+      const tb = Number(b.snapshot_id_to);
+      const ta = Number(a.snapshot_id_to);
+      if (tb !== ta) return tb - ta;
+      return Number(a.snapshot_id_from) - Number(b.snapshot_id_from);
+    });
   }
 
   return { dataDir: root, snapshots, diffs };
+}
+
+/**
+ * Diff redovi za UI: susjedni parovi (n→n+1) + ostali diff-ovi na disku.
+ * selectable = postoji promjene.jsonl u diffs/{from}_to_{to}/.
+ */
+function listDiskDiffsForUi() {
+  const { snapshots, diffs } = listStaging();
+  const diffMap = new Map();
+  for (const d of diffs) {
+    if (d.snapshot_id_from && d.snapshot_id_to) {
+      diffMap.set(`${d.snapshot_id_from}_to_${d.snapshot_id_to}`, d);
+    }
+  }
+
+  const snapById = new Map(snapshots.map((s) => [String(s.snapshot_id), s]));
+  const ids = snapshots
+    .map((s) => Number(s.snapshot_id))
+    .filter((n) => Number.isFinite(n))
+    .sort((a, b) => a - b);
+
+  const rows = [];
+  const seen = new Set();
+
+  function mapDiffRow(from, to, existing, adjacent) {
+    const fromSnap = snapById.get(from);
+    const toSnap = snapById.get(to);
+    const onDisk = Boolean(existing?.has_promjene);
+    const bothPromjene = Boolean(fromSnap?.has_promjene && toSnap?.has_promjene);
+    return {
+      key: `${from}_to_${to}`,
+      snapshot_id_from: from,
+      snapshot_id_to: to,
+      label: `#${from} → #${to}`,
+      adjacent,
+      on_disk: onDisk,
+      selectable: onDisk,
+      can_generate: adjacent && bothPromjene && !onDisk,
+      missing_reason: onDisk
+        ? null
+        : adjacent
+          ? bothPromjene
+            ? 'Nije generiran — koristi „Diff susjednih snimki”.'
+            : 'Nedostaju promjene.jsonl za jednu ili obje snimke.'
+          : 'Diff nije na disku.',
+      diff_rows: existing?.diff_rows ?? null,
+      novi_zapisi: existing?.novi_zapisi ?? null,
+      promjene_count: existing?.promjene_count ?? null,
+      promjene_size_bytes: existing?.promjene_size_bytes ?? null,
+      saved_at: existing?.saved_at ?? null
+    };
+  }
+
+  for (let i = 0; i < ids.length - 1; i += 1) {
+    const from = String(ids[i]);
+    const to = String(ids[i + 1]);
+    const key = `${from}_to_${to}`;
+    seen.add(key);
+    rows.push(mapDiffRow(from, to, diffMap.get(key), true));
+  }
+
+  for (const d of diffs) {
+    const key = `${d.snapshot_id_from}_to_${d.snapshot_id_to}`;
+    if (seen.has(key)) continue;
+    rows.push(mapDiffRow(d.snapshot_id_from, d.snapshot_id_to, d, false));
+  }
+
+  rows.sort((a, b) => {
+    const tb = Number(b.snapshot_id_to);
+    const ta = Number(a.snapshot_id_to);
+    if (tb !== ta) return tb - ta;
+    return Number(a.snapshot_id_from) - Number(b.snapshot_id_from);
+  });
+
+  return rows;
 }
 
 function isSafeSnapshotId(snapshotId) {
@@ -710,6 +807,7 @@ module.exports = {
   savePromjeneDiff,
   listStaging,
   listDiskSnapshotsForUi,
+  listDiskDiffsForUi,
   deleteSnapshotFromDisk,
   isSafeSnapshotId,
   resolveStagingDownload,
