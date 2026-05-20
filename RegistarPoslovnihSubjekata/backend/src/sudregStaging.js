@@ -876,6 +876,7 @@ module.exports = {
   diffMetaPath,
   diffDatasetsDir,
   diffDatasetFilePath,
+  diffDatasetMetaPath,
   diffDatasetFileExists,
   promjeneExists,
   diffPromjeneExists,
