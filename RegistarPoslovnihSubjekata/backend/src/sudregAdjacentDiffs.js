@@ -6,6 +6,7 @@
 const fs = require('fs');
 const { getSnapshots } = require('./sudregApi');
 const { listStaging, savePromjeneDiff, getDataDir } = require('./sudregStaging');
+const { saveMaticniDiffsToDisk } = require('./sudregMaticniDiff');
 
 function emitProgress(onProgress, payload) {
   if (typeof onProgress === 'function') {
@@ -162,7 +163,112 @@ async function runSaveAdjacentPromjeneDiffs(opts = {}) {
   };
 }
 
+/**
+ * Samo matični diff (datasets/) za susjedne parove — zahtijeva postojeći promjene diff.
+ * @param {{ source?: 'disk'|'api', force?: boolean, signal?: AbortSignal, snapshot_ids?: string[], onProgress?: Function }} opts
+ */
+async function runSaveAdjacentMaticniDiffs(opts = {}) {
+  const t0 = Date.now();
+  const source = opts.source === 'disk' ? 'disk' : 'api';
+
+  let ids =
+    source === 'disk' ? snapshotIdsFromDisk() : await snapshotIdsFromApi(opts);
+
+  const filterIds = opts.snapshot_ids;
+  if (Array.isArray(filterIds) && filterIds.length > 0) {
+    const set = new Set(filterIds.map((x) => Number(x)).filter((n) => Number.isFinite(n)));
+    ids = ids.filter((n) => set.has(n));
+  }
+
+  const pairs = buildAdjacentPairs(ids);
+  const results = [];
+  let saved = 0;
+  let skipped = 0;
+  const errors = [];
+
+  emitProgress(opts.onProgress, {
+    phase: 'adjacent_maticni_diff',
+    step: 'start',
+    message: `Matični diff (susjedni): ${pairs.length} parova (iz ${ids.length} snimki, izvor ${source})…`,
+    pair_total: pairs.length,
+    snapshot_count: ids.length,
+    source
+  });
+
+  for (let i = 0; i < pairs.length; i += 1) {
+    const { snapshot_id_from: fromId, snapshot_id_to: toId } = pairs[i];
+    emitProgress(opts.onProgress, {
+      phase: 'adjacent_maticni_diff',
+      step: 'pair_start',
+      message: `Matični diff ${i + 1}/${pairs.length}: #${fromId} → #${toId}…`,
+      pair_index: i + 1,
+      pair_total: pairs.length,
+      snapshot_id_from: fromId,
+      snapshot_id_to: toId
+    });
+
+    try {
+      const detail = await saveMaticniDiffsToDisk(fromId, toId, {
+        force: opts.force,
+        signal: opts.signal,
+        onProgress: opts.onProgress
+      });
+      results.push({ ok: true, ...detail });
+      if (detail.skipped) skipped += 1;
+      else saved += 1;
+
+      emitProgress(opts.onProgress, {
+        phase: 'adjacent_maticni_diff',
+        step: 'pair_done',
+        message: `#${fromId} → #${toId}: ${detail.skipped ? 'preskočeno' : 'maticni diff spremljen'}`,
+        pair_index: i + 1,
+        pair_total: pairs.length,
+        snapshot_id_from: fromId,
+        snapshot_id_to: toId,
+        skipped: Boolean(detail.skipped)
+      });
+    } catch (e) {
+      const err = e instanceof Error ? e.message : String(e);
+      errors.push({ snapshot_id_from: fromId, snapshot_id_to: toId, error: err });
+      results.push({
+        ok: false,
+        snapshot_id_from: fromId,
+        snapshot_id_to: toId,
+        error: err
+      });
+      emitProgress(opts.onProgress, {
+        phase: 'adjacent_maticni_diff',
+        step: 'pair_error',
+        message: `#${fromId} → #${toId}: greška — ${err}`,
+        snapshot_id_from: fromId,
+        snapshot_id_to: toId
+      });
+    }
+
+    if (typeof global.gc === 'function') global.gc();
+  }
+
+  const durationMs = Date.now() - t0;
+  return {
+    ok: errors.length === 0,
+    duration_ms: durationMs,
+    duration: formatDurationMs(durationMs),
+    dataDir: getDataDir(),
+    source,
+    snapshot_count: ids.length,
+    pair_count: pairs.length,
+    summary: {
+      saved,
+      skipped,
+      errors: errors.length
+    },
+    errors,
+    pairs: results
+  };
+}
+
 module.exports = {
   buildAdjacentPairs,
-  runSaveAdjacentPromjeneDiffs
+  runSaveAdjacentPromjeneDiffs,
+  runSaveAdjacentMaticniDiffs
 };

@@ -40,7 +40,10 @@ const { ensureDatabaseReady } = require('./lib/prisma');
 const { runFullImport } = require('./sudregFullImport');
 const { runDifferentialImport } = require('./sudregDifferentialImport');
 const { runBulkSaveAllSnapshotsToDisk } = require('./sudregBulkDiskSave');
-const { runSaveAdjacentPromjeneDiffs } = require('./sudregAdjacentDiffs');
+const {
+  runSaveAdjacentPromjeneDiffs,
+  runSaveAdjacentMaticniDiffs
+} = require('./sudregAdjacentDiffs');
 const {
   validateSnapshotMbsOrder,
   validateMbsOrderInJsonl
@@ -843,6 +846,58 @@ async function handleSaveAdjacentDiffsStream(req, res) {
   if (!closed) res.end();
 }
 
+async function handleSaveAdjacentMaticniDiffs(req, res) {
+  const opts = parseAdjacentDiffsQuery(req);
+  const t0 = Date.now();
+  try {
+    const result = await runSaveAdjacentMaticniDiffs(opts);
+    sendJson(res, 200, { durationMs: Date.now() - t0, ...result });
+  } catch (e) {
+    sendJson(res, 500, {
+      ok: false,
+      durationMs: Date.now() - t0,
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
+}
+
+async function handleSaveAdjacentMaticniDiffsStream(req, res) {
+  const opts = parseAdjacentDiffsQuery(req);
+  const send = beginSse(res);
+  const t0 = Date.now();
+  let closed = false;
+  req.on('close', () => {
+    closed = true;
+  });
+
+  try {
+    const result = await runSaveAdjacentMaticniDiffs({
+      ...opts,
+      onProgress: (ev) => {
+        if (!closed) send(ev);
+      }
+    });
+    if (!closed) {
+      send({
+        type: 'done',
+        ok: result.ok,
+        durationMs: Date.now() - t0,
+        ...result
+      });
+    }
+  } catch (e) {
+    if (!closed) {
+      send({
+        type: 'error',
+        ok: false,
+        durationMs: Date.now() - t0,
+        error: e instanceof Error ? e.message : String(e)
+      });
+    }
+  }
+  if (!closed) res.end();
+}
+
 async function handleValidateMbsOrder(req, res) {
   const q = parseQueryString(req.url);
   const snapshotId = q.get('snapshot_id');
@@ -1307,6 +1362,16 @@ const server = http.createServer((req, res) => {
 
   if (pathOnly === '/api/staging/save-adjacent-diffs' && req.method === 'GET') {
     handleSaveAdjacentDiffs(req, res);
+    return;
+  }
+
+  if (pathOnly === '/api/staging/save-adjacent-maticni-diffs/stream' && req.method === 'GET') {
+    handleSaveAdjacentMaticniDiffsStream(req, res);
+    return;
+  }
+
+  if (pathOnly === '/api/staging/save-adjacent-maticni-diffs' && req.method === 'GET') {
+    handleSaveAdjacentMaticniDiffs(req, res);
     return;
   }
 
