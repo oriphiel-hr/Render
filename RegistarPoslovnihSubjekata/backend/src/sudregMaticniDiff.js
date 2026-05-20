@@ -24,9 +24,30 @@ const {
   markRowNeaktivan,
   rowKeyForRow,
   appendNeaktivniToAffected,
-  indexAllDatasetsForMbs,
+  indexDatasetRowsByMbs,
+  indexDatasetRowsByMbsFromDb,
   SUBJEKTI_KEY
 } = require('./sudregTempApply');
+
+function releaseMemory() {
+  if (typeof global.gc === 'function') global.gc();
+}
+
+/** Jedan matični skup za zadani snapshot — samo MBS iz diff-a (ograničen RAM). */
+async function loadDatasetBucketForMbs(snapshotId, datasetKey, mbsFilter) {
+  const disk = await indexDatasetRowsByMbs(snapshotId, datasetKey, mbsFilter);
+  let byMbs = disk.byMbs;
+  let source = disk.source;
+  if (byMbs.size === 0) {
+    const db = await indexDatasetRowsByMbsFromDb(snapshotId, datasetKey, mbsFilter);
+    byMbs = db.byMbs;
+    source = db.source;
+  }
+  return {
+    byMbs,
+    sourceLabel: source ? `${datasetKey}:${source}` : null
+  };
+}
 
 function batchSize() {
   return getBatchSize();
@@ -117,9 +138,9 @@ async function loadAffectedFromPromjeneDiff(diffFile) {
  * JSONL redovi za jedan MBS i jedan matični skup — samo ako se sadržaj stvarno promijenio.
  * @returns {{ records: object[], skippedUnchanged: number }}
  */
-function buildDiffRecordsForMbs(mbs, vrsta, info, datasetKey, fromByMbs, toByMbs) {
-  const fromRows = fromByMbs.get(datasetKey)?.get(mbs) || [];
-  const toRows = toByMbs.get(datasetKey)?.get(mbs) || [];
+function buildDiffRecordsForMbs(mbs, vrsta, info, datasetKey, fromBucket, toBucket) {
+  const fromRows = fromBucket.get(mbs) || [];
+  const toRows = toBucket.get(mbs) || [];
   const records = [];
   let skippedUnchanged = 0;
   const isNeaktivan = vrsta === 'neaktivan';
@@ -229,32 +250,11 @@ async function saveMaticniDiffsToDisk(fromId, toId, opts = {}) {
     };
   }
 
-  if (typeof opts.onProgress === 'function') {
-    opts.onProgress({
-      type: 'progress',
-      phase: 'maticni_diff',
-      step: 'index',
-      message: `Indeks matičnih skupova za ${mbsFilter.size.toLocaleString('hr-HR')} MBS…`
-    });
-  }
-
-  const indexProgress = (ev) => {
-    if (typeof opts.onProgress === 'function') opts.onProgress(ev);
-  };
-  const [fromIndexed, toIndexed] = await Promise.all([
-    indexAllDatasetsForMbs(from, mbsFilter, jobs, {
-      label: from,
-      onProgress: indexProgress
-    }),
-    indexAllDatasetsForMbs(to, mbsFilter, jobs, {
-      label: to,
-      onProgress: indexProgress
-    })
-  ]);
-
   fs.mkdirSync(diffDatasetsDir(from, to), { recursive: true });
 
   const datasetResults = [];
+  const sourcesFrom = [];
+  const sourcesTo = [];
   let jobIndex = 0;
 
   for (const job of jobs) {
@@ -280,12 +280,17 @@ async function saveMaticniDiffsToDisk(fromId, toId, opts = {}) {
         type: 'progress',
         phase: 'maticni_diff',
         step: 'dataset',
-        message: `Diff matični: ${key} (${jobIndex}/${jobs.length})…`,
+        message: `Diff matični: ${key} (${jobIndex}/${jobs.length}) — indeks…`,
         dataset_key: key,
         job_index: jobIndex,
         job_total: jobs.length
       });
     }
+
+    const fromBucket = await loadDatasetBucketForMbs(from, key, mbsFilter);
+    if (fromBucket.sourceLabel) sourcesFrom.push(fromBucket.sourceLabel);
+    const toBucket = await loadDatasetBucketForMbs(to, key, mbsFilter);
+    if (toBucket.sourceLabel) sourcesTo.push(toBucket.sourceLabel);
 
     const stream = fs.createWriteStream(outFile, { flags: 'w', encoding: 'utf8' });
     let rowCount = 0;
@@ -321,8 +326,8 @@ async function saveMaticniDiffsToDisk(fromId, toId, opts = {}) {
         info.vrsta,
         info,
         key,
-        fromIndexed.index,
-        toIndexed.index
+        fromBucket.byMbs,
+        toBucket.byMbs
       );
       skippedUnchanged += skipped;
       if (records.length === 0) continue;
@@ -361,6 +366,8 @@ async function saveMaticniDiffsToDisk(fromId, toId, opts = {}) {
       rows_skipped_unchanged: skippedUnchanged,
       filePath: outFile
     });
+
+    releaseMemory();
   }
 
   let diffMeta = {};
@@ -379,9 +386,10 @@ async function saveMaticniDiffsToDisk(fromId, toId, opts = {}) {
     promjene_diff_rows: affected.size,
     neaktivni_mbs: inactive.neaktivniCount,
     sources: {
-      from: fromIndexed.sources,
-      to: toIndexed.sources
+      from: sourcesFrom,
+      to: sourcesTo
     },
+    memory_mode: 'per_dataset_sequential',
     items: datasetResults
   };
   if (!diffMeta.files) diffMeta.files = { promjene: 'promjene.jsonl', meta: 'meta.json' };

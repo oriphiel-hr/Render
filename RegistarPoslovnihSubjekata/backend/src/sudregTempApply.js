@@ -905,5 +905,7 @@ module.exports = {
   toMbs,
   appendNeaktivniToAffected,
   indexAllDatasetsForMbs,
+  indexDatasetRowsByMbs,
+  indexDatasetRowsByMbsFromDb,
   SUBJEKTI_KEY
 };

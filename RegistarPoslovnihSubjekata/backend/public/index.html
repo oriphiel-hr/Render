@@ -361,8 +361,8 @@
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v30</span></h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v30</strong>.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v31</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v31</strong>.</p>
     <p class="section-label">Servis</p>
     <div class="actions">
       <button type="button" id="btn-status">Provjeri status</button>
@@ -394,7 +394,7 @@
       Može trajati dugo — prati progress ispod.
       <strong>Diff susjednih snimki</strong>: za svaki uzastopni par ID (n→n+1) generira
       <code>diffs/{n}_to_{n+1}/promjene.jsonl</code> + <code>meta.json</code> (SCN diff) i automatski matične skupove u <code>datasets/</code>.
-      <strong>Diff matičnih entiteta</strong>: samo <code>datasets/*.jsonl</code> za sve susjedne parove (bez ponovnog SCN diff-a); potreban je postojeći <code>promjene.jsonl</code> u diff mapi.
+      <strong>Diff matičnih entiteta</strong>: samo <code>datasets/*.jsonl</code> za sve susjedne parove — <strong>jedan HTTP zahtjev po paru</strong> (bez dugog SSE-a, manji RAM); potreban je <code>promjene.jsonl</code> u diff mapi.
     </p>
     <div id="bulk-save-progress-panel" class="disk-snapshots-panel" hidden style="margin-bottom:0.75rem;">
       <h4>Masovno spremanje na disk</h4>
@@ -1187,38 +1187,37 @@
       if (btnGenSelectedMaticniDiff) btnGenSelectedMaticniDiff.disabled = n === 0;
     }
 
-    async function generateMaticniDiffForSelectedPairs() {
-      const selected = getSelectedDiskDiffs();
-      if (!selected.length) {
-        show('Označi barem jedan diff na disku (checkbox).', true);
-        return;
-      }
-      const force =
-        window.confirm(
-          'Generirati matični diff za ' +
-            selected.length +
-            ' označenih parova (redom, jedan HTTP zahtjev po paru)?\n\n' +
-            'OK = prepis postojećih datasets/\n' +
-            'Odustani = preskoči gotove'
-        ) === true;
-      setBusy(true);
+    async function fetchAdjacentPairsWithPromjeneDiff() {
+      let pairs = diskDiffsSorted.filter((d) => d.on_disk);
+      if (pairs.length) return pairs;
+      const res = await fetch('/api/staging/snapshots', { headers: { Accept: 'application/json' } });
+      const body = await res.json();
+      return (Array.isArray(body.disk_diffs) ? body.disk_diffs : []).filter((d) => d.on_disk);
+    }
+
+    async function runMaticniDiffPairsSequential(pairs, force) {
+      const total = pairs.length;
+      const t0 = performance.now();
+      let saved = 0;
+      let skipped = 0;
+      const errors = [];
       const results = [];
-      for (let i = 0; i < selected.length; i += 1) {
-        const d = selected[i];
+
+      for (let i = 0; i < total; i += 1) {
+        const d = pairs[i];
         const fromId = String(d.snapshot_id_from);
         const toId = String(d.snapshot_id_to);
-        show(
-          'Matični diff ' +
-            (i + 1) +
-            '/' +
-            selected.length +
-            ': #' +
-            fromId +
-            ' → #' +
-            toId +
-            '…',
-          false
-        );
+        applyBulkSaveProgress({
+          type: 'progress',
+          phase: 'adjacent_maticni_diff',
+          step: 'pair_start',
+          message: `Matični diff ${i + 1}/${total}: #${fromId} → #${toId}…`,
+          pair_index: i + 1,
+          pair_total: total,
+          snapshot_id_from: fromId,
+          snapshot_id_to: toId
+        });
+        show('Matični diff ' + (i + 1) + '/' + total + ': #' + fromId + ' → #' + toId + '…', false);
         const qs = new URLSearchParams({
           snapshot_id_from: fromId,
           snapshot_id_to: toId
@@ -1229,20 +1228,62 @@
         try {
           const res = await fetch(path, { headers: { Accept: 'application/json' } });
           const body = await res.json();
-          results.push({ fromId, toId, ok: res.ok && body.ok, body });
-          if (!res.ok || !body.ok) {
+          const ok = res.ok && body.ok !== false;
+          results.push({ fromId, toId, ok, body });
+          if (body.skipped) skipped += 1;
+          else if (ok) saved += 1;
+          if (!ok) {
+            errors.push({ fromId, toId, error: body.error || 'greška' });
             show(JSON.stringify({ pair: fromId + '→' + toId, ...body }, null, 2), true);
             break;
           }
         } catch (e) {
+          errors.push({ fromId, toId, error: e.message || String(e) });
           show('Greška #' + fromId + '→#' + toId + ': ' + (e.message || String(e)), true);
           break;
         }
       }
+
+      const ms = Math.round(performance.now() - t0);
+      const track = bulkSaveProgressBar && bulkSaveProgressBar.parentElement;
+      setBar(bulkSaveProgressBar, track, 100);
+      if (bulkSaveProgressLabel) {
+        bulkSaveProgressLabel.textContent =
+          'Gotovo · ' +
+          fmtDuration(ms) +
+          ' · parova=' +
+          total +
+          ' · spremljeno/preskočeno=' +
+          saved +
+          '/' +
+          skipped +
+          (errors.length ? ' · grešaka=' + errors.length : '');
+      }
+      meta.textContent = '/api/staging/save-maticni-diffs (sekvencijalno, ' + total + ' parova)';
+      return { ok: errors.length === 0, results, saved, skipped, errors, duration_ms: ms, pair_count: total };
+    }
+
+    async function generateMaticniDiffForSelectedPairs() {
+      const selected = getSelectedDiskDiffs();
+      if (!selected.length) {
+        show('Označi barem jedan diff na disku (checkbox).', true);
+        return;
+      }
+      const force =
+        window.confirm(
+          'Generirati matični diff za ' +
+            selected.length +
+            ' označenih parova (jedan HTTP po paru)?\n\n' +
+            'OK = prepis postojećih datasets/\n' +
+            'Odustani = preskoči gotove'
+        ) === true;
+      setBusy(true);
+      resetBulkSaveProgress();
+      const summary = await runMaticniDiffPairsSequential(selected, force);
       setBusy(false);
       loadDiskSnapshotsPanel();
-      if (results.length && results.every((r) => r.ok)) {
-        show(JSON.stringify({ ok: true, pairs: results.length, results }, null, 2), false);
+      if (summary.ok) {
+        show(JSON.stringify(summary, null, 2), false);
       }
     }
 
@@ -2020,22 +2061,12 @@
       btnSaveAdjacentDiffs.addEventListener('click', runSaveAdjacentDiffsToDisk);
     }
 
-    let adjacentMaticniDiffEventSource = null;
-
-    function runSaveAdjacentMaticniDiffsToDisk() {
-      if (adjacentMaticniDiffEventSource) {
-        adjacentMaticniDiffEventSource.close();
-        adjacentMaticniDiffEventSource = null;
-      }
-      const source = getSnapshotSource() === 'disk' ? 'disk' : 'api';
+    async function runSaveAdjacentMaticniDiffsToDisk() {
       const ok = window.confirm(
-        'Generirati diff matičnih entiteta za sve susjedne parove (n → n+1)?\n\n' +
-          'Za svaki par: diffs/{starija}_to_{novija}/datasets/*.jsonl (subjekti, tvrtka, …).\n' +
-          'Potreban je postojeći promjene diff (promjene.jsonl u diff mapi).\n' +
-          'Postojeći matični diff se preskače (za prepis: ?force=1 u API-ju).\n\n' +
-          'Izvor popisa snimki: ' +
-          (source === 'disk' ? 'disk' : 'Sudreg API') +
-          '.\nMože trajati dugo.'
+        'Generirati matični diff za sve susjedne parove s postojećim promjene diff-om?\n\n' +
+          'Svaki par = zaseban HTTP zahtjev (bez SSE — stabilnije na Renderu).\n' +
+          'Unutar para: jedan matični skup po jedan u memoriji.\n\n' +
+          'Može trajati dugo.'
       );
       if (!ok) return;
 
@@ -2043,76 +2074,28 @@
         window.confirm(
           'Prepisi već postojeće matične diff datoteke (datasets/)?\n\n' +
             'OK = prepis (force=1)\n' +
-            'Odustani = preskoči postojeće (preporučeno nakon prekida veze)'
+            'Odustani = preskoči postojeće'
         ) === true;
 
       setBusy(true);
       resetBulkSaveProgress();
-      show('Diff matičnih entiteta (live progress)…', false);
-      let qs = 'source=' + encodeURIComponent(source);
-      if (force) qs += '&force=1';
-      meta.textContent = '/api/staging/save-adjacent-maticni-diffs/stream?' + qs;
-
-      const t0 = performance.now();
-      const es = new EventSource('/api/staging/save-adjacent-maticni-diffs/stream?' + qs);
-      adjacentMaticniDiffEventSource = es;
-
-      es.onmessage = (msg) => {
-        let data;
-        try {
-          data = JSON.parse(msg.data);
-        } catch (_) {
-          return;
-        }
-        if (data.type === 'progress') {
-          applyBulkSaveProgress(data);
-          return;
-        }
-        if (data.type === 'done') {
-          es.close();
-          adjacentMaticniDiffEventSource = null;
-          const ms = Math.round(performance.now() - t0);
-          const track = bulkSaveProgressBar && bulkSaveProgressBar.parentElement;
-          setBar(bulkSaveProgressBar, track, 100);
-          if (bulkSaveProgressLabel) {
-            const s = data.summary || {};
-            bulkSaveProgressLabel.textContent =
-              'Gotovo · ' +
-              (data.duration || fmtDuration(data.duration_ms != null ? data.duration_ms : ms)) +
-              ' · parova=' +
-              (data.pair_count != null ? data.pair_count : '?') +
-              ' · spremljeno/preskočeno=' +
-              (s.saved != null ? s.saved : '?') +
-              '/' +
-              (s.skipped != null ? s.skipped : '?') +
-              (s.errors ? ' · grešaka=' + s.errors : '');
-          }
-          meta.textContent =
-            '/api/staging/save-adjacent-maticni-diffs/stream · ' + (data.ok ? 'OK' : 'završeno s greškama');
-          show(JSON.stringify(data, null, 2), !data.ok);
-          loadDiskSnapshotsPanel();
+      show('Učitavam parove s diska…', false);
+      try {
+        const pairs = await fetchAdjacentPairsWithPromjeneDiff();
+        if (!pairs.length) {
+          show(
+            'Nema parova s promjene.jsonl na disku. Prvo pokreni Diff susjednih snimki (SCN diff).',
+            true
+          );
           setBusy(false);
           return;
         }
-        if (data.type === 'error') {
-          es.close();
-          adjacentMaticniDiffEventSource = null;
-          show('Greška: ' + (data.error || 'nepoznato'), true);
-          meta.textContent = '/api/staging/save-adjacent-maticni-diffs/stream';
-          if (bulkSaveProgressLabel) bulkSaveProgressLabel.textContent = 'Greška.';
-          setBusy(false);
-        }
-      };
-
-      es.onerror = () => {
-        if (es.readyState === EventSource.CLOSED) return;
-        es.close();
-        adjacentMaticniDiffEventSource = null;
-        show(sseDisconnectHint(), true);
-        meta.textContent = '/api/staging/save-adjacent-maticni-diffs/stream';
-        if (bulkSaveProgressLabel) bulkSaveProgressLabel.textContent = 'Prekinuto.';
+        const summary = await runMaticniDiffPairsSequential(pairs, force);
+        show(JSON.stringify(summary, null, 2), !summary.ok);
+        loadDiskSnapshotsPanel();
+      } finally {
         setBusy(false);
-      };
+      }
     }
 
     if (btnSaveAdjacentMaticniDiffs) {
