@@ -361,8 +361,8 @@
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v29</span></h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v29</strong>.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v30</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v30</strong>.</p>
     <p class="section-label">Servis</p>
     <div class="actions">
       <button type="button" id="btn-status">Provjeri status</button>
@@ -469,6 +469,9 @@
           </button>
           <button type="button" class="secondary" id="btn-dl-selected-diff-meta" disabled>
             Preuzmi označene — meta
+          </button>
+          <button type="button" class="sudreg" id="btn-gen-selected-maticni-diff" disabled title="Za svaki označeni diff (redom, bez SSE): datasets/*.jsonl">
+            Matični diff — označeni parovi
           </button>
         </div>
         <div class="actions" style="margin-top:0.5rem;">
@@ -632,6 +635,9 @@
       <button type="button" class="secondary" id="btn-staging-save-from">API → disk (+ baza)</button>
       <button type="button" class="secondary" id="btn-staging-save-to">API → disk (+ baza)</button>
       <button type="button" class="secondary" id="btn-staging-save-diff">API → diff (+ baza)</button>
+      <button type="button" class="sudreg" id="btn-staging-save-maticni-diff" title="Samo datasets/*.jsonl za par 1→2; bez SSE, pouzdano nakon prekida veze">
+        Matični diff (par 1→2)
+      </button>
     </div>
     <div class="actions">
       <button type="button" class="secondary" id="btn-staging-sync-from-db">Samo baza ← disk (starija)</button>
@@ -717,6 +723,8 @@
     const btnStagingSaveFrom = document.getElementById('btn-staging-save-from');
     const btnStagingSaveTo = document.getElementById('btn-staging-save-to');
     const btnStagingSaveDiff = document.getElementById('btn-staging-save-diff');
+    const btnStagingSaveMaticniDiff = document.getElementById('btn-staging-save-maticni-diff');
+    const btnGenSelectedMaticniDiff = document.getElementById('btn-gen-selected-maticni-diff');
     const btnStagingList = document.getElementById('btn-staging-list');
     const btnStagingDb = document.getElementById('btn-staging-db');
     const btnTempApply = document.getElementById('btn-temp-apply');
@@ -1176,6 +1184,66 @@
       const n = selected.length;
       if (btnDlSelectedDiffPromjene) btnDlSelectedDiffPromjene.disabled = n === 0;
       if (btnDlSelectedDiffMeta) btnDlSelectedDiffMeta.disabled = n === 0;
+      if (btnGenSelectedMaticniDiff) btnGenSelectedMaticniDiff.disabled = n === 0;
+    }
+
+    async function generateMaticniDiffForSelectedPairs() {
+      const selected = getSelectedDiskDiffs();
+      if (!selected.length) {
+        show('Označi barem jedan diff na disku (checkbox).', true);
+        return;
+      }
+      const force =
+        window.confirm(
+          'Generirati matični diff za ' +
+            selected.length +
+            ' označenih parova (redom, jedan HTTP zahtjev po paru)?\n\n' +
+            'OK = prepis postojećih datasets/\n' +
+            'Odustani = preskoči gotove'
+        ) === true;
+      setBusy(true);
+      const results = [];
+      for (let i = 0; i < selected.length; i += 1) {
+        const d = selected[i];
+        const fromId = String(d.snapshot_id_from);
+        const toId = String(d.snapshot_id_to);
+        show(
+          'Matični diff ' +
+            (i + 1) +
+            '/' +
+            selected.length +
+            ': #' +
+            fromId +
+            ' → #' +
+            toId +
+            '…',
+          false
+        );
+        const qs = new URLSearchParams({
+          snapshot_id_from: fromId,
+          snapshot_id_to: toId
+        });
+        if (force) qs.set('force', '1');
+        const path = '/api/staging/save-maticni-diffs?' + qs.toString();
+        meta.textContent = path;
+        try {
+          const res = await fetch(path, { headers: { Accept: 'application/json' } });
+          const body = await res.json();
+          results.push({ fromId, toId, ok: res.ok && body.ok, body });
+          if (!res.ok || !body.ok) {
+            show(JSON.stringify({ pair: fromId + '→' + toId, ...body }, null, 2), true);
+            break;
+          }
+        } catch (e) {
+          show('Greška #' + fromId + '→#' + toId + ': ' + (e.message || String(e)), true);
+          break;
+        }
+      }
+      setBusy(false);
+      loadDiskSnapshotsPanel();
+      if (results.length && results.every((r) => r.ok)) {
+        show(JSON.stringify({ ok: true, pairs: results.length, results }, null, 2), false);
+      }
     }
 
     function renderDiskDiffsTable(rows) {
@@ -1620,6 +1688,9 @@
       btnDlSelectedDiffMeta.addEventListener('click', () => {
         downloadSelectedDiskDiffs('meta');
       });
+    }
+    if (btnGenSelectedMaticniDiff) {
+      btnGenSelectedMaticniDiff.addEventListener('click', generateMaticniDiffForSelectedPairs);
     }
 
     function onSnapshotSelectionChange() {
@@ -2665,6 +2736,34 @@
         if (stagingApplyTemp && stagingApplyTemp.checked) qs.set('apply_temp', '1');
         stagingFetch('/api/staging/save-diff?' + qs.toString(),
           'Spremam snimke (ako treba) i diff #' + fromId + ' → #' + toId + '…');
+      });
+    }
+    if (btnStagingSaveMaticniDiff) {
+      btnStagingSaveMaticniDiff.addEventListener('click', () => {
+        const fromId = snapshotFromSelect.value;
+        const toId = snapshotSelect.value;
+        if (!fromId || !toId) {
+          show('Odaberi stariju (1) i noviju (2) snimku.', true);
+          return;
+        }
+        if (Number(fromId) >= Number(toId)) {
+          show('Starija snimka mora imati manji ID od novije.', true);
+          return;
+        }
+        const force =
+          window.confirm(
+            'Matični diff #' + fromId + ' → #' + toId + ' (samo datasets/, bez SSE).\n\n' +
+              'OK = prepis postojećih\nOdustani = preskoči ako već postoji'
+          ) === true;
+        const qs = new URLSearchParams({
+          snapshot_id_from: fromId,
+          snapshot_id_to: toId
+        });
+        if (force) qs.set('force', '1');
+        stagingFetch(
+          '/api/staging/save-maticni-diffs?' + qs.toString(),
+          'Matični diff #' + fromId + ' → #' + toId + '…'
+        ).then(() => loadDiskSnapshotsPanel());
       });
     }
     if (btnStagingSyncFromDb) {
