@@ -32,6 +32,69 @@ function batchSize() {
   return getBatchSize();
 }
 
+/** Polja koja ne ulaze u usporedbu sadržaja (meta diff / SCN). */
+const DIFF_ONLY_KEYS = new Set([
+  'vrsta',
+  'aktivan',
+  'row_key',
+  'scn',
+  'scn_staro',
+  '_temp'
+]);
+
+function stableValue(v) {
+  if (v === null || typeof v !== 'object') return v;
+  if (Array.isArray(v)) return v.map(stableValue);
+  const o = {};
+  for (const k of Object.keys(v).sort()) {
+    o[k] = stableValue(v[k]);
+  }
+  return o;
+}
+
+/** Kanonski JSON za usporedbu — samo poslovni sadržaj retka. */
+function canonicalRowContent(row) {
+  if (!row || typeof row !== 'object') return '';
+  const copy = {};
+  for (const [k, v] of Object.entries(row)) {
+    if (DIFF_ONLY_KEYS.has(k)) continue;
+    copy[k] = v;
+  }
+  return JSON.stringify(stableValue(copy));
+}
+
+function rowsContentEqual(a, b) {
+  return canonicalRowContent(a) === canonicalRowContent(b);
+}
+
+function indexRowsByKey(rows) {
+  const map = new Map();
+  for (let i = 0; i < rows.length; i++) {
+    map.set(rowKeyForRow(rows[i], i), rows[i]);
+  }
+  return map;
+}
+
+function wrapDiffRecord(row, mbs, vrsta, rowKey) {
+  const aktivVal =
+    row.aktivan != null
+      ? Number(row.aktivan)
+      : row.status != null
+        ? Number(row.status) === 1
+          ? 1
+          : 0
+        : vrsta === 'neaktivan' || vrsta === 'obrisan'
+          ? 0
+          : 1;
+  return {
+    ...row,
+    mbs,
+    vrsta,
+    aktiv: Number.isFinite(aktivVal) ? aktivVal : vrsta === 'neaktivan' || vrsta === 'obrisan' ? 0 : 1,
+    row_key: rowKey
+  };
+}
+
 /**
  * @param {string} diffFile
  * @returns {Promise<Map<number, { vrsta: string, promjenaJson: object|null, baselineRow?: object }>>}
@@ -51,12 +114,14 @@ async function loadAffectedFromPromjeneDiff(diffFile) {
 }
 
 /**
- * JSONL redovi za jedan MBS i jedan matični skup.
+ * JSONL redovi za jedan MBS i jedan matični skup — samo ako se sadržaj stvarno promijenio.
+ * @returns {{ records: object[], skippedUnchanged: number }}
  */
 function buildDiffRecordsForMbs(mbs, vrsta, info, datasetKey, fromByMbs, toByMbs) {
   const fromRows = fromByMbs.get(datasetKey)?.get(mbs) || [];
   const toRows = toByMbs.get(datasetKey)?.get(mbs) || [];
   const records = [];
+  let skippedUnchanged = 0;
   const isNeaktivan = vrsta === 'neaktivan';
 
   if (isNeaktivan) {
@@ -70,37 +135,48 @@ function buildDiffRecordsForMbs(mbs, vrsta, info, datasetKey, fromByMbs, toByMbs
       const row = sourceRows[i];
       const payload =
         datasetKey === SUBJEKTI_KEY ? markNeaktivan(row) : markRowNeaktivan(row);
+      const rk = rowKeyForRow(row, i);
       records.push({
         ...payload,
         mbs,
-        vrsta,
+        vrsta: 'neaktivan',
         aktivan: 0,
-        row_key: rowKeyForRow(row, i)
+        row_key: rk
       });
     }
-    return records;
+    return { records, skippedUnchanged: 0 };
   }
 
-  const sourceRows = toRows.length > 0 ? toRows : fromRows;
-  for (let i = 0; i < sourceRows.length; i++) {
-    const row = sourceRows[i];
-    const aktiv =
-      row.aktivan != null
-        ? Number(row.aktivan)
-        : row.status != null
-          ? Number(row.status) === 1
-            ? 1
-            : 0
-          : 1;
-    records.push({
-      ...row,
-      mbs,
-      vrsta,
-      aktivan: Number.isFinite(aktivan) ? aktiv : 1,
-      row_key: rowKeyForRow(row, i)
-    });
+  const fromMap = indexRowsByKey(fromRows);
+  const toMap = indexRowsByKey(toRows);
+  const allKeys = new Set([...fromMap.keys(), ...toMap.keys()]);
+
+  for (const rk of allKeys) {
+    const fr = fromMap.get(rk);
+    const tr = toMap.get(rk);
+
+    if (fr && tr) {
+      if (rowsContentEqual(fr, tr)) {
+        skippedUnchanged += 1;
+        continue;
+      }
+      records.push(wrapDiffRecord(tr, mbs, 'promjena', rk));
+    } else if (tr && !fr) {
+      records.push(wrapDiffRecord(tr, mbs, 'novi', rk));
+    } else if (fr && !tr) {
+      const payload =
+        datasetKey === SUBJEKTI_KEY ? markNeaktivan(fr) : markRowNeaktivan(fr);
+      records.push({
+        ...payload,
+        mbs,
+        vrsta: 'obrisan',
+        aktivan: 0,
+        row_key: rk
+      });
+    }
   }
-  return records;
+
+  return { records, skippedUnchanged };
 }
 
 /**
@@ -205,13 +281,15 @@ async function saveMaticniDiffsToDisk(fromId, toId, opts = {}) {
     const stream = fs.createWriteStream(outFile, { flags: 'w', encoding: 'utf8' });
     let rowCount = 0;
     let neaktivniRows = 0;
+    let skippedUnchanged = 0;
+    let mbsWithChanges = 0;
 
     for (const [mbs, info] of affected) {
       if (opts.signal?.aborted) {
         stream.destroy();
         throw new Error('Aborted');
       }
-      const records = buildDiffRecordsForMbs(
+      const { records, skippedUnchanged: skipped } = buildDiffRecordsForMbs(
         mbs,
         info.vrsta,
         info,
@@ -219,10 +297,13 @@ async function saveMaticniDiffsToDisk(fromId, toId, opts = {}) {
         fromIndexed.index,
         toIndexed.index
       );
+      skippedUnchanged += skipped;
+      if (records.length === 0) continue;
+      mbsWithChanges += 1;
       for (const rec of records) {
         stream.write(`${JSON.stringify(rec)}\n`);
         rowCount += 1;
-        if (info.vrsta === 'neaktivan') neaktivniRows += 1;
+        if (rec.vrsta === 'neaktivan' || rec.vrsta === 'obrisan') neaktivniRows += 1;
       }
     }
 
@@ -237,6 +318,9 @@ async function saveMaticniDiffsToDisk(fromId, toId, opts = {}) {
       rowCount,
       neaktivni_rows: neaktivniRows,
       mbs_count: mbsFilter.size,
+      mbs_with_changes: mbsWithChanges,
+      rows_skipped_unchanged: skippedUnchanged,
+      only_content_changes: true,
       file: `${String(key).replace(/[^a-zA-Z0-9._-]+/g, '_')}.jsonl`
     };
     writeJson(diffDatasetMetaPath(from, to, key), dsMeta);
@@ -246,6 +330,8 @@ async function saveMaticniDiffsToDisk(fromId, toId, opts = {}) {
       skipped: false,
       rowCount,
       neaktivni_rows: neaktivniRows,
+      mbs_with_changes: mbsWithChanges,
+      rows_skipped_unchanged: skippedUnchanged,
       filePath: outFile
     });
   }
@@ -291,5 +377,7 @@ async function saveMaticniDiffsToDisk(fromId, toId, opts = {}) {
 module.exports = {
   loadAffectedFromPromjeneDiff,
   buildDiffRecordsForMbs,
+  canonicalRowContent,
+  rowsContentEqual,
   saveMaticniDiffsToDisk
 };
