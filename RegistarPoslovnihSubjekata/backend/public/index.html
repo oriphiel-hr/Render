@@ -244,6 +244,37 @@
       cursor: not-allowed;
       filter: grayscale(0.5);
     }
+    td.maticni-diff-td {
+      max-width: 22rem;
+      vertical-align: top;
+      font-size: 0.78rem;
+    }
+    details.maticni-diff-details {
+      margin: 0;
+    }
+    details.maticni-diff-details summary {
+      cursor: pointer;
+      color: var(--sudreg);
+      font-weight: 500;
+    }
+    details.maticni-diff-details summary code {
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+    ul.maticni-file-list {
+      margin: 0.35rem 0 0 1rem;
+      padding: 0;
+      list-style: disc;
+      max-height: 10rem;
+      overflow-y: auto;
+    }
+    ul.maticni-file-list li {
+      margin: 0.15rem 0;
+      line-height: 1.35;
+    }
+    ul.maticni-file-list code {
+      color: #9fd4ff;
+    }
     .diff-panel-sep {
       margin: 0.75rem 0 0.5rem;
       border: 0;
@@ -361,8 +392,8 @@
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v32</span></h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v32</strong>.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v33</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v33</strong>.</p>
     <p class="section-label">Servis</p>
     <div class="actions">
       <button type="button" id="btn-status">Provjeri status</button>
@@ -453,7 +484,7 @@
                 <th>Diff redova</th>
                 <th>Novi / promjene</th>
                 <th>Status</th>
-                <th>Matični diff</th>
+                <th>Matični diff (.jsonl)</th>
                 <th>Spremljeno</th>
               </tr>
             </thead>
@@ -462,7 +493,7 @@
         </div>
         <p class="hint" style="margin:0.45rem 0 0;font-size:0.78rem;">
           <strong>Snimke</strong> = puni podaci u <code>snapshots/{id}/datasets/</code>.
-          <strong>Diff matični</strong> = samo promjene u <code>diffs/{od}_to_{do}/datasets/*.jsonl</code> (stupac Matični diff).
+          <strong>Diff matični</strong> = datoteke u <code>diffs/{od}_to_{do}/datasets/</code> — klikni „13 datoteka” za popis imena; broj = redovi u diff-u, ne ukupan MBS.
           Zasjenjeni checkbox: SCN diff (<code>promjene.jsonl</code>) još nije na disku. Klik na red postavlja snimku 1 i 2.
         </p>
         <div class="actions" style="margin-top:0.5rem;flex-wrap:wrap;">
@@ -471,6 +502,9 @@
           </button>
           <button type="button" class="secondary" id="btn-dl-selected-diff-meta" disabled>
             Preuzmi označene — meta
+          </button>
+          <button type="button" class="secondary" id="btn-dl-selected-diff-datasets" disabled title="Sve datasets/*.jsonl za označene parove (jedan download po datoteci)">
+            Preuzmi označene — matični .jsonl
           </button>
           <button type="button" class="sudreg" id="btn-gen-selected-maticni-diff" disabled title="Za svaki označeni diff (redom, bez SSE): datasets/*.jsonl">
             Matični diff — označeni parovi
@@ -776,6 +810,7 @@
     const diskDiffsSelectAll = document.getElementById('disk-diffs-select-all');
     const btnDlSelectedDiffPromjene = document.getElementById('btn-dl-selected-diff-promjene');
     const btnDlSelectedDiffMeta = document.getElementById('btn-dl-selected-diff-meta');
+    const btnDlSelectedDiffDatasets = document.getElementById('btn-dl-selected-diff-datasets');
 
     const DATASET_CATALOG = {
       subjekti: {
@@ -1181,11 +1216,56 @@
       return out;
     }
 
+    function buildMaticniDiffCellHtml(d) {
+      const maticniItems = Array.isArray(d.maticni_dataset_items) ? d.maticni_dataset_items : [];
+      if (!maticniItems.length) {
+        return d.on_disk
+          ? '<span class="hint">— nema matičnog diff-a (pokreni Diff matičnih entiteta)</span>'
+          : '—';
+      }
+      const path = d.diff_datasets_path || 'datasets/';
+      let listHtml = '';
+      for (const x of maticniItems) {
+        const file = x.jsonl_file || String(x.dataset_key || '') + '.jsonl';
+        const rows =
+          x.row_count != null
+            ? x.row_count.toLocaleString('hr-HR') + ' redova u diff-u'
+            : '? redova';
+        const skipped =
+          x.rows_skipped_unchanged != null
+            ? ' · ' + x.rows_skipped_unchanged.toLocaleString('hr-HR') + ' istih preskočeno'
+            : '';
+        listHtml +=
+          '<li><code>' +
+          escapeHtml(file) +
+          '</code> — ' +
+          escapeHtml(rows) +
+          '<span class="hint">' +
+          escapeHtml(skipped) +
+          '</span></li>';
+      }
+      return (
+        '<details class="maticni-diff-details">' +
+        '<summary>' +
+        maticniItems.length +
+        ' datoteka · <code>' +
+        escapeHtml(path) +
+        '</code></summary>' +
+        '<ul class="maticni-file-list">' +
+        listHtml +
+        '</ul></details>'
+      );
+    }
+
     function updateDiskDiffDownloadButtons() {
       const selected = getSelectedDiskDiffs();
       const n = selected.length;
+      const hasMaticni = selected.some(
+        (d) => Array.isArray(d.maticni_dataset_items) && d.maticni_dataset_items.length > 0
+      );
       if (btnDlSelectedDiffPromjene) btnDlSelectedDiffPromjene.disabled = n === 0;
       if (btnDlSelectedDiffMeta) btnDlSelectedDiffMeta.disabled = n === 0;
+      if (btnDlSelectedDiffDatasets) btnDlSelectedDiffDatasets.disabled = n === 0 || !hasMaticni;
       if (btnGenSelectedMaticniDiff) btnGenSelectedMaticniDiff.disabled = n === 0;
     }
 
@@ -1340,31 +1420,14 @@
           : d.can_generate
             ? 'čeka generiranje'
             : '—';
-        const maticniItems = Array.isArray(d.maticni_dataset_items) ? d.maticni_dataset_items : [];
-        const maticniList = maticniItems
-          .map((x) => x.dataset_key + (x.row_count != null ? ':' + x.row_count : ''))
-          .join(', ');
-        const maticniCell =
-          maticniItems.length > 0
-            ? maticniItems.length +
-              ' (' +
-              maticniList.slice(0, 72) +
-              (maticniList.length > 72 ? '…' : '') +
-              ')' +
-              (d.neaktivni_mbs != null ? ' · neakt.MBS ' + d.neaktivni_mbs : '')
-            : d.on_disk
-              ? '— (nema matičnog diff-a)'
-              : '—';
-        const maticniTitle =
-          (d.diff_datasets_path ? d.diff_datasets_path + '\n' : '') +
-          (maticniList || 'Nema datasets/ u meta — pokreni Diff matičnih entiteta.');
+        const maticniCellHtml = buildMaticniDiffCellHtml(d);
         const saved = d.maticni_saved_at
           ? String(d.maticni_saved_at).replace('T', ' ').slice(0, 19)
           : d.saved_at
             ? String(d.saved_at).replace('T', ' ').slice(0, 19)
             : '—';
         const parLabel = '#' + from + ' → #' + to;
-        const title = d.missing_reason || maticniTitle;
+        const title = d.missing_reason || '';
 
         tr.innerHTML =
           '<td><input type="checkbox" class="disk-diff-cb" data-diff-key="' +
@@ -1391,10 +1454,8 @@
           '">' +
           escapeHtml(status) +
           '</td>' +
-          '<td title="' +
-          escapeHtml(maticniTitle) +
-          '">' +
-          escapeHtml(maticniCell) +
+          '<td class="maticni-diff-td">' +
+          maticniCellHtml +
           '</td>' +
           '<td>' +
           escapeHtml(saved) +
@@ -1404,6 +1465,10 @@
         if (cb) {
           cb.addEventListener('click', (ev) => ev.stopPropagation());
           cb.addEventListener('change', updateDiskDiffDownloadButtons);
+        }
+        const detailsEl = tr.querySelector('details.maticni-diff-details');
+        if (detailsEl) {
+          detailsEl.addEventListener('click', (ev) => ev.stopPropagation());
         }
         if (d.on_disk) {
           tr.addEventListener('click', () => {
@@ -1416,6 +1481,45 @@
       });
       highlightDiskDiffSelection();
       updateDiskDiffDownloadButtons();
+    }
+
+    async function downloadSelectedMaticniDatasets() {
+      const selected = getSelectedDiskDiffs();
+      if (!selected.length) {
+        show('Označi barem jedan diff na disku.', true);
+        return;
+      }
+      let fileCount = 0;
+      for (const d of selected) {
+        const items = Array.isArray(d.maticni_dataset_items) ? d.maticni_dataset_items : [];
+        fileCount += items.length;
+      }
+      if (!fileCount) {
+        show('Označeni parovi nemaju matični diff — prvo generiraj Diff matičnih entiteta.', true);
+        return;
+      }
+      show('Preuzimam ' + fileCount + ' .jsonl datoteka…', false);
+      for (let i = 0; i < selected.length; i += 1) {
+        const d = selected[i];
+        const items = d.maticni_dataset_items || [];
+        for (let j = 0; j < items.length; j += 1) {
+          const item = items[j];
+          const label = item.jsonl_file || item.dataset_key + '.jsonl';
+          await startStagingDownload(
+            stagingDownloadUrl({
+              kind: 'diff',
+              snapshot_id_from: d.snapshot_id_from,
+              snapshot_id_to: d.snapshot_id_to,
+              file: 'dataset',
+              dataset_key: item.dataset_key
+            }),
+            label
+          );
+          if (i < selected.length - 1 || j < items.length - 1) {
+            await new Promise((r) => setTimeout(r, 400));
+          }
+        }
+      }
     }
 
     async function downloadSelectedDiskDiffs(fileKind) {
@@ -1746,6 +1850,9 @@
       btnDlSelectedDiffMeta.addEventListener('click', () => {
         downloadSelectedDiskDiffs('meta');
       });
+    }
+    if (btnDlSelectedDiffDatasets) {
+      btnDlSelectedDiffDatasets.addEventListener('click', downloadSelectedMaticniDatasets);
     }
     if (btnGenSelectedMaticniDiff) {
       btnGenSelectedMaticniDiff.addEventListener('click', generateMaticniDiffForSelectedPairs);

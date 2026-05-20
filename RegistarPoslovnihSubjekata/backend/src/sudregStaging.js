@@ -704,12 +704,17 @@ function listDiskDiffsForUi() {
     const maticniItems = Array.isArray(dsItems)
       ? dsItems
           .filter((i) => i && !i.skipped)
-          .map((i) => ({
-            dataset_key: i.dataset_key,
-            row_count: i.rowCount != null ? Number(i.rowCount) : null,
-            rows_skipped_unchanged:
-              i.rows_skipped_unchanged != null ? Number(i.rows_skipped_unchanged) : null
-          }))
+          .map((i) => {
+            const key = i.dataset_key;
+            const safe = String(key || '').replace(/[^a-zA-Z0-9._-]+/g, '_');
+            return {
+              dataset_key: key,
+              jsonl_file: i.file ? String(i.file) : `${safe}.jsonl`,
+              row_count: i.rowCount != null ? Number(i.rowCount) : null,
+              rows_skipped_unchanged:
+                i.rows_skipped_unchanged != null ? Number(i.rows_skipped_unchanged) : null
+            };
+          })
       : [];
     const maticniCount = maticniItems.length;
     return {
