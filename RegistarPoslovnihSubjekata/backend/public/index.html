@@ -361,8 +361,8 @@
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v31</span></h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v31</strong>.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v32</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v32</strong>.</p>
     <p class="section-label">Servis</p>
     <div class="actions">
       <button type="button" id="btn-status">Provjeri status</button>
@@ -461,7 +461,9 @@
           </table>
         </div>
         <p class="hint" style="margin:0.45rem 0 0;font-size:0.78rem;">
-          Zasjenjeni checkbox: diff još nije na disku. Klik na red s diffom postavlja stariju/noviju snimku.
+          <strong>Snimke</strong> = puni podaci u <code>snapshots/{id}/datasets/</code>.
+          <strong>Diff matični</strong> = samo promjene u <code>diffs/{od}_to_{do}/datasets/*.jsonl</code> (stupac Matični diff).
+          Zasjenjeni checkbox: SCN diff (<code>promjene.jsonl</code>) još nije na disku. Klik na red postavlja snimku 1 i 2.
         </p>
         <div class="actions" style="margin-top:0.5rem;flex-wrap:wrap;">
           <button type="button" class="secondary" id="btn-dl-selected-diff-promjene" disabled>
@@ -1338,18 +1340,31 @@
           : d.can_generate
             ? 'čeka generiranje'
             : '—';
+        const maticniItems = Array.isArray(d.maticni_dataset_items) ? d.maticni_dataset_items : [];
+        const maticniList = maticniItems
+          .map((x) => x.dataset_key + (x.row_count != null ? ':' + x.row_count : ''))
+          .join(', ');
         const maticniCell =
-          d.maticni_datasets != null && d.maticni_datasets > 0
-            ? d.maticni_datasets + ' skupova' +
-              (d.neaktivni_mbs != null ? ' · neakt. ' + d.neaktivni_mbs : '')
+          maticniItems.length > 0
+            ? maticniItems.length +
+              ' (' +
+              maticniList.slice(0, 72) +
+              (maticniList.length > 72 ? '…' : '') +
+              ')' +
+              (d.neaktivni_mbs != null ? ' · neakt.MBS ' + d.neaktivni_mbs : '')
             : d.on_disk
-              ? '—'
+              ? '— (nema matičnog diff-a)'
               : '—';
-        const saved = d.saved_at
-          ? String(d.saved_at).replace('T', ' ').slice(0, 19)
-          : '—';
+        const maticniTitle =
+          (d.diff_datasets_path ? d.diff_datasets_path + '\n' : '') +
+          (maticniList || 'Nema datasets/ u meta — pokreni Diff matičnih entiteta.');
+        const saved = d.maticni_saved_at
+          ? String(d.maticni_saved_at).replace('T', ' ').slice(0, 19)
+          : d.saved_at
+            ? String(d.saved_at).replace('T', ' ').slice(0, 19)
+            : '—';
         const parLabel = '#' + from + ' → #' + to;
-        const title = d.missing_reason || '';
+        const title = d.missing_reason || maticniTitle;
 
         tr.innerHTML =
           '<td><input type="checkbox" class="disk-diff-cb" data-diff-key="' +
@@ -1376,7 +1391,9 @@
           '">' +
           escapeHtml(status) +
           '</td>' +
-          '<td title="JSONL u diffs/…/datasets/">' +
+          '<td title="' +
+          escapeHtml(maticniTitle) +
+          '">' +
           escapeHtml(maticniCell) +
           '</td>' +
           '<td>' +

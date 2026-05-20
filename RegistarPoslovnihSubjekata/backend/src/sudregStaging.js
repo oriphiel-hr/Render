@@ -701,9 +701,17 @@ function listDiskDiffsForUi() {
     const onDisk = Boolean(existing?.has_promjene);
     const bothPromjene = Boolean(fromSnap?.has_promjene && toSnap?.has_promjene);
     const dsItems = existing?.meta?.datasets?.items;
-    const maticniCount = Array.isArray(dsItems)
-      ? dsItems.filter((i) => i && !i.skipped && (i.rowCount > 0 || i.filePath)).length
-      : 0;
+    const maticniItems = Array.isArray(dsItems)
+      ? dsItems
+          .filter((i) => i && !i.skipped)
+          .map((i) => ({
+            dataset_key: i.dataset_key,
+            row_count: i.rowCount != null ? Number(i.rowCount) : null,
+            rows_skipped_unchanged:
+              i.rows_skipped_unchanged != null ? Number(i.rows_skipped_unchanged) : null
+          }))
+      : [];
+    const maticniCount = maticniItems.length;
     return {
       key: `${from}_to_${to}`,
       snapshot_id_from: from,
@@ -725,8 +733,11 @@ function listDiskDiffsForUi() {
       promjene_count: existing?.promjene_count ?? null,
       promjene_size_bytes: existing?.promjene_size_bytes ?? null,
       saved_at: existing?.saved_at ?? null,
+      maticni_saved_at: existing?.meta?.datasets?.saved_at ?? null,
       maticni_datasets: maticniCount,
-      neaktivni_mbs: existing?.meta?.datasets?.neaktivni_mbs ?? null
+      maticni_dataset_items: maticniItems,
+      neaktivni_mbs: existing?.meta?.datasets?.neaktivni_mbs ?? null,
+      diff_datasets_path: onDisk ? `diffs/${from}_to_${to}/datasets/` : null
     };
   }
 
