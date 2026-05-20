@@ -361,8 +361,8 @@
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v28</span></h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v28</strong>.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v29</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v29</strong>.</p>
     <p class="section-label">Servis</p>
     <div class="actions">
       <button type="button" id="btn-status">Provjeri status</button>
@@ -1738,6 +1738,14 @@
       if (bulkSaveProgressLabel) bulkSaveProgressLabel.textContent = 'Pokrećem…';
     }
 
+    function sseDisconnectHint() {
+      return (
+        'Veza prekinuta (timeout ili restart servera, npr. RAM na Renderu). ' +
+        'Završeni parovi ostaju na disku — ponovi gumb; preskočit će gotove. ' +
+        'Za jedan par: GET /api/staging/save-maticni-diffs?snapshot_id_from=…&snapshot_id_to=…'
+      );
+    }
+
     function applyBulkSaveProgress(ev) {
       if (!ev || ev.type !== 'progress') return;
       const track = bulkSaveProgressBar && bulkSaveProgressBar.parentElement;
@@ -1839,7 +1847,7 @@
         if (es.readyState === EventSource.CLOSED) return;
         es.close();
         bulkSaveEventSource = null;
-        show('Veza prekinuta — server se možda restartao. Pokušaj ponovo.', true);
+        show(sseDisconnectHint(), true);
         meta.textContent = '/api/staging/save-all-snapshots/stream';
         if (bulkSaveProgressLabel) bulkSaveProgressLabel.textContent = 'Prekinuto.';
         setBusy(false);
@@ -1930,7 +1938,7 @@
         if (es.readyState === EventSource.CLOSED) return;
         es.close();
         adjacentDiffEventSource = null;
-        show('Veza prekinuta. Pokušaj ponovo.', true);
+        show(sseDisconnectHint(), true);
         meta.textContent = '/api/staging/save-adjacent-diffs/stream';
         if (bulkSaveProgressLabel) bulkSaveProgressLabel.textContent = 'Prekinuto.';
         setBusy(false);
@@ -1960,10 +1968,18 @@
       );
       if (!ok) return;
 
+      const force =
+        window.confirm(
+          'Prepisi već postojeće matične diff datoteke (datasets/)?\n\n' +
+            'OK = prepis (force=1)\n' +
+            'Odustani = preskoči postojeće (preporučeno nakon prekida veze)'
+        ) === true;
+
       setBusy(true);
       resetBulkSaveProgress();
       show('Diff matičnih entiteta (live progress)…', false);
-      const qs = 'source=' + encodeURIComponent(source);
+      let qs = 'source=' + encodeURIComponent(source);
+      if (force) qs += '&force=1';
       meta.textContent = '/api/staging/save-adjacent-maticni-diffs/stream?' + qs;
 
       const t0 = performance.now();
@@ -2021,7 +2037,7 @@
         if (es.readyState === EventSource.CLOSED) return;
         es.close();
         adjacentMaticniDiffEventSource = null;
-        show('Veza prekinuta. Pokušaj ponovo.', true);
+        show(sseDisconnectHint(), true);
         meta.textContent = '/api/staging/save-adjacent-maticni-diffs/stream';
         if (bulkSaveProgressLabel) bulkSaveProgressLabel.textContent = 'Prekinuto.';
         setBusy(false);

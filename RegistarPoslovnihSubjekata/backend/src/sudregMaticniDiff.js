@@ -238,9 +238,18 @@ async function saveMaticniDiffsToDisk(fromId, toId, opts = {}) {
     });
   }
 
+  const indexProgress = (ev) => {
+    if (typeof opts.onProgress === 'function') opts.onProgress(ev);
+  };
   const [fromIndexed, toIndexed] = await Promise.all([
-    indexAllDatasetsForMbs(from, mbsFilter, jobs),
-    indexAllDatasetsForMbs(to, mbsFilter, jobs)
+    indexAllDatasetsForMbs(from, mbsFilter, jobs, {
+      label: from,
+      onProgress: indexProgress
+    }),
+    indexAllDatasetsForMbs(to, mbsFilter, jobs, {
+      label: to,
+      onProgress: indexProgress
+    })
   ]);
 
   fs.mkdirSync(diffDatasetsDir(from, to), { recursive: true });
@@ -283,8 +292,26 @@ async function saveMaticniDiffsToDisk(fromId, toId, opts = {}) {
     let neaktivniRows = 0;
     let skippedUnchanged = 0;
     let mbsWithChanges = 0;
+    const mbsTotal = affected.size;
+    let mbsProcessed = 0;
+    const mbsProgressEvery = 1500;
 
     for (const [mbs, info] of affected) {
+      mbsProcessed += 1;
+      if (
+        typeof opts.onProgress === 'function' &&
+        (mbsProcessed === 1 || mbsProcessed % mbsProgressEvery === 0 || mbsProcessed === mbsTotal)
+      ) {
+        opts.onProgress({
+          type: 'progress',
+          phase: 'maticni_diff',
+          step: 'mbs',
+          message: `Diff matični ${key}: MBS ${mbsProcessed.toLocaleString('hr-HR')}/${mbsTotal.toLocaleString('hr-HR')}…`,
+          dataset_key: key,
+          mbs_processed: mbsProcessed,
+          mbs_total: mbsTotal
+        });
+      }
       if (opts.signal?.aborted) {
         stream.destroy();
         throw new Error('Aborted');

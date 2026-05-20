@@ -428,11 +428,27 @@ function buildMaticniPendingForMbs(mbs, vrsta, promjenaJson, from, to, runId, fr
   return rows;
 }
 
-async function indexAllDatasetsForMbs(snapshotId, mbsFilter, jobs) {
+async function indexAllDatasetsForMbs(snapshotId, mbsFilter, jobs, opts = {}) {
   const index = new Map();
   const sources = [];
+  const onProgress = opts.onProgress;
+  const label = opts.label || String(snapshotId);
+  let jobIndex = 0;
 
   for (const job of jobs) {
+    jobIndex += 1;
+    if (typeof onProgress === 'function') {
+      onProgress({
+        type: 'progress',
+        phase: 'maticni_diff',
+        step: 'index_dataset',
+        message: `Indeks #${label}: ${job.datasetKey} (${jobIndex}/${jobs.length})…`,
+        snapshot_id: label,
+        dataset_key: job.datasetKey,
+        job_index: jobIndex,
+        job_total: jobs.length
+      });
+    }
     const disk = await indexDatasetRowsByMbs(snapshotId, job.datasetKey, mbsFilter);
     let byMbs = disk.byMbs;
     if (byMbs.size === 0) {

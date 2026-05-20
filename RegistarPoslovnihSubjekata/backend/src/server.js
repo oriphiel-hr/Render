@@ -100,9 +100,19 @@ function beginSse(res) {
     Connection: 'keep-alive',
     'X-Accel-Buffering': 'no'
   });
-  return (payload) => {
+  const heartbeatMs = 15000;
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(': keepalive\n\n');
+    } catch (_) {
+      clearInterval(heartbeat);
+    }
+  }, heartbeatMs);
+  const send = (payload) => {
     res.write(`data: ${JSON.stringify(payload, jsonReplacer)}\n\n`);
   };
+  send.end = () => clearInterval(heartbeat);
+  return send;
 }
 
 function sendText(res, status, text, contentType = 'text/plain; charset=utf-8') {
@@ -757,8 +767,10 @@ async function handleStagingImportAllStream(req, res) {
         error: e instanceof Error ? e.message : String(e)
       });
     }
+  } finally {
+    send.end();
+    if (!closed) res.end();
   }
-  if (!closed) res.end();
 }
 
 function parseBulkSaveQuery(req) {
@@ -842,8 +854,10 @@ async function handleSaveAdjacentDiffsStream(req, res) {
         error: e instanceof Error ? e.message : String(e)
       });
     }
+  } finally {
+    send.end();
+    if (!closed) res.end();
   }
-  if (!closed) res.end();
 }
 
 async function handleSaveAdjacentMaticniDiffs(req, res) {
@@ -894,8 +908,10 @@ async function handleSaveAdjacentMaticniDiffsStream(req, res) {
         error: e instanceof Error ? e.message : String(e)
       });
     }
+  } finally {
+    send.end();
+    if (!closed) res.end();
   }
-  if (!closed) res.end();
 }
 
 async function handleValidateMbsOrder(req, res) {
@@ -983,8 +999,10 @@ async function handleBulkSaveAllSnapshotsStream(req, res) {
         error: e instanceof Error ? e.message : String(e)
       });
     }
+  } finally {
+    send.end();
+    if (!closed) res.end();
   }
-  if (!closed) res.end();
 }
 
 async function handleStagingSyncDb(req, res) {
