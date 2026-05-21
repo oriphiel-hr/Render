@@ -1,6 +1,6 @@
 /**
- * Čeka PostgreSQL (recovery nakon restarta), zatim prisma migrate deploy.
- * Oporavak: failed migracija 20260520120000 (pogrešan dataset_key) → resolve rolled-back + retry.
+ * Čeka PostgreSQL, zatim prisma migrate deploy.
+ * Prije deploya i nakon P3009: resolve failed migracije 20260520120000 (pogrešan dataset_key u SQL-u).
  */
 const { execSync } = require('child_process');
 const path = require('path');
@@ -9,13 +9,19 @@ const { waitForDatabase, isDatabaseConfigured, disconnectPrisma } = require('./l
 const BACKEND_ROOT = path.join(__dirname, '..');
 const FAILED_MIGRATION = '20260520120000_maticni_change_log';
 
-function runPrisma(args, opts = {}) {
+function runPrisma(args) {
   return execSync(`npx prisma ${args}`, {
     cwd: BACKEND_ROOT,
     encoding: 'utf8',
     env: process.env,
-    stdio: opts.inherit ? 'inherit' : ['pipe', 'pipe', 'pipe']
+    stdio: ['pipe', 'pipe', 'pipe'],
+    maxBuffer: 20 * 1024 * 1024
   });
+}
+
+function teeOutput(text, isErr) {
+  if (!text) return;
+  (isErr ? process.stderr : process.stdout).write(text);
 }
 
 function combinedOutput(err) {
@@ -26,49 +32,87 @@ function combinedOutput(err) {
   return parts.join('\n');
 }
 
-function isFailedMigrationBlocked(output) {
-  return output.includes('P3009') && output.includes(FAILED_MIGRATION);
+function outputIndicatesFailedMigration(text) {
+  const t = String(text || '');
+  return (
+    t.includes(FAILED_MIGRATION) &&
+    (t.includes('P3009') ||
+      t.includes('failed migrations') ||
+      t.includes('have failed') ||
+      t.includes('following migration') ||
+      /failed/i.test(t))
+  );
 }
 
 function tryResolveRolledBackFailedMigration() {
   console.warn(
-    `[registar-rps] Migracija ${FAILED_MIGRATION} označena kao failed — resolve --rolled-back i ponovni deploy…`
+    `[registar-rps] resolve --rolled-back "${FAILED_MIGRATION}" (ponovna primjena ispravljene migracije)…`
   );
   try {
-    runPrisma(`migrate resolve --rolled-back "${FAILED_MIGRATION}"`);
+    const out = runPrisma(`migrate resolve --rolled-back "${FAILED_MIGRATION}"`);
+    teeOutput(out, false);
     return true;
   } catch (e) {
-    console.warn('[registar-rps] migrate resolve nije uspio:', combinedOutput(e));
+    const text = combinedOutput(e);
+    teeOutput(text, true);
+    console.warn('[registar-rps] migrate resolve:', text.slice(0, 500));
     return false;
+  }
+}
+
+function recoverFailedMigrationsBeforeDeploy() {
+  try {
+    const status = runPrisma('migrate status');
+    teeOutput(status, false);
+    if (outputIndicatesFailedMigration(status)) {
+      return tryResolveRolledBackFailedMigration();
+    }
+  } catch (e) {
+    const text = combinedOutput(e);
+    teeOutput(text, true);
+    if (outputIndicatesFailedMigration(text)) {
+      return tryResolveRolledBackFailedMigration();
+    }
+  }
+  return false;
+}
+
+function migrateDeployOnce() {
+  try {
+    const out = runPrisma('migrate deploy');
+    teeOutput(out, false);
+    return true;
+  } catch (e) {
+    const text = combinedOutput(e);
+    teeOutput(text, true);
+    const err = new Error(text || e.message || 'migrate deploy failed');
+    err.migrateOutput = text;
+    throw err;
   }
 }
 
 async function runMigrateDeploy() {
   const maxAttempts = Number(process.env.MIGRATE_MAX_ATTEMPTS) || 3;
-  let resolvedFailed = false;
+  recoverFailedMigrationsBeforeDeploy();
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      runPrisma('migrate deploy', { inherit: true });
+      migrateDeployOnce();
       return;
     } catch (e) {
-      const out = combinedOutput(e);
+      const text = e.migrateOutput || combinedOutput(e);
 
-      if (!resolvedFailed && isFailedMigrationBlocked(out)) {
-        if (tryResolveRolledBackFailedMigration()) {
-          resolvedFailed = true;
-          try {
-            runPrisma('migrate deploy', { inherit: true });
-            return;
-          } catch (retryErr) {
-            if (attempt >= maxAttempts) throw retryErr;
-          }
+      if (outputIndicatesFailedMigration(text) && tryResolveRolledBackFailedMigration()) {
+        try {
+          migrateDeployOnce();
+          return;
+        } catch (retryErr) {
+          if (attempt >= maxAttempts) throw retryErr;
         }
-      }
-
-      if (attempt >= maxAttempts) {
+      } else if (attempt >= maxAttempts) {
         throw e;
       }
+
       console.warn(
         `[registar-rps] migrate deploy pokušaj ${attempt}/${maxAttempts} nije uspio — čekam bazu…`
       );
