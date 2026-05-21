@@ -439,8 +439,8 @@
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v35</span></h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v35</strong>.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v36</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v36</strong>.</p>
     <p class="section-label">Servis</p>
     <div class="actions">
       <button type="button" id="btn-status">Provjeri status</button>
@@ -476,7 +476,7 @@
     </p>
     <p class="disk-workflow-hint">
       <strong>Izrada JSONL na disku:</strong> dovoljna su <strong>tri zelena gumba</strong> gore (snimke → SCN diff → matični diff).
-      Dolje: tablica, <strong>preuzimanje</strong>, PostgreSQL. Duplikati spremanja su u <em>Napredno</em>.
+      Zatim (odvojeno): <strong>PostgreSQL</strong> — sync gumbi ili <em>Diff 2/2 — baza</em>. Nikad automatski „disk + baza” u jednom koraku.
     </p>
     <div id="bulk-save-progress-panel" class="disk-snapshots-panel" hidden style="margin-bottom:0.75rem;">
       <h4>Masovno spremanje na disk</h4>
@@ -489,7 +489,7 @@
       <p class="section-label">Usporedba dviju snimki</p>
       <p class="hint" style="margin-bottom: 0.75rem;">
         Odabir para za pregled i preuzimanje. Za <strong>izradu datoteka</strong> koristi zelene gumbe gore, ne gumbe ispod.
-        <strong>PostgreSQL:</strong> nakon diska — <em>Diff 2/2 — baza</em> ili sync u sekciji baze.
+        <strong>PostgreSQL</strong> je odvojen korak (ispod) — ne spaja se s izradom JSONL na disku.
       </p>
       <div class="field-row snapshot-source-row">
         <label>Izvor za odabir snimke</label>
@@ -590,9 +590,8 @@
           Koristi samo ako treba jedan par ili stariji import pipeline. Inače: zeleni gumbi gore.
         </p>
         <div class="actions">
-          <button type="button" class="secondary" id="btn-import-all-full" title="Promjene + svi matični skupovi (novija snimka)">Puno (disk + baza)</button>
-          <button type="button" class="secondary" id="btn-import-diff-disk" title="Promjene, SCN diff, aktivni subjekti — samo na disk">Diff 1/2 — disk</button>
-          <button type="button" class="secondary" id="btn-import-all-diff" title="Disk i baza u jednom koraku">Diff (disk + baza)</button>
+          <button type="button" class="secondary" id="btn-import-all-full" title="Samo JSONL na disk — bez PostgreSQL">Puno — samo disk</button>
+          <button type="button" class="secondary" id="btn-import-diff-disk" title="Promjene, SCN diff, aktivni subjekti — samo disk">Diff 1/2 — samo disk</button>
         </div>
       </details>
       <p id="import-all-hint" class="hint" style="margin-top:0.5rem;"></p>
@@ -702,20 +701,17 @@
       <button type="button" class="secondary" id="btn-sifrarnik-list">Popis šifrarnika (API)</button>
     </div>
 
-    <p class="section-label">PostgreSQL i alati</p>
+    <p class="section-label">PostgreSQL (odvojeno od diska)</p>
     <p class="hint" style="margin-bottom: 0.5rem;">
-      <strong>Disk (JSONL):</strong> tri zelena gumba gore. <strong>Baza:</strong> nakon diska — sync ili <em>Diff 2/2 — baza</em> u usporedbi.
+      <strong>1.</strong> Prvo JSONL na disk (zeleni gumbi). <strong>2.</strong> Zatim ručno u bazu — sync gumbi ili <em>Diff 2/2 — baza</em>.
+      Import s diska nikad ne ide automatski u PostgreSQL.
     </p>
     <p id="db-status" class="hint" style="margin-bottom: 0.65rem;">Baza: provjeravam…</p>
     <div class="field-row">
-      <label>Opcije</label>
-      <label class="inline-label" style="display:flex;align-items:center;gap:0.35rem;cursor:pointer;">
-        <input type="checkbox" id="staging-sync-db" checked />
-        Nakon diska spremi i u bazu (zahtijeva <code>DATABASE_URL</code>)
-      </label>
+      <label>Opcije (samo baza / temp)</label>
       <label class="inline-label" style="display:flex;align-items:center;gap:0.35rem;cursor:pointer;">
         <input type="checkbox" id="staging-apply-temp" />
-        Nakon diff-a upiši u <strong>temp</strong> (svi matični skupovi s MBS)
+        Pri <em>Diff 2/2 — baza</em> upiši i u <strong>temp</strong> (matični skupovi s MBS)
       </label>
       <label class="inline-label" style="display:flex;align-items:center;gap:0.35rem;cursor:pointer;">
         <input type="checkbox" id="temp-only-subjekti" />
@@ -728,9 +724,9 @@
         Jedna snimka ili jedan par s API-ja. Masovno: <strong>Snimi sve</strong> / <strong>Diff susjednih</strong> / <strong>Diff matičnih</strong> gore.
       </p>
       <div class="actions">
-        <button type="button" class="secondary" id="btn-staging-save-from">API → disk (+ baza)</button>
-        <button type="button" class="secondary" id="btn-staging-save-to">API → disk (+ baza)</button>
-        <button type="button" class="secondary" id="btn-staging-save-diff">API → diff (+ baza)</button>
+        <button type="button" class="secondary" id="btn-staging-save-from">API → disk (samo)</button>
+        <button type="button" class="secondary" id="btn-staging-save-to">API → disk (samo)</button>
+        <button type="button" class="secondary" id="btn-staging-save-diff">API → diff (samo disk)</button>
         <button type="button" class="secondary" id="btn-staging-save-maticni-diff" title="Samo datasets/*.jsonl za par 1→2">
           Matični diff (par 1→2)
         </button>
@@ -809,7 +805,6 @@
     const btnImportAllFull = document.getElementById('btn-import-all-full');
     const btnImportDiffDisk = document.getElementById('btn-import-diff-disk');
     const btnImportDiffDb = document.getElementById('btn-import-diff-db');
-    const btnImportAllDiff = document.getElementById('btn-import-all-diff');
     const importAllHint = document.getElementById('import-all-hint');
     const importProgressPanel = document.getElementById('import-progress-panel');
     const progressDiskBlock = document.getElementById('progress-disk-block');
@@ -837,7 +832,6 @@
     const btnStagingSyncFromDb = document.getElementById('btn-staging-sync-from-db');
     const btnStagingSyncToDb = document.getElementById('btn-staging-sync-to-db');
     const btnStagingSyncDiffDb = document.getElementById('btn-staging-sync-diff-db');
-    const stagingSyncDb = document.getElementById('staging-sync-db');
     const dbStatus = document.getElementById('db-status');
     let databaseConfigured = false;
     const datasetSelect = document.getElementById('dataset-select');
@@ -1025,11 +1019,17 @@
       btnPromjene.disabled = busy;
       if (btnPromjeneDiff) btnPromjeneDiff.disabled = busy;
       if (btnImportAllFull) btnImportAllFull.disabled = busy;
-      if (btnImportAllDiff) {
+      if (btnImportDiffDisk) {
         const f = snapshotFromSelect.value;
         const t = snapshotSelect.value;
         const diffImportOk = f && t && f !== t && Number(f) < Number(t);
-        btnImportAllDiff.disabled = busy || !diffImportOk;
+        btnImportDiffDisk.disabled = busy || !diffImportOk;
+      }
+      if (btnImportDiffDb) {
+        const f = snapshotFromSelect.value;
+        const t = snapshotSelect.value;
+        const diffImportOk = f && t && f !== t && Number(f) < Number(t);
+        btnImportDiffDb.disabled = busy || !diffImportOk || !databaseConfigured;
       }
       if (btnStagingSaveFrom) btnStagingSaveFrom.disabled = busy;
       if (btnStagingSaveTo) btnStagingSaveTo.disabled = busy;
@@ -1043,7 +1043,6 @@
       if (btnStagingSyncFromDb) btnStagingSyncFromDb.disabled = busy || !databaseConfigured;
       if (btnStagingSyncToDb) btnStagingSyncToDb.disabled = busy || !databaseConfigured;
       if (btnStagingSyncDiffDb) btnStagingSyncDiffDb.disabled = busy || !databaseConfigured;
-      if (stagingSyncDb) stagingSyncDb.disabled = busy || !databaseConfigured;
       if (btnDatasetFetch) btnDatasetFetch.disabled = busy;
       if (btnDatasetList) btnDatasetList.disabled = busy;
       if (datasetSelect) datasetSelect.disabled = busy;
@@ -2656,11 +2655,11 @@
 
     function applyImportProgress(ev) {
       if (!ev || ev.type !== 'progress') return;
-      const syncDb = stagingSyncDb && stagingSyncDb.checked;
+      const showDbPhase = ev.phase === 'db';
       if (importProgressPanel) importProgressPanel.hidden = false;
 
       if (ev.phase === 'disk') {
-        if (progressDbBlock && ev.step !== 'complete') progressDbBlock.hidden = true;
+        if (progressDbBlock) progressDbBlock.hidden = true;
         let pct = ev.stepPercent != null ? ev.stepPercent : 0;
         if (ev.stepTotal && ev.stepIndex != null) {
           pct = Math.round((ev.stepIndex / ev.stepTotal) * 100);
@@ -2674,13 +2673,9 @@
           }
           progressDiskLabel.textContent = diskLabel;
         }
-        if (ev.step === 'complete' && syncDb && progressDbBlock) {
-          progressDbBlock.hidden = false;
-          if (progressDbLabel) progressDbLabel.textContent = 'Brojim redove na disku…';
-        }
       }
 
-      if (ev.phase === 'db' && syncDb) {
+      if (ev.phase === 'db' && showDbPhase) {
         if (progressDbBlock) progressDbBlock.hidden = false;
         const pct = ev.percent != null ? ev.percent : 0;
         setBar(progressDbBar, progressDbTrack, pct);
@@ -2703,7 +2698,7 @@
 
     function runImportAll(mode, diffPhase) {
       const isDiff = mode === 'diff';
-      const phase = diffPhase || 'all';
+      const phase = diffPhase || (isDiff ? 'disk' : 'disk');
       let fromId = snapshotFromSelect.value;
       let toId = snapshotSelect.value;
       if (!isDiff && (!toId || !snapshotsById[toId]) && fromId && snapshotsById[fromId]) {
@@ -2727,8 +2722,8 @@
           show('Starija snimka mora imati manji ID od novije (#' + fromId + ' → #' + toId + ').', true);
           return;
         }
-        if (phase === 'db' && !(stagingSyncDb && stagingSyncDb.checked)) {
-          show('Za Diff 2/2 — baza uključi „Sinkroniziraj u PostgreSQL”.', true);
+        if (phase === 'db' && !databaseConfigured) {
+          show('Diff 2/2 — baza zahtijeva DATABASE_URL na serveru.', true);
           return;
         }
       }
@@ -2737,30 +2732,23 @@
       if (fromId && snapshotsById[fromId] && !sameSnapshot) {
         qs.set('snapshot_id_from', fromId);
       }
-      const syncDb = Boolean(stagingSyncDb && stagingSyncDb.checked);
-      const diskOnly = isDiff && phase === 'disk';
       const dbOnly = isDiff && phase === 'db';
-      qs.set('sync_db', diskOnly ? '0' : syncDb ? '1' : '0');
+      qs.set('sync_db', dbOnly ? '1' : '0');
       if (isDiff) {
-        qs.set('phase', phase);
-        if (syncDb && !diskOnly) qs.set('apply_temp', '1');
+        qs.set('phase', dbOnly ? 'db' : 'disk');
+        if (dbOnly && stagingApplyTemp && stagingApplyTemp.checked) qs.set('apply_temp', '1');
         if (tempOnlySubjekti && tempOnlySubjekti.checked) qs.set('only_subjekti', '1');
       }
 
       setBusy(true);
-      resetImportProgress(isDiff ? !diskOnly && syncDb : syncDb);
+      resetImportProgress(dbOnly);
       if (importAllHint) {
         if (isDiff) {
-          const phaseLabel =
-            phase === 'disk'
-              ? '1/2 disk'
-              : phase === 'db'
-                ? '2/2 baza'
-                : 'disk + baza';
+          const phaseLabel = dbOnly ? '2/2 samo baza' : '1/2 samo disk';
           importAllHint.textContent =
             'Diferencijalno #' + fromId + ' → #' + toId +
-            ' (' + phaseLabel + '): promjene, diff, aktivni subjekti' +
-            (syncDb && !diskOnly
+            ' (' + phaseLabel + ')' +
+            (dbOnly && stagingApplyTemp && stagingApplyTemp.checked
               ? ', temp (' +
                 (tempOnlySubjekti && tempOnlySubjekti.checked ? 'samo subjekti' : 'svi matični skupovi') +
                 ')'
@@ -2877,11 +2865,9 @@
     if (btnImportAllFull) btnImportAllFull.addEventListener('click', () => runImportAll('full'));
     if (btnImportDiffDisk) btnImportDiffDisk.addEventListener('click', () => runImportAll('diff', 'disk'));
     if (btnImportDiffDb) btnImportDiffDb.addEventListener('click', () => runImportAll('diff', 'db'));
-    if (btnImportAllDiff) btnImportAllDiff.addEventListener('click', () => runImportAll('diff', 'all'));
 
     function stagingDbQuerySuffix() {
-      if (!stagingSyncDb || !stagingSyncDb.checked) return '&sync_db=0';
-      return '&sync_db=1';
+      return '&sync_db=0';
     }
 
     function formatDatabaseMeta(db) {
@@ -2903,7 +2889,6 @@
         if (btnStagingSyncFromDb) btnStagingSyncFromDb.disabled = !databaseConfigured;
         if (btnStagingSyncToDb) btnStagingSyncToDb.disabled = !databaseConfigured;
         if (btnStagingSyncDiffDb) btnStagingSyncDiffDb.disabled = !databaseConfigured;
-        if (stagingSyncDb) stagingSyncDb.disabled = !databaseConfigured;
         if (btnDbClear) btnDbClear.disabled = !databaseConfigured;
         if (btnIndeksRebuild) btnIndeksRebuild.disabled = !databaseConfigured;
         if (btnIndeksSearch) btnIndeksSearch.disabled = !databaseConfigured;
@@ -2961,10 +2946,9 @@
           snapshot_id_to: toId,
           save_snapshots: '1'
         });
-        qs.set('sync_db', stagingSyncDb && stagingSyncDb.checked ? '1' : '0');
-        if (stagingApplyTemp && stagingApplyTemp.checked) qs.set('apply_temp', '1');
+        qs.set('sync_db', '0');
         stagingFetch('/api/staging/save-diff?' + qs.toString(),
-          'Spremam snimke (ako treba) i diff #' + fromId + ' → #' + toId + '…');
+          'Spremam na disk (snimke ako treba + diff) #' + fromId + ' → #' + toId + '…');
       });
     }
     if (btnStagingSaveMaticniDiff) {
