@@ -781,6 +781,46 @@ function rmDirRecursive(dirPath) {
 }
 
 /**
+ * Obriši samo diff mapu diffs/{from}_to_{to}/ (ne dira snapshots/).
+ * @param {string|number} fromId
+ * @param {string|number} toId
+ */
+function deleteDiffFromDisk(fromId, toId) {
+  const from = String(fromId).trim();
+  const to = String(toId).trim();
+  if (!isSafeSnapshotId(from) || !isSafeSnapshotId(to)) {
+    throw new Error('snapshot_id_from i snapshot_id_to moraju biti numerički ID.');
+  }
+  if (Number(from) >= Number(to)) {
+    throw new Error(`snapshot_id_from (${from}) mora biti manji od snapshot_id_to (${to}).`);
+  }
+
+  const root = getDataDir();
+  const dir = diffDir(from, to);
+  const key = `${from}_to_${to}`;
+  const rel = path.relative(root, dir).split(path.sep).join('/');
+  const existed = fs.existsSync(dir);
+
+  if (existed) {
+    rmDirRecursive(dir);
+  }
+
+  return {
+    ok: true,
+    skipped: !existed,
+    reason: existed ? null : 'not_found',
+    snapshot_id_from: from,
+    snapshot_id_to: to,
+    key,
+    disk_rel_path: rel,
+    diff_removed: existed && !fs.existsSync(dir),
+    message: existed
+      ? `Diff #${from} → #${to} obrisan s diska.`
+      : `Diff #${from} → #${to} nije na disku.`
+  };
+}
+
+/**
  * Obriši snimku s diska (snapshots/{id}) i sve diff mape koje je referenciraju.
  * Ne dira PostgreSQL.
  */
@@ -903,6 +943,7 @@ module.exports = {
   listStaging,
   listDiskSnapshotsForUi,
   listDiskDiffsForUi,
+  deleteDiffFromDisk,
   deleteSnapshotFromDisk,
   isSafeSnapshotId,
   resolveStagingDownload,

@@ -25,6 +25,7 @@ const {
   listStaging,
   listDiskSnapshotsForUi,
   listDiskDiffsForUi,
+  deleteDiffFromDisk,
   deleteSnapshotFromDisk,
   resolveStagingDownload
 } = require('./sudregStaging');
@@ -345,6 +346,41 @@ async function handleStagingDeleteSnapshot(req, res) {
   const t0 = Date.now();
   try {
     const result = deleteSnapshotFromDisk(snapshotId);
+    sendJson(res, 200, {
+      durationMs: Date.now() - t0,
+      dataDir: getDataDir(),
+      ...result
+    });
+  } catch (e) {
+    sendJson(res, 500, {
+      ok: false,
+      durationMs: Date.now() - t0,
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
+}
+
+async function handleStagingDeleteDiff(req, res) {
+  const q = parseQueryString(req.url);
+  if (q.get('confirm') !== '1') {
+    sendJson(res, 400, {
+      ok: false,
+      error: 'Dodaj confirm=1 (namjerno brisanje diff mape s diska).'
+    });
+    return;
+  }
+  const fromId = q.get('snapshot_id_from') || q.get('from');
+  const toId = q.get('snapshot_id_to') || q.get('to');
+  if (!fromId || !toId) {
+    sendJson(res, 400, {
+      ok: false,
+      error: 'snapshot_id_from i snapshot_id_to su obavezni.'
+    });
+    return;
+  }
+  const t0 = Date.now();
+  try {
+    const result = deleteDiffFromDisk(fromId, toId);
     sendJson(res, 200, {
       durationMs: Date.now() - t0,
       dataDir: getDataDir(),
@@ -1322,6 +1358,14 @@ const server = http.createServer((req, res) => {
     (req.method === 'DELETE' || req.method === 'POST' || req.method === 'GET')
   ) {
     handleStagingDeleteSnapshot(req, res);
+    return;
+  }
+
+  if (
+    pathOnly === '/api/staging/diffs/delete' &&
+    (req.method === 'DELETE' || req.method === 'POST' || req.method === 'GET')
+  ) {
+    handleStagingDeleteDiff(req, res);
     return;
   }
 
