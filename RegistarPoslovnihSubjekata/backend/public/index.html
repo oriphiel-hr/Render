@@ -275,6 +275,30 @@
     ul.maticni-file-list code {
       color: #9fd4ff;
     }
+    button.diff-dl-link {
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      color: var(--sudreg);
+      cursor: pointer;
+      font: inherit;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    button.diff-dl-link:hover {
+      color: #b8e0ff;
+    }
+    button.diff-dl-link code {
+      color: inherit;
+      font-size: inherit;
+    }
+    .diff-par-dl {
+      display: block;
+      margin-top: 0.25rem;
+      font-size: 0.72rem;
+      font-weight: normal;
+    }
     .diff-panel-sep {
       margin: 0.75rem 0 0.5rem;
       border: 0;
@@ -392,8 +416,8 @@
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v33</span></h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v33</strong>.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v34</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v34</strong>.</p>
     <p class="section-label">Servis</p>
     <div class="actions">
       <button type="button" id="btn-status">Provjeri status</button>
@@ -493,8 +517,8 @@
         </div>
         <p class="hint" style="margin:0.45rem 0 0;font-size:0.78rem;">
           <strong>Snimke</strong> = puni podaci u <code>snapshots/{id}/datasets/</code>.
-          <strong>Diff matični</strong> = datoteke u <code>diffs/{od}_to_{do}/datasets/</code> — klikni „13 datoteka” za popis imena; broj = redovi u diff-u, ne ukupan MBS.
-          Zasjenjeni checkbox: SCN diff (<code>promjene.jsonl</code>) još nije na disku. Klik na red postavlja snimku 1 i 2.
+          <strong>Preuzimanje:</strong> označi ☑ red → <em>Preuzmi označene</em> (promjene / meta / sve matične .jsonl), ili u popisu klikni <strong>podcrtano ime datoteke</strong> (⬇ jedna datoteka).
+          Ispod para: <em>promjene.jsonl</em> / <em>meta.json</em>. Zasjenjeni ☑ = SCN diff još nije na disku.
         </p>
         <div class="actions" style="margin-top:0.5rem;flex-wrap:wrap;">
           <button type="button" class="secondary" id="btn-dl-selected-diff-promjene" disabled>
@@ -1216,7 +1240,7 @@
       return out;
     }
 
-    function buildMaticniDiffCellHtml(d) {
+    function buildMaticniDiffCellHtml(d, fromId, toId) {
       const maticniItems = Array.isArray(d.maticni_dataset_items) ? d.maticni_dataset_items : [];
       if (!maticniItems.length) {
         return d.on_disk
@@ -1236,9 +1260,16 @@
             ? ' · ' + x.rows_skipped_unchanged.toLocaleString('hr-HR') + ' istih preskočeno'
             : '';
         listHtml +=
-          '<li><code>' +
+          '<li><button type="button" class="diff-dl-link maticni-dl-link" title="Preuzmi datoteku" ' +
+          'data-from="' +
+          escapeHtml(fromId) +
+          '" data-to="' +
+          escapeHtml(toId) +
+          '" data-dataset="' +
+          escapeHtml(x.dataset_key) +
+          '"><code>⬇ ' +
           escapeHtml(file) +
-          '</code> — ' +
+          '</code></button> — ' +
           escapeHtml(rows) +
           '<span class="hint">' +
           escapeHtml(skipped) +
@@ -1420,7 +1451,20 @@
           : d.can_generate
             ? 'čeka generiranje'
             : '—';
-        const maticniCellHtml = buildMaticniDiffCellHtml(d);
+        const maticniCellHtml = buildMaticniDiffCellHtml(d, from, to);
+        const parDlHtml = d.on_disk
+          ? '<span class="diff-par-dl">' +
+            '<button type="button" class="diff-dl-link diff-par-dl-link" data-from="' +
+            escapeHtml(from) +
+            '" data-to="' +
+            escapeHtml(to) +
+            '" data-file="promjene" title="SCN diff — 11k MBS">⬇ promjene.jsonl</button> · ' +
+            '<button type="button" class="diff-dl-link diff-par-dl-link" data-from="' +
+            escapeHtml(from) +
+            '" data-to="' +
+            escapeHtml(to) +
+            '" data-file="meta">⬇ meta.json</button></span>'
+          : '';
         const saved = d.maticni_saved_at
           ? String(d.maticni_saved_at).replace('T', ' ').slice(0, 19)
           : d.saved_at
@@ -1439,7 +1483,9 @@
           escapeHtml(title) +
           '">' +
           escapeHtml(parLabel) +
-          '</strong></td>' +
+          '</strong>' +
+          parDlHtml +
+          '</td>' +
           '<td>' +
           escapeHtml(diffCell) +
           (d.promjene_size_bytes != null
@@ -1470,6 +1516,42 @@
         if (detailsEl) {
           detailsEl.addEventListener('click', (ev) => ev.stopPropagation());
         }
+        tr.querySelectorAll('.maticni-dl-link').forEach((btn) => {
+          btn.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            const f = btn.getAttribute('data-from');
+            const t = btn.getAttribute('data-to');
+            const key = btn.getAttribute('data-dataset');
+            const label = btn.textContent.replace(/^\s*⬇\s*/, '').trim();
+            startStagingDownload(
+              stagingDownloadUrl({
+                kind: 'diff',
+                snapshot_id_from: f,
+                snapshot_id_to: t,
+                file: 'dataset',
+                dataset_key: key
+              }),
+              label
+            );
+          });
+        });
+        tr.querySelectorAll('.diff-par-dl-link').forEach((btn) => {
+          btn.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            const f = btn.getAttribute('data-from');
+            const t = btn.getAttribute('data-to');
+            const file = btn.getAttribute('data-file') || 'promjene';
+            startStagingDownload(
+              stagingDownloadUrl({
+                kind: 'diff',
+                snapshot_id_from: f,
+                snapshot_id_to: t,
+                file: file
+              }),
+              file === 'meta' ? 'meta.json' : 'promjene.jsonl'
+            );
+          });
+        });
         if (d.on_disk) {
           tr.addEventListener('click', () => {
             snapshotFromSelect.value = from;
