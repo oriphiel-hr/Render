@@ -7,8 +7,9 @@ UPDATE "maticni_redovi"
 SET "row_key" = COALESCE(payload->>'row_key', '_0')
 WHERE "row_key" = '_0' OR "row_key" IS NULL;
 
-CREATE UNIQUE INDEX IF NOT EXISTS "maticni_redovi_dataset_key_mbs_row_key_key"
-  ON "maticni_redovi" ("dataset_key", "mbs", "row_key");
+-- Stupci u produkciji su camelCase (staged_datasets migracija), ne snake_case
+CREATE UNIQUE INDEX IF NOT EXISTS "maticni_redovi_datasetKey_mbs_row_key_key"
+  ON "maticni_redovi" ("datasetKey", "mbs", "row_key");
 
 CREATE TABLE IF NOT EXISTS "maticni_change_log" (
   "id" TEXT NOT NULL,
