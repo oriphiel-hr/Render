@@ -353,6 +353,16 @@
       font-weight: 600;
     }
     button.sudreg:hover:not(:disabled) { background: var(--sudreg-hover); }
+    button.disk-to-db {
+      background: transparent;
+      color: #60a5fa;
+      border-color: #3b82f6;
+      font-weight: 600;
+    }
+    button.disk-to-db:hover:not(:disabled) {
+      background: rgba(96, 165, 250, 0.12);
+      border-color: #60a5fa;
+    }
     button.danger {
       background: transparent;
       color: #f87171;
@@ -439,8 +449,8 @@
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v37</span></h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v37</strong>.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v39</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v39</strong>.</p>
     <p class="section-label">Servis</p>
     <div class="actions">
       <button type="button" id="btn-status">Provjeri status</button>
@@ -467,6 +477,9 @@
       </button>
     </div>
     <div class="actions" style="margin-bottom: 0.75rem; flex-wrap: wrap;">
+      <button type="button" class="disk-to-db secondary" id="btn-disk-to-db-toolbar" disabled title="Prva snimka: puni INSERT. Sljedeće: UPDATE/DELETE + log samo za te operacije (novi bez loga)">
+        Ubaci u bazu (1→2)
+      </button>
       <button type="button" class="danger secondary" id="btn-delete-snapshot-toolbar-2" title="Briše snapshots/{id} i sve diff mape s tim ID-om">
         Obriši snimku #2 s diska
       </button>
@@ -483,11 +496,12 @@
       Može trajati dugo — prati progress ispod.
       <strong>Diff susjednih snimki</strong>: za svaki uzastopni par ID (n→n+1) generira
       <code>diffs/{n}_to_{n+1}/promjene.jsonl</code> + <code>meta.json</code> (SCN diff) i automatski matične skupove u <code>datasets/</code>.
-      <strong>Diff matičnih entiteta</strong>: samo <code>datasets/*.jsonl</code> za sve susjedne parove — <strong>jedan HTTP zahtjev po paru</strong>; potreban je <code>promjene.jsonl</code> u diff mapi.
+      <strong>Diff matičnih entiteta</strong>: samo redovi čiji se <strong>poslovni sadržaj</strong> stvarno promijenio (usporedba stupaca, ne cijeli skup); u bazu ide isto — log bilježi <em>koje stupce</em> (<code>changed_columns</code>).
+      <strong>Nesusjedni par</strong> (npr. #1165→#1168): zeleni gumbi ga ne generiraju automatski — u tablici diff-ova označi par i „Matični diff (označeni parovi)”, ili u Napredno <em>API → diff</em> / <em>Matični diff (par 1→2)</em> za odabrane ID-eve.
     </p>
     <p class="disk-workflow-hint">
-      <strong>Izrada JSONL na disku:</strong> dovoljna su <strong>tri zelena gumba</strong> gore (snimke → SCN diff → matični diff).
-      Zatim (odvojeno): <strong>PostgreSQL</strong> — sync gumbi ili <em>Diff 2/2 — baza</em>. <strong>Brisanje</strong>: crveni gumbi (snimka / diff par) — samo datoteke na disku, ne baza.
+      <strong>Izrada JSONL na disku:</strong> dovoljna su <strong>tri zelena gumba</strong> gore (snimke → SCN diff → matični diff) za uzastopne ID-eve na disku.
+      Zatim <strong>PostgreSQL</strong>: plavi <em>Ubaci u bazu</em> — 1. snimka puni INSERT; dalje UPDATE/DELETE + log samo za promjene (novi su već u registru). <strong>Brisanje</strong>: crveni — samo disk.
     </p>
     <div id="bulk-save-progress-panel" class="disk-snapshots-panel" hidden style="margin-bottom:0.75rem;">
       <h4>Masovno spremanje na disk</h4>
@@ -754,7 +768,7 @@
       <button type="button" class="secondary" id="btn-indeks-search" disabled title="GET /api/db/subjekti-indeks">Pretraži indeks</button>
       <button type="button" class="danger" id="btn-db-clear" disabled title="Briše sve redove u PostgreSQL staging tablicama">Obriši bazu (staging)</button>
     </div>
-    <p class="hint" style="margin:0 0 0.75rem;font-size:0.82rem;">„Obriši bazu” briše samo <strong>PostgreSQL</strong> (promjene, matični, meta u bazi). <strong>Disk</strong> (<code>/var/data</code>, JSONL) ostaje — možeš ponovo „Samo baza ← disk”. Tablica <strong>subjekti_indeks</strong> puni se pri syncu (subjekti/tvrtka/pravni oblik) — stupci za pretragu: OIB, status, naziv, pravni oblik, datum brisanja, postupak, djelatnost, sud.</p>
+    <p class="hint" style="margin:0 0 0.75rem;font-size:0.82rem;">Log: <strong>update</strong>/<strong>delete</strong> + <code>changed_columns</code> (npr. <code>tvrtka</code>, <code>oib</code>) i <code>field_changes</code> (from/to). Red = MBS + <code>row_key</code>. Novi subjekti bez log retka.</p>
     <p class="section-label">Preuzimanje s diska</p>
     <p id="dl-status">Učitavam snimke…</p>
     <div class="actions">
@@ -801,6 +815,7 @@
     const bulkSaveProgressLabel = document.getElementById('bulk-save-progress-label');
     const btnDeleteSnapshotToolbar1 = document.getElementById('btn-delete-snapshot-toolbar-1');
     const btnDeleteSnapshotToolbar2 = document.getElementById('btn-delete-snapshot-toolbar-2');
+    const btnDiskToDbToolbar = document.getElementById('btn-disk-to-db-toolbar');
     const btnDeleteDiffPairToolbar = document.getElementById('btn-delete-diff-pair-toolbar');
     const btnDeleteSelectedDiffs = document.getElementById('btn-delete-selected-diffs');
     const btnSnapshotsJson = document.getElementById('btn-snapshots-json');
@@ -1051,6 +1066,7 @@
       if (btnStagingSyncFromDb) btnStagingSyncFromDb.disabled = busy || !databaseConfigured;
       if (btnStagingSyncToDb) btnStagingSyncToDb.disabled = busy || !databaseConfigured;
       if (btnStagingSyncDiffDb) btnStagingSyncDiffDb.disabled = busy || !databaseConfigured;
+      updateDiskToDbToolbarButton();
       if (btnDatasetFetch) btnDatasetFetch.disabled = busy;
       if (btnDatasetList) btnDatasetList.disabled = busy;
       if (datasetSelect) datasetSelect.disabled = busy;
@@ -1349,11 +1365,12 @@
     }
 
     async function fetchAdjacentPairsWithPromjeneDiff() {
-      let pairs = diskDiffsSorted.filter((d) => d.on_disk);
+      const isAdjacentOnDisk = (d) => d.on_disk && d.adjacent !== false;
+      let pairs = diskDiffsSorted.filter(isAdjacentOnDisk);
       if (pairs.length) return pairs;
       const res = await fetch('/api/staging/snapshots', { headers: { Accept: 'application/json' } });
       const body = await res.json();
-      return (Array.isArray(body.disk_diffs) ? body.disk_diffs : []).filter((d) => d.on_disk);
+      return (Array.isArray(body.disk_diffs) ? body.disk_diffs : []).filter(isAdjacentOnDisk);
     }
 
     async function runMaticniDiffPairsSequential(pairs, force) {
@@ -1988,6 +2005,13 @@
       btnGenSelectedMaticniDiff.addEventListener('click', generateMaticniDiffForSelectedPairs);
     }
 
+    function updateDiskToDbToolbarButton() {
+      if (!btnDiskToDbToolbar) return;
+      const busy = btnStatus && btnStatus.disabled;
+      const t = snapshotSelect.value;
+      btnDiskToDbToolbar.disabled = busy || !t || !databaseConfigured;
+    }
+
     function updateDeleteToolbarButtons() {
       const busy = btnStatus && btnStatus.disabled;
       const f = snapshotFromSelect.value;
@@ -1998,6 +2022,110 @@
         btnDeleteDiffPairToolbar.disabled =
           busy || !f || !t || f === t || Number(f) >= Number(t);
       }
+      updateDiskToDbToolbarButton();
+    }
+
+    async function runDiskToDbImportUi() {
+      const fromId = snapshotFromSelect.value;
+      const toId = snapshotSelect.value;
+      if (!toId) {
+        show('Odaberi noviju snimku (točka 2).', true);
+        return;
+      }
+      if (!databaseConfigured) {
+        show('DATABASE_URL nije postavljen na serveru.', true);
+        return;
+      }
+      const incremental =
+        fromId && fromId !== toId && Number(fromId) < Number(toId);
+      const ok = window.confirm(
+        incremental
+          ? 'UPDATE registra: #' + fromId + ' → #' + toId + '\n\n' +
+              '• SCN diff → tablica promjene\n' +
+              '• samo promijenjeni matični redovi (UPDATE / INSERT novih / DELETE)\n' +
+              '• log: UPDATE/DELETE + koji stupci (changed_columns)\n\n' +
+              'Ne dira nepromijenjene zapise. Nastaviti?'
+          : 'Puni INSERT (prva snimka): #' + toId + '\n\n' +
+              '• svi redovi iz snapshots/' + toId + '/\n' +
+              '• baza mora biti prazna (inače koristi par #1→#2)\n\n' +
+              'Nastaviti?'
+      );
+      if (!ok) return;
+
+      const qs = new URLSearchParams({
+        snapshot_id_to: toId,
+        mode: 'auto'
+      });
+      if (incremental) qs.set('snapshot_id_from', fromId);
+
+      setBusy(true);
+      resetImportProgress(true);
+      if (importProgressPanel) {
+        importProgressPanel.hidden = false;
+        importProgressPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+      if (importAllHint) {
+        importAllHint.textContent = incremental
+          ? 'Baza: UPDATE #' + fromId + '→#' + toId + ' + change log…'
+          : 'Baza: puni INSERT #' + toId + '…';
+      }
+      show(
+        incremental ? 'Pokrećem nastavak u bazu (matični diff)…' : 'Pokrećem puni upis u bazu…',
+        false
+      );
+      meta.textContent = 'SSE /api/staging/sync-disk-to-db/stream?' + qs.toString();
+
+      const t0 = performance.now();
+      const es = new EventSource('/api/staging/sync-disk-to-db/stream?' + qs.toString());
+
+      es.onmessage = (msg) => {
+        let data;
+        try {
+          data = JSON.parse(msg.data);
+        } catch (_) {
+          return;
+        }
+        if (data.type === 'progress') {
+          applyImportProgress(data);
+          return;
+        }
+        if (data.type === 'done') {
+          es.close();
+          const ms = Math.round(performance.now() - t0);
+          const modeLabel = data.db_mode === 'incremental' ? 'Nastavak' : 'Puni upis';
+          meta.textContent =
+            modeLabel +
+            ' u bazu · ' +
+            (data.duration || fmtDuration(data.duration_ms != null ? data.duration_ms : ms));
+          if (importAllHint) {
+            importAllHint.textContent =
+              modeLabel + ' gotovo · ' + (data.duration || fmtDuration(data.duration_ms));
+          }
+          setBar(progressDbBar, progressDbTrack, 100);
+          show(JSON.stringify(data, null, 2), false);
+          setBusy(false);
+          refreshDbStatus();
+          return;
+        }
+        if (data.type === 'error') {
+          es.close();
+          show('Greška: ' + (data.error || 'nepoznato'), true);
+          meta.textContent = '/api/staging/sync-disk-to-db/stream';
+          if (importAllHint) importAllHint.textContent = '';
+          hideImportProgress();
+          setBusy(false);
+        }
+      };
+
+      es.onerror = () => {
+        if (es.readyState === EventSource.CLOSED) return;
+        es.close();
+        show('Veza prekinuta (SSE). Pokušaj ponovo.', true);
+        meta.textContent = '/api/staging/sync-disk-to-db/stream';
+        if (importAllHint) importAllHint.textContent = '';
+        hideImportProgress();
+        setBusy(false);
+      };
     }
 
     function onSnapshotSelectionChange() {
@@ -2521,6 +2649,9 @@
         deleteSnapshotFromDiskUi(snapshotFromSelect.value, 'starija (#1)')
       );
     }
+    if (btnDiskToDbToolbar) {
+      btnDiskToDbToolbar.addEventListener('click', runDiskToDbImportUi);
+    }
     if (btnDeleteDiffPairToolbar) {
       btnDeleteDiffPairToolbar.addEventListener('click', () =>
         deleteDiffPairFromDiskUi(snapshotFromSelect.value, snapshotSelect.value)
@@ -3006,6 +3137,7 @@
         if (btnStagingSyncFromDb) btnStagingSyncFromDb.disabled = !databaseConfigured;
         if (btnStagingSyncToDb) btnStagingSyncToDb.disabled = !databaseConfigured;
         if (btnStagingSyncDiffDb) btnStagingSyncDiffDb.disabled = !databaseConfigured;
+        updateDiskToDbToolbarButton();
         if (btnDbClear) btnDbClear.disabled = !databaseConfigured;
         if (btnIndeksRebuild) btnIndeksRebuild.disabled = !databaseConfigured;
         if (btnIndeksSearch) btnIndeksSearch.disabled = !databaseConfigured;

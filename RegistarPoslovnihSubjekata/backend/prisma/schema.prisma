@@ -97,14 +97,44 @@ model MaticniRed {
   snapshotId       Int
   datasetKey       String
   mbs              Int?
+  rowKey           String        @default("_0") @map("row_key")
   payload          Json
   stagedDatasetId  String
   createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt @map("updated_at")
   stagedDataset    StagedDataset @relation(fields: [stagedDatasetId], references: [id], onDelete: Cascade)
+  changeLogs       MaticniChangeLog[]
 
+  @@unique([datasetKey, mbs, rowKey])
   @@index([snapshotId, datasetKey])
   @@index([mbs])
   @@map("maticni_redovi")
+}
+
+/// Audit: UPDATE/DELETE + changed_columns / field_changes (novi zapisi samo u maticni_redovi).
+model MaticniChangeLog {
+  id               String    @id @default(cuid())
+  snapshotIdFrom   Int       @map("snapshot_id_from")
+  snapshotIdTo     Int       @map("snapshot_id_to")
+  datasetKey       String    @map("dataset_key")
+  mbs              Int
+  rowKey           String    @default("_0") @map("row_key")
+  operation        String
+  vrsta            String?
+  changedColumns   Json?     @map("changed_columns")
+  fieldChanges     Json?     @map("field_changes")
+  payloadBefore    Json?     @map("payload_before")
+  payloadAfter     Json?     @map("payload_after")
+  maticniRedId     String?   @map("maticni_red_id")
+  appliedAt        DateTime  @default(now()) @map("applied_at")
+  maticniRed       MaticniRed? @relation(fields: [maticniRedId], references: [id], onDelete: SetNull)
+
+  @@index([snapshotIdTo])
+  @@index([snapshotIdFrom, snapshotIdTo])
+  @@index([mbs])
+  @@index([operation])
+  @@index([appliedAt])
+  @@map("maticni_change_log")
 }
 
 /// Denormalizirani subjekti za brzu pretragu (iz subjekti + tvrtka + pravni_oblici).

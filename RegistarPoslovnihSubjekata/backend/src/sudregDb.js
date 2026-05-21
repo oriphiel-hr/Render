@@ -260,12 +260,18 @@ async function syncDiffPromjeneToDb(fromId, toId, opts = {}) {
   };
 }
 
+function rowKeyFromRow(row) {
+  if (!row || typeof row !== 'object') return '_0';
+  return row.row_key != null ? String(row.row_key) : '_0';
+}
+
 function mapMaticniRow(row, snapshotId, datasetKey, stagedDatasetId) {
   const mbs = row.mbs != null ? Number(row.mbs) : null;
   return {
     snapshotId: Number(snapshotId),
     datasetKey: String(datasetKey),
     mbs: Number.isFinite(mbs) ? mbs : null,
+    rowKey: rowKeyFromRow(row),
     payload: row,
     stagedDatasetId
   };
@@ -440,6 +446,7 @@ async function clearStagingDatabase() {
   await withPrismaRetry(async (db) => {
     await db.$executeRawUnsafe(`
       TRUNCATE TABLE
+        maticni_change_log,
         subjekti_indeks,
         maticni_redovi,
         promjene,
@@ -476,7 +483,9 @@ async function getDbStagingSummary() {
     subjektIndeksCount,
     tempRuns,
     tempSubjekti,
-    tempMaticni
+    tempMaticni,
+    changeLogCount,
+    changeLogUpdates
   ] = await Promise.all([
     db.stagedSnapshot.count(),
     db.stagedDiff.count(),
@@ -486,8 +495,13 @@ async function getDbStagingSummary() {
     db.subjektIndeks.count(),
     db.tempApplyRun.count(),
     db.tempSubjekt.count(),
-    db.tempMaticni.count()
+    db.tempMaticni.count(),
+    db.maticniChangeLog.count(),
+    db.maticniChangeLog.count({ where: { operation: 'update' } })
   ]);
+  const maticniSnapshotMax = await db.maticniRed.aggregate({
+    _max: { snapshotId: true }
+  });
   const latestSnapshots = await db.stagedSnapshot.findMany({
     orderBy: { snapshotId: 'desc' },
     take: 10,
@@ -507,6 +521,9 @@ async function getDbStagingSummary() {
       promjene: promjenaCount,
       datasets: datasetCount,
       maticni_redovi: maticniCount,
+      maticni_change_log: changeLogCount,
+      maticni_change_log_updates: changeLogUpdates,
+      maticni_snapshot_max: maticniSnapshotMax._max.snapshotId,
       subjekti_indeks: subjektIndeksCount,
       temp_apply_runs: tempRuns,
       temp_subjekti: tempSubjekti,
@@ -525,5 +542,7 @@ module.exports = {
   syncDbUnit,
   getDbStagingSummary,
   clearStagingDatabase,
-  isDatabaseConfigured
+  isDatabaseConfigured,
+  rowKeyFromRow,
+  mapMaticniRow
 };

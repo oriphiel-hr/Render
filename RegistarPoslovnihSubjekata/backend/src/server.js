@@ -40,6 +40,7 @@ const {
 const { ensureDatabaseReady } = require('./lib/prisma');
 const { runFullImport } = require('./sudregFullImport');
 const { runDifferentialImport } = require('./sudregDifferentialImport');
+const { runDiskToDbImport, listMaticniChangeLog } = require('./sudregDiskDbImport');
 const { runBulkSaveAllSnapshotsToDisk } = require('./sudregBulkDiskSave');
 const {
   runSaveAdjacentPromjeneDiffs,
@@ -643,6 +644,28 @@ async function handleDbStagingSummary(res) {
   }
 }
 
+async function handleMaticniChangeLog(req, res) {
+  if (!isDatabaseConfigured()) {
+    sendJson(res, 400, { ok: false, error: 'DATABASE_URL nije postavljen.' });
+    return;
+  }
+  const q = parseQueryString(req.url);
+  try {
+    const result = await listMaticniChangeLog({
+      snapshot_id_from: q.get('snapshot_id_from'),
+      snapshot_id_to: q.get('snapshot_id_to'),
+      operation: q.get('operation') || undefined,
+      limit: q.get('limit')
+    });
+    sendJson(res, 200, { ok: true, ...result });
+  } catch (e) {
+    sendJson(res, 500, {
+      ok: false,
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
+}
+
 async function handleDbClear(req, res) {
   if (!isDatabaseConfigured()) {
     sendJson(res, 400, { ok: false, error: 'DATABASE_URL nije postavljen.' });
@@ -1078,6 +1101,93 @@ async function handleStagingSyncDb(req, res) {
   }
 }
 
+function parseDiskToDbQuery(req) {
+  const q = parseQueryString(req.url);
+  const toId = q.get('snapshot_id_to') || q.get('to');
+  const fromId = q.get('snapshot_id_from') || q.get('from') || '';
+  const mode = q.get('mode') || 'auto';
+  if (!toId) {
+    return { error: 'snapshot_id_to (novija snimka) je obavezan.' };
+  }
+  return { toId, fromId, mode };
+}
+
+async function handleStagingSyncDiskToDb(req, res) {
+  const parsed = parseDiskToDbQuery(req);
+  if (parsed.error) {
+    sendJson(res, 400, { ok: false, error: parsed.error });
+    return;
+  }
+  const t0 = Date.now();
+  try {
+    const result = await runDiskToDbImport({
+      snapshot_id_to: parsed.toId,
+      snapshot_id_from: parsed.fromId,
+      mode: parsed.mode
+    });
+    sendJson(res, 200, {
+      ok: true,
+      durationMs: Date.now() - t0,
+      dataDir: getDataDir(),
+      ...result
+    });
+  } catch (e) {
+    sendJson(res, 500, {
+      ok: false,
+      durationMs: Date.now() - t0,
+      error: e instanceof Error ? e.message : String(e)
+    });
+  }
+}
+
+async function handleStagingSyncDiskToDbStream(req, res) {
+  const parsed = parseDiskToDbQuery(req);
+  if (parsed.error) {
+    sendJson(res, 400, { ok: false, error: parsed.error });
+    return;
+  }
+  const send = beginSse(res);
+  const t0 = Date.now();
+  let closed = false;
+  req.on('close', () => {
+    closed = true;
+  });
+
+  try {
+    const result = await runDiskToDbImport(
+      {
+        snapshot_id_to: parsed.toId,
+        snapshot_id_from: parsed.fromId,
+        mode: parsed.mode
+      },
+      (ev) => {
+        if (!closed) send(ev);
+      }
+    );
+    if (!closed) {
+      send({
+        type: 'done',
+        ok: true,
+        durationMs: Date.now() - t0,
+        dataDir: getDataDir(),
+        ...result
+      });
+    }
+  } catch (e) {
+    if (!closed) {
+      send({
+        type: 'error',
+        ok: false,
+        durationMs: Date.now() - t0,
+        error: e instanceof Error ? e.message : String(e)
+      });
+    }
+  } finally {
+    send.end();
+    if (!closed) res.end();
+  }
+}
+
 function handleSudregDatasetsList(res) {
   sendJson(res, 200, {
     ok: true,
@@ -1402,6 +1512,16 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (pathOnly === '/api/staging/sync-disk-to-db' && req.method === 'GET') {
+    handleStagingSyncDiskToDb(req, res);
+    return;
+  }
+
+  if (pathOnly === '/api/staging/sync-disk-to-db/stream' && req.method === 'GET') {
+    handleStagingSyncDiskToDbStream(req, res);
+    return;
+  }
+
   if (pathOnly === '/api/staging/import-all' && req.method === 'GET') {
     handleStagingImportAll(req, res);
     return;
@@ -1474,6 +1594,11 @@ const server = http.createServer((req, res) => {
 
   if (pathOnly === '/api/db/staging' && req.method === 'GET') {
     handleDbStagingSummary(res);
+    return;
+  }
+
+  if (pathOnly === '/api/db/maticni-change-log' && req.method === 'GET') {
+    handleMaticniChangeLog(req, res);
     return;
   }
 
