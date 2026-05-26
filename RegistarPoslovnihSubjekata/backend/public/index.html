@@ -515,8 +515,8 @@
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v40</span></h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v40</strong>.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v41</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v41</strong>.</p>
     <fieldset class="ui-groupbox ui-groupbox--servis">
       <legend>Servis</legend>
       <div class="actions">
@@ -537,14 +537,7 @@
       </fieldset>
       <fieldset class="ui-groupbox ui-groupbox--disk">
         <legend>Datoteke</legend>
-        <p class="groupbox-hint">JSONL na disku (<code>snapshots/</code>, <code>diffs/</code>). Susjedni par = sljedeća snimka u popisu, ne nužno ID+1.</p>
-        <div class="actions">
-          <span class="subgroup-label">Pregled</span>
-          <button type="button" class="secondary" id="btn-disk-snapshots-refresh">Osvježi snimke na disku</button>
-          <button type="button" class="secondary" id="btn-validate-mbs-order" title="Numerički MBS redoslijed + grupiranje istog MBS u JSONL na disku">
-            Provjeri MBS redoslijed
-          </button>
-        </div>
+        <p class="groupbox-hint">Preuzimanje s API-ja u <code>snapshots/</code> i <code>diffs/</code>. Tablica ispod se osvježava sama. Susjedni par = sljedeća snimka u popisu.</p>
         <div class="actions">
           <span class="subgroup-label">Izrada</span>
           <button type="button" class="sudreg" id="btn-save-all-snapshots-disk" title="Svi snapshot_id s API-ja: promjene + svi matični skupovi; postojeći JSONL se preskaču">
@@ -891,8 +884,6 @@
     const btnSudreg = document.getElementById('btn-sudreg');
     const btnSudregConnectivity = document.getElementById('btn-sudreg-connectivity');
     const btnSnapshotsRefresh = document.getElementById('btn-snapshots-refresh');
-    const btnDiskSnapshotsRefresh = document.getElementById('btn-disk-snapshots-refresh');
-    const btnValidateMbsOrder = document.getElementById('btn-validate-mbs-order');
     const btnSaveAllSnapshotsDisk = document.getElementById('btn-save-all-snapshots-disk');
     const btnSaveAdjacentDiffs = document.getElementById('btn-save-adjacent-diffs');
     const btnSaveAdjacentMaticniDiffs = document.getElementById('btn-save-adjacent-maticni-diffs');
@@ -1114,8 +1105,6 @@
       btnSudreg.disabled = busy;
       if (btnSudregConnectivity) btnSudregConnectivity.disabled = busy;
       btnSnapshotsRefresh.disabled = busy;
-      if (btnDiskSnapshotsRefresh) btnDiskSnapshotsRefresh.disabled = busy;
-      if (btnValidateMbsOrder) btnValidateMbsOrder.disabled = busy;
       if (btnSaveAllSnapshotsDisk) btnSaveAllSnapshotsDisk.disabled = busy;
       if (btnSaveAdjacentDiffs) btnSaveAdjacentDiffs.disabled = busy;
       if (busy) {
@@ -2285,42 +2274,6 @@
       btnSudregConnectivity.addEventListener('click', () => fetchPath('/api/sudreg/connectivity', true));
     }
     btnSnapshotsRefresh.addEventListener('click', () => loadSnapshotsFromSource());
-    if (btnDiskSnapshotsRefresh) {
-      btnDiskSnapshotsRefresh.addEventListener('click', () => loadDiskSnapshotsPanel());
-    }
-
-    async function validateMbsOrderForSelectedSnapshot() {
-      const id = String(snapshotSelect.value || snapshotFromSelect.value || '').trim();
-      if (!id) {
-        show('Odaberi snimku (točka 1 ili 2) za provjeru MBS redoslijeda.', true);
-        return;
-      }
-      setBusy(true);
-      show('Provjeravam MBS redoslijed (promjene + svi matični skupovi) za #' + id + '…', false);
-      meta.textContent = '/api/staging/validate-mbs-order?snapshot_id=' + encodeURIComponent(id);
-      try {
-        const res = await fetch(
-          '/api/staging/validate-mbs-order?snapshot_id=' + encodeURIComponent(id),
-          { headers: { Accept: 'application/json' } }
-        );
-        const body = await res.json();
-        if (!res.ok) throw new Error(body.error || res.statusText);
-        const failed = (body.results || []).filter((r) => !r.skipped && !r.ok);
-        meta.textContent =
-          '/api/staging/validate-mbs-order · ' +
-          (body.ok ? 'OK' : failed.length + ' skupova s greškom');
-        show(JSON.stringify(body, null, 2), !body.ok);
-        await loadDiskSnapshotsPanel();
-      } catch (e) {
-        show('Greška: ' + (e.message || String(e)), true);
-      } finally {
-        setBusy(false);
-      }
-    }
-
-    if (btnValidateMbsOrder) {
-      btnValidateMbsOrder.addEventListener('click', validateMbsOrderForSelectedSnapshot);
-    }
 
     let bulkSaveEventSource = null;
 
