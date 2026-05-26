@@ -122,6 +122,25 @@
       font-size: 0.88rem;
       padding: 0.48rem 0.75rem;
     }
+    .disk-groupbox-status {
+      margin: 0 0 0.55rem;
+      padding: 0.42rem 0.6rem;
+      border-radius: 6px;
+      background: rgba(46, 184, 138, 0.1);
+      border: 1px solid rgba(46, 184, 138, 0.28);
+      font-size: 0.8rem;
+      line-height: 1.45;
+      color: #b8e6d4;
+    }
+    .disk-groupbox-status.empty {
+      background: rgba(139, 156, 179, 0.08);
+      border-color: var(--border);
+      color: var(--muted);
+    }
+    .disk-groupbox-status strong {
+      color: var(--text);
+      font-weight: 600;
+    }
     .actions {
       display: flex;
       flex-wrap: wrap;
@@ -515,8 +534,8 @@
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v41</span></h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v41</strong>.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v42</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v42</strong>.</p>
     <fieldset class="ui-groupbox ui-groupbox--servis">
       <legend>Servis</legend>
       <div class="actions">
@@ -538,6 +557,7 @@
       <fieldset class="ui-groupbox ui-groupbox--disk">
         <legend>Datoteke</legend>
         <p class="groupbox-hint">Preuzimanje s API-ja u <code>snapshots/</code> i <code>diffs/</code>. Tablica ispod se osvježava sama. Susjedni par = sljedeća snimka u popisu.</p>
+        <p class="disk-groupbox-status empty" id="disk-files-status" aria-live="polite">Učitavam stanje diska…</p>
         <div class="actions">
           <span class="subgroup-label">Izrada</span>
           <button type="button" class="sudreg" id="btn-save-all-snapshots-disk" title="Svi snapshot_id s API-ja: promjene + svi matični skupovi; postojeći JSONL se preskaču">
@@ -899,6 +919,7 @@
     const snapshotSourceApi = document.getElementById('snapshot-source-api');
     const snapshotSourceDisk = document.getElementById('snapshot-source-disk');
     const diskSnapshotsPanel = document.getElementById('disk-snapshots-panel');
+    const diskFilesStatus = document.getElementById('disk-files-status');
     const diskSnapshotsSummary = document.getElementById('disk-snapshots-summary');
     const diskSnapshotsTbody = document.getElementById('disk-snapshots-tbody');
     const btnPromjene = document.getElementById('btn-promjene');
@@ -1782,6 +1803,55 @@
       }
     }
 
+    function latestDiffOnDisk(diffs) {
+      const onDisk = (Array.isArray(diffs) ? diffs : []).filter((d) => d.on_disk);
+      if (!onDisk.length) return null;
+      return onDisk.slice().sort((a, b) => {
+        const tb = Number(b.snapshot_id_to) - Number(a.snapshot_id_to);
+        if (tb !== 0) return tb;
+        return Number(b.snapshot_id_from) - Number(a.snapshot_id_from);
+      })[0];
+    }
+
+    function updateDiskFilesGroupboxStatus(snapshots, diffs) {
+      if (!diskFilesStatus) return;
+      const list = Array.isArray(snapshots) ? snapshots : [];
+      if (!list.length) {
+        diskFilesStatus.textContent = 'Na disku nema snimki u snapshots/ — prvo Snimi sve snimke na disk.';
+        diskFilesStatus.classList.add('empty');
+        return;
+      }
+      diskFilesStatus.classList.remove('empty');
+      const sorted = sortDiskSnapshots(list);
+      const latest = sorted[0];
+      const id = latest.id != null ? String(latest.id) : '?';
+      const ts = latest.timestamp ? String(latest.timestamp).replace('T', ' ').slice(0, 19) : '—';
+      const prom =
+        latest.has_promjene && latest.promjene_row_count != null
+          ? latest.promjene_row_count.toLocaleString('hr-HR') + ' promjena'
+          : latest.has_promjene
+            ? 'promjene ✓'
+            : 'bez promjene.jsonl';
+      const bestDiff = latestDiffOnDisk(diffs);
+      diskFilesStatus.innerHTML =
+        'Najnovija snimka na disku: <strong>#' +
+        escapeHtml(id) +
+        '</strong> · ' +
+        escapeHtml(prom) +
+        ' · spremljeno ' +
+        escapeHtml(ts) +
+        ' · ukupno ' +
+        sorted.length +
+        ' snimki' +
+        (bestDiff
+          ? ' · zadnji diff: <strong>#' +
+            escapeHtml(String(bestDiff.snapshot_id_from)) +
+            '→#' +
+            escapeHtml(String(bestDiff.snapshot_id_to)) +
+            '</strong>'
+          : '');
+    }
+
     function renderDiskSnapshotsTable(list, dataDir) {
       if (!diskSnapshotsTbody || !diskSnapshotsSummary) return;
       diskSnapshotsTbody.innerHTML = '';
@@ -1789,6 +1859,7 @@
         diskSnapshotsSummary.textContent =
           'Nema snimki u ' + (dataDir || 'data') + '/snapshots/. Spremi promjene (API → disk).';
         if (diskSnapshotsPanel) diskSnapshotsPanel.classList.add('empty');
+        updateDiskFilesGroupboxStatus([], diskDiffsSorted);
         return;
       }
       if (diskSnapshotsPanel) diskSnapshotsPanel.classList.remove('empty');
@@ -1866,12 +1937,17 @@
           diskDiffsByKey[d.key] = d;
         });
         renderDiskDiffsTable(diffList);
+        updateDiskFilesGroupboxStatus(diskSnapshotsSorted, diffList);
       } catch (e) {
         if (diskSnapshotsSummary) {
           diskSnapshotsSummary.textContent = 'Greška: ' + (e.message || String(e));
         }
         if (diskDiffsSummary) {
           diskDiffsSummary.textContent = 'Greška učitavanja diff-ova.';
+        }
+        if (diskFilesStatus) {
+          diskFilesStatus.textContent = 'Greška učitavanja stanja diska: ' + (e.message || String(e));
+          diskFilesStatus.classList.add('empty');
         }
       }
     }
@@ -1904,6 +1980,7 @@
           diskDiffsByKey[d.key] = d;
         });
         renderDiskDiffsTable(diffList);
+        updateDiskFilesGroupboxStatus(sorted, diffList);
         meta.textContent =
           'Disk: ' + list.length + ' snimki · ' + ms + ' ms · /api/staging/snapshots';
         if (!list.length) show('Na disku nema snimki — prvo API → disk.', true);
