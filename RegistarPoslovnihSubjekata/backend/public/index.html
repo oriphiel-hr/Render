@@ -534,8 +534,8 @@
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v42</span></h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v42</strong>.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v43</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v43</strong>.</p>
     <fieldset class="ui-groupbox ui-groupbox--servis">
       <legend>Servis</legend>
       <div class="actions">
@@ -1211,6 +1211,46 @@
         .replace(/"/g, '&quot;');
     }
 
+    async function fetchJson(path, options = {}) {
+      const retries = options.retries != null ? options.retries : 0;
+      const headers = { Accept: 'application/json', ...(options.headers || {}) };
+      let lastErr = null;
+      for (let attempt = 0; attempt <= retries; attempt += 1) {
+        if (attempt > 0) {
+          await new Promise((r) => setTimeout(r, 1800));
+        }
+        const res = await fetch(path, { headers, signal: options.signal });
+        const ct = (res.headers.get('content-type') || '').toLowerCase();
+        const text = await res.text();
+        if (!ct.includes('json') && /^\s*</.test(text)) {
+          lastErr = new Error(
+            'Server je vratio HTML umjesto JSON (HTTP ' +
+              res.status +
+              '). Često Render cold start — pričekaj 10–20 s i osvježi (Ctrl+F5).'
+          );
+          if (attempt < retries) continue;
+          throw lastErr;
+        }
+        let body;
+        try {
+          body = text ? JSON.parse(text) : null;
+        } catch (parseErr) {
+          lastErr = new Error(
+            'Nevaljan JSON (HTTP ' + res.status + '): ' + (parseErr.message || String(parseErr))
+          );
+          if (attempt < retries) continue;
+          throw lastErr;
+        }
+        if (!res.ok) {
+          lastErr = new Error((body && body.error) || res.statusText || 'HTTP ' + res.status);
+          if (res.status >= 500 && attempt < retries) continue;
+          throw lastErr;
+        }
+        return body;
+      }
+      throw lastErr || new Error('Zahtjev nije uspio.');
+    }
+
     function getSnapshotSource() {
       return snapshotSourceDisk && snapshotSourceDisk.checked ? 'disk' : 'api';
     }
@@ -1813,6 +1853,44 @@
       })[0];
     }
 
+    function updateDiskFilesGroupboxFromSummary(summary) {
+      if (!diskFilesStatus || !summary) return;
+      const latest = summary.latest_snapshot;
+      const count = summary.snapshot_count != null ? summary.snapshot_count : 0;
+      if (!latest || !count) {
+        diskFilesStatus.textContent = 'Na disku nema snimki u snapshots/ — prvo Snimi sve snimke na disk.';
+        diskFilesStatus.classList.add('empty');
+        return;
+      }
+      diskFilesStatus.classList.remove('empty');
+      const id = latest.id != null ? String(latest.id) : '?';
+      const ts = latest.timestamp ? String(latest.timestamp).replace('T', ' ').slice(0, 19) : '—';
+      const prom =
+        latest.has_promjene && latest.promjene_row_count != null
+          ? latest.promjene_row_count.toLocaleString('hr-HR') + ' promjena'
+          : latest.has_promjene
+            ? 'promjene ✓'
+            : 'bez promjene.jsonl';
+      const ld = summary.latest_diff;
+      diskFilesStatus.innerHTML =
+        'Najnovija snimka na disku: <strong>#' +
+        escapeHtml(id) +
+        '</strong> · ' +
+        escapeHtml(prom) +
+        ' · spremljeno ' +
+        escapeHtml(ts) +
+        ' · ukupno ' +
+        count +
+        ' snimki' +
+        (ld
+          ? ' · zadnji diff: <strong>#' +
+            escapeHtml(String(ld.snapshot_id_from)) +
+            '→#' +
+            escapeHtml(String(ld.snapshot_id_to)) +
+            '</strong>'
+          : '');
+    }
+
     function updateDiskFilesGroupboxStatus(snapshots, diffs) {
       if (!diskFilesStatus) return;
       const list = Array.isArray(snapshots) ? snapshots : [];
@@ -1850,6 +1928,16 @@
             escapeHtml(String(bestDiff.snapshot_id_to)) +
             '</strong>'
           : '');
+    }
+
+    async function refreshDiskFilesStatusQuick() {
+      if (!diskFilesStatus) return;
+      try {
+        const summary = await fetchJson('/api/staging/disk-summary', { retries: 1 });
+        if (summary.ok !== false) updateDiskFilesGroupboxFromSummary(summary);
+      } catch (_) {
+        /* puni loadDiskSnapshotsPanel ispod */
+      }
     }
 
     function renderDiskSnapshotsTable(list, dataDir) {
@@ -1917,26 +2005,30 @@
     }
 
     async function loadDiskSnapshotsPanel() {
-      if (!diskSnapshotsSummary) return;
-      diskSnapshotsSummary.textContent = 'Učitavam snimke s diska…';
+      if (!diskSnapshotsSummary && !diskFilesStatus) return;
+      if (diskSnapshotsSummary) diskSnapshotsSummary.textContent = 'Učitavam snimke s diska…';
+      if (diskFilesStatus) {
+        diskFilesStatus.textContent = 'Učitavam stanje diska…';
+        diskFilesStatus.classList.add('empty');
+      }
+      refreshDiskFilesStatusQuick();
       try {
-        const res = await fetch('/api/staging/snapshots', { headers: { Accept: 'application/json' } });
-        const body = await res.json();
-        if (!res.ok || !body.ok) throw new Error(body.error || res.statusText);
+        const body = await fetchJson('/api/staging/snapshots', { retries: 1 });
+        if (!body.ok) throw new Error(body.error || 'Greška');
         const list = Array.isArray(body.snapshots) ? body.snapshots : [];
         Object.keys(diskSnapshotsById).forEach((k) => delete diskSnapshotsById[k]);
         diskSnapshotsSorted = sortDiskSnapshots(list);
         diskSnapshotsSorted.forEach((s) => {
           diskSnapshotsById[String(s.id)] = s;
         });
-        renderDiskSnapshotsTable(diskSnapshotsSorted, body.dataDir);
+        if (diskSnapshotsSummary) renderDiskSnapshotsTable(diskSnapshotsSorted, body.dataDir);
         const diffList = Array.isArray(body.disk_diffs) ? body.disk_diffs : [];
         Object.keys(diskDiffsByKey).forEach((k) => delete diskDiffsByKey[k]);
         diskDiffsSorted = diffList;
         diffList.forEach((d) => {
           diskDiffsByKey[d.key] = d;
         });
-        renderDiskDiffsTable(diffList);
+        if (diskDiffsTbody) renderDiskDiffsTable(diffList);
         updateDiskFilesGroupboxStatus(diskSnapshotsSorted, diffList);
       } catch (e) {
         if (diskSnapshotsSummary) {
@@ -1945,7 +2037,7 @@
         if (diskDiffsSummary) {
           diskDiffsSummary.textContent = 'Greška učitavanja diff-ova.';
         }
-        if (diskFilesStatus) {
+        if (diskFilesStatus && diskFilesStatus.textContent.indexOf('Najnovija snimka') < 0) {
           diskFilesStatus.textContent = 'Greška učitavanja stanja diska: ' + (e.message || String(e));
           diskFilesStatus.classList.add('empty');
         }
@@ -1958,10 +2050,9 @@
       snapshotSelect.innerHTML = '<option value="">Učitavam disk…</option>';
       const t0 = performance.now();
       try {
-        const res = await fetch('/api/staging/snapshots', { headers: { Accept: 'application/json' } });
+        const body = await fetchJson('/api/staging/snapshots', { retries: 1 });
         const ms = Math.round(performance.now() - t0);
-        const body = await res.json();
-        if (!res.ok || !body.ok) throw new Error(body.error || res.statusText);
+        if (!body.ok) throw new Error(body.error || 'Greška');
         const list = Array.isArray(body.snapshots) ? body.snapshots : [];
         list.forEach((s) => {
           s.source = 'disk';
@@ -1996,7 +2087,6 @@
         await loadDiskSnapshotsDropdown();
       } else {
         await loadSnapshotsDropdown();
-        await loadDiskSnapshotsPanel();
       }
     }
 

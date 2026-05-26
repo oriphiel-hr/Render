@@ -25,6 +25,7 @@ const {
   listStaging,
   listDiskSnapshotsForUi,
   listDiskDiffsForUi,
+  diskSummaryForUi,
   deleteDiffFromDisk,
   deleteSnapshotFromDisk,
   resolveStagingDownload
@@ -309,6 +310,15 @@ async function handleSudregPromjeneDiff(req, res) {
 async function handleStagingList(res) {
   try {
     sendJson(res, 200, { ok: true, ...listStaging() });
+  } catch (e) {
+    sendJson(res, 500, { ok: false, error: e instanceof Error ? e.message : String(e) });
+  }
+}
+
+function handleStagingDiskSummary(res) {
+  try {
+    const summary = diskSummaryForUi();
+    sendJson(res, 200, { ok: true, ...summary });
   } catch (e) {
     sendJson(res, 500, { ok: false, error: e instanceof Error ? e.message : String(e) });
   }
@@ -1476,6 +1486,11 @@ const server = http.createServer((req, res) => {
     (req.method === 'DELETE' || req.method === 'POST' || req.method === 'GET')
   ) {
     handleStagingDeleteDiff(req, res);
+    return;
+  }
+
+  if (pathOnly === '/api/staging/disk-summary' && req.method === 'GET') {
+    handleStagingDiskSummary(res);
     return;
   }
 

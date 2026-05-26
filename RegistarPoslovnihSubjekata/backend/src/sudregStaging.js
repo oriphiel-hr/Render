@@ -916,10 +916,46 @@ function listDiskSnapshotsForUi() {
       promjene_row_count: promRows,
       promjene_size_bytes: entry.promjene_size_bytes ?? null,
       datasets: entry.datasets || [],
-      disk_rel_path: entry.disk_rel_path,
-      meta: entry.meta || null
+      disk_rel_path: entry.disk_rel_path
     };
   });
+}
+
+/** Lagani odgovor za status u UI (bez punog meta/staging diff detalja). */
+function diskSummaryForUi() {
+  const { dataDir, snapshots } = listStaging();
+  const uiSnaps = listDiskSnapshotsForUi();
+  const sorted = uiSnaps.slice().sort((a, b) => Number(b.id) - Number(a.id));
+  const latest = sorted[0] || null;
+  const diffRows = listDiskDiffsForUi();
+  const onDisk = diffRows.filter((d) => d.on_disk);
+  let latestDiff = null;
+  if (onDisk.length) {
+    latestDiff = onDisk.slice().sort((a, b) => {
+      const tb = Number(b.snapshot_id_to) - Number(a.snapshot_id_to);
+      if (tb !== 0) return tb;
+      return Number(b.snapshot_id_from) - Number(a.snapshot_id_from);
+    })[0];
+  }
+  return {
+    dataDir,
+    snapshot_count: sorted.length,
+    latest_snapshot: latest
+      ? {
+          id: latest.id,
+          timestamp: latest.timestamp,
+          has_promjene: latest.has_promjene,
+          promjene_row_count: latest.promjene_row_count
+        }
+      : null,
+    latest_diff: latestDiff
+      ? {
+          snapshot_id_from: latestDiff.snapshot_id_from,
+          snapshot_id_to: latestDiff.snapshot_id_to
+        }
+      : null,
+    raw_snapshot_count: snapshots.length
+  };
 }
 
 module.exports = {
@@ -943,6 +979,7 @@ module.exports = {
   listStaging,
   listDiskSnapshotsForUi,
   listDiskDiffsForUi,
+  diskSummaryForUi,
   deleteDiffFromDisk,
   deleteSnapshotFromDisk,
   isSafeSnapshotId,
