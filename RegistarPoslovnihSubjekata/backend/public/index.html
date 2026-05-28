@@ -540,8 +540,8 @@
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v44</span></h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v44</strong>.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v45</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v45</strong>.</p>
     <fieldset class="ui-groupbox ui-groupbox--servis">
       <legend>Servis</legend>
       <div class="actions">
@@ -595,6 +595,9 @@
         <div class="actions">
           <button type="button" class="disk-to-db" id="btn-disk-to-db-toolbar" disabled title="Prva snimka: puni INSERT. Sljedeće: UPDATE/DELETE + log samo za te operacije (novi bez loga)">
             Ubaci u bazu (1→2)
+          </button>
+          <button type="button" class="danger" id="btn-db-clear-toolbar" disabled title="Briše sve staging podatke iz PostgreSQL baze">
+            Obriši sve iz baze
           </button>
         </div>
       </fieldset>
@@ -919,6 +922,7 @@
     const btnDeleteSnapshotToolbar1 = document.getElementById('btn-delete-snapshot-toolbar-1');
     const btnDeleteSnapshotToolbar2 = document.getElementById('btn-delete-snapshot-toolbar-2');
     const btnDiskToDbToolbar = document.getElementById('btn-disk-to-db-toolbar');
+    const btnDbClearToolbar = document.getElementById('btn-db-clear-toolbar');
     const btnDeleteDiffPairToolbar = document.getElementById('btn-delete-diff-pair-toolbar');
     const btnDeleteSelectedDiffs = document.getElementById('btn-delete-selected-diffs');
     const btnSnapshotsJson = document.getElementById('btn-snapshots-json');
@@ -1166,6 +1170,7 @@
       if (btnIndeksRebuild) btnIndeksRebuild.disabled = busy || !databaseConfigured;
       if (btnIndeksSearch) btnIndeksSearch.disabled = busy || !databaseConfigured;
       if (btnDbClear) btnDbClear.disabled = busy || !databaseConfigured;
+      if (btnDbClearToolbar) btnDbClearToolbar.disabled = busy || !databaseConfigured;
       if (btnStagingSyncFromDb) btnStagingSyncFromDb.disabled = busy || !databaseConfigured;
       if (btnStagingSyncToDb) btnStagingSyncToDb.disabled = busy || !databaseConfigured;
       if (btnStagingSyncDiffDb) btnStagingSyncDiffDb.disabled = busy || !databaseConfigured;
@@ -3381,6 +3386,7 @@
         if (btnStagingSyncDiffDb) btnStagingSyncDiffDb.disabled = !databaseConfigured;
         updateDiskToDbToolbarButton();
         if (btnDbClear) btnDbClear.disabled = !databaseConfigured;
+        if (btnDbClearToolbar) btnDbClearToolbar.disabled = !databaseConfigured;
         if (btnIndeksRebuild) btnIndeksRebuild.disabled = !databaseConfigured;
         if (btnIndeksSearch) btnIndeksSearch.disabled = !databaseConfigured;
       } catch (_) {
@@ -3554,8 +3560,7 @@
       });
     }
 
-    if (btnDbClear) {
-      btnDbClear.addEventListener('click', async () => {
+    async function runDbClearUi() {
         if (!databaseConfigured) {
           show('DATABASE_URL nije postavljen.', true);
           return;
@@ -3586,7 +3591,13 @@
         } finally {
           setBusy(false);
         }
-      });
+    }
+
+    if (btnDbClear) {
+      btnDbClear.addEventListener('click', runDbClearUi);
+    }
+    if (btnDbClearToolbar) {
+      btnDbClearToolbar.addEventListener('click', runDbClearUi);
     }
 
     loadSnapshotsFromSource();
