@@ -929,13 +929,19 @@ function diskSummaryForUi() {
   const latest = sorted[0] || null;
   const diffRows = listDiskDiffsForUi();
   const onDisk = diffRows.filter((d) => d.on_disk);
-  let latestDiff = null;
+  let latestScnDiff = null;
+  let latestMaticniDiff = null;
   if (onDisk.length) {
-    latestDiff = onDisk.slice().sort((a, b) => {
+    const sortedDiffs = onDisk.slice().sort((a, b) => {
       const tb = Number(b.snapshot_id_to) - Number(a.snapshot_id_to);
       if (tb !== 0) return tb;
       return Number(b.snapshot_id_from) - Number(a.snapshot_id_from);
-    })[0];
+    });
+    latestScnDiff = sortedDiffs[0];
+    latestMaticniDiff =
+      sortedDiffs.find(
+        (d) => Array.isArray(d.maticni_dataset_items) && d.maticni_dataset_items.length > 0
+      ) || null;
   }
   return {
     dataDir,
@@ -948,10 +954,16 @@ function diskSummaryForUi() {
           promjene_row_count: latest.promjene_row_count
         }
       : null,
-    latest_diff: latestDiff
+    latest_scn_diff: latestScnDiff
       ? {
-          snapshot_id_from: latestDiff.snapshot_id_from,
-          snapshot_id_to: latestDiff.snapshot_id_to
+          snapshot_id_from: latestScnDiff.snapshot_id_from,
+          snapshot_id_to: latestScnDiff.snapshot_id_to
+        }
+      : null,
+    latest_maticni_diff: latestMaticniDiff
+      ? {
+          snapshot_id_from: latestMaticniDiff.snapshot_id_from,
+          snapshot_id_to: latestMaticniDiff.snapshot_id_to
         }
       : null,
     raw_snapshot_count: snapshots.length

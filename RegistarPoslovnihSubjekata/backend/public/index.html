@@ -436,13 +436,18 @@
       background: var(--sudreg);
       border-color: var(--sudreg);
       font-weight: 600;
+      box-shadow: 0 2px 10px rgba(46, 184, 138, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.15);
     }
-    button.sudreg:hover:not(:disabled) { background: var(--sudreg-hover); }
+    button.sudreg:hover:not(:disabled) {
+      background: var(--sudreg-hover);
+      box-shadow: 0 3px 14px rgba(46, 184, 138, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
     button.disk-to-db {
       background: transparent;
       color: #60a5fa;
       border-color: #3b82f6;
       font-weight: 600;
+      box-shadow: 0 2px 10px rgba(59, 130, 246, 0.18), inset 0 1px 0 rgba(96, 165, 250, 0.1);
     }
     button.disk-to-db:hover:not(:disabled) {
       background: rgba(96, 165, 250, 0.12);
@@ -452,6 +457,7 @@
       background: transparent;
       color: #f87171;
       border-color: #b45454;
+      box-shadow: 0 2px 10px rgba(248, 113, 113, 0.14), inset 0 1px 0 rgba(248, 113, 113, 0.08);
     }
     button.danger:hover:not(:disabled) {
       background: rgba(248, 113, 113, 0.12);
@@ -534,8 +540,8 @@
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v43</span></h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v43</strong>.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v44</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v44</strong>.</p>
     <fieldset class="ui-groupbox ui-groupbox--servis">
       <legend>Servis</legend>
       <div class="actions">
@@ -956,6 +962,7 @@
     const btnStagingSyncDiffDb = document.getElementById('btn-staging-sync-diff-db');
     const dbStatus = document.getElementById('db-status');
     let databaseConfigured = false;
+    let apiMaxSnapshotId = null;
     const datasetSelect = document.getElementById('dataset-select');
     const datasetDetail = document.getElementById('dataset-detail');
     const btnDatasetFetch = document.getElementById('btn-dataset-fetch');
@@ -1853,6 +1860,34 @@
       })[0];
     }
 
+    function latestMaticniDiffOnDisk(diffs) {
+      const onDisk = (Array.isArray(diffs) ? diffs : []).filter((d) => d.on_disk);
+      if (!onDisk.length) return null;
+      return (
+        onDisk
+          .filter((d) => Array.isArray(d.maticni_dataset_items) && d.maticni_dataset_items.length > 0)
+          .sort((a, b) => {
+            const tb = Number(b.snapshot_id_to) - Number(a.snapshot_id_to);
+            if (tb !== 0) return tb;
+            return Number(b.snapshot_id_from) - Number(a.snapshot_id_from);
+          })[0] || null
+      );
+    }
+
+    function formatSnapshotWithMax(id) {
+      const s = String(id || '?');
+      if (apiMaxSnapshotId != null) return '#' + s + '/#' + String(apiMaxSnapshotId);
+      return '#' + s;
+    }
+
+    function formatDiffWithMax(diffObj) {
+      if (!diffObj) return '—';
+      const from = String(diffObj.snapshot_id_from);
+      const to = String(diffObj.snapshot_id_to);
+      if (apiMaxSnapshotId != null) return '#' + from + '→#' + to + '/#' + String(apiMaxSnapshotId);
+      return '#' + from + '→#' + to;
+    }
+
     function updateDiskFilesGroupboxFromSummary(summary) {
       if (!diskFilesStatus || !summary) return;
       const latest = summary.latest_snapshot;
@@ -1871,24 +1906,22 @@
           : latest.has_promjene
             ? 'promjene ✓'
             : 'bez promjene.jsonl';
-      const ld = summary.latest_diff;
+      const scn = summary.latest_scn_diff || null;
+      const maticni = summary.latest_maticni_diff || null;
       diskFilesStatus.innerHTML =
-        'Najnovija snimka na disku: <strong>#' +
-        escapeHtml(id) +
+        'Najnovija snimka na disku: <strong>' +
+        escapeHtml(formatSnapshotWithMax(id)) +
         '</strong> · ' +
         escapeHtml(prom) +
         ' · spremljeno ' +
         escapeHtml(ts) +
         ' · ukupno ' +
         count +
-        ' snimki' +
-        (ld
-          ? ' · zadnji diff: <strong>#' +
-            escapeHtml(String(ld.snapshot_id_from)) +
-            '→#' +
-            escapeHtml(String(ld.snapshot_id_to)) +
-            '</strong>'
-          : '');
+        ' snimki · SCN diff: <strong>' +
+        escapeHtml(formatDiffWithMax(scn)) +
+        '</strong> · Matični diff: <strong>' +
+        escapeHtml(formatDiffWithMax(maticni)) +
+        '</strong>';
     }
 
     function updateDiskFilesGroupboxStatus(snapshots, diffs) {
@@ -1910,24 +1943,22 @@
           : latest.has_promjene
             ? 'promjene ✓'
             : 'bez promjene.jsonl';
-      const bestDiff = latestDiffOnDisk(diffs);
+      const bestScnDiff = latestDiffOnDisk(diffs);
+      const bestMaticniDiff = latestMaticniDiffOnDisk(diffs);
       diskFilesStatus.innerHTML =
-        'Najnovija snimka na disku: <strong>#' +
-        escapeHtml(id) +
+        'Najnovija snimka na disku: <strong>' +
+        escapeHtml(formatSnapshotWithMax(id)) +
         '</strong> · ' +
         escapeHtml(prom) +
         ' · spremljeno ' +
         escapeHtml(ts) +
         ' · ukupno ' +
         sorted.length +
-        ' snimki' +
-        (bestDiff
-          ? ' · zadnji diff: <strong>#' +
-            escapeHtml(String(bestDiff.snapshot_id_from)) +
-            '→#' +
-            escapeHtml(String(bestDiff.snapshot_id_to)) +
-            '</strong>'
-          : '');
+        ' snimki · SCN diff: <strong>' +
+        escapeHtml(formatDiffWithMax(bestScnDiff)) +
+        '</strong> · Matični diff: <strong>' +
+        escapeHtml(formatDiffWithMax(bestMaticniDiff)) +
+        '</strong>';
     }
 
     async function refreshDiskFilesStatusQuick() {
@@ -2393,6 +2424,11 @@
         list.forEach((s) => {
           s.source = 'api';
         });
+        const maxApi = list
+          .map((s) => Number(s.id))
+          .filter((n) => Number.isFinite(n))
+          .sort((a, b) => b - a)[0];
+        apiMaxSnapshotId = Number.isFinite(maxApi) ? maxApi : null;
         fillSnapshotDropdown(list);
         meta.textContent = 'API: ' + list.length + ' snimki · ' + ms + ' ms';
         if (!list.length) show('API je vratio prazan popis snimki.', true);
