@@ -137,9 +137,25 @@
       border-color: var(--border);
       color: var(--muted);
     }
+    .disk-groupbox-status.warn {
+      background: rgba(251, 191, 36, 0.12);
+      border-color: rgba(251, 191, 36, 0.45);
+      color: #fcd34d;
+    }
+    .disk-groupbox-status.critical {
+      background: rgba(248, 113, 113, 0.14);
+      border-color: rgba(248, 113, 113, 0.5);
+      color: #fecaca;
+    }
     .disk-groupbox-status strong {
       color: var(--text);
       font-weight: 600;
+    }
+    .disk-usage-line {
+      display: block;
+      margin-top: 0.35rem;
+      font-size: 0.78rem;
+      line-height: 1.4;
     }
     .actions {
       display: flex;
@@ -540,8 +556,8 @@
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v45</span></h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v45</strong>.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v46</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v46</strong>.</p>
     <fieldset class="ui-groupbox ui-groupbox--servis">
       <legend>Servis</legend>
       <div class="actions">
@@ -967,6 +983,10 @@
     const dbStatus = document.getElementById('db-status');
     let databaseConfigured = false;
     let apiMaxSnapshotId = null;
+    let diskSpaceStats = null;
+
+    const DISK_FREE_WARN_BYTES = 500 * 1024 * 1024;
+    const DISK_FREE_CRITICAL_BYTES = 100 * 1024 * 1024;
     const datasetSelect = document.getElementById('dataset-select');
     const datasetDetail = document.getElementById('dataset-detail');
     const btnDatasetFetch = document.getElementById('btn-dataset-fetch');
@@ -1893,26 +1913,102 @@
       return '#' + from + '→#' + to;
     }
 
-    function updateDiskFilesGroupboxFromSummary(summary) {
-      if (!diskFilesStatus || !summary) return;
-      const latest = summary.latest_snapshot;
-      const count = summary.snapshot_count != null ? summary.snapshot_count : 0;
-      if (!latest || !count) {
-        diskFilesStatus.textContent = 'Na disku nema snimki u snapshots/ — prvo Snimi sve snimke na disk.';
-        diskFilesStatus.classList.add('empty');
+    function formatBytesGb(n) {
+      const b = Number(n);
+      if (!Number.isFinite(b) || b < 0) return '?';
+      if (b < 1024 * 1024) return Math.round(b / 1024) + ' KB';
+      if (b < 1024 * 1024 * 1024) return (b / (1024 * 1024)).toFixed(0) + ' MB';
+      return (b / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+    }
+
+    function diskSpaceAvailBytes(space) {
+      if (!space || !space.available) return null;
+      const n = space.available_bytes != null ? space.available_bytes : space.free_bytes;
+      return Number.isFinite(Number(n)) ? Number(n) : null;
+    }
+
+    function diskSpaceWarningText(space) {
+      if (!space || !space.available) return '';
+      const avail = diskSpaceAvailBytes(space);
+      if (avail != null && avail <= DISK_FREE_CRITICAL_BYTES) {
+        return (
+          'KRITIČNO: preostalo ~' +
+          formatBytesGb(avail) +
+          ' slobodnog prostora. Masovno spremanje vjerojatno pada (ENOSPC). Obriši stare snimke/diff-ove.'
+        );
+      }
+      if (avail != null && avail <= DISK_FREE_WARN_BYTES) {
+        return (
+          'Malo slobodnog prostora (~' +
+          formatBytesGb(avail) +
+          '). JSON na disku je privremen — obriši starije snimke nakon upisa u bazu.'
+        );
+      }
+      if (space.used_percent != null && space.used_percent >= 90) {
+        return 'Disk je ' + space.used_percent + '% pun.';
+      }
+      return '';
+    }
+
+    function diskSpaceSeverity(space) {
+      if (!space || !space.available) return 'empty';
+      const avail = diskSpaceAvailBytes(space);
+      if (avail != null && avail <= DISK_FREE_CRITICAL_BYTES) return 'critical';
+      if (
+        (avail != null && avail <= DISK_FREE_WARN_BYTES) ||
+        (space.used_percent != null && space.used_percent >= 85)
+      ) {
+        return 'warn';
+      }
+      return 'ok';
+    }
+
+    function formatDiskUsageLine(space) {
+      if (!space || !space.available) return '';
+      let line =
+        'Disk: ' +
+        formatBytesGb(space.used_bytes) +
+        ' / ' +
+        formatBytesGb(space.total_bytes) +
+        ' (' +
+        (space.used_percent != null ? space.used_percent : '?') +
+        '% puno)';
+      if (space.staging_bytes != null) {
+        line += ', staging ' + formatBytesGb(space.staging_bytes);
+      }
+      const warn = diskSpaceWarningText(space);
+      if (warn) line += ' · ' + warn;
+      return line;
+    }
+
+    function renderDiskGroupboxStatus(opts) {
+      if (!diskFilesStatus) return;
+      const space = opts.disk_space || null;
+      if (space && space.available) diskSpaceStats = space;
+
+      diskFilesStatus.classList.remove('empty', 'warn', 'critical');
+      const severity = diskSpaceSeverity(space);
+      if (severity === 'critical') diskFilesStatus.classList.add('critical');
+      else if (severity === 'warn') diskFilesStatus.classList.add('warn');
+      else if (!opts.hasSnapshots) diskFilesStatus.classList.add('empty');
+
+      const usageHtml = space && space.available
+        ? '<span class="disk-usage-line">' + escapeHtml(formatDiskUsageLine(space)) + '</span>'
+        : '';
+
+      if (!opts.hasSnapshots) {
+        diskFilesStatus.innerHTML =
+          escapeHtml(
+            opts.emptyMessage ||
+              'Na disku nema snimki u snapshots/ — JSON je privremen prijelaz prema bazi.'
+          ) + usageHtml;
         return;
       }
-      diskFilesStatus.classList.remove('empty');
-      const id = latest.id != null ? String(latest.id) : '?';
-      const ts = latest.timestamp ? String(latest.timestamp).replace('T', ' ').slice(0, 19) : '—';
-      const prom =
-        latest.has_promjene && latest.promjene_row_count != null
-          ? latest.promjene_row_count.toLocaleString('hr-HR') + ' promjena'
-          : latest.has_promjene
-            ? 'promjene ✓'
-            : 'bez promjene.jsonl';
-      const scn = summary.latest_scn_diff || null;
-      const maticni = summary.latest_maticni_diff || null;
+
+      const id = opts.latestId != null ? String(opts.latestId) : '?';
+      const ts = opts.timestamp ? String(opts.timestamp).replace('T', ' ').slice(0, 19) : '—';
+      const prom = opts.promLabel || '—';
+      const count = opts.snapshotCount != null ? opts.snapshotCount : 0;
       diskFilesStatus.innerHTML =
         'Najnovija snimka na disku: <strong>' +
         escapeHtml(formatSnapshotWithMax(id)) +
@@ -1923,47 +2019,92 @@
         ' · ukupno ' +
         count +
         ' snimki · SCN diff: <strong>' +
-        escapeHtml(formatDiffWithMax(scn)) +
+        escapeHtml(formatDiffWithMax(opts.scnDiff)) +
         '</strong> · Matični diff: <strong>' +
-        escapeHtml(formatDiffWithMax(maticni)) +
-        '</strong>';
+        escapeHtml(formatDiffWithMax(opts.maticniDiff)) +
+        '</strong>' +
+        usageHtml;
     }
 
-    function updateDiskFilesGroupboxStatus(snapshots, diffs) {
-      if (!diskFilesStatus) return;
-      const list = Array.isArray(snapshots) ? snapshots : [];
-      if (!list.length) {
-        diskFilesStatus.textContent = 'Na disku nema snimki u snapshots/ — prvo Snimi sve snimke na disk.';
-        diskFilesStatus.classList.add('empty');
+    async function confirmBulkDiskOperation(introLines) {
+      let space = diskSpaceStats;
+      try {
+        const summary = await fetchJson('/api/staging/disk-summary', { retries: 0 });
+        if (summary.disk_space) space = summary.disk_space;
+      } catch (_) {
+        /* koristi zadnje poznato stanje */
+      }
+      if (space && space.available) diskSpaceStats = space;
+
+      const warn = diskSpaceWarningText(space);
+      const avail = diskSpaceAvailBytes(space);
+      const critical = avail != null && avail <= DISK_FREE_CRITICAL_BYTES;
+      let msg = introLines.filter(Boolean).join('\n\n');
+      if (warn) msg += '\n\n⚠ ' + warn;
+      if (critical) {
+        return window.confirm(msg + '\n\nIPAK nastaviti? (ne preporučuje se)');
+      }
+      return window.confirm(msg);
+    }
+
+    function updateDiskFilesGroupboxFromSummary(summary) {
+      if (!diskFilesStatus || !summary) return;
+      const latest = summary.latest_snapshot;
+      const count = summary.snapshot_count != null ? summary.snapshot_count : 0;
+      if (!latest || !count) {
+        renderDiskGroupboxStatus({
+          hasSnapshots: false,
+          disk_space: summary.disk_space,
+          emptyMessage: 'Na disku nema snimki u snapshots/ — JSON je privremen prijelaz prema bazi.'
+        });
         return;
       }
-      diskFilesStatus.classList.remove('empty');
-      const sorted = sortDiskSnapshots(list);
-      const latest = sorted[0];
-      const id = latest.id != null ? String(latest.id) : '?';
-      const ts = latest.timestamp ? String(latest.timestamp).replace('T', ' ').slice(0, 19) : '—';
       const prom =
         latest.has_promjene && latest.promjene_row_count != null
           ? latest.promjene_row_count.toLocaleString('hr-HR') + ' promjena'
           : latest.has_promjene
             ? 'promjene ✓'
             : 'bez promjene.jsonl';
-      const bestScnDiff = latestDiffOnDisk(diffs);
-      const bestMaticniDiff = latestMaticniDiffOnDisk(diffs);
-      diskFilesStatus.innerHTML =
-        'Najnovija snimka na disku: <strong>' +
-        escapeHtml(formatSnapshotWithMax(id)) +
-        '</strong> · ' +
-        escapeHtml(prom) +
-        ' · spremljeno ' +
-        escapeHtml(ts) +
-        ' · ukupno ' +
-        sorted.length +
-        ' snimki · SCN diff: <strong>' +
-        escapeHtml(formatDiffWithMax(bestScnDiff)) +
-        '</strong> · Matični diff: <strong>' +
-        escapeHtml(formatDiffWithMax(bestMaticniDiff)) +
-        '</strong>';
+      renderDiskGroupboxStatus({
+        hasSnapshots: true,
+        disk_space: summary.disk_space,
+        latestId: latest.id,
+        timestamp: latest.timestamp,
+        promLabel: prom,
+        snapshotCount: count,
+        scnDiff: summary.latest_scn_diff || null,
+        maticniDiff: summary.latest_maticni_diff || null
+      });
+    }
+
+    function updateDiskFilesGroupboxStatus(snapshots, diffs, diskSpace) {
+      const list = Array.isArray(snapshots) ? snapshots : [];
+      if (!list.length) {
+        renderDiskGroupboxStatus({
+          hasSnapshots: false,
+          disk_space: diskSpace || diskSpaceStats
+        });
+        return;
+      }
+      const sorted = sortDiskSnapshots(list);
+      const latest = sorted[0];
+      const id = latest.id != null ? String(latest.id) : '?';
+      const prom =
+        latest.has_promjene && latest.promjene_row_count != null
+          ? latest.promjene_row_count.toLocaleString('hr-HR') + ' promjena'
+          : latest.has_promjene
+            ? 'promjene ✓'
+            : 'bez promjene.jsonl';
+      renderDiskGroupboxStatus({
+        hasSnapshots: true,
+        disk_space: diskSpace || diskSpaceStats,
+        latestId: id,
+        timestamp: latest.timestamp,
+        promLabel: prom,
+        snapshotCount: sorted.length,
+        scnDiff: latestDiffOnDisk(diffs),
+        maticniDiff: latestMaticniDiffOnDisk(diffs)
+      });
     }
 
     async function refreshDiskFilesStatusQuick() {
@@ -1983,7 +2124,7 @@
         diskSnapshotsSummary.textContent =
           'Nema snimki u ' + (dataDir || 'data') + '/snapshots/. Spremi promjene (API → disk).';
         if (diskSnapshotsPanel) diskSnapshotsPanel.classList.add('empty');
-        updateDiskFilesGroupboxStatus([], diskDiffsSorted);
+        updateDiskFilesGroupboxStatus([], diskDiffsSorted, diskSpaceStats);
         return;
       }
       if (diskSnapshotsPanel) diskSnapshotsPanel.classList.remove('empty');
@@ -2065,7 +2206,7 @@
           diskDiffsByKey[d.key] = d;
         });
         if (diskDiffsTbody) renderDiskDiffsTable(diffList);
-        updateDiskFilesGroupboxStatus(diskSnapshotsSorted, diffList);
+        updateDiskFilesGroupboxStatus(diskSnapshotsSorted, diffList, body.disk_space);
       } catch (e) {
         if (diskSnapshotsSummary) {
           diskSnapshotsSummary.textContent = 'Greška: ' + (e.message || String(e));
@@ -2107,7 +2248,7 @@
           diskDiffsByKey[d.key] = d;
         });
         renderDiskDiffsTable(diffList);
-        updateDiskFilesGroupboxStatus(sorted, diffList);
+        updateDiskFilesGroupboxStatus(sorted, diffList, body.disk_space);
         meta.textContent =
           'Disk: ' + list.length + ' snimki · ' + ms + ' ms · /api/staging/snapshots';
         if (!list.length) show('Na disku nema snimki — prvo API → disk.', true);
@@ -2524,16 +2665,17 @@
       }
     }
 
-    function runBulkSaveAllSnapshotsToDisk() {
+    async function runBulkSaveAllSnapshotsToDisk() {
       if (bulkSaveEventSource) {
         bulkSaveEventSource.close();
         bulkSaveEventSource = null;
       }
-      const ok = window.confirm(
-        'Preuzeti sve snimke s Sudreg API-ja na disk?\n\n' +
-          'Za svaki snapshot_id: promjene + svi matični skupovi. Postojeće JSONL datoteke se preskaču.\n\n' +
-          'Može trajati jako dugo i potrošiti puno API poziva.'
-      );
+      const ok = await confirmBulkDiskOperation([
+        'Preuzeti sve snimke s Sudreg API-ja na disk?',
+        'Za svaki snapshot_id: promjene + svi matični skupovi. Postojeće JSONL datoteke se preskaču.',
+        'JSON na disku je privremen — za dnevni update dovoljan je jedan par snimki, ne „Snimi sve“.',
+        'Može trajati jako dugo i potrošiti puno API poziva.'
+      ]);
       if (!ok) return;
 
       setBusy(true);
@@ -2614,21 +2756,18 @@
 
     let adjacentDiffEventSource = null;
 
-    function runSaveAdjacentDiffsToDisk() {
+    async function runSaveAdjacentDiffsToDisk() {
       if (adjacentDiffEventSource) {
         adjacentDiffEventSource.close();
         adjacentDiffEventSource = null;
       }
       const source = getSnapshotSource() === 'disk' ? 'disk' : 'api';
-      const ok = window.confirm(
-        'Generirati SCN diff za sve susjedne parove snimki (n → n+1)?\n\n' +
-          'Za svaki par: diffs/{starija}_to_{novija}/promjene.jsonl + meta.json (kao /promjene/diff).\n' +
-          'Potrebne su promjene.jsonl za obje snimke (dohvat ako nedostaju).\n' +
-          'Postojeći diff se preskače.\n\n' +
-          'Izvor popisa snimki: ' +
-          (source === 'disk' ? 'disk' : 'Sudreg API') +
-          '.\nMože trajati dugo.'
-      );
+      const ok = await confirmBulkDiskOperation([
+        'Generirati SCN diff za sve susjedne parove snimki u popisu?',
+        'Za svaki par: diffs/{starija}_to_{novija}/promjene.jsonl + meta.json.',
+        'Postojeći diff se preskače. Izvor popisa: ' + (source === 'disk' ? 'disk' : 'Sudreg API') + '.',
+        'Za jedan dnevni ciklus obično dovoljan je par odabran u usporedbi, ne svi parovi odjednom.'
+      ]);
       if (!ok) return;
 
       setBusy(true);
@@ -2704,12 +2843,11 @@
     }
 
     async function runSaveAdjacentMaticniDiffsToDisk() {
-      const ok = window.confirm(
-        'Generirati matični diff za sve susjedne parove s postojećim promjene diff-om?\n\n' +
-          'Svaki par = zaseban HTTP zahtjev (bez SSE — stabilnije na Renderu).\n' +
-          'Unutar para: jedan matični skup po jedan u memoriji.\n\n' +
-          'Može trajati dugo.'
-      );
+      const ok = await confirmBulkDiskOperation([
+        'Generirati matični diff za sve susjedne parove s postojećim promjene diff-om?',
+        'Svaki par = zaseban HTTP zahtjev (bez SSE — stabilnije na Renderu).',
+        'Unutar para: jedan matični skup po jedan u memoriji. Može trajati dugo.'
+      ]);
       if (!ok) return;
 
       const force =

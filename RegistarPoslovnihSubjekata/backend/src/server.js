@@ -26,6 +26,8 @@ const {
   listDiskSnapshotsForUi,
   listDiskDiffsForUi,
   diskSummaryForUi,
+  getDiskSpaceStats,
+  dirSizeBytes,
   deleteDiffFromDisk,
   deleteSnapshotFromDisk,
   resolveStagingDownload
@@ -327,13 +329,18 @@ function handleStagingDiskSummary(res) {
 async function handleStagingSnapshots(res) {
   try {
     const staging = listStaging();
+    const diskSpace = getDiskSpaceStats();
+    if (diskSpace.available) {
+      diskSpace.staging_bytes = dirSizeBytes(staging.dataDir);
+    }
     sendJson(res, 200, {
       ok: true,
       dataDir: staging.dataDir,
       count: staging.snapshots.length,
       snapshots: listDiskSnapshotsForUi(),
       diffs: staging.diffs,
-      disk_diffs: listDiskDiffsForUi()
+      disk_diffs: listDiskDiffsForUi(),
+      disk_space: diskSpace
     });
   } catch (e) {
     sendJson(res, 500, { ok: false, error: e instanceof Error ? e.message : String(e) });

@@ -24,6 +24,67 @@ function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
 }
 
+/** Zauzetost datotečnog sustava na kojem leži staging mapa (statfs). */
+function getDiskSpaceStats() {
+  const dataDir = getDataDir();
+  if (typeof fs.statfsSync !== 'function') {
+    return { available: false, dataDir, reason: 'statfs_unavailable' };
+  }
+  let statPath = dataDir;
+  try {
+    if (!fs.existsSync(statPath)) {
+      ensureDir(statPath);
+    }
+    const st = fs.statfsSync(statPath);
+    const blockSize = Number(st.bsize) || Number(st.frsize) || 4096;
+    const total = Number(st.blocks) * blockSize;
+    const free = Number(st.bfree) * blockSize;
+    const avail = Number(st.bavail) * blockSize;
+    const used = Math.max(0, total - free);
+    return {
+      available: true,
+      dataDir,
+      total_bytes: total,
+      free_bytes: free,
+      available_bytes: avail,
+      used_bytes: used,
+      used_percent: total > 0 ? Math.round((used / total) * 1000) / 10 : null
+    };
+  } catch (e) {
+    return {
+      available: false,
+      dataDir,
+      error: e instanceof Error ? e.message : String(e)
+    };
+  }
+}
+
+/** Rekurzivna veličina mape (snapshots + diffs). */
+function dirSizeBytes(rootDir) {
+  if (!rootDir || !fs.existsSync(rootDir)) return 0;
+  let total = 0;
+  const stack = [rootDir];
+  while (stack.length) {
+    const cur = stack.pop();
+    let entries;
+    try {
+      entries = fs.readdirSync(cur, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const ent of entries) {
+      const p = path.join(cur, ent.name);
+      try {
+        if (ent.isDirectory()) stack.push(p);
+        else if (ent.isFile()) total += fs.statSync(p).size;
+      } catch {
+        /* preskoči */
+      }
+    }
+  }
+  return total;
+}
+
 function snapshotDir(snapshotId) {
   return path.join(getDataDir(), 'snapshots', String(snapshotId));
 }
@@ -943,8 +1004,14 @@ function diskSummaryForUi() {
         (d) => Array.isArray(d.maticni_dataset_items) && d.maticni_dataset_items.length > 0
       ) || null;
   }
+  const diskSpace = getDiskSpaceStats();
+  if (diskSpace.available) {
+    diskSpace.staging_bytes = dirSizeBytes(dataDir);
+  }
+
   return {
     dataDir,
+    disk_space: diskSpace,
     snapshot_count: sorted.length,
     latest_snapshot: latest
       ? {
@@ -992,6 +1059,8 @@ module.exports = {
   listDiskSnapshotsForUi,
   listDiskDiffsForUi,
   diskSummaryForUi,
+  getDiskSpaceStats,
+  dirSizeBytes,
   deleteDiffFromDisk,
   deleteSnapshotFromDisk,
   isSafeSnapshotId,
