@@ -556,8 +556,8 @@
 </head>
 <body>
   <main>
-    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v46</span></h1>
-    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v46</strong>.</p>
+    <h1>Registar poslovnih subjekata <span class="version-tag" id="ui-version">UI v47</span></h1>
+    <p class="hint">Snimke se učitavaju pri otvaranju. Nakon deploya <strong>Ctrl+F5</strong> — oznaka mora biti <strong>UI v47</strong>.</p>
     <fieldset class="ui-groupbox ui-groupbox--servis">
       <legend>Servis</legend>
       <div class="actions">
@@ -592,18 +592,6 @@
             Diff matičnih entiteta
           </button>
         </div>
-        <div class="actions">
-          <span class="subgroup-label">Brisanje (samo disk)</span>
-          <button type="button" class="danger secondary" id="btn-delete-snapshot-toolbar-2" title="Briše snapshots/{id} i sve diff mape s tim ID-om">
-            Obriši snimku #2
-          </button>
-          <button type="button" class="danger secondary" id="btn-delete-snapshot-toolbar-1" title="Briše snapshots/{id} i sve diff mape s tim ID-om">
-            Obriši snimku #1
-          </button>
-          <button type="button" class="danger secondary" id="btn-delete-diff-pair-toolbar" title="Briše samo diffs/{od}_to_{do}/ — snimke ostaju">
-            Obriši diff par (1→2)
-          </button>
-        </div>
       </fieldset>
       <fieldset class="ui-groupbox ui-groupbox--db">
         <legend>Baza</legend>
@@ -625,7 +613,7 @@
       Par izvan lanca na disku: tablica diff-ova ili Napredno.
     </p>
     <p class="disk-workflow-hint">
-      <strong>Redoslijed:</strong> <em>API</em> (popis) → <em>Datoteke</em> (tri zelena: snimke → SCN diff → matični diff) → <em>Baza</em> (<em>Ubaci u bazu</em>). Crveni gumbi samo brišu s diska.
+      <strong>Redoslijed:</strong> <em>API</em> (popis) → <em>Datoteke</em> (tri zelena: snimke → SCN diff → matični diff) → <em>Baza</em> (<em>Ubaci u bazu</em>). Brisanje s diska: označi ☑ u tablicama ispod.
     </p>
     <div id="bulk-save-progress-panel" class="disk-snapshots-panel" hidden style="margin-bottom:0.75rem;">
       <h4>Masovno spremanje na disk</h4>
@@ -660,6 +648,9 @@
           <table class="disk-snapshots-table" id="disk-snapshots-table">
             <thead>
               <tr>
+                <th style="width:2.2rem;" title="Označi za brisanje s diska">
+                  <input type="checkbox" id="disk-snapshots-select-all" disabled title="Označi sve snimke" />
+                </th>
                 <th>ID</th>
                 <th>Promjene</th>
                 <th>Matični skupovi</th>
@@ -669,7 +660,14 @@
             <tbody id="disk-snapshots-tbody"></tbody>
           </table>
         </div>
-        <p class="hint" style="margin:0.45rem 0 0;font-size:0.78rem;">Klik na red: postavi noviju snimku (2). Za izvor „Snimke na disku” koristi padajuće liste.</p>
+        <div class="actions" style="margin-top:0.45rem;flex-wrap:wrap;">
+          <button type="button" class="danger secondary" id="btn-delete-selected-snapshots" disabled title="Briše snapshots/{id}/ i sve diff mape s tim ID-om">
+            Obriši označene snimke
+          </button>
+        </div>
+        <p class="hint" style="margin:0.45rem 0 0;font-size:0.78rem;">
+          ☑ = brisanje · klik na red (bez ☑) = postavi noviju snimku u padajućoj listi za usporedbu / bazu.
+        </p>
         <hr class="diff-panel-sep" />
         <h4 style="margin:0 0 0.35rem;font-size:0.88rem;font-weight:600;">Diff promjena na disku</h4>
         <p id="disk-diffs-summary" class="hint" style="margin:0 0 0.5rem;">Učitavam diff-ove…</p>
@@ -677,8 +675,8 @@
           <table class="disk-snapshots-table" id="disk-diffs-table">
             <thead>
               <tr>
-                <th style="width:2.2rem;" title="Označi za preuzimanje (samo generirani diff)">
-                  <input type="checkbox" id="disk-diffs-select-all" disabled title="Označi sve dostupne" />
+                <th style="width:2.2rem;" title="Označi za preuzimanje i brisanje">
+                  <input type="checkbox" id="disk-diffs-select-all" disabled title="Označi sve diff-ove na disku" />
                 </th>
                 <th>Par</th>
                 <th>Diff redova</th>
@@ -693,9 +691,9 @@
         </div>
         <p class="hint" style="margin:0.45rem 0 0;font-size:0.78rem;">
           <strong>Snimke</strong> = puni podaci u <code>snapshots/{id}/datasets/</code>.
-          <strong>Preuzimanje:</strong> označi ☑ → <em>Preuzmi označene</em> ili ⬇ na imenu datoteke.
-          <strong>Brisanje:</strong> <em>Obriši označene diff-ove</em> (samo diff mapa) ili crveni gumbi gore.
-          Zasjenjeni ☑ = SCN diff još nije na disku.
+          <strong>Preuzimanje:</strong> označi ☑ diff → <em>Preuzmi označene</em> ili ⬇ na datoteci.
+          <strong>Brisanje:</strong> označi ☑ → <em>Obriši označene snimke</em> / <em>Obriši označene diff-ove</em> (samo disk, ne baza).
+          Onemogućeni ☑ diff = još nema SCN diff-a na disku.
         </p>
         <div class="actions" style="margin-top:0.5rem;flex-wrap:wrap;">
           <button type="button" class="secondary" id="btn-dl-selected-diff-promjene" disabled>
@@ -935,12 +933,11 @@
     const bulkSaveProgressPanel = document.getElementById('bulk-save-progress-panel');
     const bulkSaveProgressBar = document.getElementById('bulk-save-progress-bar');
     const bulkSaveProgressLabel = document.getElementById('bulk-save-progress-label');
-    const btnDeleteSnapshotToolbar1 = document.getElementById('btn-delete-snapshot-toolbar-1');
-    const btnDeleteSnapshotToolbar2 = document.getElementById('btn-delete-snapshot-toolbar-2');
     const btnDiskToDbToolbar = document.getElementById('btn-disk-to-db-toolbar');
     const btnDbClearToolbar = document.getElementById('btn-db-clear-toolbar');
-    const btnDeleteDiffPairToolbar = document.getElementById('btn-delete-diff-pair-toolbar');
+    const btnDeleteSelectedSnapshots = document.getElementById('btn-delete-selected-snapshots');
     const btnDeleteSelectedDiffs = document.getElementById('btn-delete-selected-diffs');
+    const diskSnapshotsSelectAll = document.getElementById('disk-snapshots-select-all');
     const btnSnapshotsJson = document.getElementById('btn-snapshots-json');
     const snapshotSourceApi = document.getElementById('snapshot-source-api');
     const snapshotSourceDisk = document.getElementById('snapshot-source-disk');
@@ -1163,8 +1160,9 @@
         if (btnDlSelectedDiffPromjene) btnDlSelectedDiffPromjene.disabled = true;
         if (btnDlSelectedDiffMeta) btnDlSelectedDiffMeta.disabled = true;
         if (diskDiffsSelectAll) diskDiffsSelectAll.disabled = true;
+        if (diskSnapshotsSelectAll) diskSnapshotsSelectAll.disabled = true;
       }
-      updateDeleteToolbarButtons();
+      updateDiskBulkActionButtons();
       btnSnapshotsJson.disabled = busy;
       btnPromjene.disabled = busy;
       if (btnPromjeneDiff) btnPromjeneDiff.disabled = busy;
@@ -1461,6 +1459,16 @@
       });
     }
 
+    function getSelectedDiskSnapshots() {
+      if (!diskSnapshotsTbody) return [];
+      const out = [];
+      diskSnapshotsTbody.querySelectorAll('input.disk-snapshot-cb:checked').forEach((cb) => {
+        const id = cb.getAttribute('data-snapshot-id');
+        if (id && diskSnapshotsById[id]) out.push(diskSnapshotsById[id]);
+      });
+      return out;
+    }
+
     function getSelectedDiskDiffs() {
       if (!diskDiffsTbody) return [];
       const out = [];
@@ -1469,6 +1477,18 @@
         if (key && diskDiffsByKey[key]) out.push(diskDiffsByKey[key]);
       });
       return out;
+    }
+
+    function updateDiskSnapshotDeleteButtons() {
+      const busy = btnStatus && btnStatus.disabled;
+      const n = getSelectedDiskSnapshots().length;
+      if (btnDeleteSelectedSnapshots) btnDeleteSelectedSnapshots.disabled = busy || n === 0;
+    }
+
+    function updateDiskBulkActionButtons() {
+      updateDiskToDbToolbarButton();
+      updateDiskSnapshotDeleteButtons();
+      updateDiskDiffDownloadButtons();
     }
 
     function buildMaticniDiffCellHtml(d, fromId, toId) {
@@ -1520,16 +1540,17 @@
     }
 
     function updateDiskDiffDownloadButtons() {
+      const busy = btnStatus && btnStatus.disabled;
       const selected = getSelectedDiskDiffs();
       const n = selected.length;
       const hasMaticni = selected.some(
         (d) => Array.isArray(d.maticni_dataset_items) && d.maticni_dataset_items.length > 0
       );
-      if (btnDlSelectedDiffPromjene) btnDlSelectedDiffPromjene.disabled = n === 0;
-      if (btnDlSelectedDiffMeta) btnDlSelectedDiffMeta.disabled = n === 0;
-      if (btnDlSelectedDiffDatasets) btnDlSelectedDiffDatasets.disabled = n === 0 || !hasMaticni;
-      if (btnDeleteSelectedDiffs) btnDeleteSelectedDiffs.disabled = n === 0;
-      if (btnGenSelectedMaticniDiff) btnGenSelectedMaticniDiff.disabled = n === 0;
+      if (btnDlSelectedDiffPromjene) btnDlSelectedDiffPromjene.disabled = busy || n === 0;
+      if (btnDlSelectedDiffMeta) btnDlSelectedDiffMeta.disabled = busy || n === 0;
+      if (btnDlSelectedDiffDatasets) btnDlSelectedDiffDatasets.disabled = busy || n === 0 || !hasMaticni;
+      if (btnDeleteSelectedDiffs) btnDeleteSelectedDiffs.disabled = busy || n === 0;
+      if (btnGenSelectedMaticniDiff) btnGenSelectedMaticniDiff.disabled = busy || n === 0;
     }
 
     async function fetchAdjacentPairsWithPromjeneDiff() {
@@ -2124,8 +2145,17 @@
         diskSnapshotsSummary.textContent =
           'Nema snimki u ' + (dataDir || 'data') + '/snapshots/. Spremi promjene (API → disk).';
         if (diskSnapshotsPanel) diskSnapshotsPanel.classList.add('empty');
+        if (diskSnapshotsSelectAll) {
+          diskSnapshotsSelectAll.disabled = true;
+          diskSnapshotsSelectAll.checked = false;
+        }
+        updateDiskSnapshotDeleteButtons();
         updateDiskFilesGroupboxStatus([], diskDiffsSorted, diskSpaceStats);
         return;
+      }
+      if (diskSnapshotsSelectAll) {
+        diskSnapshotsSelectAll.disabled = false;
+        diskSnapshotsSelectAll.checked = false;
       }
       if (diskSnapshotsPanel) diskSnapshotsPanel.classList.remove('empty');
       diskSnapshotsSummary.textContent =
@@ -2152,6 +2182,9 @@
         const tr = document.createElement('tr');
         tr.setAttribute('data-snapshot-id', id);
         tr.innerHTML =
+          '<td><input type="checkbox" class="disk-snapshot-cb" data-snapshot-id="' +
+          escapeHtml(id) +
+          '" /></td>' +
           '<td><strong>#' +
           escapeHtml(id) +
           '</strong></td>' +
@@ -2166,6 +2199,11 @@
           '<td>' +
           escapeHtml(s.timestamp ? String(s.timestamp).replace('T', ' ').slice(0, 19) : '—') +
           '</td>';
+        const snapCb = tr.querySelector('input.disk-snapshot-cb');
+        if (snapCb) {
+          snapCb.addEventListener('click', (ev) => ev.stopPropagation());
+          snapCb.addEventListener('change', updateDiskSnapshotDeleteButtons);
+        }
         tr.addEventListener('click', () => {
           if (getSnapshotSource() === 'disk') {
             snapshotSelect.value = id;
@@ -2179,6 +2217,7 @@
         diskSnapshotsTbody.appendChild(tr);
       });
       highlightDiskTableSelection();
+      updateDiskSnapshotDeleteButtons();
     }
 
     async function loadDiskSnapshotsPanel() {
@@ -2396,6 +2435,17 @@
         );
       });
     }
+    if (diskSnapshotsSelectAll) {
+      diskSnapshotsSelectAll.addEventListener('change', () => {
+        const checked = diskSnapshotsSelectAll.checked;
+        if (diskSnapshotsTbody) {
+          diskSnapshotsTbody.querySelectorAll('input.disk-snapshot-cb').forEach((cb) => {
+            cb.checked = checked;
+          });
+        }
+        updateDiskSnapshotDeleteButtons();
+      });
+    }
     if (diskDiffsSelectAll) {
       diskDiffsSelectAll.addEventListener('change', () => {
         const checked = diskDiffsSelectAll.checked;
@@ -2429,19 +2479,6 @@
       const busy = btnStatus && btnStatus.disabled;
       const t = snapshotSelect.value;
       btnDiskToDbToolbar.disabled = busy || !t || !databaseConfigured;
-    }
-
-    function updateDeleteToolbarButtons() {
-      const busy = btnStatus && btnStatus.disabled;
-      const f = snapshotFromSelect.value;
-      const t = snapshotSelect.value;
-      if (btnDeleteSnapshotToolbar1) btnDeleteSnapshotToolbar1.disabled = busy || !f;
-      if (btnDeleteSnapshotToolbar2) btnDeleteSnapshotToolbar2.disabled = busy || !t;
-      if (btnDeleteDiffPairToolbar) {
-        btnDeleteDiffPairToolbar.disabled =
-          busy || !f || !t || f === t || Number(f) >= Number(t);
-      }
-      updateDiskToDbToolbarButton();
     }
 
     async function runDiskToDbImportUi() {
@@ -2551,7 +2588,7 @@
       renderCompareSelection();
       updateStagingDownloadLinks();
       highlightDiskTableSelection();
-      updateDeleteToolbarButtons();
+      updateDiskBulkActionButtons();
     }
 
     async function loadSnapshotsDropdown() {
@@ -2882,47 +2919,58 @@
       btnSaveAdjacentMaticniDiffs.addEventListener('click', runSaveAdjacentMaticniDiffsToDisk);
     }
 
-    async function deleteDiffPairFromDiskUi(fromId, toId) {
-      const from = String(fromId || '').trim();
-      const to = String(toId || '').trim();
-      if (!from || !to) {
-        show('Odaberi stariju (1) i noviju (2) snimku.', true);
+    async function deleteSelectedSnapshotsFromDisk() {
+      const selected = getSelectedDiskSnapshots();
+      if (!selected.length) {
+        show('Označi barem jednu snimku u tablici (checkbox).', true);
         return;
       }
-      if (from === to || Number(from) >= Number(to)) {
-        show('Za diff par: starija mora imati manji ID od novije.', true);
-        return;
-      }
+      const ids = selected.map((s) => String(s.id)).sort((a, b) => Number(b) - Number(a));
       const ok = window.confirm(
-        'Obrisati diff mapu #' + from + ' → #' + to + ' s diska?\n\n' +
-          'Briše samo diffs/' + from + '_to_' + to + '/ (promjene, meta, datasets).\n' +
-          'Snimke snapshots/' + from + '/ i snapshots/' + to + '/ ostaju.\n\n' +
-          'PostgreSQL se NE briše.'
+        'Obrisati ' +
+          ids.length +
+          ' snimki s diska?\n\n' +
+          ids.map((id) => '#' + id).join('\n') +
+          '\n\nZa svaku se briše snapshots/{id}/ i sve diff mape s tim ID-om.\nPostgreSQL se NE briše.'
       );
       if (!ok) return;
       setBusy(true);
-      show('Brišem diff #' + from + ' → #' + to + '…', false);
-      try {
-        const res = await fetch(
-          '/api/staging/diffs/delete?snapshot_id_from=' +
-            encodeURIComponent(from) +
-            '&snapshot_id_to=' +
-            encodeURIComponent(to) +
-            '&confirm=1',
-          { method: 'DELETE', headers: { Accept: 'application/json' } }
-        );
-        const body = await res.json();
-        meta.textContent = (res.ok ? 'Obrisano' : 'Greška') + ' · /api/staging/diffs/delete';
-        show(JSON.stringify(body, null, 2), !res.ok || !body.ok);
-        if (res.ok && body.ok) {
-          await loadDiskSnapshotsPanel();
-          onSnapshotSelectionChange();
+      const results = [];
+      for (let i = 0; i < ids.length; i += 1) {
+        const id = ids[i];
+        show('Brišem snimku ' + (i + 1) + '/' + ids.length + ': #' + id + '…', false);
+        try {
+          const res = await fetch(
+            '/api/staging/snapshots/delete?snapshot_id=' +
+              encodeURIComponent(id) +
+              '&confirm=1',
+            { method: 'DELETE', headers: { Accept: 'application/json' } }
+          );
+          const body = await res.json();
+          results.push({ id, ok: res.ok && body.ok, body });
+          if (res.ok && body.ok) {
+            delete snapshotsById[id];
+            delete diskSnapshotsById[id];
+            if (snapshotSelect.value === id) snapshotSelect.value = '';
+            if (snapshotFromSelect.value === id) snapshotFromSelect.value = '';
+          } else {
+            break;
+          }
+        } catch (e) {
+          show('Greška #' + id + ': ' + (e.message || String(e)), true);
+          break;
         }
-      } catch (e) {
-        show('Greška: ' + (e.message || String(e)), true);
-      } finally {
-        setBusy(false);
       }
+      setBusy(false);
+      if (diskSnapshotsSelectAll) diskSnapshotsSelectAll.checked = false;
+      await loadDiskSnapshotsPanel();
+      if (getSnapshotSource() === 'disk') {
+        await loadDiskSnapshotsDropdown();
+      } else {
+        await loadSnapshotsDropdown();
+      }
+      onSnapshotSelectionChange();
+      show(JSON.stringify({ ok: results.every((r) => r.ok), results }, null, 2), !results.every((r) => r.ok));
     }
 
     async function deleteSelectedDiffsFromDisk() {
@@ -2964,83 +3012,17 @@
         }
       }
       setBusy(false);
+      if (diskDiffsSelectAll) diskDiffsSelectAll.checked = false;
       await loadDiskSnapshotsPanel();
       onSnapshotSelectionChange();
       show(JSON.stringify({ ok: results.every((r) => r.ok), results }, null, 2), !results.every((r) => r.ok));
     }
 
-    async function deleteSnapshotFromDiskUi(snapshotId, label) {
-      const id = String(snapshotId || '').trim();
-      if (!id) {
-        show('Odaberi snimku u listi (točka 1 ili 2).', true);
-        return;
-      }
-      const onDisk = diskSnapshotsById[id];
-      const ok = window.confirm(
-        'Obrisati snimku #' +
-          id +
-          ' (' +
-          (label || 'odabrana') +
-          ') s diska?\n\n' +
-          'Briše mapu snapshots/' +
-          id +
-          '/ (promjene, meta, datasets) i sve diff mape koje uključuju #' +
-          id +
-          '.\n\n' +
-          'PostgreSQL (baza) se NE briše — samo datoteke na disku.' +
-          (onDisk ? '' : '\n\nUpozorenje: snimka nije u tablici diska (možda već obrisana).')
-      );
-      if (!ok) return;
-      setBusy(true);
-      show('Brišem snimku #' + id + ' s diska…', false);
-      try {
-        const res = await fetch(
-          '/api/staging/snapshots/delete?snapshot_id=' +
-            encodeURIComponent(id) +
-            '&confirm=1',
-          { method: 'DELETE', headers: { Accept: 'application/json' } }
-        );
-        const body = await res.json();
-        meta.textContent =
-          (res.ok ? 'Obrisano' : 'Greška') + ' · /api/staging/snapshots/delete';
-        show(JSON.stringify(body, null, 2), !res.ok || !body.ok);
-        if (res.ok && body.ok) {
-          delete snapshotsById[id];
-          delete diskSnapshotsById[id];
-          if (snapshotSelect.value === id) snapshotSelect.value = '';
-          if (snapshotFromSelect.value === id) snapshotFromSelect.value = '';
-          await loadDiskSnapshotsPanel();
-          if (getSnapshotSource() === 'disk') {
-            await loadDiskSnapshotsDropdown();
-          } else {
-            await loadSnapshotsDropdown();
-          }
-          onSnapshotSelectionChange();
-        }
-      } catch (e) {
-        show('Greška: ' + (e.message || String(e)), true);
-      } finally {
-        setBusy(false);
-      }
-    }
-
-    if (btnDeleteSnapshotToolbar2) {
-      btnDeleteSnapshotToolbar2.addEventListener('click', () =>
-        deleteSnapshotFromDiskUi(snapshotSelect.value, 'novija (#2)')
-      );
-    }
-    if (btnDeleteSnapshotToolbar1) {
-      btnDeleteSnapshotToolbar1.addEventListener('click', () =>
-        deleteSnapshotFromDiskUi(snapshotFromSelect.value, 'starija (#1)')
-      );
+    if (btnDeleteSelectedSnapshots) {
+      btnDeleteSelectedSnapshots.addEventListener('click', deleteSelectedSnapshotsFromDisk);
     }
     if (btnDiskToDbToolbar) {
       btnDiskToDbToolbar.addEventListener('click', runDiskToDbImportUi);
-    }
-    if (btnDeleteDiffPairToolbar) {
-      btnDeleteDiffPairToolbar.addEventListener('click', () =>
-        deleteDiffPairFromDiskUi(snapshotFromSelect.value, snapshotSelect.value)
-      );
     }
     if (btnDeleteSelectedDiffs) {
       btnDeleteSelectedDiffs.addEventListener('click', deleteSelectedDiffsFromDisk);
