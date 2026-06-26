@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->trustProxies(at: '*');
+        $middleware->redirectGuestsTo(fn (Request $request) => $request->is('api/*') ? null : '/');
         $middleware->append(\App\Http\Middleware\AddApiSourceMetadata::class);
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
@@ -27,6 +28,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
+        $exceptions->shouldRenderJsonWhen(fn (Request $request, \Throwable $e) => $request->is('api/*') || $request->expectsJson());
+
         $exceptions->render(function (LedgerException $exception, Request $request) {
             return $exception->render($request);
         });
