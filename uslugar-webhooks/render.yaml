@@ -1,9 +1,12 @@
 # Render Blueprint: Web servis + PostgreSQL
-# Ako je repo monorepo, u Render UI postavi Root Directory na `uslugar-webhooks`.
-# Outbound IP rasponi za whitelist vanjskih API-ja: vidi `render-network.txt`.
+# Monorepo: u Render UI postavi Blueprint path na uslugar-webhooks/render.yaml
+# ili Root Directory na uslugar-webhooks kad ručno povezuješ repo.
+# Outbound IP rasponi: render-network.txt
 
 databases:
   - name: uslugar-webhooks-db
+    plan: free
+    region: frankfurt
     databaseName: uslugar_webhooks
     user: webhooks
 
@@ -12,6 +15,9 @@ services:
     name: uslugar-webhooks
     runtime: node
     plan: starter
+    region: frankfurt
+    branch: main
+    rootDir: uslugar-webhooks
     healthCheckPath: /health
     buildCommand: npm ci && npm run migrate && npm run build
     startCommand: npm start
@@ -23,4 +29,4 @@ services:
           name: uslugar-webhooks-db
           property: connectionString
       # Ručno u dashboardu: VERIFY_TOKEN, FACEBOOK_APP_SECRET, INGEST_API_KEY,
-      # META_WEBHOOK_PROFILES, META_*_VERIFY_TOKEN, META_*_APP_SECRET, META_*_DATABASE_URL
+      # ADMIN_PANEL_TOKEN, META_WEBHOOK_PROFILES, META_*_VERIFY_TOKEN, META_*_APP_SECRET
