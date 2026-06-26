@@ -1,0 +1,63 @@
+# Monorepo Render: Laravel migracije za oriphiel-atomic-ledger-core
+# Secret: ORIPHIEL_LEDGER_DATABASE_URL (Render Postgres connection string)
+
+name: oriphiel-atomic-ledger-core – migracije
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "oriphiel-atomic-ledger-core/database/migrations/**"
+      - ".github/workflows/oriphiel-atomic-ledger-core-migrate.yml"
+
+permissions:
+  contents: read
+
+env:
+  PROJECT_DIR: oriphiel-atomic-ledger-core
+
+jobs:
+  migrate:
+    name: Laravel migrate (Render Postgres)
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    defaults:
+      run:
+        working-directory: ${{ env.PROJECT_DIR }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: bcmath, pdo_pgsql
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-dev
+
+      - name: Validate database secret
+        env:
+          ORIPHIEL_LEDGER_DATABASE_URL: ${{ secrets.ORIPHIEL_LEDGER_DATABASE_URL }}
+        run: |
+          if [ -z "$ORIPHIEL_LEDGER_DATABASE_URL" ]; then
+            echo "ORIPHIEL_LEDGER_DATABASE_URL nije postavljen — preskačem migracije."
+            echo "Dodaj secret u GitHub: Settings → Secrets → Actions"
+            exit 0
+          fi
+          echo "Database URL je postavljen (maskiran)."
+
+      - name: Run migrations
+        env:
+          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          ORIPHIEL_LEDGER_DATABASE_URL: ${{ secrets.ORIPHIEL_LEDGER_DATABASE_URL }}
+          DB_CONNECTION: pgsql
+          DB_URL: ${{ secrets.ORIPHIEL_LEDGER_DATABASE_URL }}
+        run: |
+          if [ -z "$ORIPHIEL_LEDGER_DATABASE_URL" ]; then
+            exit 0
+          fi
+          php artisan migrate --force

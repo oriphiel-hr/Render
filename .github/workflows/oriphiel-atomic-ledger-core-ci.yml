@@ -1,14 +1,34 @@
-name: CI
+# Monorepo Render: Laravel u oriphiel-atomic-ledger-core
+# (oriphiel-atomic-ledger-core/.github/workflows/ GitHub NE izvršava u ovom repou)
+
+name: oriphiel-atomic-ledger-core CI
 
 on:
   push:
     branches: [main, develop]
+    paths:
+      - "oriphiel-atomic-ledger-core/**"
+      - ".github/workflows/oriphiel-atomic-ledger-core-ci.yml"
   pull_request:
     branches: [main, develop]
+    paths:
+      - "oriphiel-atomic-ledger-core/**"
+      - ".github/workflows/oriphiel-atomic-ledger-core-ci.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: oriphiel-atomic-ledger-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PROJECT_DIR: oriphiel-atomic-ledger-core
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.PROJECT_DIR }}
 
     services:
       postgres:
@@ -63,7 +83,7 @@ jobs:
           DB_PASSWORD: secret
         run: php artisan migrate --force
 
-      - name: Run unit and feature tests
+      - name: Run tests
         env:
           DB_CONNECTION: pgsql
           DB_HOST: 127.0.0.1
