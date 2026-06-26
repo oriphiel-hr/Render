@@ -204,7 +204,7 @@
             <div class="card">
                 <h2>Verify data comes from API</h2>
                 <p style="color:var(--muted);font-size:.88rem;margin-bottom:1rem;line-height:1.55">
-                    UI loads data via REST calls. Open the same endpoints in a new tab or with <code>curl</code> to confirm responses match what you see here.
+                    UI loads data via REST calls. When signed in, use <strong>Open</strong> on an endpoint — your session cookie authenticates the request in the browser.
                     Each JSON body includes <code>_source</code> with endpoint URL and timestamp.
                 </p>
                 <h3 style="font-size:.78rem;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem">Public — no login</h3>
@@ -280,12 +280,23 @@ const AUTH_ENDPOINTS = [
     { method: 'GET', path: '/api/admin/reconciliation', label: 'Reconciliation (admin)' },
 ];
 
+const getCsrfToken = () => {
+    const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : '';
+};
+
+const ensureCsrfCookie = () => fetch('/sanctum/csrf-cookie', { credentials: 'include' });
+
 const api = async (path, opts = {}) => {
     const method = (opts.method || 'GET').toUpperCase();
     const started = performance.now();
     const headers = { 'Accept': 'application/json', 'Content-Type': 'application/json', ...(opts.headers || {}) };
     if (token) headers['Authorization'] = 'Bearer ' + token;
-    const res = await fetch('/api' + path, { ...opts, headers });
+    if (method !== 'GET' && method !== 'HEAD') {
+        const csrf = getCsrfToken();
+        if (csrf) headers['X-XSRF-TOKEN'] = csrf;
+    }
+    const res = await fetch('/api' + path, { ...opts, credentials: 'include', headers });
     const data = await res.json().catch(() => ({}));
     const entry = {
         method, path: '/api' + path, status: res.status, ok: res.ok,
@@ -343,8 +354,8 @@ function renderApiVerifyTab() {
         <li><span class="badge warn">${e.method}</span><code>${esc(e.path)}</code><span>${esc(e.label)}</span>
         <button type="button" class="btn btn-secondary btn-sm" data-fetch-auth="${esc(e.path)}">Fetch now</button></li>`).join('');
     if (tok) tok.textContent = token
-        ? `curl -H "Authorization: Bearer ${token}" -H "Accept: application/json" ${APP_URL}/api/wallets`
-        : 'Sign in to get Bearer token for authenticated endpoints.';
+        ? `Logged in — open /api/wallets in a new tab (session cookie) or:\ncurl -H "Authorization: Bearer ${token}" -H "Accept: application/json" ${APP_URL}/api/wallets`
+        : 'Sign in — then Open works in browser via session cookie.';
 }
 
 document.addEventListener('click', e => {
@@ -400,6 +411,7 @@ document.getElementById('auth-tab-register').addEventListener('click', () => {
 });
 
 async function login(email, password) {
+    await ensureCsrfCookie();
     const { ok, status, data } = await api('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
     if (!ok) {
         if (status === 403 && data.code === 'EMAIL_NOT_VERIFIED') {
@@ -422,6 +434,7 @@ async function login(email, password) {
 
 document.getElementById('register-form').addEventListener('submit', async e => {
     e.preventDefault();
+    await ensureCsrfCookie();
     const { ok, data } = await api('/auth/register', { method: 'POST', body: JSON.stringify({
         name: document.getElementById('register-name').value,
         email: document.getElementById('register-email').value,

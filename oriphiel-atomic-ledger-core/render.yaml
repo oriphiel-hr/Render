@@ -65,6 +65,10 @@ services:
         sync: false
       - key: BINANCE_API_SECRET
         sync: false
+      - key: SANCTUM_STATEFUL_DOMAINS
+        value: oriphiel-atomic-ledger.onrender.com
+      - key: SESSION_SECURE_COOKIE
+        value: "true"
     # Docker runtime: nema Start Command — CMD je u Dockerfile (render-entrypoint.sh)
 
   - type: keyvalue
