@@ -54,6 +54,15 @@ class ApiSessionAuthTest extends TestCase
             ->withUnencryptedCookie('ledger_api_token', $token)
             ->getJson('/api/wallets')
             ->assertOk()
-            ->assertJsonStructure(['data', '_source']);
+            ->assertJsonStructure([
+                'data',
+                '_source',
+                'data_source' => [
+                    'provider',
+                    'storage',
+                    'table',
+                    'exchange_bridge',
+                ],
+            ]);
     }
 }

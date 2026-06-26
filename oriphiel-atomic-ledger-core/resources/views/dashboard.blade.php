@@ -204,8 +204,8 @@
             <div class="card">
                 <h2>Verify data comes from API</h2>
                 <p style="color:var(--muted);font-size:.88rem;margin-bottom:1rem;line-height:1.55">
-                    UI loads data via REST calls. When signed in, use <strong>Open</strong> on an endpoint — your session cookie authenticates the request in the browser.
-                    Each JSON body includes <code>_source</code> with endpoint URL and timestamp.
+                    UI loads data via REST calls. When signed in, use <strong>Open</strong> on an endpoint — your auth cookie authenticates the request in the browser.
+                    Each JSON body includes <code>_source</code> (this API call) and <code>data_source</code> (where balances really come from: PostgreSQL ledger vs Binance).
                 </p>
                 <h3 style="font-size:.78rem;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem">Public — no login</h3>
                 <ul class="api-endpoint-list" id="api-public-list"></ul>
@@ -301,19 +301,44 @@ const api = async (path, opts = {}) => {
 const esc = s => { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; };
 const showAlert = (id, ok, msg) => { const el = document.getElementById(id); el.className = 'alert show ' + (ok ? 'ok' : 'err'); el.textContent = msg; };
 
+function renderDataSourceLine(dataSrc) {
+    if (!dataSrc) return '';
+    if (dataSrc.provider === 'local_ledger') {
+        const bridge = dataSrc.exchange_bridge || {};
+        let line = `Data: <strong>PostgreSQL</strong> <code>${esc(dataSrc.table)}</code> (local atomic ledger)`;
+        if (bridge.credentials_configured) {
+            line += bridge.enabled
+                ? ` · live Binance (${esc(bridge.mode_label || bridge.mode)}): <a href="${esc(bridge.live_balances_endpoint)}" target="_blank" rel="noopener">/api/exchange/accounts</a>`
+                : ` · Binance keys set — enable <code>EXCHANGE_ENABLED</code> for live API`;
+        } else {
+            line += ` · Binance bridge: <a href="${esc(bridge.status_endpoint || '/api/exchange/status')}" target="_blank" rel="noopener">/api/exchange/status</a>`;
+        }
+        return line;
+    }
+    if (dataSrc.provider) {
+        const called = dataSrc.upstream_called === false ? ' · upstream not called (fallback)' : '';
+        return `Upstream: <strong>${esc(dataSrc.provider)}</strong> ${esc(dataSrc.method || 'GET')} <code>${esc(dataSrc.url)}</code>${called}`;
+    }
+    return '';
+}
+
 function renderApiSourceBar(elId, jsonId, method, path, result) {
     const bar = document.getElementById(elId);
     const pre = jsonId ? document.getElementById(jsonId) : null;
     if (!bar) return;
-    const src = result?.data?._source;
+    const payload = result?.data || {};
+    const src = payload._source;
+    const dataSrc = payload.data_source;
     const url = src?.url || (APP_URL + path);
     const fetched = src?.fetched_at ? ` · ${src.fetched_at}` : '';
+    const origin = renderDataSourceLine(dataSrc);
     bar.innerHTML = `<span class="badge ok">API</span> <strong>${esc(method)}</strong> <code>${esc(path)}</code>
         <button type="button" class="btn btn-secondary btn-sm" data-toggle-json="${jsonId || ''}">View JSON</button>
         <a class="btn btn-secondary btn-sm" href="${esc(path)}" target="_blank" rel="noopener">Open</a>
-        <span style="color:var(--muted)">${esc(url)}${esc(fetched)}</span>`;
+        <span style="color:var(--muted)">${esc(url)}${esc(fetched)}</span>
+        ${origin ? `<div style="width:100%;margin-top:.35rem;font-size:.78rem">${origin}</div>` : ''}`;
     if (pre) {
-        pre.textContent = JSON.stringify(result.data, null, 2);
+        pre.textContent = JSON.stringify(payload, null, 2);
         pre.classList.remove('show');
     }
 }
@@ -498,11 +523,8 @@ async function loadExchange() {
     const status = statusResult.data;
     const accounts = accountsResult.data;
     renderApiSourceBar('exchange-api-source', 'exchange-api-json', 'GET', '/api/exchange/accounts', accountsResult);
-    const upstream = accounts.data_source || status.data_source;
-    const upstreamText = upstream
-        ? `Upstream: <strong>${esc(upstream.provider)}</strong> ${esc(upstream.method || 'GET')} <code>${esc(upstream.url)}</code>${upstream.upstream_called === false ? ' (not called — demo fallback)' : ''}`
-        : 'Upstream source not available.';
-    document.getElementById('exchange-upstream').innerHTML = upstreamText;
+    const upstreamLine = renderDataSourceLine(accounts.data_source || status.data_source);
+    document.getElementById('exchange-upstream').innerHTML = upstreamLine || 'Upstream source not available.';
     document.getElementById('exchange-message').textContent = (status.message || status.connection || '—') + (status.mode_label ? ` · ${status.mode_label}` : '');
     document.getElementById('exchange-accounts').innerHTML = (accounts.data || []).map(a =>
         `<div class="wallet-row"><span>${esc(a.name||a.currency)}</span><span class="mono">${esc(a.balance)} ${esc(a.currency||'')}</span></div>`).join('');

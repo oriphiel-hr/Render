@@ -62,7 +62,7 @@ services:
           type: keyvalue
           property: port
       - key: EXCHANGE_ENABLED
-        value: "false"
+        value: "true"
       - key: EXCHANGE_MODE
         value: testnet
       - key: BINANCE_API_KEY

@@ -8,6 +8,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Models\WalletOperation;
 use App\Services\Ledger\LedgerService;
+use App\Support\ApiSource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -31,7 +32,10 @@ class WalletController extends Controller
                 'total' => $wallet->total(),
             ]);
 
-        return response()->json(['data' => $wallets]);
+        return response()->json([
+            'data' => $wallets,
+            'data_source' => ApiSource::forLedger('user_balances', '/api/wallets'),
+        ]);
     }
 
     public function deposit(Request $request): JsonResponse
@@ -146,7 +150,10 @@ class WalletController extends Controller
                 'created_at' => $entry->created_at?->toIso8601String(),
             ]);
 
-        return response()->json(['data' => $entries]);
+        return response()->json([
+            'data' => $entries,
+            'data_source' => ApiSource::forLedger('ledger_entries', '/api/ledger', 'Append-only ledger entries in PostgreSQL.'),
+        ]);
     }
 
     public function operations(Request $request): JsonResponse
@@ -158,7 +165,10 @@ class WalletController extends Controller
             ->get()
             ->map(fn (WalletOperation $op) => $this->operationPayload($op));
 
-        return response()->json(['data' => $operations]);
+        return response()->json([
+            'data' => $operations,
+            'data_source' => ApiSource::forLedger('wallet_operations', '/api/operations'),
+        ]);
     }
 
     public function transactions(Request $request): JsonResponse
@@ -184,7 +194,10 @@ class WalletController extends Controller
                 'created_at' => $tx->created_at?->toIso8601String(),
             ]);
 
-        return response()->json(['data' => $transactions]);
+        return response()->json([
+            'data' => $transactions,
+            'data_source' => ApiSource::forLedger('transactions', '/api/my/transactions'),
+        ]);
     }
 
     /**
