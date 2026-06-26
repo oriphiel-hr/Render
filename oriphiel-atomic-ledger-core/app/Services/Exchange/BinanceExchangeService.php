@@ -3,6 +3,7 @@
 namespace App\Services\Exchange;
 
 use App\Enums\ExchangeMode;
+use App\Support\ApiSource;
 use App\Support\ExchangeConfig;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -39,6 +40,8 @@ class BinanceExchangeService
     public function status(): array
     {
         $mode = $this->mode();
+        $accountUrl = $this->baseUrl().'/api/v3/account';
+
         $base = [
             'enabled' => $this->isEnabled(),
             'provider' => 'binance',
@@ -52,12 +55,16 @@ class BinanceExchangeService
             'credentials_configured' => $this->auth->hasCredentials(),
             'cutover' => $mode->cutoverInstructions(),
             'env_flag' => 'EXCHANGE_MODE='.$mode->value,
+            'ledger_api' => url('/api/exchange/status'),
         ];
 
         if (! $this->isEnabled()) {
             return array_merge($base, [
                 'connection' => 'local_only',
                 'message' => 'Ledger radi lokalno. Postavi EXCHANGE_ENABLED=true za Binance bridge.',
+                'data_source' => ApiSource::upstream('ledger_api', 'GET', url('/api/exchange/status'), [
+                    'note' => 'Status served by this application; Binance API not called.',
+                ]),
             ]);
         }
 
@@ -65,6 +72,9 @@ class BinanceExchangeService
             return array_merge($base, [
                 'connection' => 'awaiting_credentials',
                 'message' => 'Postavi BINANCE_API_KEY i BINANCE_API_SECRET u Render env.',
+                'data_source' => ApiSource::upstream('ledger_api', 'GET', url('/api/exchange/status'), [
+                    'note' => 'Binance credentials missing; upstream not contacted.',
+                ]),
             ]);
         }
 
@@ -78,6 +88,10 @@ class BinanceExchangeService
                 'message' => $response->successful()
                     ? "Povezano na Binance Spot ({$envLabel})."
                     : 'Binance API greška — provjeri ključeve i EXCHANGE_MODE.',
+                'data_source' => ApiSource::upstream('binance', 'GET', $accountUrl, [
+                    'http_status' => $response->status(),
+                    'verify' => 'Open GET /api/exchange/status and compare base_url with Binance docs.',
+                ]),
             ]);
         } catch (\Throwable $exception) {
             Log::warning('exchange.binance.status_failed', ['error' => $exception->getMessage()]);
@@ -85,6 +99,9 @@ class BinanceExchangeService
             return array_merge($base, [
                 'connection' => 'unreachable',
                 'message' => $exception->getMessage(),
+                'data_source' => ApiSource::upstream('binance', 'GET', $accountUrl, [
+                    'error' => $exception->getMessage(),
+                ]),
             ]);
         }
     }
@@ -94,6 +111,8 @@ class BinanceExchangeService
      */
     public function accounts(): array
     {
+        $accountUrl = $this->baseUrl().'/api/v3/account';
+
         if (! $this->isEnabled() || ! $this->auth->hasCredentials()) {
             return [
                 'provider' => 'binance',
@@ -101,6 +120,10 @@ class BinanceExchangeService
                 'environment' => $this->mode()->value,
                 'data' => $this->demoAccounts(),
                 'note' => 'Demo računi — postavi BINANCE_API_KEY i BINANCE_API_SECRET za live podatke.',
+                'data_source' => ApiSource::upstream('ledger_api', 'GET', url('/api/exchange/accounts'), [
+                    'upstream' => $accountUrl,
+                    'upstream_called' => false,
+                ]),
             ];
         }
 
@@ -113,6 +136,10 @@ class BinanceExchangeService
                     'mode' => 'live',
                     'environment' => $this->mode()->value,
                     'data' => $this->mapBalances($response->json('balances', [])),
+                    'data_source' => ApiSource::upstream('binance', 'GET', $accountUrl, [
+                        'http_status' => $response->status(),
+                        'upstream_called' => true,
+                    ]),
                 ];
             }
         } catch (\Throwable $exception) {
@@ -125,6 +152,9 @@ class BinanceExchangeService
             'environment' => $this->mode()->value,
             'data' => $this->demoAccounts(),
             'note' => 'Fallback na demo — Binance API nije dostupan.',
+            'data_source' => ApiSource::upstream('binance', 'GET', $accountUrl, [
+                'upstream_called' => false,
+            ]),
         ];
     }
 

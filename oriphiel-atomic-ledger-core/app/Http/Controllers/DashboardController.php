@@ -13,6 +13,7 @@ class DashboardController extends Controller
 
         return view('dashboard', [
             'appName' => config('app.name'),
+            'appUrl' => config('app.url'),
             'exchangeEnabled' => ExchangeConfig::isEnabled(),
             'exchangeMode' => $mode->value,
             'exchangeModeLabel' => $mode->label(),

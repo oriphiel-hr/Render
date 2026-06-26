@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->trustProxies(at: '*');
+        $middleware->append(\App\Http\Middleware\AddApiSourceMetadata::class);
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,

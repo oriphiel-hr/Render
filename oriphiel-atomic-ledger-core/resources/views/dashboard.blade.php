@@ -42,13 +42,22 @@
         header { display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1.25rem; flex-wrap:wrap; }
         .diff-bad { color:var(--danger); font-weight:600; }
         .diff-ok { color:var(--success); }
+        .api-source { font-size:.75rem; color:var(--muted); margin-bottom:.85rem; padding:.55rem .7rem; background:var(--surface2); border-radius:8px; border:1px solid var(--border); display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; }
+        .api-source code { font-family:'JetBrains Mono',monospace; font-size:.72rem; color:var(--accent); }
+        .api-json { background:#0a0f1a; border:1px solid var(--border); border-radius:8px; padding:.75rem; font-family:'JetBrains Mono',monospace; font-size:.72rem; max-height:280px; overflow:auto; white-space:pre-wrap; word-break:break-all; margin-top:.5rem; display:none; }
+        .api-json.show { display:block; }
+        .api-log-row { padding:.55rem 0; border-bottom:1px solid var(--border); font-size:.8rem; }
+        .api-log-row:last-child { border-bottom:none; }
+        .api-endpoint-list { list-style:none; font-size:.85rem; }
+        .api-endpoint-list li { padding:.45rem 0; border-bottom:1px solid var(--border); display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; }
     </style>
 </head>
 <body>
 <div class="wrap">
     <div id="login-screen" class="login-box card">
         <h1 style="font-size:1.35rem;margin-bottom:.35rem">{{ $appName }}</h1>
-        <p style="color:var(--muted);font-size:.9rem;margin-bottom:1rem">Crypto exchange ledger demo</p>
+        <p style="color:var(--muted);font-size:.9rem;margin-bottom:1rem">Crypto exchange ledger demo — login required</p>
+        <p style="font-size:.8rem;color:var(--muted);margin-bottom:1rem">Verify API without login: <a href="/api/status" target="_blank" rel="noopener" style="color:var(--accent)">GET /api/status</a></p>
         <div class="tabs" style="margin-bottom:1rem">
             <button type="button" class="auth-tab tab active" id="auth-tab-login">Sign in</button>
             <button type="button" class="auth-tab tab" id="auth-tab-register">Register</button>
@@ -100,11 +109,17 @@
             <button class="tab" data-tab="transfer">Transfer</button>
             <button class="tab" data-tab="history">History</button>
             <button class="tab" data-tab="exchange">Binance</button>
+            <button class="tab" data-tab="api-verify">Verify API</button>
             <button class="tab hidden" data-tab="admin" id="admin-tab">Admin</button>
         </div>
 
         <div class="tab-panel" data-panel="wallets">
-            <div class="card"><h2>My wallets</h2><div id="wallets-list">Loading…</div></div>
+            <div class="card">
+                <div class="api-source" id="wallets-api-source">Loading API source…</div>
+                <h2>My wallets</h2>
+                <div id="wallets-list">Loading…</div>
+                <pre class="api-json" id="wallets-api-json"></pre>
+            </div>
         </div>
 
         <div class="tab-panel hidden" data-panel="deposit">
@@ -159,16 +174,49 @@
 
         <div class="tab-panel hidden" data-panel="history">
             <div class="grid grid-2">
-                <div class="card"><h2>Ledger entries</h2><div style="overflow-x:auto"><table><thead><tr><th>Type</th><th>Asset</th><th>Δ avail</th><th>Δ lock</th><th>Δ pend</th></tr></thead><tbody id="ledger-body"></tbody></table></div></div>
-                <div class="card"><h2>Transfers</h2><div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Flow</th><th>Amount</th></tr></thead><tbody id="tx-body"></tbody></table></div></div>
+                <div class="card">
+                    <div class="api-source" id="ledger-api-source">—</div>
+                    <h2>Ledger entries</h2>
+                    <div style="overflow-x:auto"><table><thead><tr><th>Type</th><th>Asset</th><th>Δ avail</th><th>Δ lock</th><th>Δ pend</th></tr></thead><tbody id="ledger-body"></tbody></table></div>
+                    <pre class="api-json" id="ledger-api-json"></pre>
+                </div>
+                <div class="card">
+                    <div class="api-source" id="tx-api-source">—</div>
+                    <h2>Transfers</h2>
+                    <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Flow</th><th>Amount</th></tr></thead><tbody id="tx-body"></tbody></table></div>
+                    <pre class="api-json" id="tx-api-json"></pre>
+                </div>
             </div>
         </div>
 
         <div class="tab-panel hidden" data-panel="exchange">
             <div class="card" style="border-color:rgba(240,185,11,.35)">
-                <h2>Binance Spot bridge</h2>
+                <div class="api-source" id="exchange-api-source">—</div>
+                <h2>Binance Spot bridge @if($exchangeIsTestnet)<span class="badge warn">testnet</span>@endif</h2>
+                <p id="exchange-upstream" style="font-size:.82rem;color:var(--muted);margin-bottom:.5rem">—</p>
                 <p id="exchange-message" style="color:var(--muted);font-size:.85rem">—</p>
                 <div id="exchange-accounts" style="margin-top:.8rem"></div>
+                <pre class="api-json" id="exchange-api-json"></pre>
+            </div>
+        </div>
+
+        <div class="tab-panel hidden" data-panel="api-verify">
+            <div class="card">
+                <h2>Verify data comes from API</h2>
+                <p style="color:var(--muted);font-size:.88rem;margin-bottom:1rem;line-height:1.55">
+                    UI loads data via REST calls. Open the same endpoints in a new tab or with <code>curl</code> to confirm responses match what you see here.
+                    Each JSON body includes <code>_source</code> with endpoint URL and timestamp.
+                </p>
+                <h3 style="font-size:.78rem;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem">Public — no login</h3>
+                <ul class="api-endpoint-list" id="api-public-list"></ul>
+                <h3 style="font-size:.78rem;text-transform:uppercase;color:var(--muted);margin:1rem 0 .6rem">Authenticated — Bearer token</h3>
+                <ul class="api-endpoint-list" id="api-auth-list"></ul>
+                <p style="margin-top:1rem;font-size:.8rem;color:var(--muted)">Your token (for curl):</p>
+                <pre class="api-json show" id="api-curl-token" style="max-height:4rem">—</pre>
+            </div>
+            <div class="card">
+                <h2>Live API call log (this session)</h2>
+                <div id="api-call-log"><p style="color:var(--muted)">No calls yet.</p></div>
             </div>
         </div>
 
@@ -214,19 +262,115 @@
 </div>
 
 <script>
+const APP_URL = @json($appUrl);
 let token = localStorage.getItem('ledger_token') || '';
 let currentUser = null;
+const apiCallLog = [];
+
+const PUBLIC_ENDPOINTS = [
+    { method: 'GET', path: '/api/status', label: 'Service status + exchange info' },
+    { method: 'GET', path: '/api/exchange/status', label: 'Binance bridge status' },
+    { method: 'GET', path: '/api/exchange/accounts', label: 'Binance accounts (or demo fallback)' },
+];
+const AUTH_ENDPOINTS = [
+    { method: 'GET', path: '/api/wallets', label: 'My wallet balances' },
+    { method: 'GET', path: '/api/ledger', label: 'Ledger entries' },
+    { method: 'GET', path: '/api/my/transactions', label: 'My transfers' },
+    { method: 'GET', path: '/api/users', label: 'Users list' },
+    { method: 'GET', path: '/api/admin/reconciliation', label: 'Reconciliation (admin)' },
+];
 
 const api = async (path, opts = {}) => {
+    const method = (opts.method || 'GET').toUpperCase();
+    const started = performance.now();
     const headers = { 'Accept': 'application/json', 'Content-Type': 'application/json', ...(opts.headers || {}) };
     if (token) headers['Authorization'] = 'Bearer ' + token;
     const res = await fetch('/api' + path, { ...opts, headers });
     const data = await res.json().catch(() => ({}));
+    const entry = {
+        method, path: '/api' + path, status: res.status, ok: res.ok,
+        ms: Math.round(performance.now() - started),
+        at: new Date().toISOString(), data,
+    };
+    apiCallLog.unshift(entry);
+    if (apiCallLog.length > 40) apiCallLog.pop();
+    renderApiCallLog();
     return { ok: res.ok, status: res.status, data };
 };
 
 const esc = s => { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; };
 const showAlert = (id, ok, msg) => { const el = document.getElementById(id); el.className = 'alert show ' + (ok ? 'ok' : 'err'); el.textContent = msg; };
+
+function renderApiSourceBar(elId, jsonId, method, path, result) {
+    const bar = document.getElementById(elId);
+    const pre = jsonId ? document.getElementById(jsonId) : null;
+    if (!bar) return;
+    const src = result?.data?._source;
+    const url = src?.url || (APP_URL + path);
+    const fetched = src?.fetched_at ? ` · ${src.fetched_at}` : '';
+    bar.innerHTML = `<span class="badge ok">API</span> <strong>${esc(method)}</strong> <code>${esc(path)}</code>
+        <button type="button" class="btn btn-secondary btn-sm" data-toggle-json="${jsonId || ''}">View JSON</button>
+        <a class="btn btn-secondary btn-sm" href="${esc(path)}" target="_blank" rel="noopener">Open</a>
+        <span style="color:var(--muted)">${esc(url)}${esc(fetched)}</span>`;
+    if (pre) {
+        pre.textContent = JSON.stringify(result.data, null, 2);
+        pre.classList.remove('show');
+    }
+}
+
+function renderApiCallLog() {
+    const el = document.getElementById('api-call-log');
+    if (!el) return;
+    if (!apiCallLog.length) { el.innerHTML = '<p style="color:var(--muted)">No calls yet.</p>'; return; }
+    el.innerHTML = apiCallLog.map((e, i) => `
+        <div class="api-log-row">
+            <span class="badge ${e.ok ? 'ok' : 'err'}">${e.status}</span>
+            <strong>${esc(e.method)}</strong> <code>${esc(e.path)}</code>
+            <span style="color:var(--muted)">${e.ms}ms · ${esc(e.at)}</span>
+            <button type="button" class="btn btn-secondary btn-sm" data-log-json="${i}">JSON</button>
+        </div>
+        <pre class="api-json" id="log-json-${i}"></pre>`).join('');
+}
+
+function renderApiVerifyTab() {
+    const pub = document.getElementById('api-public-list');
+    const auth = document.getElementById('api-auth-list');
+    const tok = document.getElementById('api-curl-token');
+    if (pub) pub.innerHTML = PUBLIC_ENDPOINTS.map(e => `
+        <li><span class="badge ok">${e.method}</span><code>${esc(e.path)}</code><span>${esc(e.label)}</span>
+        <a href="${esc(e.path)}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">Open</a></li>`).join('');
+    if (auth) auth.innerHTML = AUTH_ENDPOINTS.map(e => `
+        <li><span class="badge warn">${e.method}</span><code>${esc(e.path)}</code><span>${esc(e.label)}</span>
+        <button type="button" class="btn btn-secondary btn-sm" data-fetch-auth="${esc(e.path)}">Fetch now</button></li>`).join('');
+    if (tok) tok.textContent = token
+        ? `curl -H "Authorization: Bearer ${token}" -H "Accept: application/json" ${APP_URL}/api/wallets`
+        : 'Sign in to get Bearer token for authenticated endpoints.';
+}
+
+document.addEventListener('click', e => {
+    const toggle = e.target.closest('[data-toggle-json]');
+    if (toggle) {
+        const pre = document.getElementById(toggle.dataset.toggleJson);
+        if (pre) pre.classList.toggle('show');
+        return;
+    }
+    const logBtn = e.target.closest('[data-log-json]');
+    if (logBtn) {
+        const i = +logBtn.dataset.logJson;
+        const pre = document.getElementById('log-json-' + i);
+        if (pre) {
+            pre.textContent = JSON.stringify(apiCallLog[i]?.data, null, 2);
+            pre.classList.toggle('show');
+        }
+        return;
+    }
+    const fetchBtn = e.target.closest('[data-fetch-auth]');
+    if (fetchBtn) {
+        api(fetchBtn.dataset.fetchAuth.replace('/api', '')).then(r => alert(JSON.stringify(r.data, null, 2)));
+    }
+});
+
+renderApiVerifyTab();
 
 document.querySelectorAll('#main-tabs .tab').forEach(btn => btn.addEventListener('click', () => {
     document.querySelectorAll('#main-tabs .tab').forEach(t => t.classList.remove('active'));
@@ -235,6 +379,7 @@ document.querySelectorAll('#main-tabs .tab').forEach(btn => btn.addEventListener
     document.querySelector(`[data-panel="${btn.dataset.tab}"]`).classList.remove('hidden');
     if (btn.dataset.tab === 'admin') { loadReconciliation(); loadInvitations(); }
     if (btn.dataset.tab === 'exchange') loadExchange();
+    if (btn.dataset.tab === 'api-verify') renderApiVerifyTab();
 }));
 
 let pendingVerifyEmail = '';
@@ -271,6 +416,7 @@ async function login(email, password) {
     document.getElementById('app-screen').classList.remove('hidden');
     document.getElementById('user-badge').textContent = currentUser.name + ' (' + currentUser.role + ')';
     if (currentUser.is_admin) document.getElementById('admin-tab').classList.remove('hidden');
+    renderApiVerifyTab();
     await refreshAll();
 }
 
@@ -310,7 +456,9 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
 });
 
 async function loadWallets() {
-    const { data } = await api('/wallets');
+    const result = await api('/wallets');
+    const { data } = result;
+    renderApiSourceBar('wallets-api-source', 'wallets-api-json', 'GET', '/api/wallets', result);
     const list = document.getElementById('wallets-list');
     if (!data.data?.length) { list.innerHTML = '<p style="color:var(--muted)">No wallets</p>'; return; }
     list.innerHTML = data.data.map(w => `
@@ -330,7 +478,11 @@ async function loadUsers() {
 }
 
 async function loadLedger() {
-    const [{ data: ledger }, { data: tx }] = await Promise.all([api('/ledger'), api('/my/transactions')]);
+    const [ledgerResult, txResult] = await Promise.all([api('/ledger'), api('/my/transactions')]);
+    const ledger = ledgerResult.data;
+    const tx = txResult.data;
+    renderApiSourceBar('ledger-api-source', 'ledger-api-json', 'GET', '/api/ledger', ledgerResult);
+    renderApiSourceBar('tx-api-source', 'tx-api-json', 'GET', '/api/my/transactions', txResult);
     document.getElementById('ledger-body').innerHTML = (ledger.data || []).map(e => `<tr>
         <td>${esc(e.entry_type)}</td><td>${esc(e.asset)}</td>
         <td class="mono">${esc(e.available_delta)}</td><td class="mono">${esc(e.locked_delta)}</td><td class="mono">${esc(e.pending_delta)}</td></tr>`).join('') || '<tr><td colspan="5">No entries</td></tr>';
@@ -340,8 +492,16 @@ async function loadLedger() {
 }
 
 async function loadExchange() {
-    const [{ data: status }, { data: accounts }] = await Promise.all([api('/exchange/status'), api('/exchange/accounts')]);
-    document.getElementById('exchange-message').textContent = status.message || status.connection || '—';
+    const [statusResult, accountsResult] = await Promise.all([api('/exchange/status'), api('/exchange/accounts')]);
+    const status = statusResult.data;
+    const accounts = accountsResult.data;
+    renderApiSourceBar('exchange-api-source', 'exchange-api-json', 'GET', '/api/exchange/accounts', accountsResult);
+    const upstream = accounts.data_source || status.data_source;
+    const upstreamText = upstream
+        ? `Upstream: <strong>${esc(upstream.provider)}</strong> ${esc(upstream.method || 'GET')} <code>${esc(upstream.url)}</code>${upstream.upstream_called === false ? ' (not called — demo fallback)' : ''}`
+        : 'Upstream source not available.';
+    document.getElementById('exchange-upstream').innerHTML = upstreamText;
+    document.getElementById('exchange-message').textContent = (status.message || status.connection || '—') + (status.mode_label ? ` · ${status.mode_label}` : '');
     document.getElementById('exchange-accounts').innerHTML = (accounts.data || []).map(a =>
         `<div class="wallet-row"><span>${esc(a.name||a.currency)}</span><span class="mono">${esc(a.balance)} ${esc(a.currency||'')}</span></div>`).join('');
 }
@@ -446,6 +606,7 @@ document.getElementById('invite-form').addEventListener('submit', async e => {
     document.getElementById('app-screen').classList.remove('hidden');
     document.getElementById('user-badge').textContent = currentUser.name + ' (' + currentUser.role + ')';
     if (currentUser.is_admin) document.getElementById('admin-tab').classList.remove('hidden');
+    renderApiVerifyTab();
     await refreshAll();
 })();
 </script>
