@@ -39,8 +39,6 @@ Ručno u **Docker Command** (ako ne želiš prazno):
 sh -c "php artisan migrate --force && php artisan db:seed --force && php artisan serve --host=0.0.0.0 --port=$PORT"
 ```
 
-**Start Command** (zastarjelo za Docker — ne traži ga):
-
 **Environment** (Postgres koji si već kreirao):
 ```
 APP_ENV=production
