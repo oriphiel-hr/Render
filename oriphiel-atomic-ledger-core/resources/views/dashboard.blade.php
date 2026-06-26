@@ -280,23 +280,12 @@ const AUTH_ENDPOINTS = [
     { method: 'GET', path: '/api/admin/reconciliation', label: 'Reconciliation (admin)' },
 ];
 
-const getCsrfToken = () => {
-    const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
-    return match ? decodeURIComponent(match[1]) : '';
-};
-
-const ensureCsrfCookie = () => fetch('/sanctum/csrf-cookie', { credentials: 'include' });
-
 const api = async (path, opts = {}) => {
     const method = (opts.method || 'GET').toUpperCase();
     const started = performance.now();
     const headers = { 'Accept': 'application/json', 'Content-Type': 'application/json', ...(opts.headers || {}) };
     if (token) headers['Authorization'] = 'Bearer ' + token;
-    if (method !== 'GET' && method !== 'HEAD') {
-        const csrf = getCsrfToken();
-        if (csrf) headers['X-XSRF-TOKEN'] = csrf;
-    }
-    const res = await fetch('/api' + path, { ...opts, credentials: 'include', headers });
+    const res = await fetch('/api' + path, { ...opts, headers });
     const data = await res.json().catch(() => ({}));
     const entry = {
         method, path: '/api' + path, status: res.status, ok: res.ok,
@@ -354,8 +343,8 @@ function renderApiVerifyTab() {
         <li><span class="badge warn">${e.method}</span><code>${esc(e.path)}</code><span>${esc(e.label)}</span>
         <button type="button" class="btn btn-secondary btn-sm" data-fetch-auth="${esc(e.path)}">Fetch now</button></li>`).join('');
     if (tok) tok.textContent = token
-        ? `Logged in — open /api/wallets in a new tab (session cookie) or:\ncurl -H "Authorization: Bearer ${token}" -H "Accept: application/json" ${APP_URL}/api/wallets`
-        : 'Sign in — then Open works in browser via session cookie.';
+        ? `Logged in — use Fetch now below, or:\ncurl -H "Authorization: Bearer ${token}" -H "Accept: application/json" ${APP_URL}/api/wallets`
+        : 'Sign in — then use Fetch now or the curl example below.';
 }
 
 document.addEventListener('click', e => {
@@ -411,14 +400,15 @@ document.getElementById('auth-tab-register').addEventListener('click', () => {
 });
 
 async function login(email, password) {
-    await ensureCsrfCookie();
     const { ok, status, data } = await api('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
     if (!ok) {
         if (status === 403 && data.code === 'EMAIL_NOT_VERIFIED') {
             pendingVerifyEmail = data.email || email;
             document.getElementById('resend-verify-btn').classList.remove('hidden');
         }
-        showAlert('login-alert', false, data.message || data.errors?.email?.[0] || 'Login failed');
+        const msg = data.message || data.errors?.email?.[0]
+            || (status >= 500 ? `Server error (${status}). Try again in a moment.` : 'Login failed');
+        showAlert('login-alert', false, msg);
         return;
     }
     token = data.token;
@@ -434,7 +424,6 @@ async function login(email, password) {
 
 document.getElementById('register-form').addEventListener('submit', async e => {
     e.preventDefault();
-    await ensureCsrfCookie();
     const { ok, data } = await api('/auth/register', { method: 'POST', body: JSON.stringify({
         name: document.getElementById('register-name').value,
         email: document.getElementById('register-email').value,

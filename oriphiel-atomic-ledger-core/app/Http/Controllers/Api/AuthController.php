@@ -9,7 +9,6 @@ use App\Services\Auth\InvitationService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
@@ -67,7 +66,6 @@ class AuthController extends Controller
         }
 
         $token = $user->createToken('ledger-demo')->plainTextToken;
-        $this->establishWebSession($request, $user);
 
         return response()->json([
             'token' => $token,
@@ -117,7 +115,6 @@ class AuthController extends Controller
         );
 
         $token = $user->createToken('ledger-demo')->plainTextToken;
-        $this->establishWebSession($request, $user);
 
         return response()->json([
             'message' => 'Invitation accepted. Your account is ready.',
@@ -137,23 +134,7 @@ class AuthController extends Controller
     {
         $request->user()?->currentAccessToken()?->delete();
 
-        if ($request->hasSession()) {
-            Auth::guard('web')->logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-        }
-
         return response()->json(['message' => 'Logged out.']);
-    }
-
-    private function establishWebSession(Request $request, User $user): void
-    {
-        if (! $request->hasSession()) {
-            return;
-        }
-
-        Auth::guard('web')->login($user);
-        $request->session()->regenerate();
     }
 
     /**

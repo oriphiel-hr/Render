@@ -20,7 +20,6 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->trustProxies(at: '*');
-        $middleware->statefulApi();
         $middleware->redirectGuestsTo(fn (Request $request) => $request->is('api/*') ? null : '/');
         $middleware->api(append: [
             \App\Http\Middleware\AddApiSourceMetadata::class,
