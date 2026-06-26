@@ -1,3 +1,5 @@
+require('../src/lib/prismaEnvBootstrap');
+
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();

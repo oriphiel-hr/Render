@@ -1,5 +1,8 @@
+require('./prismaEnvBootstrap');
+
 const { PrismaClient } = require('@prisma/client');
 const { metaEnvPrefix } = require('./metaEnv');
+const { normalizeRenderDatabaseUrl } = require('./databaseUrl');
 
 const logLevel =
   process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'];
@@ -24,8 +27,9 @@ const prismaByProfile = new Map();
  */
 function getPrismaForProfile(profile) {
   if (!profile) return prisma;
-  const url = process.env[`${metaEnvPrefix(profile)}_DATABASE_URL`];
-  if (!url) return prisma;
+  const rawUrl = process.env[`${metaEnvPrefix(profile)}_DATABASE_URL`];
+  if (!rawUrl) return prisma;
+  const url = normalizeRenderDatabaseUrl(rawUrl) || rawUrl;
   let client = prismaByProfile.get(profile);
   if (!client) {
     client = new PrismaClient({

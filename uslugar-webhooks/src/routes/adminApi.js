@@ -48,9 +48,16 @@ function createAdminRouter() {
       await prisma.$queryRaw`SELECT 1 FROM "ChannelMessage" LIMIT 1`;
       databaseReady = true;
     } catch (e) {
-      databaseHint =
-        'Tablice ne postoje ili DATABASE_URL je kriv. Na Renderu pokreni build s ' +
-        '`npx prisma migrate deploy` ili u Shellu: `cd uslugar-webhooks && npx prisma migrate deploy`.';
+      const msg = e && e.message ? String(e.message) : '';
+      if (/Can't reach database server|ECONNREFUSED|ENOTFOUND|ETIMEDOUT/i.test(msg)) {
+        databaseHint =
+          'Baza nije dostupna. Lokalno koristi Render External Database URL u .env (ili Internal — app ga automatski pretvara). ' +
+          'Na Renderu provjeri je li PostgreSQL servis Available (nije Suspended) i je li DATABASE_URL povezan na ispravnu bazu.';
+      } else {
+        databaseHint =
+          'Tablice ne postoje ili DATABASE_URL je kriv. Na Renderu pokreni build s ' +
+          '`npm run migrate` ili u Shellu: `cd uslugar-webhooks && npm run migrate`.';
+      }
     }
 
     const profiles = parseWebhookProfiles();

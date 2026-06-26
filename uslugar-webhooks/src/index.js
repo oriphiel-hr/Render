@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('./lib/prismaEnvBootstrap');
 
 const express = require('express');
 const { createFacebookWebhookRouter } = require('./routes/facebookWebhook');
