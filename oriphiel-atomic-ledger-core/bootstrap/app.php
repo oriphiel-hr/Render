@@ -20,7 +20,13 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->trustProxies(at: '*');
+        $middleware->encryptCookies(except: [
+            'ledger_api_token',
+        ]);
         $middleware->redirectGuestsTo(fn (Request $request) => $request->is('api/*') ? null : '/');
+        $middleware->api(prepend: [
+            \App\Http\Middleware\AuthenticateApiTokenFromCookie::class,
+        ]);
         $middleware->api(append: [
             \App\Http\Middleware\AddApiSourceMetadata::class,
         ]);

@@ -285,7 +285,7 @@ const api = async (path, opts = {}) => {
     const started = performance.now();
     const headers = { 'Accept': 'application/json', 'Content-Type': 'application/json', ...(opts.headers || {}) };
     if (token) headers['Authorization'] = 'Bearer ' + token;
-    const res = await fetch('/api' + path, { ...opts, headers });
+    const res = await fetch('/api' + path, { ...opts, credentials: 'same-origin', headers });
     const data = await res.json().catch(() => ({}));
     const entry = {
         method, path: '/api' + path, status: res.status, ok: res.ok,
@@ -343,8 +343,8 @@ function renderApiVerifyTab() {
         <li><span class="badge warn">${e.method}</span><code>${esc(e.path)}</code><span>${esc(e.label)}</span>
         <button type="button" class="btn btn-secondary btn-sm" data-fetch-auth="${esc(e.path)}">Fetch now</button></li>`).join('');
     if (tok) tok.textContent = token
-        ? `Logged in — use Fetch now below, or:\ncurl -H "Authorization: Bearer ${token}" -H "Accept: application/json" ${APP_URL}/api/wallets`
-        : 'Sign in — then use Fetch now or the curl example below.';
+        ? `Logged in — open /api/wallets in a new tab (auth cookie) or:\ncurl -H "Authorization: Bearer ${token}" -H "Accept: application/json" ${APP_URL}/api/wallets`
+        : 'Sign in — then Open works in a new browser tab.';
 }
 
 document.addEventListener('click', e => {

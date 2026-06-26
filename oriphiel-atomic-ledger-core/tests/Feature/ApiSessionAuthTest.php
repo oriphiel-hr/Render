@@ -35,4 +35,25 @@ class ApiSessionAuthTest extends TestCase
             ->assertOk()
             ->assertJsonStructure(['data', '_source']);
     }
+
+    public function test_api_token_cookie_allows_browser_wallets_request(): void
+    {
+        User::factory()->create([
+            'email' => 'browser@demo.local',
+            'password' => 'password',
+        ]);
+
+        $login = $this->postJson('/api/auth/login', [
+            'email' => 'browser@demo.local',
+            'password' => 'password',
+        ])->assertOk();
+
+        $token = $login->json('token');
+
+        $this->withCredentials()
+            ->withUnencryptedCookie('ledger_api_token', $token)
+            ->getJson('/api/wallets')
+            ->assertOk()
+            ->assertJsonStructure(['data', '_source']);
+    }
 }

@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Cookie;
 
 class AuthController extends Controller
 {
@@ -70,7 +71,7 @@ class AuthController extends Controller
         return response()->json([
             'token' => $token,
             'user' => $this->userPayload($user),
-        ]);
+        ])->cookie($this->apiTokenCookie($token));
     }
 
     public function resendVerification(Request $request): JsonResponse
@@ -120,7 +121,7 @@ class AuthController extends Controller
             'message' => 'Invitation accepted. Your account is ready.',
             'token' => $token,
             'user' => $this->userPayload($user),
-        ], 201);
+        ], 201)->cookie($this->apiTokenCookie($token));
     }
 
     public function me(Request $request): JsonResponse
@@ -134,7 +135,21 @@ class AuthController extends Controller
     {
         $request->user()?->currentAccessToken()?->delete();
 
-        return response()->json(['message' => 'Logged out.']);
+        return response()->json(['message' => 'Logged out.'])
+            ->withoutCookie('ledger_api_token');
+    }
+
+    private function apiTokenCookie(string $token): Cookie
+    {
+        return cookie(
+            name: 'ledger_api_token',
+            value: $token,
+            minutes: 60 * 24 * 7,
+            path: '/',
+            secure: (bool) config('session.secure'),
+            httpOnly: true,
+            sameSite: 'lax',
+        );
     }
 
     /**
