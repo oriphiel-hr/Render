@@ -51,6 +51,22 @@ function normalizeRenderDatabaseUrl(rawUrl) {
 }
 
 /**
+ * Sigurni sažetak connection stringa za log (bez lozinke).
+ * @param {string | undefined} rawUrl
+ * @returns {{ host: string, database: string } | null}
+ */
+function describeDatabaseUrl(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== 'string') return null;
+  try {
+    const parsed = new URL(rawUrl.trim());
+    const database = parsed.pathname.replace(/^\//, '') || '(unknown)';
+    return { host: parsed.hostname, database };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * @param {string} key
  */
 function patchDatabaseEnvVar(key) {
@@ -79,5 +95,6 @@ module.exports = {
   defaultPgRegion,
   isOnRender,
   normalizeRenderDatabaseUrl,
+  describeDatabaseUrl,
   ensureDatabaseEnv
 };

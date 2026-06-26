@@ -5,6 +5,7 @@ const { createFacebookWebhookRouter } = require('./routes/facebookWebhook');
 const { createIngestRouter } = require('./routes/ingestApi');
 const { createAdminRouter } = require('./routes/adminApi');
 const { metaEnvPrefix, parseWebhookProfiles } = require('./lib/metaEnv');
+const { describeDatabaseUrl } = require('./lib/databaseUrl');
 const { getMessengerOutboundApprovalState } = require('./services/pendingMessengerSend');
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -215,6 +216,12 @@ app.listen(PORT, () => {
   const usesMetaProfilesOnly = mountedProfiles.length > 0;
 
   console.log(`Listening on http://localhost:${PORT}`);
+  const dbInfo = describeDatabaseUrl(process.env.DATABASE_URL);
+  if (dbInfo) {
+    console.log(`DATABASE_URL target: ${dbInfo.host} / ${dbInfo.database}`);
+  } else if (process.env.DATABASE_URL) {
+    console.warn('DATABASE_URL is set but could not be parsed — check format in Render Environment.');
+  }
   if (process.env.RENDER_GIT_COMMIT) {
     console.log(`Deploy revision: ${process.env.RENDER_GIT_COMMIT}`);
   } else {
