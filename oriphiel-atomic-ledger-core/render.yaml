@@ -1,0 +1,80 @@
+# Render Blueprint — oriphiel-atomic-ledger-core
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: oriphiel-atomic-ledger
+    runtime: docker
+    plan: starter
+    region: frankfurt
+    branch: main
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /up
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        generateValue: true
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromDatabase:
+          name: oriphiel-postgres
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: oriphiel-postgres
+          property: port
+      - key: DB_DATABASE
+        fromDatabase:
+          name: oriphiel-postgres
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: oriphiel-postgres
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: oriphiel-postgres
+          property: password
+      - key: CACHE_STORE
+        value: redis
+      - key: QUEUE_CONNECTION
+        value: redis
+      - key: REDIS_HOST
+        fromService:
+          name: oriphiel-redis
+          type: keyvalue
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          name: oriphiel-redis
+          type: keyvalue
+          property: port
+      - key: COINBASE_ENABLED
+        value: "false"
+      - key: COINBASE_SANDBOX
+        value: "true"
+      - key: COINBASE_API_KEY
+        sync: false
+      - key: COINBASE_API_SECRET
+        sync: false
+    buildCommand: composer install --no-dev --optimize-autoloader
+    startCommand: php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=$PORT
+
+  - type: keyvalue
+    name: oriphiel-redis
+    plan: starter
+    region: frankfurt
+    ipAllowList: []
+
+databases:
+  - name: oriphiel-postgres
+    plan: starter
+    region: frankfurt
+    databaseName: oriphiel_ledger
+    user: oriphiel

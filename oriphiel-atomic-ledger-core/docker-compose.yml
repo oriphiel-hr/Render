@@ -1,0 +1,79 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: oriphiel-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    environment:
+      APP_ENV: ${APP_ENV:-local}
+      APP_DEBUG: ${APP_DEBUG:-true}
+      APP_KEY: ${APP_KEY:-}
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_DATABASE:-oriphiel_ledger}
+      DB_USERNAME: ${DB_USERNAME:-oriphiel}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      CACHE_STORE: redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      QUEUE_CONNECTION: redis
+      COINBASE_ENABLED: ${COINBASE_ENABLED:-false}
+      COINBASE_SANDBOX: ${COINBASE_SANDBOX:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - oriphiel
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: oriphiel-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-oriphiel_ledger}
+      POSTGRES_USER: ${DB_USERNAME:-oriphiel}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-oriphiel} -d ${DB_DATABASE:-oriphiel_ledger}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - oriphiel
+
+  redis:
+    image: redis:7-alpine
+    container_name: oriphiel-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - oriphiel
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  oriphiel:
+    driver: bridge
