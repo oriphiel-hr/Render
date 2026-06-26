@@ -15,8 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
         apiPrefix: 'api',
         then: function () {
-            // Bez web middlewarea (session) — izbjegava 500 kad SESSION_DRIVER=database bez sessions tablice
-            Route::get('/', function () {
+            Route::middleware('api')->get('/', function () {
                 return response()->json([
                     'service' => 'oriphiel-atomic-ledger-core',
                     'description' => 'Laravel fintech ledger — Redis lock + PostgreSQL row-level safety + BCMath',
