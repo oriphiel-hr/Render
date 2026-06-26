@@ -1,9 +1,14 @@
 /**
  * Render PostgreSQL internal host (npr. dpg-xxx-a) radi samo unutar Render mreže.
- * Vanjski host (dpg-xxx-a.<region>-postgres.render.com) radi i lokalno i na Renderu.
+ * Vanjski host (dpg-xxx-a.<region>-postgres.render.com) treba lokalno i izvan Rendera.
+ * Na samom Renderu ostavi internal URL — external odatle može zatvoriti vezu (P1017).
  */
 
 const RENDER_INTERNAL_PG_HOST = /^dpg-[a-z0-9]+-a$/i;
+
+function isOnRender() {
+  return process.env.RENDER === 'true' || process.env.RENDER === '1';
+}
 
 function defaultPgRegion() {
   return (
@@ -19,6 +24,7 @@ function defaultPgRegion() {
  */
 function normalizeRenderDatabaseUrl(rawUrl) {
   if (!rawUrl || typeof rawUrl !== 'string') return rawUrl;
+  if (isOnRender()) return rawUrl;
 
   const trimmed = rawUrl.trim();
   let parsed;
@@ -71,6 +77,7 @@ function ensureDatabaseEnv() {
 
 module.exports = {
   defaultPgRegion,
+  isOnRender,
   normalizeRenderDatabaseUrl,
   ensureDatabaseEnv
 };
