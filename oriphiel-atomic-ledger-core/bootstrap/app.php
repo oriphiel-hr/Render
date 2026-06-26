@@ -15,18 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
         apiPrefix: 'api',
         then: function () {
-            Route::middleware('api')->get('/', function () {
-                return response()->json([
-                    'service' => 'oriphiel-atomic-ledger-core',
-                    'description' => 'Laravel fintech ledger — Redis lock + PostgreSQL row-level safety + BCMath',
-                    'endpoints' => [
-                        'health' => '/up',
-                        'status' => '/api/status',
-                        'transfer' => '/api/transfers (POST)',
-                    ],
-                    'github' => 'https://github.com/oriphiel-hr/Render/tree/main/oriphiel-atomic-ledger-core',
-                ]);
-            });
+            Route::middleware('api')->get('/', [\App\Http\Controllers\DashboardController::class, 'index']);
         },
     )
     ->withMiddleware(function (Middleware $middleware) {
