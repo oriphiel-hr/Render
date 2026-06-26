@@ -2,6 +2,8 @@
 
 namespace App\Services\Coinbase;
 
+use App\Enums\CoinbaseMode;
+use App\Support\CoinbaseConfig;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -13,19 +15,22 @@ class CoinbaseCdpService
 
     public function isEnabled(): bool
     {
-        return (bool) config('coinbase.enabled');
+        return CoinbaseConfig::isEnabled();
+    }
+
+    public function mode(): CoinbaseMode
+    {
+        return CoinbaseConfig::mode();
     }
 
     public function isSandbox(): bool
     {
-        return (bool) config('coinbase.sandbox');
+        return $this->mode()->isSandbox();
     }
 
     public function baseUrl(): string
     {
-        return $this->isSandbox()
-            ? (string) config('coinbase.cdp.sandbox_base_url')
-            : (string) config('coinbase.cdp.production_base_url');
+        return $this->mode()->cdpBaseUrl();
     }
 
     /**
@@ -33,41 +38,45 @@ class CoinbaseCdpService
      */
     public function status(): array
     {
+        $mode = $this->mode();
         $base = [
             'enabled' => $this->isEnabled(),
-            'sandbox' => $this->isSandbox(),
-            'mode' => $this->resolveMode(),
+            'mode' => $mode->value,
+            'mode_label' => $mode->label(),
+            'sandbox' => $mode->isSandbox(),
+            'connection_state' => $this->resolveConnectionState(),
             'base_url' => $this->baseUrl(),
-            'portal_url' => $this->isSandbox()
-                ? 'https://portal.cdp.coinbase.com/v2/sandbox'
-                : 'https://portal.cdp.coinbase.com',
+            'portal_url' => $mode->portalUrl(),
             'docs_url' => 'https://docs.cdp.coinbase.com/get-started/sandbox/quickstart',
             'credentials_configured' => $this->auth->hasCredentials(),
+            'cutover' => $mode->cutoverInstructions(),
+            'env_flag' => 'COINBASE_MODE='.$mode->value,
         ];
 
         if (! $this->isEnabled()) {
             return array_merge($base, [
                 'connection' => 'local_only',
-                'message' => 'Ledger radi lokalno. Uključi COINBASE_ENABLED=true za CDP sandbox bridge.',
+                'message' => 'Ledger radi lokalno. Postavi COINBASE_ENABLED=true za CDP bridge.',
             ]);
         }
 
         if (! $this->auth->hasCredentials()) {
             return array_merge($base, [
                 'connection' => 'awaiting_credentials',
-                'message' => 'Postavi COINBASE_CDP_API_KEY_NAME i COINBASE_CDP_API_KEY_PRIVATE u Render env.',
+                'message' => 'Postavi CDP API ključeve u Render env (sandbox ili production).',
             ]);
         }
 
         try {
             $response = $this->http()->get('/platform/v2/accounts');
+            $envLabel = $mode->isSandbox() ? 'sandbox' : 'production';
 
             return array_merge($base, [
                 'connection' => $response->successful() ? 'connected' : 'error',
                 'http_status' => $response->status(),
                 'message' => $response->successful()
-                    ? 'Povezano na Coinbase Developer Platform sandbox.'
-                    : 'CDP API vratio grešku — provjeri API ključeve.',
+                    ? "Povezano na Coinbase CDP ({$envLabel})."
+                    : 'CDP API greška — provjeri ključeve i COINBASE_MODE.',
             ]);
         } catch (\Throwable $exception) {
             Log::warning('coinbase.cdp.status_failed', ['error' => $exception->getMessage()]);
@@ -87,8 +96,9 @@ class CoinbaseCdpService
         if (! $this->isEnabled() || ! $this->auth->hasCredentials()) {
             return [
                 'mode' => 'demo',
+                'environment' => $this->mode()->value,
                 'data' => $this->demoAccounts(),
-                'note' => 'Demo sandbox računi — konfiguriraj CDP ključeve za live podatke.',
+                'note' => 'Demo računi — konfiguriraj CDP ključeve za live podatke.',
             ];
         }
 
@@ -98,6 +108,7 @@ class CoinbaseCdpService
             if ($response->successful()) {
                 return [
                     'mode' => 'live',
+                    'environment' => $this->mode()->value,
                     'data' => $response->json('accounts', $response->json()),
                 ];
             }
@@ -107,24 +118,27 @@ class CoinbaseCdpService
 
         return [
             'mode' => 'demo',
+            'environment' => $this->mode()->value,
             'data' => $this->demoAccounts(),
-            'note' => 'Fallback na demo prikaz — CDP nije dostupan.',
+            'note' => 'Fallback na demo — CDP nije dostupan.',
         ];
     }
 
     /**
-     * @return array<string, mixed>|null
+     * @return array<string, mixed>
      */
-    public function registerLedgerTransfer(string $reference, string $amount, string $currency = 'USDC'): ?array
+    public function registerLedgerTransfer(string $reference, string $amount, string $currency = 'USDC'): array
     {
+        $mode = $this->mode();
+
         if (! $this->isEnabled()) {
             return [
                 'type' => 'ledger_bridge_local',
                 'reference' => $reference,
                 'amount' => $amount,
                 'currency' => $currency,
-                'sandbox' => $this->isSandbox(),
-                'note' => 'CDP disabled — postavi COINBASE_ENABLED=true za sandbox sync.',
+                'environment' => $mode->value,
+                'note' => 'CDP disabled — postavi COINBASE_ENABLED=true.',
             ];
         }
 
@@ -133,7 +147,7 @@ class CoinbaseCdpService
             'reference' => $reference,
             'amount' => $amount,
             'currency' => $currency,
-            'sandbox' => $this->isSandbox(),
+            'environment' => $mode->value,
             'cdp_base_url' => $this->baseUrl(),
             'synced_at' => now()->toIso8601String(),
         ];
@@ -159,17 +173,17 @@ class CoinbaseCdpService
         return $payload;
     }
 
-    private function resolveMode(): string
+    private function resolveConnectionState(): string
     {
         if (! $this->isEnabled()) {
             return 'disabled';
         }
 
         if (! $this->auth->hasCredentials()) {
-            return 'sandbox_ready';
+            return $this->mode()->isSandbox() ? 'sandbox_ready' : 'production_ready';
         }
 
-        return $this->isSandbox() ? 'sandbox_live' : 'production';
+        return $this->mode()->isSandbox() ? 'sandbox_live' : 'production_live';
     }
 
     /**

@@ -2,6 +2,8 @@
 
 namespace App\Services\Coinbase;
 
+use App\Enums\CoinbaseMode;
+use App\Support\CoinbaseConfig;
 use Firebase\JWT\JWT;
 
 class CoinbaseCdpAuth
@@ -18,13 +20,14 @@ class CoinbaseCdpAuth
             return null;
         }
 
+        $mode = CoinbaseConfig::mode();
         $now = time();
         $payload = [
             'sub' => config('coinbase.cdp.api_key_name'),
             'iss' => 'cdp',
             'nbf' => $now,
             'exp' => $now + 120,
-            'uri' => config('coinbase.cdp.jwt_uri', 'GET api.cdp.coinbase.com/platform/v2/accounts'),
+            'uri' => $mode->jwtUri(),
         ];
 
         $privateKey = str_replace('\\n', "\n", (string) config('coinbase.cdp.api_key_private'));

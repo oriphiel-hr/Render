@@ -45,7 +45,12 @@
             border-radius: 999px; border: 1px solid var(--border); background: var(--surface);
         }
         .badge.live { border-color: var(--success); color: var(--success); }
-        .badge.sandbox { border-color: var(--coinbase); color: #6ea8ff; background: rgba(0,82,255,0.1); }
+        .badge.production { border-color: var(--warning); color: var(--warning); background: rgba(245,158,11,0.1); }
+        .cutover-box {
+            margin-top: 1rem; padding: 0.75rem; border-radius: 8px; font-size: 0.78rem; line-height: 1.5;
+            background: rgba(245,158,11,0.08); border: 1px dashed rgba(245,158,11,0.4); color: #fcd34d;
+        }
+        .cutover-box code { font-family: 'JetBrains Mono', monospace; background: var(--surface-2); padding: 0.1rem 0.35rem; border-radius: 4px; }
         .grid { display: grid; gap: 1.25rem; }
         @media (min-width: 900px) {
             .grid-main { grid-template-columns: 1fr 380px; }
@@ -125,8 +130,10 @@
         </div>
         <div class="badges">
             <span class="badge live" id="health-badge">● Live</span>
-            @if($coinbaseSandbox)
-                <span class="badge sandbox">Coinbase CDP Sandbox</span>
+            @if($coinbaseIsSandbox)
+                <span class="badge sandbox">CDP Sandbox</span>
+            @else
+                <span class="badge production">CDP Production</span>
             @endif
             <span class="badge">Laravel 11</span>
         </div>
@@ -172,10 +179,15 @@
             <div class="card cdp-panel">
                 <div class="cdp-logo">⬡ Coinbase Developer Platform</div>
                 <div class="badges">
-                    <span class="badge sandbox" id="cdp-mode">Sandbox</span>
+                    <span class="badge {{ $coinbaseIsSandbox ? 'sandbox' : 'production' }}" id="cdp-mode">{{ $coinbaseModeLabel }}</span>
                     <span class="badge" id="cdp-connection">…</span>
                 </div>
                 <p class="cdp-msg" id="cdp-message">Connecting to CDP status…</p>
+                <div class="cutover-box" id="cdp-cutover" style="{{ $coinbaseIsSandbox ? '' : 'display:none' }}">
+                    <strong>Production cutover:</strong> na Renderu postavi
+                    <code>COINBASE_MODE=production</code>,
+                    zamijeni CDP ključeve s production portalom i redeployaj.
+                </div>
                 <div class="cdp-accounts" id="cdp-accounts"></div>
                 <p style="margin-top:1rem">
                     <a class="link" href="https://portal.cdp.coinbase.com/v2/sandbox" target="_blank" rel="noopener">CDP Sandbox Portal →</a>
@@ -265,9 +277,17 @@ async function loadCdp() {
         api('/coinbase/status'),
         api('/coinbase/accounts'),
     ]);
-    document.getElementById('cdp-mode').textContent = status.mode?.replace('_', ' ') || 'sandbox';
-    document.getElementById('cdp-connection').textContent = status.connection || status.mode || '—';
-    document.getElementById('cdp-message').textContent = status.message || 'CDP sandbox ready.';
+    document.getElementById('cdp-mode').textContent = status.mode_label || status.mode || 'sandbox';
+    document.getElementById('cdp-mode').className = 'badge ' + (status.sandbox ? 'sandbox' : 'production');
+    document.getElementById('cdp-connection').textContent = status.connection || status.connection_state || '—';
+    document.getElementById('cdp-message').textContent = status.message || 'CDP ready.';
+    const cutover = document.getElementById('cdp-cutover');
+    if (cutover && status.sandbox) {
+        cutover.style.display = '';
+        if (status.cutover?.steps) cutover.innerHTML = '<strong>Production cutover:</strong> ' + esc(status.cutover.steps) + ' — flag: <code>COINBASE_MODE=production</code>';
+    } else if (cutover) {
+        cutover.style.display = 'none';
+    }
     const acc = accounts.data || [];
     document.getElementById('cdp-accounts').innerHTML = acc.map(a => `
         <div class="cdp-acc">
