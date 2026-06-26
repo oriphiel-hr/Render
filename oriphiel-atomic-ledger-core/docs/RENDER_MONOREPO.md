@@ -29,11 +29,17 @@ Kad si unutra, trebao bi vidjeti postojeće Uslugar servise. Novi servis dodaje�
 | Runtime | **Docker** |
 | Branch | `main` |
 | Auto-Deploy | Yes |
+| **Docker Command** | **prazno** (koristi CMD iz Dockerfile) |
 
-**Start Command:**
+> Za Docker na Renderu **nema** polja Start Command — samo **Docker Command**.  
+> Možeš ga ostaviti praznim: `Dockerfile` pokreće `docker/render-entrypoint.sh` (migrate + seed + serve na `$PORT`).
+
+Ručno u **Docker Command** (ako ne želiš prazno):
 ```bash
-php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=$PORT
+sh -c "php artisan migrate --force && php artisan db:seed --force && php artisan serve --host=0.0.0.0 --port=$PORT"
 ```
+
+**Start Command** (zastarjelo za Docker — ne traži ga):
 
 **Environment** (Postgres koji si već kreirao):
 ```
@@ -95,3 +101,28 @@ curl https://oriphiel-atomic-ledger.onrender.com/api/status
 ```
 
 Baza je već migrirana i seedana (3 korisnika).
+
+## Troubleshooting: `php: command not found`
+
+Ako log izgleda ovako:
+```
+Using Node.js version ...
+Running build command 'npm install'...
+php: command not found
+```
+
+**Uzrok:** servis je **Node**, ne **Docker**. PHP postoji samo u `Dockerfile`.
+
+**Popravak** → servis → **Settings**:
+
+1. **Root Directory:** `oriphiel-atomic-ledger-core`
+2. **Runtime:** **Docker** (ne Node)
+3. **Dockerfile Path:** `./Dockerfile`
+4. **Build Command:** prazno (obriši `npm install`)
+5. **Start Command:**
+   ```bash
+   php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=$PORT
+   ```
+6. **Manual Deploy**
+
+Ako ne možeš promijeniti Node → Docker, obriši servis i kreiraj novi s **Runtime: Docker**.

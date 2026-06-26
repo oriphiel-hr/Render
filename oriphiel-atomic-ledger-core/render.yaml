@@ -65,7 +65,7 @@ services:
         sync: false
       - key: COINBASE_API_SECRET
         sync: false
-    startCommand: php artisan migrate --force && php artisan db:seed --force && php artisan serve --host=0.0.0.0 --port=$PORT
+    # Docker runtime: nema Start Command — CMD je u Dockerfile (render-entrypoint.sh)
 
   - type: keyvalue
     name: oriphiel-redis
