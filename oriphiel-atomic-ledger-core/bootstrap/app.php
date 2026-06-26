@@ -15,14 +15,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
         apiPrefix: 'api',
         then: function () {
-            Route::middleware('web')->get('/', [\App\Http\Controllers\DashboardController::class, 'index']);
+            Route::middleware('api')->get('/', [\App\Http\Controllers\DashboardController::class, 'index']);
         },
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->trustProxies(at: '*');
         $middleware->statefulApi();
         $middleware->redirectGuestsTo(fn (Request $request) => $request->is('api/*') ? null : '/');
-        $middleware->append(\App\Http\Middleware\AddApiSourceMetadata::class);
+        $middleware->api(append: [
+            \App\Http\Middleware\AddApiSourceMetadata::class,
+        ]);
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
