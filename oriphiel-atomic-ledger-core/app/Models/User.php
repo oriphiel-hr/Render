@@ -2,34 +2,66 @@
 
 namespace App\Models;
 
+use App\Enums\UserRole;
+use App\Notifications\VerifyEmailNotification;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-class User extends Model
+class User extends Authenticatable implements MustVerifyEmail
 {
+    use HasApiTokens;
     use HasFactory;
+    use Notifiable;
 
     protected $fillable = [
         'name',
-        'balance',
+        'email',
+        'password',
+        'role',
+        'email_verified_at',
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
     ];
 
     protected function casts(): array
     {
         return [
-            'balance' => 'string',
+            'password' => 'hashed',
+            'role' => UserRole::class,
+            'email_verified_at' => 'datetime',
         ];
     }
 
-    public function getBalanceAttribute(mixed $value): string
+    public function sendEmailVerificationNotification(): void
     {
-        return bcadd((string) $value, '0', 8);
+        $this->notify(new VerifyEmailNotification);
     }
 
-    public function setBalanceAttribute(mixed $value): void
+    public function isAdmin(): bool
     {
-        $this->attributes['balance'] = bcadd((string) $value, '0', 8);
+        return $this->role->isAdmin();
+    }
+
+    public function wallets(): HasMany
+    {
+        return $this->hasMany(UserBalance::class);
+    }
+
+    public function ledgerEntries(): HasMany
+    {
+        return $this->hasMany(LedgerEntry::class);
+    }
+
+    public function walletOperations(): HasMany
+    {
+        return $this->hasMany(WalletOperation::class);
     }
 
     public function sentTransactions(): HasMany
@@ -45,5 +77,14 @@ class User extends Model
     public function auditLogs(): HasMany
     {
         return $this->hasMany(AuditLog::class);
+    }
+
+    public function getBalanceAttribute(): string
+    {
+        $available = $this->wallets()
+            ->where('asset', 'USDT')
+            ->value('available');
+
+        return bcadd((string) ($available ?? '0'), '0', 8);
     }
 }

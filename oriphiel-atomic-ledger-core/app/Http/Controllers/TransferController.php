@@ -20,6 +20,7 @@ class TransferController extends Controller
             amount: (string) $request->validated('amount'),
             idempotencyKey: $request->validated('idempotency_key'),
             ipAddress: $request->ip(),
+            asset: strtoupper((string) ($request->validated('asset') ?? 'USDT')),
         );
 
         return response()->json([
@@ -28,6 +29,7 @@ class TransferController extends Controller
                 'sender_id' => $transaction->sender_id,
                 'receiver_id' => $transaction->receiver_id,
                 'amount' => $transaction->amount,
+                'asset' => $transaction->asset,
                 'status' => $transaction->status->value,
                 'external_reference' => $transaction->external_reference,
                 'created_at' => $transaction->created_at?->toIso8601String(),

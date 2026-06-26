@@ -20,12 +20,40 @@ docker compose exec app php artisan key:generate
 docker compose exec app php artisan migrate --seed
 ```
 
-API:
+## Demo login
+
+| Account | Email | Password | Role |
+|---------|-------|----------|------|
+| Alice | alice@demo.local | password | user |
+| Bob | bob@demo.local | password | user |
+| Charlie | charlie@demo.local | password | user |
+| Admin | admin@demo.local | password | admin |
+
+Dashboard: `GET /` → login → wallets, deposit, withdraw, trade, transfer, admin reconciliation.
+
+```bash
+curl -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"alice@demo.local","password":"password"}'
+```
+
+## API (authenticated)
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/wallets
+curl -X POST -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/deposits \
+  -H "Content-Type: application/json" -d '{"asset":"USDT","amount":"10"}'
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/api/admin/reconciliation
+php artisan ledger:reconcile
+```
+
+Legacy transfer (requires Sanctum token):
 
 ```bash
 curl -X POST http://localhost:8000/api/transfers \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"sender_id":1,"receiver_id":2,"amount":"10.5"}'
+  -d '{"sender_id":1,"receiver_id":2,"amount":"10.5","asset":"USDT"}'
 ```
 
 Status:

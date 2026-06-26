@@ -16,6 +16,7 @@ class Transaction extends Model
         'sender_id',
         'receiver_id',
         'amount',
+        'asset',
         'status',
         'idempotency_key',
         'external_reference',

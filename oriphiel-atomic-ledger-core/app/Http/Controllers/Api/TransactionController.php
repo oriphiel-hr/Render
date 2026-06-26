@@ -22,6 +22,7 @@ class TransactionController extends Controller
                 'sender' => ['id' => $tx->sender_id, 'name' => $tx->sender?->name],
                 'receiver' => ['id' => $tx->receiver_id, 'name' => $tx->receiver?->name],
                 'amount' => $tx->amount,
+                'asset' => $tx->asset,
                 'status' => $tx->status->value,
                 'external_reference' => $tx->external_reference,
                 'created_at' => $tx->created_at?->toIso8601String(),

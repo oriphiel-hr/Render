@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Enums\TransactionStatus;
 use App\Models\User;
 use App\Models\UserBalance;
 use App\Support\LedgerBootstrap;
@@ -12,7 +11,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Process;
 use Tests\TestCase;
 
-class ConcurrentTransferTest extends TestCase
+class ConcurrentWithdrawTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -26,7 +25,7 @@ class ConcurrentTransferTest extends TestCase
             return;
         }
 
-        $this->sharedDatabasePath = database_path('concurrent_test.sqlite');
+        $this->sharedDatabasePath = database_path('concurrent_withdraw_test.sqlite');
 
         if (file_exists($this->sharedDatabasePath)) {
             unlink($this->sharedDatabasePath);
@@ -49,97 +48,64 @@ class ConcurrentTransferTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_ten_concurrent_transfers_prevent_double_spending(): void
+    public function test_concurrent_withdrawals_do_not_overdraw_available_balance(): void
     {
         if (config('cache.default') !== 'redis') {
-            $this->markTestSkipped('Concurrent transfer test requires Redis cache driver (CACHE_STORE=redis).');
+            $this->markTestSkipped('Concurrent withdrawal test requires Redis cache driver.');
         }
 
         config()->set('database.connections.sqlite.database', $this->sharedDatabasePath);
 
-        $sender = User::factory()->create();
+        $user = User::factory()->create();
         UserBalance::query()->create([
-            'user_id' => $sender->id,
+            'user_id' => $user->id,
             'asset' => 'USDT',
             'available' => '50.00000000',
             'locked' => '0.00000000',
             'pending' => '0.00000000',
         ]);
         LedgerBootstrap::recordOpeningBalance(
-            UserBalance::query()->where('user_id', $sender->id)->where('asset', 'USDT')->first(),
+            UserBalance::query()->where('user_id', $user->id)->where('asset', 'USDT')->first(),
             '50.00000000',
         );
-        $receiver = User::factory()->create();
-        UserBalance::query()->create([
-            'user_id' => $receiver->id,
-            'asset' => 'USDT',
-            'available' => '0.00000000',
-            'locked' => '0.00000000',
-            'pending' => '0.00000000',
-        ]);
 
         $amount = '10.00000000';
         $attempts = 10;
-        $subprocessEnv = $this->subprocessEnvironment();
+        $env = $this->subprocessEnvironment();
 
-        $results = Process::pool(function (Pool $pool) use ($sender, $receiver, $amount, $attempts, $subprocessEnv) {
+        $results = Process::pool(function (Pool $pool) use ($user, $amount, $attempts, $env) {
             for ($index = 0; $index < $attempts; $index++) {
                 $pool
-                    ->as("transfer-{$index}")
+                    ->as("withdraw-{$index}")
                     ->path(base_path())
-                    ->env($subprocessEnv)
+                    ->env($env)
                     ->command([
                         PHP_BINARY,
                         'artisan',
-                        'ledger:simulate-transfer',
-                        (string) $sender->id,
-                        (string) $receiver->id,
+                        'ledger:simulate-withdraw',
+                        (string) $user->id,
                         $amount,
+                        'USDT',
                     ]);
             }
         })->start()->wait();
 
         $successCount = 0;
-        $insufficientFundsCount = 0;
-        $lockFailureCount = 0;
 
         foreach ($results->collect() as $result) {
             $payload = json_decode($result->output(), true, 512, JSON_THROW_ON_ERROR);
-
             if (($payload['success'] ?? false) === true) {
                 $successCount++;
-
-                continue;
-            }
-
-            if (str_contains((string) ($payload['error'] ?? ''), 'InsufficientFundsException')) {
-                $insufficientFundsCount++;
-
-                continue;
-            }
-
-            if (str_contains((string) ($payload['error'] ?? ''), 'LockAcquisitionException')) {
-                $lockFailureCount++;
             }
         }
 
-        $sender->refresh();
-        $receiver->refresh();
+        $wallet = UserBalance::query()->where('user_id', $user->id)->where('asset', 'USDT')->first();
+        $wallet->refresh();
 
-        $senderWallet = UserBalance::query()->where('user_id', $sender->id)->where('asset', 'USDT')->first();
-        $receiverWallet = UserBalance::query()->where('user_id', $receiver->id)->where('asset', 'USDT')->first();
-
-        $completedTransfers = $sender->sentTransactions()
-            ->where('status', TransactionStatus::Completed)
-            ->count();
-
-        $this->assertSame(5, $successCount, 'Exactly five transfers of 10 should succeed from a balance of 50.');
-        $this->assertSame(5, $attempts - $successCount, 'All non-successful attempts must be rejected.');
-        $this->assertGreaterThanOrEqual(5, $insufficientFundsCount + $lockFailureCount);
-        $this->assertSame(5, $completedTransfers);
-        $this->assertSame('0.00000000', $senderWallet->available, 'Sender balance must not go negative (no double spending).');
-        $this->assertSame('50.00000000', $receiverWallet->available, 'Receiver balance must equal sum of successful transfers.');
-        $this->assertGreaterThan(0, $sender->auditLogs()->count());
+        $this->assertSame(5, $successCount);
+        $this->assertSame('0.00000000', $wallet->available);
+        $this->assertSame('0.00000000', $wallet->locked);
+        $this->assertGreaterThanOrEqual(0, bccomp($wallet->available, '0', 8));
     }
 
     /**

@@ -8,7 +8,17 @@ class TransferFundsRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $user = $this->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        return (int) $this->input('sender_id') === $user->id;
     }
 
     /**
@@ -20,18 +30,8 @@ class TransferFundsRequest extends FormRequest
             'sender_id' => ['required', 'integer', 'exists:users,id'],
             'receiver_id' => ['required', 'integer', 'exists:users,id', 'different:sender_id'],
             'amount' => ['required', 'regex:/^\d+(\.\d{1,8})?$/'],
+            'asset' => ['nullable', 'string', 'max:16'],
             'idempotency_key' => ['nullable', 'string', 'max:64'],
-        ];
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public function messages(): array
-    {
-        return [
-            'amount.regex' => 'Amount must be a positive decimal with up to 8 fractional digits.',
-            'receiver_id.different' => 'Sender and receiver must be different users.',
         ];
     }
 }

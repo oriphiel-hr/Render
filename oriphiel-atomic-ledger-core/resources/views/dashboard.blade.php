@@ -3,347 +3,451 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $appName }} — Atomic Ledger</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <title>{{ $appName }} — Exchange Ledger Demo</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg: #070b14;
-            --surface: #0f1624;
-            --surface-2: #151e30;
-            --border: #1e2a42;
-            --text: #e8edf7;
-            --muted: #8b9bb8;
-            --accent: #3b82f6;
-            --accent-glow: rgba(59, 130, 246, 0.25);
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --exchange: #f0b90b;
-            --radius: 14px;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'DM Sans', system-ui, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            background-image:
-                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59, 130, 246, 0.15), transparent),
-                radial-gradient(ellipse 60% 40% at 100% 0%, rgba(0, 82, 255, 0.08), transparent);
-        }
-        .wrap { max-width: 1200px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
-        header {
-            display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-            gap: 1rem; margin-bottom: 2rem;
-        }
-        .brand h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
-        .brand p { color: var(--muted); font-size: 0.9rem; margin-top: 0.25rem; }
-        .badges { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-        .badge {
-            font-size: 0.75rem; font-weight: 600; padding: 0.35rem 0.75rem;
-            border-radius: 999px; border: 1px solid var(--border); background: var(--surface);
-        }
-        .badge.live { border-color: var(--success); color: var(--success); }
-        .badge.production { border-color: var(--warning); color: var(--warning); background: rgba(245,158,11,0.1); }
-        .cutover-box {
-            margin-top: 1rem; padding: 0.75rem; border-radius: 8px; font-size: 0.78rem; line-height: 1.5;
-            background: rgba(245,158,11,0.08); border: 1px dashed rgba(245,158,11,0.4); color: #fcd34d;
-        }
-        .cutover-box code { font-family: 'JetBrains Mono', monospace; background: var(--surface-2); padding: 0.1rem 0.35rem; border-radius: 4px; }
-        .grid { display: grid; gap: 1.25rem; }
-        @media (min-width: 900px) {
-            .grid-main { grid-template-columns: 1fr 380px; }
-            .grid-2 { grid-template-columns: 1fr 1fr; }
-        }
-        .card {
-            background: var(--surface); border: 1px solid var(--border);
-            border-radius: var(--radius); padding: 1.25rem;
-        }
-        .card h2 {
-            font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em;
-            color: var(--muted); margin-bottom: 1rem; font-weight: 600;
-        }
-        .users-grid { display: grid; gap: 0.75rem; }
-        .user-row {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 0.85rem 1rem; background: var(--surface-2); border-radius: 10px;
-            border: 1px solid var(--border);
-        }
-        .user-row .name { font-weight: 600; }
-        .user-row .id { font-size: 0.75rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
-        .balance { font-family: 'JetBrains Mono', monospace; font-weight: 500; color: var(--success); }
-        label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 0.35rem; }
-        select, input {
-            width: 100%; padding: 0.65rem 0.85rem; border-radius: 8px;
-            border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
-            font-family: inherit; font-size: 0.95rem; margin-bottom: 0.85rem;
-        }
-        select:focus, input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
-        .btn {
-            width: 100%; padding: 0.75rem 1rem; border: none; border-radius: 8px;
-            font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: transform 0.15s, opacity 0.15s;
-        }
-        .btn-primary { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
-        .btn-primary:hover { transform: translateY(-1px); }
-        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-        .alert {
-            padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.85rem; margin-top: 0.75rem; display: none;
-        }
-        .alert.show { display: block; }
-        .alert.ok { background: rgba(16,185,129,0.15); border: 1px solid var(--success); color: #6ee7b7; }
-        .alert.err { background: rgba(239,68,68,0.15); border: 1px solid var(--danger); color: #fca5a5; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-        th { text-align: left; color: var(--muted); font-weight: 500; padding: 0.5rem 0.35rem; border-bottom: 1px solid var(--border); }
-        td { padding: 0.65rem 0.35rem; border-bottom: 1px solid var(--border); }
-        .status-pill {
-            font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 4px;
-            text-transform: uppercase;
-        }
-        .status-completed { background: rgba(16,185,129,0.2); color: var(--success); }
-        .status-failed { background: rgba(239,68,68,0.2); color: var(--danger); }
-        .exchange-panel { border-color: rgba(240,185,11,0.35); background: linear-gradient(160deg, var(--surface), rgba(240,185,11,0.06)); }
-        .exchange-logo { font-weight: 700; color: #fcd34d; font-size: 1rem; margin-bottom: 0.5rem; }
-        .exchange-msg { font-size: 0.85rem; color: var(--muted); line-height: 1.5; margin: 0.75rem 0; }
-        .exchange-accounts { display: grid; gap: 0.5rem; margin-top: 1rem; }
-        .exchange-acc {
-            display: flex; justify-content: space-between; padding: 0.6rem 0.75rem;
-            background: rgba(240,185,11,0.08); border-radius: 8px; font-size: 0.8rem;
-        }
-        .link { color: var(--accent); text-decoration: none; font-size: 0.8rem; }
-        .link:hover { text-decoration: underline; }
-        .arch { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
-        .arch span {
-            font-size: 0.7rem; padding: 0.25rem 0.5rem; background: var(--surface-2);
-            border-radius: 4px; color: var(--muted); font-family: 'JetBrains Mono', monospace;
-        }
-        footer { text-align: center; margin-top: 2rem; color: var(--muted); font-size: 0.8rem; }
-        .loading { opacity: 0.5; pointer-events: none; }
+        :root { --bg:#070b14; --surface:#0f1624; --surface2:#151e30; --border:#1e2a42; --text:#e8edf7; --muted:#8b9bb8; --accent:#3b82f6; --success:#10b981; --warning:#f59e0b; --danger:#ef4444; --exchange:#f0b90b; }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { font-family:'DM Sans',system-ui,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+        .wrap { max-width:1280px; margin:0 auto; padding:1.5rem 1rem 3rem; }
+        .card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.25rem; margin-bottom:1rem; }
+        .card h2 { font-size:.78rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:1rem; }
+        .grid { display:grid; gap:1rem; }
+        @media(min-width:960px){ .grid-2{grid-template-columns:1fr 1fr;} .grid-3{grid-template-columns:2fr 1fr;} }
+        .badge { font-size:.72rem; font-weight:600; padding:.3rem .65rem; border-radius:999px; border:1px solid var(--border); display:inline-block; }
+        .badge.ok { border-color:var(--success); color:var(--success); }
+        .badge.warn { border-color:var(--warning); color:var(--warning); }
+        .badge.err { border-color:var(--danger); color:var(--danger); }
+        label { display:block; font-size:.78rem; color:var(--muted); margin-bottom:.3rem; }
+        input, select, textarea { width:100%; padding:.6rem .8rem; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--text); margin-bottom:.7rem; font:inherit; }
+        .btn { padding:.65rem 1rem; border:none; border-radius:8px; font-weight:600; cursor:pointer; font:inherit; }
+        .btn-primary { background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; width:100%; }
+        .btn-secondary { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+        .btn-sm { padding:.4rem .7rem; font-size:.8rem; width:auto; }
+        .hidden { display:none !important; }
+        table { width:100%; border-collapse:collapse; font-size:.82rem; }
+        th, td { padding:.55rem .4rem; border-bottom:1px solid var(--border); text-align:left; }
+        th { color:var(--muted); font-weight:500; }
+        .mono { font-family:'JetBrains Mono',monospace; }
+        .tabs { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1rem; }
+        .tab { padding:.45rem .8rem; border-radius:8px; border:1px solid var(--border); background:var(--surface2); cursor:pointer; font-size:.82rem; }
+        .tab.active { border-color:var(--accent); color:var(--accent); }
+        .alert { padding:.7rem .9rem; border-radius:8px; font-size:.85rem; margin-top:.6rem; display:none; }
+        .alert.show { display:block; }
+        .alert.ok { background:rgba(16,185,129,.12); border:1px solid var(--success); color:#6ee7b7; }
+        .alert.err { background:rgba(239,68,68,.12); border:1px solid var(--danger); color:#fca5a5; }
+        .wallet-row { display:grid; grid-template-columns:repeat(4,1fr); gap:.5rem; padding:.7rem; background:var(--surface2); border-radius:8px; margin-bottom:.5rem; font-size:.82rem; }
+        .login-box { max-width:420px; margin:4rem auto; }
+        .demo-creds { font-size:.78rem; color:var(--muted); line-height:1.6; margin-top:1rem; padding:.8rem; background:var(--surface2); border-radius:8px; }
+        header { display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1.25rem; flex-wrap:wrap; }
+        .diff-bad { color:var(--danger); font-weight:600; }
+        .diff-ok { color:var(--success); }
     </style>
 </head>
 <body>
 <div class="wrap">
-    <header>
-        <div class="brand">
-            <h1>{{ $appName }}</h1>
-            <p>Atomic ledger · Redis lock · PostgreSQL FOR UPDATE · BCMath</p>
+    <div id="login-screen" class="login-box card">
+        <h1 style="font-size:1.35rem;margin-bottom:.35rem">{{ $appName }}</h1>
+        <p style="color:var(--muted);font-size:.9rem;margin-bottom:1rem">Crypto exchange ledger demo</p>
+        <div class="tabs" style="margin-bottom:1rem">
+            <button type="button" class="auth-tab tab active" id="auth-tab-login">Sign in</button>
+            <button type="button" class="auth-tab tab" id="auth-tab-register">Register</button>
         </div>
-        <div class="badges">
-            <span class="badge live" id="health-badge">● Live</span>
-            @if($exchangeIsTestnet)
-                <span class="badge sandbox">Binance Testnet</span>
-            @else
-                <span class="badge production">Binance Production</span>
-            @endif
-            <span class="badge">Laravel 11</span>
+        <form id="login-form">
+            <label>Email</label>
+            <input type="email" id="login-email" value="alice@demo.local" required>
+            <label>Password</label>
+            <input type="password" id="login-password" value="password" required>
+            <button class="btn btn-primary" type="submit">Sign in</button>
+        </form>
+        <form id="register-form" class="hidden">
+            <label>Name</label>
+            <input type="text" id="register-name" required>
+            <label>Email</label>
+            <input type="email" id="register-email" required>
+            <label>Password</label>
+            <input type="password" id="register-password" minlength="8" required>
+            <label>Confirm password</label>
+            <input type="password" id="register-password-confirm" minlength="8" required>
+            <button class="btn btn-primary" type="submit">Create account</button>
+        </form>
+        <div class="demo-creds">
+            <strong>Demo accounts</strong> (password: <code>password</code>)<br>
+            alice@demo.local · admin@demo.local<br>
+            New users must verify email before login.
         </div>
-    </header>
+        <div class="alert" id="login-alert"></div>
+        <button type="button" class="btn btn-secondary btn-sm hidden" id="resend-verify-btn" style="margin-top:.75rem;width:100%">Resend verification email</button>
+    </div>
 
-    <div class="grid grid-main">
-        <div class="grid" style="gap:1.25rem">
-            <div class="card">
-                <h2>Wallets &amp; balances</h2>
-                <div class="users-grid" id="users-list">
-                    <p style="color:var(--muted)">Loading…</p>
-                </div>
+    <div id="app-screen" class="hidden">
+        <header>
+            <div>
+                <h1 style="font-size:1.3rem">{{ $appName }}</h1>
+                <p style="color:var(--muted);font-size:.85rem">Atomic ledger · available / locked / pending · reconciliation</p>
             </div>
+            <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+                <span class="badge ok" id="user-badge">—</span>
+                <button class="btn btn-secondary btn-sm" id="logout-btn">Logout</button>
+            </div>
+        </header>
 
+        <div class="tabs" id="main-tabs">
+            <button class="tab active" data-tab="wallets">Wallets</button>
+            <button class="tab" data-tab="deposit">Deposit</button>
+            <button class="tab" data-tab="withdraw">Withdraw</button>
+            <button class="tab" data-tab="trade">Trade</button>
+            <button class="tab" data-tab="transfer">Transfer</button>
+            <button class="tab" data-tab="history">History</button>
+            <button class="tab" data-tab="exchange">Binance</button>
+            <button class="tab hidden" data-tab="admin" id="admin-tab">Admin</button>
+        </div>
+
+        <div class="tab-panel" data-panel="wallets">
+            <div class="card"><h2>My wallets</h2><div id="wallets-list">Loading…</div></div>
+        </div>
+
+        <div class="tab-panel hidden" data-panel="deposit">
             <div class="card">
-                <h2>Transfer funds</h2>
+                <h2>Simulate deposit</h2>
+                <form id="deposit-form">
+                    <label>Asset</label><select id="deposit-asset"><option>USDT</option><option>BTC</option><option>ETH</option></select>
+                    <label>Amount</label><input id="deposit-amount" placeholder="100.00000000" required>
+                    <button class="btn btn-primary" type="submit">Deposit (pending → confirm)</button>
+                </form>
+                <div class="alert" id="deposit-alert"></div>
+            </div>
+        </div>
+
+        <div class="tab-panel hidden" data-panel="withdraw">
+            <div class="card">
+                <h2>Simulate withdrawal</h2>
+                <form id="withdraw-form">
+                    <label>Asset</label><select id="withdraw-asset"><option>USDT</option><option>BTC</option><option>ETH</option></select>
+                    <label>Amount</label><input id="withdraw-amount" placeholder="10.00000000" required>
+                    <button class="btn btn-primary" type="submit">Withdraw (lock → complete)</button>
+                </form>
+                <div class="alert" id="withdraw-alert"></div>
+            </div>
+        </div>
+
+        <div class="tab-panel hidden" data-panel="trade">
+            <div class="card">
+                <h2>Simulate trade</h2>
+                <form id="trade-form">
+                    <label>From</label><select id="trade-from"><option>USDT</option><option>BTC</option><option>ETH</option></select>
+                    <label>To</label><select id="trade-to"><option>BTC</option><option>ETH</option><option>USDT</option></select>
+                    <label>Amount (from asset)</label><input id="trade-amount" placeholder="50.00000000" required>
+                    <button class="btn btn-primary" type="submit">Execute trade</button>
+                </form>
+                <div class="alert" id="trade-alert"></div>
+            </div>
+        </div>
+
+        <div class="tab-panel hidden" data-panel="transfer">
+            <div class="card">
+                <h2>Transfer to user</h2>
                 <form id="transfer-form">
-                    <label for="sender_id">From</label>
-                    <select id="sender_id" name="sender_id" required></select>
-                    <label for="receiver_id">To</label>
-                    <select id="receiver_id" name="receiver_id" required></select>
-                    <label for="amount">Amount (max 8 decimals)</label>
-                    <input type="text" id="amount" name="amount" placeholder="10.50000000" pattern="^\d+(\.\d{1,8})?$" required>
-                    <button type="submit" class="btn btn-primary" id="transfer-btn">Execute transfer</button>
+                    <label>To user</label><select id="transfer-receiver" required></select>
+                    <label>Asset</label><select id="transfer-asset"><option>USDT</option><option>BTC</option><option>ETH</option></select>
+                    <label>Amount</label><input id="transfer-amount" placeholder="10.00000000" required>
+                    <button class="btn btn-primary" type="submit">Send</button>
                 </form>
                 <div class="alert" id="transfer-alert"></div>
             </div>
+        </div>
 
+        <div class="tab-panel hidden" data-panel="history">
+            <div class="grid grid-2">
+                <div class="card"><h2>Ledger entries</h2><div style="overflow-x:auto"><table><thead><tr><th>Type</th><th>Asset</th><th>Δ avail</th><th>Δ lock</th><th>Δ pend</th></tr></thead><tbody id="ledger-body"></tbody></table></div></div>
+                <div class="card"><h2>Transfers</h2><div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Flow</th><th>Amount</th></tr></thead><tbody id="tx-body"></tbody></table></div></div>
+            </div>
+        </div>
+
+        <div class="tab-panel hidden" data-panel="exchange">
+            <div class="card" style="border-color:rgba(240,185,11,.35)">
+                <h2>Binance Spot bridge</h2>
+                <p id="exchange-message" style="color:var(--muted);font-size:.85rem">—</p>
+                <div id="exchange-accounts" style="margin-top:.8rem"></div>
+            </div>
+        </div>
+
+        <div class="tab-panel hidden" data-panel="admin">
             <div class="card">
-                <h2>Recent transactions</h2>
+                <h2>Balance reconciliation</h2>
+                <p id="recon-summary" style="margin-bottom:.8rem;font-size:.9rem">—</p>
                 <div style="overflow-x:auto">
                     <table>
-                        <thead>
-                            <tr><th>ID</th><th>From → To</th><th>Amount</th><th>Status</th><th>Exchange ref</th></tr>
-                        </thead>
-                        <tbody id="tx-body"><tr><td colspan="5" style="color:var(--muted)">Loading…</td></tr></tbody>
+                        <thead><tr><th>User</th><th>Asset</th><th>Stored</th><th>Calculated</th><th>Diff</th><th>Status</th></tr></thead>
+                        <tbody id="recon-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card">
+                <h2>Manual adjustment</h2>
+                <form id="adjust-form">
+                    <label>User ID</label><input id="adjust-user" type="number" required>
+                    <label>Asset</label><input id="adjust-asset" value="USDT" required>
+                    <label>Available delta (+/-)</label><input id="adjust-delta" placeholder="10.00000000" required>
+                    <label>Reason</label><textarea id="adjust-reason" rows="2" required>Reconciliation fix</textarea>
+                    <button class="btn btn-primary" type="submit">Apply adjustment</button>
+                </form>
+                <div class="alert" id="adjust-alert"></div>
+            </div>
+            <div class="card">
+                <h2>Invite user</h2>
+                <form id="invite-form">
+                    <label>Name</label><input id="invite-name" required>
+                    <label>Email</label><input type="email" id="invite-email" required>
+                    <button class="btn btn-primary" type="submit">Send invitation</button>
+                </form>
+                <div class="alert" id="invite-alert"></div>
+                <div style="margin-top:1rem;overflow-x:auto">
+                    <table>
+                        <thead><tr><th>Email</th><th>Name</th><th>Status</th><th>Expires</th></tr></thead>
+                        <tbody id="invites-body"></tbody>
                     </table>
                 </div>
             </div>
         </div>
-
-        <div class="grid" style="gap:1.25rem">
-            <div class="card exchange-panel">
-                <div class="exchange-logo">⬡ Binance Spot</div>
-                <div class="badges">
-                    <span class="badge {{ $exchangeIsTestnet ? 'sandbox' : 'production' }}" id="exchange-mode">{{ $exchangeModeLabel }}</span>
-                    <span class="badge" id="exchange-connection">…</span>
-                </div>
-                <p class="exchange-msg" id="exchange-message">Connecting to exchange status…</p>
-                <div class="cutover-box" id="exchange-cutover" style="{{ $exchangeIsTestnet ? '' : 'display:none' }}">
-                    <strong>Production cutover:</strong> na Renderu postavi
-                    <code>EXCHANGE_MODE=production</code>,
-                    zamijeni Binance ključeve s production API keyevima i redeployaj.
-                </div>
-                <div class="exchange-accounts" id="exchange-accounts"></div>
-                <p style="margin-top:1rem">
-                    <a class="link" href="https://testnet.binance.vision" target="_blank" rel="noopener">Binance Testnet →</a>
-                    &nbsp;·&nbsp;
-                    <a class="link" href="https://github.com/binance/binance-spot-api-docs/blob/master/testnet/rest-api.md" target="_blank" rel="noopener">API Docs</a>
-                </p>
-            </div>
-
-            <div class="card">
-                <h2>Architecture</h2>
-                <div class="arch">
-                    <span>Cache::lock</span>
-                    <span>lockForUpdate</span>
-                    <span>BCMath</span>
-                    <span>DECIMAL(24,8)</span>
-                    <span>Audit log</span>
-                    <span>Idempotency</span>
-                </div>
-                <p class="exchange-msg" style="margin-top:1rem">
-                    Dvoslojna zaštita od race conditiona: Redis distribuirani lock + PostgreSQL row-level lock.
-                    Svaki transfer je ACID transakcija s punim audit trailom.
-                </p>
-            </div>
-
-            <div class="card">
-                <h2>API</h2>
-                <p class="exchange-msg" style="font-family:'JetBrains Mono',monospace;font-size:0.75rem">
-                    GET /api/users<br>
-                    GET /api/transactions<br>
-                    POST /api/transfers<br>
-                    GET /api/exchange/status
-                </p>
-                <p style="margin-top:0.75rem">
-                    <a class="link" href="https://github.com/oriphiel-hr/Render/tree/main/oriphiel-atomic-ledger-core" target="_blank" rel="noopener">GitHub →</a>
-                </p>
-            </div>
-        </div>
     </div>
-
-    <footer>Oriphiel · Fintech portfolio demo · Render + Docker + PostgreSQL</footer>
 </div>
 
 <script>
-const api = (path, opts = {}) => fetch('/api' + path, {
-    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', ...opts.headers },
-    ...opts,
-}).then(r => r.json().then(d => ({ ok: r.ok, status: r.status, data: d })));
+let token = localStorage.getItem('ledger_token') || '';
+let currentUser = null;
 
-let users = [];
+const api = async (path, opts = {}) => {
+    const headers = { 'Accept': 'application/json', 'Content-Type': 'application/json', ...(opts.headers || {}) };
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    const res = await fetch('/api' + path, { ...opts, headers });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, data };
+};
 
-async function loadUsers() {
-    const { ok, data } = await api('/users');
-    if (!ok) return;
-    users = data.data || [];
-    const list = document.getElementById('users-list');
-    const sender = document.getElementById('sender_id');
-    const receiver = document.getElementById('receiver_id');
-    list.innerHTML = users.map(u => `
-        <div class="user-row">
-            <div><div class="name">${esc(u.name)}</div><div class="id">#${u.id}</div></div>
-            <div class="balance">${esc(u.balance)}</div>
-        </div>`).join('');
-    const opts = users.map(u => `<option value="${u.id}">${esc(u.name)} (#${u.id}) — ${esc(u.balance)}</option>`).join('');
-    sender.innerHTML = opts;
-    receiver.innerHTML = users.map(u => `<option value="${u.id}" ${u.id===2?'selected':''}>${esc(u.name)} (#${u.id})</option>`).join('');
-}
+const esc = s => { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; };
+const showAlert = (id, ok, msg) => { const el = document.getElementById(id); el.className = 'alert show ' + (ok ? 'ok' : 'err'); el.textContent = msg; };
 
-async function loadTransactions() {
-    const { ok, data } = await api('/transactions');
-    const body = document.getElementById('tx-body');
-    if (!ok || !data.data?.length) {
-        body.innerHTML = '<tr><td colspan="5" style="color:var(--muted)">No transactions yet</td></tr>';
+document.querySelectorAll('#main-tabs .tab').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('#main-tabs .tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+    btn.classList.add('active');
+    document.querySelector(`[data-panel="${btn.dataset.tab}"]`).classList.remove('hidden');
+    if (btn.dataset.tab === 'admin') { loadReconciliation(); loadInvitations(); }
+    if (btn.dataset.tab === 'exchange') loadExchange();
+}));
+
+let pendingVerifyEmail = '';
+
+document.getElementById('auth-tab-login').addEventListener('click', () => {
+    document.getElementById('auth-tab-login').classList.add('active');
+    document.getElementById('auth-tab-register').classList.remove('active');
+    document.getElementById('login-form').classList.remove('hidden');
+    document.getElementById('register-form').classList.add('hidden');
+    document.getElementById('resend-verify-btn').classList.add('hidden');
+});
+document.getElementById('auth-tab-register').addEventListener('click', () => {
+    document.getElementById('auth-tab-register').classList.add('active');
+    document.getElementById('auth-tab-login').classList.remove('active');
+    document.getElementById('register-form').classList.remove('hidden');
+    document.getElementById('login-form').classList.add('hidden');
+    document.getElementById('resend-verify-btn').classList.add('hidden');
+});
+
+async function login(email, password) {
+    const { ok, status, data } = await api('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+    if (!ok) {
+        if (status === 403 && data.code === 'EMAIL_NOT_VERIFIED') {
+            pendingVerifyEmail = data.email || email;
+            document.getElementById('resend-verify-btn').classList.remove('hidden');
+        }
+        showAlert('login-alert', false, data.message || data.errors?.email?.[0] || 'Login failed');
         return;
     }
-    body.innerHTML = data.data.map(tx => `
-        <tr>
-            <td>#${tx.id}</td>
-            <td>${esc(tx.sender?.name)} → ${esc(tx.receiver?.name)}</td>
-            <td style="font-family:JetBrains Mono,monospace">${esc(tx.amount)}</td>
-            <td><span class="status-pill status-${tx.status}">${tx.status}</span></td>
-            <td style="font-size:0.75rem;color:var(--muted)">${esc(tx.external_reference || '—')}</td>
-        </tr>`).join('');
+    token = data.token;
+    currentUser = data.user;
+    localStorage.setItem('ledger_token', token);
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app-screen').classList.remove('hidden');
+    document.getElementById('user-badge').textContent = currentUser.name + ' (' + currentUser.role + ')';
+    if (currentUser.is_admin) document.getElementById('admin-tab').classList.remove('hidden');
+    await refreshAll();
+}
+
+document.getElementById('register-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const { ok, data } = await api('/auth/register', { method: 'POST', body: JSON.stringify({
+        name: document.getElementById('register-name').value,
+        email: document.getElementById('register-email').value,
+        password: document.getElementById('register-password').value,
+        password_confirmation: document.getElementById('register-password-confirm').value,
+    })});
+    if (ok) {
+        pendingVerifyEmail = document.getElementById('register-email').value;
+        document.getElementById('auth-tab-login').click();
+        showAlert('login-alert', true, data.message || 'Check your email to verify your account.');
+        document.getElementById('resend-verify-btn').classList.remove('hidden');
+    } else {
+        showAlert('login-alert', false, data.message || JSON.stringify(data.errors || data));
+    }
+});
+
+document.getElementById('resend-verify-btn').addEventListener('click', async () => {
+    const email = pendingVerifyEmail || document.getElementById('login-email').value;
+    const { ok, data } = await api('/auth/verification/resend', { method: 'POST', body: JSON.stringify({ email }) });
+    showAlert('login-alert', ok, data.message || (ok ? 'Verification sent.' : 'Failed to resend.'));
+});
+
+document.getElementById('login-form').addEventListener('submit', e => {
+    e.preventDefault();
+    login(document.getElementById('login-email').value, document.getElementById('login-password').value);
+});
+
+document.getElementById('logout-btn').addEventListener('click', async () => {
+    await api('/auth/logout', { method: 'POST' });
+    token = ''; currentUser = null; localStorage.removeItem('ledger_token');
+    location.reload();
+});
+
+async function loadWallets() {
+    const { data } = await api('/wallets');
+    const list = document.getElementById('wallets-list');
+    if (!data.data?.length) { list.innerHTML = '<p style="color:var(--muted)">No wallets</p>'; return; }
+    list.innerHTML = data.data.map(w => `
+        <div class="wallet-row">
+            <div><strong>${esc(w.asset)}</strong></div>
+            <div class="mono">avail ${esc(w.available)}</div>
+            <div class="mono">lock ${esc(w.locked)}</div>
+            <div class="mono">pend ${esc(w.pending)}</div>
+        </div>`).join('');
+}
+
+async function loadUsers() {
+    const { data } = await api('/users');
+    const sel = document.getElementById('transfer-receiver');
+    sel.innerHTML = (data.data || []).filter(u => u.id !== currentUser.id).map(u =>
+        `<option value="${u.id}">${esc(u.name)} (#${u.id})</option>`).join('');
+}
+
+async function loadLedger() {
+    const [{ data: ledger }, { data: tx }] = await Promise.all([api('/ledger'), api('/my/transactions')]);
+    document.getElementById('ledger-body').innerHTML = (ledger.data || []).map(e => `<tr>
+        <td>${esc(e.entry_type)}</td><td>${esc(e.asset)}</td>
+        <td class="mono">${esc(e.available_delta)}</td><td class="mono">${esc(e.locked_delta)}</td><td class="mono">${esc(e.pending_delta)}</td></tr>`).join('') || '<tr><td colspan="5">No entries</td></tr>';
+    document.getElementById('tx-body').innerHTML = (tx.data || []).map(t => `<tr>
+        <td>#${t.id}</td><td>${esc(t.sender?.name)} → ${esc(t.receiver?.name)}</td>
+        <td class="mono">${esc(t.amount)} ${esc(t.asset)}</td></tr>`).join('') || '<tr><td colspan="3">No transfers</td></tr>';
 }
 
 async function loadExchange() {
-    const [{ data: status }, { data: accounts }] = await Promise.all([
-        api('/exchange/status'),
-        api('/exchange/accounts'),
-    ]);
-    document.getElementById('exchange-mode').textContent = status.mode_label || status.mode || 'testnet';
-    document.getElementById('exchange-mode').className = 'badge ' + (status.testnet ? 'sandbox' : 'production');
-    document.getElementById('exchange-connection').textContent = status.connection || status.connection_state || '—';
-    document.getElementById('exchange-message').textContent = status.message || 'Exchange ready.';
-    const cutover = document.getElementById('exchange-cutover');
-    if (cutover && status.testnet) {
-        cutover.style.display = '';
-        if (status.cutover?.steps) cutover.innerHTML = '<strong>Production cutover:</strong> ' + esc(status.cutover.steps) + ' — flag: <code>EXCHANGE_MODE=production</code>';
-    } else if (cutover) {
-        cutover.style.display = 'none';
-    }
-    const acc = accounts.data || [];
-    document.getElementById('exchange-accounts').innerHTML = acc.map(a => `
-        <div class="exchange-acc">
-            <span>${esc(a.name || a.currency)}</span>
-            <span style="font-family:JetBrains Mono,monospace">${esc(a.balance)} ${esc(a.currency || '')}</span>
-        </div>`).join('') || '<p style="color:var(--muted);font-size:0.8rem">No accounts</p>';
+    const [{ data: status }, { data: accounts }] = await Promise.all([api('/exchange/status'), api('/exchange/accounts')]);
+    document.getElementById('exchange-message').textContent = status.message || status.connection || '—';
+    document.getElementById('exchange-accounts').innerHTML = (accounts.data || []).map(a =>
+        `<div class="wallet-row"><span>${esc(a.name||a.currency)}</span><span class="mono">${esc(a.balance)} ${esc(a.currency||'')}</span></div>`).join('');
 }
 
-function esc(s) {
-    if (s == null) return '';
-    const d = document.createElement('div');
-    d.textContent = String(s);
-    return d.innerHTML;
+async function loadReconciliation() {
+    const { data } = await api('/admin/reconciliation');
+    const s = data.summary || {};
+    document.getElementById('recon-summary').innerHTML = `Wallets: <strong>${s.total_wallets}</strong> · Out of sync: <strong class="${s.out_of_sync ? 'diff-bad' : 'diff-ok'}">${s.out_of_sync}</strong>`;
+    document.getElementById('recon-body').innerHTML = (data.data || []).map(r => `<tr>
+        <td>#${r.user_id}</td><td>${esc(r.asset)}</td>
+        <td class="mono">${esc(r.stored.available)}/${esc(r.stored.locked)}/${esc(r.stored.pending)}</td>
+        <td class="mono">${esc(r.calculated.available)}/${esc(r.calculated.locked)}/${esc(r.calculated.pending)}</td>
+        <td class="mono">${esc(r.diff.available)}/${esc(r.diff.locked)}/${esc(r.diff.pending)}</td>
+        <td class="${r.in_sync ? 'diff-ok' : 'diff-bad'}">${r.in_sync ? 'OK' : 'DIFF'}</td></tr>`).join('');
 }
 
-document.getElementById('transfer-form').addEventListener('submit', async (e) => {
+async function loadInvitations() {
+    const { data } = await api('/admin/invites');
+    document.getElementById('invites-body').innerHTML = (data.data || []).map(i => `<tr>
+        <td>${esc(i.email)}</td><td>${esc(i.name)}</td><td>${esc(i.status)}</td>
+        <td class="mono">${esc(i.expires_at?.slice(0, 10) || '—')}</td></tr>`).join('') || '<tr><td colspan="4">No invitations</td></tr>';
+}
+
+async function refreshAll() {
+    await Promise.all([loadWallets(), loadUsers(), loadLedger()]);
+}
+
+document.getElementById('deposit-form').addEventListener('submit', async e => {
     e.preventDefault();
-    const btn = document.getElementById('transfer-btn');
-    const alert = document.getElementById('transfer-alert');
-    const sender_id = +document.getElementById('sender_id').value;
-    const receiver_id = +document.getElementById('receiver_id').value;
-    const amount = document.getElementById('amount').value;
-    if (sender_id === receiver_id) {
-        alert.className = 'alert show err';
-        alert.textContent = 'Sender and receiver must differ.';
-        return;
-    }
-    btn.disabled = true;
-    alert.className = 'alert';
-    const { ok, data } = await api('/transfers', {
-        method: 'POST',
-        body: JSON.stringify({ sender_id, receiver_id, amount, idempotency_key: 'ui-' + Date.now() }),
-    });
-    if (ok) {
-        alert.className = 'alert show ok';
-        alert.textContent = `Transfer #${data.data.id} completed — ${data.data.amount} (ref: ${data.data.external_reference || 'local'})`;
-        document.getElementById('amount').value = '';
-        await Promise.all([loadUsers(), loadTransactions(), loadExchange()]);
-    } else {
-        alert.className = 'alert show err';
-        alert.textContent = data.message || data.error || JSON.stringify(data);
-    }
-    btn.disabled = false;
+    const { ok, data } = await api('/deposits', { method:'POST', body: JSON.stringify({
+        asset: document.getElementById('deposit-asset').value,
+        amount: document.getElementById('deposit-amount').value,
+        auto_confirm: true,
+    })});
+    showAlert('deposit-alert', ok, ok ? `Deposit #${data.data.id} confirmed` : (data.message || JSON.stringify(data)));
+    if (ok) await refreshAll();
 });
 
-async function init() {
-    try {
-        await api('/status');
-        await Promise.all([loadUsers(), loadTransactions(), loadExchange()]);
-    } catch (e) {
-        document.getElementById('health-badge').textContent = '● Offline';
-        document.getElementById('health-badge').className = 'badge';
+document.getElementById('withdraw-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const body = { asset: document.getElementById('withdraw-asset').value, amount: document.getElementById('withdraw-amount').value, auto_complete: true };
+    const { ok, data } = await api('/withdrawals', { method:'POST', body: JSON.stringify(body) });
+    showAlert('withdraw-alert', ok, ok ? `Withdrawal #${data.data.id} completed` : (data.message || JSON.stringify(data)));
+    if (ok) await refreshAll();
+});
+
+document.getElementById('trade-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const { ok, data } = await api('/trades', { method:'POST', body: JSON.stringify({
+        from_asset: document.getElementById('trade-from').value,
+        to_asset: document.getElementById('trade-to').value,
+        amount: document.getElementById('trade-amount').value,
+    })});
+    showAlert('trade-alert', ok, ok ? `Trade #${data.data.id} settled` : (data.message || JSON.stringify(data)));
+    if (ok) await refreshAll();
+});
+
+document.getElementById('transfer-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const { ok, data } = await api('/transfers', { method:'POST', body: JSON.stringify({
+        sender_id: currentUser.id,
+        receiver_id: +document.getElementById('transfer-receiver').value,
+        asset: document.getElementById('transfer-asset').value,
+        amount: document.getElementById('transfer-amount').value,
+        idempotency_key: 'ui-' + Date.now(),
+    })});
+    showAlert('transfer-alert', ok, ok ? `Transfer #${data.data.id} OK` : (data.message || data.error || JSON.stringify(data)));
+    if (ok) await refreshAll();
+});
+
+document.getElementById('adjust-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const { ok, data } = await api('/admin/adjustments', { method:'POST', body: JSON.stringify({
+        user_id: +document.getElementById('adjust-user').value,
+        asset: document.getElementById('adjust-asset').value,
+        available_delta: document.getElementById('adjust-delta').value,
+        reason: document.getElementById('adjust-reason').value,
+    })});
+    showAlert('adjust-alert', ok, ok ? 'Adjustment applied' : (data.message || JSON.stringify(data)));
+    if (ok) { await refreshAll(); await loadReconciliation(); }
+});
+
+document.getElementById('invite-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const { ok, data } = await api('/admin/invites', { method:'POST', body: JSON.stringify({
+        name: document.getElementById('invite-name').value,
+        email: document.getElementById('invite-email').value,
+    })});
+    showAlert('invite-alert', ok, ok ? (data.message || 'Invitation sent.') : (data.message || JSON.stringify(data.errors || data)));
+    if (ok) {
+        document.getElementById('invite-form').reset();
+        await loadInvitations();
     }
-}
-init();
-setInterval(() => { loadUsers(); loadTransactions(); }, 30000);
+});
+
+(async () => {
+    if (!token) return;
+    const { ok, data } = await api('/auth/me');
+    if (!ok) { token = ''; localStorage.removeItem('ledger_token'); return; }
+    currentUser = data.data;
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app-screen').classList.remove('hidden');
+    document.getElementById('user-badge').textContent = currentUser.name + ' (' + currentUser.role + ')';
+    if (currentUser.is_admin) document.getElementById('admin-tab').classList.remove('hidden');
+    await refreshAll();
+})();
 </script>
 </body>
 </html>
