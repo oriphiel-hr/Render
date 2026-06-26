@@ -9,6 +9,10 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        if (User::query()->exists()) {
+            return;
+        }
+
         User::query()->create([
             'name' => 'Alice',
             'balance' => '1000.00000000',

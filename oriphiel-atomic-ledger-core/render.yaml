@@ -1,13 +1,15 @@
 # Render Blueprint — oriphiel-atomic-ledger-core
-# https://render.com/docs/blueprint-spec
+# Repo: https://github.com/oriphiel-hr/Render (monorepo)
+# Blueprint path u Renderu: oriphiel-atomic-ledger-core/render.yaml
 
 services:
   - type: web
     name: oriphiel-atomic-ledger
     runtime: docker
-    plan: starter
+    plan: free
     region: frankfurt
     branch: main
+    rootDir: oriphiel-atomic-ledger-core
     dockerfilePath: ./Dockerfile
     healthCheckPath: /up
     envVars:
@@ -63,18 +65,18 @@ services:
         sync: false
       - key: COINBASE_API_SECRET
         sync: false
-    buildCommand: composer install --no-dev --optimize-autoloader
-    startCommand: php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=$PORT
+    startCommand: php artisan migrate --force && php artisan db:seed --force && php artisan serve --host=0.0.0.0 --port=$PORT
 
   - type: keyvalue
     name: oriphiel-redis
-    plan: starter
+    plan: free
     region: frankfurt
+    maxmemoryPolicy: allkeys-lru
     ipAllowList: []
 
 databases:
   - name: oriphiel-postgres
-    plan: starter
+    plan: free
     region: frankfurt
     databaseName: oriphiel_ledger
     user: oriphiel
