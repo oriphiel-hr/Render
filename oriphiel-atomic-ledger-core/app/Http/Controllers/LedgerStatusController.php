@@ -3,16 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Services\Coinbase\CoinbaseCdpService;
+use App\Services\Exchange\BinanceExchangeService;
 use Illuminate\Http\JsonResponse;
 
 class LedgerStatusController extends Controller
 {
-    public function show(CoinbaseCdpService $cdpService): JsonResponse
+    public function show(BinanceExchangeService $exchangeService): JsonResponse
     {
         return response()->json([
             'service' => 'oriphiel-atomic-ledger-core',
-            'coinbase' => $cdpService->status(),
+            'exchange' => $exchangeService->status(),
             'users_count' => User::query()->count(),
         ]);
     }

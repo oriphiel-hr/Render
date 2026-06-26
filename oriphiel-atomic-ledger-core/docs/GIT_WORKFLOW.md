@@ -6,7 +6,7 @@
 |--------|---------|
 | `main` | Production-ready code deployed to Render |
 | `develop` | Integration branch for features |
-| `feature/*` | New ledger features (e.g. `feature/coinbase-webhooks`) |
+| `feature/*` | New ledger features (e.g. `feature/exchange-webhooks`) |
 | `fix/*` | Bug fixes (e.g. `fix/lock-timeout`) |
 | `release/*` | Release preparation and hardening |
 
@@ -25,13 +25,13 @@
 3. Open PR to `develop` — CI must pass (PHPUnit + PostgreSQL + Redis).
 4. After QA on staging Render service, merge `develop` → `main`.
 
-## Coinbase sandbox → production cutover
+## Binance testnet → production cutover
 
-1. Keep `COINBASE_ENABLED=false` and `COINBASE_SANDBOX=true` in staging.
-2. Validate transfers against Coinbase Developer Platform sandbox.
+1. Keep `EXCHANGE_ENABLED=false` and `EXCHANGE_MODE=testnet` in staging.
+2. Validate transfers against Binance Spot testnet.
 3. For production deploy on Render, set:
-   - `COINBASE_SANDBOX=false`
-   - `COINBASE_ENABLED=true`
+   - `EXCHANGE_MODE=production`
+   - `EXCHANGE_ENABLED=true`
    - Production API credentials (Render secret env vars)
 
 ## Render deployment

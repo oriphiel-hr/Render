@@ -1,30 +1,30 @@
 <?php
 
-namespace App\Services\Coinbase;
+namespace App\Services\Exchange;
 
 use App\Models\Transaction;
 use App\Services\Audit\TransactionAuditService;
 
-class CoinbaseLedgerBridge
+class ExchangeLedgerBridge
 {
     public function __construct(
-        private readonly CoinbaseCdpService $cdpService,
+        private readonly BinanceExchangeService $exchangeService,
         private readonly TransactionAuditService $auditService,
     ) {}
 
     public function syncCompletedTransfer(Transaction $transaction): void
     {
         $reference = sprintf('txn-%d', $transaction->id);
-        $result = $this->cdpService->registerLedgerTransfer($reference, $transaction->amount);
+        $result = $this->exchangeService->registerLedgerTransfer($reference, $transaction->amount);
 
         $transaction->update([
             'external_reference' => $reference,
         ]);
 
-        $this->auditService->log('coinbase.synced', [
+        $this->auditService->log('exchange.synced', [
             'external_reference' => $reference,
-            'sandbox' => $this->cdpService->isSandbox(),
-            'mode' => $this->cdpService->status()['mode'] ?? 'unknown',
+            'testnet' => $this->exchangeService->isTestnet(),
+            'mode' => $this->exchangeService->status()['mode'] ?? 'unknown',
             'payload' => $result,
         ], $transaction, $transaction->sender_id);
     }

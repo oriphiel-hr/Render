@@ -9,7 +9,7 @@ Robustna Laravel 11 simulacija kripto mjenjačnice fokusirana na **Balance Synch
 - PostgreSQL 16
 - Redis 7
 - Docker / Render
-- Coinbase Developer Platform (sandbox flag)
+- Binance Spot Testnet bridge (`EXCHANGE_MODE=testnet`)
 
 ## Brzi start (Docker)
 
@@ -44,15 +44,16 @@ docker compose exec app php artisan test --exclude-group=concurrency
 docker compose exec app php artisan test --filter=ConcurrentTransferTest
 ```
 
-## Coinbase sandbox → produkcija
+## Binance testnet → produkcija
 
 | Env var | Staging | Production |
 |---------|---------|------------|
-| `COINBASE_ENABLED` | `false` / `true` | `true` |
-| `COINBASE_SANDBOX` | `true` | `false` |
-| `COINBASE_API_KEY` | sandbox key | production key |
+| `EXCHANGE_ENABLED` | `false` / `true` | `true` |
+| `EXCHANGE_MODE` | `testnet` | `production` |
+| `BINANCE_API_KEY` | testnet key | production key |
+| `BINANCE_API_SECRET` | testnet secret | production secret |
 
-Dok je `COINBASE_SANDBOX=true`, bridge logira transfer u sandbox modu bez produkcijskog rizika.
+Ključevi: [testnet.binance.vision](https://testnet.binance.vision) (login preko GitHuba).
 
 ## Render deploy
 
@@ -72,7 +73,7 @@ Request → TransferFundsRequest → TransferController
             3. lockForUpdate() na users redovima (deadlock-safe sort)
             4. BCMath provjera i update balansa
             5. Transaction + AuditLog
-            6. CoinbaseLedgerBridge (opcionalno)
+            6. ExchangeLedgerBridge (opcionalno — Binance)
 ```
 
 ## Production-ready obrazloženje

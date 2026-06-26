@@ -19,7 +19,7 @@
             --success: #10b981;
             --warning: #f59e0b;
             --danger: #ef4444;
-            --coinbase: #0052ff;
+            --exchange: #f0b90b;
             --radius: 14px;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -102,13 +102,13 @@
         }
         .status-completed { background: rgba(16,185,129,0.2); color: var(--success); }
         .status-failed { background: rgba(239,68,68,0.2); color: var(--danger); }
-        .cdp-panel { border-color: rgba(0,82,255,0.35); background: linear-gradient(160deg, var(--surface), rgba(0,82,255,0.06)); }
-        .cdp-logo { font-weight: 700; color: #6ea8ff; font-size: 1rem; margin-bottom: 0.5rem; }
-        .cdp-msg { font-size: 0.85rem; color: var(--muted); line-height: 1.5; margin: 0.75rem 0; }
-        .cdp-accounts { display: grid; gap: 0.5rem; margin-top: 1rem; }
-        .cdp-acc {
+        .exchange-panel { border-color: rgba(240,185,11,0.35); background: linear-gradient(160deg, var(--surface), rgba(240,185,11,0.06)); }
+        .exchange-logo { font-weight: 700; color: #fcd34d; font-size: 1rem; margin-bottom: 0.5rem; }
+        .exchange-msg { font-size: 0.85rem; color: var(--muted); line-height: 1.5; margin: 0.75rem 0; }
+        .exchange-accounts { display: grid; gap: 0.5rem; margin-top: 1rem; }
+        .exchange-acc {
             display: flex; justify-content: space-between; padding: 0.6rem 0.75rem;
-            background: rgba(0,82,255,0.08); border-radius: 8px; font-size: 0.8rem;
+            background: rgba(240,185,11,0.08); border-radius: 8px; font-size: 0.8rem;
         }
         .link { color: var(--accent); text-decoration: none; font-size: 0.8rem; }
         .link:hover { text-decoration: underline; }
@@ -130,10 +130,10 @@
         </div>
         <div class="badges">
             <span class="badge live" id="health-badge">● Live</span>
-            @if($coinbaseIsSandbox)
-                <span class="badge sandbox">CDP Sandbox</span>
+            @if($exchangeIsTestnet)
+                <span class="badge sandbox">Binance Testnet</span>
             @else
-                <span class="badge production">CDP Production</span>
+                <span class="badge production">Binance Production</span>
             @endif
             <span class="badge">Laravel 11</span>
         </div>
@@ -167,7 +167,7 @@
                 <div style="overflow-x:auto">
                     <table>
                         <thead>
-                            <tr><th>ID</th><th>From → To</th><th>Amount</th><th>Status</th><th>CDP ref</th></tr>
+                            <tr><th>ID</th><th>From → To</th><th>Amount</th><th>Status</th><th>Exchange ref</th></tr>
                         </thead>
                         <tbody id="tx-body"><tr><td colspan="5" style="color:var(--muted)">Loading…</td></tr></tbody>
                     </table>
@@ -176,23 +176,23 @@
         </div>
 
         <div class="grid" style="gap:1.25rem">
-            <div class="card cdp-panel">
-                <div class="cdp-logo">⬡ Coinbase Developer Platform</div>
+            <div class="card exchange-panel">
+                <div class="exchange-logo">⬡ Binance Spot</div>
                 <div class="badges">
-                    <span class="badge {{ $coinbaseIsSandbox ? 'sandbox' : 'production' }}" id="cdp-mode">{{ $coinbaseModeLabel }}</span>
-                    <span class="badge" id="cdp-connection">…</span>
+                    <span class="badge {{ $exchangeIsTestnet ? 'sandbox' : 'production' }}" id="exchange-mode">{{ $exchangeModeLabel }}</span>
+                    <span class="badge" id="exchange-connection">…</span>
                 </div>
-                <p class="cdp-msg" id="cdp-message">Connecting to CDP status…</p>
-                <div class="cutover-box" id="cdp-cutover" style="{{ $coinbaseIsSandbox ? '' : 'display:none' }}">
+                <p class="exchange-msg" id="exchange-message">Connecting to exchange status…</p>
+                <div class="cutover-box" id="exchange-cutover" style="{{ $exchangeIsTestnet ? '' : 'display:none' }}">
                     <strong>Production cutover:</strong> na Renderu postavi
-                    <code>COINBASE_MODE=production</code>,
-                    zamijeni CDP ključeve s production portalom i redeployaj.
+                    <code>EXCHANGE_MODE=production</code>,
+                    zamijeni Binance ključeve s production API keyevima i redeployaj.
                 </div>
-                <div class="cdp-accounts" id="cdp-accounts"></div>
+                <div class="exchange-accounts" id="exchange-accounts"></div>
                 <p style="margin-top:1rem">
-                    <a class="link" href="https://portal.cdp.coinbase.com/v2/sandbox" target="_blank" rel="noopener">CDP Sandbox Portal →</a>
+                    <a class="link" href="https://testnet.binance.vision" target="_blank" rel="noopener">Binance Testnet →</a>
                     &nbsp;·&nbsp;
-                    <a class="link" href="https://docs.cdp.coinbase.com/get-started/sandbox/quickstart" target="_blank" rel="noopener">Docs</a>
+                    <a class="link" href="https://github.com/binance/binance-spot-api-docs/blob/master/testnet/rest-api.md" target="_blank" rel="noopener">API Docs</a>
                 </p>
             </div>
 
@@ -206,7 +206,7 @@
                     <span>Audit log</span>
                     <span>Idempotency</span>
                 </div>
-                <p class="cdp-msg" style="margin-top:1rem">
+                <p class="exchange-msg" style="margin-top:1rem">
                     Dvoslojna zaštita od race conditiona: Redis distribuirani lock + PostgreSQL row-level lock.
                     Svaki transfer je ACID transakcija s punim audit trailom.
                 </p>
@@ -214,11 +214,11 @@
 
             <div class="card">
                 <h2>API</h2>
-                <p class="cdp-msg" style="font-family:'JetBrains Mono',monospace;font-size:0.75rem">
+                <p class="exchange-msg" style="font-family:'JetBrains Mono',monospace;font-size:0.75rem">
                     GET /api/users<br>
                     GET /api/transactions<br>
                     POST /api/transfers<br>
-                    GET /api/coinbase/status
+                    GET /api/exchange/status
                 </p>
                 <p style="margin-top:0.75rem">
                     <a class="link" href="https://github.com/oriphiel-hr/Render/tree/main/oriphiel-atomic-ledger-core" target="_blank" rel="noopener">GitHub →</a>
@@ -272,25 +272,25 @@ async function loadTransactions() {
         </tr>`).join('');
 }
 
-async function loadCdp() {
+async function loadExchange() {
     const [{ data: status }, { data: accounts }] = await Promise.all([
-        api('/coinbase/status'),
-        api('/coinbase/accounts'),
+        api('/exchange/status'),
+        api('/exchange/accounts'),
     ]);
-    document.getElementById('cdp-mode').textContent = status.mode_label || status.mode || 'sandbox';
-    document.getElementById('cdp-mode').className = 'badge ' + (status.sandbox ? 'sandbox' : 'production');
-    document.getElementById('cdp-connection').textContent = status.connection || status.connection_state || '—';
-    document.getElementById('cdp-message').textContent = status.message || 'CDP ready.';
-    const cutover = document.getElementById('cdp-cutover');
-    if (cutover && status.sandbox) {
+    document.getElementById('exchange-mode').textContent = status.mode_label || status.mode || 'testnet';
+    document.getElementById('exchange-mode').className = 'badge ' + (status.testnet ? 'sandbox' : 'production');
+    document.getElementById('exchange-connection').textContent = status.connection || status.connection_state || '—';
+    document.getElementById('exchange-message').textContent = status.message || 'Exchange ready.';
+    const cutover = document.getElementById('exchange-cutover');
+    if (cutover && status.testnet) {
         cutover.style.display = '';
-        if (status.cutover?.steps) cutover.innerHTML = '<strong>Production cutover:</strong> ' + esc(status.cutover.steps) + ' — flag: <code>COINBASE_MODE=production</code>';
+        if (status.cutover?.steps) cutover.innerHTML = '<strong>Production cutover:</strong> ' + esc(status.cutover.steps) + ' — flag: <code>EXCHANGE_MODE=production</code>';
     } else if (cutover) {
         cutover.style.display = 'none';
     }
     const acc = accounts.data || [];
-    document.getElementById('cdp-accounts').innerHTML = acc.map(a => `
-        <div class="cdp-acc">
+    document.getElementById('exchange-accounts').innerHTML = acc.map(a => `
+        <div class="exchange-acc">
             <span>${esc(a.name || a.currency)}</span>
             <span style="font-family:JetBrains Mono,monospace">${esc(a.balance)} ${esc(a.currency || '')}</span>
         </div>`).join('') || '<p style="color:var(--muted);font-size:0.8rem">No accounts</p>';
@@ -325,7 +325,7 @@ document.getElementById('transfer-form').addEventListener('submit', async (e) =>
         alert.className = 'alert show ok';
         alert.textContent = `Transfer #${data.data.id} completed — ${data.data.amount} (ref: ${data.data.external_reference || 'local'})`;
         document.getElementById('amount').value = '';
-        await Promise.all([loadUsers(), loadTransactions(), loadCdp()]);
+        await Promise.all([loadUsers(), loadTransactions(), loadExchange()]);
     } else {
         alert.className = 'alert show err';
         alert.textContent = data.message || data.error || JSON.stringify(data);
@@ -336,7 +336,7 @@ document.getElementById('transfer-form').addEventListener('submit', async (e) =>
 async function init() {
     try {
         await api('/status');
-        await Promise.all([loadUsers(), loadTransactions(), loadCdp()]);
+        await Promise.all([loadUsers(), loadTransactions(), loadExchange()]);
     } catch (e) {
         document.getElementById('health-badge').textContent = '● Offline';
         document.getElementById('health-badge').className = 'badge';

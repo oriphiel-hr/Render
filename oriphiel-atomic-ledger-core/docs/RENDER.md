@@ -92,8 +92,8 @@ QUEUE_CONNECTION=redis
 REDIS_HOST=<Internal Hostname iz Redis>
 REDIS_PORT=6379
 
-COINBASE_ENABLED=false
-COINBASE_SANDBOX=true
+EXCHANGE_ENABLED=false
+EXCHANGE_MODE=testnet
 ```
 
 Koristi **Internal** hostname (npr. `dpg-xxxxx-a.frankfurt-postgres.render.com`), ne External.

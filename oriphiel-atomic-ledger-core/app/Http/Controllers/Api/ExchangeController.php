@@ -4,29 +4,29 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
-use App\Services\Coinbase\CoinbaseCdpService;
+use App\Services\Exchange\BinanceExchangeService;
 use Illuminate\Http\JsonResponse;
 
-class CoinbaseController extends Controller
+class ExchangeController extends Controller
 {
     public function __construct(
-        private readonly CoinbaseCdpService $cdpService,
+        private readonly BinanceExchangeService $exchangeService,
     ) {}
 
     public function status(): JsonResponse
     {
-        return response()->json($this->cdpService->status());
+        return response()->json($this->exchangeService->status());
     }
 
     public function accounts(): JsonResponse
     {
-        return response()->json($this->cdpService->accounts());
+        return response()->json($this->exchangeService->accounts());
     }
 
     public function auditTrail(): JsonResponse
     {
         $logs = AuditLog::query()
-            ->whereIn('action', ['coinbase.synced', 'transfer.completed', 'transfer.failed'])
+            ->whereIn('action', ['exchange.synced', 'transfer.completed', 'transfer.failed'])
             ->orderByDesc('id')
             ->limit(20)
             ->get();

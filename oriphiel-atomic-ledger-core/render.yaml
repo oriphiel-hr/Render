@@ -57,13 +57,13 @@ services:
           name: oriphiel-redis
           type: keyvalue
           property: port
-      - key: COINBASE_ENABLED
+      - key: EXCHANGE_ENABLED
         value: "false"
-      - key: COINBASE_MODE
-        value: sandbox
-      - key: COINBASE_CDP_API_KEY_NAME
+      - key: EXCHANGE_MODE
+        value: testnet
+      - key: BINANCE_API_KEY
         sync: false
-      - key: COINBASE_CDP_API_KEY_PRIVATE
+      - key: BINANCE_API_SECRET
         sync: false
     # Docker runtime: nema Start Command — CMD je u Dockerfile (render-entrypoint.sh)
 

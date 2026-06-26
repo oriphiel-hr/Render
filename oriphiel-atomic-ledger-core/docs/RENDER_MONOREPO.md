@@ -55,8 +55,8 @@ DB_PASSWORD=<iz Render Postgres → Connections>
 
 CACHE_STORE=database
 QUEUE_CONNECTION=database
-COINBASE_ENABLED=false
-COINBASE_SANDBOX=true
+EXCHANGE_ENABLED=false
+EXCHANGE_MODE=testnet
 ```
 
 Ili jedna varijabla (Laravel čita `DB_URL`):

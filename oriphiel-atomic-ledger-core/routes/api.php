@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Api\CoinbaseController;
+use App\Http\Controllers\Api\ExchangeController;
 use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\LedgerStatusController;
@@ -12,8 +12,8 @@ Route::get('/users', [UserController::class, 'index']);
 Route::get('/transactions', [TransactionController::class, 'index']);
 Route::post('/transfers', [TransferController::class, 'store']);
 
-Route::prefix('coinbase')->group(function () {
-    Route::get('/status', [CoinbaseController::class, 'status']);
-    Route::get('/accounts', [CoinbaseController::class, 'accounts']);
-    Route::get('/audit', [CoinbaseController::class, 'auditTrail']);
+Route::prefix('exchange')->group(function () {
+    Route::get('/status', [ExchangeController::class, 'status']);
+    Route::get('/accounts', [ExchangeController::class, 'accounts']);
+    Route::get('/audit', [ExchangeController::class, 'auditTrail']);
 });

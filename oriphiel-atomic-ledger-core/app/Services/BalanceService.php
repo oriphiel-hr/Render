@@ -9,7 +9,7 @@ use App\Exceptions\LockAcquisitionException;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\Audit\TransactionAuditService;
-use App\Services\Coinbase\CoinbaseLedgerBridge;
+use App\Services\Exchange\ExchangeLedgerBridge;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +20,7 @@ class BalanceService
 
     public function __construct(
         private readonly TransactionAuditService $auditService,
-        private readonly CoinbaseLedgerBridge $coinbaseBridge,
+        private readonly ExchangeLedgerBridge $exchangeBridge,
     ) {}
 
     public function transferFunds(
@@ -116,7 +116,7 @@ class BalanceService
                     'amount' => $amount,
                 ], $transaction, $senderId, $ipAddress);
 
-                $this->coinbaseBridge->syncCompletedTransfer($transaction);
+                $this->exchangeBridge->syncCompletedTransfer($transaction);
 
                 return $transaction->fresh(['sender', 'receiver']);
             });
