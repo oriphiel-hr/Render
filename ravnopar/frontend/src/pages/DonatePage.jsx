@@ -9,9 +9,13 @@ export default function DonatePage() {
         {' · '}
         <Link to="/planovi">Model naplate</Link>
       </p>
-      <section className="hero donate-hero">
+      <section className="hero donate-hero donate-hero-warm">
+        <p className="eyebrow">Zahvaljujemo se</p>
         <h1>Podrži projekt</h1>
-        <p className="subtitle">Dobrovoljna podrška za server i održavanje — bez dodatnih funkcija.</p>
+        <p className="landing-lead">
+          Ravnopar održavamo s puno truda i malo budžeta. Ako ti platforma znači, možeš
+          dobrovoljno pomoći — bez pritiska i bez dodatnih funkcija u zamjenu.
+        </p>
       </section>
       <SupportContent />
     </main>

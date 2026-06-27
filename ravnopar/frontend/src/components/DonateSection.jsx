@@ -70,11 +70,11 @@ export default function DonateSection() {
       <p className="eyebrow">Podrška projektu</p>
       <h2 id="donate-heading" className="section-title">Podrži Ravnopar</h2>
       <p className="muted">
-        Ravnopar je besplatan za korištenje. Ako ti platforma znači, možeš dobrovoljno pomoći
-        pokrivanje servera i održavanja.
+        Ako ti platforma pomogne u upoznavanju, možeš dobrovoljno pomoći s troškovima servera.
+        Svaka kuna (ili euro) stvarno pomaže — a ti ne dobivaš nikakvu prednost u feedu.
       </p>
       <p className="muted donate-note">
-        Donacija je potpuno dobrovoljna i ne daje dodatne funkcije u aplikaciji.
+        Donacija je potpuno dobrovoljna. Hvala ti što razmišljaš o tome. ♥
       </p>
 
       {hasRevolut && (

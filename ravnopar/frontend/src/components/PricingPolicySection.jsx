@@ -1,4 +1,8 @@
-import { PRICING_POLICY } from '../lib/plans.js';
+import {
+  PRICING_POLICY,
+  PRICING_PROMISES,
+  PRICING_TRIGGERS
+} from '../lib/plans.js';
 
 export default function PricingPolicySection({ variant = 'full' }) {
   const compact = variant === 'compact';
@@ -9,33 +13,51 @@ export default function PricingPolicySection({ variant = 'full' }) {
       <h2 id="pricing-policy-heading" className="section-title">
         {PRICING_POLICY.headline}
       </h2>
-      <p className="muted">{PRICING_POLICY.lead}</p>
+      <p className="muted pricing-lead">{PRICING_POLICY.lead}</p>
 
       {!compact && (
         <>
-          <h3 className="subsection-title">Što obećavamo</h3>
-          <ul className="policy-list">
-            {PRICING_POLICY.promises.map((item) => (
-              <li key={item}>{item}</li>
+          <h3 className="subsection-title">{PRICING_POLICY.promisesIntro}</h3>
+          <div className="promise-grid">
+            {PRICING_PROMISES.map((item) => (
+              <article key={item.title} className="promise-card">
+                <span className="promise-icon" aria-hidden="true">
+                  {item.icon}
+                </span>
+                <div>
+                  <h4 className="promise-title">{item.title}</h4>
+                  <p className="muted promise-text">{item.text}</p>
+                </div>
+              </article>
             ))}
-          </ul>
+          </div>
 
-          <h3 className="subsection-title">Kad bismo razmotrili Premium</h3>
-          <p className="muted">Tek kad su ispunjeni svi relevantni uvjeti, primjerice:</p>
-          <ul className="policy-list">
-            {PRICING_POLICY.triggers.map((item) => (
-              <li key={item}>{item}</li>
+          <h3 className="subsection-title">{PRICING_POLICY.triggersIntro}</h3>
+          <div className="trigger-grid">
+            {PRICING_TRIGGERS.map((item) => (
+              <div key={item.text} className="trigger-chip">
+                <span aria-hidden="true">{item.icon}</span>
+                <span>{item.text}</span>
+              </div>
             ))}
-          </ul>
+          </div>
         </>
       )}
 
       {compact && (
-        <ul className="policy-list policy-list-compact">
-          {PRICING_POLICY.promises.slice(0, 3).map((item) => (
-            <li key={item}>{item}</li>
+        <div className="promise-grid promise-grid-compact">
+          {PRICING_PROMISES.slice(0, 3).map((item) => (
+            <article key={item.title} className="promise-card">
+              <span className="promise-icon" aria-hidden="true">
+                {item.icon}
+              </span>
+              <div>
+                <h4 className="promise-title">{item.title}</h4>
+                <p className="muted promise-text">{item.text}</p>
+              </div>
+            </article>
           ))}
-        </ul>
+        </div>
       )}
 
       <p className="muted pricing-footnote">{PRICING_POLICY.footnote}</p>

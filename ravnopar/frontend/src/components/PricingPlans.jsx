@@ -11,7 +11,7 @@ function planStatus(plan) {
 }
 
 function planButtonLabel(plan) {
-  if (plan.tier === 'free') return 'Uključeno';
+  if (plan.tier === 'free') return 'Uključeno u aplikaciji';
   if (arePlansPurchasable()) return 'Uskoro dostupno';
   return 'Još nije dostupno';
 }
@@ -21,12 +21,13 @@ export default function PricingPlans() {
 
   return (
     <section className="pricing-plans" aria-labelledby="pricing-plans-heading">
+      <p className="eyebrow">Paketi</p>
       <h2 id="pricing-plans-heading" className="section-title">
-        Paketi
+        Odaberi svoj ritam — bez pritiska
       </h2>
       <p className="muted">
-        Paketi su pripremljeni unaprijed. Premium opcije su onemogućene dok zajednica i proizvod ne
-        dosegnu dogovorene uvjete.
+        Besplatni paket pokriva sve bitno. Premium opcije su već pripremljene, ali namjerno
+        isključene dok zajednica ne bude spremna.
       </p>
       <div className="plan-grid">
         {PLANS.map((plan) => {
@@ -40,9 +41,17 @@ export default function PricingPlans() {
               className={`card plan-card plan-card-${status.kind}`}
               aria-disabled={disabled}
             >
-              <div className="plan-card-head">
-                <h3 className="plan-name">{plan.name}</h3>
-                <span className={`plan-badge plan-badge-${status.kind}`}>{status.label}</span>
+              <div className="plan-card-top">
+                <span className="plan-icon" aria-hidden="true">
+                  {plan.icon}
+                </span>
+                <div className="plan-card-head">
+                  <div>
+                    <p className="plan-tagline">{plan.tagline}</p>
+                    <h3 className="plan-name">{plan.name}</h3>
+                  </div>
+                  <span className={`plan-badge plan-badge-${status.kind}`}>{status.label}</span>
+                </div>
               </div>
               <p className="plan-price">
                 <strong>{formatPlanPrice(plan)}</strong>
@@ -67,7 +76,9 @@ export default function PricingPlans() {
                 {planButtonLabel(plan)}
               </button>
               {disabled && !purchasable && (
-                <p className="muted plan-hint">Aktivacija nakon stabilnog MAU-a i aktivnosti zajednice.</p>
+                <p className="muted plan-hint">
+                  Aktiviramo kad proizvod i zajednica budu spremni — obavijest stiže unaprijed.
+                </p>
               )}
             </article>
           );

@@ -90,12 +90,17 @@ export default function HomePage() {
       <section className="landing-section">
         <h2 className="landing-heading">Model naplate</h2>
         <article className="card pricing-teaser">
-          <p className="muted">
-            Danas je Ravnopar besplatan za razgovor. Premium paketi bit će opcionalni i uključeni tek kad
-            proizvod bude stabilan i zajednica aktivna — obavijest unaprijed, bez paywalla za kontakt.
+          <p className="eyebrow">Bez iznenađenja</p>
+          <p className="pricing-teaser-lead">
+            Ravnopar je besplatan za razgovor — i to ostaje temelj. Premium će doći tek kad
+            platforma bude stabilna, a ti ćeš znati unaprijed.
           </p>
+          <div className="landing-chips">
+            <span className="chip">♥ Bez paywalla</span>
+            <span className="chip">Fer vidljivost</span>
+          </div>
           <Link className="button button-secondary" to="/planovi">
-            Pogledaj planove unaprijed
+            Pogledaj planove i obećanja
           </Link>
         </article>
       </section>
