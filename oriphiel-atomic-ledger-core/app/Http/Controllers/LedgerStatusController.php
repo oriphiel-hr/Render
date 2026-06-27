@@ -11,7 +11,8 @@ class LedgerStatusController extends Controller
     public function show(BinanceExchangeService $exchangeService): JsonResponse
     {
         return response()->json([
-            'service' => 'oriphiel-atomic-ledger-core',
+            'service' => config('app.name'),
+            'service_id' => 'oriphiel-atomic-ledger',
             'environment' => config('app.env'),
             'exchange' => $exchangeService->status(),
             'users_count' => User::query()->count(),

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $appName }} — Exchange Ledger Demo</title>
+    <title>{{ $appName }}</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root { --bg:#070b14; --surface:#0f1624; --surface2:#151e30; --border:#1e2a42; --text:#f2f6fc; --muted:#a8b8d4; --accent:#5b9aff; --success:#34d399; --warning:#fbbf24; --danger:#f87171; --exchange:#f0b90b; }
@@ -39,7 +39,18 @@
         .alert.ok { background:rgba(16,185,129,.12); border:1px solid var(--success); color:#6ee7b7; }
         .alert.err { background:rgba(239,68,68,.12); border:1px solid var(--danger); color:#fca5a5; }
         .wallet-row { display:grid; grid-template-columns:repeat(4,1fr); gap:.5rem; padding:.7rem; background:var(--surface2); border-radius:8px; margin-bottom:.5rem; font-size:.82rem; }
-        .login-box { max-width:420px; margin:4rem auto; }
+        .login-layout { display:grid; gap:1.25rem; margin:2rem auto 3rem; max-width:1120px; align-items:start; }
+        @media(min-width:920px){ .login-layout { grid-template-columns:1.12fr .88fr; } }
+        .login-box { max-width:none; margin:0; }
+        .preview-gallery h2 { font-size:.78rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:.85rem; }
+        .preview-main { width:100%; border-radius:10px; border:1px solid var(--border); display:block; background:var(--surface2); aspect-ratio:16/10; object-fit:cover; object-position:top left; }
+        .preview-caption { font-size:.82rem; color:var(--muted); margin-top:.65rem; text-align:center; min-height:1.25rem; }
+        .preview-thumbs { display:flex; gap:.45rem; flex-wrap:wrap; margin-top:.75rem; }
+        .preview-thumb { flex:1 1 68px; max-width:88px; padding:0; border:2px solid transparent; border-radius:8px; overflow:hidden; cursor:pointer; background:var(--surface2); transition:border-color .15s; }
+        .preview-thumb:hover { border-color:#3d5070; }
+        .preview-thumb.active { border-color:var(--accent); }
+        .preview-thumb img { width:100%; display:block; aspect-ratio:16/10; object-fit:cover; object-position:top left; opacity:.88; }
+        .preview-thumb.active img { opacity:1; }
         .demo-creds { font-size:.78rem; color:var(--muted); line-height:1.6; margin-top:1rem; padding:.8rem; background:var(--surface2); border-radius:8px; }
         header { display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1.25rem; flex-wrap:wrap; }
         .diff-bad { color:var(--danger); font-weight:600; }
@@ -52,50 +63,70 @@
         .api-log-row:last-child { border-bottom:none; }
         .api-endpoint-list { list-style:none; font-size:.85rem; }
         .api-endpoint-list li { padding:.45rem 0; border-bottom:1px solid var(--border); display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; }
+        .about-block { font-size:.88rem; line-height:1.6; color:var(--muted); }
+        .about-block h3 { font-size:.78rem; text-transform:uppercase; letter-spacing:.06em; color:var(--text); margin:1.1rem 0 .5rem; }
+        .about-block p { margin-bottom:.65rem; }
+        .about-block ul { margin:.35rem 0 .65rem 1.1rem; }
+        .about-block li { margin-bottom:.35rem; }
+        .about-diagram { font-family:'JetBrains Mono',monospace; font-size:.72rem; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:.85rem; line-height:1.5; overflow-x:auto; white-space:pre; color:var(--muted); }
     </style>
 </head>
 <body>
 <div class="wrap">
-    <div id="login-screen" class="login-box card">
-        <h1 style="font-size:1.35rem;margin-bottom:.35rem">{{ $appName }}</h1>
-        <p style="color:var(--muted);font-size:.9rem;margin-bottom:1rem">Crypto exchange ledger demo — login required</p>
-        <p style="font-size:.8rem;color:var(--muted);margin-bottom:1rem">Verify API without login: <a href="/api/status" target="_blank" rel="noopener" style="color:var(--accent)">GET /api/status</a></p>
-        <div class="tabs" style="margin-bottom:1rem">
-            <button type="button" class="auth-tab tab active" id="auth-tab-login">Sign in</button>
-            <button type="button" class="auth-tab tab" id="auth-tab-register">Register</button>
+    <div id="login-screen" class="login-layout">
+        <section class="preview-gallery card" aria-label="App preview">
+            <h2>Inside the demo</h2>
+            <img class="preview-main" id="preview-main" src="/demo-screenshots/wallets.png" alt="Wallets — per-user balances in the internal ledger">
+            <p class="preview-caption" id="preview-caption">Wallets — per-user balances in the internal ledger</p>
+            <div class="preview-thumbs" role="tablist" aria-label="Preview screens">
+                <button type="button" class="preview-thumb active" role="tab" aria-selected="true" data-src="/demo-screenshots/wallets.png" data-caption="Wallets — per-user balances in the internal ledger" title="Wallets"><img src="/demo-screenshots/wallets.png" alt="Wallets"></button>
+                <button type="button" class="preview-thumb" role="tab" aria-selected="false" data-src="/demo-screenshots/binance.png" data-caption="Binance — live shared testnet custody readout" title="Binance"><img src="/demo-screenshots/binance.png" alt="Binance"></button>
+                <button type="button" class="preview-thumb" role="tab" aria-selected="false" data-src="/demo-screenshots/verify-api.png" data-caption="Verify API — endpoints, JSON provenance, live call log" title="Verify API"><img src="/demo-screenshots/verify-api.png" alt="Verify API"></button>
+                <button type="button" class="preview-thumb" role="tab" aria-selected="false" data-src="/demo-screenshots/about.png" data-caption="About — how the platform and pooled custody work" title="About"><img src="/demo-screenshots/about.png" alt="About"></button>
+                <button type="button" class="preview-thumb" role="tab" aria-selected="false" data-src="/demo-screenshots/admin.png" data-caption="Admin — ledger reconciliation and pooled exchange check" title="Admin"><img src="/demo-screenshots/admin.png" alt="Admin"></button>
+            </div>
+        </section>
+        <div class="login-box card">
+            <h1 style="font-size:1.35rem;margin-bottom:.35rem;letter-spacing:-.02em">{{ $appName }}</h1>
+            <p style="color:var(--muted);font-size:.9rem;margin-bottom:1rem">Atomic ledger demo — sign in to continue</p>
+            <p style="font-size:.8rem;color:var(--muted);margin-bottom:1rem">Verify API without login: <a href="/api/status" target="_blank" rel="noopener" style="color:var(--accent)">GET /api/status</a></p>
+            <div class="tabs" style="margin-bottom:1rem">
+                <button type="button" class="auth-tab tab active" id="auth-tab-login">Sign in</button>
+                <button type="button" class="auth-tab tab" id="auth-tab-register">Register</button>
+            </div>
+            <form id="login-form">
+                <label>Email</label>
+                <input type="email" id="login-email" value="alice@demo.local" required>
+                <label>Password</label>
+                <input type="password" id="login-password" value="password" required>
+                <button class="btn btn-primary" type="submit">Sign in</button>
+            </form>
+            <form id="register-form" class="hidden">
+                <label>Name</label>
+                <input type="text" id="register-name" required>
+                <label>Email</label>
+                <input type="email" id="register-email" required>
+                <label>Password</label>
+                <input type="password" id="register-password" minlength="8" required>
+                <label>Confirm password</label>
+                <input type="password" id="register-password-confirm" minlength="8" required>
+                <button class="btn btn-primary" type="submit">Create account</button>
+            </form>
+            <div class="demo-creds">
+                <strong>Demo accounts</strong> (password: <code>password</code>)<br>
+                alice@demo.local · admin@demo.local<br>
+                New users must verify email before login.
+            </div>
+            <div class="alert" id="login-alert"></div>
+            <button type="button" class="btn btn-secondary btn-sm hidden" id="resend-verify-btn" style="margin-top:.75rem;width:100%">Resend verification email</button>
         </div>
-        <form id="login-form">
-            <label>Email</label>
-            <input type="email" id="login-email" value="alice@demo.local" required>
-            <label>Password</label>
-            <input type="password" id="login-password" value="password" required>
-            <button class="btn btn-primary" type="submit">Sign in</button>
-        </form>
-        <form id="register-form" class="hidden">
-            <label>Name</label>
-            <input type="text" id="register-name" required>
-            <label>Email</label>
-            <input type="email" id="register-email" required>
-            <label>Password</label>
-            <input type="password" id="register-password" minlength="8" required>
-            <label>Confirm password</label>
-            <input type="password" id="register-password-confirm" minlength="8" required>
-            <button class="btn btn-primary" type="submit">Create account</button>
-        </form>
-        <div class="demo-creds">
-            <strong>Demo accounts</strong> (password: <code>password</code>)<br>
-            alice@demo.local · admin@demo.local<br>
-            New users must verify email before login.
-        </div>
-        <div class="alert" id="login-alert"></div>
-        <button type="button" class="btn btn-secondary btn-sm hidden" id="resend-verify-btn" style="margin-top:.75rem;width:100%">Resend verification email</button>
     </div>
 
     <div id="app-screen" class="hidden">
         <header>
             <div>
-                <h1 style="font-size:1.3rem">{{ $appName }}</h1>
-                <p style="color:var(--muted);font-size:.85rem">Atomic ledger · available / locked / pending · reconciliation</p>
+                <h1 style="font-size:1.3rem;letter-spacing:-.02em">{{ $appName }}</h1>
+                <p style="color:var(--muted);font-size:.85rem">Atomic ledger · reconciliation · Binance bridge</p>
             </div>
             <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
                 <span class="badge ok" id="user-badge">—</span>
@@ -112,6 +143,7 @@
             <button class="tab" data-tab="history">History</button>
             <button class="tab" data-tab="exchange">Binance</button>
             <button class="tab" data-tab="api-verify">Verify API</button>
+            <button class="tab" data-tab="about">About</button>
             <button class="tab hidden" data-tab="admin" id="admin-tab">Admin</button>
         </div>
 
@@ -196,8 +228,8 @@
                 <div class="api-source" id="exchange-api-source">—</div>
                 <h2>Binance Spot bridge @if($exchangeIsTestnet)<span class="badge warn">testnet</span>@endif</h2>
                 <p style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem;line-height:1.5">
-                    <strong>Your ledger</strong> (Wallets tab) is per user in PostgreSQL.
-                    <strong>Binance below</strong> uses the server API keys — one shared testnet account for all demo users.
+                    <strong>Your balance</strong> (Wallets tab) is yours alone in this application.
+                    <strong>Binance below</strong> is one shared {{ $exchangeIsTestnet ? 'testnet' : 'live' }} account — the same live readout for every demo user.
                 </p>
                 <div class="card" style="background:var(--surface2);margin-bottom:1rem;padding:1rem">
                     <h2 style="margin-bottom:.6rem">My Binance check (on request)</h2>
@@ -212,6 +244,15 @@
                 <p id="exchange-message" style="color:var(--muted);font-size:.85rem">—</p>
                 <div id="exchange-accounts" style="margin-top:.8rem"></div>
                 <pre class="api-json" id="exchange-api-json"></pre>
+                <details style="margin-top:1rem;font-size:.78rem;color:var(--muted)">
+                    <summary style="cursor:pointer;color:var(--accent);margin-bottom:.5rem">Technical details (integrators)</summary>
+                    <ul style="margin-left:1rem;line-height:1.55">
+                        <li>Upstream: signed <code>GET /api/v3/account</code> on Binance Spot ({{ $exchangeModeLabel }})</li>
+                        <li>Base URL: <code>{{ $exchangeIsTestnet ? 'https://testnet.binance.vision' : 'https://api.binance.com' }}</code></li>
+                        <li>On-demand check: <code>GET /api/exchange/my-binance</code> — includes <code>verification.response_sha256</code> of the raw upstream body</li>
+                        <li>Not per-user Binance logins — omnibus custody via application API credentials</li>
+                    </ul>
+                </details>
             </div>
         </div>
 
@@ -219,9 +260,20 @@
             <div class="card">
                 <h2>Verify data comes from API</h2>
                 <p style="color:var(--muted);font-size:.88rem;margin-bottom:1rem;line-height:1.55">
-                    UI loads data via REST calls. When signed in, use <strong>Open</strong> on an endpoint — your auth cookie authenticates the request in the browser.
-                    Each JSON body includes <code>_source</code> (this API call) and <code>data_source</code> (where balances really come from: PostgreSQL ledger vs Binance).
+                    For auditors and developers: every screen loads data via <strong>REST JSON</strong>. When signed in, <strong>Open</strong> uses your auth cookie; authenticated calls also accept <strong>Bearer</strong> tokens.
                 </p>
+                <details open style="margin-bottom:1rem;font-size:.82rem;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.75rem 1rem">
+                    <summary style="cursor:pointer;color:var(--text);font-weight:600;margin-bottom:.5rem">Technology &amp; data provenance</summary>
+                    <ul style="margin:.5rem 0 0 1rem;line-height:1.6">
+                        <li><strong style="color:var(--text)">Ledger</strong> — PostgreSQL (<code>user_balances</code>, <code>ledger_entries</code>). Endpoints: <code>/api/wallets</code>, <code>/api/ledger</code>, …</li>
+                        <li><strong style="color:var(--text)">Exchange bridge</strong> — Binance Spot REST API ({{ $exchangeModeLabel }}). Endpoints: <code>/api/exchange/status</code>, <code>/api/exchange/accounts</code></li>
+                        <li><strong style="color:var(--text)">JSON fields</strong> — <code>_source</code> (which app endpoint served the response), <code>data_source</code> (upstream provider, URL, <code>upstream_called</code>)</li>
+                        <li><strong style="color:var(--text)">Auth</strong> — Bearer token in <code>Authorization</code> header; browser uses <code>ledger_api_token</code> httpOnly cookie</li>
+                        <li><strong style="color:var(--text)">Admin pooled check</strong> — <code>GET /api/admin/reconciliation</code> → <code>exchange_pool</code> compares SUM(ledger) vs live Binance balances</li>
+                        <li><strong style="color:var(--text)">Independent verify</strong> — compare Binance tab balances with <a href="https://testnet.binance.vision" target="_blank" rel="noopener" style="color:var(--accent)">testnet.binance.vision</a> or recompute SHA-256 from “My Binance check”</li>
+                    </ul>
+                    <p style="margin:.75rem 0 0;font-size:.75rem">API base: <code>{{ $appUrl }}</code></p>
+                </details>
                 <h3 style="font-size:.78rem;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem">Public — no login</h3>
                 <ul class="api-endpoint-list" id="api-public-list"></ul>
                 <h3 style="font-size:.78rem;text-transform:uppercase;color:var(--muted);margin:1rem 0 .6rem">Authenticated — Bearer token</h3>
@@ -235,9 +287,51 @@
             </div>
         </div>
 
+        <div class="tab-panel hidden" data-panel="about">
+            <div class="card">
+                <h2>About {{ $appName }}</h2>
+                <div class="about-block">
+                    <p><strong style="color:var(--text)">{{ $appName }}</strong> is a demonstration of how a digital asset platform can track balances, process movements of funds, and check that internal records match external custody.</p>
+
+                    <h3>Your balance in this app</h3>
+                    <p>When you sign in, <strong style="color:var(--text)">Wallets</strong> shows <em>your</em> balances — available, locked, and pending. Deposits, withdrawals, trades, and transfers update <em>your</em> account in the platform’s internal ledger.</p>
+
+                    <h3>One shared exchange connection</h3>
+                    <p>Many real platforms use a <strong style="color:var(--text)">pooled</strong> model: the organisation holds funds in shared custody, while the system records how much belongs to each user. The <strong style="color:var(--text)">Binance</strong> tab shows a <em>live</em> readout from an external exchange account ({{ $exchangeModeLabel }}) — the same view for all demo users, not a personal exchange login per person.</p>
+                    <div class="about-diagram">Your Wallets tab     →  what the platform owes you (your account)
+Binance tab          →  what sits in shared external custody (live)</div>
+                    <p>These two are <strong style="color:var(--text)">not automatically linked</strong> in this demo. Administrators can compare totals under <strong style="color:var(--text)">Admin → Pooled exchange reconciliation</strong>.</p>
+
+                    <h3>Who sees what</h3>
+                    <ul>
+                        <li><strong style="color:var(--text)">You</strong> — your wallets, history, and simulated operations.</li>
+                        <li><strong style="color:var(--text)">Everyone signed in</strong> — the same live exchange readout on the Binance tab.</li>
+                        <li><strong style="color:var(--text)">Administrators</strong> — balance checks and custody reconciliation.</li>
+                    </ul>
+
+                    <h3>Try the demo</h3>
+                    <p>Password for all demo users: <code>password</code></p>
+                    <p><code>alice@demo.local</code> · <code>bob@demo.local</code> · <code>admin@demo.local</code> (administrator)</p>
+                    <p>New registrations require email verification before first login.</p>
+
+                    <h3>Where to go</h3>
+                    <ul>
+                        <li><strong style="color:var(--text)">Wallets / History</strong> — your activity</li>
+                        <li><strong style="color:var(--text)">Deposit, Withdraw, Trade, Transfer</strong> — simulate operations</li>
+                        <li><strong style="color:var(--text)">Binance</strong> — live external balances + optional on-demand check</li>
+                        <li><strong style="color:var(--text)">Verify API</strong> — technical proof for integrators (endpoints, JSON, stack)</li>
+                    </ul>
+
+                    <h3>Can I trust the numbers?</h3>
+                    <p>Every balance should be explainable. For a plain overview, use this page. To inspect <em>how</em> data is loaded — endpoints, upstream exchange API, database ledger — open <strong style="color:var(--text)">Verify API</strong> or ask an administrator to run reconciliation.</p>
+                </div>
+            </div>
+        </div>
+
         <div class="tab-panel hidden" data-panel="admin">
             <div class="card">
                 <h2>Balance reconciliation</h2>
+                <p style="font-size:.8rem;color:var(--muted);margin-bottom:.6rem">Internal: stored wallet row vs sum of immutable <code>ledger_entries</code> per user.</p>
                 <p id="recon-summary" style="margin-bottom:.8rem;font-size:.9rem">—</p>
                 <div style="overflow-x:auto">
                     <table>
@@ -248,7 +342,7 @@
             </div>
             <div class="card" style="border-color:rgba(240,185,11,.35)">
                 <h2>Pooled exchange reconciliation</h2>
-                <p style="font-size:.8rem;color:var(--muted);margin-bottom:.6rem">Sum of all user ledger liabilities vs shared Binance custody (omnibus model).</p>
+                <p style="font-size:.8rem;color:var(--muted);margin-bottom:.6rem">Technical: <code>SUM(user_balances)</code> per asset vs live Binance <code>GET /api/v3/account</code> on the shared omnibus wallet. Status <code>deficit</code> = alarm.</p>
                 <p id="pool-recon-summary" style="margin-bottom:.8rem;font-size:.9rem">—</p>
                 <div style="overflow-x:auto">
                     <table>
@@ -739,6 +833,16 @@ document.getElementById('invite-form').addEventListener('submit', async e => {
         await loadInvitations();
     }
 });
+
+document.querySelectorAll('.preview-thumb').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('.preview-thumb').forEach(t => { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
+    btn.classList.add('active');
+    btn.setAttribute('aria-selected', 'true');
+    const main = document.getElementById('preview-main');
+    main.src = btn.dataset.src;
+    main.alt = btn.dataset.caption;
+    document.getElementById('preview-caption').textContent = btn.dataset.caption;
+}));
 
 (async () => {
     if (!token) return;
