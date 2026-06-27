@@ -17,7 +17,8 @@
         .badge { font-size:.72rem; font-weight:600; padding:.3rem .65rem; border-radius:999px; border:1px solid var(--border); display:inline-block; }
         .badge.ok { border-color:var(--success); color:var(--success); }
         .badge.warn { border-color:var(--warning); color:var(--warning); }
-        .badge.err { border-color:var(--danger); color:var(--danger); }
+        .badge.exchange { border-color:var(--exchange); color:var(--exchange); }
+        .badge.local { border-color:var(--accent); color:var(--accent); }
         label { display:block; font-size:.78rem; color:var(--muted); margin-bottom:.3rem; }
         input, select, textarea { width:100%; padding:.6rem .8rem; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--text); margin-bottom:.7rem; font:inherit; }
         .btn { padding:.65rem 1rem; border:none; border-radius:8px; font-weight:600; cursor:pointer; font:inherit; }
@@ -194,6 +195,7 @@
             <div class="card" style="border-color:rgba(240,185,11,.35)">
                 <div class="api-source" id="exchange-api-source">—</div>
                 <h2>Binance Spot bridge @if($exchangeIsTestnet)<span class="badge warn">testnet</span>@endif</h2>
+                <div class="alert hidden" id="exchange-origin-banner"></div>
                 <p id="exchange-upstream" style="font-size:.82rem;color:var(--muted);margin-bottom:.5rem">—</p>
                 <p id="exchange-message" style="color:var(--muted);font-size:.85rem">—</p>
                 <div id="exchange-accounts" style="margin-top:.8rem"></div>
@@ -302,23 +304,40 @@ const api = async (path, opts = {}) => {
 const esc = s => { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; };
 const showAlert = (id, ok, msg) => { const el = document.getElementById(id); el.className = 'alert show ' + (ok ? 'ok' : 'err'); el.textContent = msg; };
 
-function renderDataSourceLine(dataSrc) {
+function dataSourceBadge(dataSrc) {
     if (!dataSrc) return '';
     if (dataSrc.provider === 'local_ledger') {
+        return '<span class="badge local">LOCAL LEDGER</span>';
+    }
+    if (dataSrc.provider === 'binance' && dataSrc.upstream_called !== false) {
+        return '<span class="badge exchange">BINANCE LIVE</span>';
+    }
+    if (dataSrc.provider === 'binance') {
+        return '<span class="badge warn">BINANCE (fallback)</span>';
+    }
+    if (dataSrc.provider === 'ledger_api') {
+        return '<span class="badge warn">APP ONLY</span>';
+    }
+    return '';
+}
+
+function renderDataSourceLine(dataSrc) {
+    if (!dataSrc) return '';
+    const label = dataSrc.origin_label ? `<strong>${esc(dataSrc.origin_label)}</strong> · ` : '';
+    if (dataSrc.provider === 'local_ledger') {
         const bridge = dataSrc.exchange_bridge || {};
-        let line = `Data: <strong>PostgreSQL</strong> <code>${esc(dataSrc.table)}</code> (local atomic ledger)`;
-        if (bridge.credentials_configured) {
-            line += bridge.enabled
-                ? ` · live Binance (${esc(bridge.mode_label || bridge.mode)}): <a href="${esc(bridge.live_balances_endpoint)}" target="_blank" rel="noopener">/api/exchange/accounts</a>`
-                : ` · Binance keys set — bridge should be active after deploy`;
-        } else {
-            line += ` · Binance bridge: <a href="${esc(bridge.status_endpoint || '/api/exchange/status')}" target="_blank" rel="noopener">/api/exchange/status</a>`;
+        let line = `${label}table <code>${esc(dataSrc.table)}</code> — not Binance balances`;
+        if (bridge.enabled) {
+            line += ` · Binance testnet: <a href="${esc(bridge.live_balances_endpoint)}" target="_blank" rel="noopener">/api/exchange/accounts</a>`;
         }
         return line;
     }
+    if (dataSrc.provider === 'binance') {
+        const called = dataSrc.upstream_called === false ? ' · demo fallback, Binance not called' : ' · fetched just now from upstream';
+        return `${label}${esc(dataSrc.method || 'GET')} <code>${esc(dataSrc.url)}</code>${called}`;
+    }
     if (dataSrc.provider) {
-        const called = dataSrc.upstream_called === false ? ' · upstream not called (fallback)' : '';
-        return `Upstream: <strong>${esc(dataSrc.provider)}</strong> ${esc(dataSrc.method || 'GET')} <code>${esc(dataSrc.url)}</code>${called}`;
+        return `${label}${esc(dataSrc.method || 'GET')} <code>${esc(dataSrc.url)}</code>`;
     }
     return '';
 }
@@ -333,7 +352,8 @@ function renderApiSourceBar(elId, jsonId, method, path, result) {
     const url = src?.url || (APP_URL + path);
     const fetched = src?.fetched_at ? ` · ${src.fetched_at}` : '';
     const origin = renderDataSourceLine(dataSrc);
-    bar.innerHTML = `<span class="badge ok">API</span> <strong>${esc(method)}</strong> <code>${esc(path)}</code>
+    const badge = dataSourceBadge(dataSrc);
+    bar.innerHTML = `${badge}<span class="badge ok">API</span> <strong>${esc(method)}</strong> <code>${esc(path)}</code>
         <button type="button" class="btn btn-secondary btn-sm" data-toggle-json="${jsonId || ''}">View JSON</button>
         <a class="btn btn-secondary btn-sm" href="${esc(path)}" target="_blank" rel="noopener">Open</a>
         <span style="color:var(--muted)">${esc(url)}${esc(fetched)}</span>
@@ -527,6 +547,20 @@ async function loadExchange() {
     const upstreamLine = renderDataSourceLine(accounts.data_source || status.data_source);
     document.getElementById('exchange-upstream').innerHTML = upstreamLine || 'Upstream source not available.';
     document.getElementById('exchange-message').textContent = (status.message || status.connection || '—') + (status.mode_label ? ` · ${status.mode_label}` : '');
+    const ds = accounts.data_source || status.data_source;
+    const banner = document.getElementById('exchange-origin-banner');
+    if (banner) {
+        if (ds?.provider === 'binance' && ds.upstream_called !== false) {
+            banner.className = 'alert show ok';
+            banner.textContent = `Balances below are from Binance (${status.mode_label || 'testnet'}) — upstream ${ds.url}`;
+        } else if (accounts.mode === 'demo') {
+            banner.className = 'alert show err';
+            banner.textContent = 'Demo fallback — not live Binance data. Check /api/exchange/status.';
+        } else {
+            banner.className = 'alert hidden';
+            banner.textContent = '';
+        }
+    }
     document.getElementById('exchange-accounts').innerHTML = (accounts.data || []).map(a =>
         `<div class="wallet-row"><span>${esc(a.name||a.currency)}</span><span class="mono">${esc(a.balance)} ${esc(a.currency||'')}</span></div>`).join('');
 }

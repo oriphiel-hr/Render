@@ -32,6 +32,7 @@ class ApiSource
 
         return [
             'provider' => 'local_ledger',
+            'origin_label' => 'Local atomic ledger (PostgreSQL)',
             'storage' => 'postgresql',
             'table' => $table,
             'method' => 'SELECT',
@@ -58,8 +59,17 @@ class ApiSource
      */
     public static function upstream(string $provider, string $method, string $url, array $upstream = []): array
     {
+        $originLabel = match ($provider) {
+            'binance' => str_contains($url, 'testnet.binance.vision')
+                ? 'Binance Spot API — testnet (live upstream)'
+                : 'Binance Spot API — production (live upstream)',
+            'ledger_api' => 'This application only (Binance not called)',
+            default => ucfirst($provider).' API',
+        };
+
         return array_merge([
             'provider' => $provider,
+            'origin_label' => $originLabel,
             'method' => $method,
             'url' => $url,
             'fetched_at' => now()->toIso8601String(),
