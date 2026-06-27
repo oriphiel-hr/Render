@@ -203,6 +203,42 @@ paymentsRouter.post('/checkout/plan', requireAuth, async (req, res) => {
   }
 });
 
+export async function handleStripeWebhook(req, res) {
+  if (!stripe) return res.status(503).send('Stripe not configured');
+
+  const secret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
+  if (!secret) return res.status(503).send('Webhook secret not configured');
+
+  let event;
+  try {
+    const signature = req.headers['stripe-signature'];
+    event = stripe.webhooks.constructEvent(req.body, signature, secret);
+  } catch (error) {
+    return res.status(400).send(`Webhook Error: ${error.message}`);
+  }
+
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    const metadata = session.metadata || {};
+
+    if (metadata.orderId) {
+      await prisma.paymentOrder.updateMany({
+        where: { id: metadata.orderId },
+        data: { status: 'PAID', stripeSessionId: session.id }
+      });
+    }
+
+    if (metadata.planId && metadata.profileId) {
+      await prisma.userProfile.update({
+        where: { id: metadata.profileId },
+        data: { planTier: metadata.planId }
+      });
+    }
+  }
+
+  return res.json({ received: true });
+}
+
 paymentsRouter.get('/my-orders', requireAuth, async (req, res) => {
   const items = await prisma.paymentOrder.findMany({
     where: { userProfileId: req.auth.profileId },

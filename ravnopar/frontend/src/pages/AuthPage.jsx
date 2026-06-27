@@ -1,16 +1,24 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { login, register, verifyEmail } from '../api/index.js';
+import { Link, useSearchParams } from 'react-router-dom';
+import { forgotPassword, login, register, resetPassword, verifyEmail } from '../api/index.js';
 import { IDENTITY_LABELS, INTENT_LABELS, PROFILE_TYPE_LABELS } from '../lib/labels.js';
+import TurnstileWidget, { isTurnstileEnabled, resetTurnstileWidget } from '../components/TurnstileWidget.jsx';
 
-const STEPS = [
+const REG_STEPS = [
   { id: 1, title: 'Račun' },
   { id: 2, title: 'Verifikacija' },
   { id: 3, title: 'Prijava' }
 ];
 
+const STEPS = [
+  ...REG_STEPS,
+  { id: 4, title: 'Reset' },
+  { id: 5, title: 'Nova lozinka' }
+];
+
 export default function AuthPage({ onLogin }) {
-  const [step, setStep] = useState(1);
+  const [searchParams] = useSearchParams();
+  const [step, setStep] = useState(() => (searchParams.get('reset') === '1' ? 4 : 1));
   const [busy, setBusy] = useState(false);
   const [registerForm, setRegisterForm] = useState({
     email: '',
@@ -27,6 +35,10 @@ export default function AuthPage({ onLogin }) {
   });
   const [verifyForm, setVerifyForm] = useState({ email: '', code: '' });
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+  const [forgotForm, setForgotForm] = useState({ email: '' });
+  const [resetForm, setResetForm] = useState({ email: '', code: '', newPassword: '' });
+  const [website, setWebsite] = useState('');
+  const [captchaToken, setCaptchaToken] = useState('');
   const [status, setStatus] = useState('');
   const [statusKind, setStatusKind] = useState('info');
 
@@ -46,16 +58,22 @@ export default function AuthPage({ onLogin }) {
 
   async function submitRegister(event) {
     event.preventDefault();
+    if (isTurnstileEnabled() && !captchaToken) {
+      setMessage('Potvrdi captchu prije registracije.', 'error');
+      return;
+    }
     setBusy(true);
     setMessage('');
     try {
-      const data = await register(registerForm);
+      const data = await register({ ...registerForm, website, captchaToken: captchaToken || undefined });
       if (data?.success) {
         setVerifyForm((prev) => ({ ...prev, email: registerForm.email }));
         setMessage('Račun je kreiran. Unesi verifikacijski kod koji si primio/la.', 'success');
         setStep(2);
       } else {
         setMessage(data?.error || 'Registracija nije uspjela. Provjeri podatke i pokušaj ponovo.', 'error');
+        resetTurnstileWidget();
+        setCaptchaToken('');
       }
     } finally {
       setBusy(false);
@@ -78,6 +96,32 @@ export default function AuthPage({ onLogin }) {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function submitForgot(event) {
+    event.preventDefault();
+    setBusy(true);
+    const data = await forgotPassword(forgotForm.email);
+    setMessage(data?.message || 'Provjeri email.', data?.success ? 'success' : 'error');
+    if (data?.success) {
+      setResetForm((p) => ({ ...p, email: forgotForm.email }));
+      setStep(5);
+    }
+    setBusy(false);
+  }
+
+  async function submitReset(event) {
+    event.preventDefault();
+    setBusy(true);
+    const data = await resetPassword(resetForm);
+    if (data?.success) {
+      setMessage('Lozinka promijenjena. Prijavi se.', 'success');
+      setLoginForm((p) => ({ ...p, email: resetForm.email }));
+      setStep(3);
+    } else {
+      setMessage(data?.error || 'Reset nije uspio.', 'error');
+    }
+    setBusy(false);
   }
 
   async function submitLogin(event) {
@@ -104,7 +148,7 @@ export default function AuthPage({ onLogin }) {
       </section>
 
       <div className="stepper" aria-label="Koraci registracije">
-        {STEPS.map((item) => (
+        {(step <= 3 ? REG_STEPS : STEPS.filter((s) => s.id >= 4)).map((item) => (
           <button
             key={item.id}
             type="button"
@@ -246,6 +290,10 @@ export default function AuthPage({ onLogin }) {
             </div>
           </fieldset>
 
+          <input type="text" className="hp-field" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} aria-hidden="true" />
+
+          <TurnstileWidget onToken={setCaptchaToken} onExpire={() => setCaptchaToken('')} />
+
           <div className="form-actions">
             <button type="submit" className="button button-primary" disabled={busy}>
               {busy ? 'Spremanje...' : 'Nastavi na verifikaciju'}
@@ -312,6 +360,11 @@ export default function AuthPage({ onLogin }) {
               required
             />
           </label>
+          <p className="auth-footer">
+            <button type="button" className="button button-ghost" onClick={() => setStep(4)}>
+              Zaboravljena lozinka?
+            </button>
+          </p>
           <div className="form-actions row">
             <button type="button" className="button button-secondary" onClick={() => setStep(2)}>
               Natrag
@@ -319,6 +372,34 @@ export default function AuthPage({ onLogin }) {
             <button type="submit" className="button button-primary" disabled={busy}>
               {busy ? 'Prijava...' : 'Uđi u Ravnopar'}
             </button>
+          </div>
+        </form>
+      )}
+
+      {step === 4 && (
+        <form onSubmit={submitForgot} className="card auth-card">
+          <h2 className="section-title">Reset lozinke</h2>
+          <p className="muted">Poslat ćemo kod na email ako račun postoji.</p>
+          <label>
+            Email
+            <input type="email" value={forgotForm.email} onChange={(e) => setForgotForm({ email: e.target.value })} required />
+          </label>
+          <div className="form-actions row">
+            <button type="button" className="button button-secondary" onClick={() => setStep(3)}>Natrag</button>
+            <button type="submit" className="button button-primary" disabled={busy}>{busy ? 'Slanje...' : 'Pošalji kod'}</button>
+          </div>
+        </form>
+      )}
+
+      {step === 5 && (
+        <form onSubmit={submitReset} className="card auth-card">
+          <h2 className="section-title">Nova lozinka</h2>
+          <label>Email<input type="email" value={resetForm.email} onChange={(e) => setResetForm((p) => ({ ...p, email: e.target.value }))} required /></label>
+          <label>Kod<input inputMode="numeric" maxLength={6} value={resetForm.code} onChange={(e) => setResetForm((p) => ({ ...p, code: e.target.value }))} required /></label>
+          <label>Nova lozinka<input type="password" minLength={8} value={resetForm.newPassword} onChange={(e) => setResetForm((p) => ({ ...p, newPassword: e.target.value }))} required /></label>
+          <div className="form-actions row">
+            <button type="button" className="button button-secondary" onClick={() => setStep(4)}>Natrag</button>
+            <button type="submit" className="button button-primary" disabled={busy}>{busy ? 'Spremanje...' : 'Spremi lozinku'}</button>
           </div>
         </form>
       )}

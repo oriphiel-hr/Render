@@ -6,9 +6,15 @@ import { issueAuthToken, requireAuth } from '../lib/auth.js';
 import { normalizePhotos, toPublicProfile } from '../lib/profile-public.js';
 import { validatePhotosArray } from '../lib/photo-validation.js';
 import { calculateProfileCompleteness } from '../services/profile-service.js';
-import { sendVerificationEmail } from '../services/notification-service.js';
+import { sendVerificationEmail, sendPasswordResetEmail } from '../services/notification-service.js';
+import { verifyRegisterCaptcha, validateTurnstile } from '../lib/captcha.js';
+import { persistPhotos } from '../lib/storage.js';
+import { rateLimit } from '../lib/rate-limit.js';
 
 export const authRouter = Router();
+
+const authLimiter = rateLimit({ windowMs: 60_000, max: 20, keyPrefix: 'auth' });
+authRouter.use(authLimiter);
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -21,7 +27,9 @@ const registerSchema = z.object({
   profileType: z.enum(['INDIVIDUAL', 'COUPLE']),
   seekingIdentities: z.array(z.enum(['MALE', 'FEMALE', 'NON_BINARY', 'OTHER'])).min(1).max(4),
   seekingProfileTypes: z.array(z.enum(['INDIVIDUAL', 'COUPLE'])).min(1).max(2),
-  intents: z.array(z.enum(['CHAT', 'CASUAL', 'RELATIONSHIP', 'MARRIAGE', 'ADVENTURE'])).min(1).max(5)
+  intents: z.array(z.enum(['CHAT', 'CASUAL', 'RELATIONSHIP', 'MARRIAGE', 'ADVENTURE'])).min(1).max(5),
+  website: z.string().max(0).optional(),
+  captchaToken: z.string().optional()
 });
 
 const verifySchema = z.object({
@@ -51,6 +59,15 @@ function calculateAge(dateOfBirth) {
 
 authRouter.post('/register', async (req, res) => {
   try {
+    const captcha = verifyRegisterCaptcha(req.body);
+    if (!captcha.ok) {
+      return res.status(400).json({ success: false, error: captcha.error });
+    }
+    if (captcha.secret && captcha.token) {
+      const valid = await validateTurnstile(captcha.token, captcha.secret);
+      if (!valid) return res.status(400).json({ success: false, error: 'Captcha nije prošla.' });
+    }
+
     const payload = registerSchema.parse(req.body);
     const age = calculateAge(payload.dateOfBirth);
     if (Number.isNaN(age) || age < 18) {
@@ -174,6 +191,9 @@ authRouter.post('/login', async (req, res) => {
     if (!account.verifiedAt) {
       return res.status(403).json({ success: false, error: 'Email not verified' });
     }
+    if (account.suspendedAt) {
+      return res.status(403).json({ success: false, error: 'Račun je suspendiran. Kontaktiraj podršku.' });
+    }
 
     const ok = await bcrypt.compare(payload.password, account.passwordHash);
     if (!ok) {
@@ -190,12 +210,123 @@ authRouter.post('/login', async (req, res) => {
         city: profile.city,
         availability: profile.availability,
         planTier: profile.planTier || 'free',
+        onboardingDone: profile.onboardingDone,
         role: account.role
       }
     });
   } catch (_error) {
     return res.status(400).json({ success: false, error: 'Invalid payload' });
   }
+});
+
+authRouter.post('/forgot-password', async (req, res) => {
+  const schema = z.object({ email: z.string().email() });
+  try {
+    const { email } = schema.parse(req.body);
+    const profile = await prisma.userProfile.findUnique({ where: { email } });
+    let devCode;
+    if (profile) {
+      const code = generateCode();
+      devCode = code;
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+      await prisma.passwordResetCode.create({ data: { email, code, expiresAt } });
+      await sendPasswordResetEmail(email, code);
+    }
+    return res.json({
+      success: true,
+      message: 'Ako email postoji, poslan je kod za reset lozinke.',
+      devResetCode: process.env.NODE_ENV === 'production' ? undefined : devCode
+    });
+  } catch (_error) {
+    return res.status(400).json({ success: false, error: 'Invalid payload' });
+  }
+});
+
+authRouter.post('/reset-password', async (req, res) => {
+  const schema = z.object({
+    email: z.string().email(),
+    code: z.string().regex(/^\d{6}$/),
+    newPassword: z.string().min(8).max(128)
+  });
+  try {
+    const payload = schema.parse(req.body);
+    const row = await prisma.passwordResetCode.findFirst({
+      where: {
+        email: payload.email,
+        code: payload.code,
+        consumedAt: null,
+        expiresAt: { gt: new Date() }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    if (!row) return res.status(400).json({ success: false, error: 'Invalid or expired code' });
+
+    const profile = await prisma.userProfile.findUnique({ where: { email: payload.email } });
+    if (!profile) return res.status(404).json({ success: false, error: 'Profile not found' });
+
+    const passwordHash = await bcrypt.hash(payload.newPassword, 10);
+    await prisma.$transaction(async (tx) => {
+      await tx.passwordResetCode.update({ where: { id: row.id }, data: { consumedAt: new Date() } });
+      await tx.userAccount.update({ where: { profileId: profile.id }, data: { passwordHash } });
+    });
+
+    return res.json({ success: true });
+  } catch (_error) {
+    return res.status(400).json({ success: false, error: 'Invalid payload' });
+  }
+});
+
+authRouter.get('/export-data', requireAuth, async (req, res) => {
+  const profile = await prisma.userProfile.findUnique({
+    where: { id: req.auth.profileId },
+    include: { account: { select: { role: true, verifiedAt: true, createdAt: true, suspendedAt: true } } }
+  });
+  if (!profile) return res.status(404).json({ success: false, error: 'Profile not found' });
+
+  const [contacts, pairs, messages, reports, ratings, orders] = await Promise.all([
+    prisma.matchContact.findMany({
+      where: { OR: [{ requesterId: profile.id }, { targetId: profile.id }] },
+      orderBy: { createdAt: 'desc' },
+      take: 200
+    }),
+    prisma.engagedPair.findMany({
+      where: { OR: [{ userAId: profile.id }, { userBId: profile.id }] },
+      orderBy: { startedAt: 'desc' },
+      take: 100
+    }),
+    prisma.pairMessage.findMany({
+      where: { senderId: profile.id },
+      orderBy: { createdAt: 'desc' },
+      take: 500
+    }),
+    prisma.userReport.findMany({
+      where: { OR: [{ reporterId: profile.id }, { reportedId: profile.id }] },
+      take: 100
+    }),
+    prisma.userRating.findMany({
+      where: { OR: [{ fromUserId: profile.id }, { toUserId: profile.id }] },
+      take: 100
+    }),
+    prisma.paymentOrder.findMany({ where: { userProfileId: profile.id }, take: 50 })
+  ]);
+
+  return res.json({
+    success: true,
+    exportedAt: new Date().toISOString(),
+    profile: {
+      ...toPublicProfile(profile),
+      email: profile.email,
+      dateOfBirth: profile.dateOfBirth,
+      notifyEmail: profile.notifyEmail,
+      account: profile.account
+    },
+    contacts,
+    pairs,
+    messagesSent: messages,
+    reports,
+    ratings,
+    orders
+  });
 });
 
 const profileUpdateSchema = z.object({
@@ -209,6 +340,7 @@ const profileUpdateSchema = z.object({
   intents: z.array(z.enum(['CHAT', 'CASUAL', 'RELATIONSHIP', 'MARRIAGE', 'ADVENTURE'])).min(1).max(5).optional(),
   availability: z.enum(['AVAILABLE', 'PAUSED']).optional(),
   notifyEmail: z.boolean().optional(),
+  onboardingDone: z.boolean().optional(),
   photos: z.array(z.string()).max(3).optional()
 });
 
@@ -245,7 +377,9 @@ authRouter.patch('/profile', requireAuth, async (req, res) => {
     }
 
     const data = { ...payload };
-    if (payload.photos) data.photos = normalizePhotos(payload.photos);
+    if (payload.photos) {
+      data.photos = await persistPhotos(profile.id, normalizePhotos(payload.photos));
+    }
 
     const updated = await prisma.userProfile.update({
       where: { id: profile.id },

@@ -9,7 +9,8 @@ import { calculateProfileCompleteness } from '../services/profile-service.js';
 import {
   notifyContactAccepted,
   notifyContactRequest,
-  notifyNewMessage
+  notifyNewMessage,
+  notifyAdminReport
 } from '../services/notification-service.js';
 
 export const matchmakingRouter = Router();
@@ -293,6 +294,7 @@ matchmakingRouter.post('/report', requireAuth, async (req, res) => {
       return res.status(400).json({ success: false, error: 'Cannot report yourself' });
     }
     const priority = /threat|abuse|minor|violence|harass/i.test(payload.reason) ? 5 : 2;
+    const reported = await prisma.userProfile.findUnique({ where: { id: payload.reportedId } });
     const item = await prisma.userReport.create({
       data: {
         reporterId: req.auth.profileId,
@@ -302,6 +304,7 @@ matchmakingRouter.post('/report', requireAuth, async (req, res) => {
         priority
       }
     });
+    notifyAdminReport(item.id, reported?.displayName || 'Korisnik', payload.reason).catch(() => {});
     return res.status(201).json({ success: true, item });
   } catch (_error) {
     return res.status(400).json({ success: false, error: 'Invalid payload' });
@@ -395,7 +398,7 @@ matchmakingRouter.post('/contacts/:contactId/respond', requireAuth, async (req, 
       notifyContactAccepted(requester.id, accepter.displayName).catch(() => {});
     }
 
-    return res.json({ success: true, item });
+    return res.json({ success: true, item, pairId: item.pair?.id || null });
   } catch (_error) {
     return res.status(400).json({ success: false, error: 'Invalid payload' });
   }
@@ -646,6 +649,71 @@ matchmakingRouter.get('/admin/fairness-audit', requireAuth, requireAdmin, async 
   });
 });
 
+matchmakingRouter.get('/profiles/:profileId', requireAuth, async (req, res) => {
+  const profile = await prisma.userProfile.findUnique({ where: { id: req.params.profileId } });
+  if (!profile) return res.status(404).json({ success: false, error: 'Profile not found' });
+
+  const blockedIds = await getBlockedIdSet(req.auth.profileId);
+  if (blockedIds.has(profile.id)) {
+    return res.status(403).json({ success: false, error: 'Profile unavailable' });
+  }
+
+  return res.json({
+    success: true,
+    profile: toPublicProfile(profile, { completeness: calculateProfileCompleteness(profile) })
+  });
+});
+
+matchmakingRouter.get('/inbox-summary', requireAuth, async (req, res) => {
+  const profileId = req.auth.profileId;
+  const pairs = await prisma.engagedPair.findMany({
+    where: { status: 'ACTIVE', OR: [{ userAId: profileId }, { userBId: profileId }] }
+  });
+
+  let unreadTotal = 0;
+  const items = [];
+  for (const pair of pairs) {
+    const readState = await prisma.pairReadState.findUnique({
+      where: { pairId_profileId: { pairId: pair.id, profileId } }
+    });
+    const since = readState?.lastReadAt || new Date(0);
+    const unread = await prisma.pairMessage.count({
+      where: {
+        pairId: pair.id,
+        senderId: { not: profileId },
+        createdAt: { gt: since }
+      }
+    });
+    unreadTotal += unread;
+    const partnerId = pair.userAId === profileId ? pair.userBId : pair.userAId;
+    const partner = await prisma.userProfile.findUnique({
+      where: { id: partnerId },
+      select: { id: true, displayName: true }
+    });
+    items.push({
+      pairId: pair.id,
+      partnerId: partner?.id || null,
+      partnerName: partner?.displayName || 'Korisnik',
+      unread
+    });
+  }
+
+  return res.json({ success: true, unreadTotal, items });
+});
+
+matchmakingRouter.post('/pairs/:pairId/read', requireAuth, async (req, res) => {
+  const pair = await assertPairMember(req.params.pairId, req.auth.profileId);
+  if (!pair) return res.status(404).json({ success: false, error: 'Active pair not found' });
+
+  await prisma.pairReadState.upsert({
+    where: { pairId_profileId: { pairId: pair.id, profileId: req.auth.profileId } },
+    create: { pairId: pair.id, profileId: req.auth.profileId, lastReadAt: new Date() },
+    update: { lastReadAt: new Date() }
+  });
+
+  return res.json({ success: true });
+});
+
 matchmakingRouter.get('/pairs/:pairId/messages', requireAuth, async (req, res) => {
   const pair = await assertPairMember(req.params.pairId, req.auth.profileId);
   if (!pair) return res.status(404).json({ success: false, error: 'Active pair not found' });
@@ -665,6 +733,12 @@ matchmakingRouter.post('/pairs/:pairId/messages', requireAuth, async (req, res) 
     const pair = await assertPairMember(req.params.pairId, req.auth.profileId);
     if (!pair) return res.status(404).json({ success: false, error: 'Active pair not found' });
 
+    const recipientId = pair.userAId === req.auth.profileId ? pair.userBId : pair.userAId;
+    const blockedIds = await getBlockedIdSet(req.auth.profileId);
+    if (blockedIds.has(recipientId)) {
+      return res.status(403).json({ success: false, error: 'Razgovor nije dostupan.' });
+    }
+
     const { body } = schema.parse(req.body);
     const item = await prisma.pairMessage.create({
       data: {
@@ -674,7 +748,6 @@ matchmakingRouter.post('/pairs/:pairId/messages', requireAuth, async (req, res) 
       }
     });
 
-    const recipientId = pair.userAId === req.auth.profileId ? pair.userBId : pair.userAId;
     const sender = await prisma.userProfile.findUnique({ where: { id: req.auth.profileId } });
     if (sender) {
       notifyNewMessage(recipientId, sender.displayName).catch(() => {});
@@ -684,4 +757,38 @@ matchmakingRouter.post('/pairs/:pairId/messages', requireAuth, async (req, res) 
   } catch (_error) {
     return res.status(400).json({ success: false, error: 'Invalid payload' });
   }
+});
+
+matchmakingRouter.get('/pairs/:pairId/messages/stream', requireAuth, async (req, res) => {
+  const pair = await assertPairMember(req.params.pairId, req.auth.profileId);
+  if (!pair) return res.status(404).json({ success: false, error: 'Active pair not found' });
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders?.();
+
+  let since = req.query.since ? new Date(String(req.query.since)) : new Date();
+  if (Number.isNaN(since.getTime())) since = new Date();
+
+  const timer = setInterval(async () => {
+    try {
+      const messages = await prisma.pairMessage.findMany({
+        where: { pairId: pair.id, createdAt: { gt: since } },
+        orderBy: { createdAt: 'asc' },
+        take: 50
+      });
+      if (messages.length > 0) {
+        since = messages[messages.length - 1].createdAt;
+        res.write(`data: ${JSON.stringify({ messages })}\n\n`);
+      } else {
+        res.write(`data: ${JSON.stringify({ ping: true })}\n\n`);
+      }
+    } catch (_error) {
+      clearInterval(timer);
+      res.end();
+    }
+  }, 2500);
+
+  req.on('close', () => clearInterval(timer));
 });

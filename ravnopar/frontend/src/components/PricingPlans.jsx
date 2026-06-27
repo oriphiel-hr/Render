@@ -75,6 +75,11 @@ export default function PricingPlans() {
               >
                 {planButtonLabel(plan)}
               </button>
+              {disabled && purchasable && (
+                <p className="muted plan-hint">
+                  Premium checkout dostupan u <a href="/app/postavke">Postavkama</a> nakon prijave.
+                </p>
+              )}
               {disabled && !purchasable && (
                 <p className="muted plan-hint">
                   Aktiviramo kad proizvod i zajednica budu spremni — obavijest stiže unaprijed.

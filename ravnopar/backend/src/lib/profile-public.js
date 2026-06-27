@@ -19,6 +19,8 @@ export function toPublicProfile(profile, extras = {}) {
     availability: profile.availability,
     photos: normalizePhotos(profile.photos),
     planTier: profile.planTier || 'free',
+    photoVerified: profile.photoVerified === true,
+    onboardingDone: profile.onboardingDone === true,
     createdAt: profile.createdAt,
     ...extras
   };

@@ -265,3 +265,82 @@ export async function getMyOrders(token) {
   });
   return res.json();
 }
+
+export async function forgotPassword(email) {
+  const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  });
+  return res.json();
+}
+
+export async function resetPassword(payload) {
+  const res = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  return res.json();
+}
+
+export async function exportMyData(token) {
+  const res = await fetch(`${API_BASE_URL}/auth/export-data`, { headers: authHeaders(token) });
+  return res.json();
+}
+
+export async function getInboxSummary(token) {
+  const res = await fetch(`${API_BASE_URL}/matchmaking/inbox-summary`, { headers: authHeaders(token) });
+  return res.json();
+}
+
+export async function markPairRead(token, pairId) {
+  const res = await fetch(`${API_BASE_URL}/matchmaking/pairs/${pairId}/read`, {
+    method: 'POST',
+    headers: authHeaders(token)
+  });
+  return res.json();
+}
+
+export async function getPublicProfile(token, profileId) {
+  const res = await fetch(`${API_BASE_URL}/matchmaking/profiles/${profileId}`, {
+    headers: authHeaders(token)
+  });
+  return res.json();
+}
+
+export async function getAdminOverview(token) {
+  const res = await fetch(`${API_BASE_URL}/admin/overview`, { headers: authHeaders(token) });
+  return res.json();
+}
+
+export async function getAdminUsers(token, q = '') {
+  const query = q ? `?q=${encodeURIComponent(q)}` : '';
+  const res = await fetch(`${API_BASE_URL}/admin/users${query}`, { headers: authHeaders(token) });
+  return res.json();
+}
+
+export async function updateAdminUser(token, profileId, payload) {
+  const res = await fetch(`${API_BASE_URL}/admin/users/${profileId}`, {
+    method: 'PATCH',
+    headers: authHeaders(token),
+    body: JSON.stringify(payload)
+  });
+  return res.json();
+}
+
+export async function getAdminPayments(token) {
+  const res = await fetch(`${API_BASE_URL}/admin/payments`, { headers: authHeaders(token) });
+  return res.json();
+}
+
+export function messagesStreamUrl(token, pairId, since) {
+  const params = new URLSearchParams();
+  params.set('access_token', token);
+  if (since) params.set('since', since);
+  return `${API_BASE_URL}/matchmaking/pairs/${pairId}/messages/stream?${params}`;
+}
+
+export function authHeaderValue(token) {
+  return authHeaders(token).authorization;
+}

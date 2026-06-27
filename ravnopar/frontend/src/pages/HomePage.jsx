@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import PageMeta from '../components/PageMeta.jsx';
+import StructuredData from '../components/StructuredData.jsx';
 import { getPublicStats } from '../api/index.js';
 
 const STEPS = [
@@ -69,6 +70,7 @@ export default function HomePage() {
 
   return (
     <main className="page landing-page">
+      <StructuredData />
       <PageMeta
         title="Početna"
         description="Ravnopar — fer dating platforma za Hrvatsku. Bez paywalla za razgovor, s chatom nakon matcha i transparentnim pravilima."

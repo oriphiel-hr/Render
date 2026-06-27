@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   createPlanCheckout,
   deleteAccount,
+  exportMyData,
   getPlansStatus,
   getProfile,
   updateProfile
@@ -58,15 +59,33 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
     setBusy(true);
     try {
       const dataUrl = await resizeImageFile(file);
-      const nextPhotos = [dataUrl, ...(form.photos || []).slice(0, 2)];
+      const nextPhotos = [...(form.photos || []), dataUrl].slice(0, 3);
       setForm((prev) => ({ ...prev, photos: nextPhotos }));
-      setMessage('Fotografija spremna — klikni Spremi profil.', 'info');
+      setMessage('Fotografija dodana — klikni Spremi profil.', 'info');
     } catch (error) {
       setMessage(error.message || 'Upload fotografije nije uspio.', 'error');
     } finally {
       setBusy(false);
       event.target.value = '';
     }
+  }
+
+  async function exportData() {
+    setBusy(true);
+    const data = await exportMyData(token);
+    if (data?.success) {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ravnopar-export-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage('Izvoz podataka preuzet.', 'success');
+    } else {
+      setMessage(data?.error || 'Izvoz nije uspio.', 'error');
+    }
+    setBusy(false);
   }
 
   async function saveProfile(event) {
@@ -96,6 +115,7 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
           city: data.profile.city,
           availability: data.profile.availability,
           planTier: data.profile.planTier,
+          onboardingDone: data.profile.onboardingDone,
           role: profile?.role
         });
         setMessage('Profil je spremljen.', 'success');
@@ -158,10 +178,17 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
           <ProfileAvatar person={form} size="lg" />
           <div>
             <label className="field-label">
-              Profilna fotografija
-              <input type="file" accept="image/*" onChange={handlePhotoChange} disabled={busy} />
+              Fotografije ({(form.photos || []).length}/3)
+              <input type="file" accept="image/*" onChange={handlePhotoChange} disabled={busy || (form.photos || []).length >= 3} />
             </label>
-            <p className="muted">JPG/PNG, automatski smanjeno. Do 3 fotografije (uskoro).</p>
+            <p className="muted">JPG/PNG, automatski smanjeno. Maks. 3 fotografije.</p>
+            {(form.photos || []).length > 0 && (
+              <div className="photo-gallery">
+                {form.photos.map((photo, index) => (
+                  <img key={`${index}-${photo.slice(-12)}`} src={photo} alt="" className="photo-thumb" />
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -292,6 +319,14 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
           </div>
         </section>
       )}
+
+      <section className="card">
+        <h2 className="section-title">Privatnost (GDPR)</h2>
+        <p className="muted">Preuzmi kopiju svojih podataka u JSON formatu.</p>
+        <button type="button" className="button button-secondary" disabled={busy} onClick={exportData}>
+          Preuzmi moje podatke
+        </button>
+      </section>
 
       <section className="card danger-zone">
         <h2 className="section-title">Opasna zona</h2>

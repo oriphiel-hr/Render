@@ -66,6 +66,8 @@ model UserProfile {
   photos        Json                @default("[]")
   planTier      String              @default("free")
   notifyEmail   Boolean             @default(true)
+  photoVerified Boolean             @default(false)
+  onboardingDone Boolean            @default(false)
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
   account       UserAccount?
@@ -103,6 +105,7 @@ model UserAccount {
   passwordHash    String
   role            UserRole @default(USER)
   verifiedAt      DateTime?
+  suspendedAt     DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   profile         UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
@@ -167,6 +170,28 @@ model FairnessConfigChange {
   createdAt      DateTime @default(now())
 
   @@index([createdAt])
+}
+
+model PasswordResetCode {
+  id          String   @id @default(cuid())
+  email       String
+  code        String
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([email, createdAt])
+  @@index([email, code, expiresAt])
+}
+
+model PairReadState {
+  id         String   @id @default(cuid())
+  pairId     String
+  profileId  String
+  lastReadAt DateTime @default(now())
+
+  @@unique([pairId, profileId])
+  @@index([profileId])
 }
 
 model PairMessage {

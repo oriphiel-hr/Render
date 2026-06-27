@@ -2,29 +2,66 @@
 
 ## ravnopar-backend
 
-Postavi u **Environment** (Dashboard → ravnopar-backend → Environment):
-
 | Key | Vrijednost |
 |-----|------------|
 | `NODE_ENV` | `production` |
-| `DATABASE_URL` | Internal Database URL iz `ravnopar-db` → Connections |
+| `DATABASE_URL` | Internal Database URL iz `ravnopar-db` |
 | `JWT_SECRET` | jak random string (min. 32 znaka) |
 | `FRONTEND_BASE_URL` | `https://ravnopar-frontend.onrender.com` |
 | `DAILY_CONTACT_LIMIT` | `30` |
 | `FIRST_USER_IS_ADMIN` | `false` |
 
-Opcionalno: `STRIPE_SECRET_KEY`
+### Email (preporučeno u produkciji)
 
-**Build Command:**
+| Key | Opis |
+|-----|------|
+| `SMTP_HOST` | npr. `smtp.sendgrid.net` |
+| `SMTP_PORT` | `587` |
+| `SMTP_USER` | SMTP korisnik |
+| `SMTP_PASS` | SMTP lozinka |
+| `MAIL_FROM` | `Ravnopar <noreply@tvojadomena.hr>` |
+| `ADMIN_NOTIFY_EMAIL` | email za admin obavijesti o prijavama |
+
+Bez SMTP-a kodovi se logiraju u backend konzolu (Render → Logs).
+
+### Stripe Premium
+
+| Key | Opis |
+|-----|------|
+| `STRIPE_SECRET_KEY` | Stripe secret key |
+| `STRIPE_WEBHOOK_SECRET` | Webhook signing secret (`checkout.session.completed`) |
+| `PLANS_ENABLED` | `true` kad želiš uključiti Premium checkout |
+
+Webhook URL u Stripe Dashboardu:
 ```
-npm install && npm run build
+https://ravnopar-backend.onrender.com/api/payments/stripe/webhook
 ```
 
-**Start Command:** `npm run start`  
-**Health Check Path:** `/health`  
-**Root Directory:** `ravnopar/backend`
+### S3/R2 pohrana fotografija (opcionalno)
 
-Nakon prvog deploya (samo staging): Shell → `npm run seed`
+| Key | Opis |
+|-----|------|
+| `S3_BUCKET` | ime bucketa |
+| `S3_ENDPOINT` | npr. R2 endpoint |
+| `S3_ACCESS_KEY` | access key |
+| `S3_SECRET_KEY` | secret key |
+| `S3_PUBLIC_BASE_URL` | javni URL prefiks |
+| `S3_REGION` | `auto` za R2 |
+
+Bez S3-a fotografije ostaju u bazi (base64) — OK za start.
+
+### Anti-bot (opcionalno)
+
+| Key | Opis |
+|-----|------|
+| `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile secret |
+
+**Build:** `npm install && npm run build`  
+**Start:** `npm run start`  
+**Health:** `/health`  
+**Root:** `ravnopar/backend`
+
+Migracije se pokreću automatski u build koraku (`prisma migrate deploy`).
 
 ---
 
@@ -33,39 +70,43 @@ Nakon prvog deploya (samo staging): Shell → `npm run seed`
 | Key | Vrijednost |
 |-----|------------|
 | `VITE_API_BASE_URL` | `https://ravnopar-backend.onrender.com/api` |
+| `VITE_CONTACT_EMAIL` | `podrska@ravnopar.app` |
+| `VITE_PLANS_ENABLED` | `false` (ili `true` uz Stripe) |
 
-Opcionalno (dobrovoljne donacije):
+### Donacije
 
-| Key | Vrijednost |
-|-----|------------|
-| `VITE_DONATE_IBAN` | HRxx... (bankovna uplata) |
-| `VITE_DONATE_RECIPIENT` | Ime i prezime primatelja |
+| Key | Opis |
+|-----|------|
+| `VITE_DONATE_IBAN` | IBAN |
+| `VITE_DONATE_RECIPIENT` | Primatelj |
 | `VITE_DONATE_REFERENCE` | `Ravnopar donacija` |
-| `VITE_DONATE_REVOLUT_URL` | Revolut payment link ili `https://revolut.me/tvojeime` |
-| `VITE_DONATE_STRIPE_URL` | Samo uz poslovni Stripe (opcionalno) |
+| `VITE_DONATE_REVOLUT_URL` | Revolut link |
 
-**Backend** (Stripe u aplikaciji — samo uz obrt/d.o.o.):
+### Analitika i captcha (opcionalno)
 
-| Key | Vrijednost |
-|-----|------------|
-| `STRIPE_SECRET_KEY` | `sk_test_...` ili `sk_live_...` iz Stripe Dashboarda |
+| Key | Opis |
+|-----|------|
+| `VITE_ANALYTICS_URL` | Plausible/Umami script URL |
+| `VITE_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key |
 
-**Build Command:** `npm install && npm run build`  
-**Publish Directory:** `dist`  
-**Root Directory:** `ravnopar/frontend`
-
-**Redirects/Rewrites:**
-
-| Source | Destination | Action |
-|--------|-------------|--------|
-| `/*` | `/index.html` | Rewrite (200) |
+**Build:** `npm install && npm run build`  
+**Publish:** `dist`  
+**Root:** `ravnopar/frontend`  
+**Rewrite:** `/*` → `/index.html` (200)
 
 ---
 
-## Provjera
+## Provjera nakon deploya
 
 ```bash
 curl https://ravnopar-backend.onrender.com/health
+curl https://ravnopar-backend.onrender.com/api/matchmaking/public-stats
 ```
 
-Frontend: otvori https://ravnopar-frontend.onrender.com i probaj registraciju.
+Checklist:
+- [ ] Registracija + email kod (ili dev kod u logu)
+- [ ] Reset lozinke (`/auth?reset=1`)
+- [ ] Upload fotografije u Postavkama
+- [ ] Match + chat + nepročitane poruke
+- [ ] Admin `/admin` — korisnici, moderacija, plaćanja
+- [ ] Cookie banner + footer linkovi

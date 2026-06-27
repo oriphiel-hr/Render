@@ -14,9 +14,15 @@ export function issueAuthToken(account) {
   );
 }
 
-export function requireAuth(req, res, next) {
+export function getTokenFromRequest(req) {
   const authorization = req.header('authorization') || '';
-  const token = authorization.startsWith('Bearer ') ? authorization.slice(7) : null;
+  if (authorization.startsWith('Bearer ')) return authorization.slice(7);
+  if (req.query?.access_token) return String(req.query.access_token);
+  return null;
+}
+
+export function requireAuth(req, res, next) {
+  const token = getTokenFromRequest(req);
   if (!token) {
     return res.status(401).json({ success: false, error: 'Missing token' });
   }

@@ -53,6 +53,40 @@ export async function notifyContactAccepted(requesterProfileId, accepterName) {
   });
 }
 
+export async function sendPasswordResetEmail(email, code) {
+  return sendEmail({
+    to: email,
+    subject: 'Ravnopar — reset lozinke',
+    text: [
+      'Pozdrav!',
+      '',
+      `Kod za reset lozinke: ${code}`,
+      'Kod vrijedi 15 minuta.',
+      '',
+      `Reset: ${frontendBase()}/auth?reset=1`
+    ].join('\n')
+  });
+}
+
+export async function notifyAdminReport(reportId, reportedName, reason) {
+  const adminEmail = process.env.ADMIN_NOTIFY_EMAIL?.trim();
+  if (!adminEmail) return { skipped: true };
+
+  return sendEmail({
+    to: adminEmail,
+    subject: 'Ravnopar Admin — nova prijava',
+    text: [
+      'Nova prijava u moderaciji.',
+      '',
+      `ID: ${reportId}`,
+      `Prijavljen profil: ${reportedName}`,
+      `Razlog: ${reason}`,
+      '',
+      `Admin: ${frontendBase()}/admin`
+    ].join('\n')
+  });
+}
+
 export async function notifyNewMessage(recipientProfileId, senderName) {
   const recipient = await prisma.userProfile.findUnique({ where: { id: recipientProfileId } });
   if (!recipient?.email || recipient.notifyEmail === false) return { skipped: true };

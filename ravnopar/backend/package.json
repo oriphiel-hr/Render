@@ -10,7 +10,8 @@
     "prisma:generate": "node ./node_modules/prisma/build/index.js generate",
     "migrate:deploy": "node ./node_modules/prisma/build/index.js migrate deploy",
     "seed": "node prisma/seed.js",
-    "seed:reset": "cross-env ALLOW_SEED_RESET=true node prisma/reset-seed.js && node prisma/seed.js"
+    "seed:reset": "cross-env ALLOW_SEED_RESET=true node prisma/reset-seed.js && node prisma/seed.js",
+    "test": "node --test test/smoke.test.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

@@ -3,6 +3,7 @@ import {
   blockUser,
   closePair,
   getFeed,
+  getInboxSummary,
   getMyState,
   policyCheck,
   rateUser,
@@ -10,7 +11,7 @@ import {
   respondToContact,
   sendContactRequest
 } from '../api/index.js';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import DonatePromptBanner from '../components/DonatePromptBanner.jsx';
 import ProfileAvatar from '../components/ProfileAvatar.jsx';
 import { isDonateConfigured } from '../lib/donate-config.js';
@@ -37,7 +38,15 @@ function ProfileCard({ person, children }) {
       <div className="profile-card-head">
         <ProfileAvatar person={person} />
         <div>
-          <h3>{person.displayName}</h3>
+          <h3>
+            {person.id ? (
+              <Link className="profile-link" to={`/app/profile/${person.id}`}>
+                {person.displayName}
+              </Link>
+            ) : (
+              person.displayName
+            )}
+          </h3>
           <p className="muted profile-meta">
             {person.city}, {person.age} god.
           </p>
@@ -70,6 +79,7 @@ function ProfileCard({ person, children }) {
 }
 
 export default function UserDashboardPage({ token, profile }) {
+  const navigate = useNavigate();
   const [feed, setFeed] = useState([]);
   const [myState, setMyState] = useState(null);
   const [status, setStatus] = useState('');
@@ -77,6 +87,7 @@ export default function UserDashboardPage({ token, profile }) {
   const [policyWarnings, setPolicyWarnings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [donatePrompt, setDonatePrompt] = useState({ show: false, reason: null });
+  const [inbox, setInbox] = useState({ unreadTotal: 0, items: [] });
 
   function refreshDonatePrompt() {
     if (!isDonateConfigured()) {
@@ -94,8 +105,15 @@ export default function UserDashboardPage({ token, profile }) {
   async function reload() {
     setLoading(true);
     try {
-      const [feedData, stateData] = await Promise.all([getFeed(token), getMyState(token)]);
+      const [feedData, stateData, inboxData] = await Promise.all([
+        getFeed(token),
+        getMyState(token),
+        getInboxSummary(token)
+      ]);
       if (feedData?.success) setFeed(feedData.items || []);
+      if (inboxData?.success) {
+        setInbox({ unreadTotal: inboxData.unreadTotal || 0, items: inboxData.items || [] });
+      }
       if (stateData?.success) {
         setMyState(stateData);
         if (stateData.activePair) {
@@ -163,6 +181,9 @@ export default function UserDashboardPage({ token, profile }) {
     if (data?.success && action === 'ACCEPT') {
       markMatchDonateMoment();
       refreshDonatePrompt();
+      if (data.pairId) {
+        navigate(`/app/chat/${data.pairId}`);
+      }
     }
     setMessage(
       data?.success
@@ -205,6 +226,34 @@ export default function UserDashboardPage({ token, profile }) {
           reason={donatePrompt.reason}
           onDismiss={() => setDonatePrompt({ show: false, reason: null })}
         />
+      )}
+
+      {(myState?.completeness ?? 0) < 80 && (
+        <section className="card onboarding-hint">
+          <p><strong>Profil ti još nije kompletan ({myState?.completeness ?? 0}%).</strong></p>
+          <p className="muted">Dodaj fotografiju i bio — to povećava šanse za kontakt.</p>
+          <Link className="button button-secondary" to="/app/postavke">Dovrši profil</Link>
+        </section>
+      )}
+
+      {inbox.items.length > 0 && (
+        <section>
+          <h2 className="section-title">
+            Razgovori{inbox.unreadTotal > 0 ? ` (${inbox.unreadTotal} novo)` : ''}
+          </h2>
+          <div className="inbox-list">
+            {inbox.items.map((row) => (
+              <Link key={row.pairId} className="card inbox-item" to={`/app/chat/${row.pairId}`}>
+                <strong>{row.partnerName}</strong>
+                {row.unread > 0 ? (
+                  <span className="chip inbox-unread">{row.unread} novo</span>
+                ) : (
+                  <span className="muted">Otvori chat</span>
+                )}
+              </Link>
+            ))}
+          </div>
+        </section>
       )}
 
       {policyWarnings.length > 0 && (
