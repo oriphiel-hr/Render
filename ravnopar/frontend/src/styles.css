@@ -1496,11 +1496,28 @@ body:has(.mobile-dock) .cookie-banner {
   vertical-align: top;
 }
 
+.admin-table th:last-child,
+.admin-actions-cell {
+  min-width: 21rem;
+}
+
+.admin-actions-cell {
+  white-space: nowrap;
+}
+
 .admin-row-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
   gap: 0.25rem;
-  min-width: 14rem;
+}
+
+.admin-row-actions .button-sm {
+  min-height: 32px;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .admin-plan-select {

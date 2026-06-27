@@ -280,7 +280,8 @@ export default function AdminPage({ token, profile }) {
                     {user.suspended ? 'Suspendiran' : user.availability}
                     {user.photoVerified ? ' · ✓' : ''}
                   </td>
-                  <td className="admin-row-actions">
+                  <td className="admin-actions-cell">
+                    <div className="admin-row-actions">
                     <button type="button" className="button button-ghost button-sm" onClick={() => patchUser(user.id, { photoVerified: true })}>
                       Verificiraj
                     </button>
@@ -317,6 +318,7 @@ export default function AdminPage({ token, profile }) {
                     >
                       Obriši
                     </button>
+                    </div>
                   </td>
                 </tr>
               ))}
