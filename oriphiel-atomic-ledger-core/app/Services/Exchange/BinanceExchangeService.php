@@ -44,6 +44,7 @@ class BinanceExchangeService
 
         $base = [
             'enabled' => $this->isEnabled(),
+            'enabled_reason' => $this->enabledReason(),
             'provider' => 'binance',
             'mode' => $mode->value,
             'mode_label' => $mode->label(),
@@ -60,10 +61,10 @@ class BinanceExchangeService
 
         if (! $this->isEnabled()) {
             return array_merge($base, [
-                'connection' => 'local_only',
-                'message' => 'Ledger radi lokalno. Postavi EXCHANGE_ENABLED=true za Binance bridge.',
+                'connection' => 'awaiting_credentials',
+                'message' => 'Binance bridge is off — add BINANCE_API_KEY and BINANCE_API_SECRET in Render env.',
                 'data_source' => ApiSource::upstream('ledger_api', 'GET', url('/api/exchange/status'), [
-                    'note' => 'Status served by this application; Binance API not called.',
+                    'note' => 'API keys missing; Binance upstream not contacted.',
                 ]),
             ]);
         }
@@ -212,6 +213,19 @@ class BinanceExchangeService
         }
 
         return $this->mode()->isTestnet() ? 'testnet_live' : 'production_live';
+    }
+
+    private function enabledReason(): string
+    {
+        if ($this->auth->hasCredentials()) {
+            return 'api_keys_configured';
+        }
+
+        if ($this->isEnabled()) {
+            return 'exchange_enabled_flag';
+        }
+
+        return 'no_api_keys';
     }
 
     /**

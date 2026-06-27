@@ -13,6 +13,16 @@ class ExchangeConfig
 
     public static function isEnabled(): bool
     {
+        if (self::hasCredentials()) {
+            return true;
+        }
+
         return (bool) config('exchange.enabled');
+    }
+
+    public static function hasCredentials(): bool
+    {
+        return filled(config('exchange.binance.api_key'))
+            && filled(config('exchange.binance.api_secret'));
     }
 }

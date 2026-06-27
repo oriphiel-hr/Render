@@ -6,7 +6,7 @@
     <title>{{ $appName }} — Exchange Ledger Demo</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        :root { --bg:#070b14; --surface:#0f1624; --surface2:#151e30; --border:#1e2a42; --text:#e8edf7; --muted:#8b9bb8; --accent:#3b82f6; --success:#10b981; --warning:#f59e0b; --danger:#ef4444; --exchange:#f0b90b; }
+        :root { --bg:#070b14; --surface:#0f1624; --surface2:#151e30; --border:#1e2a42; --text:#f2f6fc; --muted:#a8b8d4; --accent:#5b9aff; --success:#34d399; --warning:#fbbf24; --danger:#f87171; --exchange:#f0b90b; }
         * { box-sizing:border-box; margin:0; padding:0; }
         body { font-family:'DM Sans',system-ui,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
         .wrap { max-width:1280px; margin:0 auto; padding:1.5rem 1rem 3rem; }
@@ -30,8 +30,9 @@
         th { color:var(--muted); font-weight:500; }
         .mono { font-family:'JetBrains Mono',monospace; }
         .tabs { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1rem; }
-        .tab { padding:.45rem .8rem; border-radius:8px; border:1px solid var(--border); background:var(--surface2); cursor:pointer; font-size:.82rem; }
-        .tab.active { border-color:var(--accent); color:var(--accent); }
+        .tab { padding:.5rem .9rem; border-radius:8px; border:1px solid var(--border); background:var(--surface2); cursor:pointer; font-size:.88rem; font-weight:500; color:var(--text); transition:color .15s,border-color .15s,background .15s; }
+        .tab:hover { color:#fff; border-color:#3d5070; background:#1a2438; }
+        .tab.active { border-color:var(--accent); color:#fff; background:rgba(91,154,255,.16); font-weight:600; }
         .alert { padding:.7rem .9rem; border-radius:8px; font-size:.85rem; margin-top:.6rem; display:none; }
         .alert.show { display:block; }
         .alert.ok { background:rgba(16,185,129,.12); border:1px solid var(--success); color:#6ee7b7; }
@@ -309,7 +310,7 @@ function renderDataSourceLine(dataSrc) {
         if (bridge.credentials_configured) {
             line += bridge.enabled
                 ? ` · live Binance (${esc(bridge.mode_label || bridge.mode)}): <a href="${esc(bridge.live_balances_endpoint)}" target="_blank" rel="noopener">/api/exchange/accounts</a>`
-                : ` · Binance keys set — enable <code>EXCHANGE_ENABLED</code> for live API`;
+                : ` · Binance keys set — bridge should be active after deploy`;
         } else {
             line += ` · Binance bridge: <a href="${esc(bridge.status_endpoint || '/api/exchange/status')}" target="_blank" rel="noopener">/api/exchange/status</a>`;
         }

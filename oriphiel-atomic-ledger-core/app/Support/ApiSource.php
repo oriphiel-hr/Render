@@ -27,9 +27,8 @@ class ApiSource
     public static function forLedger(string $table, string $apiPath, ?string $note = null): array
     {
         $mode = ExchangeConfig::mode();
+        $credentialsConfigured = ExchangeConfig::hasCredentials();
         $exchangeEnabled = ExchangeConfig::isEnabled();
-        $credentialsConfigured = filled(config('exchange.binance.api_key'))
-            && filled(config('exchange.binance.api_secret'));
 
         return [
             'provider' => 'local_ledger',
