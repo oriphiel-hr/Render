@@ -2,37 +2,91 @@ import { useEffect, useState } from 'react';
 import {
   blockUser,
   closePair,
-  createBankTransferOrder,
-  createStripeCheckout,
   getFeed,
   getMyState,
-  getMyOrders,
   policyCheck,
   rateUser,
   reportUser,
   respondToContact,
   sendContactRequest
 } from '../api/index.js';
+import {
+  initials,
+  labelAvailability,
+  labelIdentity,
+  labelIntent,
+  labelProfileType
+} from '../lib/labels.js';
 
-export default function UserDashboardPage({ token, profile, onLogout }) {
+function normalizeList(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function ProfileCard({ person, children }) {
+  const intents = normalizeList(person.intents);
+  return (
+    <article className="profile-card">
+      <div className="profile-card-head">
+        <div className="avatar" aria-hidden="true">{initials(person.displayName)}</div>
+        <div>
+          <h3>{person.displayName}</h3>
+          <p className="muted profile-meta">
+            {person.city}, {person.age} god.
+          </p>
+        </div>
+      </div>
+      <div className="profile-tags">
+        <span className="chip">{labelIdentity(person.identity)}</span>
+        <span className="chip">{labelProfileType(person.profileType)}</span>
+      </div>
+      {intents.length > 0 && (
+        <p className="profile-intents muted">
+          Traži: {intents.map((item) => labelIntent(item)).join(', ')}
+        </p>
+      )}
+      {typeof person.completeness === 'number' && (
+        <div className="progress-block">
+          <div className="progress-label">
+            <span>Popunjenost profila</span>
+            <strong>{person.completeness}%</strong>
+          </div>
+          <div className="progress-track">
+            <div className="progress-fill" style={{ width: `${person.completeness}%` }} />
+          </div>
+        </div>
+      )}
+      {children}
+    </article>
+  );
+}
+
+export default function UserDashboardPage({ token, profile }) {
   const [feed, setFeed] = useState([]);
   const [myState, setMyState] = useState(null);
   const [status, setStatus] = useState('');
+  const [statusKind, setStatusKind] = useState('info');
   const [policyWarnings, setPolicyWarnings] = useState([]);
-  const [orders, setOrders] = useState([]);
-  const [paymentAmount, setPaymentAmount] = useState(990);
-  const [paymentDescription, setPaymentDescription] = useState('Ravnopar premium');
+  const [loading, setLoading] = useState(true);
+
+  function setMessage(message, kind = 'info') {
+    setStatus(message);
+    setStatusKind(kind);
+  }
 
   async function reload() {
-    const [feedData, stateData, ordersData] = await Promise.all([getFeed(token), getMyState(token), getMyOrders(token)]);
-    if (feedData?.success) setFeed(feedData.items || []);
-    if (stateData?.success) setMyState(stateData);
-    if (ordersData?.success) setOrders(ordersData.items || []);
+    setLoading(true);
+    try {
+      const [feedData, stateData] = await Promise.all([getFeed(token), getMyState(token)]);
+      if (feedData?.success) setFeed(feedData.items || []);
+      if (stateData?.success) setMyState(stateData);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
     reload();
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     async function runPolicyCheck() {
@@ -52,166 +106,159 @@ export default function UserDashboardPage({ token, profile, onLogout }) {
   async function contact(id) {
     const data = await sendContactRequest(token, id);
     if (data?.success) {
-      setStatus(data.warning ? `Poslan zahtjev. Napomena: ${data.warning}` : 'Poslan zahtjev za kontakt.');
+      setMessage(
+        data.warning ? `Zahtjev poslan. Napomena: ${data.warning}` : 'Zahtjev za kontakt je poslan.',
+        'success'
+      );
     } else {
-      setStatus(data?.error || 'Nije uspjelo.');
+      setMessage(data?.error || 'Slanje zahtjeva nije uspjelo.', 'error');
     }
     await reload();
   }
 
   async function block(profileId) {
-    const data = await blockUser(token, profileId, 'User preference');
-    setStatus(data?.success ? 'Korisnik je blokiran.' : data?.error || 'Block nije uspio.');
+    const data = await blockUser(token, profileId, 'Korisnička preferenca');
+    setMessage(data?.success ? 'Korisnik je blokiran.' : data?.error || 'Blokiranje nije uspjelo.', data?.success ? 'success' : 'error');
     await reload();
   }
 
   async function report(profileId) {
-    const data = await reportUser(token, profileId, 'Neprimjereno ponasanje', 'Prijava iz user dashboarda.');
-    setStatus(data?.success ? 'Prijava je zaprimljena.' : data?.error || 'Report nije uspio.');
+    const data = await reportUser(token, profileId, 'Neprimjereno ponašanje', 'Prijava iz korisničkog sučelja.');
+    setMessage(data?.success ? 'Prijava je zaprimljena. Hvala.' : data?.error || 'Prijava nije uspjela.', data?.success ? 'success' : 'error');
   }
 
   async function rate(profileId, score) {
     const data = await rateUser(token, profileId, score, 'Ocjena nakon razgovora');
-    setStatus(data?.success ? 'Ocjena spremljena.' : data?.error || 'Ocjenjivanje nije uspjelo.');
-  }
-
-  async function payStripe() {
-    const data = await createStripeCheckout(token, paymentAmount, paymentDescription);
-    if (data?.success && data.checkoutUrl) {
-      window.open(data.checkoutUrl, '_blank', 'noopener,noreferrer');
-      setStatus('Stripe checkout otvoren u novom tabu.');
-      await reload();
-    } else {
-      setStatus(data?.error || 'Stripe checkout nije uspio.');
-    }
-  }
-
-  async function payBank() {
-    const data = await createBankTransferOrder(token, paymentAmount, paymentDescription);
-    if (data?.success) {
-      setStatus(`Kreirana uplata. Referenca: ${data.bankTransferReference}`);
-      await reload();
-    } else {
-      setStatus(data?.error || 'Bank transfer zahtjev nije uspio.');
-    }
+    setMessage(data?.success ? 'Ocjena je spremljena.' : data?.error || 'Ocjenjivanje nije uspjelo.', data?.success ? 'success' : 'error');
   }
 
   async function respond(contactId, action) {
     const data = await respondToContact(token, contactId, action);
-    setStatus(data?.success ? 'Odgovor spremljen.' : data?.error || 'Nije uspjelo.');
+    setMessage(
+      data?.success
+        ? action === 'ACCEPT'
+          ? 'Kontakt je prihvaćen.'
+          : 'Zahtjev je odbijen.'
+        : data?.error || 'Odgovor nije spremljen.',
+      data?.success ? 'success' : 'error'
+    );
     await reload();
   }
 
   async function closeCurrentPair() {
     if (!myState?.activePair) return;
-    const data = await closePair(token, myState.activePair.id, 'User closed contact');
-    setStatus(data?.success ? 'Kontakt zatvoren, vraceni ste u dostupne.' : data?.error || 'Nije uspjelo.');
+    const data = await closePair(token, myState.activePair.id, 'Korisnik je zatvorio kontakt');
+    setMessage(
+      data?.success ? 'Kontakt zatvoren. Ponovno si dostupan/na u feedu.' : data?.error || 'Zatvaranje nije uspjelo.',
+      data?.success ? 'success' : 'error'
+    );
     await reload();
   }
 
+  const incoming = myState?.pendingIncoming || [];
+
   return (
-    <main className="page">
-      <section className="hero">
-        <div className="row" style={{ justifyContent: 'space-between' }}>
-          <div>
-            <h1 style={{ marginBottom: 6 }}>Pozdrav, {profile?.displayName}</h1>
-            <p className="subtitle" style={{ marginTop: 0 }}>Ovo je tvoj fer feed bez skrivenog smanjenja dosega.</p>
-          </div>
-          <button type="button" onClick={onLogout}>Odjava</button>
-        </div>
+    <main className="page dashboard-page">
+      <section className="hero dashboard-hero">
+        <h1>Pozdrav, {profile?.displayName}</h1>
+        <p className="subtitle">Ovdje pronalaziš profile koji odgovaraju tvojim preferencijama.</p>
       </section>
 
-      {status && <p className={status.includes('Nije') || status.includes('nije') ? 'warning' : 'success-note'}>{status}</p>}
+      {loading && <p className="status-banner status-info">Učitavanje...</p>}
+      {status && <p className={`status-banner status-${statusKind}`}>{status}</p>}
+
       {policyWarnings.length > 0 && (
         <section className="card warning">
-          <strong>Soft upozorenja za preuske preferencije</strong>
-          <ul>
-            {policyWarnings.map((w) => (
-              <li key={w}>{w}</li>
+          <strong>Preuske preference</strong>
+          <ul className="compact-list">
+            {policyWarnings.map((warning) => (
+              <li key={warning}>{warning}</li>
             ))}
           </ul>
         </section>
       )}
 
-      <section className="card">
-        <h3 className="section-title">Moj status</h3>
-        <p>Dostupnost: <span className="chip">{myState?.profile?.availability || '-'}</span></p>
-        <p>Profil completeness: <span className="chip">{myState?.completeness ?? 0}%</span></p>
-        <div style={{ width: '100%', background: '#e5e7eb', borderRadius: 999, height: 10, marginBottom: 10 }}>
-          <div
-            style={{
-              width: `${myState?.completeness ?? 0}%`,
-              background: '#4f46e5',
-              height: '100%',
-              borderRadius: 999
-            }}
-          />
+      <section className="card status-card">
+        <h2 className="section-title">Tvoj status</h2>
+        <div className="status-grid">
+          <div>
+            <span className="muted">Dostupnost</span>
+            <p><span className="chip">{labelAvailability(myState?.profile?.availability)}</span></p>
+          </div>
+          <div>
+            <span className="muted">Popunjenost profila</span>
+            <p><strong>{myState?.completeness ?? 0}%</strong></p>
+          </div>
+          <div>
+            <span className="muted">Prosječna ocjena</span>
+            <p>
+              <strong>
+                {myState?.rating?.average ? myState.rating.average.toFixed(1) : '—'}
+              </strong>
+              {myState?.rating?.count ? ` (${myState.rating.count})` : ''}
+            </p>
+          </div>
         </div>
-        <p>Prosjecna ocjena: {myState?.rating?.average ? myState.rating.average.toFixed(2) : '-'} ({myState?.rating?.count || 0})</p>
         {myState?.activePair ? (
-          <>
-            <p>Aktivni kontakt: <code>{myState.activePair.id}</code></p>
-            <button type="button" onClick={closeCurrentPair}>Zatvori trenutni kontakt</button>
-          </>
+          <div className="active-contact">
+            <p>Trenutno si u aktivnom razgovoru s <strong>{myState.activePair.partnerName}</strong>.</p>
+            <button type="button" className="button button-secondary" onClick={closeCurrentPair}>
+              Završi razgovor
+            </button>
+          </div>
         ) : (
-          <p>Nemate aktivan par.</p>
+          <p className="muted">Trenutno nemaš aktivan razgovor — vidljiv/a si u feedu drugima.</p>
         )}
       </section>
 
-      <section className="card">
-        <h3 className="section-title">Dolazni zahtjevi</h3>
-        <ul>
-          {(myState?.pendingIncoming || []).map((row) => (
-            <li key={row.id}>
-              Zahtjev: {row.requesterId}{' '}
-              <button type="button" onClick={() => respond(row.id, 'ACCEPT')}>Prihvati</button>{' '}
-              <button type="button" onClick={() => respond(row.id, 'DECLINE')}>Odbij</button>
-            </li>
-          ))}
-        </ul>
-        {(myState?.pendingIncoming || []).length === 0 && <p className="muted">Nema novih zahtjeva trenutno.</p>}
-      </section>
+      {incoming.length > 0 && (
+        <section>
+          <h2 className="section-title">Zahtjevi za kontakt</h2>
+          <div className="profile-grid">
+            {incoming.map((row) => (
+              <ProfileCard key={row.id} person={row.requester || { displayName: 'Korisnik', city: '—', age: '—' }}>
+                <div className="card-actions">
+                  <button type="button" className="button button-primary" onClick={() => respond(row.id, 'ACCEPT')}>
+                    Prihvati
+                  </button>
+                  <button type="button" className="button button-secondary" onClick={() => respond(row.id, 'DECLINE')}>
+                    Odbij
+                  </button>
+                </div>
+              </ProfileCard>
+            ))}
+          </div>
+        </section>
+      )}
 
-      <section className="card">
-        <h3 className="section-title">Feed dostupnih profila</h3>
-        <ul>
+      <section>
+        <h2 className="section-title">Dostupni profili</h2>
+        {feed.length === 0 && !loading && (
+          <div className="card empty-state">
+            <p>Trenutno nema kompatibilnih profila.</p>
+            <p className="muted">Vrati se uskoro — sustav ne skriva doseg, nego čeka nove korisnike i promjene preferencija.</p>
+          </div>
+        )}
+        <div className="profile-grid">
           {feed.map((item) => (
-            <li key={item.id}>
-              {item.displayName} ({item.city}, {item.age}) | completeness: {item.completeness || 0}%{' '}
-              <button type="button" onClick={() => contact(item.id)}>Posalji kontakt</button>
-              <button type="button" onClick={() => report(item.id)} style={{ marginLeft: 6 }}>Report</button>
-              <button type="button" onClick={() => block(item.id)} style={{ marginLeft: 6 }}>Block</button>
-              <button type="button" onClick={() => rate(item.id, 5)} style={{ marginLeft: 6 }}>Ocijeni 5</button>
-            </li>
+            <ProfileCard key={item.id} person={item}>
+              <div className="card-actions">
+                <button type="button" className="button button-primary" onClick={() => contact(item.id)}>
+                  Pošalji zahtjev
+                </button>
+                <button type="button" className="button button-ghost" onClick={() => rate(item.id, 5)}>
+                  Ocijeni
+                </button>
+                <button type="button" className="button button-ghost" onClick={() => report(item.id)}>
+                  Prijavi
+                </button>
+                <button type="button" className="button button-ghost" onClick={() => block(item.id)}>
+                  Blokiraj
+                </button>
+              </div>
+            </ProfileCard>
           ))}
-        </ul>
-        {feed.length === 0 && (
-          <p className="muted">
-            Trenutno nema kompatibilnih profila. Sustav ne skriva domet, nego ceka nove ulaske i promjene preferencija.
-          </p>
-        )}
-      </section>
-
-      <section className="card">
-        <h3 className="section-title">Placanje</h3>
-        <label>Iznos (centi)
-          <input type="number" value={paymentAmount} onChange={(e) => setPaymentAmount(Number(e.target.value))} />
-        </label>
-        <label>Opis
-          <input value={paymentDescription} onChange={(e) => setPaymentDescription(e.target.value)} />
-        </label>
-        <div className="row">
-          <button type="button" onClick={payStripe}>Plati karticom (Stripe)</button>
-          <button type="button" onClick={payBank}>Bank transfer</button>
         </div>
-        <ul className="compact-list">
-          {orders.slice(0, 5).map((order) => (
-            <li key={order.id}>
-              {order.provider} | {order.status} | {(order.amountCents / 100).toFixed(2)} {order.currency}
-              {order.bankTransferReference ? ` | ref: ${order.bankTransferReference}` : ''}
-            </li>
-          ))}
-        </ul>
       </section>
     </main>
   );

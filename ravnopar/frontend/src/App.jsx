@@ -1,9 +1,51 @@
 import { useState } from 'react';
-import { Link, Navigate, Route, Routes } from 'react-router-dom';
+import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import HomePage from './pages/HomePage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 import AuthPage from './pages/AuthPage.jsx';
 import UserDashboardPage from './pages/UserDashboardPage.jsx';
+
+function Topbar({ token, profile, onLogout }) {
+  const location = useLocation();
+
+  return (
+    <header className="topbar">
+      <nav className="topbar-inner">
+        <Link className="brand" to="/">
+          Ravnopar
+        </Link>
+        <div className="topbar-links">
+          {!token && (
+            <>
+              <Link className={location.pathname === '/' ? 'nav-link active' : 'nav-link'} to="/">
+                Početna
+              </Link>
+              <Link className={location.pathname === '/auth' ? 'nav-link active' : 'nav-link'} to="/auth">
+                Prijava
+              </Link>
+            </>
+          )}
+          {token && (
+            <>
+              <Link className={location.pathname === '/app' ? 'nav-link active' : 'nav-link'} to="/app">
+                Moj prostor
+              </Link>
+              <span className="nav-user">Pozdrav, {profile?.displayName}</span>
+              <button type="button" className="button button-ghost" onClick={onLogout}>
+                Odjava
+              </button>
+            </>
+          )}
+          {profile?.role === 'ADMIN' && (
+            <Link className={location.pathname === '/admin' ? 'nav-link active' : 'nav-link'} to="/admin">
+              Admin
+            </Link>
+          )}
+        </div>
+      </nav>
+    </header>
+  );
+}
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('ravnoparToken') || '');
@@ -28,22 +70,15 @@ export default function App() {
 
   return (
     <>
-      <header className="topbar">
-        <nav className="topbar-inner">
-          <Link className="nav-link" to="/">Landing</Link>
-          <Link className="nav-link" to="/auth">Prijava</Link>
-          <Link className="nav-link" to="/app">Korisnicki dio</Link>
-          {profile?.role === 'ADMIN' && <Link className="nav-link" to="/admin">Admin</Link>}
-        </nav>
-      </header>
+      <Topbar token={token} profile={profile} onLogout={onLogout} />
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/auth" element={<AuthPage onLogin={onLogin} />} />
+        <Route path="/auth" element={token ? <Navigate to="/app" replace /> : <AuthPage onLogin={onLogin} />} />
         <Route
           path="/app"
           element={
             token ? (
-              <UserDashboardPage token={token} profile={profile} onLogout={onLogout} />
+              <UserDashboardPage token={token} profile={profile} />
             ) : (
               <Navigate to="/auth" replace />
             )

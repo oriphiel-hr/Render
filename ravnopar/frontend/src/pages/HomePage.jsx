@@ -1,37 +1,90 @@
+import { Link } from 'react-router-dom';
+
+const STEPS = [
+  {
+    title: 'Registriraj se',
+    text: 'Napravi profil, odaberi koga tražiš i što želiš od platforme.'
+  },
+  {
+    title: 'Upoznaj ljude',
+    text: 'Pregledaj feed dostupnih profila bez skrivenog smanjenja dosega.'
+  },
+  {
+    title: 'Razgovaraj fer',
+    text: 'Kad se uspostavi obostrani kontakt, oboje ste fokusirani na razgovor.'
+  }
+];
+
+const VALUES = [
+  {
+    title: 'Bez paywalla za razgovor',
+    text: 'Osnovna komunikacija je dostupna svima — bez umjetnih barijera.'
+  },
+  {
+    title: 'Poštena vidljivost',
+    text: 'Aktivni parovi privremeno izlaze iz feeda kako bi ostali dobili priliku.'
+  },
+  {
+    title: 'Zaštita i kontrola',
+    text: 'Blokiranje, prijave i anti-spam limiti čuvaju kvalitetu zajednice.'
+  }
+];
+
 export default function HomePage() {
   return (
-    <main className="page">
-      <section className="hero">
-        <h1 style={{ marginBottom: 6 }}>Ravnopar</h1>
-        <p className="subtitle">
-          Fer dating platforma: bez skrivanja dosega, bez manipulacija, s jasnim pravilima i stvarnim prilikama.
+    <main className="page landing-page">
+      <section className="landing-hero">
+        <p className="eyebrow">Dating bez manipulacije dosega</p>
+        <h1>Ravnopar</h1>
+        <p className="landing-lead">
+          Fer platforma za upoznavanje: svatko ima priliku za razgovor, a pravila su jasna i transparentna.
         </p>
-        <div className="row">
-          <span className="chip">No reach throttling</span>
-          <span className="chip">Consent-first</span>
-          <span className="chip">Anti-spam limiter</span>
+        <div className="landing-actions">
+          <Link className="button button-primary button-lg" to="/auth">
+            Kreni
+          </Link>
+          <Link className="button button-secondary button-lg" to="/auth">
+            Već imam račun
+          </Link>
+        </div>
+        <div className="landing-chips">
+          <span className="chip">Bez skrivanja dosega</span>
+          <span className="chip">Suglasnost na prvom mjestu</span>
+          <span className="chip">Zaštita od spama</span>
         </div>
       </section>
 
-      <section className="grid-2">
-        <article className="card">
-          <h3 className="section-title">Kako platforma ostaje poštena</h3>
-          <ul className="compact-list">
-            <li>Bez umjetnog ogranicavanja dosega.</li>
-            <li>Engaged parovi su privremeno van glavnog feeda.</li>
-            <li>Korisnici bez kontakta dobivaju fairness boost kroz rangiranje.</li>
-            <li>Dostupnost ide AVAILABLE -&gt; FOCUSED_CONTACT -&gt; AVAILABLE.</li>
-          </ul>
-        </article>
-        <article className="card">
-          <h3 className="section-title">Zaštita korisnika</h3>
-          <ul className="compact-list">
-            <li>Obavezna punoljetnost (18+).</li>
-            <li>Report/block mehanizam i anti-spam limiter.</li>
-            <li>Soft upozorenja kod preuskih preferencija.</li>
-            <li>Javni community guidelines i admin fairness audit.</li>
-          </ul>
-        </article>
+      <section className="landing-section">
+        <h2 className="landing-heading">Kako funkcionira</h2>
+        <div className="steps-grid">
+          {STEPS.map((step, index) => (
+            <article key={step.title} className="card step-card">
+              <span className="step-number">{index + 1}</span>
+              <h3>{step.title}</h3>
+              <p className="muted">{step.text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="landing-section">
+        <h2 className="landing-heading">Zašto Ravnopar</h2>
+        <div className="grid-2">
+          {VALUES.map((item) => (
+            <article key={item.title} className="card">
+              <h3 className="section-title">{item.title}</h3>
+              <p className="muted">{item.text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="landing-cta card">
+        <h2>Spreman/na za fer upoznavanje?</h2>
+        <p className="muted">Registracija traje nekoliko minuta. Potrebno je imati 18+ godina.</p>
+        <Link className="button button-primary" to="/auth">
+          Kreni besplatno
+        </Link>
       </section>
     </main>
   );

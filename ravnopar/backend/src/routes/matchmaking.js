@@ -82,7 +82,7 @@ matchmakingRouter.get('/my-state', requireAuth, async (req, res) => {
   const profile = await prisma.userProfile.findUnique({ where: { id: req.auth.profileId } });
   if (!profile) return res.status(404).json({ success: false, error: 'Profile not found' });
 
-  const [activePair, pendingIncoming, avgRating] = await Promise.all([
+  const [activePair, pendingContacts, avgRating] = await Promise.all([
     prisma.engagedPair.findFirst({
       where: { status: 'ACTIVE', OR: [{ userAId: profile.id }, { userBId: profile.id }] }
     }),
@@ -98,12 +98,53 @@ matchmakingRouter.get('/my-state', requireAuth, async (req, res) => {
     })
   ]);
 
+  const requesterIds = pendingContacts.map((row) => row.requesterId);
+  const requesterProfiles = requesterIds.length
+    ? await prisma.userProfile.findMany({ where: { id: { in: requesterIds } } })
+    : [];
+  const requesterById = new Map(requesterProfiles.map((row) => [row.id, row]));
+
+  let activePairPayload = null;
+  if (activePair) {
+    const partnerId = activePair.userAId === profile.id ? activePair.userBId : activePair.userAId;
+    const partner = await prisma.userProfile.findUnique({
+      where: { id: partnerId },
+      select: { id: true, displayName: true, city: true, age: true }
+    });
+    activePairPayload = {
+      id: activePair.id,
+      partnerName: partner?.displayName || 'Korisnik'
+    };
+  }
+
   return res.json({
     success: true,
     profile,
     completeness: calculateProfileCompleteness(profile),
-    activePair,
-    pendingIncoming,
+    activePair: activePairPayload,
+    pendingIncoming: pendingContacts.map((row) => {
+      const requester = requesterById.get(row.requesterId);
+      return {
+        id: row.id,
+        createdAt: row.createdAt,
+        requester: requester
+          ? {
+              id: requester.id,
+              displayName: requester.displayName,
+              city: requester.city,
+              age: requester.age,
+              identity: requester.identity,
+              profileType: requester.profileType,
+              intents: requester.intents,
+              completeness: calculateProfileCompleteness(requester)
+            }
+          : {
+              displayName: 'Korisnik',
+              city: '—',
+              age: '—'
+            }
+      };
+    }),
     rating: {
       average: avgRating._avg.score || null,
       count: avgRating._count.score || 0
