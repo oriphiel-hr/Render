@@ -40,6 +40,28 @@ export function labelAvailability(value) {
   return AVAILABILITY_LABELS[value] || value;
 }
 
+export const REPORT_STATUS_LABELS = {
+  OPEN: 'Otvoreno',
+  IN_REVIEW: 'U pregledu',
+  RESOLVED: 'Riješeno',
+  DISMISSED: 'Odbijeno'
+};
+
+export function labelReportStatus(value) {
+  return REPORT_STATUS_LABELS[value] || value;
+}
+
+export function formatDateTime(value) {
+  if (!value) return '—';
+  return new Date(value).toLocaleString('hr-HR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
 export function initials(name = '') {
   return name
     .split(/\s+/)

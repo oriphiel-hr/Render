@@ -7,37 +7,74 @@ import UserDashboardPage from './pages/UserDashboardPage.jsx';
 
 function Topbar({ token, profile, onLogout }) {
   const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  function closeMenu() {
+    setMenuOpen(false);
+  }
+
+  function handleLogout() {
+    closeMenu();
+    onLogout();
+  }
 
   return (
     <header className="topbar">
       <nav className="topbar-inner">
-        <Link className="brand" to="/">
-          Ravnopar
-        </Link>
-        <div className="topbar-links">
+        <div className="topbar-main">
+          <Link className="brand" to="/" onClick={closeMenu}>
+            Ravnopar
+          </Link>
+          <button
+            type="button"
+            className="menu-toggle"
+            aria-expanded={menuOpen}
+            aria-controls="main-navigation"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            {menuOpen ? 'Zatvori' : 'Izbornik'}
+          </button>
+        </div>
+        <div id="main-navigation" className={`topbar-links ${menuOpen ? 'open' : ''}`}>
           {!token && (
             <>
-              <Link className={location.pathname === '/' ? 'nav-link active' : 'nav-link'} to="/">
+              <Link
+                className={location.pathname === '/' ? 'nav-link active' : 'nav-link'}
+                to="/"
+                onClick={closeMenu}
+              >
                 Početna
               </Link>
-              <Link className={location.pathname === '/auth' ? 'nav-link active' : 'nav-link'} to="/auth">
+              <Link
+                className={location.pathname === '/auth' ? 'nav-link active' : 'nav-link'}
+                to="/auth"
+                onClick={closeMenu}
+              >
                 Prijava
               </Link>
             </>
           )}
           {token && (
             <>
-              <Link className={location.pathname === '/app' ? 'nav-link active' : 'nav-link'} to="/app">
+              <Link
+                className={location.pathname === '/app' ? 'nav-link active' : 'nav-link'}
+                to="/app"
+                onClick={closeMenu}
+              >
                 Moj prostor
               </Link>
               <span className="nav-user">Pozdrav, {profile?.displayName}</span>
-              <button type="button" className="button button-ghost" onClick={onLogout}>
+              <button type="button" className="button button-ghost nav-logout" onClick={handleLogout}>
                 Odjava
               </button>
             </>
           )}
           {profile?.role === 'ADMIN' && (
-            <Link className={location.pathname === '/admin' ? 'nav-link active' : 'nav-link'} to="/admin">
+            <Link
+              className={location.pathname === '/admin' ? 'nav-link active' : 'nav-link'}
+              to="/admin"
+              onClick={closeMenu}
+            >
               Admin
             </Link>
           )}
@@ -96,6 +133,12 @@ export default function App() {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      {token && (
+        <nav className="mobile-dock" aria-label="Brza navigacija">
+          <Link className="dock-link" to="/app">Moj prostor</Link>
+          {profile?.role === 'ADMIN' && <Link className="dock-link" to="/admin">Admin</Link>}
+        </nav>
+      )}
     </>
   );
 }

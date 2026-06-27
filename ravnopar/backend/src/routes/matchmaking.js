@@ -469,7 +469,25 @@ matchmakingRouter.get('/admin/moderation-queue', requireAuth, requireAdmin, asyn
     orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
     take: 100
   });
-  return res.json({ success: true, items });
+
+  const profileIds = [...new Set(items.flatMap((item) => [item.reporterId, item.reportedId]))];
+  const profiles = profileIds.length
+    ? await prisma.userProfile.findMany({
+        where: { id: { in: profileIds } },
+        select: { id: true, displayName: true, city: true }
+      })
+    : [];
+  const profileById = new Map(profiles.map((row) => [row.id, row]));
+
+  return res.json({
+    success: true,
+    items: items.map((item) => ({
+      ...item,
+      reporterName: profileById.get(item.reporterId)?.displayName || 'Korisnik',
+      reportedName: profileById.get(item.reportedId)?.displayName || 'Korisnik',
+      reportedCity: profileById.get(item.reportedId)?.city || '—'
+    }))
+  });
 });
 
 matchmakingRouter.patch('/admin/reports/:reportId', requireAuth, requireAdmin, async (req, res) => {
