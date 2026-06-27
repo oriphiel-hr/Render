@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import DonateSection from '../components/DonateSection.jsx';
 
 const STEPS = [
   {
@@ -78,6 +79,8 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      <DonateSection />
 
       <section className="landing-cta card">
         <h2>Spreman/na za fer upoznavanje?</h2>

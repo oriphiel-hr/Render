@@ -34,6 +34,14 @@ Nakon prvog deploya (samo staging): Shell → `npm run seed`
 |-----|------------|
 | `VITE_API_BASE_URL` | `https://ravnopar-backend.onrender.com/api` |
 
+Opcionalno (dobrovoljne donacije na privatni račun):
+
+| Key | Vrijednost |
+|-----|------------|
+| `VITE_DONATE_IBAN` | HRxx... (tvoj IBAN) |
+| `VITE_DONATE_RECIPIENT` | Ime i prezime primatelja |
+| `VITE_DONATE_REFERENCE` | `Ravnopar donacija` (poziv na broj / opis uplate) |
+
 **Build Command:** `npm install && npm run build`  
 **Publish Directory:** `dist`  
 **Root Directory:** `ravnopar/frontend`
