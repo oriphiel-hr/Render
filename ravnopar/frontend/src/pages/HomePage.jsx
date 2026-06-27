@@ -1,5 +1,4 @@
 import { Link, useSearchParams } from 'react-router-dom';
-import DonateSection from '../components/DonateSection.jsx';
 
 const STEPS = [
   {
@@ -88,7 +87,18 @@ export default function HomePage() {
         </div>
       </section>
 
-      <DonateSection />
+      <section className="landing-section">
+        <h2 className="landing-heading">Model naplate</h2>
+        <article className="card pricing-teaser">
+          <p className="muted">
+            Danas je Ravnopar besplatan za razgovor. Premium paketi bit će opcionalni i uključeni tek kad
+            proizvod bude stabilan i zajednica aktivna — obavijest unaprijed, bez paywalla za kontakt.
+          </p>
+          <Link className="button button-secondary" to="/planovi">
+            Pogledaj planove unaprijed
+          </Link>
+        </article>
+      </section>
 
       <section className="landing-cta card">
         <h2>Spreman/na za fer upoznavanje?</h2>

@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import SiteFooter from './components/SiteFooter.jsx';
 import HomePage from './pages/HomePage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 import AuthPage from './pages/AuthPage.jsx';
+import DonatePage from './pages/DonatePage.jsx';
+import PlanoviPage from './pages/PlanoviPage.jsx';
 import UserDashboardPage from './pages/UserDashboardPage.jsx';
+import { recordMemberSinceIfNeeded } from './lib/donate-prompt.js';
 
 function Topbar({ token, profile, onLogout }) {
   const location = useLocation();
@@ -52,6 +56,13 @@ function Topbar({ token, profile, onLogout }) {
               >
                 Prijava
               </Link>
+              <Link
+                className={location.pathname === '/planovi' ? 'nav-link active' : 'nav-link'}
+                to="/planovi"
+                onClick={closeMenu}
+              >
+                Planovi
+              </Link>
             </>
           )}
           {token && (
@@ -96,6 +107,7 @@ export default function App() {
     setProfile(nextProfile);
     localStorage.setItem('ravnoparToken', nextToken);
     localStorage.setItem('ravnoparProfile', JSON.stringify(nextProfile));
+    recordMemberSinceIfNeeded();
   }
 
   function onLogout() {
@@ -110,6 +122,7 @@ export default function App() {
       <Topbar token={token} profile={profile} onLogout={onLogout} />
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/planovi" element={<PlanoviPage />} />
         <Route path="/auth" element={token ? <Navigate to="/app" replace /> : <AuthPage onLogin={onLogin} />} />
         <Route
           path="/app"
@@ -120,6 +133,10 @@ export default function App() {
               <Navigate to="/auth" replace />
             )
           }
+        />
+        <Route
+          path="/app/podrzi"
+          element={token ? <DonatePage /> : <Navigate to="/auth" replace />}
         />
         <Route
           path="/admin"
@@ -133,6 +150,7 @@ export default function App() {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      {token && <SiteFooter />}
       {token && (
         <nav className="mobile-dock" aria-label="Brza navigacija">
           <Link className="dock-link" to="/app">Moj prostor</Link>

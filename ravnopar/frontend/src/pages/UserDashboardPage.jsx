@@ -10,6 +10,13 @@ import {
   respondToContact,
   sendContactRequest
 } from '../api/index.js';
+import DonatePromptBanner from '../components/DonatePromptBanner.jsx';
+import { isDonateConfigured } from '../lib/donate-config.js';
+import {
+  getDonatePrompt,
+  markMatchDonateMoment,
+  recordMemberSinceIfNeeded
+} from '../lib/donate-prompt.js';
 import {
   initials,
   labelAvailability,
@@ -67,6 +74,15 @@ export default function UserDashboardPage({ token, profile }) {
   const [statusKind, setStatusKind] = useState('info');
   const [policyWarnings, setPolicyWarnings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [donatePrompt, setDonatePrompt] = useState({ show: false, reason: null });
+
+  function refreshDonatePrompt() {
+    if (!isDonateConfigured()) {
+      setDonatePrompt({ show: false, reason: null });
+      return;
+    }
+    setDonatePrompt(getDonatePrompt());
+  }
 
   function setMessage(message, kind = 'info') {
     setStatus(message);
@@ -78,13 +94,21 @@ export default function UserDashboardPage({ token, profile }) {
     try {
       const [feedData, stateData] = await Promise.all([getFeed(token), getMyState(token)]);
       if (feedData?.success) setFeed(feedData.items || []);
-      if (stateData?.success) setMyState(stateData);
+      if (stateData?.success) {
+        setMyState(stateData);
+        if (stateData.activePair) {
+          markMatchDonateMoment();
+        }
+      }
     } finally {
       setLoading(false);
+      refreshDonatePrompt();
     }
   }
 
   useEffect(() => {
+    recordMemberSinceIfNeeded();
+    refreshDonatePrompt();
     reload();
   }, [token]);
 
@@ -134,6 +158,10 @@ export default function UserDashboardPage({ token, profile }) {
 
   async function respond(contactId, action) {
     const data = await respondToContact(token, contactId, action);
+    if (data?.success && action === 'ACCEPT') {
+      markMatchDonateMoment();
+      refreshDonatePrompt();
+    }
     setMessage(
       data?.success
         ? action === 'ACCEPT'
@@ -166,6 +194,13 @@ export default function UserDashboardPage({ token, profile }) {
 
       {loading && <p className="status-banner status-info">Učitavanje...</p>}
       {status && <p className={`status-banner status-${statusKind}`}>{status}</p>}
+
+      {donatePrompt.show && (
+        <DonatePromptBanner
+          reason={donatePrompt.reason}
+          onDismiss={() => setDonatePrompt({ show: false, reason: null })}
+        />
+      )}
 
       {policyWarnings.length > 0 && (
         <section className="card warning">
