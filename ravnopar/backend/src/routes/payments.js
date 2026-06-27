@@ -136,6 +136,73 @@ paymentsRouter.post('/checkout/bank-transfer', requireAuth, async (req, res) => 
   }
 });
 
+const PLAN_CATALOG = {
+  plus: { amountCents: 499, label: 'Ravnopar Plus' },
+  supporter: { amountCents: 299, label: 'Ravnopar Supporter' }
+};
+
+paymentsRouter.get('/plans/status', (_req, res) => {
+  return res.json({
+    success: true,
+    plansEnabled: process.env.PLANS_ENABLED === 'true',
+    stripeEnabled: Boolean(stripe),
+    plans: Object.entries(PLAN_CATALOG).map(([id, plan]) => ({ id, ...plan }))
+  });
+});
+
+paymentsRouter.post('/checkout/plan', requireAuth, async (req, res) => {
+  const schema = z.object({ planId: z.enum(['plus', 'supporter']) });
+  try {
+    if (process.env.PLANS_ENABLED !== 'true') {
+      return res.status(503).json({ success: false, error: 'Premium paketi još nisu dostupni.' });
+    }
+    if (!stripe) {
+      return res.status(503).json({ success: false, error: 'Stripe not configured' });
+    }
+
+    const { planId } = schema.parse(req.body);
+    const plan = PLAN_CATALOG[planId];
+    const frontendBase = process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
+
+    const order = await prisma.paymentOrder.create({
+      data: {
+        userProfileId: req.auth.profileId,
+        provider: 'STRIPE',
+        status: 'PENDING',
+        amountCents: plan.amountCents,
+        description: plan.label
+      }
+    });
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: 'eur',
+            unit_amount: plan.amountCents,
+            product_data: { name: plan.label, description: 'Mjesečna pretplata (priprema — aktivacija ručno nakon uplate)' }
+          }
+        }
+      ],
+      success_url: `${frontendBase}/app/postavke?plan=success`,
+      cancel_url: `${frontendBase}/planovi?plan=cancel`,
+      metadata: { planId, profileId: req.auth.profileId, orderId: order.id }
+    });
+
+    await prisma.paymentOrder.update({
+      where: { id: order.id },
+      data: { stripeSessionId: session.id }
+    });
+
+    return res.json({ success: true, checkoutUrl: session.url, orderId: order.id });
+  } catch (_error) {
+    return res.status(400).json({ success: false, error: 'Invalid plan checkout request' });
+  }
+});
+
 paymentsRouter.get('/my-orders', requireAuth, async (req, res) => {
   const items = await prisma.paymentOrder.findMany({
     where: { userProfileId: req.auth.profileId },

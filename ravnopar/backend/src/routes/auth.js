@@ -2,7 +2,11 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
-import { issueAuthToken } from '../lib/auth.js';
+import { issueAuthToken, requireAuth } from '../lib/auth.js';
+import { normalizePhotos, toPublicProfile } from '../lib/profile-public.js';
+import { validatePhotosArray } from '../lib/photo-validation.js';
+import { calculateProfileCompleteness } from '../services/profile-service.js';
+import { sendVerificationEmail } from '../services/notification-service.js';
 
 export const authRouter = Router();
 
@@ -98,6 +102,8 @@ authRouter.post('/register', async (req, res) => {
       });
     });
 
+    await sendVerificationEmail(payload.email, code);
+
     return res.status(201).json({
       success: true,
       message: 'Account created. Verify your email code.',
@@ -183,10 +189,99 @@ authRouter.post('/login', async (req, res) => {
         displayName: profile.displayName,
         city: profile.city,
         availability: profile.availability,
+        planTier: profile.planTier || 'free',
         role: account.role
       }
     });
   } catch (_error) {
     return res.status(400).json({ success: false, error: 'Invalid payload' });
   }
+});
+
+const profileUpdateSchema = z.object({
+  displayName: z.string().min(2).max(80).optional(),
+  city: z.string().min(2).max(80).optional(),
+  bio: z.string().max(500).nullable().optional(),
+  identity: z.enum(['MALE', 'FEMALE', 'NON_BINARY', 'OTHER']).optional(),
+  profileType: z.enum(['INDIVIDUAL', 'COUPLE']).optional(),
+  seekingIdentities: z.array(z.enum(['MALE', 'FEMALE', 'NON_BINARY', 'OTHER'])).min(1).max(4).optional(),
+  seekingProfileTypes: z.array(z.enum(['INDIVIDUAL', 'COUPLE'])).min(1).max(2).optional(),
+  intents: z.array(z.enum(['CHAT', 'CASUAL', 'RELATIONSHIP', 'MARRIAGE', 'ADVENTURE'])).min(1).max(5).optional(),
+  availability: z.enum(['AVAILABLE', 'PAUSED']).optional(),
+  notifyEmail: z.boolean().optional(),
+  photos: z.array(z.string()).max(3).optional()
+});
+
+authRouter.get('/profile', requireAuth, async (req, res) => {
+  const profile = await prisma.userProfile.findUnique({ where: { id: req.auth.profileId } });
+  if (!profile) return res.status(404).json({ success: false, error: 'Profile not found' });
+  return res.json({
+    success: true,
+    profile: {
+      ...toPublicProfile(profile),
+      email: profile.email,
+      dateOfBirth: profile.dateOfBirth,
+      notifyEmail: profile.notifyEmail
+    },
+    completeness: calculateProfileCompleteness(profile)
+  });
+});
+
+authRouter.patch('/profile', requireAuth, async (req, res) => {
+  try {
+    const payload = profileUpdateSchema.parse(req.body);
+    const profile = await prisma.userProfile.findUnique({ where: { id: req.auth.profileId } });
+    if (!profile) return res.status(404).json({ success: false, error: 'Profile not found' });
+
+    if (payload.availability === 'PAUSED' && profile.availability === 'FOCUSED_CONTACT') {
+      return res.status(409).json({
+        success: false,
+        error: 'Ne možeš pauzirati profil dok si u aktivnom razgovoru. Prvo završi kontakt.'
+      });
+    }
+
+    if (payload.photos && !validatePhotosArray(payload.photos)) {
+      return res.status(400).json({ success: false, error: 'Neispravna fotografija.' });
+    }
+
+    const data = { ...payload };
+    if (payload.photos) data.photos = normalizePhotos(payload.photos);
+
+    const updated = await prisma.userProfile.update({
+      where: { id: profile.id },
+      data
+    });
+
+    return res.json({
+      success: true,
+      profile: {
+        ...toPublicProfile(updated),
+        email: updated.email,
+        dateOfBirth: updated.dateOfBirth,
+        notifyEmail: updated.notifyEmail
+      },
+      completeness: calculateProfileCompleteness(updated)
+    });
+  } catch (_error) {
+    return res.status(400).json({ success: false, error: 'Invalid payload' });
+  }
+});
+
+authRouter.delete('/account', requireAuth, async (req, res) => {
+  const profileId = req.auth.profileId;
+  const profile = await prisma.userProfile.findUnique({ where: { id: profileId } });
+  if (!profile) return res.status(404).json({ success: false, error: 'Profile not found' });
+
+  await prisma.$transaction(async (tx) => {
+    await tx.engagedPair.updateMany({
+      where: {
+        status: 'ACTIVE',
+        OR: [{ userAId: profileId }, { userBId: profileId }]
+      },
+      data: { status: 'CLOSED', endedAt: new Date(), closeReason: 'Account deleted' }
+    });
+    await tx.userProfile.delete({ where: { id: profileId } });
+  });
+
+  return res.json({ success: true });
 });

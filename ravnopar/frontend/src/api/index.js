@@ -27,6 +27,63 @@ export async function login(payload) {
   return res.json();
 }
 
+export async function getProfile(token) {
+  const res = await fetch(`${API_BASE_URL}/auth/profile`, { headers: authHeaders(token) });
+  return res.json();
+}
+
+export async function updateProfile(token, payload) {
+  const res = await fetch(`${API_BASE_URL}/auth/profile`, {
+    method: 'PATCH',
+    headers: authHeaders(token),
+    body: JSON.stringify(payload)
+  });
+  return res.json();
+}
+
+export async function deleteAccount(token) {
+  const res = await fetch(`${API_BASE_URL}/auth/account`, {
+    method: 'DELETE',
+    headers: authHeaders(token)
+  });
+  return res.json();
+}
+
+export async function getPublicStats() {
+  const res = await fetch(`${API_BASE_URL}/matchmaking/public-stats`);
+  return res.json();
+}
+
+export async function getMessages(token, pairId) {
+  const res = await fetch(`${API_BASE_URL}/matchmaking/pairs/${pairId}/messages`, {
+    headers: authHeaders(token)
+  });
+  return res.json();
+}
+
+export async function sendMessage(token, pairId, body) {
+  const res = await fetch(`${API_BASE_URL}/matchmaking/pairs/${pairId}/messages`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ body })
+  });
+  return res.json();
+}
+
+export async function getPlansStatus() {
+  const res = await fetch(`${API_BASE_URL}/payments/plans/status`);
+  return res.json();
+}
+
+export async function createPlanCheckout(token, planId) {
+  const res = await fetch(`${API_BASE_URL}/payments/checkout/plan`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ planId })
+  });
+  return res.json();
+}
+
 function authHeaders(token) {
   return {
     'Content-Type': 'application/json',

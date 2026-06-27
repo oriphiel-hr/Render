@@ -1,9 +1,12 @@
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import PageMeta from '../components/PageMeta.jsx';
+import { getPublicStats } from '../api/index.js';
 
 const STEPS = [
   {
     title: 'Registriraj se',
-    text: 'Napravi profil, odaberi koga tražiš i što želiš od platforme.'
+    text: 'Napravi profil, dodaj fotografiju i bio, odaberi koga tražiš.'
   },
   {
     title: 'Upoznaj ljude',
@@ -11,7 +14,7 @@ const STEPS = [
   },
   {
     title: 'Razgovaraj fer',
-    text: 'Kad se uspostavi obostrani kontakt, oboje ste fokusirani na razgovor.'
+    text: 'Kad se uspostavi obostrani kontakt, otvori chat i razgovaraj u aplikaciji.'
   }
 ];
 
@@ -30,12 +33,46 @@ const VALUES = [
   }
 ];
 
+const SAFETY_ITEMS = [
+  {
+    icon: '🛡️',
+    title: 'Blokiraj i prijavi',
+    text: 'Neugodan profil možeš blokirati ili prijaviti admin timu.'
+  },
+  {
+    icon: '✉️',
+    title: 'Verificiran email',
+    text: 'Registracija zahtijeva potvrdu emaila — manje lažnih profila.'
+  },
+  {
+    icon: '🤝',
+    title: 'Pravila zajednice',
+    text: 'Jasna pravila ponašanja i poštivanje granica drugih korisnika.'
+  },
+  {
+    icon: '⏸️',
+    title: 'Kontrola vidljivosti',
+    text: 'Pauziraj profil ili obriši račun kad god želiš — u Postavkama.'
+  }
+];
+
 export default function HomePage() {
   const [searchParams] = useSearchParams();
   const donateThanks = searchParams.get('donate') === 'thanks';
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    getPublicStats().then((data) => {
+      if (data?.success) setStats(data.stats);
+    });
+  }, []);
 
   return (
     <main className="page landing-page">
+      <PageMeta
+        title="Početna"
+        description="Ravnopar — fer dating platforma za Hrvatsku. Bez paywalla za razgovor, s chatom nakon matcha i transparentnim pravilima."
+      />
       {donateThanks && (
         <p className="status-banner status-success">
           Hvala na donaciji! Tvoja podrška pomaže održavanju Ravnopara.
@@ -45,8 +82,17 @@ export default function HomePage() {
         <p className="eyebrow">Dating bez manipulacije dosega</p>
         <h1>Ravnopar</h1>
         <p className="landing-lead">
-          Fer platforma za upoznavanje: svatko ima priliku za razgovor, a pravila su jasna i transparentna.
+          Fer platforma za upoznavanje: profili s fotografijom, chat nakon matcha i pravila koja su jasna unaprijed.
         </p>
+        {stats && (
+          <div className="social-proof">
+            <span className="chip">{stats.memberCount}+ članova</span>
+            <span className="chip">{stats.contactsLast30Days} kontakata (30 dana)</span>
+            {stats.topCities?.[0] && (
+              <span className="chip">Aktivno: {stats.topCities[0].city}</span>
+            )}
+          </div>
+        )}
         <div className="landing-actions">
           <Link className="button button-primary button-lg" to="/auth">
             Kreni
@@ -57,7 +103,7 @@ export default function HomePage() {
         </div>
         <div className="landing-chips">
           <span className="chip">Bez skrivanja dosega</span>
-          <span className="chip">Suglasnost na prvom mjestu</span>
+          <span className="chip">Chat nakon matcha</span>
           <span className="chip">Zaštita od spama</span>
         </div>
       </section>
@@ -73,6 +119,22 @@ export default function HomePage() {
             </article>
           ))}
         </div>
+      </section>
+
+      <section className="landing-section">
+        <h2 className="landing-heading">Sigurnost i zajednica</h2>
+        <div className="safety-grid">
+          {SAFETY_ITEMS.map((item) => (
+            <article key={item.title} className="card safety-card">
+              <span className="safety-icon" aria-hidden="true">{item.icon}</span>
+              <h3 className="section-title">{item.title}</h3>
+              <p className="muted">{item.text}</p>
+            </article>
+          ))}
+        </div>
+        <p className="landing-section-link">
+          <Link to="/pravila">Pročitaj pravila zajednice →</Link>
+        </p>
       </section>
 
       <section className="landing-section">
@@ -101,6 +163,18 @@ export default function HomePage() {
           </div>
           <Link className="button button-secondary" to="/planovi">
             Pročitaj model naplate
+          </Link>
+        </article>
+      </section>
+
+      <section className="landing-section">
+        <h2 className="landing-heading">Pitanja?</h2>
+        <article className="card">
+          <p className="muted">
+            Kako radi match, chat, pauza profila i email obavijesti — sve na jednom mjestu.
+          </p>
+          <Link className="button button-secondary" to="/pomoc">
+            Pomoć i FAQ
           </Link>
         </article>
       </section>

@@ -63,6 +63,9 @@ model UserProfile {
   seekingProfileTypes Json
   intents       Json
   availability  ProfileAvailability @default(AVAILABLE)
+  photos        Json                @default("[]")
+  planTier      String              @default("free")
+  notifyEmail   Boolean             @default(true)
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
   account       UserAccount?
@@ -164,6 +167,16 @@ model FairnessConfigChange {
   createdAt      DateTime @default(now())
 
   @@index([createdAt])
+}
+
+model PairMessage {
+  id        String   @id @default(cuid())
+  pairId    String
+  senderId  String
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([pairId, createdAt])
 }
 
 model PaymentOrder {

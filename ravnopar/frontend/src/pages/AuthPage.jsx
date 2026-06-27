@@ -18,6 +18,7 @@ export default function AuthPage({ onLogin }) {
     displayName: '',
     dateOfBirth: '',
     city: '',
+    bio: '',
     identity: 'OTHER',
     profileType: 'INDIVIDUAL',
     seekingIdentities: ['FEMALE'],
@@ -185,6 +186,17 @@ export default function AuthPage({ onLogin }) {
               </select>
             </label>
           </div>
+
+          <label>
+            O meni (opcionalno)
+            <textarea
+              rows={3}
+              maxLength={500}
+              value={registerForm.bio}
+              onChange={(e) => setRegisterForm((p) => ({ ...p, bio: e.target.value }))}
+              placeholder="Kratko se predstavi..."
+            />
+          </label>
 
           <fieldset className="choice-group">
             <legend>Koga tražiš</legend>

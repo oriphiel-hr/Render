@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
+import PageMeta from '../components/PageMeta.jsx';
 import PricingHeartSection from '../components/PricingHeartSection.jsx';
 import SupportContent from '../components/SupportContent.jsx';
 
 export default function PlanoviPage() {
   return (
     <main className="page planovi-page">
+      <PageMeta title="Planovi" description="Transparentan model naplate Ravnopara — besplatan chat, premium paketi unaprijed pripremljeni." />
       <section className="landing-hero planovi-hero-warm">
         <p className="eyebrow">Fer i otvoreno</p>
         <h1>Planovi s ljudskim licem</h1>

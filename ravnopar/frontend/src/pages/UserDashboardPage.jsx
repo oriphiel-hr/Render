@@ -10,7 +10,9 @@ import {
   respondToContact,
   sendContactRequest
 } from '../api/index.js';
+import { Link } from 'react-router-dom';
 import DonatePromptBanner from '../components/DonatePromptBanner.jsx';
+import ProfileAvatar from '../components/ProfileAvatar.jsx';
 import { isDonateConfigured } from '../lib/donate-config.js';
 import {
   getDonatePrompt,
@@ -18,7 +20,6 @@ import {
   recordMemberSinceIfNeeded
 } from '../lib/donate-prompt.js';
 import {
-  initials,
   labelAvailability,
   labelIdentity,
   labelIntent,
@@ -34,7 +35,7 @@ function ProfileCard({ person, children }) {
   return (
     <article className="profile-card">
       <div className="profile-card-head">
-        <div className="avatar" aria-hidden="true">{initials(person.displayName)}</div>
+        <ProfileAvatar person={person} />
         <div>
           <h3>{person.displayName}</h3>
           <p className="muted profile-meta">
@@ -42,6 +43,7 @@ function ProfileCard({ person, children }) {
           </p>
         </div>
       </div>
+      {person.bio && <p className="profile-bio">{person.bio}</p>}
       <div className="profile-tags">
         <span className="chip">{labelIdentity(person.identity)}</span>
         <span className="chip">{labelProfileType(person.profileType)}</span>
@@ -190,6 +192,9 @@ export default function UserDashboardPage({ token, profile }) {
       <section className="hero dashboard-hero">
         <h1>Pozdrav, {profile?.displayName}</h1>
         <p className="subtitle">Ovdje pronalaziš profile koji odgovaraju tvojim preferencijama.</p>
+        <p className="auth-footer dashboard-links">
+          <Link to="/app/postavke">Postavke profila</Link>
+        </p>
       </section>
 
       {loading && <p className="status-banner status-info">Učitavanje...</p>}
@@ -237,9 +242,14 @@ export default function UserDashboardPage({ token, profile }) {
         {myState?.activePair ? (
           <div className="active-contact">
             <p>Trenutno si u aktivnom razgovoru s <strong>{myState.activePair.partnerName}</strong>.</p>
-            <button type="button" className="button button-secondary" onClick={closeCurrentPair}>
-              Završi razgovor
-            </button>
+            <div className="card-actions">
+              <Link className="button button-primary" to={`/app/chat/${myState.activePair.id}`}>
+                Otvori chat
+              </Link>
+              <button type="button" className="button button-secondary" onClick={closeCurrentPair}>
+                Završi razgovor
+              </button>
+            </div>
           </div>
         ) : (
           <p className="muted">Trenutno nemaš aktivan razgovor — vidljiv/a si u feedu drugima.</p>

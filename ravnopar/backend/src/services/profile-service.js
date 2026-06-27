@@ -5,11 +5,17 @@ function isFilled(value) {
   return true;
 }
 
+function hasPhoto(profile) {
+  if (!Array.isArray(profile.photos)) return false;
+  return profile.photos.some((item) => typeof item === 'string' && item.trim().length > 0);
+}
+
 export function calculateProfileCompleteness(profile) {
   const checks = [
     isFilled(profile.displayName),
     isFilled(profile.city),
     isFilled(profile.bio),
+    hasPhoto(profile),
     isFilled(profile.identity),
     isFilled(profile.profileType),
     isFilled(profile.seekingIdentities),

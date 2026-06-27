@@ -2,9 +2,15 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { requireAdmin, requireAuth } from '../lib/auth.js';
 import { prisma } from '../lib/prisma.js';
+import { toPublicProfile } from '../lib/profile-public.js';
 import { getDemoFeedState } from '../services/fairness-service.js';
 import { evaluateContactLimiter, evaluatePreferencePolicy } from '../services/policy-service.js';
 import { calculateProfileCompleteness } from '../services/profile-service.js';
+import {
+  notifyContactAccepted,
+  notifyContactRequest,
+  notifyNewMessage
+} from '../services/notification-service.js';
 
 export const matchmakingRouter = Router();
 let dailyContactLimit = Number(process.env.DAILY_CONTACT_LIMIT || 30);
@@ -29,6 +35,39 @@ async function getBlockedIdSet(profileId) {
     ...blockedMe.map((b) => b.blockerId)
   ]);
 }
+
+async function getActivePairForProfile(profileId) {
+  return prisma.engagedPair.findFirst({
+    where: { status: 'ACTIVE', OR: [{ userAId: profileId }, { userBId: profileId }] }
+  });
+}
+
+async function assertPairMember(pairId, profileId) {
+  const pair = await prisma.engagedPair.findUnique({ where: { id: pairId } });
+  if (!pair || pair.status !== 'ACTIVE') return null;
+  if (pair.userAId !== profileId && pair.userBId !== profileId) return null;
+  return pair;
+}
+
+matchmakingRouter.get('/public-stats', async (_req, res) => {
+  const since30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const [memberCount, activeCount, contactCount, cityGroups] = await Promise.all([
+    prisma.userProfile.count(),
+    prisma.userProfile.count({ where: { availability: { not: 'PAUSED' } } }),
+    prisma.matchContact.count({ where: { status: 'ACCEPTED', createdAt: { gt: since30d } } }),
+    prisma.userProfile.groupBy({ by: ['city'], _count: { city: true }, orderBy: { _count: { city: 'desc' } }, take: 5 })
+  ]);
+
+  return res.json({
+    success: true,
+    stats: {
+      memberCount,
+      activeCount,
+      contactsLast30Days: contactCount,
+      topCities: cityGroups.map((row) => ({ city: row.city, count: row._count.city }))
+    }
+  });
+});
 
 matchmakingRouter.get('/fairness-state', async (_req, res) => {
   const state = await getDemoFeedState();
@@ -71,10 +110,9 @@ matchmakingRouter.get('/feed', requireAuth, async (req, res) => {
 
   return res.json({
     success: true,
-    items: compatible.map((candidate) => ({
-      ...candidate,
-      completeness: calculateProfileCompleteness(candidate)
-    }))
+    items: compatible.map((candidate) =>
+      toPublicProfile(candidate, { completeness: calculateProfileCompleteness(candidate) })
+    )
   });
 });
 
@@ -113,13 +151,19 @@ matchmakingRouter.get('/my-state', requireAuth, async (req, res) => {
     });
     activePairPayload = {
       id: activePair.id,
+      partnerId: partner?.id || null,
       partnerName: partner?.displayName || 'Korisnik'
     };
   }
 
   return res.json({
     success: true,
-    profile,
+    profile: {
+      ...toPublicProfile(profile),
+      email: profile.email,
+      dateOfBirth: profile.dateOfBirth,
+      notifyEmail: profile.notifyEmail
+    },
     completeness: calculateProfileCompleteness(profile),
     activePair: activePairPayload,
     pendingIncoming: pendingContacts.map((row) => {
@@ -128,16 +172,7 @@ matchmakingRouter.get('/my-state', requireAuth, async (req, res) => {
         id: row.id,
         createdAt: row.createdAt,
         requester: requester
-          ? {
-              id: requester.id,
-              displayName: requester.displayName,
-              city: requester.city,
-              age: requester.age,
-              identity: requester.identity,
-              profileType: requester.profileType,
-              intents: requester.intents,
-              completeness: calculateProfileCompleteness(requester)
-            }
+          ? toPublicProfile(requester, { completeness: calculateProfileCompleteness(requester) })
           : {
               displayName: 'Korisnik',
               city: '—',
@@ -194,6 +229,7 @@ matchmakingRouter.post('/contact-request', requireAuth, async (req, res) => {
     const contact = await prisma.matchContact.create({
       data: { requesterId: me.id, targetId: target.id }
     });
+    notifyContactRequest(target.id, me.displayName).catch(() => {});
     return res.status(201).json({ success: true, item: contact, warning: limiter.warning || null });
   } catch (_error) {
     return res.status(400).json({ success: false, error: 'Invalid payload' });
@@ -350,6 +386,15 @@ matchmakingRouter.post('/contacts/:contactId/respond', requireAuth, async (req, 
       });
       return { accepted, pair };
     });
+
+    const [requester, accepter] = await Promise.all([
+      prisma.userProfile.findUnique({ where: { id: contact.requesterId } }),
+      prisma.userProfile.findUnique({ where: { id: contact.targetId } })
+    ]);
+    if (requester && accepter) {
+      notifyContactAccepted(requester.id, accepter.displayName).catch(() => {});
+    }
+
     return res.json({ success: true, item });
   } catch (_error) {
     return res.status(400).json({ success: false, error: 'Invalid payload' });
@@ -599,4 +644,44 @@ matchmakingRouter.get('/admin/fairness-audit', requireAuth, requireAdmin, async 
         : 'Omjer pending/accepted je u zdravom rasponu.'
     ]
   });
+});
+
+matchmakingRouter.get('/pairs/:pairId/messages', requireAuth, async (req, res) => {
+  const pair = await assertPairMember(req.params.pairId, req.auth.profileId);
+  if (!pair) return res.status(404).json({ success: false, error: 'Active pair not found' });
+
+  const items = await prisma.pairMessage.findMany({
+    where: { pairId: pair.id },
+    orderBy: { createdAt: 'asc' },
+    take: 200
+  });
+
+  return res.json({ success: true, items });
+});
+
+matchmakingRouter.post('/pairs/:pairId/messages', requireAuth, async (req, res) => {
+  const schema = z.object({ body: z.string().min(1).max(2000) });
+  try {
+    const pair = await assertPairMember(req.params.pairId, req.auth.profileId);
+    if (!pair) return res.status(404).json({ success: false, error: 'Active pair not found' });
+
+    const { body } = schema.parse(req.body);
+    const item = await prisma.pairMessage.create({
+      data: {
+        pairId: pair.id,
+        senderId: req.auth.profileId,
+        body: body.trim()
+      }
+    });
+
+    const recipientId = pair.userAId === req.auth.profileId ? pair.userBId : pair.userAId;
+    const sender = await prisma.userProfile.findUnique({ where: { id: req.auth.profileId } });
+    if (sender) {
+      notifyNewMessage(recipientId, sender.displayName).catch(() => {});
+    }
+
+    return res.status(201).json({ success: true, item });
+  } catch (_error) {
+    return res.status(400).json({ success: false, error: 'Invalid payload' });
+  }
 });
