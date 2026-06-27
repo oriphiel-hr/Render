@@ -15,12 +15,23 @@
 
 | Key | Opis |
 |-----|------|
-| `SMTP_HOST` | npr. `smtp.sendgrid.net` |
-| `SMTP_PORT` | `587` |
-| `SMTP_USER` | SMTP korisnik |
-| `SMTP_PASS` | SMTP lozinka |
-| `MAIL_FROM` | `Ravnopar <noreply@tvojadomena.hr>` |
+| `SMTP_HOST` | npr. `smtp.hostinger.com` |
+| `SMTP_PORT` | `587` (STARTTLS) ili `465` (SSL) |
+| `SMTP_SECURE` | samo za port **465**: `true`. Za port **587** ostavi prazno ili `false` |
+| `SMTP_USER` | puni email, npr. `ravnopar@oriph.io` |
+| `SMTP_PASS` | lozinka mail računa |
+| `MAIL_FROM` | `Ravnopar <ravnopar@oriph.io>` |
 | `ADMIN_NOTIFY_EMAIL` | email za admin obavijesti o prijavama |
+
+**Hostinger (preporučeno):**
+```
+SMTP_HOST=smtp.hostinger.com
+SMTP_PORT=587
+SMTP_USER=ravnopar@oriph.io
+SMTP_PASS=<lozinka>
+MAIL_FROM=Ravnopar <ravnopar@oriph.io>
+```
+Ne postavljaj `SMTP_SECURE` na portu 587 — inače dobiješ `wrong version number` u logu.
 
 Bez SMTP-a kodovi se logiraju u backend konzolu (Render → Logs).
 
