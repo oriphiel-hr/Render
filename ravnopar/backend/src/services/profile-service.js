@@ -38,3 +38,16 @@ export function hasMinimumBio(profile, minLength = 10) {
 export function isFeedReady(profile) {
   return hasProfilePhoto(profile) && hasMinimumBio(profile);
 }
+
+export async function deleteUserProfile(prismaClient, profileId) {
+  await prismaClient.$transaction(async (tx) => {
+    await tx.engagedPair.updateMany({
+      where: {
+        status: 'ACTIVE',
+        OR: [{ userAId: profileId }, { userBId: profileId }]
+      },
+      data: { status: 'CLOSED', endedAt: new Date(), closeReason: 'Account deleted' }
+    });
+    await tx.userProfile.delete({ where: { id: profileId } });
+  });
+}

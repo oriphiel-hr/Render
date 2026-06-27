@@ -334,6 +334,14 @@ export async function updateAdminUser(token, profileId, payload) {
   return res.json();
 }
 
+export async function deleteAdminUser(token, profileId) {
+  const res = await fetch(`${API_BASE_URL}/admin/users/${profileId}`, {
+    method: 'DELETE',
+    headers: authHeaders(token)
+  });
+  return res.json();
+}
+
 export async function getAdminPayments(token) {
   const res = await fetch(`${API_BASE_URL}/admin/payments`, { headers: authHeaders(token) });
   return res.json();

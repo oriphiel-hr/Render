@@ -111,7 +111,15 @@ Migracije se pokreću automatski u build koraku (`prisma migrate deploy`).
 **Build:** `npm install && npm run build`  
 **Publish:** `dist`  
 **Root:** `ravnopar/frontend`  
-**Rewrite:** `/*` → `/index.html` (200)
+**Rewrite (obavezno za SPA):** `/*` → `/index.html` (200)
+
+Ako je frontend servis kreiran ručno (ne iz Blueprinta), u Render Dashboardu otvori **ravnopar-frontend → Redirects/Rewrites** i dodaj:
+
+| Source | Destination | Action |
+|--------|-------------|--------|
+| `/*` | `/index.html` | Rewrite (200) |
+
+Bez ovog pravila hard refresh na `/admin`, `/app` i sl. vraća **Not Found**.
 
 ---
 

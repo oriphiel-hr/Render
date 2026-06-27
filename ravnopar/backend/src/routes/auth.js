@@ -502,16 +502,8 @@ authRouter.delete('/account', requireAuth, async (req, res) => {
   const profile = await prisma.userProfile.findUnique({ where: { id: profileId } });
   if (!profile) return res.status(404).json({ success: false, error: 'Profile not found' });
 
-  await prisma.$transaction(async (tx) => {
-    await tx.engagedPair.updateMany({
-      where: {
-        status: 'ACTIVE',
-        OR: [{ userAId: profileId }, { userBId: profileId }]
-      },
-      data: { status: 'CLOSED', endedAt: new Date(), closeReason: 'Account deleted' }
-    });
-    await tx.userProfile.delete({ where: { id: profileId } });
-  });
+  const { deleteUserProfile } = await import('../services/profile-service.js');
+  await deleteUserProfile(prisma, profileId);
 
   return res.json({ success: true });
 });

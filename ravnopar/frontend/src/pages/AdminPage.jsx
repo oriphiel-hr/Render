@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
+  deleteAdminUser,
   getAdminOverview,
   getAdminPayments,
   getAdminRiskOverview,
@@ -80,6 +81,21 @@ export default function AdminPage({ token, profile }) {
       await loadAll();
     } else {
       setMessage(data?.error || 'Ažuriranje nije uspjelo.', 'error');
+    }
+  }
+
+  async function removeUser(user) {
+    const confirmed = window.confirm(
+      `Trajno obrisati korisnika ${user.displayName} (${user.email})?\n\nOva radnja se ne može poništiti.`
+    );
+    if (!confirmed) return;
+
+    const data = await deleteAdminUser(token, user.id);
+    if (data?.success) {
+      setMessage('Korisnik obrisan.', 'success');
+      await loadAll();
+    } else {
+      setMessage(data?.error || 'Brisanje nije uspjelo.', 'error');
     }
   }
 
@@ -276,6 +292,21 @@ export default function AdminPage({ token, profile }) {
                         Postavi admin
                       </button>
                     )}
+                    <button
+                      type="button"
+                      className="button button-ghost button-sm admin-delete-btn"
+                      disabled={user.id === profile?.id || user.role === 'ADMIN'}
+                      title={
+                        user.id === profile?.id
+                          ? 'Ne možeš obrisati vlastiti račun'
+                          : user.role === 'ADMIN'
+                            ? 'Admin računi se ne brišu iz panela'
+                            : undefined
+                      }
+                      onClick={() => removeUser(user)}
+                    >
+                      Obriši
+                    </button>
                   </td>
                 </tr>
               ))}

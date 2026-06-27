@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { requireAdmin, requireAuth } from '../lib/auth.js';
 import { prisma } from '../lib/prisma.js';
 import { toPublicProfile } from '../lib/profile-public.js';
-import { calculateProfileCompleteness } from '../services/profile-service.js';
+import { calculateProfileCompleteness, deleteUserProfile } from '../services/profile-service.js';
 
 export const adminRouter = Router();
 
@@ -107,6 +107,27 @@ adminRouter.get('/users', async (req, res) => {
       createdAt: profile.createdAt
     }))
   });
+});
+
+adminRouter.delete('/users/:profileId', async (req, res) => {
+  const profileId = req.params.profileId;
+  if (profileId === req.auth.profileId) {
+    return res.status(403).json({ success: false, error: 'Ne možeš obrisati vlastiti račun iz admin panela.' });
+  }
+
+  const profile = await prisma.userProfile.findUnique({
+    where: { id: profileId },
+    include: { account: true }
+  });
+  if (!profile?.account) {
+    return res.status(404).json({ success: false, error: 'User not found' });
+  }
+  if (profile.account.role === 'ADMIN') {
+    return res.status(403).json({ success: false, error: 'Admin računi se ne mogu brisati iz panela.' });
+  }
+
+  await deleteUserProfile(prisma, profileId);
+  return res.json({ success: true });
 });
 
 adminRouter.patch('/users/:profileId', async (req, res) => {

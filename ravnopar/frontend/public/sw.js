@@ -1,4 +1,4 @@
-const CACHE = 'ravnopar-v3';
+const CACHE = 'ravnopar-v4';
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg'];
 
 self.addEventListener('install', (event) => {
@@ -16,6 +16,16 @@ self.addEventListener('activate', (event) => {
 
 function isAsset(url) {
   return url.pathname.startsWith('/assets/') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css');
+}
+
+function isAppRoute(url) {
+  return !isAsset(url) && !url.pathname.includes('.');
+}
+
+async function serveShell() {
+  const cached = await caches.match('/index.html');
+  if (cached) return cached;
+  return fetch('/index.html');
 }
 
 self.addEventListener('fetch', (event) => {
@@ -39,17 +49,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request)
-        .then((response) => {
-          if (!response || response.status !== 200 || response.type !== 'basic') return response;
-          const copy = response.clone();
-          caches.open(CACHE).then((cache) => cache.put(event.request, copy));
-          return response;
-        })
-        .catch(() => caches.match('/index.html'));
-    })
-  );
+  if (isAppRoute(url)) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => (response.ok ? response : serveShell()))
+        .catch(() => serveShell())
+    );
+    return;
+  }
+
+  event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
 });
