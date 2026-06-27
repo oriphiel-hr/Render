@@ -1,4 +1,4 @@
-const CACHE = 'ravnopar-v2';
+const CACHE = 'ravnopar-v3';
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg'];
 
 self.addEventListener('install', (event) => {
