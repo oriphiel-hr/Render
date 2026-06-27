@@ -33,6 +33,18 @@ export function labelRole(value) {
   return ROLE_LABELS[value] || value;
 }
 
+export const PLAN_TIER_LABELS = {
+  free: 'Besplatno',
+  plus: 'Plus',
+  supporter: 'Supporter'
+};
+
+export const ADMIN_PLAN_TIERS = ['free', 'plus', 'supporter'];
+
+export function labelPlanTier(value) {
+  return PLAN_TIER_LABELS[value] || value;
+}
+
 export function labelIdentity(value) {
   return IDENTITY_LABELS[value] || value;
 }

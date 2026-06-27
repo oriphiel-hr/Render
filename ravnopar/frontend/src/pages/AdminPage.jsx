@@ -15,7 +15,7 @@ import {
   updateReportStatus
 } from '../api/index.js';
 import PageMeta from '../components/PageMeta.jsx';
-import { formatDateTime, labelReportStatus, labelRole } from '../lib/labels.js';
+import { ADMIN_PLAN_TIERS, formatDateTime, labelPlanTier, labelReportStatus, labelRole } from '../lib/labels.js';
 
 function StatCard({ label, value }) {
   return (
@@ -262,7 +262,20 @@ export default function AdminPage({ token, profile }) {
                       {labelRole(user.role || 'USER')}
                     </span>
                   </td>
-                  <td>{user.planTier}</td>
+                  <td>
+                    <select
+                      className="admin-plan-select"
+                      value={user.planTier || 'free'}
+                      aria-label={`Paket za ${user.displayName}`}
+                      onChange={(e) => patchUser(user.id, { planTier: e.target.value })}
+                    >
+                      {ADMIN_PLAN_TIERS.map((tier) => (
+                        <option key={tier} value={tier}>
+                          {labelPlanTier(tier)}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
                   <td>
                     {user.suspended ? 'Suspendiran' : user.availability}
                     {user.photoVerified ? ' · ✓' : ''}
@@ -270,9 +283,6 @@ export default function AdminPage({ token, profile }) {
                   <td className="admin-row-actions">
                     <button type="button" className="button button-ghost button-sm" onClick={() => patchUser(user.id, { photoVerified: true })}>
                       Verificiraj
-                    </button>
-                    <button type="button" className="button button-ghost button-sm" onClick={() => patchUser(user.id, { planTier: 'plus' })}>
-                      Plus
                     </button>
                     <button type="button" className="button button-ghost button-sm" onClick={() => patchUser(user.id, { suspended: !user.suspended })}>
                       {user.suspended ? 'Unsuspend' : 'Suspend'}
@@ -294,14 +304,14 @@ export default function AdminPage({ token, profile }) {
                     )}
                     <button
                       type="button"
-                      className="button button-ghost button-sm admin-delete-btn"
+                      className="button button-sm admin-delete-btn"
                       disabled={user.id === profile?.id || user.role === 'ADMIN'}
                       title={
                         user.id === profile?.id
                           ? 'Ne možeš obrisati vlastiti račun'
                           : user.role === 'ADMIN'
                             ? 'Admin računi se ne brišu iz panela'
-                            : undefined
+                            : 'Trajno obriši korisnika'
                       }
                       onClick={() => removeUser(user)}
                     >
