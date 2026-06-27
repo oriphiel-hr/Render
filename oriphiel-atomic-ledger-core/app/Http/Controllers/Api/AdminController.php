@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\UserInvitation;
 use App\Services\Auth\InvitationService;
+use App\Services\Exchange\PooledExchangeReconciliationService;
 use App\Services\Ledger\LedgerService;
 use App\Services\Ledger\ReconciliationService;
 use Illuminate\Http\JsonResponse;
@@ -15,6 +16,7 @@ class AdminController extends Controller
 {
     public function __construct(
         private readonly ReconciliationService $reconciliationService,
+        private readonly PooledExchangeReconciliationService $pooledReconciliationService,
         private readonly LedgerService $ledgerService,
         private readonly InvitationService $invitationService,
     ) {}
@@ -45,6 +47,7 @@ class AdminController extends Controller
     {
         $rows = $this->reconciliationService->reconcileAll();
         $outOfSync = $rows->where('in_sync', false)->count();
+        $exchangePool = $this->pooledReconciliationService->reconcile();
 
         return response()->json([
             'summary' => [
@@ -53,6 +56,12 @@ class AdminController extends Controller
                 'healthy' => $outOfSync === 0,
             ],
             'data' => $rows->values(),
+            'exchange_pool' => $exchangePool,
+            'summary_combined' => [
+                'ledger_healthy' => $outOfSync === 0,
+                'exchange_pool_healthy' => $exchangePool['healthy'],
+                'overall_healthy' => $outOfSync === 0 && ($exchangePool['healthy'] ?? false) === true,
+            ],
         ]);
     }
 

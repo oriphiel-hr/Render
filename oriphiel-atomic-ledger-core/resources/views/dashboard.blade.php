@@ -195,6 +195,18 @@
             <div class="card" style="border-color:rgba(240,185,11,.35)">
                 <div class="api-source" id="exchange-api-source">—</div>
                 <h2>Binance Spot bridge @if($exchangeIsTestnet)<span class="badge warn">testnet</span>@endif</h2>
+                <p style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem;line-height:1.5">
+                    <strong>Your ledger</strong> (Wallets tab) is per user in PostgreSQL.
+                    <strong>Binance below</strong> uses the server API keys — one shared testnet account for all demo users.
+                </p>
+                <div class="card" style="background:var(--surface2);margin-bottom:1rem;padding:1rem">
+                    <h2 style="margin-bottom:.6rem">My Binance check (on request)</h2>
+                    <p style="font-size:.8rem;color:var(--muted);margin-bottom:.75rem">Fetches live from Binance now — includes your ledger balances, shared Binance balances, and SHA-256 of the raw upstream response.</p>
+                    <button type="button" class="btn btn-secondary btn-sm" id="my-binance-btn">Fetch my Binance status</button>
+                    <div class="alert" id="my-binance-alert"></div>
+                    <div id="my-binance-result" style="margin-top:.75rem;font-size:.82rem"></div>
+                    <pre class="api-json" id="my-binance-json"></pre>
+                </div>
                 <div class="alert hidden" id="exchange-origin-banner"></div>
                 <p id="exchange-upstream" style="font-size:.82rem;color:var(--muted);margin-bottom:.5rem">—</p>
                 <p id="exchange-message" style="color:var(--muted);font-size:.85rem">—</p>
@@ -233,6 +245,18 @@
                         <tbody id="recon-body"></tbody>
                     </table>
                 </div>
+            </div>
+            <div class="card" style="border-color:rgba(240,185,11,.35)">
+                <h2>Pooled exchange reconciliation</h2>
+                <p style="font-size:.8rem;color:var(--muted);margin-bottom:.6rem">Sum of all user ledger liabilities vs shared Binance custody (omnibus model).</p>
+                <p id="pool-recon-summary" style="margin-bottom:.8rem;font-size:.9rem">—</p>
+                <div style="overflow-x:auto">
+                    <table>
+                        <thead><tr><th>Asset</th><th>Ledger total</th><th>Binance custody</th><th>Diff</th><th>Status</th></tr></thead>
+                        <tbody id="pool-recon-body"></tbody>
+                    </table>
+                </div>
+                <pre class="api-json" id="pool-recon-json"></pre>
             </div>
             <div class="card">
                 <h2>Manual adjustment</h2>
@@ -274,6 +298,7 @@ const PUBLIC_ENDPOINTS = [
     { method: 'GET', path: '/api/status', label: 'Service status + exchange info' },
     { method: 'GET', path: '/api/exchange/status', label: 'Binance bridge status' },
     { method: 'GET', path: '/api/exchange/accounts', label: 'Binance accounts (or demo fallback)' },
+    { method: 'GET', path: '/api/exchange/my-binance', label: 'My live Binance check (login required)' },
 ];
 const AUTH_ENDPOINTS = [
     { method: 'GET', path: '/api/wallets', label: 'My wallet balances' },
@@ -565,16 +590,75 @@ async function loadExchange() {
         `<div class="wallet-row"><span>${esc(a.name||a.currency)}</span><span class="mono">${esc(a.balance)} ${esc(a.currency||'')}</span></div>`).join('');
 }
 
+async function loadMyBinance() {
+    const btn = document.getElementById('my-binance-btn');
+    const resultEl = document.getElementById('my-binance-result');
+    const pre = document.getElementById('my-binance-json');
+    if (!btn || !resultEl) return;
+    btn.disabled = true;
+    btn.textContent = 'Fetching from Binance…';
+    const result = await api('/exchange/my-binance');
+    btn.disabled = false;
+    btn.textContent = 'Fetch my Binance status';
+    const data = result.data || {};
+    if (!result.ok) {
+        showAlert('my-binance-alert', false, data.message || 'Request failed');
+        return;
+    }
+    showAlert('my-binance-alert', data.available, data.message || (data.available ? 'Live Binance data fetched.' : 'Binance not available.'));
+    const v = data.verification || {};
+    const ledger = (data.ledger_balances || []).map(w =>
+        `<div class="wallet-row"><span><strong>${esc(w.asset)}</strong> (ledger)</span><span class="mono">${esc(w.available)} avail</span></div>`
+    ).join('') || '<p style="color:var(--muted)">No ledger wallets</p>';
+    const binance = (data.binance?.balances || []).map(b =>
+        `<div class="wallet-row"><span><strong>${esc(b.currency)}</strong> (Binance)</span><span class="mono">${esc(b.balance)}</span></div>`
+    ).join('') || '<p style="color:var(--muted)">No non-zero Binance balances</p>';
+    resultEl.innerHTML = `
+        <p style="color:var(--muted);margin-bottom:.5rem">${esc(data.scope_note || '')}</p>
+        <p style="margin-bottom:.5rem"><span class="badge local">YOUR LEDGER</span> ${esc(data.requested_by?.email || '')}</p>
+        ${ledger}
+        <p style="margin:.75rem 0 .5rem"><span class="badge exchange">BINANCE LIVE</span> UID ${esc(data.binance?.account_uid ?? '—')} · ${esc(data.binance?.mode_label || '')}</p>
+        ${binance}
+        ${v.response_sha256 ? `<p style="margin-top:.75rem;color:var(--muted);font-size:.75rem">SHA-256: <code class="mono">${esc(v.response_sha256)}</code> · ${v.latency_ms ?? '—'}ms · <a href="${esc(v.portal_url || 'https://testnet.binance.vision')}" target="_blank" rel="noopener">verify on Binance</a></p>` : ''}`;
+    if (pre) {
+        pre.textContent = JSON.stringify(data, null, 2);
+        pre.classList.add('show');
+    }
+}
+
+document.getElementById('my-binance-btn')?.addEventListener('click', loadMyBinance);
+
 async function loadReconciliation() {
     const { data } = await api('/admin/reconciliation');
     const s = data.summary || {};
-    document.getElementById('recon-summary').innerHTML = `Wallets: <strong>${s.total_wallets}</strong> · Out of sync: <strong class="${s.out_of_sync ? 'diff-bad' : 'diff-ok'}">${s.out_of_sync}</strong>`;
+    const combined = data.summary_combined || {};
+    document.getElementById('recon-summary').innerHTML = `Internal: <strong>${s.total_wallets}</strong> wallets · out of sync <strong class="${s.out_of_sync ? 'diff-bad' : 'diff-ok'}">${s.out_of_sync}</strong>`
+        + (combined.overall_healthy !== undefined ? ` · overall <strong class="${combined.overall_healthy ? 'diff-ok' : 'diff-bad'}">${combined.overall_healthy ? 'OK' : 'ALARM'}</strong>` : '');
     document.getElementById('recon-body').innerHTML = (data.data || []).map(r => `<tr>
         <td>#${r.user_id}</td><td>${esc(r.asset)}</td>
         <td class="mono">${esc(r.stored.available)}/${esc(r.stored.locked)}/${esc(r.stored.pending)}</td>
         <td class="mono">${esc(r.calculated.available)}/${esc(r.calculated.locked)}/${esc(r.calculated.pending)}</td>
         <td class="mono">${esc(r.diff.available)}/${esc(r.diff.locked)}/${esc(r.diff.pending)}</td>
         <td class="${r.in_sync ? 'diff-ok' : 'diff-bad'}">${r.in_sync ? 'OK' : 'DIFF'}</td></tr>`).join('');
+
+    const pool = data.exchange_pool || {};
+    const poolSummary = document.getElementById('pool-recon-summary');
+    const poolBody = document.getElementById('pool-recon-body');
+    const poolJson = document.getElementById('pool-recon-json');
+    if (poolSummary) {
+        const healthy = pool.healthy === true ? 'diff-ok' : (pool.healthy === false ? 'diff-bad' : '');
+        poolSummary.innerHTML = `<span class="badge exchange">POOLED</span> ${esc(pool.message || pool.status || '—')}`
+            + (pool.healthy !== null && pool.healthy !== undefined ? ` · <strong class="${healthy}">${pool.healthy ? 'CUSTODY OK' : 'DEFICIT'}</strong>` : '');
+    }
+    if (poolBody) {
+        poolBody.innerHTML = (pool.assets || []).map(a => `<tr>
+            <td><strong>${esc(a.asset)}</strong></td>
+            <td class="mono">${esc(a.ledger?.total_liabilities ?? '—')}</td>
+            <td class="mono">${esc(a.binance?.total_custody ?? '—')}</td>
+            <td class="mono">${esc(a.diff ?? '—')}</td>
+            <td class="${a.alarm ? 'diff-bad' : 'diff-ok'}">${esc(a.status)}</td></tr>`).join('') || '<tr><td colspan="5">No assets</td></tr>';
+    }
+    if (poolJson) poolJson.textContent = JSON.stringify(pool, null, 2);
 }
 
 async function loadInvitations() {

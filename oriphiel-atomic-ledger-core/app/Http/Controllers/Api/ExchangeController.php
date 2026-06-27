@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Services\Exchange\BinanceExchangeService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class ExchangeController extends Controller
 {
@@ -21,6 +22,27 @@ class ExchangeController extends Controller
     public function accounts(): JsonResponse
     {
         return response()->json($this->exchangeService->accounts());
+    }
+
+    public function myBinance(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $payload = $this->exchangeService->myBinanceStatus($user);
+
+        AuditLog::query()->create([
+            'user_id' => $user->id,
+            'action' => 'exchange.binance_checked',
+            'payload' => [
+                'available' => $payload['available'] ?? false,
+                'http_status' => $payload['verification']['http_status'] ?? null,
+                'response_sha256' => $payload['verification']['response_sha256'] ?? null,
+                'binance_account_uid' => $payload['binance']['account_uid'] ?? null,
+            ],
+            'ip_address' => $request->ip(),
+            'created_at' => now(),
+        ]);
+
+        return response()->json($payload);
     }
 
     public function auditTrail(): JsonResponse

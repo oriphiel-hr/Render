@@ -36,6 +36,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::get('/my/transactions', [WalletController::class, 'transactions']);
     Route::post('/transfers', [TransferController::class, 'store']);
     Route::get('/users', [UserController::class, 'index']);
+    Route::get('/exchange/my-binance', [ExchangeController::class, 'myBinance']);
 
     Route::prefix('admin')->middleware('admin')->group(function () {
         Route::get('/users', [AdminController::class, 'users']);

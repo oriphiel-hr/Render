@@ -2,19 +2,24 @@
 
 namespace App\Console\Commands;
 
+use App\Services\Exchange\PooledExchangeReconciliationService;
 use App\Services\Ledger\ReconciliationService;
 use Illuminate\Console\Command;
 
 class ReconcileBalancesCommand extends Command
 {
-    protected $signature = 'ledger:reconcile';
+    protected $signature = 'ledger:reconcile {--exchange : Also compare pooled ledger totals vs Binance custody}';
 
     protected $description = 'Compare stored wallet balances against immutable ledger entries';
 
-    public function handle(ReconciliationService $reconciliationService): int
-    {
+    public function handle(
+        ReconciliationService $reconciliationService,
+        PooledExchangeReconciliationService $pooledReconciliationService,
+    ): int {
         $rows = $reconciliationService->reconcileAll();
         $outOfSync = $rows->where('in_sync', false);
+
+        $this->info('Internal ledger reconciliation (stored vs calculated):');
 
         foreach ($rows as $row) {
             $status = $row['in_sync'] ? 'OK' : 'DIFF';
@@ -32,14 +37,39 @@ class ReconcileBalancesCommand extends Command
             ));
         }
 
+        $exitCode = self::SUCCESS;
+
         if ($outOfSync->isNotEmpty()) {
             $this->error("{$outOfSync->count()} wallet(s) out of sync.");
-
-            return self::FAILURE;
+            $exitCode = self::FAILURE;
+        } else {
+            $this->info('All wallets in sync.');
         }
 
-        $this->info('All wallets in sync.');
+        if ($this->option('exchange')) {
+            $this->newLine();
+            $this->info('Pooled exchange reconciliation (ledger liabilities vs Binance custody):');
+            $pool = $pooledReconciliationService->reconcile();
 
-        return self::SUCCESS;
+            foreach ($pool['assets'] ?? [] as $asset) {
+                $binanceTotal = $asset['binance']['total_custody'] ?? '—';
+                $this->line(sprintf(
+                    '[%s] %s ledger=%s binance=%s diff=%s',
+                    strtoupper((string) $asset['status']),
+                    $asset['asset'],
+                    $asset['ledger']['total_liabilities'] ?? '—',
+                    $binanceTotal,
+                    $asset['diff'] ?? '—',
+                ));
+            }
+
+            $this->line($pool['message'] ?? '');
+
+            if (($pool['healthy'] ?? null) === false) {
+                $exitCode = self::FAILURE;
+            }
+        }
+
+        return $exitCode;
     }
 }

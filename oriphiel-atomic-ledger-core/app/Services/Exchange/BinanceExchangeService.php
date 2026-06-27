@@ -35,6 +35,56 @@ class BinanceExchangeService
     }
 
     /**
+     * Live spot balances keyed by asset symbol.
+     *
+     * @return array{
+     *     balances: array<string, array{free: string, locked: string, total: string}>,
+     *     http_status: int,
+     *     response_sha256: string,
+     *     account_uid: int|string|null
+     * }
+     */
+    public function fetchSpotBalances(): array
+    {
+        if (! $this->isEnabled() || ! $this->auth->hasCredentials()) {
+            throw new \RuntimeException('Binance API keys are not configured.');
+        }
+
+        $response = $this->signedGet('/api/v3/account');
+        $body = $response->body();
+        $json = $response->json() ?? [];
+
+        if (! $response->successful()) {
+            throw new \RuntimeException('Binance API returned HTTP '.$response->status());
+        }
+
+        $balances = [];
+
+        foreach ($json['balances'] ?? [] as $row) {
+            $asset = (string) ($row['asset'] ?? '');
+            if ($asset === '') {
+                continue;
+            }
+
+            $free = bcadd((string) ($row['free'] ?? '0'), '0', 8);
+            $locked = bcadd((string) ($row['locked'] ?? '0'), '0', 8);
+
+            $balances[$asset] = [
+                'free' => $free,
+                'locked' => $locked,
+                'total' => bcadd($free, $locked, 8),
+            ];
+        }
+
+        return [
+            'balances' => $balances,
+            'http_status' => $response->status(),
+            'response_sha256' => hash('sha256', $body),
+            'account_uid' => $json['uid'] ?? null,
+        ];
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function status(): array
@@ -226,6 +276,130 @@ class BinanceExchangeService
         }
 
         return 'no_api_keys';
+    }
+
+    /**
+     * Live Binance account snapshot for an authenticated demo user (on-demand).
+     *
+     * Uses the application's Binance API keys — all demo users see the same
+     * testnet account; ledger_balances are per-user from PostgreSQL.
+     *
+     * @return array<string, mixed>
+     */
+    public function myBinanceStatus(\App\Models\User $user): array
+    {
+        $mode = $this->mode();
+        $accountUrl = $this->baseUrl().'/api/v3/account';
+
+        $ledgerBalances = $user->wallets()
+            ->orderBy('asset')
+            ->get()
+            ->map(fn ($wallet) => [
+                'asset' => $wallet->asset,
+                'available' => $wallet->available,
+                'locked' => $wallet->locked,
+                'pending' => $wallet->pending,
+            ])
+            ->values()
+            ->all();
+
+        $base = [
+            'requested_by' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ],
+            'scope' => 'shared_application_binance_account',
+            'scope_note' => 'This live fetch uses the Binance API keys configured on the server (one testnet account). '
+                .'It is not a personal Binance login per demo user. ledger_balances are yours in this app; binance.balances are from the shared testnet wallet.',
+            'ledger_balances' => $ledgerBalances,
+            'binance' => null,
+            'available' => false,
+        ];
+
+        if (! $this->isEnabled() || ! $this->auth->hasCredentials()) {
+            return array_merge($base, [
+                'message' => 'Binance API keys are not configured on the server.',
+                'data_source' => ApiSource::upstream('ledger_api', 'GET', url('/api/exchange/my-binance'), [
+                    'upstream_called' => false,
+                ]),
+            ]);
+        }
+
+        try {
+            $started = microtime(true);
+            $response = $this->signedGet('/api/v3/account');
+            $latencyMs = (int) round((microtime(true) - $started) * 1000);
+            $body = $response->body();
+            $json = $response->json() ?? [];
+
+            if (! $response->successful()) {
+                return array_merge($base, [
+                    'message' => 'Binance API returned HTTP '.$response->status(),
+                    'verification' => [
+                        'upstream_url' => $accountUrl,
+                        'http_status' => $response->status(),
+                        'latency_ms' => $latencyMs,
+                    ],
+                    'data_source' => ApiSource::upstream('binance', 'GET', $accountUrl, [
+                        'upstream_called' => true,
+                        'http_status' => $response->status(),
+                    ]),
+                ]);
+            }
+
+            $updateTime = $json['updateTime'] ?? null;
+
+            return array_merge($base, [
+                'available' => true,
+                'message' => 'Live Binance '.$mode->label().' account fetched on your request.',
+                'binance' => [
+                    'provider' => 'binance',
+                    'mode' => $mode->value,
+                    'mode_label' => $mode->label(),
+                    'base_url' => $this->baseUrl(),
+                    'account_uid' => $json['uid'] ?? null,
+                    'account_type' => $json['accountType'] ?? null,
+                    'update_time' => is_numeric($updateTime)
+                        ? gmdate('c', (int) floor((int) $updateTime / 1000))
+                        : null,
+                    'can_trade' => $json['canTrade'] ?? null,
+                    'balances' => $this->mapBalances($json['balances'] ?? []),
+                ],
+                'verification' => [
+                    'upstream_url' => $accountUrl,
+                    'http_status' => $response->status(),
+                    'latency_ms' => $latencyMs,
+                    'response_sha256' => hash('sha256', $body),
+                    'binance_account_uid' => $json['uid'] ?? null,
+                    'verify_independently' => [
+                        'Log in to '.$mode->portalUrl().' and compare spot balances.',
+                        'Or call GET '.$accountUrl.' with your own signed request using the same API keys.',
+                        'response_sha256 is the SHA-256 of the raw JSON body returned by Binance (proves this payload came from an upstream HTTP response at fetch time).',
+                    ],
+                    'portal_url' => $mode->portalUrl(),
+                ],
+                'data_source' => ApiSource::upstream('binance', 'GET', $accountUrl, [
+                    'upstream_called' => true,
+                    'http_status' => $response->status(),
+                    'response_sha256' => hash('sha256', $body),
+                    'binance_account_uid' => $json['uid'] ?? null,
+                ]),
+            ]);
+        } catch (\Throwable $exception) {
+            Log::warning('exchange.binance.my_status_failed', [
+                'user_id' => $user->id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return array_merge($base, [
+                'message' => $exception->getMessage(),
+                'data_source' => ApiSource::upstream('binance', 'GET', $accountUrl, [
+                    'upstream_called' => false,
+                    'error' => $exception->getMessage(),
+                ]),
+            ]);
+        }
     }
 
     /**
