@@ -6,10 +6,9 @@
   "scripts": {
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
-    "build": "prisma generate && prisma migrate deploy",
-    "postinstall": "prisma generate",
-    "prisma:generate": "prisma generate",
-    "migrate:deploy": "prisma migrate deploy",
+    "build": "node ./node_modules/prisma/build/index.js generate && node ./node_modules/prisma/build/index.js migrate deploy",
+    "prisma:generate": "node ./node_modules/prisma/build/index.js generate",
+    "migrate:deploy": "node ./node_modules/prisma/build/index.js migrate deploy",
     "seed": "node prisma/seed.js",
     "seed:reset": "cross-env ALLOW_SEED_RESET=true node prisma/reset-seed.js && node prisma/seed.js"
   },
