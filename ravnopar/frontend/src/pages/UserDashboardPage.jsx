@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   blockUser,
   closePair,
@@ -6,88 +7,35 @@ import {
   getInboxSummary,
   getMyState,
   policyCheck,
-  rateUser,
   reportUser,
   respondToContact,
   sendContactRequest
 } from '../api/index.js';
-import { Link, useNavigate } from 'react-router-dom';
 import DonatePromptBanner from '../components/DonatePromptBanner.jsx';
-import ProfileAvatar from '../components/ProfileAvatar.jsx';
+import MatchModal from '../components/MatchModal.jsx';
+import PhotoGallery from '../components/PhotoGallery.jsx';
+import SwipeFeedCard from '../components/SwipeFeedCard.jsx';
 import { isDonateConfigured } from '../lib/donate-config.js';
 import {
   getDonatePrompt,
   markMatchDonateMoment,
   recordMemberSinceIfNeeded
 } from '../lib/donate-prompt.js';
-import {
-  labelAvailability,
-  labelIdentity,
-  labelIntent,
-  labelProfileType
-} from '../lib/labels.js';
-
-function normalizeList(value) {
-  return Array.isArray(value) ? value : [];
-}
-
-function ProfileCard({ person, children }) {
-  const intents = normalizeList(person.intents);
-  return (
-    <article className="profile-card">
-      <div className="profile-card-head">
-        <ProfileAvatar person={person} />
-        <div>
-          <h3>
-            {person.id ? (
-              <Link className="profile-link" to={`/app/profile/${person.id}`}>
-                {person.displayName}
-              </Link>
-            ) : (
-              person.displayName
-            )}
-          </h3>
-          <p className="muted profile-meta">
-            {person.city}, {person.age} god.
-          </p>
-        </div>
-      </div>
-      {person.bio && <p className="profile-bio">{person.bio}</p>}
-      <div className="profile-tags">
-        <span className="chip">{labelIdentity(person.identity)}</span>
-        <span className="chip">{labelProfileType(person.profileType)}</span>
-      </div>
-      {intents.length > 0 && (
-        <p className="profile-intents muted">
-          Traži: {intents.map((item) => labelIntent(item)).join(', ')}
-        </p>
-      )}
-      {typeof person.completeness === 'number' && (
-        <div className="progress-block">
-          <div className="progress-label">
-            <span>Popunjenost profila</span>
-            <strong>{person.completeness}%</strong>
-          </div>
-          <div className="progress-track">
-            <div className="progress-fill" style={{ width: `${person.completeness}%` }} />
-          </div>
-        </div>
-      )}
-      {children}
-    </article>
-  );
-}
+import { labelAvailability } from '../lib/labels.js';
+import { trackEvent } from '../lib/analytics.js';
 
 export default function UserDashboardPage({ token, profile }) {
-  const navigate = useNavigate();
   const [feed, setFeed] = useState([]);
+  const [feedIndex, setFeedIndex] = useState(0);
   const [myState, setMyState] = useState(null);
   const [status, setStatus] = useState('');
   const [statusKind, setStatusKind] = useState('info');
   const [policyWarnings, setPolicyWarnings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [actionBusy, setActionBusy] = useState(false);
   const [donatePrompt, setDonatePrompt] = useState({ show: false, reason: null });
   const [inbox, setInbox] = useState({ unreadTotal: 0, items: [] });
+  const [matchModal, setMatchModal] = useState(null);
 
   function refreshDonatePrompt() {
     if (!isDonateConfigured()) {
@@ -110,15 +58,16 @@ export default function UserDashboardPage({ token, profile }) {
         getMyState(token),
         getInboxSummary(token)
       ]);
-      if (feedData?.success) setFeed(feedData.items || []);
+      if (feedData?.success) {
+        setFeed(feedData.items || []);
+        setFeedIndex(0);
+      }
       if (inboxData?.success) {
         setInbox({ unreadTotal: inboxData.unreadTotal || 0, items: inboxData.items || [] });
       }
       if (stateData?.success) {
         setMyState(stateData);
-        if (stateData.activePair) {
-          markMatchDonateMoment();
-        }
+        if (stateData.activePair) markMatchDonateMoment();
       }
     } finally {
       setLoading(false);
@@ -130,6 +79,7 @@ export default function UserDashboardPage({ token, profile }) {
     recordMemberSinceIfNeeded();
     refreshDonatePrompt();
     reload();
+    trackEvent('Feed View');
   }, [token]);
 
   useEffect(() => {
@@ -140,30 +90,34 @@ export default function UserDashboardPage({ token, profile }) {
         cities: [profile?.city || 'Zagreb'],
         distanceKm: 8
       });
-      if (data?.success) {
-        setPolicyWarnings(data.result?.warnings || []);
-      }
+      if (data?.success) setPolicyWarnings(data.result?.warnings || []);
     }
     runPolicyCheck();
   }, [token, profile?.city]);
 
+  function advanceFeed() {
+    setFeedIndex((i) => i + 1);
+  }
+
   async function contact(id) {
+    setActionBusy(true);
     const data = await sendContactRequest(token, id);
     if (data?.success) {
-      setMessage(
-        data.warning ? `Zahtjev poslan. Napomena: ${data.warning}` : 'Zahtjev za kontakt je poslan.',
-        'success'
-      );
+      setMessage(data.warning ? `Zahtjev poslan. ${data.warning}` : 'Zahtjev za kontakt je poslan.', 'success');
+      advanceFeed();
     } else {
       setMessage(data?.error || 'Slanje zahtjeva nije uspjelo.', 'error');
     }
-    await reload();
+    setActionBusy(false);
   }
 
   async function block(profileId) {
+    setActionBusy(true);
     const data = await blockUser(token, profileId, 'Korisnička preferenca');
     setMessage(data?.success ? 'Korisnik je blokiran.' : data?.error || 'Blokiranje nije uspjelo.', data?.success ? 'success' : 'error');
+    if (data?.success) advanceFeed();
     await reload();
+    setActionBusy(false);
   }
 
   async function report(profileId) {
@@ -171,19 +125,16 @@ export default function UserDashboardPage({ token, profile }) {
     setMessage(data?.success ? 'Prijava je zaprimljena. Hvala.' : data?.error || 'Prijava nije uspjela.', data?.success ? 'success' : 'error');
   }
 
-  async function rate(profileId, score) {
-    const data = await rateUser(token, profileId, score, 'Ocjena nakon razgovora');
-    setMessage(data?.success ? 'Ocjena je spremljena.' : data?.error || 'Ocjenjivanje nije uspjelo.', data?.success ? 'success' : 'error');
-  }
-
-  async function respond(contactId, action) {
+  async function respond(contactId, action, requesterName) {
+    setActionBusy(true);
     const data = await respondToContact(token, contactId, action);
     if (data?.success && action === 'ACCEPT') {
       markMatchDonateMoment();
       refreshDonatePrompt();
-      if (data.pairId) {
-        navigate(`/app/chat/${data.pairId}`);
-      }
+      setMatchModal({
+        partnerName: data.partnerName || requesterName || 'Korisnik',
+        pairId: data.pairId
+      });
     }
     setMessage(
       data?.success
@@ -194,6 +145,7 @@ export default function UserDashboardPage({ token, profile }) {
       data?.success ? 'success' : 'error'
     );
     await reload();
+    setActionBusy(false);
   }
 
   async function closeCurrentPair() {
@@ -207,12 +159,30 @@ export default function UserDashboardPage({ token, profile }) {
   }
 
   const incoming = myState?.pendingIncoming || [];
+  const currentPerson = feed[feedIndex];
+  const feedReady = myState?.feedReady === true;
 
   return (
     <main className="page dashboard-page">
+      {matchModal && (
+        <MatchModal
+          partnerName={matchModal.partnerName}
+          pairId={matchModal.pairId}
+          onClose={() => setMatchModal(null)}
+        />
+      )}
+
       <section className="hero dashboard-hero">
         <h1>Pozdrav, {profile?.displayName}</h1>
-        <p className="subtitle">Ovdje pronalaziš profile koji odgovaraju tvojim preferencijama.</p>
+        <p className="subtitle">Swipeaj profile ili koristi gumbe — jedan po jedan, bez žurbe.</p>
+        {!loading && feed.length > 0 && (
+          <p className="dashboard-feed-count">
+            <span className="chip chip-feed-count">{feed.length} profila u tvom feedu</span>
+          </p>
+        )}
+        {!loading && feed.length === 0 && (
+          <p className="muted">Trenutno nema kompatibilnih profila u tvom feedu.</p>
+        )}
         <p className="auth-footer dashboard-links">
           <Link to="/app/postavke">Postavke profila</Link>
         </p>
@@ -228,10 +198,10 @@ export default function UserDashboardPage({ token, profile }) {
         />
       )}
 
-      {(myState?.completeness ?? 0) < 80 && (
+      {(myState?.completeness ?? 0) < 80 && feedReady && (
         <section className="card onboarding-hint">
           <p><strong>Profil ti još nije kompletan ({myState?.completeness ?? 0}%).</strong></p>
-          <p className="muted">Dodaj fotografiju i bio — to povećava šanse za kontakt.</p>
+          <p className="muted">Dodaj fotografiju, bio i icebreaker — to povećava šanse za kontakt.</p>
           <Link className="button button-secondary" to="/app/postavke">Dovrši profil</Link>
         </section>
       )}
@@ -258,7 +228,7 @@ export default function UserDashboardPage({ token, profile }) {
 
       {policyWarnings.length > 0 && (
         <section className="card warning">
-          <strong>Preuske preference</strong>
+          <strong>Uz preference</strong>
           <ul className="compact-list">
             {policyWarnings.map((warning) => (
               <li key={warning}>{warning}</li>
@@ -275,22 +245,20 @@ export default function UserDashboardPage({ token, profile }) {
             <p><span className="chip">{labelAvailability(myState?.profile?.availability)}</span></p>
           </div>
           <div>
-            <span className="muted">Popunjenost profila</span>
+            <span className="muted">Popunjenost</span>
             <p><strong>{myState?.completeness ?? 0}%</strong></p>
           </div>
           <div>
             <span className="muted">Prosječna ocjena</span>
             <p>
-              <strong>
-                {myState?.rating?.average ? myState.rating.average.toFixed(1) : '—'}
-              </strong>
+              <strong>{myState?.rating?.average ? myState.rating.average.toFixed(1) : '—'}</strong>
               {myState?.rating?.count ? ` (${myState.rating.count})` : ''}
             </p>
           </div>
         </div>
         {myState?.activePair ? (
           <div className="active-contact">
-            <p>Trenutno si u aktivnom razgovoru s <strong>{myState.activePair.partnerName}</strong>.</p>
+            <p>Trenutno razgovaraš s <strong>{myState.activePair.partnerName}</strong>.</p>
             <div className="card-actions">
               <Link className="button button-primary" to={`/app/chat/${myState.activePair.id}`}>
                 Otvori chat
@@ -301,58 +269,102 @@ export default function UserDashboardPage({ token, profile }) {
             </div>
           </div>
         ) : (
-          <p className="muted">Trenutno nemaš aktivan razgovor — vidljiv/a si u feedu drugima.</p>
+          <p className="muted">Vidljiv/a si u feedu — swipeaj profile ispod.</p>
         )}
       </section>
 
       {incoming.length > 0 && (
         <section>
           <h2 className="section-title">Zahtjevi za kontakt</h2>
-          <div className="profile-grid">
+          <div className="incoming-stack">
             {incoming.map((row) => (
-              <ProfileCard key={row.id} person={row.requester || { displayName: 'Korisnik', city: '—', age: '—' }}>
-                <div className="card-actions">
-                  <button type="button" className="button button-primary" onClick={() => respond(row.id, 'ACCEPT')}>
-                    Prihvati
-                  </button>
-                  <button type="button" className="button button-secondary" onClick={() => respond(row.id, 'DECLINE')}>
-                    Odbij
-                  </button>
+              <article key={row.id} className="card incoming-card">
+                <PhotoGallery photos={row.requester?.photos} alt={row.requester?.displayName} />
+                <div className="incoming-card-body">
+                  <h3>{row.requester?.displayName || 'Korisnik'}</h3>
+                  <p className="muted">{row.requester?.city}, {row.requester?.age} god.</p>
+                  {row.requester?.bio && <p className="profile-bio">{row.requester.bio}</p>}
+                  <div className="card-actions">
+                    <button
+                      type="button"
+                      className="button button-primary"
+                      disabled={actionBusy}
+                      onClick={() => respond(row.id, 'ACCEPT', row.requester?.displayName)}
+                    >
+                      Prihvati
+                    </button>
+                    <button
+                      type="button"
+                      className="button button-secondary"
+                      disabled={actionBusy}
+                      onClick={() => respond(row.id, 'DECLINE')}
+                    >
+                      Odbij
+                    </button>
+                  </div>
                 </div>
-              </ProfileCard>
+              </article>
             ))}
           </div>
         </section>
       )}
 
-      <section>
-        <h2 className="section-title">Dostupni profili</h2>
-        {feed.length === 0 && !loading && (
-          <div className="card empty-state">
-            <p>Trenutno nema kompatibilnih profila.</p>
-            <p className="muted">Vrati se uskoro — sustav ne skriva doseg, nego čeka nove korisnike i promjene preferencija.</p>
+      <section className="feed-section">
+        <h2 className="section-title">
+          Otkrij profile
+          {!loading && feed.length > 0 && feedReady && (
+            <span className="muted feed-section-count"> · {feed.length} za tebe</span>
+          )}
+        </h2>
+
+        {!loading && !feedReady && (
+          <div className="card empty-state empty-state-rich profile-gate">
+            <span className="empty-icon" aria-hidden="true">📷</span>
+            <h3>Profil nije spreman za feed</h3>
+            <p className="muted">
+              Dodaj fotografiju i bio (min. 10 znakova) prije slanja zahtjeva i swipea.
+            </p>
+            <Link className="button button-primary" to="/app/postavke">Dovrši profil</Link>
+            <Link className="button button-ghost" to="/app/onboarding">Pogledaj uvod</Link>
           </div>
         )}
-        <div className="profile-grid">
-          {feed.map((item) => (
-            <ProfileCard key={item.id} person={item}>
-              <div className="card-actions">
-                <button type="button" className="button button-primary" onClick={() => contact(item.id)}>
-                  Pošalji zahtjev
-                </button>
-                <button type="button" className="button button-ghost" onClick={() => rate(item.id, 5)}>
-                  Ocijeni
-                </button>
-                <button type="button" className="button button-ghost" onClick={() => report(item.id)}>
-                  Prijavi
-                </button>
-                <button type="button" className="button button-ghost" onClick={() => block(item.id)}>
-                  Blokiraj
-                </button>
-              </div>
-            </ProfileCard>
-          ))}
-        </div>
+
+        {feedReady && !loading && feed.length === 0 && (
+          <div className="card empty-state empty-state-rich">
+            <span className="empty-icon" aria-hidden="true">♥</span>
+            <h3>Nema novih profila</h3>
+            <p className="muted">
+              Proširi grad ili preference u Postavkama — ili se vrati uskoro kad se netko novi registrira.
+            </p>
+            <Link className="button button-primary" to="/app/postavke">Proširi preference</Link>
+          </div>
+        )}
+        {feedReady && !loading && feed.length > 0 && feedIndex >= feed.length && (
+          <div className="card empty-state empty-state-rich">
+            <span className="empty-icon" aria-hidden="true">✨</span>
+            <h3>Pregledao/la si sve</h3>
+            <p className="muted">Vrati se kasnije — novi profili se pojavljuju redovito.</p>
+            <button type="button" className="button button-secondary" onClick={() => setFeedIndex(0)}>
+              Pogledaj ponovo
+            </button>
+          </div>
+        )}
+        {feedReady && currentPerson && (
+          <SwipeFeedCard
+            person={currentPerson}
+            myCity={profile?.city}
+            busy={actionBusy}
+            onLike={() => contact(currentPerson.id)}
+            onPass={advanceFeed}
+            onBlock={() => block(currentPerson.id)}
+            onReport={() => report(currentPerson.id)}
+          />
+        )}
+        {feedReady && feed.length > 0 && feedIndex < feed.length && (
+          <p className="muted feed-counter">
+            {feedIndex + 1} / {feed.length}
+          </p>
+        )}
       </section>
     </main>
   );

@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { forgotPassword, login, register, resetPassword, verifyEmail } from '../api/index.js';
 import { IDENTITY_LABELS, INTENT_LABELS, PROFILE_TYPE_LABELS } from '../lib/labels.js';
 import TurnstileWidget, { isTurnstileEnabled, resetTurnstileWidget } from '../components/TurnstileWidget.jsx';
+import { trackEvent } from '../lib/analytics.js';
 
 const REG_STEPS = [
   { id: 1, title: 'Račun' },
@@ -31,7 +32,8 @@ export default function AuthPage({ onLogin }) {
     profileType: 'INDIVIDUAL',
     seekingIdentities: ['FEMALE'],
     seekingProfileTypes: ['INDIVIDUAL'],
-    intents: ['RELATIONSHIP']
+    intents: ['RELATIONSHIP'],
+    referralCode: searchParams.get('ref')?.trim().toLowerCase() || ''
   });
   const [verifyForm, setVerifyForm] = useState({ email: '', code: '' });
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
@@ -65,8 +67,11 @@ export default function AuthPage({ onLogin }) {
     setBusy(true);
     setMessage('');
     try {
-      const data = await register({ ...registerForm, website, captchaToken: captchaToken || undefined });
+      const payload = { ...registerForm, website, captchaToken: captchaToken || undefined };
+      if (!payload.referralCode) delete payload.referralCode;
+      const data = await register(payload);
       if (data?.success) {
+        trackEvent('Register');
         setVerifyForm((prev) => ({ ...prev, email: registerForm.email }));
         setMessage('Račun je kreiran. Unesi verifikacijski kod koji si primio/la.', 'success');
         setStep(2);
@@ -131,6 +136,7 @@ export default function AuthPage({ onLogin }) {
     try {
       const data = await login(loginForm);
       if (data?.success) {
+        trackEvent('Login');
         onLogin(data.token, data.profile);
       } else {
         setMessage(data?.error || 'Prijava nije uspjela. Provjeri email i lozinku.', 'error');
@@ -166,6 +172,9 @@ export default function AuthPage({ onLogin }) {
       {step === 1 && (
         <form onSubmit={submitRegister} className="card auth-card">
           <h2 className="section-title">1. Kreiraj račun</h2>
+          {registerForm.referralCode && (
+            <p className="status-banner status-info">Pozivnica primijenjena — hvala što si došao/la preko prijatelja.</p>
+          )}
           <div className="form-grid">
             <label>
               Email

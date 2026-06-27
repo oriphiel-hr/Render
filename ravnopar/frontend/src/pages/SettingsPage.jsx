@@ -12,6 +12,8 @@ import PageMeta from '../components/PageMeta.jsx';
 import ProfileAvatar from '../components/ProfileAvatar.jsx';
 import { IDENTITY_LABELS, INTENT_LABELS, PROFILE_TYPE_LABELS, labelAvailability } from '../lib/labels.js';
 import { resizeImageFile } from '../lib/photo-utils.js';
+import { ICEBREAKER_PROMPTS } from '../lib/icebreakers.js';
+import InviteSection from '../components/InviteSection.jsx';
 
 export default function SettingsPage({ token, profile, onLogout, onProfileUpdate }) {
   const navigate = useNavigate();
@@ -88,8 +90,53 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
     setBusy(false);
   }
 
+  async function handleSelfieChange(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setBusy(true);
+    try {
+      const dataUrl = await resizeImageFile(file);
+      setForm((prev) => ({ ...prev, verificationSelfie: dataUrl, verificationPending: true }));
+      setMessage('Selfie dodan — spremi profil za slanje na provjeru.', 'info');
+    } catch (error) {
+      setMessage(error.message || 'Selfie nije uspio.', 'error');
+    } finally {
+      setBusy(false);
+      event.target.value = '';
+    }
+  }
+
+  function detectLocation() {
+    if (!navigator.geolocation) {
+      setMessage('Preglednik ne podržava geolokaciju.', 'error');
+      return;
+    }
+    setBusy(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setForm((prev) => ({
+          ...prev,
+          shareLocation: true,
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude
+        }));
+        setMessage('Lokacija učitana. Spremi profil.', 'success');
+        setBusy(false);
+      },
+      () => {
+        setMessage('Lokacija nije dostupna. Provjeri dozvole preglednika.', 'error');
+        setBusy(false);
+      },
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 600000 }
+    );
+  }
+
   async function saveProfile(event) {
     event.preventDefault();
+    if (form.shareLocation && (form.latitude == null || form.longitude == null)) {
+      setMessage('Uključi lokaciju gumbom „Učitaj moju lokaciju“ prije spremanja.', 'error');
+      return;
+    }
     setBusy(true);
     setMessage('');
     try {
@@ -104,7 +151,15 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
         intents: form.intents,
         availability: form.availability,
         notifyEmail: form.notifyEmail,
-        photos: form.photos || []
+        photos: form.photos || [],
+        icebreakers: form.icebreakers || [],
+        shareLocation: Boolean(form.shareLocation),
+        latitude: form.shareLocation ? form.latitude ?? null : null,
+        longitude: form.shareLocation ? form.longitude ?? null : null,
+        videoUrl: form.videoUrl?.trim() || null,
+        ...(form.verificationSelfie?.startsWith('data:image/')
+          ? { verificationSelfie: form.verificationSelfie }
+          : {})
       });
       if (data?.success) {
         setForm(data.profile);
@@ -220,6 +275,133 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
         </label>
 
         <fieldset className="settings-fieldset">
+          <legend>Icebreaker pitanja (do 3)</legend>
+          <p className="muted">Kratka pitanja i odgovori — pomažu pri prvom kontaktu.</p>
+          {(form.icebreakers || []).map((item, index) => (
+            <div key={index} className="icebreaker-edit">
+              <label className="field-label">
+                Pitanje
+                <select
+                  className="input"
+                  value={item.question}
+                  onChange={(e) => {
+                    const next = [...(form.icebreakers || [])];
+                    next[index] = { ...next[index], question: e.target.value };
+                    setForm({ ...form, icebreakers: next });
+                  }}
+                >
+                  {ICEBREAKER_PROMPTS.map((prompt) => (
+                    <option key={prompt} value={prompt}>{prompt}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="field-label">
+                Odgovor
+                <input
+                  className="input"
+                  maxLength={200}
+                  value={item.answer}
+                  onChange={(e) => {
+                    const next = [...(form.icebreakers || [])];
+                    next[index] = { ...next[index], answer: e.target.value };
+                    setForm({ ...form, icebreakers: next });
+                  }}
+                />
+              </label>
+              <button
+                type="button"
+                className="button button-ghost button-sm"
+                onClick={() => setForm({ ...form, icebreakers: (form.icebreakers || []).filter((_, i) => i !== index) })}
+              >
+                Ukloni
+              </button>
+            </div>
+          ))}
+          {(form.icebreakers || []).length < 3 && (
+            <button
+              type="button"
+              className="button button-secondary"
+              onClick={() =>
+                setForm({
+                  ...form,
+                  icebreakers: [
+                    ...(form.icebreakers || []),
+                    { question: ICEBREAKER_PROMPTS[(form.icebreakers || []).length % ICEBREAKER_PROMPTS.length], answer: '' }
+                  ]
+                })
+              }
+            >
+              Dodaj icebreaker
+            </button>
+          )}
+        </fieldset>
+
+        <fieldset className="settings-fieldset">
+          <legend>Udaljenost (privatno)</legend>
+          <p className="muted">
+            Koordinate se ne prikazuju drugima — samo gruba udaljenost (npr. „5–15 km“). Oboje mora uključiti opciju.
+          </p>
+          <label className="choice-chip notify-toggle">
+            <input
+              type="checkbox"
+              checked={Boolean(form.shareLocation)}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  shareLocation: e.target.checked,
+                  ...(e.target.checked ? {} : { latitude: null, longitude: null })
+                })
+              }
+            />
+            Prikaži udaljenost od mene drugim korisnicima
+          </label>
+          {form.shareLocation && (
+            <div className="location-actions">
+              <button type="button" className="button button-secondary" disabled={busy} onClick={detectLocation}>
+                Učitaj moju lokaciju
+              </button>
+              {form.latitude != null && form.longitude != null && (
+                <span className="chip chip-verified">Lokacija spremljena</span>
+              )}
+            </div>
+          )}
+        </fieldset>
+
+        <fieldset className="settings-fieldset">
+          <legend>Video profil (link)</legend>
+          <label className="field-label">
+            YouTube, Vimeo, Instagram ili TikTok link
+            <input
+              className="input"
+              type="url"
+              placeholder="https://youtube.com/..."
+              value={form.videoUrl || ''}
+              onChange={(e) => setForm({ ...form, videoUrl: e.target.value })}
+            />
+          </label>
+        </fieldset>
+
+        <fieldset className="settings-fieldset">
+          <legend>Verifikacija profila</legend>
+          <p className="muted">
+            Selfie za ručnu provjeru admin tima — usporedba s profilnom fotkom. Nije javno vidljivo.
+          </p>
+          {form.photoVerified && !form.verificationPending && (
+            <span className="chip chip-verified">Profil verificiran</span>
+          )}
+          {form.verificationPending && (
+            <p className="status-banner status-info">Selfie je na provjeri — obavijest stiže nakon pregleda.</p>
+          )}
+          <label className="field-label">
+            Verifikacijski selfie
+            <input type="file" accept="image/*" onChange={handleSelfieChange} disabled={busy} />
+          </label>
+          {form.verificationSelfie && (
+            <img src={form.verificationSelfie} alt="" className="verification-selfie-preview" />
+          )}
+        </fieldset>
+
+        <fieldset className="settings-fieldset">
           <legend>Identitet</legend>
           <div className="choice-row">
             {Object.entries(IDENTITY_LABELS).map(([value, label]) => (
@@ -319,6 +501,8 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
           </div>
         </section>
       )}
+
+      <InviteSection token={token} />
 
       <section className="card">
         <h2 className="section-title">Privatnost (GDPR)</h2>

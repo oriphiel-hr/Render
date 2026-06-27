@@ -24,6 +24,14 @@
 
 Bez SMTP-a kodovi se logiraju u backend konzolu (Render → Logs).
 
+| Key | Opis |
+|-----|------|
+| `MESSAGE_EMAIL_COOLDOWN_MS` | Cooldown emaila za nove poruke (default `900000` = 15 min) |
+
+### Monitoring
+
+Vidi [MONITORING.md](./MONITORING.md) — UptimeRobot na `/health`.
+
 ### Stripe Premium
 
 | Key | Opis |

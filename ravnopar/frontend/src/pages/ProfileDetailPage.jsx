@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { blockUser, getPublicProfile, reportUser, sendContactRequest } from '../api/index.js';
 import PageMeta from '../components/PageMeta.jsx';
-import ProfileAvatar from '../components/ProfileAvatar.jsx';
+import PhotoGallery from '../components/PhotoGallery.jsx';
+import VideoEmbed from '../components/VideoEmbed.jsx';
 import { labelIdentity, labelIntent, labelProfileType } from '../lib/labels.js';
 
 export default function ProfileDetailPage({ token, myProfileId }) {
@@ -43,27 +44,39 @@ export default function ProfileDetailPage({ token, myProfileId }) {
       {status && <p className="status-banner status-info">{status}</p>}
       {person && (
         <article className="card profile-detail-card">
+          <PhotoGallery photos={person.photos} alt={person.displayName} className="profile-detail-gallery" />
           <div className="profile-detail-head">
-            <ProfileAvatar person={person} size="lg" />
             <div>
               <h1>{person.displayName}</h1>
-              <p className="muted">{person.city}, {person.age} god.</p>
-              {person.photoVerified && <span className="chip">Verificiran profil</span>}
-              {person.planTier !== 'free' && <span className="chip">Supporter</span>}
+              <p className="muted">
+                {person.city}, {person.age} god.
+                {person.distanceLabel && <span className="chip chip-distance">{person.distanceLabel}</span>}
+              </p>
+              <div className="profile-tags">
+                {person.photoVerified && <span className="chip chip-verified">Verificiran profil</span>}
+                {person.planTier !== 'free' && <span className="chip">Supporter</span>}
+                <span className="chip">{labelIdentity(person.identity)}</span>
+                <span className="chip">{labelProfileType(person.profileType)}</span>
+              </div>
             </div>
           </div>
-          {person.photos?.length > 1 && (
-            <div className="photo-gallery">
-              {person.photos.slice(1).map((photo) => (
-                <img key={photo.slice(-24)} src={photo} alt="" className="photo-thumb" />
-              ))}
+          {person.bio && <p className="profile-bio">{person.bio}</p>}
+          {person.videoUrl && (
+            <div className="profile-video-block">
+              <h2 className="subsection-title">Video</h2>
+              <VideoEmbed url={person.videoUrl} />
             </div>
           )}
-          {person.bio && <p className="profile-bio">{person.bio}</p>}
-          <div className="profile-tags">
-            <span className="chip">{labelIdentity(person.identity)}</span>
-            <span className="chip">{labelProfileType(person.profileType)}</span>
-          </div>
+          {person.icebreakers?.length > 0 && (
+            <ul className="icebreaker-list">
+              {person.icebreakers.map((item) => (
+                <li key={item.question}>
+                  <strong>{item.question}</strong>
+                  <span>{item.answer}</span>
+                </li>
+              ))}
+            </ul>
+          )}
           <p className="muted">
             Traži: {(person.intents || []).map((i) => labelIntent(i)).join(', ')}
           </p>

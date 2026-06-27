@@ -5,8 +5,10 @@ import { matchmakingRouter } from './routes/matchmaking.js';
 import { authRouter } from './routes/auth.js';
 import { paymentsRouter, handleStripeWebhook } from './routes/payments.js';
 import { adminRouter } from './routes/admin.js';
+import { prisma } from './lib/prisma.js';
 
 const app = express();
+const startedAt = new Date().toISOString();
 
 const frontendBaseUrl = process.env.FRONTEND_BASE_URL?.replace(/\/$/, '');
 const corsOrigins = [
@@ -28,8 +30,23 @@ app.post(
 
 app.use(express.json({ limit: '2mb' }));
 
-app.get('/health', (_req, res) => {
-  res.json({ ok: true, service: 'ravnopar-backend' });
+app.get('/health', async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({
+      ok: true,
+      service: 'ravnopar-backend',
+      startedAt,
+      database: 'ok'
+    });
+  } catch (_error) {
+    res.status(503).json({
+      ok: false,
+      service: 'ravnopar-backend',
+      startedAt,
+      database: 'error'
+    });
+  }
 });
 
 app.use('/api/auth', authRouter);

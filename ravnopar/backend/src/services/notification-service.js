@@ -1,5 +1,6 @@
 import { sendEmail } from '../lib/mail.js';
 import { prisma } from '../lib/prisma.js';
+import { canSendMessageEmail, markMessageEmailSent } from '../lib/message-email-throttle.js';
 
 const frontendBase = () => (process.env.FRONTEND_BASE_URL || 'http://localhost:5173').replace(/\/$/, '');
 
@@ -87,11 +88,16 @@ export async function notifyAdminReport(reportId, reportedName, reason) {
   });
 }
 
-export async function notifyNewMessage(recipientProfileId, senderName) {
+export async function notifyNewMessage(recipientProfileId, senderName, pairId) {
   const recipient = await prisma.userProfile.findUnique({ where: { id: recipientProfileId } });
   if (!recipient?.email || recipient.notifyEmail === false) return { skipped: true };
 
-  return sendEmail({
+  if (pairId) {
+    const allowed = await canSendMessageEmail(pairId, recipientProfileId);
+    if (!allowed) return { skipped: true, reason: 'throttled' };
+  }
+
+  const result = await sendEmail({
     to: recipient.email,
     subject: 'Ravnopar — nova poruka',
     text: [
@@ -102,4 +108,10 @@ export async function notifyNewMessage(recipientProfileId, senderName) {
       `Otvori aplikaciju: ${frontendBase()}/app`
     ].join('\n')
   });
+
+  if (pairId && result?.sent === true) {
+    await markMessageEmailSent(pairId, recipientProfileId);
+  }
+
+  return result;
 }

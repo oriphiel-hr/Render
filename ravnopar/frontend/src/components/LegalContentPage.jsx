@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import PageMeta from './PageMeta.jsx';
+import { LEGAL_DISCLAIMER } from '../lib/legal-content.js';
 
 export default function LegalContentPage({ title, description, sections, backTo = '/' }) {
   return (
@@ -9,6 +10,7 @@ export default function LegalContentPage({ title, description, sections, backTo 
         <h1>{title}</h1>
         <p className="subtitle">{description}</p>
       </section>
+      <p className="card legal-disclaimer">{LEGAL_DISCLAIMER}</p>
       <div className="legal-sections">
         {sections.map((section) => (
           <article key={section.title} className="card legal-section">

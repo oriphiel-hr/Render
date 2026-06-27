@@ -3,13 +3,16 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { issueAuthToken, requireAuth } from '../lib/auth.js';
-import { normalizePhotos, toPublicProfile } from '../lib/profile-public.js';
+import { normalizePhotos, toPublicProfile, normalizeIcebreakers } from '../lib/profile-public.js';
 import { validatePhotosArray } from '../lib/photo-validation.js';
-import { calculateProfileCompleteness } from '../services/profile-service.js';
+import { calculateProfileCompleteness, isFeedReady } from '../services/profile-service.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../services/notification-service.js';
 import { verifyRegisterCaptcha, validateTurnstile } from '../lib/captcha.js';
 import { persistPhotos } from '../lib/storage.js';
+import { persistVerificationSelfie } from '../lib/verification-selfie.js';
+import { normalizeVideoUrl } from '../lib/video-url.js';
 import { rateLimit } from '../lib/rate-limit.js';
+import { ensureReferralCode, generateReferralCode } from '../lib/referral.js';
 
 export const authRouter = Router();
 
@@ -29,7 +32,8 @@ const registerSchema = z.object({
   seekingProfileTypes: z.array(z.enum(['INDIVIDUAL', 'COUPLE'])).min(1).max(2),
   intents: z.array(z.enum(['CHAT', 'CASUAL', 'RELATIONSHIP', 'MARRIAGE', 'ADVENTURE'])).min(1).max(5),
   website: z.string().max(0).optional(),
-  captchaToken: z.string().optional()
+  captchaToken: z.string().optional(),
+  referralCode: z.string().min(4).max(12).optional()
 });
 
 const verifySchema = z.object({
@@ -87,6 +91,15 @@ authRouter.post('/register', async (req, res) => {
     const bootstrapAdminEnabled = process.env.FIRST_USER_IS_ADMIN !== 'false';
     const initialRole = existingAccounts === 0 && bootstrapAdminEnabled ? 'ADMIN' : 'USER';
 
+    let referredByProfileId = null;
+    if (payload.referralCode) {
+      const code = payload.referralCode.trim().toLowerCase();
+      const referrer = await prisma.userProfile.findFirst({
+        where: { referralCode: code }
+      });
+      if (referrer) referredByProfileId = referrer.id;
+    }
+
     await prisma.$transaction(async (tx) => {
       const profile = await tx.userProfile.create({
         data: {
@@ -100,7 +113,9 @@ authRouter.post('/register', async (req, res) => {
           profileType: payload.profileType,
           seekingIdentities: payload.seekingIdentities,
           seekingProfileTypes: payload.seekingProfileTypes,
-          intents: payload.intents
+          intents: payload.intents,
+          referredByProfileId,
+          referralCode: generateReferralCode(payload.displayName)
         }
       });
       await tx.userAccount.create({
@@ -341,7 +356,16 @@ const profileUpdateSchema = z.object({
   availability: z.enum(['AVAILABLE', 'PAUSED']).optional(),
   notifyEmail: z.boolean().optional(),
   onboardingDone: z.boolean().optional(),
-  photos: z.array(z.string()).max(3).optional()
+  photos: z.array(z.string()).max(3).optional(),
+  icebreakers: z
+    .array(z.object({ question: z.string().min(2).max(120), answer: z.string().min(1).max(200) }))
+    .max(3)
+    .optional(),
+  shareLocation: z.boolean().optional(),
+  latitude: z.number().min(-90).max(90).nullable().optional(),
+  longitude: z.number().min(-180).max(180).nullable().optional(),
+  videoUrl: z.string().max(500).nullable().optional(),
+  verificationSelfie: z.string().max(600_000).nullable().optional()
 });
 
 authRouter.get('/profile', requireAuth, async (req, res) => {
@@ -353,9 +377,32 @@ authRouter.get('/profile', requireAuth, async (req, res) => {
       ...toPublicProfile(profile),
       email: profile.email,
       dateOfBirth: profile.dateOfBirth,
-      notifyEmail: profile.notifyEmail
+      notifyEmail: profile.notifyEmail,
+      shareLocation: profile.shareLocation,
+      verificationPending: profile.verificationPending,
+      verificationSelfie: profile.verificationSelfie || null
     },
+    feedReady: isFeedReady(profile),
     completeness: calculateProfileCompleteness(profile)
+  });
+});
+
+authRouter.get('/referral', requireAuth, async (req, res) => {
+  const profile = await prisma.userProfile.findUnique({ where: { id: req.auth.profileId } });
+  if (!profile) return res.status(404).json({ success: false, error: 'Profile not found' });
+
+  const referralCode = await ensureReferralCode(prisma, profile.id, profile.displayName);
+  const invitedCount = await prisma.userProfile.count({
+    where: { referredByProfileId: profile.id }
+  });
+
+  const frontendBase = (process.env.FRONTEND_BASE_URL || 'http://localhost:5173').replace(/\/$/, '');
+
+  return res.json({
+    success: true,
+    referralCode,
+    inviteUrl: `${frontendBase}/auth?ref=${referralCode}`,
+    invitedCount
   });
 });
 
@@ -380,6 +427,52 @@ authRouter.patch('/profile', requireAuth, async (req, res) => {
     if (payload.photos) {
       data.photos = await persistPhotos(profile.id, normalizePhotos(payload.photos));
     }
+    if (payload.icebreakers) {
+      data.icebreakers = normalizeIcebreakers(payload.icebreakers);
+    }
+    if (payload.videoUrl !== undefined) {
+      data.videoUrl = payload.videoUrl ? normalizeVideoUrl(payload.videoUrl) : null;
+      if (payload.videoUrl && !data.videoUrl) {
+        return res.status(400).json({ success: false, error: 'Neispravan video link.' });
+      }
+    }
+    if (payload.shareLocation === false) {
+      data.shareLocation = false;
+      data.latitude = null;
+      data.longitude = null;
+    } else if (payload.shareLocation === true) {
+      data.shareLocation = true;
+    }
+    if (payload.latitude !== undefined && payload.shareLocation !== false) {
+      data.latitude = payload.latitude;
+    }
+    if (payload.longitude !== undefined && payload.shareLocation !== false) {
+      data.longitude = payload.longitude;
+    }
+    if (payload.verificationSelfie !== undefined) {
+      if (payload.verificationSelfie === null) {
+        data.verificationSelfie = null;
+        data.verificationPending = false;
+      } else {
+        const stored = await persistVerificationSelfie(profile.id, payload.verificationSelfie);
+        if (!stored) {
+          return res.status(400).json({ success: false, error: 'Neispravan selfie.' });
+        }
+        data.verificationSelfie = stored;
+        data.verificationPending = true;
+        data.photoVerified = false;
+      }
+    }
+
+    if (payload.onboardingDone === true) {
+      const merged = { ...profile, ...data };
+      if (!isFeedReady(merged)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Prije završetka uvoda dodaj fotografiju i bio (min. 10 znakova).'
+        });
+      }
+    }
 
     const updated = await prisma.userProfile.update({
       where: { id: profile.id },
@@ -392,7 +485,10 @@ authRouter.patch('/profile', requireAuth, async (req, res) => {
         ...toPublicProfile(updated),
         email: updated.email,
         dateOfBirth: updated.dateOfBirth,
-        notifyEmail: updated.notifyEmail
+        notifyEmail: updated.notifyEmail,
+        shareLocation: updated.shareLocation,
+        verificationPending: updated.verificationPending,
+        verificationSelfie: updated.verificationSelfie || null
       },
       completeness: calculateProfileCompleteness(updated)
     });

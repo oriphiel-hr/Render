@@ -32,6 +32,11 @@ export async function getProfile(token) {
   return res.json();
 }
 
+export async function getReferralInfo(token) {
+  const res = await fetch(`${API_BASE_URL}/auth/referral`, { headers: authHeaders(token) });
+  return res.json();
+}
+
 export async function updateProfile(token, payload) {
   const res = await fetch(`${API_BASE_URL}/auth/profile`, {
     method: 'PATCH',
@@ -331,6 +336,36 @@ export async function updateAdminUser(token, profileId, payload) {
 
 export async function getAdminPayments(token) {
   const res = await fetch(`${API_BASE_URL}/admin/payments`, { headers: authHeaders(token) });
+  return res.json();
+}
+
+export async function getAdminVerificationQueue(token) {
+  const res = await fetch(`${API_BASE_URL}/admin/verification-queue`, { headers: authHeaders(token) });
+  return res.json();
+}
+
+export async function rejectAdminVerification(token, profileId) {
+  const res = await fetch(`${API_BASE_URL}/admin/users/${profileId}/verification/reject`, {
+    method: 'POST',
+    headers: authHeaders(token)
+  });
+  return res.json();
+}
+
+export async function sendTypingPulse(token, pairId) {
+  const res = await fetch(`${API_BASE_URL}/matchmaking/pairs/${pairId}/typing`, {
+    method: 'POST',
+    headers: authHeaders(token)
+  });
+  return res.json();
+}
+
+export async function reactToMessage(token, pairId, messageId, emoji) {
+  const res = await fetch(`${API_BASE_URL}/matchmaking/pairs/${pairId}/messages/${messageId}/reaction`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ emoji })
+  });
   return res.json();
 }
 

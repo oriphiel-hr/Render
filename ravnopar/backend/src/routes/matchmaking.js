@@ -3,9 +3,11 @@ import { z } from 'zod';
 import { requireAdmin, requireAuth } from '../lib/auth.js';
 import { prisma } from '../lib/prisma.js';
 import { toPublicProfile } from '../lib/profile-public.js';
+import { setTyping, getTypingInPair } from '../lib/typing-state.js';
+import { distanceLabelForProfiles } from '../lib/geo.js';
 import { getDemoFeedState } from '../services/fairness-service.js';
 import { evaluateContactLimiter, evaluatePreferencePolicy } from '../services/policy-service.js';
-import { calculateProfileCompleteness } from '../services/profile-service.js';
+import { calculateProfileCompleteness, isFeedReady, hasProfilePhoto } from '../services/profile-service.js';
 import {
   notifyContactAccepted,
   notifyContactRequest,
@@ -106,13 +108,16 @@ matchmakingRouter.get('/feed', requireAuth, async (req, res) => {
       candidateSeekingProfileTypes.includes(me.profileType);
     const intentOverlap = hasOverlap(myIntents, candidateIntents);
 
-    return myWantsCandidate && candidateWantsMe && intentOverlap;
+    return myWantsCandidate && candidateWantsMe && intentOverlap && hasProfilePhoto(candidate);
   });
 
   return res.json({
     success: true,
     items: compatible.map((candidate) =>
-      toPublicProfile(candidate, { completeness: calculateProfileCompleteness(candidate) })
+      toPublicProfile(candidate, {
+        completeness: calculateProfileCompleteness(candidate),
+        distanceLabel: distanceLabelForProfiles(me, candidate)
+      })
     )
   });
 });
@@ -166,6 +171,7 @@ matchmakingRouter.get('/my-state', requireAuth, async (req, res) => {
       notifyEmail: profile.notifyEmail
     },
     completeness: calculateProfileCompleteness(profile),
+    feedReady: isFeedReady(profile),
     activePair: activePairPayload,
     pendingIncoming: pendingContacts.map((row) => {
       const requester = requesterById.get(row.requesterId);
@@ -202,6 +208,12 @@ matchmakingRouter.post('/contact-request', requireAuth, async (req, res) => {
       getBlockedIdSet(req.auth.profileId)
     ]);
     if (!me || !target) return res.status(404).json({ success: false, error: 'Profile not found' });
+    if (!isFeedReady(me)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Dodaj fotografiju i bio (min. 10 znakova) prije slanja zahtjeva.'
+      });
+    }
     if (blockedIds.has(target.id)) {
       return res.status(403).json({ success: false, error: 'Contact blocked between users' });
     }
@@ -398,7 +410,13 @@ matchmakingRouter.post('/contacts/:contactId/respond', requireAuth, async (req, 
       notifyContactAccepted(requester.id, accepter.displayName).catch(() => {});
     }
 
-    return res.json({ success: true, item, pairId: item.pair?.id || null });
+    return res.json({
+      success: true,
+      item,
+      pairId: item.pair?.id || null,
+      partnerName: requester?.displayName || null,
+      partnerId: contact.requesterId
+    });
   } catch (_error) {
     return res.status(400).json({ success: false, error: 'Invalid payload' });
   }
@@ -650,7 +668,10 @@ matchmakingRouter.get('/admin/fairness-audit', requireAuth, requireAdmin, async 
 });
 
 matchmakingRouter.get('/profiles/:profileId', requireAuth, async (req, res) => {
-  const profile = await prisma.userProfile.findUnique({ where: { id: req.params.profileId } });
+  const [profile, me] = await Promise.all([
+    prisma.userProfile.findUnique({ where: { id: req.params.profileId } }),
+    prisma.userProfile.findUnique({ where: { id: req.auth.profileId } })
+  ]);
   if (!profile) return res.status(404).json({ success: false, error: 'Profile not found' });
 
   const blockedIds = await getBlockedIdSet(req.auth.profileId);
@@ -660,7 +681,10 @@ matchmakingRouter.get('/profiles/:profileId', requireAuth, async (req, res) => {
 
   return res.json({
     success: true,
-    profile: toPublicProfile(profile, { completeness: calculateProfileCompleteness(profile) })
+    profile: toPublicProfile(profile, {
+      completeness: calculateProfileCompleteness(profile),
+      distanceLabel: me ? distanceLabelForProfiles(me, profile) : null
+    })
   });
 });
 
@@ -718,13 +742,28 @@ matchmakingRouter.get('/pairs/:pairId/messages', requireAuth, async (req, res) =
   const pair = await assertPairMember(req.params.pairId, req.auth.profileId);
   if (!pair) return res.status(404).json({ success: false, error: 'Active pair not found' });
 
-  const items = await prisma.pairMessage.findMany({
-    where: { pairId: pair.id },
-    orderBy: { createdAt: 'asc' },
-    take: 200
-  });
+  const partnerId = pair.userAId === req.auth.profileId ? pair.userBId : pair.userAId;
+  const [rows, partnerRead] = await Promise.all([
+    prisma.pairMessage.findMany({
+      where: { pairId: pair.id },
+      orderBy: { createdAt: 'asc' },
+      take: 200
+    }),
+    prisma.pairReadState.findUnique({
+      where: { pairId_profileId: { pairId: pair.id, profileId: partnerId } }
+    })
+  ]);
 
-  return res.json({ success: true, items });
+  const partnerLastReadAt = partnerRead?.lastReadAt || null;
+  const items = rows.map((msg) => ({
+    ...msg,
+    readByPartner:
+      msg.senderId === req.auth.profileId &&
+      partnerLastReadAt &&
+      msg.createdAt <= partnerLastReadAt
+  }));
+
+  return res.json({ success: true, items, partnerLastReadAt });
 });
 
 matchmakingRouter.post('/pairs/:pairId/messages', requireAuth, async (req, res) => {
@@ -750,10 +789,39 @@ matchmakingRouter.post('/pairs/:pairId/messages', requireAuth, async (req, res) 
 
     const sender = await prisma.userProfile.findUnique({ where: { id: req.auth.profileId } });
     if (sender) {
-      notifyNewMessage(recipientId, sender.displayName).catch(() => {});
+      notifyNewMessage(recipientId, sender.displayName, pair.id).catch(() => {});
     }
 
     return res.status(201).json({ success: true, item });
+  } catch (_error) {
+    return res.status(400).json({ success: false, error: 'Invalid payload' });
+  }
+});
+
+matchmakingRouter.post('/pairs/:pairId/typing', requireAuth, async (req, res) => {
+  const pair = await assertPairMember(req.params.pairId, req.auth.profileId);
+  if (!pair) return res.status(404).json({ success: false, error: 'Active pair not found' });
+  setTyping(pair.id, req.auth.profileId);
+  return res.json({ success: true });
+});
+
+matchmakingRouter.post('/pairs/:pairId/messages/:messageId/reaction', requireAuth, async (req, res) => {
+  const schema = z.object({ emoji: z.string().min(1).max(8).nullable() });
+  try {
+    const pair = await assertPairMember(req.params.pairId, req.auth.profileId);
+    if (!pair) return res.status(404).json({ success: false, error: 'Active pair not found' });
+
+    const message = await prisma.pairMessage.findFirst({
+      where: { id: req.params.messageId, pairId: pair.id }
+    });
+    if (!message) return res.status(404).json({ success: false, error: 'Message not found' });
+
+    const { emoji } = schema.parse(req.body);
+    const item = await prisma.pairMessage.update({
+      where: { id: message.id },
+      data: { reaction: emoji }
+    });
+    return res.json({ success: true, item });
   } catch (_error) {
     return res.status(400).json({ success: false, error: 'Invalid payload' });
   }
@@ -778,9 +846,12 @@ matchmakingRouter.get('/pairs/:pairId/messages/stream', requireAuth, async (req,
         orderBy: { createdAt: 'asc' },
         take: 50
       });
+      const typing = getTypingInPair(pair.id, req.auth.profileId);
       if (messages.length > 0) {
         since = messages[messages.length - 1].createdAt;
-        res.write(`data: ${JSON.stringify({ messages })}\n\n`);
+        res.write(`data: ${JSON.stringify({ messages, typing })}\n\n`);
+      } else if (typing.length > 0) {
+        res.write(`data: ${JSON.stringify({ typing })}\n\n`);
       } else {
         res.write(`data: ${JSON.stringify({ ping: true })}\n\n`);
       }

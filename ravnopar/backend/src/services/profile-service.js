@@ -26,3 +26,15 @@ export function calculateProfileCompleteness(profile) {
   const done = checks.filter(Boolean).length;
   return Math.round((done / checks.length) * 100);
 }
+
+export function hasProfilePhoto(profile) {
+  return hasPhoto(profile);
+}
+
+export function hasMinimumBio(profile, minLength = 10) {
+  return typeof profile?.bio === 'string' && profile.bio.trim().length >= minLength;
+}
+
+export function isFeedReady(profile) {
+  return hasProfilePhoto(profile) && hasMinimumBio(profile);
+}

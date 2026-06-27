@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import PageMeta from '../components/PageMeta.jsx';
 import StructuredData from '../components/StructuredData.jsx';
+import LandingShowcase from '../components/LandingShowcase.jsx';
 import { getPublicStats } from '../api/index.js';
 
 const STEPS = [
@@ -57,6 +58,29 @@ const SAFETY_ITEMS = [
   }
 ];
 
+function LandingSocialProof({ stats }) {
+  if (!stats) return null;
+
+  const showCommunitySize = stats.activeCount >= 20;
+  const topCities = (stats.topCities || []).slice(0, 3);
+
+  return (
+    <div className="social-proof">
+      {showCommunitySize && (
+        <span className="chip">{stats.activeCount}+ dostupno u zajednici</span>
+      )}
+      {stats.contactsLast30Days > 0 && (
+        <span className="chip">{stats.contactsLast30Days} kontakata (30 dana)</span>
+      )}
+      {topCities.length > 0 && (
+        <span className="chip social-proof-cities">
+          Aktivno: {topCities.map((row) => row.city).join(', ')}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export default function HomePage() {
   const [searchParams] = useSearchParams();
   const donateThanks = searchParams.get('donate') === 'thanks';
@@ -80,21 +104,13 @@ export default function HomePage() {
           Hvala na donaciji! Tvoja podrška pomaže održavanju Ravnopara.
         </p>
       )}
-      <section className="landing-hero">
+      <section className="landing-hero landing-hero-animated">
         <p className="eyebrow">Dating bez manipulacije dosega</p>
         <h1>Ravnopar</h1>
         <p className="landing-lead">
           Fer platforma za upoznavanje: profili s fotografijom, chat nakon matcha i pravila koja su jasna unaprijed.
         </p>
-        {stats && (
-          <div className="social-proof">
-            <span className="chip">{stats.memberCount}+ članova</span>
-            <span className="chip">{stats.contactsLast30Days} kontakata (30 dana)</span>
-            {stats.topCities?.[0] && (
-              <span className="chip">Aktivno: {stats.topCities[0].city}</span>
-            )}
-          </div>
-        )}
+        {stats && <LandingSocialProof stats={stats} />}
         <div className="landing-actions">
           <Link className="button button-primary button-lg" to="/auth">
             Kreni
@@ -109,6 +125,8 @@ export default function HomePage() {
           <span className="chip">Zaštita od spama</span>
         </div>
       </section>
+
+      <LandingShowcase />
 
       <section className="landing-section">
         <h2 className="landing-heading">Kako funkcionira</h2>

@@ -14,6 +14,7 @@ export default function CookieBanner() {
 
   function accept() {
     localStorage.setItem(KEY, 'accepted');
+    window.dispatchEvent(new Event('ravnopar-cookie-consent'));
     setVisible(false);
   }
 

@@ -132,6 +132,10 @@ adminRouter.patch('/users/:profileId', async (req, res) => {
     const profileData = {};
     if (payload.planTier !== undefined) profileData.planTier = payload.planTier;
     if (payload.photoVerified !== undefined) profileData.photoVerified = payload.photoVerified;
+    if (payload.photoVerified === true) {
+      profileData.verificationPending = false;
+      profileData.verificationSelfie = null;
+    }
     if (payload.onboardingDone !== undefined) profileData.onboardingDone = payload.onboardingDone;
     if (payload.availability !== undefined) profileData.availability = payload.availability;
 
@@ -169,6 +173,41 @@ adminRouter.patch('/users/:profileId', async (req, res) => {
   } catch (_error) {
     return res.status(400).json({ success: false, error: 'Invalid payload' });
   }
+});
+
+adminRouter.get('/verification-queue', async (_req, res) => {
+  const items = await prisma.userProfile.findMany({
+    where: { verificationPending: true, verificationSelfie: { not: null } },
+    orderBy: { updatedAt: 'desc' },
+    take: 30,
+    select: {
+      id: true,
+      displayName: true,
+      email: true,
+      city: true,
+      photos: true,
+      verificationSelfie: true,
+      photoVerified: true,
+      updatedAt: true
+    }
+  });
+
+  return res.json({ success: true, items });
+});
+
+adminRouter.post('/users/:profileId/verification/reject', async (req, res) => {
+  const profile = await prisma.userProfile.findUnique({ where: { id: req.params.profileId } });
+  if (!profile) return res.status(404).json({ success: false, error: 'User not found' });
+
+  await prisma.userProfile.update({
+    where: { id: profile.id },
+    data: {
+      verificationSelfie: null,
+      verificationPending: false
+    }
+  });
+
+  return res.json({ success: true });
 });
 
 adminRouter.get('/payments', async (_req, res) => {

@@ -68,9 +68,26 @@ model UserProfile {
   notifyEmail   Boolean             @default(true)
   photoVerified Boolean             @default(false)
   onboardingDone Boolean            @default(false)
+  icebreakers   Json                @default("[]")
+  latitude      Float?
+  longitude     Float?
+  shareLocation Boolean             @default(false)
+  videoUrl      String?
+  verificationSelfie String?
+  verificationPending Boolean        @default(false)
+  referralCode      String?          @unique
+  referredByProfileId String?
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
   account       UserAccount?
+}
+
+model PairMessageEmailLog {
+  pairId     String
+  profileId  String
+  lastSentAt DateTime @default(now()) @updatedAt
+
+  @@id([pairId, profileId])
 }
 
 model EngagedPair {
@@ -199,6 +216,7 @@ model PairMessage {
   pairId    String
   senderId  String
   body      String
+  reaction  String?
   createdAt DateTime @default(now())
 
   @@index([pairId, createdAt])

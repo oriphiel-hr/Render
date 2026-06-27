@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import Analytics from './components/Analytics.jsx';
+import ThemeToggle from './components/ThemeToggle.jsx';
 import CookieBanner from './components/CookieBanner.jsx';
 import PublicFooter from './components/PublicFooter.jsx';
 import HomePage from './pages/HomePage.jsx';
@@ -62,6 +63,7 @@ function Topbar({ token, profile, onLogout, unreadTotal }) {
           {profile?.role === 'ADMIN' && (
             <Link className={location.pathname === '/admin' ? 'nav-link active' : 'nav-link'} to="/admin" onClick={closeMenu}>Admin</Link>
           )}
+          <ThemeToggle />
         </div>
       </nav>
     </header>
@@ -76,11 +78,15 @@ export default function App() {
   });
   const [unreadTotal, setUnreadTotal] = useState(0);
   const [onboardingDone, setOnboardingDone] = useState(true);
+  const [feedReady, setFeedReady] = useState(true);
 
   useEffect(() => {
     if (!token) return;
     getProfile(token).then((data) => {
-      if (data?.success) setOnboardingDone(Boolean(data.profile?.onboardingDone));
+      if (data?.success) {
+        setOnboardingDone(Boolean(data.profile?.onboardingDone));
+        setFeedReady(data.feedReady === true);
+      }
     });
     const refreshInbox = () => {
       getInboxSummary(token).then((data) => {
@@ -115,6 +121,7 @@ export default function App() {
   }
 
   const needsOnboarding = token && profile && !onboardingDone;
+  const needsProfileSetup = token && profile && onboardingDone && !feedReady;
 
   return (
     <>
@@ -130,8 +137,8 @@ export default function App() {
         <Route path="/uvjeti" element={<TermsPage />} />
         <Route path="/kontakt" element={<ContactPage />} />
         <Route path="/auth" element={token ? <Navigate to="/app" replace /> : <AuthPage onLogin={onLogin} />} />
-        <Route path="/app/onboarding" element={token ? <OnboardingPage token={token} onDone={() => setOnboardingDone(true)} /> : <Navigate to="/auth" replace />} />
-        <Route path="/app" element={token ? (needsOnboarding ? <Navigate to="/app/onboarding" replace /> : <UserDashboardPage token={token} profile={profile} />) : <Navigate to="/auth" replace />} />
+        <Route path="/app/onboarding" element={token ? <OnboardingPage token={token} onDone={() => { setOnboardingDone(true); setFeedReady(true); }} /> : <Navigate to="/auth" replace />} />
+        <Route path="/app" element={token ? (needsOnboarding || needsProfileSetup ? <Navigate to="/app/onboarding" replace /> : <UserDashboardPage token={token} profile={profile} />) : <Navigate to="/auth" replace />} />
         <Route path="/app/postavke" element={token ? <SettingsPage token={token} profile={profile} onLogout={onLogout} onProfileUpdate={onProfileUpdate} /> : <Navigate to="/auth" replace />} />
         <Route path="/app/profile/:profileId" element={token ? <ProfileDetailPage token={token} myProfileId={profile?.id} /> : <Navigate to="/auth" replace />} />
         <Route path="/app/chat/:pairId" element={token ? <ChatPage token={token} profile={profile} onRead={() => getInboxSummary(token).then((d) => d?.success && setUnreadTotal(d.unreadTotal || 0))} /> : <Navigate to="/auth" replace />} />

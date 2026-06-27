@@ -4,8 +4,10 @@ import {
   getAdminPayments,
   getAdminRiskOverview,
   getAdminUsers,
+  getAdminVerificationQueue,
   getFairnessAudit,
   getModerationQueue,
+  rejectAdminVerification,
   runTimeoutSweep,
   updateAdminUser,
   updateFairnessConfig,
@@ -30,6 +32,7 @@ export default function AdminPage({ token }) {
   const [riskItems, setRiskItems] = useState([]);
   const [audit, setAudit] = useState(null);
   const [moderationQueue, setModerationQueue] = useState([]);
+  const [verificationQueue, setVerificationQueue] = useState([]);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [statusKind, setStatusKind] = useState('info');
@@ -43,13 +46,14 @@ export default function AdminPage({ token }) {
   }
 
   async function loadAll() {
-    const [ov, userData, payData, modData, auditData, riskData] = await Promise.all([
+    const [ov, userData, payData, modData, auditData, riskData, verifyData] = await Promise.all([
       getAdminOverview(token),
       getAdminUsers(token),
       getAdminPayments(token),
       getModerationQueue(token),
       getFairnessAudit(token),
-      getAdminRiskOverview(token)
+      getAdminRiskOverview(token),
+      getAdminVerificationQueue(token)
     ]);
     if (ov?.success) setOverview(ov);
     if (userData?.success) setUsers(userData.items || []);
@@ -57,6 +61,7 @@ export default function AdminPage({ token }) {
     if (modData?.success) setModerationQueue(modData.items || []);
     if (auditData?.success) setAudit(auditData);
     if (riskData?.success) setRiskItems(riskData.items || []);
+    if (verifyData?.success) setVerificationQueue(verifyData.items || []);
   }
 
   useEffect(() => {
@@ -100,6 +105,12 @@ export default function AdminPage({ token }) {
       setMessage('Prijava riješena.', 'success');
       await loadAll();
     }
+  }
+
+  async function rejectVerification(profileId) {
+    const data = await rejectAdminVerification(token, profileId);
+    setMessage(data?.success ? 'Selfie odbijen.' : data?.error || 'Neuspjeh.', data?.success ? 'success' : 'error');
+    if (data?.success) await loadAll();
   }
 
   const stats = overview?.stats;
@@ -152,6 +163,50 @@ export default function AdminPage({ token }) {
           </button>
         </div>
       </section>
+
+      {verificationQueue.length > 0 && (
+        <section>
+          <h2 className="section-title">Verifikacija profila ({verificationQueue.length})</h2>
+          <div className="admin-card-grid">
+            {verificationQueue.map((item) => (
+              <article key={item.id} className="card admin-verify-card">
+                <h3>{item.displayName}</h3>
+                <p className="muted">{item.email} · {item.city}</p>
+                <div className="verify-compare">
+                  <div>
+                    <p className="muted">Profilna</p>
+                    {item.photos?.[0] ? (
+                      <img src={item.photos[0]} alt="" className="verify-photo" />
+                    ) : (
+                      <p className="muted">Nema fotke</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="muted">Selfie</p>
+                    <img src={item.verificationSelfie} alt="" className="verify-photo" />
+                  </div>
+                </div>
+                <div className="admin-row-actions">
+                  <button
+                    type="button"
+                    className="button button-primary button-sm"
+                    onClick={() => patchUser(item.id, { photoVerified: true })}
+                  >
+                    Odobri
+                  </button>
+                  <button
+                    type="button"
+                    className="button button-ghost button-sm"
+                    onClick={() => rejectVerification(item.id)}
+                  >
+                    Odbij
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="card">
         <h2 className="section-title">Korisnici</h2>
