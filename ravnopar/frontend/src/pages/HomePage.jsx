@@ -100,7 +100,7 @@ export default function HomePage() {
             <span className="chip">Fer vidljivost</span>
           </div>
           <Link className="button button-secondary" to="/planovi">
-            Pogledaj planove i obećanja
+            Pročitaj model naplate
           </Link>
         </article>
       </section>

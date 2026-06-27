@@ -2,7 +2,7 @@ export const PRICING_POLICY = {
   headline: 'Novac ne smije stajati između ljudi',
   lead:
     'Ravnopar je danas besplatan za upoznavanje — i to nam je namjera. Nećemo uvesti naplatu dok proizvod nije stabilan i dok zajednica stvarno živi na platformi.',
-  promisesIntro: 'Ovo obećavamo svakom korisniku — danas i kad uvedemo Premium:',
+  promisesIntro: 'Na ovo možeš računati — danas i kad uvedemo Premium:',
   triggersIntro:
     'Ne žurimo s naplatom. Premium pakete uključujemo tek kad sve sljedeće ima smisla:',
   footnote:
