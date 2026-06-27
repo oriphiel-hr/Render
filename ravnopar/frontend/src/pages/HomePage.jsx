@@ -115,7 +115,7 @@ export default function HomePage() {
           <Link className="button button-primary button-lg" to="/auth">
             Kreni
           </Link>
-          <Link className="button button-secondary button-lg" to="/auth">
+          <Link className="button button-secondary button-lg" to="/auth?login=1">
             Već imam račun
           </Link>
         </div>

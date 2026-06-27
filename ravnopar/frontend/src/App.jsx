@@ -45,7 +45,7 @@ function Topbar({ token, profile, onLogout, unreadTotal }) {
           {!token && (
             <>
               <Link className={location.pathname === '/' ? 'nav-link active' : 'nav-link'} to="/" onClick={closeMenu}>Početna</Link>
-              <Link className={location.pathname === '/auth' ? 'nav-link active' : 'nav-link'} to="/auth" onClick={closeMenu}>Prijava</Link>
+              <Link className={location.pathname === '/auth' ? 'nav-link active' : 'nav-link'} to="/auth?login=1" onClick={closeMenu}>Prijava</Link>
               <Link className={location.pathname === '/planovi' ? 'nav-link active' : 'nav-link'} to="/planovi" onClick={closeMenu}>Planovi</Link>
               <Link className={location.pathname === '/pomoc' ? 'nav-link active' : 'nav-link'} to="/pomoc" onClick={closeMenu}>Pomoć</Link>
             </>

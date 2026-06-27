@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { forgotPassword, login, register, resetPassword, verifyEmail } from '../api/index.js';
 import { IDENTITY_LABELS, INTENT_LABELS, PROFILE_TYPE_LABELS } from '../lib/labels.js';
@@ -19,7 +19,12 @@ const STEPS = [
 
 export default function AuthPage({ onLogin }) {
   const [searchParams] = useSearchParams();
-  const [step, setStep] = useState(() => (searchParams.get('reset') === '1' ? 4 : 1));
+  const loginOnly = searchParams.get('login') === '1';
+  const [step, setStep] = useState(() => {
+    if (searchParams.get('reset') === '1') return 4;
+    if (loginOnly) return 3;
+    return 1;
+  });
   const [busy, setBusy] = useState(false);
   const [registerForm, setRegisterForm] = useState({
     email: '',
@@ -43,6 +48,12 @@ export default function AuthPage({ onLogin }) {
   const [captchaToken, setCaptchaToken] = useState('');
   const [status, setStatus] = useState('');
   const [statusKind, setStatusKind] = useState('info');
+
+  useEffect(() => {
+    if (searchParams.get('reset') === '1') setStep(4);
+    else if (searchParams.get('login') === '1') setStep(3);
+    else setStep(1);
+  }, [searchParams]);
 
   function setMessage(message, kind = 'info') {
     setStatus(message);
@@ -149,10 +160,15 @@ export default function AuthPage({ onLogin }) {
   return (
     <main className="page auth-page">
       <section className="hero auth-hero">
-        <h1>Dobrodošao/la u Ravnopar</h1>
-        <p className="subtitle">Tri jednostavna koraka do tvog profila.</p>
+        <h1>{loginOnly && step === 3 ? 'Prijavi se' : 'Dobrodošao/la u Ravnopar'}</h1>
+        <p className="subtitle">
+          {loginOnly && step === 3
+            ? 'Unesi email i lozinku za pristup svom profilu.'
+            : 'Tri jednostavna koraka do tvog profila.'}
+        </p>
       </section>
 
+      {!loginOnly && (
       <div className="stepper" aria-label="Koraci registracije">
         {(step <= 3 ? REG_STEPS : STEPS.filter((s) => s.id >= 4)).map((item) => (
           <button
@@ -166,6 +182,7 @@ export default function AuthPage({ onLogin }) {
           </button>
         ))}
       </div>
+      )}
 
       {status && <p className={`status-banner status-${statusKind}`}>{status}</p>}
 
@@ -308,6 +325,12 @@ export default function AuthPage({ onLogin }) {
               {busy ? 'Spremanje...' : 'Nastavi na verifikaciju'}
             </button>
           </div>
+          <p className="auth-footer muted">
+            Već imaš račun?{' '}
+            <Link to="/auth?login=1" onClick={() => setStep(3)}>
+              Prijavi se
+            </Link>
+          </p>
         </form>
       )}
 
@@ -348,7 +371,7 @@ export default function AuthPage({ onLogin }) {
 
       {step === 3 && (
         <form onSubmit={submitLogin} className="card auth-card">
-          <h2 className="section-title">3. Prijavi se</h2>
+          <h2 className="section-title">{loginOnly ? 'Prijava' : '3. Prijavi se'}</h2>
           <label>
             Email
             <input
@@ -375,13 +398,18 @@ export default function AuthPage({ onLogin }) {
             </button>
           </p>
           <div className="form-actions row">
-            <button type="button" className="button button-secondary" onClick={() => setStep(2)}>
-              Natrag
-            </button>
+            {!loginOnly && (
+              <button type="button" className="button button-secondary" onClick={() => setStep(2)}>
+                Natrag
+              </button>
+            )}
             <button type="submit" className="button button-primary" disabled={busy}>
               {busy ? 'Prijava...' : 'Uđi u Ravnopar'}
             </button>
           </div>
+          <p className="auth-footer muted">
+            Nemaš račun? <Link to="/auth">Registriraj se</Link>
+          </p>
         </form>
       )}
 
