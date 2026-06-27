@@ -34,13 +34,20 @@ Nakon prvog deploya (samo staging): Shell → `npm run seed`
 |-----|------------|
 | `VITE_API_BASE_URL` | `https://ravnopar-backend.onrender.com/api` |
 
-Opcionalno (dobrovoljne donacije na privatni račun):
+Opcionalno (dobrovoljne donacije):
 
 | Key | Vrijednost |
 |-----|------------|
-| `VITE_DONATE_IBAN` | HRxx... (tvoj IBAN) |
+| `VITE_DONATE_IBAN` | HRxx... (bankovna uplata) |
 | `VITE_DONATE_RECIPIENT` | Ime i prezime primatelja |
-| `VITE_DONATE_REFERENCE` | `Ravnopar donacija` (poziv na broj / opis uplate) |
+| `VITE_DONATE_REFERENCE` | `Ravnopar donacija` |
+| `VITE_DONATE_STRIPE_URL` | Stripe Payment Link (opcionalno, umjesto integriranog checkouta) |
+
+**Backend** (donacije karticom preko Stripe Checkout):
+
+| Key | Vrijednost |
+|-----|------------|
+| `STRIPE_SECRET_KEY` | `sk_test_...` ili `sk_live_...` iz Stripe Dashboarda |
 
 **Build Command:** `npm install && npm run build`  
 **Publish Directory:** `dist`  

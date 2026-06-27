@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import DonateSection from '../components/DonateSection.jsx';
 
 const STEPS = [
@@ -32,8 +32,16 @@ const VALUES = [
 ];
 
 export default function HomePage() {
+  const [searchParams] = useSearchParams();
+  const donateThanks = searchParams.get('donate') === 'thanks';
+
   return (
     <main className="page landing-page">
+      {donateThanks && (
+        <p className="status-banner status-success">
+          Hvala na donaciji! Tvoja podrška pomaže održavanju Ravnopara.
+        </p>
+      )}
       <section className="landing-hero">
         <p className="eyebrow">Dating bez manipulacije dosega</p>
         <h1>Ravnopar</h1>

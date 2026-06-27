@@ -170,6 +170,20 @@ export async function updateFairnessConfig(token, newDailyLimit, reason) {
   return res.json();
 }
 
+export async function getDonateStatus() {
+  const res = await fetch(`${API_BASE_URL}/payments/donate/status`);
+  return res.json();
+}
+
+export async function createDonateCheckout(amountCents) {
+  const res = await fetch(`${API_BASE_URL}/payments/donate/stripe`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ amountCents })
+  });
+  return res.json();
+}
+
 export async function createStripeCheckout(token, amountCents, description) {
   const res = await fetch(`${API_BASE_URL}/payments/checkout/stripe`, {
     method: 'POST',
