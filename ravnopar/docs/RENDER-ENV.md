@@ -41,9 +41,10 @@ Opcionalno (dobrovoljne donacije):
 | `VITE_DONATE_IBAN` | HRxx... (bankovna uplata) |
 | `VITE_DONATE_RECIPIENT` | Ime i prezime primatelja |
 | `VITE_DONATE_REFERENCE` | `Ravnopar donacija` |
-| `VITE_DONATE_STRIPE_URL` | Stripe Payment Link (opcionalno, umjesto integriranog checkouta) |
+| `VITE_DONATE_REVOLUT_URL` | Revolut payment link ili `https://revolut.me/tvojeime` |
+| `VITE_DONATE_STRIPE_URL` | Samo uz poslovni Stripe (opcionalno) |
 
-**Backend** (donacije karticom preko Stripe Checkout):
+**Backend** (Stripe u aplikaciji — samo uz obrt/d.o.o.):
 
 | Key | Vrijednost |
 |-----|------------|
