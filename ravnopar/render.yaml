@@ -1,0 +1,54 @@
+# Ravnopar — Render Blueprint
+# Repo: oriphiel-hr/Render (monorepo)
+# Ako su servisi već ručno kreirani, uskladi env varijable u Dashboardu s docs/RENDER-ENV.md
+
+databases:
+  - name: ravnopar-db
+    plan: free
+    region: frankfurt
+    databaseName: ravnopar
+    user: ravnopar_user
+
+services:
+  - type: web
+    name: ravnopar-backend
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    rootDir: ravnopar/backend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ravnopar-db
+          property: connectionString
+      - key: FRONTEND_BASE_URL
+        value: https://ravnopar-frontend.onrender.com
+      - key: DAILY_CONTACT_LIMIT
+        value: "30"
+      - key: FIRST_USER_IS_ADMIN
+        value: "false"
+
+  - type: web
+    name: ravnopar-frontend
+    runtime: static
+    plan: free
+    region: frankfurt
+    branch: main
+    rootDir: ravnopar/frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://ravnopar-backend.onrender.com/api

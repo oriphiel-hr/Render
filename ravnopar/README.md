@@ -37,3 +37,10 @@ Ravnopar je fokusiran na kvalitetu i fer raspodjelu paznje, ne na umjetna ograni
    - `cd frontend`
    - `npm install`
    - `npm run dev`
+
+## Render (produkcija)
+
+- Backend: https://ravnopar-backend.onrender.com
+- Frontend: https://ravnopar-frontend.onrender.com
+- Env varijable i provjera: `docs/RENDER-ENV.md`
+- Blueprint: `render.yaml`
