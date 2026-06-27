@@ -56,7 +56,10 @@ function Topbar({ token, profile, onLogout, unreadTotal }) {
                 Moj prostor{unreadTotal > 0 ? ` (${unreadTotal})` : ''}
               </Link>
               <Link className={location.pathname.startsWith('/app/postavke') ? 'nav-link active' : 'nav-link'} to="/app/postavke" onClick={closeMenu}>Postavke</Link>
-              <span className="nav-user">Pozdrav, {profile?.displayName}</span>
+              <span className="nav-user">
+                Pozdrav, {profile?.displayName}
+                {profile?.role === 'ADMIN' && <span className="chip chip-admin nav-role">Admin</span>}
+              </span>
               <button type="button" className="button button-ghost nav-logout" onClick={() => { closeMenu(); onLogout(); }}>Odjava</button>
             </>
           )}
@@ -143,7 +146,7 @@ export default function App() {
         <Route path="/app/profile/:profileId" element={token ? <ProfileDetailPage token={token} myProfileId={profile?.id} /> : <Navigate to="/auth" replace />} />
         <Route path="/app/chat/:pairId" element={token ? <ChatPage token={token} profile={profile} onRead={() => getInboxSummary(token).then((d) => d?.success && setUnreadTotal(d.unreadTotal || 0))} /> : <Navigate to="/auth" replace />} />
         <Route path="/app/podrzi" element={token ? <DonatePage /> : <Navigate to="/auth" replace />} />
-        <Route path="/admin" element={token && profile?.role === 'ADMIN' ? <AdminPage token={token} /> : <Navigate to="/auth" replace />} />
+        <Route path="/admin" element={token && profile?.role === 'ADMIN' ? <AdminPage token={token} profile={profile} /> : <Navigate to="/auth" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <PublicFooter token={token} />

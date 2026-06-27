@@ -14,7 +14,7 @@ import {
   updateReportStatus
 } from '../api/index.js';
 import PageMeta from '../components/PageMeta.jsx';
-import { formatDateTime, labelReportStatus } from '../lib/labels.js';
+import { formatDateTime, labelReportStatus, labelRole } from '../lib/labels.js';
 
 function StatCard({ label, value }) {
   return (
@@ -25,7 +25,7 @@ function StatCard({ label, value }) {
   );
 }
 
-export default function AdminPage({ token }) {
+export default function AdminPage({ token, profile }) {
   const [overview, setOverview] = useState(null);
   const [users, setUsers] = useState([]);
   const [payments, setPayments] = useState([]);
@@ -121,6 +121,12 @@ export default function AdminPage({ token }) {
       <section className="hero admin-hero">
         <h1>Admin centar</h1>
         <p className="subtitle">Korisnici, moderacija, plaćanja i poštenost platforme.</p>
+        {profile?.role === 'ADMIN' && (
+          <p className="admin-session-role">
+            Prijavljen kao <span className="chip chip-admin">{labelRole('ADMIN')}</span>
+            <span className="muted"> · {profile.displayName}</span>
+          </p>
+        )}
       </section>
 
       {status && <p className={`status-banner status-${statusKind}`}>{status}</p>}
@@ -223,6 +229,7 @@ export default function AdminPage({ token }) {
                 <th>Ime</th>
                 <th>Email</th>
                 <th>Grad</th>
+                <th>Uloga</th>
                 <th>Paket</th>
                 <th>Status</th>
                 <th>Akcije</th>
@@ -234,6 +241,11 @@ export default function AdminPage({ token }) {
                   <td>{user.displayName}</td>
                   <td>{user.email}</td>
                   <td>{user.city}</td>
+                  <td>
+                    <span className={`chip ${user.role === 'ADMIN' ? 'chip-admin' : ''}`}>
+                      {labelRole(user.role || 'USER')}
+                    </span>
+                  </td>
                   <td>{user.planTier}</td>
                   <td>
                     {user.suspended ? 'Suspendiran' : user.availability}
@@ -249,6 +261,21 @@ export default function AdminPage({ token }) {
                     <button type="button" className="button button-ghost button-sm" onClick={() => patchUser(user.id, { suspended: !user.suspended })}>
                       {user.suspended ? 'Unsuspend' : 'Suspend'}
                     </button>
+                    {user.role === 'ADMIN' ? (
+                      <button
+                        type="button"
+                        className="button button-ghost button-sm"
+                        disabled={user.id === profile?.id}
+                        title={user.id === profile?.id ? 'Ne možeš ukloniti vlastitu admin ulogu' : undefined}
+                        onClick={() => patchUser(user.id, { role: 'USER' })}
+                      >
+                        Ukloni admin
+                      </button>
+                    ) : (
+                      <button type="button" className="button button-ghost button-sm" onClick={() => patchUser(user.id, { role: 'ADMIN' })}>
+                        Postavi admin
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

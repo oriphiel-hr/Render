@@ -24,6 +24,15 @@ export const AVAILABILITY_LABELS = {
   PAUSED: 'Pauzirano'
 };
 
+export const ROLE_LABELS = {
+  USER: 'Korisnik',
+  ADMIN: 'Administrator'
+};
+
+export function labelRole(value) {
+  return ROLE_LABELS[value] || value;
+}
+
 export function labelIdentity(value) {
   return IDENTITY_LABELS[value] || value;
 }
