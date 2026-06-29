@@ -14,11 +14,18 @@ export default {
     es: "Španělština",
     sk: "Slovenština"
   },
+
+  langPicker: {
+    label: "Vyberte jazyk",
+    hint: "13 jazyků — vyberte svůj"
+  },
+
   nav: {
     home: "Domů",
     login: "Přihlášení",
     plans: "Plány",
     help: "Nápověda",
+    contact: "Kontakt",
     mySpace: "Můj prostor",
     settings: "Nastavení",
     admin: "Admin",
@@ -788,6 +795,9 @@ export default {
     subtitle: "Odpovědi na nejčastější otázky o Ravnopar.",
     backHome: "← Zpět na domů",
     contact: "Kontakt",
+    ctaTitle: "Nenašli jste odpověď?",
+    ctaLead: "Napište nám — dotazy, pochvaly, návrhy a žádosti týkající se soukromí.",
+    ctaEmail: "Poslat email",
     items: [
       {
         q: "Je Ravnopar zdarma?",
@@ -825,7 +835,16 @@ export default {
   },
   contact: {
     title: "Kontakt",
-    subtitle: "Jsme tu pro dotazy, hlášení a žádosti o soukromí.",
+    subtitle: "Jsme tu pro dotazy, pochvaly, návrhy a žádosti týkající se soukromí.",
+    topicsTitle: "O čem nám můžete napsat",
+    topics: [
+      "Dotazy k používání Ravnopar",
+      "Pochvaly a návrhy",
+      "Žádosti týkající se soukromí (GDPR)",
+      "Technické problémy a chyby"
+    ],
+    reportHint:
+      "Pro nahlášení uživatele v aplikaci použijte tlačítko Nahlásit na profilu — neposílejte osobní údaje jiných emailem, pokud to není nutné kvůli bezpečnosti.",
     emailTitle: "E-mail",
     emailHint: "Odpovídáme v přiměřené době — obvykle během několika pracovních dní.",
     emergencyTitle: "Nouzové případy",

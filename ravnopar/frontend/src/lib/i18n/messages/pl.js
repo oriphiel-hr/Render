@@ -14,11 +14,18 @@ export default {
     es: "Hiszpański",
     sk: "Słowacki"
   },
+
+  langPicker: {
+    label: "Wybierz język",
+    hint: "13 języków — wybierz swój"
+  },
+
   nav: {
     home: "Strona główna",
     login: "Logowanie",
     plans: "Plany",
     help: "Pomoc",
+    contact: "Kontakt",
     mySpace: "Moja przestrzeń",
     settings: "Ustawienia",
     admin: "Admin",
@@ -788,6 +795,9 @@ export default {
     subtitle: "Odpowiedzi na najczęstsze pytania o Ravnopar.",
     backHome: "← Wróć na stronę główną",
     contact: "Kontakt",
+    ctaTitle: "Nie znalazłeś/aś odpowiedzi?",
+    ctaLead: "Napisz do nas — pytania, pochwały, sugestie i wnioski dotyczące prywatności.",
+    ctaEmail: "Wyślij email",
     items: [
       {
         q: "Czy Ravnopar jest darmowy?",
@@ -825,7 +835,16 @@ export default {
   },
   contact: {
     title: "Kontakt",
-    subtitle: "Jesteśmy tu w sprawie pytań, zgłoszeń i prywatności.",
+    subtitle: "Jesteśmy tu po pytania, pochwały, sugestie i wnioski dotyczące prywatności.",
+    topicsTitle: "O czym możesz napisać",
+    topics: [
+      "Pytania o korzystanie z Ravnopar",
+      "Pochwały i sugestie",
+      "Wnioski dotyczące prywatności (RODO)",
+      "Problemy techniczne i błędy"
+    ],
+    reportHint:
+      "Aby zgłosić użytkownika w aplikacji, użyj przycisku Zgłoś na profilu — nie wysyłaj danych osobowych innych osób emailem, chyba że jest to konieczne ze względów bezpieczeństwa.",
     emailTitle: "Email",
     emailHint: "Odpowiadamy w rozsądnym czasie — zwykle w ciągu kilku dni roboczych.",
     emergencyTitle: "Nagłe przypadki",

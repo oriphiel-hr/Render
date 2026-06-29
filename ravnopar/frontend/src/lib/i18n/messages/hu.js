@@ -14,11 +14,18 @@ export default {
     es: "Spanyol",
     sk: "Szlovák"
   },
+
+  langPicker: {
+    label: "Válassz nyelvet",
+    hint: "13 nyelv — válaszd ki a sajátod"
+  },
+
   nav: {
     home: "Kezdőlap",
     login: "Bejelentkezés",
     plans: "Csomagok",
     help: "Súgó",
+    contact: "Kapcsolat",
     mySpace: "Saját tér",
     settings: "Beállítások",
     admin: "Admin",
@@ -788,6 +795,9 @@ export default {
     subtitle: "Válaszok a Ravnoparral kapcsolatos leggyakoribb kérdésekre.",
     backHome: "← Vissza a kezdőlapra",
     contact: "Kapcsolat",
+    ctaTitle: "Nem találtad a választ?",
+    ctaLead: "Írj nekünk — kérdések, dicséret, javaslatok és adatvédelmi kérések.",
+    ctaEmail: "Email küldése",
     items: [
       {
         q: "Ingyenes a Ravnopar?",
@@ -825,7 +835,16 @@ export default {
   },
   contact: {
     title: "Kapcsolat",
-    subtitle: "Kérdések, jelentések és adatvédelmi kérések esetén itt vagyunk.",
+    subtitle: "Kérdésekre, dicséretre, javaslatokra és adatvédelmi kérésekre vagyunk itt.",
+    topicsTitle: "Miről írhatsz",
+    topics: [
+      "Kérdések a Ravnopar használatáról",
+      "Dicséret és fejlesztési ötletek",
+      "Adatvédelmi kérések (GDPR)",
+      "Technikai problémák és hibák"
+    ],
+    reportHint:
+      "Felhasználó jelentéséhez az alkalmazásban használd a Jelentés gombot a profilon — ne küldj mások személyes adatait emailben, hacsak nem szükséges a biztonság érdekében.",
     emailTitle: "E-mail",
     emailHint: "Ésszerű időn belül válaszolunk — általában néhány munkanapon belül.",
     emergencyTitle: "Vészhelyzetek",

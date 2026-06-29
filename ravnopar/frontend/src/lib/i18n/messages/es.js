@@ -14,11 +14,18 @@ export default {
     es: "Español",
     sk: "Eslovaco"
   },
+
+  langPicker: {
+    label: "Elegir idioma",
+    hint: "13 idiomas — elige el tuyo"
+  },
+
   nav: {
     home: "Inicio",
     login: "Iniciar sesión",
     plans: "Planes",
     help: "Ayuda",
+    contact: "Contacto",
     mySpace: "Mi espacio",
     settings: "Ajustes",
     admin: "Admin",
@@ -788,6 +795,9 @@ export default {
     subtitle: "Respuestas a las preguntas más comunes sobre Ravnopar.",
     backHome: "← Volver al inicio",
     contact: "Contacto",
+    ctaTitle: "¿No encontraste tu respuesta?",
+    ctaLead: "Escríbenos — preguntas, elogios, sugerencias y solicitudes de privacidad.",
+    ctaEmail: "Enviar email",
     items: [
       {
         q: "¿Ravnopar es gratis?",
@@ -825,7 +835,16 @@ export default {
   },
   contact: {
     title: "Contacto",
-    subtitle: "Estamos aquí para preguntas, reportes y solicitudes de privacidad.",
+    subtitle: "Estamos aquí para preguntas, elogios, sugerencias y solicitudes de privacidad.",
+    topicsTitle: "Sobre qué puedes escribir",
+    topics: [
+      "Preguntas sobre el uso de Ravnopar",
+      "Elogios y sugerencias",
+      "Solicitudes de privacidad (RGPD)",
+      "Problemas técnicos y errores"
+    ],
+    reportHint:
+      "Para reportar a un usuario en la app, usa el botón Reportar en su perfil — no envíes datos personales de otros por email salvo que sea necesario por seguridad.",
     emailTitle: "Correo",
     emailHint: "Respondemos en un plazo razonable — normalmente en unos pocos días laborables.",
     emergencyTitle: "Emergencias",

@@ -57,6 +57,8 @@ function Topbar({ token, profile, onLogout, unreadTotal }) {
                   {unreadTotal > 0 ? t('nav.mySpaceUnread', { count: unreadTotal }) : t('nav.mySpace')}
                 </Link>
                 <Link className={location.pathname.startsWith('/app/postavke') ? 'nav-link active' : 'nav-link'} to="/app/postavke" onClick={closeMenu}>{t('nav.settings')}</Link>
+              <Link className={location.pathname === '/pomoc' ? 'nav-link active' : 'nav-link'} to="/pomoc" onClick={closeMenu}>{t('nav.help')}</Link>
+              <Link className={location.pathname === '/kontakt' ? 'nav-link active' : 'nav-link'} to="/kontakt" onClick={closeMenu}>{t('nav.contact')}</Link>
                 {isDonateConfigured() && (
                   <Link
                     className={location.pathname === '/app/podrzi' ? 'nav-link active' : 'nav-link'}

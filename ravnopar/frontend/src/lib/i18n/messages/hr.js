@@ -25,6 +25,7 @@ export default {
     login: 'Prijava',
     plans: 'Planovi',
     help: 'Pomoć',
+    contact: 'Kontakt',
     mySpace: 'Moj prostor',
     settings: 'Postavke',
     admin: 'Admin',
@@ -959,6 +960,9 @@ export default {
     subtitle: 'Odgovori na najčešća pitanja o Ravnoparu.',
     backHome: '← Natrag na početnu',
     contact: 'Kontakt',
+    ctaTitle: 'Nisi našao/la odgovor?',
+    ctaLead: 'Piši nam — pitanja, pohvale, prijedloge i zahtjeve vezane uz privatnost.',
+    ctaEmail: 'Pošalji email',
     items: [
       {
         q: 'Je li Ravnopar besplatan?',
@@ -997,7 +1001,16 @@ export default {
 
   contact: {
     title: 'Kontakt',
-    subtitle: 'Tu smo za pitanja, prijave i zahtjeve vezane uz privatnost.',
+    subtitle: 'Tu smo za pitanja, pohvale, prijedloge i zahtjeve vezane uz privatnost.',
+    topicsTitle: 'Što možeš poslati',
+    topics: [
+      'Pitanja o korištenju Ravnopara',
+      'Pohvale i prijedloge za poboljšanje',
+      'Zahtjeve vezane uz privatnost (GDPR)',
+      'Tehničke probleme i greške'
+    ],
+    reportHint:
+      'Za prijavu korisnika u aplikaciji koristi gumb Prijavi na profilu — ne šalji osobne podatke drugih na email osim ako je nužno radi sigurnosti.',
     emailTitle: 'Email',
     emailHint: 'Odgovaramo u razumnom roku — obično unutar nekoliko radnih dana.',
     emergencyTitle: 'Hitne situacije',

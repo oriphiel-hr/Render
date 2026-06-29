@@ -14,11 +14,18 @@ export default {
     es: "Spanisch",
     sk: "Slowakisch"
   },
+
+  langPicker: {
+    label: "Sprache wählen",
+    hint: "13 Sprachen — wähle deine"
+  },
+
   nav: {
     home: "Startseite",
     login: "Anmelden",
     plans: "Tarife",
     help: "Hilfe",
+    contact: "Kontakt",
     mySpace: "Mein Bereich",
     settings: "Einstellungen",
     admin: "Admin",
@@ -788,6 +795,9 @@ export default {
     subtitle: "Antworten auf die häufigsten Fragen zu Ravnopar.",
     backHome: "← Zur Startseite",
     contact: "Kontakt",
+    ctaTitle: "Keine Antwort gefunden?",
+    ctaLead: "Schreib uns — Fragen, Feedback, Vorschläge und Datenschutzanfragen.",
+    ctaEmail: "E-Mail senden",
     items: [
       {
         q: "Ist Ravnopar kostenlos?",
@@ -825,7 +835,16 @@ export default {
   },
   contact: {
     title: "Kontakt",
-    subtitle: "Wir sind für Fragen, Meldungen und Datenschutzanfragen da.",
+    subtitle: "Wir sind für Fragen, Lob, Vorschläge und Datenschutzanfragen da.",
+    topicsTitle: "Worum du schreiben kannst",
+    topics: [
+      "Fragen zur Nutzung von Ravnopar",
+      "Lob und Verbesserungsvorschläge",
+      "Datenschutzanfragen (DSGVO)",
+      "Technische Probleme und Fehler"
+    ],
+    reportHint:
+      "Um einen Nutzer in der App zu melden, nutze die Schaltfläche „Melden“ im Profil — sende keine personenbezogenen Daten anderer per E-Mail, außer wenn es für die Sicherheit nötig ist.",
     emailTitle: "E-Mail",
     emailHint: "Wir antworten in angemessener Zeit — meist innerhalb weniger Werktage.",
     emergencyTitle: "Notfälle",

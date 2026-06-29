@@ -24,6 +24,7 @@ export default {
     login: "Log in",
     plans: "Plans",
     help: "Help",
+    contact: "Contact",
     mySpace: "My space",
     settings: "Settings",
     admin: "Admin",
@@ -907,6 +908,9 @@ export default {
     subtitle: "Answers to the most common questions about Ravnopar.",
     backHome: "← Back to home",
     contact: "Contact",
+    ctaTitle: "Didn't find your answer?",
+    ctaLead: "Email us — questions, compliments, suggestions, and privacy requests.",
+    ctaEmail: "Send email",
     items: [
       {
         q: "Is Ravnopar free?",
@@ -944,7 +948,16 @@ export default {
   },
   contact: {
     title: "Contact",
-    subtitle: "We are here for questions, reports, and privacy requests.",
+    subtitle: "We're here for questions, compliments, suggestions, and privacy requests.",
+    topicsTitle: "What you can write about",
+    topics: [
+      "Questions about using Ravnopar",
+      "Compliments and improvement ideas",
+      "Privacy requests (GDPR)",
+      "Technical issues and bugs"
+    ],
+    reportHint:
+      "To report a user in the app, use the Report button on their profile — do not email other people's personal data unless necessary for safety.",
     emailTitle: "Email",
     emailHint: "We respond within a reasonable time — usually within a few business days.",
     emergencyTitle: "Emergencies",

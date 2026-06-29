@@ -14,11 +14,18 @@ export default {
     es: "Español",
     sk: "Slovenčina"
   },
+
+  langPicker: {
+    label: "Izaberi jezik",
+    hint: "13 jezika — izaberi svoj"
+  },
+
   nav: {
     home: "Početna",
     login: "Prijava",
     plans: "Planovi",
     help: "Pomoć",
+    contact: "Контакт",
     mySpace: "Moj prostor",
     settings: "Podešavanja",
     admin: "Admin",
@@ -788,6 +795,9 @@ export default {
     subtitle: "Odgovori na najčešća pitanja o Ravnoparu.",
     backHome: "← Nazad na početnu",
     contact: "Kontakt",
+    ctaTitle: "Нисте нашли одговор?",
+    ctaLead: "Пишите нам — питања, похвале, предлози и захтеви везани за приватност.",
+    ctaEmail: "Пошаљи email",
     items: [
       {
         q: "Da li je Ravnopar besplatan?",
@@ -825,7 +835,16 @@ export default {
   },
   contact: {
     title: "Kontakt",
-    subtitle: "Tu smo za pitanja, prijave i zahteve vezane za privatnost.",
+    subtitle: "Овде смо за питања, похвале, предлоге и захтеве везане за приватност.",
+    topicsTitle: "Шта нам можете послати",
+    topics: [
+      "Питања о коришћењу Ravnopar-а",
+      "Похвале и предлози",
+      "Захтеве везане за приватност (GDPR)",
+      "Техничке проблеме и грешке"
+    ],
+    reportHint:
+      "За пријаву корисника у апликацији користите дугме Пријави на профилу — не шаљите личне податке других на email осим ако је неопходно ради безбедности.",
     emailTitle: "Email",
     emailHint: "Odgovaramo u razumnom roku — obično u nekoliko radnih dana.",
     emergencyTitle: "Hitne situacije",
