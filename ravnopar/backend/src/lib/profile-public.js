@@ -1,3 +1,11 @@
+import {
+  activityStatusFor,
+  normalizePrivateTags,
+  normalizePublicTags,
+  tagsOverlap
+} from './profile-tags.js';
+import { lifestyleFieldsFromProfile } from './profile-lifestyle.js';
+
 export function normalizePhotos(value) {
   if (!Array.isArray(value)) return [];
   return value.filter((item) => typeof item === 'string' && item.trim().length > 0).slice(0, 3);
@@ -15,8 +23,12 @@ export function normalizeIcebreakers(value) {
     .slice(0, 3);
 }
 
+export { normalizePublicTags, normalizePrivateTags, activityStatusFor, tagsOverlap };
+
 export function toPublicProfile(profile, extras = {}) {
   if (!profile) return null;
+  const photos = normalizePhotos(profile.photos);
+  const lifestyle = lifestyleFieldsFromProfile(profile);
   return {
     id: profile.id,
     displayName: profile.displayName,
@@ -29,8 +41,12 @@ export function toPublicProfile(profile, extras = {}) {
     seekingProfileTypes: profile.seekingProfileTypes,
     intents: profile.intents,
     availability: profile.availability,
-    photos: normalizePhotos(profile.photos),
+    photos,
+    photoCount: photos.length,
     icebreakers: normalizeIcebreakers(profile.icebreakers),
+    publicTags: normalizePublicTags(profile.publicTags),
+    activityStatus: activityStatusFor(profile.lastActiveAt),
+    ...lifestyle,
     videoUrl: profile.videoUrl || null,
     planTier: profile.planTier || 'free',
     photoVerified: profile.photoVerified === true,

@@ -115,6 +115,16 @@ model UserProfile {
   latitude      Float?
   longitude     Float?
   shareLocation Boolean             @default(false)
+  seekingAgeMin Int                 @default(18)
+  seekingAgeMax Int                 @default(99)
+  maxDistanceKm Int?
+  sameCountryOnly Boolean           @default(false)
+  publicTags    Json                @default("[]")
+  privateTags   Json                @default("[]")
+  lastActiveAt  DateTime?
+  childrenPref  String?
+  smoking       String?
+  relationshipStatus String?
   videoUrl      String?
   verificationSelfie String?
   verificationPending Boolean        @default(false)

@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { blockUser, getPublicProfile, reportUser, sendContactRequest } from '../api/index.js';
 import PageMeta from '../components/PageMeta.jsx';
 import PhotoGallery from '../components/PhotoGallery.jsx';
+import { ActivityChip, CommonTagsLine, LifestyleChipList, ProfileSignalChips, ProfileTagList } from '../components/ProfileTagList.jsx';
 import VideoEmbed from '../components/VideoEmbed.jsx';
 import { useI18n } from '../lib/i18n/index.jsx';
 
@@ -11,13 +12,16 @@ export default function ProfileDetailPage({ token, myProfileId }) {
   const { profileId } = useParams();
   const navigate = useNavigate();
   const [person, setPerson] = useState(null);
+  const [canViewPrivate, setCanViewPrivate] = useState(false);
   const [status, setStatus] = useState('');
   const isSelf = profileId === myProfileId;
 
   useEffect(() => {
     getPublicProfile(token, profileId).then((data) => {
-      if (data?.success) setPerson(data.profile);
-      else setStatus(data?.error || t('profile.unavailable'));
+      if (data?.success) {
+        setPerson(data.profile);
+        setCanViewPrivate(Boolean(data.canViewPrivateTags));
+      } else setStatus(data?.error || t('profile.unavailable'));
     });
   }, [token, profileId, t]);
 
@@ -57,6 +61,8 @@ export default function ProfileDetailPage({ token, myProfileId }) {
               <h1>{person.displayName}</h1>
               <p className="muted">
                 {person.city}, {person.age} {t('common.yearsShort')}
+                <ActivityChip status={person.activityStatus} />
+                <ProfileSignalChips person={person} />
                 {person.distanceLabel && <span className="chip chip-distance">{person.distanceLabel}</span>}
               </p>
               <div className="profile-tags">
@@ -68,6 +74,31 @@ export default function ProfileDetailPage({ token, myProfileId }) {
             </div>
           </div>
           {person.bio && <p className="profile-bio">{person.bio}</p>}
+          {(person.publicTags?.length > 0 || person.commonTags?.length > 0) && (
+            <section className="profile-tags-section">
+              <h2 className="subsection-title">{t('profile.interests')}</h2>
+              <ProfileTagList tags={person.publicTags} scope="public" />
+              <CommonTagsLine tags={person.commonTags} />
+            </section>
+          )}
+          {(person.childrenPref || person.smoking || person.relationshipStatus) && (
+            <section className="profile-tags-section">
+              <h2 className="subsection-title">{t('profile.lifestyle')}</h2>
+              <LifestyleChipList person={person} labels={labels} />
+            </section>
+          )}
+          <section className="profile-tags-section profile-tags-private">
+            <h2 className="subsection-title">{t('profile.privatePreferences')}</h2>
+            {canViewPrivate || isSelf ? (
+              person.privateTags?.length > 0 ? (
+                <ProfileTagList tags={person.privateTags} scope="private" />
+              ) : (
+                <p className="muted">{t('profile.noPrivateTags')}</p>
+              )
+            ) : (
+              <p className="muted">{t('profile.privateLocked')}</p>
+            )}
+          </section>
           {person.videoUrl && (
             <div className="profile-video-block">
               <h2 className="subsection-title">{t('profile.video')}</h2>

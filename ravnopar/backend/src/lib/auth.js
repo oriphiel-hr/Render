@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { touchLastActive } from './profile-activity.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 
@@ -30,6 +31,7 @@ export function requireAuth(req, res, next) {
   try {
     const payload = jwt.verify(token, JWT_SECRET);
     req.auth = payload;
+    touchLastActive(payload.profileId);
     return next();
   } catch (_error) {
     return res.status(401).json({ success: false, error: 'Invalid token' });

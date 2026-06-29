@@ -1442,6 +1442,138 @@ body:has(.mobile-dock) .public-footer {
   margin: 0;
 }
 
+.age-range-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+@media (max-width: 480px) {
+  .age-range-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tag-picker {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.tag-picker-catalog {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.tag-chip {
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: #fff;
+}
+
+.tag-chip.active {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, white);
+}
+
+.settings-fieldset-private {
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
+}
+
+.tag-picker-selected,
+.profile-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.tag-picker-custom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.tag-picker-custom .input {
+  flex: 1;
+  min-width: 10rem;
+}
+
+.chip-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.chip-tag-private {
+  background: color-mix(in srgb, var(--primary) 8%, #f8f7ff);
+  border: 1px solid color-mix(in srgb, var(--primary) 25%, var(--border));
+}
+
+.chip-activity {
+  margin-left: 0.35rem;
+}
+
+.chip-online {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #166534;
+  font-weight: 600;
+}
+
+.profile-common-tags {
+  margin-top: 0.35rem;
+}
+
+.profile-tags-section {
+  margin-top: 1rem;
+}
+
+.tag-remove {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  font-size: 1rem;
+}
+
+.chip-lifestyle {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+}
+
+.profile-signal-list {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-left: 0.25rem;
+}
+
+.chip-signal {
+  font-size: 0.78rem;
+}
+
+.chip-awaiting {
+  background: #fef3c7;
+  border-color: #fcd34d;
+  color: #92400e;
+}
+
+.chip-photos {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+  color: #075985;
+}
+
+.chip-full-profile {
+  background: #ede9fe;
+  border-color: #c4b5fd;
+  color: #5b21b6;
+}
+
 .notify-toggle {
   margin-top: 0.25rem;
 }

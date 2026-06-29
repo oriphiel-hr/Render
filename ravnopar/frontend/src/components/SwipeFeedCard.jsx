@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import PhotoGallery from './PhotoGallery.jsx';
+import { ActivityChip, CommonTagsLine, LifestyleChipList, ProfileSignalChips, ProfileTagList } from './ProfileTagList.jsx';
 import { useI18n } from '../lib/i18n/index.jsx';
 
 export default function SwipeFeedCard({ person, myCity, onLike, onPass, onBlock, onReport, busy }) {
@@ -56,12 +57,18 @@ export default function SwipeFeedCard({ person, myCity, onLike, onPass, onBlock,
           </h3>
           <p className="muted">
             {person.city}, {person.age} {t('common.yearsShort')}
+            <ActivityChip status={person.activityStatus} />
+            <ProfileSignalChips person={person} />
             {person.distanceLabel && <span className="chip chip-distance">{person.distanceLabel}</span>}
             {!person.distanceLabel && sameCity && <span className="chip chip-near">{t('swipe.sameCity')}</span>}
           </p>
         </div>
 
         {person.bio && <p className="profile-bio">{person.bio}</p>}
+
+        <ProfileTagList tags={person.publicTags} scope="public" />
+        <LifestyleChipList person={person} labels={labels} />
+        <CommonTagsLine tags={person.commonTags} />
 
         {person.icebreakers?.length > 0 && (
           <ul className="icebreaker-list">

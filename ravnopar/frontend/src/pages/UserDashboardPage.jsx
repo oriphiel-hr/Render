@@ -85,16 +85,32 @@ export default function UserDashboardPage({ token, profile }) {
 
   useEffect(() => {
     async function runPolicyCheck() {
+      const profile = myState?.profile;
+      if (!profile) return;
       const data = await policyCheck(token, {
-        ageMin: 25,
-        ageMax: 28,
-        cities: [profile?.city || 'Zagreb'],
-        distanceKm: 8
+        ageMin: Number(profile.seekingAgeMin) || 18,
+        ageMax: Number(profile.seekingAgeMax) || 99,
+        distanceKm: profile.maxDistanceKm ?? null,
+        sameCountryOnly: Boolean(profile.sameCountryOnly),
+        hasLocation: Boolean(profile.shareLocation)
       });
       if (data?.success) setPolicyWarnings(data.result?.warnings || []);
     }
     runPolicyCheck();
-  }, [token, profile?.city]);
+  }, [token, myState?.profile]);
+
+  function policyWarningText(warning) {
+    if (!warning) return '';
+    if (typeof warning === 'string') return warning;
+    const code = warning.code;
+    if (code === 'NARROW_AGE_RANGE') return t('dashboard.policyNarrowAge');
+    if (code === 'SAME_COUNTRY_ONLY') return t('dashboard.policySameCountry');
+    if (code === 'SMALL_DISTANCE') {
+      return t('dashboard.policySmallDistance', { km: warning.vars?.km ?? '?' });
+    }
+    if (code === 'DISTANCE_WITHOUT_LOCATION') return t('dashboard.policyDistanceNoLocation');
+    return code;
+  }
 
   function advanceFeed() {
     setFeedIndex((i) => i + 1);
@@ -249,7 +265,7 @@ export default function UserDashboardPage({ token, profile }) {
           <strong>{t('dashboard.policyTitle')}</strong>
           <ul className="compact-list">
             {policyWarnings.map((warning) => (
-              <li key={warning}>{warning}</li>
+              <li key={typeof warning === 'string' ? warning : warning.code}>{policyWarningText(warning)}</li>
             ))}
           </ul>
         </section>

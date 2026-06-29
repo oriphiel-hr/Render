@@ -1,6 +1,13 @@
 import { prisma } from '../lib/prisma.js';
 import { distanceLabelForProfiles } from '../lib/geo.js';
-import { toPublicProfile } from '../lib/profile-public.js';
+import {
+  isAgeCompatible,
+  isCountryCompatible,
+  isDistanceCompatible
+} from '../lib/match-preferences.js';
+import { scorePublicTagOverlap } from '../lib/profile-tags.js';
+import { scoreLifestyleOverlap, shouldShowAwaitingContact, lifestyleFieldsFromProfile } from '../lib/profile-lifestyle.js';
+import { tagsOverlap, toPublicProfile } from '../lib/profile-public.js';
 import { calculateProfileCompleteness, hasProfilePhoto } from '../services/profile-service.js';
 
 function normalizeStringArray(value) {
@@ -13,7 +20,7 @@ function hasOverlap(a, b) {
   return a.some((item) => setB.has(item));
 }
 
-function isCompatible(me, candidate) {
+export function isFeedCompatible(me, candidate) {
   const mySeekingIdentities = normalizeStringArray(me.seekingIdentities);
   const mySeekingProfileTypes = normalizeStringArray(me.seekingProfileTypes);
   const myIntents = normalizeStringArray(me.intents);
@@ -29,7 +36,15 @@ function isCompatible(me, candidate) {
     candidateSeekingProfileTypes.includes(me.profileType);
   const intentOverlap = hasOverlap(myIntents, candidateIntents);
 
-  return myWantsCandidate && candidateWantsMe && intentOverlap && hasProfilePhoto(candidate);
+  return (
+    myWantsCandidate &&
+    candidateWantsMe &&
+    intentOverlap &&
+    hasProfilePhoto(candidate) &&
+    isAgeCompatible(me, candidate) &&
+    isCountryCompatible(me, candidate) &&
+    isDistanceCompatible(me, candidate)
+  );
 }
 
 function daysSince(date) {
@@ -50,6 +65,31 @@ export function scoreCandidate(me, candidate, { incoming7d = 0 }) {
   if (candidate.photoVerified) {
     score += 5;
     factors.push({ key: 'verified', label: 'Verificirana fotografija', points: 5 });
+  }
+
+  const tagMatch = scorePublicTagOverlap(me, candidate);
+  if (tagMatch.points > 0) {
+    score += tagMatch.points;
+    factors.push({
+      key: 'shared_tags',
+      label: 'Zajednički interesi',
+      points: tagMatch.points,
+      detail: tagMatch.overlap.join(', ')
+    });
+  }
+
+  const lifestyleMatch = scoreLifestyleOverlap(
+    lifestyleFieldsFromProfile(me),
+    lifestyleFieldsFromProfile(candidate)
+  );
+  if (lifestyleMatch.points > 0) {
+    score += lifestyleMatch.points;
+    factors.push({
+      key: 'shared_lifestyle',
+      label: 'Podudaranje životnih navika',
+      points: lifestyleMatch.points,
+      detail: lifestyleMatch.matches.join(', ')
+    });
   }
 
   const waitingDays = daysSince(candidate.createdAt);
@@ -91,7 +131,9 @@ export async function buildRankedFeed(me, { blockedIds, logSnapshot = false, rec
     take: 80
   });
 
-  const compatible = profiles.filter((candidate) => !blockedIds.has(candidate.id) && isCompatible(me, candidate));
+  const compatible = profiles.filter(
+    (candidate) => !blockedIds.has(candidate.id) && isFeedCompatible(me, candidate)
+  );
   const candidateIds = compatible.map((c) => c.id);
 
   const incomingRows = candidateIds.length
@@ -106,7 +148,7 @@ export async function buildRankedFeed(me, { blockedIds, logSnapshot = false, rec
   const ranked = compatible
     .map((candidate) => {
       const incoming7d = incomingByTarget.get(candidate.id) || 0;
-      const { score, factors, completeness } = scoreCandidate(me, candidate, { incoming7d });
+      const { score, factors, completeness, waitingDays } = scoreCandidate(me, candidate, { incoming7d });
       return {
         profileId: candidate.id,
         displayName: candidate.displayName,
@@ -116,7 +158,8 @@ export async function buildRankedFeed(me, { blockedIds, logSnapshot = false, rec
         factors,
         completeness,
         candidate,
-        incoming7d
+        incoming7d,
+        waitingDays
       };
     })
     .sort((a, b) => b.score - a.score || new Date(b.candidate.createdAt) - new Date(a.candidate.createdAt));
@@ -130,7 +173,13 @@ export async function buildRankedFeed(me, { blockedIds, logSnapshot = false, rec
   const items = withRank.map((row) =>
     toPublicProfile(row.candidate, {
       completeness: row.completeness,
-      distanceLabel: distanceLabelForProfiles(me, row.candidate)
+      distanceLabel: distanceLabelForProfiles(me, row.candidate),
+      commonTags: tagsOverlap(me.publicTags, row.candidate.publicTags),
+      awaitingContact: shouldShowAwaitingContact({
+        incoming7d: row.incoming7d,
+        waitingDays: row.waitingDays
+      }),
+      fullProfile: row.completeness >= 90
     })
   );
 
@@ -155,8 +204,10 @@ export async function explainFeedForViewer(viewerProfileId) {
     viewer: { id: me.id, displayName: me.displayName, city: me.city, identity: me.identity },
     principles: [
       'Kompatibilnost (preferencije + namjere) je obavezni filter',
+      'Dobni raspon i udaljenost filtriraju feed kad su postavljeni',
       'Paket (free/plus/supporter) ne daje bodove za rang',
       'Korisnici bez dolaznih zahtjeva duže čekaju — dobivaju fer boost',
+      'Podudaranje interesa i životnih navika daje male bodove u feedu',
       'Potpunost profila i verifikacija daju male, transparentne bodove'
     ],
     rankings: rankings.slice(0, 20).map((row) => ({

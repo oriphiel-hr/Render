@@ -165,7 +165,10 @@ export default {
     PROFILE_NOT_FOUND: "Profile not found.",
     CAPTCHA_FAILED: "Captcha verification failed.",
     CAPTCHA_REQUIRED: "Captcha verification required.",
-    INVALID_SUBMISSION: "Invalid submission."
+    INVALID_SUBMISSION: "Invalid submission.",
+    SEEKING_AGE_UNDER_MIN: "The seeking age range cannot be below 18.",
+    SEEKING_AGE_OVER_MAX: "The seeking age range cannot be above 99.",
+    SEEKING_AGE_INVERTED: "Minimum seeking age must be less than or equal to maximum."
   },
   errors: {
     generic: "Something went wrong. Please try again."
@@ -186,6 +189,61 @@ export default {
     RELATIONSHIP: "Relationship",
     MARRIAGE: "Marriage",
     ADVENTURE: "Adventure"
+  },
+  relationship: {
+    SINGLE: "Single",
+    OPEN: "In a relationship (open to meeting)",
+    COMPLICATED: "It's complicated"
+  },
+  children: {
+    NONE: "No children",
+    HAS: "Has children",
+    WANTS_SOMEDAY: "Wants children someday",
+    NOT_IMPORTANT: "Not important to me"
+  },
+  smoking: {
+    NO: "Non-smoker",
+    SOMETIMES: "Occasional smoker",
+    YES: "Smoker"
+  },
+  activity: {
+    online: "Online",
+    today: "Active today",
+    week: "Active this week",
+    daysAgo: "Active {days} days ago"
+  },
+  tags: {
+    remove: "Remove",
+    addCustom: "Add",
+    customPlaceholder: "Custom tag (e.g. hiking)",
+    count: "{current}/{max} tags",
+    common: "In common: {tags}",
+    public: {
+      READING: "Reading",
+      HIKING: "Hiking",
+      ANIMALS: "Animals",
+      COFFEE: "Coffee",
+      MUSIC: "Music",
+      TRAVEL: "Travel",
+      SPORTS: "Sports",
+      COOKING: "Cooking",
+      GAMING: "Gaming",
+      ART: "Art",
+      NATURE: "Nature",
+      MOVIES: "Movies",
+      DANCING: "Dancing",
+      PHOTOGRAPHY: "Photography"
+    },
+    private: {
+      CASUAL_SEX: "Casual / physical",
+      NO_RUSH_INTIMACY: "No rush with intimacy",
+      CUDDLES: "Cuddles and affection",
+      OPEN_MINDED: "Open to talking about desires",
+      MONOGAMOUS: "Monogamous intimacy",
+      EXPLORING: "Still exploring what I want",
+      FRIENDSHIP_FIRST: "Friendship first",
+      LONG_TERM_FOCUS: "Long-term focus"
+    }
   },
   availability: {
     AVAILABLE: "Available",
@@ -432,9 +490,38 @@ export default {
     city: "City",
     bio: "About me (bio)",
     bioPlaceholder: "Introduce yourself briefly — what you are looking for, what you enjoy...",
+    publicTagsLegend: "Interests and hobbies (public)",
+    publicTagsHint: "Up to 5 tags — visible on your profile and in the feed. Helps others see what you enjoy (reading, animals, sports…).",
+    privateTagsLegend: "Intimate preferences (private)",
+    privateTagsHint:
+      "Up to 5 tags — visible only after a contact is accepted. Clearly signals what you want intimately (e.g. casual, no rush).",
+    lifestyleLegend: "Life details (optional)",
+    lifestyleHint:
+      "Helps others understand context — not a search filter, but gives a small feed bonus when values match.",
+    childrenLabel: "Children",
+    smokingLabel: "Smoking",
+    relationshipLabel: "Status",
+    lifestyleUnset: "— prefer not to say",
     icebreakersLegend: "Icebreaker questions (up to 3)",
     icebreakersHint: "Short questions and answers — they help with first contact.",
     addIcebreaker: "Add icebreaker",
+    preferencesLegend: "Matching preferences",
+    preferencesHint: "Control which profiles you see in the feed — along with identity, intent, and compatibility.",
+    seekingAgeMin: "Seeking age from",
+    seekingAgeMax: "to",
+    seekingAgeHint: "Mutual — others must also be seeking your age. Minimum age is 18.",
+    seekingAgeUnder18: "The seeking age cannot be below 18.",
+    ageRangeInvalid: "Minimum seeking age must be less than or equal to maximum.",
+    seekingAgeOver99: "The seeking age cannot be above 99.",
+    maxDistanceLabel: "Maximum distance",
+    distanceUnlimited: "No limit",
+    distanceKmOption: "Up to {km} km",
+    maxDistanceHint:
+      "To filter by distance, enable location in the section below. Profiles without location may still appear.",
+    sameCountryOnly: "Only profiles from my country",
+    sameCountryHint: "When enabled, you only see users from the same country as on your profile.",
+    profileTypeLegend: "Profile type",
+    seekingProfileTypeLegend: "Seeking profile type",
     locationLegend: "Distance (private)",
     locationHint: "Coordinates are not shown to others — only a rough distance (e.g. “5–15 km”). Both people must enable the option.",
     shareLocation: "Show distance from me to other users",
@@ -496,6 +583,11 @@ export default {
     conversationsUnread: "Conversations ({unread} new)",
     openChat: "Open chat",
     policyTitle: "Along with preferences",
+    policyNarrowAge: "Your age range is very narrow — consider widening it for more matches.",
+    policySameCountry: "You filter to your country only — that significantly reduces the number of profiles.",
+    policySmallDistance: "A small distance ({km} km) may limit profiles in your feed.",
+    policyDistanceNoLocation:
+      "You set a max distance but location is not enabled — the filter will not work until you load it in Settings.",
     statusTitle: "Your status",
     availability: "Availability",
     completeness: "Completeness",
@@ -558,7 +650,12 @@ export default {
     verified: "Verified profile",
     supporter: "Supporter",
     video: "Video",
-    seeking: "Looking for: {intents}",
+    seeking: "Looking for:",
+    interests: "Interests",
+    lifestyle: "Life details",
+    privatePreferences: "Intimate preferences",
+    privateLocked: "Intimate preferences are visible only after a contact is accepted.",
+    noPrivateTags: "No private tags yet — add them in Settings.",
     sendRequest: "Send request",
     report: "Report",
     block: "Block",
@@ -634,7 +731,10 @@ export default {
     stampLike: "Interested",
     stampPass: "Skip",
     sameCity: "Same city",
-    seeking: "Looking for: {intents}",
+    seeking: "Looking for:",
+    awaitingContact: "Awaiting contact",
+    multiPhotos: "{count} photos",
+    fullProfile: "Complete profile",
     report: "Report",
     block: "Block",
     ariaPass: "Skip",

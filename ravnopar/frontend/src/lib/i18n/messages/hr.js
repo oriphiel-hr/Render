@@ -170,7 +170,10 @@ export default {
     PROFILE_NOT_FOUND: 'Profil nije pronađen.',
     CAPTCHA_FAILED: 'Captcha provjera nije uspjela.',
     CAPTCHA_REQUIRED: 'Potvrdi captchu prije nastavka.',
-    INVALID_SUBMISSION: 'Neispravan zahtjev.'
+    INVALID_SUBMISSION: 'Neispravan zahtjev.',
+    SEEKING_AGE_UNDER_MIN: 'Tražena dob ne smije biti manja od 18 godina.',
+    SEEKING_AGE_OVER_MAX: 'Tražena dob ne smije biti veća od 99 godina.',
+    SEEKING_AGE_INVERTED: 'Najmanja tražena dob mora biti manja ili jednaka najvećoj.'
   },
 
   errors: {
@@ -195,6 +198,66 @@ export default {
     RELATIONSHIP: 'Veza',
     MARRIAGE: 'Brak',
     ADVENTURE: 'Avantura'
+  },
+
+  activity: {
+    online: 'Online',
+    today: 'Aktivan danas',
+    week: 'Aktivan ovaj tjedan',
+    daysAgo: 'Aktivan prije {days} dana'
+  },
+
+  tags: {
+    remove: 'Ukloni',
+    addCustom: 'Dodaj',
+    customPlaceholder: 'Vlastiti tag (npr. planinarenje)',
+    count: '{current}/{max} tagova',
+    common: 'Zajedničko: {tags}',
+    public: {
+      READING: 'Čitanje',
+      HIKING: 'Planinarenje',
+      ANIMALS: 'Životinje',
+      COFFEE: 'Kava',
+      MUSIC: 'Glazba',
+      TRAVEL: 'Putovanja',
+      SPORTS: 'Sport',
+      COOKING: 'Kuhanje',
+      GAMING: 'Igre',
+      ART: 'Umjetnost',
+      NATURE: 'Priroda',
+      MOVIES: 'Filmovi',
+      DANCING: 'Ples',
+      PHOTOGRAPHY: 'Fotografija'
+    },
+    private: {
+      CASUAL_SEX: 'Ležerno / fizički',
+      NO_RUSH_INTIMACY: 'Ne žurim s intimnošću',
+      CUDDLES: 'Nježnost i mazanje',
+      OPEN_MINDED: 'Otvoren/a za razgovor o željama',
+      MONOGAMOUS: 'Monogamna intimnost',
+      EXPLORING: 'Još istražujem što tražim',
+      FRIENDSHIP_FIRST: 'Prvo prijateljstvo',
+      LONG_TERM_FOCUS: 'Fokus na dugoročno'
+    }
+  },
+
+  relationship: {
+    SINGLE: 'Sam/a',
+    OPEN: 'U vezi (otvoren/a za upoznavanje)',
+    COMPLICATED: 'Komplicirano'
+  },
+
+  children: {
+    NONE: 'Nemam djece',
+    HAS: 'Imam djecu',
+    WANTS_SOMEDAY: 'Želim djecu jednog dana',
+    NOT_IMPORTANT: 'Nije mi bitno'
+  },
+
+  smoking: {
+    NO: 'Nepušač',
+    SOMETIMES: 'Povremeno pušim',
+    YES: 'Pušač'
   },
 
   availability: {
@@ -466,9 +529,38 @@ export default {
     city: 'Grad',
     bio: 'O meni (bio)',
     bioPlaceholder: 'Kratko se predstavi — što tražiš, što voliš...',
+    publicTagsLegend: 'Interesi i hobiji (javno)',
+    publicTagsHint: 'Do 5 tagova — vidljivo na profilu i u feedu. Pomaže drugima da vide što voliš (čitanje, životinje, sport…).',
+    privateTagsLegend: 'Intimne preference (privatno)',
+    privateTagsHint:
+      'Do 5 tagova — vidljivo tek nakon prihvaćenog kontakta. Jasno označava što tražiš u intimnom smislu (npr. ležerno, bez žurbe).',
+    lifestyleLegend: 'Životni detalji (opcionalno)',
+    lifestyleHint:
+      'Pomaže drugima da razumiju kontekst — nije filter u pretrazi, ali daje mali bonus u feedu kad se vrijednosti podudaraju.',
+    childrenLabel: 'Djeca',
+    smokingLabel: 'Pušenje',
+    relationshipLabel: 'Status',
+    lifestyleUnset: '— ne želim navesti',
     icebreakersLegend: 'Icebreaker pitanja (do 3)',
     icebreakersHint: 'Kratka pitanja i odgovori — pomažu pri prvom kontaktu.',
     addIcebreaker: 'Dodaj icebreaker',
+    preferencesLegend: 'Preference upoznavanja',
+    preferencesHint: 'Određuju koje profile vidiš u feedu — uz identitet, namjeru i kompatibilnost.',
+    seekingAgeMin: 'Tražim dob od',
+    seekingAgeMax: 'do',
+    seekingAgeHint: 'Obostrano — i drugi moraju tražiti tvoju dob. Minimalno 18 godina.',
+    seekingAgeUnder18: 'Tražena dob ne smije biti manja od 18 godina.',
+    ageRangeInvalid: 'Najmanja tražena dob mora biti manja ili jednaka najvećoj.',
+    seekingAgeOver99: 'Tražena dob ne smije biti veća od 99 godina.',
+    maxDistanceLabel: 'Maksimalna udaljenost',
+    distanceUnlimited: 'Bez ograničenja',
+    distanceKmOption: 'Do {km} km',
+    maxDistanceHint:
+      'Za filtriranje po udaljenosti uključi lokaciju u odjeljku ispod. Profili bez lokacije se i dalje mogu pojaviti.',
+    sameCountryOnly: 'Samo profili iz moje države',
+    sameCountryHint: 'Kad je uključeno, vidiš samo korisnike iz iste države kao na tvom profilu.',
+    profileTypeLegend: 'Tip profila',
+    seekingProfileTypeLegend: 'Tražim tip profila',
     locationLegend: 'Udaljenost (privatno)',
     locationHint:
       'Koordinate se ne prikazuju drugima — samo gruba udaljenost (npr. „5–15 km"). Oboje mora uključiti opciju.',
@@ -533,6 +625,11 @@ export default {
     conversationsUnread: 'Razgovori ({count} novo)',
     openChat: 'Otvori chat',
     policyTitle: 'Uz preference',
+    policyNarrowAge: 'Dobni raspon je vrlo uzak — razmisli o širem rasponu za više prilika.',
+    policySameCountry: 'Filtriraš samo svoju državu — to značajno smanjuje broj profila.',
+    policySmallDistance: 'Mala udaljenost ({km} km) može ograničiti broj profila u feedu.',
+    policyDistanceNoLocation:
+      'Postavio/la si maks. udaljenost, ali lokacija nije uključena — filtar neće raditi dok je ne učitaš u Postavkama.',
     statusTitle: 'Tvoj status',
     availability: 'Dostupnost',
     completeness: 'Popunjenost',
@@ -599,6 +696,11 @@ export default {
     supporter: 'Supporter',
     video: 'Video',
     seeking: 'Traži:',
+    interests: 'Interesi',
+    lifestyle: 'Životni detalji',
+    privatePreferences: 'Intimne preference',
+    privateLocked: 'Intimne preference vidljive su tek nakon prihvaćenog kontakta.',
+    noPrivateTags: 'Nema privatnih tagova — dodaj ih u Postavkama.',
     sendRequest: 'Pošalji zahtjev',
     report: 'Prijavi',
     block: 'Blokiraj',
@@ -683,6 +785,9 @@ export default {
     stampPass: 'Preskoči',
     sameCity: 'Isti grad',
     seeking: 'Traži:',
+    awaitingContact: 'Čeka kontakt',
+    multiPhotos: '{count} fotografije',
+    fullProfile: 'Potpun profil',
     report: 'Prijavi',
     block: 'Blokiraj',
     ariaPass: 'Preskoči',

@@ -7,9 +7,12 @@ import { setTyping, getTypingInPair } from '../lib/typing-state.js';
 import { distanceLabelForProfiles } from '../lib/geo.js';
 import { getDemoFeedState } from '../services/fairness-service.js';
 import { buildExtendedFairnessAudit } from '../services/fairness-audit-service.js';
-import { buildRankedFeed } from '../services/feed-ranking-service.js';
+import { buildRankedFeed, isFeedCompatible } from '../services/feed-ranking-service.js';
 import { recordFeedRankingSnapshot, recordSecurityEvent } from '../services/audit-service.js';
 import { evaluateContactLimiter, evaluatePreferencePolicy } from '../services/policy-service.js';
+import { normalizeMaxDistanceKm, normalizeSeekingAgeRange } from '../lib/match-preferences.js';
+import { normalizePrivateTags, normalizePublicTags, tagCatalogPayload } from '../lib/profile-tags.js';
+import { tagsOverlap } from '../lib/profile-public.js';
 import { calculateProfileCompleteness, isFeedReady, hasProfilePhoto } from '../services/profile-service.js';
 import {
   notifyContactAccepted,
@@ -140,7 +143,21 @@ matchmakingRouter.get('/my-state', requireAuth, async (req, res) => {
       ...toPublicProfile(profile),
       email: profile.email,
       dateOfBirth: profile.dateOfBirth,
-      notifyEmail: profile.notifyEmail
+      notifyEmail: profile.notifyEmail,
+      shareLocation: profile.shareLocation,
+      ...(() => {
+        const ages = normalizeSeekingAgeRange(
+          profile.seekingAgeMin,
+          profile.seekingAgeMax,
+          profile.age
+        );
+        return {
+          seekingAgeMin: ages.seekingAgeMin,
+          seekingAgeMax: ages.seekingAgeMax,
+          maxDistanceKm: normalizeMaxDistanceKm(profile.maxDistanceKm),
+          sameCountryOnly: profile.sameCountryOnly === true
+        };
+      })()
     },
     completeness: calculateProfileCompleteness(profile),
     feedReady: isFeedReady(profile),
@@ -192,6 +209,12 @@ matchmakingRouter.post('/contact-request', requireAuth, async (req, res) => {
     if (me.availability !== 'AVAILABLE' || target.availability !== 'AVAILABLE') {
       return res.status(409).json({ success: false, error: 'One profile is not available' });
     }
+    if (!isFeedCompatible(me, target)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Profil ne odgovara tvojim preferencama upoznavanja.'
+      });
+    }
 
     const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const outgoingPendingLast24h = await prisma.matchContact.count({
@@ -225,8 +248,9 @@ matchmakingRouter.post('/policy-check', requireAuth, async (req, res) => {
   const schema = z.object({
     ageMin: z.number().int().min(18).max(99).optional(),
     ageMax: z.number().int().min(18).max(99).optional(),
-    cities: z.array(z.string().min(2).max(80)).optional(),
-    distanceKm: z.number().int().min(1).max(500).optional()
+    distanceKm: z.number().int().min(1).max(500).nullable().optional(),
+    sameCountryOnly: z.boolean().optional(),
+    hasLocation: z.boolean().optional()
   });
   try {
     const preferences = schema.parse(req.body || {});
@@ -615,6 +639,24 @@ matchmakingRouter.get('/admin/fairness-audit', requireAuth, requireAdmin, async 
   return res.json({ success: true, ...audit });
 });
 
+async function canViewPrivateTags(viewerId, targetId) {
+  if (viewerId === targetId) return true;
+  const pair = await prisma.engagedPair.findFirst({
+    where: {
+      status: 'ACTIVE',
+      OR: [
+        { userAId: viewerId, userBId: targetId },
+        { userAId: targetId, userBId: viewerId }
+      ]
+    }
+  });
+  return Boolean(pair);
+}
+
+matchmakingRouter.get('/tag-catalog', requireAuth, (_req, res) => {
+  return res.json({ success: true, catalog: tagCatalogPayload() });
+});
+
 matchmakingRouter.get('/profiles/:profileId', requireAuth, async (req, res) => {
   const [profile, me] = await Promise.all([
     prisma.userProfile.findUnique({ where: { id: req.params.profileId } }),
@@ -627,12 +669,19 @@ matchmakingRouter.get('/profiles/:profileId', requireAuth, async (req, res) => {
     return res.status(403).json({ success: false, error: 'Profile unavailable' });
   }
 
+  const showPrivate = await canViewPrivateTags(req.auth.profileId, profile.id);
+  const commonTags = me ? tagsOverlap(me.publicTags, profile.publicTags) : [];
+
   return res.json({
     success: true,
     profile: toPublicProfile(profile, {
       completeness: calculateProfileCompleteness(profile),
-      distanceLabel: me ? distanceLabelForProfiles(me, profile) : null
-    })
+      distanceLabel: me ? distanceLabelForProfiles(me, profile) : null,
+      commonTags: me ? tagsOverlap(me.publicTags, profile.publicTags) : [],
+      fullProfile: calculateProfileCompleteness(profile) >= 90,
+      ...(showPrivate ? { privateTags: normalizePrivateTags(profile.privateTags) } : {})
+    }),
+    canViewPrivateTags: showPrivate
   });
 });
 

@@ -4,6 +4,12 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { issueAuthToken, requireAuth } from '../lib/auth.js';
 import { normalizePhotos, toPublicProfile, normalizeIcebreakers } from '../lib/profile-public.js';
+import { normalizePrivateTags, normalizePublicTags } from '../lib/profile-tags.js';
+import {
+  normalizeChildrenPref,
+  normalizeRelationshipStatus,
+  normalizeSmoking
+} from '../lib/profile-lifestyle.js';
 import { validatePhotosArray } from '../lib/photo-validation.js';
 import { calculateProfileCompleteness, isFeedReady } from '../services/profile-service.js';
 import { recordComplianceEvent, recordSecurityEvent } from '../services/audit-service.js';
@@ -16,8 +22,41 @@ import { rateLimit } from '../lib/rate-limit.js';
 import { ensureReferralCode, generateReferralCode } from '../lib/referral.js';
 import { sendError } from '../lib/api-errors.js';
 import { SUPPORTED_LOCALES } from '../lib/locales.js';
+import {
+  defaultSeekingAgeRange,
+  normalizeMaxDistanceKm,
+  normalizeSeekingAgeRange,
+  validateSeekingAgeRange
+} from '../lib/match-preferences.js';
 
 const localeSchema = z.enum(SUPPORTED_LOCALES);
+
+function ownerProfileExtras(profile) {
+  const { seekingAgeMin, seekingAgeMax } = normalizeSeekingAgeRange(
+    profile.seekingAgeMin,
+    profile.seekingAgeMax,
+    profile.age
+  );
+  return {
+    email: profile.email,
+    dateOfBirth: profile.dateOfBirth,
+    country: profile.country,
+    locale: profile.locale,
+    notifyEmail: profile.notifyEmail,
+    shareLocation: profile.shareLocation,
+    seekingAgeMin,
+    seekingAgeMax,
+    maxDistanceKm: normalizeMaxDistanceKm(profile.maxDistanceKm),
+    sameCountryOnly: profile.sameCountryOnly === true,
+    publicTags: normalizePublicTags(profile.publicTags),
+    privateTags: normalizePrivateTags(profile.privateTags),
+    childrenPref: normalizeChildrenPref(profile.childrenPref),
+    smoking: normalizeSmoking(profile.smoking),
+    relationshipStatus: normalizeRelationshipStatus(profile.relationshipStatus),
+    verificationPending: profile.verificationPending,
+    verificationSelfie: profile.verificationSelfie || null
+  };
+}
 
 export const authRouter = Router();
 
@@ -107,6 +146,8 @@ authRouter.post('/register', async (req, res) => {
       if (referrer) referredByProfileId = referrer.id;
     }
 
+    const ageDefaults = defaultSeekingAgeRange(age);
+
     await prisma.$transaction(async (tx) => {
       const profile = await tx.userProfile.create({
         data: {
@@ -123,6 +164,8 @@ authRouter.post('/register', async (req, res) => {
           seekingIdentities: payload.seekingIdentities,
           seekingProfileTypes: payload.seekingProfileTypes,
           intents: payload.intents,
+          seekingAgeMin: ageDefaults.seekingAgeMin,
+          seekingAgeMax: ageDefaults.seekingAgeMax,
           referredByProfileId,
           referralCode: generateReferralCode(payload.displayName)
         }
@@ -385,6 +428,15 @@ const profileUpdateSchema = z.object({
   shareLocation: z.boolean().optional(),
   latitude: z.number().min(-90).max(90).nullable().optional(),
   longitude: z.number().min(-180).max(180).nullable().optional(),
+  seekingAgeMin: z.number().int().min(18).max(99).optional(),
+  seekingAgeMax: z.number().int().min(18).max(99).optional(),
+  maxDistanceKm: z.number().int().min(1).max(500).nullable().optional(),
+  sameCountryOnly: z.boolean().optional(),
+  publicTags: z.array(z.string().min(2).max(32)).max(5).optional(),
+  privateTags: z.array(z.string().min(2).max(32)).max(5).optional(),
+  childrenPref: z.enum(['NONE', 'HAS', 'WANTS_SOMEDAY', 'NOT_IMPORTANT']).nullable().optional(),
+  smoking: z.enum(['NO', 'SOMETIMES', 'YES']).nullable().optional(),
+  relationshipStatus: z.enum(['SINGLE', 'OPEN', 'COMPLICATED']).nullable().optional(),
   videoUrl: z.string().max(500).nullable().optional(),
   verificationSelfie: z.string().max(600_000).nullable().optional()
 });
@@ -396,14 +448,7 @@ authRouter.get('/profile', requireAuth, async (req, res) => {
     success: true,
     profile: {
       ...toPublicProfile(profile),
-      email: profile.email,
-      dateOfBirth: profile.dateOfBirth,
-      country: profile.country,
-      locale: profile.locale,
-      notifyEmail: profile.notifyEmail,
-      shareLocation: profile.shareLocation,
-      verificationPending: profile.verificationPending,
-      verificationSelfie: profile.verificationSelfie || null
+      ...ownerProfileExtras(profile)
     },
     feedReady: isFeedReady(profile),
     completeness: calculateProfileCompleteness(profile)
@@ -472,6 +517,47 @@ authRouter.patch('/profile', requireAuth, async (req, res) => {
     if (payload.longitude !== undefined && payload.shareLocation !== false) {
       data.longitude = payload.longitude;
     }
+    if (payload.seekingAgeMin !== undefined || payload.seekingAgeMax !== undefined) {
+      const validated = validateSeekingAgeRange(
+        payload.seekingAgeMin ?? profile.seekingAgeMin,
+        payload.seekingAgeMax ?? profile.seekingAgeMax
+      );
+      if (!validated.ok) {
+        if (validated.code === 'UNDER_MIN') {
+          return sendError(req, res, 400, 'SEEKING_AGE_UNDER_MIN');
+        }
+        if (validated.code === 'OVER_MAX') {
+          return sendError(req, res, 400, 'SEEKING_AGE_OVER_MAX');
+        }
+        if (validated.code === 'INVERTED') {
+          return sendError(req, res, 400, 'SEEKING_AGE_INVERTED');
+        }
+        return sendError(req, res, 400, 'INVALID_PAYLOAD');
+      }
+      data.seekingAgeMin = validated.seekingAgeMin;
+      data.seekingAgeMax = validated.seekingAgeMax;
+    }
+    if (payload.maxDistanceKm !== undefined) {
+      data.maxDistanceKm = normalizeMaxDistanceKm(payload.maxDistanceKm);
+    }
+    if (payload.sameCountryOnly !== undefined) {
+      data.sameCountryOnly = payload.sameCountryOnly;
+    }
+    if (payload.publicTags !== undefined) {
+      data.publicTags = normalizePublicTags(payload.publicTags);
+    }
+    if (payload.privateTags !== undefined) {
+      data.privateTags = normalizePrivateTags(payload.privateTags);
+    }
+    if (payload.childrenPref !== undefined) {
+      data.childrenPref = normalizeChildrenPref(payload.childrenPref);
+    }
+    if (payload.smoking !== undefined) {
+      data.smoking = normalizeSmoking(payload.smoking);
+    }
+    if (payload.relationshipStatus !== undefined) {
+      data.relationshipStatus = normalizeRelationshipStatus(payload.relationshipStatus);
+    }
     if (payload.verificationSelfie !== undefined) {
       if (payload.verificationSelfie === null) {
         data.verificationSelfie = null;
@@ -506,14 +592,7 @@ authRouter.patch('/profile', requireAuth, async (req, res) => {
       success: true,
       profile: {
         ...toPublicProfile(updated),
-        email: updated.email,
-        dateOfBirth: updated.dateOfBirth,
-        country: updated.country,
-        locale: updated.locale,
-        notifyEmail: updated.notifyEmail,
-        shareLocation: updated.shareLocation,
-        verificationPending: updated.verificationPending,
-        verificationSelfie: updated.verificationSelfie || null
+        ...ownerProfileExtras(updated)
       },
       completeness: calculateProfileCompleteness(updated)
     });

@@ -15,10 +15,19 @@ import { getIcebreakerPrompts } from '../lib/icebreakers.js';
 import InviteSection from '../components/InviteSection.jsx';
 import CountrySelect from '../components/CountrySelect.jsx';
 import LanguageSwitcher from '../components/LanguageSwitcher.jsx';
-import { useI18n } from '../lib/i18n/index.jsx';
+import { translateApiError, useI18n } from '../lib/i18n/index.jsx';
+import TagPicker from '../components/TagPicker.jsx';
+import { PRIVATE_TAG_KEYS, PUBLIC_TAG_KEYS } from '../lib/profile-tags.js';
+import {
+  CHILDREN_KEYS,
+  RELATIONSHIP_KEYS,
+  SMOKING_KEYS
+} from '../lib/profile-lifestyle.js';
 
 const IDENTITY_KEYS = ['MALE', 'FEMALE', 'NON_BINARY', 'OTHER'];
+const PROFILE_TYPE_KEYS = ['INDIVIDUAL', 'COUPLE'];
 const INTENT_KEYS = ['CHAT', 'CASUAL', 'RELATIONSHIP', 'MARRIAGE', 'ADVENTURE'];
+const DISTANCE_KM_OPTIONS = [25, 50, 100, 200, 500];
 
 export default function SettingsPage({ token, profile, onLogout, onProfileUpdate }) {
   const { t, locale, setLocale, catalog, labels } = useI18n();
@@ -149,6 +158,24 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
       setMessage(t('settings.locationRequired'), 'error');
       return;
     }
+    const seekingAgeMin = Number(form.seekingAgeMin);
+    const seekingAgeMax = Number(form.seekingAgeMax);
+    if (!Number.isFinite(seekingAgeMin) || !Number.isFinite(seekingAgeMax)) {
+      setMessage(t('settings.ageRangeInvalid'), 'error');
+      return;
+    }
+    if (seekingAgeMin < 18 || seekingAgeMax < 18) {
+      setMessage(t('settings.seekingAgeUnder18'), 'error');
+      return;
+    }
+    if (seekingAgeMin > 99 || seekingAgeMax > 99) {
+      setMessage(t('settings.seekingAgeOver99'), 'error');
+      return;
+    }
+    if (seekingAgeMin > seekingAgeMax) {
+      setMessage(t('settings.ageRangeInvalid'), 'error');
+      return;
+    }
     setBusy(true);
     setMessage('');
     try {
@@ -163,10 +190,19 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
         seekingIdentities: form.seekingIdentities,
         seekingProfileTypes: form.seekingProfileTypes,
         intents: form.intents,
+        seekingAgeMin,
+        seekingAgeMax,
+        maxDistanceKm: form.maxDistanceKm ? Number(form.maxDistanceKm) : null,
+        sameCountryOnly: Boolean(form.sameCountryOnly),
         availability: form.availability,
         notifyEmail: form.notifyEmail,
         photos: form.photos || [],
         icebreakers: form.icebreakers || [],
+        publicTags: form.publicTags || [],
+        privateTags: form.privateTags || [],
+        childrenPref: form.childrenPref || null,
+        smoking: form.smoking || null,
+        relationshipStatus: form.relationshipStatus || null,
         shareLocation: Boolean(form.shareLocation),
         latitude: form.shareLocation ? form.latitude ?? null : null,
         longitude: form.shareLocation ? form.longitude ?? null : null,
@@ -191,7 +227,7 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
         });
         setMessage(t('settings.profileSaved'), 'success');
       } else {
-        setMessage(data?.error || t('settings.saveFailed'), 'error');
+        setMessage(translateApiError(data) || data?.error || t('settings.saveFailed'), 'error');
       }
     } finally {
       setBusy(false);
@@ -309,6 +345,30 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
         </label>
 
         <fieldset className="settings-fieldset">
+          <legend>{t('settings.publicTagsLegend')}</legend>
+          <p className="muted">{t('settings.publicTagsHint')}</p>
+          <TagPicker
+            tags={form.publicTags || []}
+            catalogKeys={PUBLIC_TAG_KEYS}
+            scope="public"
+            disabled={busy}
+            onChange={(publicTags) => setForm({ ...form, publicTags })}
+          />
+        </fieldset>
+
+        <fieldset className="settings-fieldset settings-fieldset-private">
+          <legend>{t('settings.privateTagsLegend')}</legend>
+          <p className="muted">{t('settings.privateTagsHint')}</p>
+          <TagPicker
+            tags={form.privateTags || []}
+            catalogKeys={PRIVATE_TAG_KEYS}
+            scope="private"
+            disabled={busy}
+            onChange={(privateTags) => setForm({ ...form, privateTags })}
+          />
+        </fieldset>
+
+        <fieldset className="settings-fieldset">
           <legend>{t('settings.icebreakersLegend')}</legend>
           <p className="muted">{t('settings.icebreakersHint')}</p>
           {(form.icebreakers || []).map((item, index) => (
@@ -374,6 +434,132 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
         </fieldset>
 
         <fieldset className="settings-fieldset">
+          <legend>{t('settings.lifestyleLegend')}</legend>
+          <p className="muted">{t('settings.lifestyleHint')}</p>
+          <label className="field-label">
+            {t('settings.childrenLabel')}
+            <select
+              className="input"
+              value={form.childrenPref || ''}
+              onChange={(e) => setForm({ ...form, childrenPref: e.target.value || null })}
+            >
+              <option value="">{t('settings.lifestyleUnset')}</option>
+              {CHILDREN_KEYS.map((value) => (
+                <option key={value} value={value}>
+                  {labels.labelChildren(value)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field-label">
+            {t('settings.smokingLabel')}
+            <select
+              className="input"
+              value={form.smoking || ''}
+              onChange={(e) => setForm({ ...form, smoking: e.target.value || null })}
+            >
+              <option value="">{t('settings.lifestyleUnset')}</option>
+              {SMOKING_KEYS.map((value) => (
+                <option key={value} value={value}>
+                  {labels.labelSmoking(value)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field-label">
+            {t('settings.relationshipLabel')}
+            <select
+              className="input"
+              value={form.relationshipStatus || ''}
+              onChange={(e) => setForm({ ...form, relationshipStatus: e.target.value || null })}
+            >
+              <option value="">{t('settings.lifestyleUnset')}</option>
+              {RELATIONSHIP_KEYS.map((value) => (
+                <option key={value} value={value}>
+                  {labels.labelRelationship(value)}
+                </option>
+              ))}
+            </select>
+          </label>
+        </fieldset>
+
+        <fieldset className="settings-fieldset">
+          <legend>{t('settings.preferencesLegend')}</legend>
+          <p className="muted">{t('settings.preferencesHint')}</p>
+          <div className="age-range-row">
+            <label className="field-label">
+              {t('settings.seekingAgeMin')}
+              <input
+                className="input"
+                type="number"
+                min={18}
+                max={99}
+                value={form.seekingAgeMin ?? 18}
+                onChange={(e) => setForm({ ...form, seekingAgeMin: e.target.value })}
+                onBlur={(e) => {
+                  const value = Number(e.target.value);
+                  if (Number.isFinite(value) && value < 18) {
+                    setForm({ ...form, seekingAgeMin: 18 });
+                  }
+                }}
+                required
+              />
+            </label>
+            <label className="field-label">
+              {t('settings.seekingAgeMax')}
+              <input
+                className="input"
+                type="number"
+                min={18}
+                max={99}
+                value={form.seekingAgeMax ?? 99}
+                onChange={(e) => setForm({ ...form, seekingAgeMax: e.target.value })}
+                onBlur={(e) => {
+                  const value = Number(e.target.value);
+                  if (Number.isFinite(value) && value < 18) {
+                    setForm({ ...form, seekingAgeMax: 18 });
+                  }
+                }}
+                required
+              />
+            </label>
+          </div>
+          <p className="muted">{t('settings.seekingAgeHint')}</p>
+
+          <label className="field-label">
+            {t('settings.maxDistanceLabel')}
+            <select
+              className="input"
+              value={form.maxDistanceKm ?? ''}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  maxDistanceKm: e.target.value ? Number(e.target.value) : null
+                })
+              }
+            >
+              <option value="">{t('settings.distanceUnlimited')}</option>
+              {DISTANCE_KM_OPTIONS.map((km) => (
+                <option key={km} value={km}>
+                  {t('settings.distanceKmOption', { km })}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="muted">{t('settings.maxDistanceHint')}</p>
+
+          <label className="choice-chip notify-toggle">
+            <input
+              type="checkbox"
+              checked={Boolean(form.sameCountryOnly)}
+              onChange={(e) => setForm({ ...form, sameCountryOnly: e.target.checked })}
+            />
+            {t('settings.sameCountryOnly')}
+          </label>
+          <p className="muted">{t('settings.sameCountryHint')}</p>
+        </fieldset>
+
+        <fieldset className="settings-fieldset">
           <legend>{t('settings.locationLegend')}</legend>
           <p className="muted">{t('settings.locationHint')}</p>
           <label className="choice-chip notify-toggle">
@@ -432,6 +618,39 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
           {form.verificationSelfie && (
             <img src={form.verificationSelfie} alt="" className="verification-selfie-preview" />
           )}
+        </fieldset>
+
+        <fieldset className="settings-fieldset">
+          <legend>{t('settings.profileTypeLegend')}</legend>
+          <div className="choice-row">
+            {PROFILE_TYPE_KEYS.map((value) => (
+              <label key={value} className="choice-chip">
+                <input
+                  type="radio"
+                  name="profileType"
+                  checked={form.profileType === value}
+                  onChange={() => setForm({ ...form, profileType: value })}
+                />
+                {t(`profileType.${value}`)}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset className="settings-fieldset">
+          <legend>{t('settings.seekingProfileTypeLegend')}</legend>
+          <div className="choice-row">
+            {PROFILE_TYPE_KEYS.map((value) => (
+              <label key={value} className="choice-chip">
+                <input
+                  type="checkbox"
+                  checked={form.seekingProfileTypes?.includes(value)}
+                  onChange={() => toggleListField('seekingProfileTypes', value)}
+                />
+                {t(`profileType.${value}`)}
+              </label>
+            ))}
+          </div>
         </fieldset>
 
         <fieldset className="settings-fieldset">
