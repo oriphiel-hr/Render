@@ -3,8 +3,11 @@ export function arePlansPurchasable() {
 }
 
 export function formatPlanPrice(plan, t) {
-  if (plan.priceEur === 0) return t ? t('pricing.freePrice') : '0 €';
-  const amount = `${plan.priceEur.toFixed(2).replace('.', ',')} €`;
+  const price = Number(plan?.priceEur);
+  if (!Number.isFinite(price) || price === 0) {
+    return t ? t('pricing.freePrice') : '0 €';
+  }
+  const amount = `${price.toFixed(2).replace('.', ',')} €`;
   return plan.period ? `${amount}${plan.period}` : amount;
 }
 

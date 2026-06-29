@@ -737,9 +737,7 @@ export default {
         id: "free",
         name: "Gratuit",
         icon: "🏠",
-        priceEur: {
-
-        },
+        priceEur: 0,
         period: "",
         tagline: "Votre départ",
         description: "Tout ce qu'il faut pour des rencontres équitables — aujourd'hui et quand nous introduirons Premium.",
@@ -755,9 +753,7 @@ export default {
         id: "plus",
         name: "Ravnopar Plus",
         icon: "✦",
-        priceEur: {
-
-        },
+        priceEur: 4.99,
         period: "/ mois",
         tagline: "Plus pour votre profil",
         description: "Pour ceux qui veulent plus de contrôle — sans impacter les autres dans le feed.",
@@ -773,9 +769,7 @@ export default {
         id: "supporter",
         name: "Ravnopar Supporter",
         icon: "♥",
-        priceEur: {
-
-        },
+        priceEur: 2.99,
         period: "/ mois",
         tagline: "Soutenir et rester",
         description: "Un abonnement symbolique pour ceux qui croient en ce que nous construisons.",

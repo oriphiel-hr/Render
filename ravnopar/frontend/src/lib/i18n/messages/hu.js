@@ -737,9 +737,7 @@ export default {
         id: "free",
         name: "Ingyenes",
         icon: "🏠",
-        priceEur: {
-
-        },
+        priceEur: 0,
         period: "",
         tagline: "Kezdésed",
         description: "Minden, amire a tisztességes társkereséshez szükség van — ma és akkor is, ha bevezetjük a Prémiumot.",
@@ -755,9 +753,7 @@ export default {
         id: "plus",
         name: "Ravnopar Plus",
         icon: "✦",
-        priceEur: {
-
-        },
+        priceEur: 4.99,
         period: "/ hó",
         tagline: "Több lehetőség a profilodhoz",
         description: "Azoknak, akik extra kontrollt szeretnének — mások hírfolyamát nem befolyásolja.",
@@ -773,9 +769,7 @@ export default {
         id: "supporter",
         name: "Ravnopar Támogató",
         icon: "♥",
-        priceEur: {
-
-        },
+        priceEur: 2.99,
         period: "/ hó",
         tagline: "Támogass és maradj",
         description: "Szimbolikus előfizetés azoknak, akik hisznek abban, amit építünk.",

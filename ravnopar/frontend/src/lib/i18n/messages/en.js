@@ -851,9 +851,7 @@ export default {
         id: "free",
         name: "Free",
         icon: "🏠",
-        priceEur: {
-
-        },
+        priceEur: 0,
         period: "",
         tagline: "Your start",
         description: "Everything you need for fair dating — today and when we introduce Premium.",
@@ -869,9 +867,7 @@ export default {
         id: "plus",
         name: "Ravnopar Plus",
         icon: "✦",
-        priceEur: {
-
-        },
+        priceEur: 4.99,
         period: "/ mo",
         tagline: "More for your profile",
         description: "For those who want extra control — without affecting others in the feed.",
@@ -887,9 +883,7 @@ export default {
         id: "supporter",
         name: "Ravnopar Supporter",
         icon: "♥",
-        priceEur: {
-
-        },
+        priceEur: 2.99,
         period: "/ mo",
         tagline: "Support and stay",
         description: "A symbolic subscription for those who believe in what we are building.",

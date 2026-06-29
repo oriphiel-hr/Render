@@ -737,9 +737,7 @@ export default {
         id: "free",
         name: "Bezplatný",
         icon: "🏠",
-        priceEur: {
-
-        },
+        priceEur: 0,
         period: "",
         tagline: "Váš štart",
         description: "Všetko, čo potrebujete na férové zoznamovanie — dnes aj keď zavedie­me Premium.",
@@ -755,9 +753,7 @@ export default {
         id: "plus",
         name: "Ravnopar Plus",
         icon: "✦",
-        priceEur: {
-
-        },
+        priceEur: 4.99,
         period: "/ mes.",
         tagline: "Viac pre váš profil",
         description: "Pre tých, ktorí chcú viac kontroly — bez vplyvu na ostatných vo feede.",
@@ -773,9 +769,7 @@ export default {
         id: "supporter",
         name: "Ravnopar Supporter",
         icon: "♥",
-        priceEur: {
-
-        },
+        priceEur: 2.99,
         period: "/ mes.",
         tagline: "Podporte a zostaňte",
         description: "Symbolické predplatné pre tých, ktorí veria v to, čo budujeme.",
