@@ -6,6 +6,9 @@ import { toPublicProfile } from '../lib/profile-public.js';
 import { setTyping, getTypingInPair } from '../lib/typing-state.js';
 import { distanceLabelForProfiles } from '../lib/geo.js';
 import { getDemoFeedState } from '../services/fairness-service.js';
+import { buildExtendedFairnessAudit } from '../services/fairness-audit-service.js';
+import { buildRankedFeed } from '../services/feed-ranking-service.js';
+import { recordFeedRankingSnapshot, recordSecurityEvent } from '../services/audit-service.js';
 import { evaluateContactLimiter, evaluatePreferencePolicy } from '../services/policy-service.js';
 import { calculateProfileCompleteness, isFeedReady, hasProfilePhoto } from '../services/profile-service.js';
 import {
@@ -81,45 +84,14 @@ matchmakingRouter.get('/feed', requireAuth, async (req, res) => {
   const me = await prisma.userProfile.findUnique({ where: { id: req.auth.profileId } });
   if (!me) return res.status(404).json({ success: false, error: 'Profile not found' });
 
-  const [profiles, blockedIds] = await Promise.all([
-    prisma.userProfile.findMany({
-      where: { id: { not: me.id }, availability: 'AVAILABLE' },
-      orderBy: { createdAt: 'desc' },
-      take: 50
-    }),
-    getBlockedIdSet(me.id)
-  ]);
-
-  const mySeekingIdentities = normalizeStringArray(me.seekingIdentities);
-  const mySeekingProfileTypes = normalizeStringArray(me.seekingProfileTypes);
-  const myIntents = normalizeStringArray(me.intents);
-
-  const compatible = profiles.filter((candidate) => {
-    if (blockedIds.has(candidate.id)) return false;
-    const candidateSeekingIdentities = normalizeStringArray(candidate.seekingIdentities);
-    const candidateSeekingProfileTypes = normalizeStringArray(candidate.seekingProfileTypes);
-    const candidateIntents = normalizeStringArray(candidate.intents);
-
-    const myWantsCandidate =
-      mySeekingIdentities.includes(candidate.identity) &&
-      mySeekingProfileTypes.includes(candidate.profileType);
-    const candidateWantsMe =
-      candidateSeekingIdentities.includes(me.identity) &&
-      candidateSeekingProfileTypes.includes(me.profileType);
-    const intentOverlap = hasOverlap(myIntents, candidateIntents);
-
-    return myWantsCandidate && candidateWantsMe && intentOverlap && hasProfilePhoto(candidate);
+  const blockedIds = await getBlockedIdSet(me.id);
+  const { items } = await buildRankedFeed(me, {
+    blockedIds,
+    logSnapshot: true,
+    recordSnapshot: recordFeedRankingSnapshot
   });
 
-  return res.json({
-    success: true,
-    items: compatible.map((candidate) =>
-      toPublicProfile(candidate, {
-        completeness: calculateProfileCompleteness(candidate),
-        distanceLabel: distanceLabelForProfiles(me, candidate)
-      })
-    )
-  });
+  return res.json({ success: true, items });
 });
 
 matchmakingRouter.get('/my-state', requireAuth, async (req, res) => {
@@ -288,6 +260,14 @@ matchmakingRouter.post('/block', requireAuth, async (req, res) => {
         reason: payload.reason || null
       }
     });
+    await recordSecurityEvent({
+      action: 'BLOCK',
+      actorProfileId: req.auth.profileId,
+      targetProfileId: payload.targetProfileId,
+      entityType: 'UserBlock',
+      summary: 'Korisnik blokiran',
+      payload: { reason: payload.reason || null }
+    });
     return res.json({ success: true });
   } catch (_error) {
     return res.status(400).json({ success: false, error: 'Invalid payload' });
@@ -314,6 +294,21 @@ matchmakingRouter.post('/report', requireAuth, async (req, res) => {
         reason: payload.reason,
         details: payload.details || null,
         priority
+      }
+    });
+    await recordSecurityEvent({
+      action: 'REPORT',
+      actorProfileId: req.auth.profileId,
+      targetProfileId: payload.reportedId,
+      entityType: 'UserReport',
+      entityId: item.id,
+      summary: `Prijava profila: ${payload.reason}`,
+      payload: {
+        reportId: item.id,
+        reason: payload.reason,
+        details: payload.details || null,
+        priority,
+        reportedName: reported?.displayName || null
       }
     });
     notifyAdminReport(item.id, reported?.displayName || 'Korisnik', payload.reason).catch(() => {});
@@ -616,55 +611,8 @@ matchmakingRouter.post('/admin/fairness-config', requireAuth, requireAdmin, asyn
 });
 
 matchmakingRouter.get('/admin/fairness-audit', requireAuth, requireAdmin, async (_req, res) => {
-  const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const [totalProfiles, availableProfiles, focusedProfiles, pendingRequests7d, acceptedRequests7d] =
-    await Promise.all([
-      prisma.userProfile.count(),
-      prisma.userProfile.count({ where: { availability: 'AVAILABLE' } }),
-      prisma.userProfile.count({ where: { availability: 'FOCUSED_CONTACT' } }),
-      prisma.matchContact.count({ where: { status: 'PENDING', createdAt: { gt: since7d } } }),
-      prisma.matchContact.count({ where: { status: 'ACCEPTED', createdAt: { gt: since7d } } })
-    ]);
-
-  const usersWithoutIncoming7d = await prisma.userProfile.count({
-    where: {
-      availability: 'AVAILABLE',
-      id: {
-        notIn: (
-          await prisma.matchContact.findMany({
-            where: { createdAt: { gt: since7d } },
-            select: { targetId: true },
-            distinct: ['targetId']
-          })
-        ).map((r) => r.targetId)
-      }
-    }
-  });
-
-  return res.json({
-    success: true,
-    principles: {
-      noReachThrottling: true,
-      fairnessRankingOnly: true,
-      engagedPairsTemporarilyHidden: true
-    },
-    metrics: {
-      totalProfiles,
-      availableProfiles,
-      focusedProfiles,
-      usersWithoutIncoming7d,
-      pendingRequests7d,
-      acceptedRequests7d
-    },
-    recommendations: [
-      usersWithoutIncoming7d > 20
-        ? 'Povecaj vidljivost korisnicima bez kontakta kroz fair boost.'
-        : 'Balans vidljivosti je stabilan.',
-      pendingRequests7d > acceptedRequests7d * 3
-        ? 'Puno otvorenih zahtjeva; pojacaj edukaciju za kvalitetne poruke.'
-        : 'Omjer pending/accepted je u zdravom rasponu.'
-    ]
-  });
+  const audit = await buildExtendedFairnessAudit();
+  return res.json({ success: true, ...audit });
 });
 
 matchmakingRouter.get('/profiles/:profileId', requireAuth, async (req, res) => {

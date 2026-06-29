@@ -45,6 +45,54 @@ export function labelPlanTier(value) {
   return PLAN_TIER_LABELS[value] || value;
 }
 
+const AUDIT_CATEGORY_LABELS = {
+  ADMIN_ACTION: 'Admin',
+  MODERATION: 'Moderacija',
+  SECURITY: 'Sigurnost',
+  FEED_RANKING: 'Feed rang',
+  COMPLIANCE: 'Compliance'
+};
+
+const AUDIT_ACTION_LABELS = {
+  SUSPEND: 'Suspend',
+  UNSUSPEND: 'Unsuspend',
+  DELETE_USER: 'Brisanje',
+  PLAN_CHANGE: 'Paket',
+  ROLE_CHANGE: 'Uloga',
+  VERIFY_PHOTO: 'Verifikacija',
+  UNVERIFY_PHOTO: 'Ukloni verifikaciju',
+  VERIFY_REJECT: 'Odbij selfie',
+  AVAILABILITY_CHANGE: 'Status',
+  ONBOARDING_CHANGE: 'Onboarding',
+  REPORT_RESOLVED: 'Prijava riješena',
+  BLOCK: 'Blok',
+  REPORT: 'Prijava',
+  FEED_SNAPSHOT: 'Feed snapshot',
+  DATA_EXPORT: 'Export podataka',
+  ACCOUNT_DELETE_SELF: 'Brisanje računa',
+  ACCOUNT_DELETE: 'Brisanje računa',
+  ADMIN_USER_SEARCH: 'Admin pretraga'
+};
+
+const MODERATION_ACTION_LABELS = {
+  NONE: 'Bez akcije',
+  WARN: 'Upozorenje',
+  SUSPEND: 'Suspend',
+  DELETE: 'Brisanje'
+};
+
+export function labelAuditCategory(value) {
+  return AUDIT_CATEGORY_LABELS[value] || value;
+}
+
+export function labelAuditAction(value) {
+  return AUDIT_ACTION_LABELS[value] || value;
+}
+
+export function labelModerationAction(value) {
+  return MODERATION_ACTION_LABELS[value] || value;
+}
+
 export function labelIdentity(value) {
   return IDENTITY_LABELS[value] || value;
 }

@@ -360,6 +360,42 @@ export async function rejectAdminVerification(token, profileId) {
   return res.json();
 }
 
+export async function getAdminAuditEvents(token, category, limit = 50) {
+  const params = new URLSearchParams();
+  if (category) params.set('category', category);
+  params.set('limit', String(limit));
+  const res = await fetch(`${API_BASE_URL}/admin/audit/events?${params}`, { headers: authHeaders(token) });
+  return res.json();
+}
+
+export async function getAdminModerationDecisions(token, limit = 30) {
+  const res = await fetch(`${API_BASE_URL}/admin/audit/moderation-decisions?limit=${limit}`, {
+    headers: authHeaders(token)
+  });
+  return res.json();
+}
+
+export async function getAdminFeedExplain(token, viewerId) {
+  const res = await fetch(`${API_BASE_URL}/admin/audit/feed-explain?viewerId=${encodeURIComponent(viewerId)}`, {
+    headers: authHeaders(token)
+  });
+  return res.json();
+}
+
+export async function getAdminRetentionPolicy(token) {
+  const res = await fetch(`${API_BASE_URL}/admin/audit/retention-policy`, { headers: authHeaders(token) });
+  return res.json();
+}
+
+export async function resolveAdminReport(token, payload) {
+  const res = await fetch(`${API_BASE_URL}/admin/audit/resolve-report`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(payload)
+  });
+  return res.json();
+}
+
 export async function sendTypingPulse(token, pairId) {
   const res = await fetch(`${API_BASE_URL}/matchmaking/pairs/${pairId}/typing`, {
     method: 'POST',

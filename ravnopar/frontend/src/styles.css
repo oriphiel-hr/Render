@@ -1546,6 +1546,91 @@ body:has(.mobile-dock) .cookie-banner {
   opacity: 0.45;
 }
 
+.admin-audit-panel {
+  margin-top: 1rem;
+}
+
+.admin-audit-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+}
+
+.admin-audit-body {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.admin-audit-filters {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.audit-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.audit-timeline-item {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+}
+
+.audit-timeline-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  margin-bottom: 0.35rem;
+}
+
+.audit-timeline-meta {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+}
+
+.chip-muted {
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.subsection-title {
+  margin: 0.5rem 0 0.25rem;
+  font-size: 0.95rem;
+}
+
+.audit-factors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.moderation-resolve-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.moderation-resolve-form select,
+.moderation-resolve-form input {
+  flex: 1 1 8rem;
+  min-width: 0;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+}
+
 .admin-search-row {
   display: flex;
   gap: 0.55rem;

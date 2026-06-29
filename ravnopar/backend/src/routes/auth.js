@@ -6,6 +6,7 @@ import { issueAuthToken, requireAuth } from '../lib/auth.js';
 import { normalizePhotos, toPublicProfile, normalizeIcebreakers } from '../lib/profile-public.js';
 import { validatePhotosArray } from '../lib/photo-validation.js';
 import { calculateProfileCompleteness, isFeedReady } from '../services/profile-service.js';
+import { recordComplianceEvent, recordSecurityEvent } from '../services/audit-service.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../services/notification-service.js';
 import { verifyRegisterCaptcha, validateTurnstile } from '../lib/captcha.js';
 import { persistPhotos } from '../lib/storage.js';
@@ -298,6 +299,14 @@ authRouter.get('/export-data', requireAuth, async (req, res) => {
   });
   if (!profile) return res.status(404).json({ success: false, error: 'Profile not found' });
 
+  await recordComplianceEvent({
+    action: 'DATA_EXPORT',
+    actorProfileId: profile.id,
+    targetProfileId: profile.id,
+    summary: 'Korisnik preuzeo GDPR export podataka',
+    payload: { email: profile.email }
+  });
+
   const [contacts, pairs, messages, reports, ratings, orders] = await Promise.all([
     prisma.matchContact.findMany({
       where: { OR: [{ requesterId: profile.id }, { targetId: profile.id }] },
@@ -501,6 +510,21 @@ authRouter.delete('/account', requireAuth, async (req, res) => {
   const profileId = req.auth.profileId;
   const profile = await prisma.userProfile.findUnique({ where: { id: profileId } });
   if (!profile) return res.status(404).json({ success: false, error: 'Profile not found' });
+
+  await recordComplianceEvent({
+    action: 'ACCOUNT_DELETE_SELF',
+    actorProfileId: profileId,
+    targetProfileId: profileId,
+    summary: 'Korisnik obrisao vlastiti račun',
+    payload: { email: profile.email, displayName: profile.displayName }
+  });
+  await recordSecurityEvent({
+    action: 'ACCOUNT_DELETE',
+    actorProfileId: profileId,
+    targetProfileId: profileId,
+    summary: `Račun obrisan (korisnik): ${profile.displayName}`,
+    payload: { email: profile.email, via: 'self_service' }
+  });
 
   const { deleteUserProfile } = await import('../services/profile-service.js');
   await deleteUserProfile(prisma, profileId);

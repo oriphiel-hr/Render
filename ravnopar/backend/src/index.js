@@ -5,6 +5,7 @@ import { matchmakingRouter } from './routes/matchmaking.js';
 import { authRouter } from './routes/auth.js';
 import { paymentsRouter, handleStripeWebhook } from './routes/payments.js';
 import { adminRouter } from './routes/admin.js';
+import { adminAuditRouter } from './routes/admin-audit.js';
 import { prisma } from './lib/prisma.js';
 
 const app = express();
@@ -53,6 +54,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/matchmaking', matchmakingRouter);
 app.use('/api/payments', paymentsRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/admin/audit', adminAuditRouter);
 
 const port = Number(process.env.PORT || 4200);
 app.listen(port, () => {

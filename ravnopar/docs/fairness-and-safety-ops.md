@@ -6,6 +6,35 @@
 - Koristi se fairness rangiranje kako bi korisnici bez kontakta dobili priliku.
 - Aktivni parovi su privremeno izvan glavnog feeda dok traje fokusirani kontakt.
 
+## Audit sustav
+
+Append-only zapisi u `AuditEvent` i `ModerationDecision` (migracija `20260628220000_audit_system`).
+
+### Kategorije
+
+| Kategorija | Što se bilježi |
+|------------|----------------|
+| `ADMIN_ACTION` | suspend, brisanje, paket, uloga, verifikacija |
+| `MODERATION` | rješavanje prijava s odlukom i akcijom |
+| `SECURITY` | blok, prijava profila |
+| `FEED_RANKING` | snapshot rangiranja pri učitavanju feeda |
+| `COMPLIANCE` | GDPR export, brisanje računa, admin pretraga |
+
+### API (admin)
+
+- `GET /api/admin/audit/events?category=&limit=`
+- `GET /api/admin/audit/moderation-decisions`
+- `GET /api/admin/audit/fairness`
+- `GET /api/admin/audit/feed-explain?viewerId=`
+- `GET /api/admin/audit/retention-policy`
+- `POST /api/admin/audit/resolve-report` — `{ reportId, outcome, actionTaken, notes }`
+
+### Feed rangiranje
+
+Paket (`planTier`) **ne daje bodove**. Bodovi: fer boost za korisnike bez dolaznih zahtjeva, potpunost profila, verifikacija.
+
+Zadržavanje: `AUDIT_RETENTION_DAYS` (default 365).
+
 ## Fairness changelog
 
 - Admin mijenja `dailyContactLimit` kroz endpoint:

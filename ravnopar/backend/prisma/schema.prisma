@@ -49,6 +49,47 @@ enum PaymentStatus {
   CANCELLED
 }
 
+enum AuditCategory {
+  ADMIN_ACTION
+  MODERATION
+  SECURITY
+  FEED_RANKING
+  COMPLIANCE
+}
+
+model AuditEvent {
+  id              String        @id @default(cuid())
+  category        AuditCategory
+  action          String
+  actorProfileId  String?
+  targetProfileId String?
+  entityType      String?
+  entityId        String?
+  summary         String
+  payload         Json          @default("{}")
+  createdAt       DateTime      @default(now())
+
+  @@index([category, createdAt])
+  @@index([actorProfileId, createdAt])
+  @@index([targetProfileId, createdAt])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model ModerationDecision {
+  id                  String   @id @default(cuid())
+  reportId            String
+  resolvedByProfileId String
+  outcome             String
+  actionTaken         String
+  notes               String?
+  createdAt           DateTime @default(now())
+
+  @@index([reportId])
+  @@index([resolvedByProfileId, createdAt])
+  @@index([createdAt])
+}
+
 model UserProfile {
   id            String              @id @default(cuid())
   email         String              @unique

@@ -9,11 +9,12 @@ import {
   getFairnessAudit,
   getModerationQueue,
   rejectAdminVerification,
+  resolveAdminReport,
   runTimeoutSweep,
   updateAdminUser,
-  updateFairnessConfig,
-  updateReportStatus
+  updateFairnessConfig
 } from '../api/index.js';
+import AdminAuditPanel, { ModerationResolveForm } from '../components/AdminAuditPanel.jsx';
 import PageMeta from '../components/PageMeta.jsx';
 import { ADMIN_PLAN_TIERS, formatDateTime, labelPlanTier, labelReportStatus, labelRole } from '../lib/labels.js';
 
@@ -40,6 +41,7 @@ export default function AdminPage({ token, profile }) {
   const [busy, setBusy] = useState(false);
   const [thresholdHours, setThresholdHours] = useState(72);
   const [newDailyLimit, setNewDailyLimit] = useState(30);
+  const [resolveForms, setResolveForms] = useState({});
 
   function setMessage(message, kind = 'info') {
     setStatus(message);
@@ -116,11 +118,29 @@ export default function AdminPage({ token, profile }) {
   }
 
   async function resolveReport(reportId) {
-    const data = await updateReportStatus(token, reportId, 'RESOLVED');
+    const form = resolveForms[reportId] || { outcome: 'RESOLVED', actionTaken: 'NONE', notes: '' };
+    if (form.actionTaken === 'DELETE' && !window.confirm('Trajno obrisati prijavljenog korisnika?')) return;
+    if (form.actionTaken === 'SUSPEND' && !window.confirm('Suspendirati prijavljenog korisnika?')) return;
+
+    const data = await resolveAdminReport(token, {
+      reportId,
+      outcome: form.outcome,
+      actionTaken: form.actionTaken,
+      notes: form.notes || undefined
+    });
     if (data?.success) {
-      setMessage('Prijava riješena.', 'success');
+      setMessage('Prijava obrađena i zapisana u audit.', 'success');
       await loadAll();
+    } else {
+      setMessage(data?.error || 'Obrada prijave nije uspjela.', 'error');
     }
+  }
+
+  function setResolveField(reportId, field, value) {
+    setResolveForms((prev) => ({
+      ...prev,
+      [reportId]: { outcome: 'RESOLVED', actionTaken: 'NONE', notes: '', ...prev[reportId], [field]: value }
+    }));
   }
 
   async function rejectVerification(profileId) {
@@ -338,9 +358,12 @@ export default function AdminPage({ token, profile }) {
                 <p className="muted">Prijavio/la: {item.reporterName || item.reporterId}</p>
                 <p>{item.reason}</p>
                 <p className="muted">{formatDateTime(item.createdAt)}</p>
-                <button type="button" className="button button-primary" onClick={() => resolveReport(item.id)}>
-                  Označi riješeno
-                </button>
+                <ModerationResolveForm
+                  reportId={item.id}
+                  form={resolveForms[item.id]}
+                  onChange={setResolveField}
+                  onSubmit={resolveReport}
+                />
               </article>
             ))}
           </div>
@@ -360,16 +383,13 @@ export default function AdminPage({ token, profile }) {
         </section>
       )}
 
-      {audit && (
-        <section className="card">
-          <h2 className="section-title">Revizija poštenosti</h2>
-          <ul className="compact-list">
-            {(audit.recommendations || []).map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <AdminAuditPanel
+        token={token}
+        audit={audit}
+        users={users}
+        onRefresh={loadAll}
+        onMessage={(message, kind) => setMessage(message, kind)}
+      />
 
       {riskItems.length > 0 && (
         <section>

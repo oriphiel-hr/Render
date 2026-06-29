@@ -4,6 +4,7 @@ import { requireAdmin, requireAuth } from '../lib/auth.js';
 import { prisma } from '../lib/prisma.js';
 import { toPublicProfile } from '../lib/profile-public.js';
 import { calculateProfileCompleteness, deleteUserProfile } from '../services/profile-service.js';
+import { recordAdminAction, recordComplianceEvent, recordSecurityEvent } from '../services/audit-service.js';
 
 export const adminRouter = Router();
 
@@ -78,6 +79,15 @@ adminRouter.get('/users', async (req, res) => {
   const q = String(req.query.q || '').trim();
   const take = Math.min(Number(req.query.limit) || 50, 100);
 
+  if (q) {
+    await recordComplianceEvent({
+      action: 'ADMIN_USER_SEARCH',
+      actorProfileId: req.auth.profileId,
+      summary: `Admin pretraga korisnika: "${q}"`,
+      payload: { query: q }
+    });
+  }
+
   const profiles = await prisma.userProfile.findMany({
     where: q
       ? {
@@ -125,6 +135,20 @@ adminRouter.delete('/users/:profileId', async (req, res) => {
   if (profile.account.role === 'ADMIN') {
     return res.status(403).json({ success: false, error: 'Admin računi se ne mogu brisati iz panela.' });
   }
+
+  await recordAdminAction(req, {
+    action: 'DELETE_USER',
+    targetProfileId: profileId,
+    summary: `Obrisan korisnik ${profile.displayName}`,
+    payload: { email: profile.email, displayName: profile.displayName, role: profile.account.role }
+  });
+  await recordSecurityEvent({
+    action: 'ACCOUNT_DELETE',
+    actorProfileId: req.auth.profileId,
+    targetProfileId: profileId,
+    summary: `Račun obrisan (admin): ${profile.displayName}`,
+    payload: { email: profile.email, via: 'admin_panel' }
+  });
 
   await deleteUserProfile(prisma, profileId);
   return res.json({ success: true });
@@ -176,6 +200,59 @@ adminRouter.patch('/users/:profileId', async (req, res) => {
       }
     });
 
+    const auditEntries = [];
+    if (payload.planTier !== undefined && payload.planTier !== profile.planTier) {
+      auditEntries.push({
+        action: 'PLAN_CHANGE',
+        summary: `Paket: ${profile.planTier} → ${payload.planTier}`,
+        payload: { from: profile.planTier, to: payload.planTier }
+      });
+    }
+    if (payload.suspended !== undefined) {
+      const was = Boolean(profile.account.suspendedAt);
+      if (was !== payload.suspended) {
+        auditEntries.push({
+          action: payload.suspended ? 'SUSPEND' : 'UNSUSPEND',
+          summary: payload.suspended ? 'Korisnik suspendiran' : 'Suspend uklonjen',
+          payload: { suspended: payload.suspended }
+        });
+      }
+    }
+    if (payload.role !== undefined && payload.role !== profile.account.role) {
+      auditEntries.push({
+        action: 'ROLE_CHANGE',
+        summary: `Uloga: ${profile.account.role} → ${payload.role}`,
+        payload: { from: profile.account.role, to: payload.role }
+      });
+    }
+    if (payload.photoVerified !== undefined && payload.photoVerified !== profile.photoVerified) {
+      auditEntries.push({
+        action: payload.photoVerified ? 'VERIFY_PHOTO' : 'UNVERIFY_PHOTO',
+        summary: payload.photoVerified ? 'Profil verificiran' : 'Verifikacija uklonjena',
+        payload: { photoVerified: payload.photoVerified }
+      });
+    }
+    if (payload.availability !== undefined && payload.availability !== profile.availability) {
+      auditEntries.push({
+        action: 'AVAILABILITY_CHANGE',
+        summary: `Status: ${profile.availability} → ${payload.availability}`,
+        payload: { from: profile.availability, to: payload.availability }
+      });
+    }
+    if (payload.onboardingDone !== undefined && payload.onboardingDone !== profile.onboardingDone) {
+      auditEntries.push({
+        action: 'ONBOARDING_CHANGE',
+        summary: `Onboarding: ${profile.onboardingDone} → ${payload.onboardingDone}`,
+        payload: { from: profile.onboardingDone, to: payload.onboardingDone }
+      });
+    }
+    for (const entry of auditEntries) {
+      await recordAdminAction(req, {
+        ...entry,
+        targetProfileId: profile.id
+      });
+    }
+
     const updated = await prisma.userProfile.findUnique({
       where: { id: profile.id },
       include: { account: true }
@@ -226,6 +303,13 @@ adminRouter.post('/users/:profileId/verification/reject', async (req, res) => {
       verificationSelfie: null,
       verificationPending: false
     }
+  });
+
+  await recordAdminAction(req, {
+    action: 'VERIFY_REJECT',
+    targetProfileId: profile.id,
+    summary: `Selfie verifikacija odbijena: ${profile.displayName}`,
+    payload: { email: profile.email }
   });
 
   return res.json({ success: true });
