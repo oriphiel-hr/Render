@@ -96,8 +96,8 @@ Migracije se pokreću automatski u build koraku (`prisma migrate deploy`).
 
 | Key | Opis |
 |-----|------|
-| `VITE_DONATE_IBAN` | IBAN |
-| `VITE_DONATE_RECIPIENT` | Primatelj |
+| `VITE_DONATE_IBAN` | Puni HR IBAN (21 znakova bez razmaka). Ostavi prazno dok nemaš pravi broj — placeholderi poput `HR__ ___` se ne prikazuju. |
+| `VITE_DONATE_RECIPIENT` | Primatelj (prikazuje se samo uz valjani IBAN) |
 | `VITE_DONATE_REFERENCE` | `Ravnopar donacija` |
 | `VITE_DONATE_REVOLUT_URL` | Revolut link |
 

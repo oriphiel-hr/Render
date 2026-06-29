@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { createDonateCheckout, getDonateStatus } from '../api/index.js';
 import {
   getDonateIban,
+  getDonateIbanCompact,
   getDonateRecipient,
   getDonateRevolutUrl,
   getDonateStripeUrl,
@@ -11,6 +12,7 @@ import {
 import { useI18n } from '../lib/i18n/index.jsx';
 
 const IBAN = getDonateIban();
+const IBAN_COMPACT = getDonateIbanCompact();
 const RECIPIENT = getDonateRecipient();
 const REVOLUT_URL = getDonateRevolutUrl();
 const STRIPE_PAYMENT_LINK = getDonateStripeUrl();
@@ -135,7 +137,7 @@ export default function DonateSection() {
                 <button
                   type="button"
                   className="button button-ghost button-sm"
-                  onClick={() => handleCopy('iban', IBAN.replace(/\s+/g, ''))}
+                  onClick={() => handleCopy('iban', IBAN_COMPACT)}
                 >
                   {copied === 'iban' ? t('common.copied') : t('donate.copyIban')}
                 </button>
