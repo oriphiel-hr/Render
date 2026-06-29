@@ -20,6 +20,8 @@ export { SUPPORTED_LOCALES };
 
 const STORAGE_KEY = 'ravnoparLocale';
 
+/** UI jezik — mijenja se u dropdownu; sprema se u localStorage i sinkronizira u profil (za emailove). */
+
 const I18nContext = createContext(null);
 
 function getNested(obj, path) {

@@ -1,72 +1,50 @@
 import { sendEmail } from '../lib/mail.js';
+import { buildEmail } from '../lib/email-i18n.js';
 import { prisma } from '../lib/prisma.js';
 import { canSendMessageEmail, markMessageEmailSent } from '../lib/message-email-throttle.js';
 
 const frontendBase = () => (process.env.FRONTEND_BASE_URL || 'http://localhost:5173').replace(/\/$/, '');
 
-export async function sendVerificationEmail(email, code) {
-  return sendEmail({
-    to: email,
-    subject: 'Ravnopar — verifikacijski kod',
-    text: [
-      'Pozdrav!',
-      '',
-      `Tvoj verifikacijski kod za Ravnopar je: ${code}`,
-      'Kod vrijedi 15 minuta.',
-      '',
-      `Aplikacija: ${frontendBase()}/auth`
-    ].join('\n')
+export async function sendVerificationEmail(email, code, locale = 'hr') {
+  const { subject, text } = buildEmail('verification', locale, {
+    code,
+    appUrl: `${frontendBase()}/auth`
   });
+  return sendEmail({ to: email, subject, text });
 }
 
 export async function notifyContactRequest(targetProfileId, requesterName) {
   const target = await prisma.userProfile.findUnique({ where: { id: targetProfileId } });
   if (!target?.email || target.notifyEmail === false) return { skipped: true };
 
-  return sendEmail({
-    to: target.email,
-    subject: 'Ravnopar — novi zahtjev za kontakt',
-    text: [
-      `Pozdrav ${target.displayName},`,
-      '',
-      `${requesterName} ti je poslao/la zahtjev za kontakt na Ravnoparu.`,
-      '',
-      `Pogledaj u aplikaciji: ${frontendBase()}/app`
-    ].join('\n')
+  const { subject, text } = buildEmail('contactRequest', target.locale, {
+    name: target.displayName,
+    requester: requesterName,
+    appUrl: `${frontendBase()}/app`
   });
+  return sendEmail({ to: target.email, subject, text });
 }
 
 export async function notifyContactAccepted(requesterProfileId, accepterName) {
   const requester = await prisma.userProfile.findUnique({ where: { id: requesterProfileId } });
   if (!requester?.email || requester.notifyEmail === false) return { skipped: true };
 
-  return sendEmail({
-    to: requester.email,
-    subject: 'Ravnopar — kontakt prihvaćen',
-    text: [
-      `Pozdrav ${requester.displayName},`,
-      '',
-      `${accepterName} je prihvatio/la tvoj zahtjev za kontakt.`,
-      'Sada možete razgovarati u aplikaciji.',
-      '',
-      `Otvori chat: ${frontendBase()}/app`
-    ].join('\n')
+  const { subject, text } = buildEmail('contactAccepted', requester.locale, {
+    name: requester.displayName,
+    accepter: accepterName,
+    appUrl: `${frontendBase()}/app`
   });
+  return sendEmail({ to: requester.email, subject, text });
 }
 
 export async function sendPasswordResetEmail(email, code) {
-  return sendEmail({
-    to: email,
-    subject: 'Ravnopar — reset lozinke',
-    text: [
-      'Pozdrav!',
-      '',
-      `Kod za reset lozinke: ${code}`,
-      'Kod vrijedi 15 minuta.',
-      '',
-      `Reset: ${frontendBase()}/auth?reset=1`
-    ].join('\n')
+  const profile = await prisma.userProfile.findUnique({ where: { email } });
+  const locale = profile?.locale || 'hr';
+  const { subject, text } = buildEmail('passwordReset', locale, {
+    code,
+    resetUrl: `${frontendBase()}/auth?reset=1`
   });
+  return sendEmail({ to: email, subject, text });
 }
 
 export async function notifyAdminReport(reportId, reportedName, reason) {
@@ -97,17 +75,13 @@ export async function notifyNewMessage(recipientProfileId, senderName, pairId) {
     if (!allowed) return { skipped: true, reason: 'throttled' };
   }
 
-  const result = await sendEmail({
-    to: recipient.email,
-    subject: 'Ravnopar — nova poruka',
-    text: [
-      `Pozdrav ${recipient.displayName},`,
-      '',
-      `${senderName} ti je poslao/la novu poruku.`,
-      '',
-      `Otvori aplikaciju: ${frontendBase()}/app`
-    ].join('\n')
+  const { subject, text } = buildEmail('newMessage', recipient.locale, {
+    name: recipient.displayName,
+    sender: senderName,
+    appUrl: `${frontendBase()}/app`
   });
+
+  const result = await sendEmail({ to: recipient.email, subject, text });
 
   if (pairId && result?.sent === true) {
     await markMessageEmailSent(pairId, recipientProfileId);

@@ -186,7 +186,7 @@ authRouter.post('/register', async (req, res) => {
       });
     });
 
-    await sendVerificationEmail(payload.email, code);
+    await sendVerificationEmail(payload.email, code, payload.locale);
 
     return res.status(201).json({
       success: true,

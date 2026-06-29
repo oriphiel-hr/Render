@@ -524,7 +524,7 @@ export default {
     backToApp: '← Moj prostor',
     title: 'Postavke profila',
     subtitle: 'Popunjenost: {percent}% · Status: {status}',
-    photos: 'Fotografije',
+    photos: 'Fotografije ({current}/{max})',
     photosHint: 'JPG/PNG, automatski smanjeno. Maks. 3 fotografije.',
     displayName: 'Ime za prikaz',
     city: 'Grad',

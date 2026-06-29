@@ -13,7 +13,7 @@ const PROFILE_TYPE_KEYS = ['INDIVIDUAL', 'COUPLE'];
 const INTENT_KEYS = ['CHAT', 'CASUAL', 'RELATIONSHIP', 'MARRIAGE', 'ADVENTURE'];
 
 export default function AuthPage({ onLogin }) {
-  const { t, locale, setLocale } = useI18n();
+  const { t, locale } = useI18n();
   const [searchParams] = useSearchParams();
   const loginOnly = searchParams.get('login') === '1';
 
@@ -168,7 +168,6 @@ export default function AuthPage({ onLogin }) {
       const data = await login(loginForm);
       if (data?.success) {
         trackEvent('Login');
-        if (data.profile?.locale) setLocale(data.profile.locale);
         onLogin(data.token, data.profile);
       } else {
         setMessage(translateApiError(data) || t('auth.loginFailed'), 'error');

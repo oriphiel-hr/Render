@@ -30,7 +30,7 @@ const INTENT_KEYS = ['CHAT', 'CASUAL', 'RELATIONSHIP', 'MARRIAGE', 'ADVENTURE'];
 const DISTANCE_KM_OPTIONS = [25, 50, 100, 200, 500];
 
 export default function SettingsPage({ token, profile, onLogout, onProfileUpdate }) {
-  const { t, locale, setLocale, catalog, labels } = useI18n();
+  const { t, locale, catalog, labels } = useI18n();
   const icebreakerPrompts = getIcebreakerPrompts(catalog);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -61,10 +61,6 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
   useEffect(() => {
     load();
   }, [token]);
-
-  useEffect(() => {
-    if (form?.locale) setLocale(form.locale);
-  }, [form?.locale, setLocale]);
 
   function toggleListField(field, value) {
     setForm((prev) => {
@@ -290,7 +286,7 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
           <ProfileAvatar person={form} size="lg" />
           <div>
             <label className="field-label">
-              {t('settings.photos')} ({t('common.photoCount', { current: (form.photos || []).length, max: 3 })})
+              {t('settings.photos', { current: (form.photos || []).length, max: 3 })}
               <input type="file" accept="image/*" onChange={handlePhotoChange} disabled={busy || (form.photos || []).length >= 3} />
             </label>
             <p className="muted">{t('settings.photosHint')}</p>

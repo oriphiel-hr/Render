@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import Analytics from './components/Analytics.jsx';
 import ThemeToggle from './components/ThemeToggle.jsx';
@@ -24,6 +24,7 @@ import { isDonateConfigured } from './lib/donate-config.js';
 import { recordMemberSinceIfNeeded } from './lib/donate-prompt.js';
 import { useI18n } from './lib/i18n/index.jsx';
 import LanguageSwitcher from './components/LanguageSwitcher.jsx';
+import LocaleProfileSync from './components/LocaleProfileSync.jsx';
 
 function Topbar({ token, profile, onLogout, unreadTotal }) {
   const location = useLocation();
@@ -105,7 +106,6 @@ function MobileDock({ token, profile, unreadTotal }) {
 }
 
 export default function App() {
-  const { setLocale } = useI18n();
   const [token, setToken] = useState(localStorage.getItem('ravnoparToken') || '');
   const [profile, setProfile] = useState(() => {
     const raw = localStorage.getItem('ravnoparProfile');
@@ -137,7 +137,6 @@ export default function App() {
     setToken(nextToken);
     setProfile(nextProfile);
     setOnboardingDone(Boolean(nextProfile?.onboardingDone));
-    if (nextProfile?.locale) setLocale(nextProfile.locale);
     localStorage.setItem('ravnoparToken', nextToken);
     localStorage.setItem('ravnoparProfile', JSON.stringify(nextProfile));
     recordMemberSinceIfNeeded();
@@ -147,6 +146,15 @@ export default function App() {
     setProfile(nextProfile);
     localStorage.setItem('ravnoparProfile', JSON.stringify(nextProfile));
   }
+
+  const onProfileLocaleSaved = useCallback((locale) => {
+    setProfile((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, locale };
+      localStorage.setItem('ravnoparProfile', JSON.stringify(next));
+      return next;
+    });
+  }, []);
 
   function onLogout() {
     setToken('');
@@ -163,6 +171,7 @@ export default function App() {
     <>
       <Analytics />
       <CookieBanner />
+      <LocaleProfileSync token={token} profile={profile} onProfileLocaleSaved={onProfileLocaleSaved} />
       <Topbar token={token} profile={profile} onLogout={onLogout} unreadTotal={unreadTotal} />
       <Routes>
         <Route path="/" element={<HomePage />} />
