@@ -1844,6 +1844,11 @@ body:has(.mobile-dock) .cookie-banner {
   gap: 0.35rem;
   flex: 1;
   min-width: 0;
+  overflow: visible;
+}
+
+.lang-picker-full {
+  overflow: visible;
 }
 
 .lang-picker-full-grid {
@@ -1872,6 +1877,7 @@ body:has(.mobile-dock) .cookie-banner {
   align-items: center;
   justify-content: center;
   gap: 0.08rem;
+  position: relative;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--card);
@@ -1920,6 +1926,43 @@ body:has(.mobile-dock) .cookie-banner {
 .lang-picker-btn.active .lang-picker-code,
 .lang-picker-btn.active .lang-picker-name {
   color: var(--primary-dark);
+}
+
+.lang-picker-btn[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 0.35rem);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.28rem 0.5rem;
+  border-radius: 6px;
+  background: #1e293b;
+  color: #f8fafc;
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s ease, visibility 0.12s ease;
+  z-index: 20;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.18);
+}
+
+.lang-picker-btn[data-tooltip]:hover::after,
+.lang-picker-btn[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+.lang-picker-full-grid .lang-picker-name {
+  display: none;
+}
+
+.lang-picker-full-grid .lang-picker-btn {
+  min-height: 2.15rem;
+  padding: 0.4rem 0.15rem;
 }
 
 .lang-popover {

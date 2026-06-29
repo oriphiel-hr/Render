@@ -14,6 +14,8 @@ function LanguageGrid({ locale, setLocale, onSelect, className = '' }) {
             setLocale(code);
             onSelect?.(code);
           }}
+          title={LOCALE_LABELS[code]}
+          data-tooltip={LOCALE_LABELS[code]}
           aria-label={LOCALE_LABELS[code]}
           aria-pressed={locale === code}
         >
@@ -57,6 +59,7 @@ export default function LanguageSwitcher({ className = '', variant = 'full' }) {
           className="lang-popover-trigger"
           aria-expanded={open}
           aria-haspopup="dialog"
+          title={LOCALE_LABELS[locale]}
           onClick={() => setOpen((value) => !value)}
         >
           <span className="lang-popover-globe" aria-hidden="true">
