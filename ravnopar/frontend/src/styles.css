@@ -1649,6 +1649,28 @@ body:has(.mobile-dock) .cookie-banner {
   font: inherit;
 }
 
+.dob-picker-single {
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: 1fr;
+}
+
+.dob-input {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.dob-confirmed {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--success, #0d7a4e);
+  font-weight: 600;
+}
+
+.dob-hint-error {
+  color: var(--danger, #c0392b);
+}
+
 .dob-picker {
   display: grid;
   grid-template-columns: 1fr 1.4fr 1fr;

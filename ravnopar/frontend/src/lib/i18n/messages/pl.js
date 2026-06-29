@@ -92,7 +92,9 @@ export default {
     resetSuccess: "Hasło zmienione. Zaloguj się.",
     resetFailed: "Reset nie powiódł się.",
     checkEmail: "Sprawdź email.",
-    dobInvalid: "Wybierz prawidłową datę urodzenia (18+)."
+        dobPlaceholder: "15.03.1985",
+    dobFormatHint: "Jedno pole — dzień, miesiąc i rok (np. 15.03.1985).",
+    dobSelected: "Wybrano: {date}",
   },
   months: [
     "Styczeń",

@@ -92,7 +92,9 @@ export default {
     resetSuccess: "Contraseña cambiada. Inicia sesión.",
     resetFailed: "Restablecimiento fallido.",
     checkEmail: "Revisa tu correo.",
-    dobInvalid: "Elige una fecha de nacimiento válida (18 años o más)."
+        dobPlaceholder: "15.03.1985",
+    dobFormatHint: "Un solo campo — día, mes y año (ej. 15.03.1985).",
+    dobSelected: "Seleccionado: {date}",
   },
   months: [
     "Enero",

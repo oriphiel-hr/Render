@@ -92,7 +92,9 @@ export default {
     resetSuccess: "Password cambiata. Accedi.",
     resetFailed: "Reset fallito.",
     checkEmail: "Controlla la email.",
-    dobInvalid: "Scegli una data di nascita valida (18+)."
+        dobPlaceholder: "15.03.1985",
+    dobFormatHint: "Un campo — giorno, mese e anno (es. 15.03.1985).",
+    dobSelected: "Selezionato: {date}",
   },
   months: [
     "Gennaio",

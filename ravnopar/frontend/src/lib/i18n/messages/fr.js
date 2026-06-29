@@ -92,7 +92,9 @@ export default {
     resetSuccess: "Mot de passe modifié. Veuillez vous connecter.",
     resetFailed: "Réinitialisation échouée.",
     checkEmail: "Consultez votre e-mail.",
-    dobInvalid: "Choisissez une date de naissance valide (18 ans ou plus)."
+        dobPlaceholder: "15.03.1985",
+    dobFormatHint: "Un seul champ — jour, mois et année (ex. 15.03.1985).",
+    dobSelected: "Sélectionné : {date}",
   },
   months: [
     "Janvier",

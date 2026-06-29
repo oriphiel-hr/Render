@@ -92,7 +92,9 @@ export default {
     resetSuccess: "Heslo změněno. Přihlaste se.",
     resetFailed: "Reset se nezdařil.",
     checkEmail: "Zkontrolujte e-mail.",
-    dobInvalid: "Vyberte platné datum narození (18+)."
+        dobPlaceholder: "15.03.1985",
+    dobFormatHint: "Jedno pole — den, měsíc a rok (např. 15.03.1985).",
+    dobSelected: "Vybráno: {date}",
   },
   months: [
     "Leden",

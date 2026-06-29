@@ -92,7 +92,9 @@ export default {
     resetSuccess: "Jelszó megváltoztatva. Kérjük, jelentkezz be.",
     resetFailed: "Visszaállítás sikertelen.",
     checkEmail: "Ellenőrizd az e-mailt.",
-    dobInvalid: "Válassz érvényes születési dátumot (18+)."
+        dobPlaceholder: "15.03.1985",
+    dobFormatHint: "Egy mező — nap, hónap, év (pl. 15.03.1985).",
+    dobSelected: "Kiválasztva: {date}",
   },
   months: [
     "Január",

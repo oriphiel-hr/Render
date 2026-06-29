@@ -92,7 +92,9 @@ export default {
     resetSuccess: "Geslo spremenjeno. Prosimo, prijavite se.",
     resetFailed: "Ponastavitev ni uspela.",
     checkEmail: "Preverite e-pošto.",
-    dobInvalid: "Izberite veljaven datum rojstva (18+)."
+        dobPlaceholder: "15.03.1985",
+    dobFormatHint: "Eno polje — dan, mesec in leto (npr. 15.03.1985).",
+    dobSelected: "Izbrano: {date}",
   },
   months: [
     "Januar",

@@ -92,7 +92,9 @@ export default {
     resetSuccess: "Lozinka je promijenjena. Prijavi se.",
     resetFailed: "Reset nije uspio.",
     checkEmail: "Provjeri email.",
-    dobInvalid: "Odaberi valjan datum rođenja (18+)."
+        dobPlaceholder: "15.03.1985",
+    dobFormatHint: "Jedno polje — dan, mjesec i godina (npr. 15.03.1985).",
+    dobSelected: "Odabrano: {date}",
   },
   months: [
     "Januar",

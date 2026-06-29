@@ -92,7 +92,9 @@ export default {
     resetSuccess: "Heslo zmenené. Prihláste sa.",
     resetFailed: "Obnovenie zlyhalo.",
     checkEmail: "Skontrolujte e-mail.",
-    dobInvalid: "Vyberte platný dátum narodenia (18+)."
+        dobPlaceholder: "15.03.1985",
+    dobFormatHint: "Jedno pole — deň, mesiac a rok (napr. 15.03.1985).",
+    dobSelected: "Vybrané: {date}",
   },
   months: [
     "Január",
