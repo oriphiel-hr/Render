@@ -34,7 +34,7 @@ Ako baza nije dostupna → **503** i `"database": "error"`.
 3. **Alert Contacts** → tvoj email (i opcionalno SMS)
 4. Spremi
 
-Opcionalno drugi monitor za frontend:
+Opcionalno drugi monitor za frontend (`ravnopar` static site):
 
 ```
 https://ravnopar.onrender.com/

@@ -1,5 +1,12 @@
 # Ravnopar — Render env varijable
 
+**Produkcijski frontend:** [https://ravnopar.onrender.com](https://ravnopar.onrender.com)
+
+Nakon prebacivanja s `ravnopar-frontend.onrender.com`:
+1. **ravnopar-backend** → `FRONTEND_BASE_URL` = `https://ravnopar.onrender.com` → **Manual Deploy**
+2. Stari static site (`ravnopar-frontend`) → obustavi auto-deploy ili obriši
+3. UptimeRobot / bookmarkovi → novi URL
+
 ## ravnopar-backend
 
 | Key | Vrijednost |
@@ -131,6 +138,8 @@ curl https://ravnopar-backend.onrender.com/api/matchmaking/public-stats
 ```
 
 Checklist:
+- [ ] `FRONTEND_BASE_URL` na backendu = `https://ravnopar.onrender.com`
+- [ ] Frontend radi na `https://ravnopar.onrender.com`
 - [ ] Registracija + email kod (ili dev kod u logu)
 - [ ] Reset lozinke (`/auth?reset=1`)
 - [ ] Upload fotografije u Postavkama
