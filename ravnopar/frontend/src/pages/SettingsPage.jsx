@@ -144,6 +144,7 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
 
   async function saveProfile(event) {
     event.preventDefault();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     if (form.shareLocation && (form.latitude == null || form.longitude == null)) {
       setMessage(t('settings.locationRequired'), 'error');
       return;
