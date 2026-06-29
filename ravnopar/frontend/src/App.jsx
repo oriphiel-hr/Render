@@ -38,52 +38,52 @@ function Topbar({ token, profile, onLogout, unreadTotal }) {
   return (
     <header className="topbar">
       <nav className="topbar-inner">
-        <div className="topbar-main">
+        <div className="topbar-head">
           <Link className="brand" to="/" onClick={closeMenu}>
             Ravnopar
           </Link>
+          <div className={`topbar-links ${menuOpen ? 'open' : ''}`}>
+            {!token && (
+              <>
+                <Link className={location.pathname === '/' ? 'nav-link active' : 'nav-link'} to="/" onClick={closeMenu}>{t('nav.home')}</Link>
+                <Link className={location.pathname === '/auth' ? 'nav-link active' : 'nav-link'} to="/auth?login=1" onClick={closeMenu}>{t('nav.login')}</Link>
+                <Link className={location.pathname === '/planovi' ? 'nav-link active' : 'nav-link'} to="/planovi" onClick={closeMenu}>{t('nav.plans')}</Link>
+                <Link className={location.pathname === '/pomoc' ? 'nav-link active' : 'nav-link'} to="/pomoc" onClick={closeMenu}>{t('nav.help')}</Link>
+              </>
+            )}
+            {token && (
+              <>
+                <Link className={location.pathname === '/app' ? 'nav-link active' : 'nav-link'} to="/app" onClick={closeMenu}>
+                  {unreadTotal > 0 ? t('nav.mySpaceUnread', { count: unreadTotal }) : t('nav.mySpace')}
+                </Link>
+                <Link className={location.pathname.startsWith('/app/postavke') ? 'nav-link active' : 'nav-link'} to="/app/postavke" onClick={closeMenu}>{t('nav.settings')}</Link>
+                {isDonateConfigured() && (
+                  <Link
+                    className={location.pathname === '/app/podrzi' ? 'nav-link active' : 'nav-link'}
+                    to="/app/podrzi"
+                    onClick={closeMenu}
+                  >
+                    {t('nav.donate')}
+                  </Link>
+                )}
+                <span className="nav-user">
+                  {t('nav.greeting', { name: profile?.displayName })}
+                  {profile?.role === 'ADMIN' && <span className="chip chip-admin nav-role">{t('nav.admin')}</span>}
+                </span>
+                <button type="button" className="button button-ghost nav-logout" onClick={() => { closeMenu(); onLogout(); }}>{t('nav.logout')}</button>
+              </>
+            )}
+            {profile?.role === 'ADMIN' && (
+              <Link className={location.pathname === '/admin' ? 'nav-link active' : 'nav-link'} to="/admin" onClick={closeMenu}>{t('nav.admin')}</Link>
+            )}
+            <ThemeToggle />
+          </div>
           <button type="button" className="menu-toggle" aria-expanded={menuOpen} onClick={() => setMenuOpen((o) => !o)}>
             {menuOpen ? t('nav.close') : t('nav.menu')}
           </button>
         </div>
         <div className="topbar-lang-row">
-          <LanguageSwitcher className="topbar-lang" />
-        </div>
-        <div className={`topbar-links ${menuOpen ? 'open' : ''}`}>
-          {!token && (
-            <>
-              <Link className={location.pathname === '/' ? 'nav-link active' : 'nav-link'} to="/" onClick={closeMenu}>{t('nav.home')}</Link>
-              <Link className={location.pathname === '/auth' ? 'nav-link active' : 'nav-link'} to="/auth?login=1" onClick={closeMenu}>{t('nav.login')}</Link>
-              <Link className={location.pathname === '/planovi' ? 'nav-link active' : 'nav-link'} to="/planovi" onClick={closeMenu}>{t('nav.plans')}</Link>
-              <Link className={location.pathname === '/pomoc' ? 'nav-link active' : 'nav-link'} to="/pomoc" onClick={closeMenu}>{t('nav.help')}</Link>
-            </>
-          )}
-          {token && (
-            <>
-              <Link className={location.pathname === '/app' ? 'nav-link active' : 'nav-link'} to="/app" onClick={closeMenu}>
-                {unreadTotal > 0 ? t('nav.mySpaceUnread', { count: unreadTotal }) : t('nav.mySpace')}
-              </Link>
-              <Link className={location.pathname.startsWith('/app/postavke') ? 'nav-link active' : 'nav-link'} to="/app/postavke" onClick={closeMenu}>{t('nav.settings')}</Link>
-              {isDonateConfigured() && (
-                <Link
-                  className={location.pathname === '/app/podrzi' ? 'nav-link active' : 'nav-link'}
-                  to="/app/podrzi"
-                  onClick={closeMenu}
-                >
-                  {t('nav.donate')}
-                </Link>
-              )}
-              <span className="nav-user">
-                {t('nav.greeting', { name: profile?.displayName })}
-                {profile?.role === 'ADMIN' && <span className="chip chip-admin nav-role">{t('nav.admin')}</span>}
-              </span>
-              <button type="button" className="button button-ghost nav-logout" onClick={() => { closeMenu(); onLogout(); }}>{t('nav.logout')}</button>
-            </>
-          )}
-          {profile?.role === 'ADMIN' && (
-            <Link className={location.pathname === '/admin' ? 'nav-link active' : 'nav-link'} to="/admin" onClick={closeMenu}>{t('nav.admin')}</Link>
-          )}
-          <ThemeToggle />
+          <LanguageSwitcher className="topbar-lang" dense />
         </div>
       </nav>
     </header>
