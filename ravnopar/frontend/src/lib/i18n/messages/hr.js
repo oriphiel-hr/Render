@@ -755,7 +755,7 @@ export default {
     sectionEyebrow: 'Podrška projektu',
     sectionTitle: 'Podrži Ravnopar',
     sectionLead:
-      'Ako ti platforma pomogne u upoznavanju, možeš dobrovoljno pomoći s troškovima servera. Svaka kuna (ili euro) stvarno pomaže — a ti ne dobivaš nikakvu prednost u feedu.',
+      'Ako ti platforma pomogne u upoznavanju, možeš dobrovoljno pomoći s troškovima servera. Svaki euro stvarno pomaže — a ti ne dobivaš nikakvu prednost u feedu.',
     note: 'Donacija je potpuno dobrovoljna. Hvala ti što razmišljaš o tome. ♥',
     revolutTitle: 'Kartica (Revolut)',
     revolutHint: 'Brza uplata karticom — otvara se sigurna Revolut stranica.',
