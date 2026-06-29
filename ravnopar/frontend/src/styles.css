@@ -1809,10 +1809,35 @@ body:has(.mobile-dock) .cookie-banner {
 }
 
 .lang-picker-list {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(2.65rem, 1fr));
   gap: 0.35rem;
   max-width: 100%;
+}
+
+.lang-picker-grid .lang-picker-list {
+  flex: 1;
+  min-width: 0;
+}
+
+.lang-picker-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.lang-picker-select-control {
+  min-width: 8.5rem;
+  max-width: 11rem;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
 }
 
 .lang-picker-btn {
@@ -1840,18 +1865,6 @@ body:has(.mobile-dock) .cookie-banner {
   color: var(--primary-dark);
 }
 
-.lang-picker-compact .lang-picker-list {
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  padding-bottom: 0.15rem;
-  max-width: min(100%, 14rem);
-}
-
-.lang-picker-compact .lang-picker-btn {
-  flex-shrink: 0;
-}
-
 .lang-picker-hint {
   margin: 0 0 0.45rem;
   font-size: 0.92rem;
@@ -1869,7 +1882,13 @@ body:has(.mobile-dock) .cookie-banner {
 }
 
 .landing-lang-picker .lang-picker-list {
-  justify-content: center;
+  grid-template-columns: repeat(7, minmax(2.65rem, 1fr));
+}
+
+@media (max-width: 520px) {
+  .landing-lang-picker .lang-picker-list {
+    grid-template-columns: repeat(5, minmax(2.65rem, 1fr));
+  }
 }
 
 .lang-switcher-select,
@@ -1952,13 +1971,24 @@ body:has(.mobile-dock) .cookie-banner {
   border: 0;
 }
 
-.topbar-lang.lang-picker {
-  align-items: center;
+.topbar-lang.lang-picker-select {
+  width: 100%;
 }
 
-.topbar-lang .lang-picker-globe {
-  line-height: 1.4;
-  font-size: 1rem;
+.topbar-lang .lang-picker-select-control {
+  flex: 1;
+  max-width: none;
+}
+
+@media (min-width: 900px) {
+  .topbar-lang.lang-picker-select {
+    width: auto;
+  }
+
+  .topbar-lang .lang-picker-select-control {
+    flex: none;
+    max-width: 11rem;
+  }
 }
 
 .topbar-lang .lang-switcher-select {
