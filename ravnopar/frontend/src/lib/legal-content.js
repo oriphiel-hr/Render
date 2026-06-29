@@ -1,4 +1,4 @@
-export const CONTACT_EMAIL = import.meta.env.VITE_CONTACT_EMAIL?.trim() || 'podrska@ravnopar.app';
+export const CONTACT_EMAIL = import.meta.env.VITE_CONTACT_EMAIL?.trim() || 'ravnopar@oriph.io';
 
 export function getLegalDisclaimer(catalog) {
   return catalog?.legal?.disclaimer ?? '';

@@ -89,7 +89,7 @@ Migracije se pokreću automatski u build koraku (`prisma migrate deploy`).
 | Key | Vrijednost |
 |-----|------------|
 | `VITE_API_BASE_URL` | `https://ravnopar-backend.onrender.com/api` |
-| `VITE_CONTACT_EMAIL` | `podrska@ravnopar.app` |
+| `VITE_CONTACT_EMAIL` | `ravnopar@oriph.io` (ista adresa kao `MAIL_FROM` / SMTP) |
 | `VITE_PLANS_ENABLED` | `false` (ili `true` uz Stripe) |
 
 ### Donacije
