@@ -10,12 +10,19 @@ import {
 } from '../api/index.js';
 import PageMeta from '../components/PageMeta.jsx';
 import ProfileAvatar from '../components/ProfileAvatar.jsx';
-import { IDENTITY_LABELS, INTENT_LABELS, PROFILE_TYPE_LABELS, labelAvailability } from '../lib/labels.js';
 import { resizeImageFile } from '../lib/photo-utils.js';
-import { ICEBREAKER_PROMPTS } from '../lib/icebreakers.js';
+import { getIcebreakerPrompts } from '../lib/icebreakers.js';
 import InviteSection from '../components/InviteSection.jsx';
+import CountrySelect from '../components/CountrySelect.jsx';
+import LanguageSwitcher from '../components/LanguageSwitcher.jsx';
+import { useI18n } from '../lib/i18n/index.jsx';
+
+const IDENTITY_KEYS = ['MALE', 'FEMALE', 'NON_BINARY', 'OTHER'];
+const INTENT_KEYS = ['CHAT', 'CASUAL', 'RELATIONSHIP', 'MARRIAGE', 'ADVENTURE'];
 
 export default function SettingsPage({ token, profile, onLogout, onProfileUpdate }) {
+  const { t, locale, setLocale, catalog, labels } = useI18n();
+  const icebreakerPrompts = getIcebreakerPrompts(catalog);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [form, setForm] = useState(null);
@@ -38,13 +45,17 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
     }
     if (plansData?.success) setPlansStatus(plansData);
     if (searchParams.get('plan') === 'success') {
-      setMessage('Uplata zaprimljena. Premium aktivacija slijedi nakon provjere.', 'success');
+      setMessage(t('settings.planSuccess'), 'success');
     }
   }
 
   useEffect(() => {
     load();
   }, [token]);
+
+  useEffect(() => {
+    if (form?.locale) setLocale(form.locale);
+  }, [form?.locale, setLocale]);
 
   function toggleListField(field, value) {
     setForm((prev) => {
@@ -63,9 +74,9 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
       const dataUrl = await resizeImageFile(file);
       const nextPhotos = [...(form.photos || []), dataUrl].slice(0, 3);
       setForm((prev) => ({ ...prev, photos: nextPhotos }));
-      setMessage('Fotografija dodana — klikni Spremi profil.', 'info');
+      setMessage(t('settings.photoAdded'), 'info');
     } catch (error) {
-      setMessage(error.message || 'Upload fotografije nije uspio.', 'error');
+      setMessage(error.message || t('settings.photoUploadFailed'), 'error');
     } finally {
       setBusy(false);
       event.target.value = '';
@@ -83,9 +94,9 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
       a.download = `ravnopar-export-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      setMessage('Izvoz podataka preuzet.', 'success');
+      setMessage(t('settings.exportDone'), 'success');
     } else {
-      setMessage(data?.error || 'Izvoz nije uspio.', 'error');
+      setMessage(data?.error || t('settings.exportFailed'), 'error');
     }
     setBusy(false);
   }
@@ -97,9 +108,9 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
     try {
       const dataUrl = await resizeImageFile(file);
       setForm((prev) => ({ ...prev, verificationSelfie: dataUrl, verificationPending: true }));
-      setMessage('Selfie dodan — spremi profil za slanje na provjeru.', 'info');
+      setMessage(t('settings.selfieAdded'), 'info');
     } catch (error) {
-      setMessage(error.message || 'Selfie nije uspio.', 'error');
+      setMessage(error.message || t('settings.selfieFailed'), 'error');
     } finally {
       setBusy(false);
       event.target.value = '';
@@ -108,7 +119,7 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
 
   function detectLocation() {
     if (!navigator.geolocation) {
-      setMessage('Preglednik ne podržava geolokaciju.', 'error');
+      setMessage(t('settings.geolocationUnsupported'), 'error');
       return;
     }
     setBusy(true);
@@ -120,11 +131,11 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
           latitude: pos.coords.latitude,
           longitude: pos.coords.longitude
         }));
-        setMessage('Lokacija učitana. Spremi profil.', 'success');
+        setMessage(t('settings.locationLoaded'), 'success');
         setBusy(false);
       },
       () => {
-        setMessage('Lokacija nije dostupna. Provjeri dozvole preglednika.', 'error');
+        setMessage(t('settings.locationFailed'), 'error');
         setBusy(false);
       },
       { enableHighAccuracy: false, timeout: 15000, maximumAge: 600000 }
@@ -134,7 +145,7 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
   async function saveProfile(event) {
     event.preventDefault();
     if (form.shareLocation && (form.latitude == null || form.longitude == null)) {
-      setMessage('Uključi lokaciju gumbom „Učitaj moju lokaciju“ prije spremanja.', 'error');
+      setMessage(t('settings.locationRequired'), 'error');
       return;
     }
     setBusy(true);
@@ -143,6 +154,8 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
       const data = await updateProfile(token, {
         displayName: form.displayName,
         city: form.city,
+        country: form.country,
+        locale,
         bio: form.bio || null,
         identity: form.identity,
         profileType: form.profileType,
@@ -168,14 +181,16 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
           id: data.profile.id,
           displayName: data.profile.displayName,
           city: data.profile.city,
+          country: data.profile.country,
+          locale: data.profile.locale,
           availability: data.profile.availability,
           planTier: data.profile.planTier,
           onboardingDone: data.profile.onboardingDone,
           role: profile?.role
         });
-        setMessage('Profil je spremljen.', 'success');
+        setMessage(t('settings.profileSaved'), 'success');
       } else {
-        setMessage(data?.error || 'Spremanje nije uspjelo.', 'error');
+        setMessage(data?.error || t('settings.saveFailed'), 'error');
       }
     } finally {
       setBusy(false);
@@ -183,7 +198,7 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
   }
 
   async function handleDeleteAccount() {
-    const ok = window.confirm('Trajno obrisati račun? Ova radnja se ne može poništiti.');
+    const ok = window.confirm(t('settings.deleteConfirm'));
     if (!ok) return;
     setBusy(true);
     const data = await deleteAccount(token);
@@ -191,7 +206,7 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
       onLogout?.();
       navigate('/');
     } else {
-      setMessage(data?.error || 'Brisanje računa nije uspjelo.', 'error');
+      setMessage(data?.error || t('settings.deleteFailed'), 'error');
       setBusy(false);
     }
   }
@@ -203,27 +218,32 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
       window.location.href = data.checkoutUrl;
       return;
     }
-    setMessage(data?.error || 'Premium checkout nije dostupan.', 'error');
+    setMessage(data?.error || t('settings.checkoutFailed'), 'error');
     setBusy(false);
   }
 
   if (!form) {
     return (
       <main className="page settings-page">
-        <p className="muted">Učitavanje postavki...</p>
+        <p className="muted">{t('settings.loading')}</p>
       </main>
     );
   }
 
   return (
     <main className="page settings-page">
-      <PageMeta title="Postavke" description="Uredi profil, fotografije, obavijesti i privatnost." />
+      <PageMeta titleKey="settings" descriptionKey="settings" />
       <p className="auth-footer">
-        <Link to="/app">← Moj prostor</Link>
+        <Link to="/app">{t('settings.backToApp')}</Link>
       </p>
       <section className="hero settings-hero">
-        <h1>Postavke profila</h1>
-        <p className="subtitle">Popunjenost: {completeness}% · Status: {labelAvailability(form.availability)}</p>
+        <h1>{t('settings.title')}</h1>
+        <p className="subtitle">
+          {t('settings.subtitle', {
+            percent: completeness,
+            status: labels.labelAvailability(form.availability)
+          })}
+        </p>
       </section>
 
       {status && <p className={`status-banner status-${statusKind}`}>{status}</p>}
@@ -233,10 +253,10 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
           <ProfileAvatar person={form} size="lg" />
           <div>
             <label className="field-label">
-              Fotografije ({(form.photos || []).length}/3)
+              {t('settings.photos')} ({t('common.photoCount', { current: (form.photos || []).length, max: 3 })})
               <input type="file" accept="image/*" onChange={handlePhotoChange} disabled={busy || (form.photos || []).length >= 3} />
             </label>
-            <p className="muted">JPG/PNG, automatski smanjeno. Maks. 3 fotografije.</p>
+            <p className="muted">{t('settings.photosHint')}</p>
             {(form.photos || []).length > 0 && (
               <div className="photo-gallery">
                 {form.photos.map((photo, index) => (
@@ -248,7 +268,7 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
         </div>
 
         <label className="field-label">
-          Ime za prikaz
+          {t('settings.displayName')}
           <input
             className="input"
             value={form.displayName}
@@ -258,29 +278,42 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
         </label>
 
         <label className="field-label">
-          Grad
+          {t('settings.city')}
           <input className="input" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} required />
         </label>
 
         <label className="field-label">
-          O meni (bio)
+          {t('auth.country')}
+          <CountrySelect
+            value={form.country || 'HR'}
+            onChange={(country) => setForm({ ...form, country })}
+          />
+        </label>
+
+        <label className="field-label">
+          {t('auth.language')}
+          <LanguageSwitcher />
+        </label>
+
+        <label className="field-label">
+          {t('settings.bio')}
           <textarea
             className="input"
             rows={4}
             maxLength={500}
             value={form.bio || ''}
             onChange={(e) => setForm({ ...form, bio: e.target.value })}
-            placeholder="Kratko se predstavi — što tražiš, što voliš..."
+            placeholder={t('settings.bioPlaceholder')}
           />
         </label>
 
         <fieldset className="settings-fieldset">
-          <legend>Icebreaker pitanja (do 3)</legend>
-          <p className="muted">Kratka pitanja i odgovori — pomažu pri prvom kontaktu.</p>
+          <legend>{t('settings.icebreakersLegend')}</legend>
+          <p className="muted">{t('settings.icebreakersHint')}</p>
           {(form.icebreakers || []).map((item, index) => (
             <div key={index} className="icebreaker-edit">
               <label className="field-label">
-                Pitanje
+                {t('common.question')}
                 <select
                   className="input"
                   value={item.question}
@@ -290,13 +323,13 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
                     setForm({ ...form, icebreakers: next });
                   }}
                 >
-                  {ICEBREAKER_PROMPTS.map((prompt) => (
+                  {icebreakerPrompts.map((prompt) => (
                     <option key={prompt} value={prompt}>{prompt}</option>
                   ))}
                 </select>
               </label>
               <label className="field-label">
-                Odgovor
+                {t('common.answer')}
                 <input
                   className="input"
                   maxLength={200}
@@ -313,7 +346,7 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
                 className="button button-ghost button-sm"
                 onClick={() => setForm({ ...form, icebreakers: (form.icebreakers || []).filter((_, i) => i !== index) })}
               >
-                Ukloni
+                {t('common.remove')}
               </button>
             </div>
           ))}
@@ -326,21 +359,22 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
                   ...form,
                   icebreakers: [
                     ...(form.icebreakers || []),
-                    { question: ICEBREAKER_PROMPTS[(form.icebreakers || []).length % ICEBREAKER_PROMPTS.length], answer: '' }
+                    {
+                      question: icebreakerPrompts[(form.icebreakers || []).length % icebreakerPrompts.length],
+                      answer: ''
+                    }
                   ]
                 })
               }
             >
-              Dodaj icebreaker
+              {t('settings.addIcebreaker')}
             </button>
           )}
         </fieldset>
 
         <fieldset className="settings-fieldset">
-          <legend>Udaljenost (privatno)</legend>
-          <p className="muted">
-            Koordinate se ne prikazuju drugima — samo gruba udaljenost (npr. „5–15 km“). Oboje mora uključiti opciju.
-          </p>
+          <legend>{t('settings.locationLegend')}</legend>
+          <p className="muted">{t('settings.locationHint')}</p>
           <label className="choice-chip notify-toggle">
             <input
               type="checkbox"
@@ -353,28 +387,28 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
                 })
               }
             />
-            Prikaži udaljenost od mene drugim korisnicima
+            {t('settings.shareLocation')}
           </label>
           {form.shareLocation && (
             <div className="location-actions">
               <button type="button" className="button button-secondary" disabled={busy} onClick={detectLocation}>
-                Učitaj moju lokaciju
+                {t('settings.loadLocation')}
               </button>
               {form.latitude != null && form.longitude != null && (
-                <span className="chip chip-verified">Lokacija spremljena</span>
+                <span className="chip chip-verified">{t('settings.locationSaved')}</span>
               )}
             </div>
           )}
         </fieldset>
 
         <fieldset className="settings-fieldset">
-          <legend>Video profil (link)</legend>
+          <legend>{t('settings.videoLegend')}</legend>
           <label className="field-label">
-            YouTube, Vimeo, Instagram ili TikTok link
+            {t('settings.videoPlaceholder')}
             <input
               className="input"
               type="url"
-              placeholder="https://youtube.com/..."
+              placeholder={t('settings.videoUrlPlaceholder')}
               value={form.videoUrl || ''}
               onChange={(e) => setForm({ ...form, videoUrl: e.target.value })}
             />
@@ -382,18 +416,16 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
         </fieldset>
 
         <fieldset className="settings-fieldset">
-          <legend>Verifikacija profila</legend>
-          <p className="muted">
-            Selfie za ručnu provjeru admin tima — usporedba s profilnom fotkom. Nije javno vidljivo.
-          </p>
+          <legend>{t('settings.verificationLegend')}</legend>
+          <p className="muted">{t('settings.verificationHint')}</p>
           {form.photoVerified && !form.verificationPending && (
-            <span className="chip chip-verified">Profil verificiran</span>
+            <span className="chip chip-verified">{t('settings.verified')}</span>
           )}
           {form.verificationPending && (
-            <p className="status-banner status-info">Selfie je na provjeri — obavijest stiže nakon pregleda.</p>
+            <p className="status-banner status-info">{t('settings.verificationPending')}</p>
           )}
           <label className="field-label">
-            Verifikacijski selfie
+            {t('settings.verificationSelfie')}
             <input type="file" accept="image/*" onChange={handleSelfieChange} disabled={busy} />
           </label>
           {form.verificationSelfie && (
@@ -402,9 +434,9 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
         </fieldset>
 
         <fieldset className="settings-fieldset">
-          <legend>Identitet</legend>
+          <legend>{t('settings.identityLegend')}</legend>
           <div className="choice-row">
-            {Object.entries(IDENTITY_LABELS).map(([value, label]) => (
+            {IDENTITY_KEYS.map((value) => (
               <label key={value} className="choice-chip">
                 <input
                   type="radio"
@@ -412,56 +444,56 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
                   checked={form.identity === value}
                   onChange={() => setForm({ ...form, identity: value })}
                 />
-                {label}
+                {labels.labelIdentity(value)}
               </label>
             ))}
           </div>
         </fieldset>
 
         <fieldset className="settings-fieldset">
-          <legend>Tražim identitet</legend>
+          <legend>{t('settings.seekingIdentityLegend')}</legend>
           <div className="choice-row">
-            {Object.entries(IDENTITY_LABELS).map(([value, label]) => (
+            {IDENTITY_KEYS.map((value) => (
               <label key={value} className="choice-chip">
                 <input
                   type="checkbox"
                   checked={form.seekingIdentities?.includes(value)}
                   onChange={() => toggleListField('seekingIdentities', value)}
                 />
-                {label}
+                {labels.labelIdentity(value)}
               </label>
             ))}
           </div>
         </fieldset>
 
         <fieldset className="settings-fieldset">
-          <legend>Namjera</legend>
+          <legend>{t('settings.intentLegend')}</legend>
           <div className="choice-row">
-            {Object.entries(INTENT_LABELS).map(([value, label]) => (
+            {INTENT_KEYS.map((value) => (
               <label key={value} className="choice-chip">
                 <input
                   type="checkbox"
                   checked={form.intents?.includes(value)}
                   onChange={() => toggleListField('intents', value)}
                 />
-                {label}
+                {labels.labelIntent(value)}
               </label>
             ))}
           </div>
         </fieldset>
 
         <label className="field-label">
-          Vidljivost profila
+          {t('settings.availabilityLabel')}
           <select
             className="input"
             value={form.availability === 'FOCUSED_CONTACT' ? 'FOCUSED_CONTACT' : form.availability}
             onChange={(e) => setForm({ ...form, availability: e.target.value })}
             disabled={form.availability === 'FOCUSED_CONTACT'}
           >
-            <option value="AVAILABLE">Dostupan/na u feedu</option>
-            <option value="PAUSED">Pauzirano (skriven/a)</option>
+            <option value="AVAILABLE">{t('settings.availabilityAvailable')}</option>
+            <option value="PAUSED">{t('settings.availabilityPaused')}</option>
             {form.availability === 'FOCUSED_CONTACT' && (
-              <option value="FOCUSED_CONTACT">U aktivnom razgovoru</option>
+              <option value="FOCUSED_CONTACT">{t('settings.availabilityFocused')}</option>
             )}
           </select>
         </label>
@@ -472,20 +504,20 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
             checked={form.notifyEmail !== false}
             onChange={(e) => setForm({ ...form, notifyEmail: e.target.checked })}
           />
-          Email obavijesti (novi zahtjevi, match, poruke)
+          {t('settings.notifyEmail')}
         </label>
 
         <div className="form-actions row">
           <button type="submit" className="button button-primary" disabled={busy}>
-            {busy ? 'Spremanje...' : 'Spremi profil'}
+            {busy ? t('settings.saving') : t('settings.saveProfile')}
           </button>
         </div>
       </form>
 
       {plansStatus?.plansEnabled && plansStatus?.stripeEnabled && (
         <section className="card">
-          <h2 className="section-title">Premium paketi</h2>
-          <p className="muted">Checkout je spreman — aktivacija paketa nakon uplate.</p>
+          <h2 className="section-title">{t('settings.premiumTitle')}</h2>
+          <p className="muted">{t('settings.premiumHint')}</p>
           <div className="form-actions row">
             {plansStatus.plans?.map((plan) => (
               <button
@@ -505,18 +537,18 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
       <InviteSection token={token} />
 
       <section className="card">
-        <h2 className="section-title">Privatnost (GDPR)</h2>
-        <p className="muted">Preuzmi kopiju svojih podataka u JSON formatu.</p>
+        <h2 className="section-title">{t('settings.gdprTitle')}</h2>
+        <p className="muted">{t('settings.gdprHint')}</p>
         <button type="button" className="button button-secondary" disabled={busy} onClick={exportData}>
-          Preuzmi moje podatke
+          {t('settings.exportData')}
         </button>
       </section>
 
       <section className="card danger-zone">
-        <h2 className="section-title">Opasna zona</h2>
-        <p className="muted">Brisanje računa uklanja profil, poruke i povijest kontakata.</p>
+        <h2 className="section-title">{t('settings.dangerTitle')}</h2>
+        <p className="muted">{t('settings.dangerHint')}</p>
         <button type="button" className="button button-ghost" disabled={busy} onClick={handleDeleteAccount}>
-          Obriši račun
+          {t('settings.deleteAccount')}
         </button>
       </section>
     </main>

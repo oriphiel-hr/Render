@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useI18n } from '../lib/i18n/index.jsx';
 
 const STORAGE_KEY = 'ravnopar-theme';
 
@@ -13,6 +14,7 @@ export function applyTheme(theme) {
 }
 
 export default function ThemeToggle() {
+  const { t } = useI18n();
   const [theme, setTheme] = useState(getInitialTheme);
 
   useEffect(() => {
@@ -20,11 +22,11 @@ export default function ThemeToggle() {
   }, [theme]);
 
   function toggle() {
-    setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+    setTheme((current) => (current === 'dark' ? 'light' : 'dark'));
   }
 
   return (
-    <button type="button" className="button button-ghost theme-toggle" onClick={toggle} aria-label="Promijeni temu">
+    <button type="button" className="button button-ghost theme-toggle" onClick={toggle} aria-label={t('theme.toggle')}>
       {theme === 'dark' ? '☀️' : '🌙'}
     </button>
   );

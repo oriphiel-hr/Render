@@ -1,6 +1,8 @@
 import { initials } from '../lib/labels.js';
+import { useI18n } from '../lib/i18n/index.jsx';
 
 export default function ProfileAvatar({ person, size = 'md' }) {
+  const { t } = useI18n();
   const photo = Array.isArray(person?.photos) ? person.photos[0] : null;
   const name = person?.displayName || '?';
 
@@ -9,7 +11,7 @@ export default function ProfileAvatar({ person, size = 'md' }) {
       <img
         className={`avatar avatar-photo avatar-${size}`}
         src={photo}
-        alt={`Profilna fotografija: ${name}`}
+        alt={t('avatar.alt', { name })}
       />
     );
   }

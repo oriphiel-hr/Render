@@ -21,9 +21,12 @@ import TermsPage from './pages/TermsPage.jsx';
 import UserDashboardPage from './pages/UserDashboardPage.jsx';
 import { getInboxSummary, getProfile } from './api/index.js';
 import { recordMemberSinceIfNeeded } from './lib/donate-prompt.js';
+import { useI18n } from './lib/i18n/index.jsx';
+import LanguageSwitcher from './components/LanguageSwitcher.jsx';
 
 function Topbar({ token, profile, onLogout, unreadTotal }) {
   const location = useLocation();
+  const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
 
   function closeMenu() {
@@ -38,34 +41,35 @@ function Topbar({ token, profile, onLogout, unreadTotal }) {
             Ravnopar
           </Link>
           <button type="button" className="menu-toggle" aria-expanded={menuOpen} onClick={() => setMenuOpen((o) => !o)}>
-            {menuOpen ? 'Zatvori' : 'Izbornik'}
+            {menuOpen ? t('nav.close') : t('nav.menu')}
           </button>
         </div>
         <div className={`topbar-links ${menuOpen ? 'open' : ''}`}>
           {!token && (
             <>
-              <Link className={location.pathname === '/' ? 'nav-link active' : 'nav-link'} to="/" onClick={closeMenu}>Početna</Link>
-              <Link className={location.pathname === '/auth' ? 'nav-link active' : 'nav-link'} to="/auth?login=1" onClick={closeMenu}>Prijava</Link>
-              <Link className={location.pathname === '/planovi' ? 'nav-link active' : 'nav-link'} to="/planovi" onClick={closeMenu}>Planovi</Link>
-              <Link className={location.pathname === '/pomoc' ? 'nav-link active' : 'nav-link'} to="/pomoc" onClick={closeMenu}>Pomoć</Link>
+              <Link className={location.pathname === '/' ? 'nav-link active' : 'nav-link'} to="/" onClick={closeMenu}>{t('nav.home')}</Link>
+              <Link className={location.pathname === '/auth' ? 'nav-link active' : 'nav-link'} to="/auth?login=1" onClick={closeMenu}>{t('nav.login')}</Link>
+              <Link className={location.pathname === '/planovi' ? 'nav-link active' : 'nav-link'} to="/planovi" onClick={closeMenu}>{t('nav.plans')}</Link>
+              <Link className={location.pathname === '/pomoc' ? 'nav-link active' : 'nav-link'} to="/pomoc" onClick={closeMenu}>{t('nav.help')}</Link>
             </>
           )}
           {token && (
             <>
               <Link className={location.pathname === '/app' ? 'nav-link active' : 'nav-link'} to="/app" onClick={closeMenu}>
-                Moj prostor{unreadTotal > 0 ? ` (${unreadTotal})` : ''}
+                {unreadTotal > 0 ? t('nav.mySpaceUnread', { count: unreadTotal }) : t('nav.mySpace')}
               </Link>
-              <Link className={location.pathname.startsWith('/app/postavke') ? 'nav-link active' : 'nav-link'} to="/app/postavke" onClick={closeMenu}>Postavke</Link>
+              <Link className={location.pathname.startsWith('/app/postavke') ? 'nav-link active' : 'nav-link'} to="/app/postavke" onClick={closeMenu}>{t('nav.settings')}</Link>
               <span className="nav-user">
-                Pozdrav, {profile?.displayName}
-                {profile?.role === 'ADMIN' && <span className="chip chip-admin nav-role">Admin</span>}
+                {t('nav.greeting', { name: profile?.displayName })}
+                {profile?.role === 'ADMIN' && <span className="chip chip-admin nav-role">{t('nav.admin')}</span>}
               </span>
-              <button type="button" className="button button-ghost nav-logout" onClick={() => { closeMenu(); onLogout(); }}>Odjava</button>
+              <button type="button" className="button button-ghost nav-logout" onClick={() => { closeMenu(); onLogout(); }}>{t('nav.logout')}</button>
             </>
           )}
           {profile?.role === 'ADMIN' && (
-            <Link className={location.pathname === '/admin' ? 'nav-link active' : 'nav-link'} to="/admin" onClick={closeMenu}>Admin</Link>
+            <Link className={location.pathname === '/admin' ? 'nav-link active' : 'nav-link'} to="/admin" onClick={closeMenu}>{t('nav.admin')}</Link>
           )}
+          <LanguageSwitcher className="topbar-lang" />
           <ThemeToggle />
         </div>
       </nav>
@@ -73,7 +77,24 @@ function Topbar({ token, profile, onLogout, unreadTotal }) {
   );
 }
 
+function MobileDock({ token, profile, unreadTotal }) {
+  const { t } = useI18n();
+
+  if (!token) return null;
+
+  return (
+    <nav className="mobile-dock" aria-label={t('nav.quickNav')}>
+      <Link className="dock-link" to="/app">
+        {unreadTotal > 0 ? t('nav.mySpaceUnread', { count: unreadTotal }) : t('nav.mySpace')}
+      </Link>
+      <Link className="dock-link" to="/app/postavke">{t('nav.settings')}</Link>
+      {profile?.role === 'ADMIN' && <Link className="dock-link" to="/admin">{t('nav.admin')}</Link>}
+    </nav>
+  );
+}
+
 export default function App() {
+  const { setLocale } = useI18n();
   const [token, setToken] = useState(localStorage.getItem('ravnoparToken') || '');
   const [profile, setProfile] = useState(() => {
     const raw = localStorage.getItem('ravnoparProfile');
@@ -105,6 +126,7 @@ export default function App() {
     setToken(nextToken);
     setProfile(nextProfile);
     setOnboardingDone(Boolean(nextProfile?.onboardingDone));
+    if (nextProfile?.locale) setLocale(nextProfile.locale);
     localStorage.setItem('ravnoparToken', nextToken);
     localStorage.setItem('ravnoparProfile', JSON.stringify(nextProfile));
     recordMemberSinceIfNeeded();
@@ -150,13 +172,7 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <PublicFooter token={token} />
-      {token && (
-        <nav className="mobile-dock" aria-label="Brza navigacija">
-          <Link className="dock-link" to="/app">Moj prostor{unreadTotal > 0 ? ` (${unreadTotal})` : ''}</Link>
-          <Link className="dock-link" to="/app/postavke">Postavke</Link>
-          {profile?.role === 'ADMIN' && <Link className="dock-link" to="/admin">Admin</Link>}
-        </nav>
-      )}
+      <MobileDock token={token} profile={profile} unreadTotal={unreadTotal} />
     </>
   );
 }

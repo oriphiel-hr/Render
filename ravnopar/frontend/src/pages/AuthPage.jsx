@@ -1,25 +1,35 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { forgotPassword, login, register, resetPassword, verifyEmail } from '../api/index.js';
-import { IDENTITY_LABELS, INTENT_LABELS, PROFILE_TYPE_LABELS } from '../lib/labels.js';
+import { translateApiError, useI18n } from '../lib/i18n/index.jsx';
+import DateOfBirthPicker, { isAdultDob } from '../components/DateOfBirthPicker.jsx';
+import CountrySelect from '../components/CountrySelect.jsx';
+import LanguageSwitcher from '../components/LanguageSwitcher.jsx';
 import TurnstileWidget, { isTurnstileEnabled, resetTurnstileWidget } from '../components/TurnstileWidget.jsx';
 import { trackEvent } from '../lib/analytics.js';
 
-const REG_STEPS = [
-  { id: 1, title: 'Račun' },
-  { id: 2, title: 'Verifikacija' },
-  { id: 3, title: 'Prijava' }
-];
-
-const STEPS = [
-  ...REG_STEPS,
-  { id: 4, title: 'Reset' },
-  { id: 5, title: 'Nova lozinka' }
-];
+const IDENTITY_KEYS = ['MALE', 'FEMALE', 'NON_BINARY', 'OTHER'];
+const PROFILE_TYPE_KEYS = ['INDIVIDUAL', 'COUPLE'];
+const INTENT_KEYS = ['CHAT', 'CASUAL', 'RELATIONSHIP', 'MARRIAGE', 'ADVENTURE'];
 
 export default function AuthPage({ onLogin }) {
+  const { t, locale, setLocale } = useI18n();
   const [searchParams] = useSearchParams();
   const loginOnly = searchParams.get('login') === '1';
+
+  const REG_STEPS = useMemo(
+    () => [
+      { id: 1, title: t('auth.stepAccount') },
+      { id: 2, title: t('auth.stepVerify') },
+      { id: 3, title: t('auth.stepLogin') }
+    ],
+    [t]
+  );
+  const STEPS = useMemo(
+    () => [...REG_STEPS, { id: 4, title: t('auth.stepReset') }, { id: 5, title: t('auth.stepNewPassword') }],
+    [REG_STEPS, t]
+  );
+
   const [step, setStep] = useState(() => {
     if (searchParams.get('reset') === '1') return 4;
     if (loginOnly) return 3;
@@ -32,6 +42,8 @@ export default function AuthPage({ onLogin }) {
     displayName: '',
     dateOfBirth: '',
     city: '',
+    country: 'HR',
+    locale: 'hr',
     bio: '',
     identity: 'OTHER',
     profileType: 'INDIVIDUAL',
@@ -48,6 +60,10 @@ export default function AuthPage({ onLogin }) {
   const [captchaToken, setCaptchaToken] = useState('');
   const [status, setStatus] = useState('');
   const [statusKind, setStatusKind] = useState('info');
+
+  useEffect(() => {
+    setRegisterForm((prev) => ({ ...prev, locale }));
+  }, [locale]);
 
   useEffect(() => {
     if (searchParams.get('reset') === '1') setStep(4);
@@ -71,23 +87,27 @@ export default function AuthPage({ onLogin }) {
 
   async function submitRegister(event) {
     event.preventDefault();
+    if (!isAdultDob(registerForm.dateOfBirth)) {
+      setMessage(t('auth.dobInvalid'), 'error');
+      return;
+    }
     if (isTurnstileEnabled() && !captchaToken) {
-      setMessage('Potvrdi captchu prije registracije.', 'error');
+      setMessage(t('auth.captchaRequired'), 'error');
       return;
     }
     setBusy(true);
     setMessage('');
     try {
-      const payload = { ...registerForm, website, captchaToken: captchaToken || undefined };
+      const payload = { ...registerForm, website, captchaToken: captchaToken || undefined, locale };
       if (!payload.referralCode) delete payload.referralCode;
       const data = await register(payload);
       if (data?.success) {
         trackEvent('Register');
         setVerifyForm((prev) => ({ ...prev, email: registerForm.email }));
-        setMessage('Račun je kreiran. Unesi verifikacijski kod koji si primio/la.', 'success');
+        setMessage(t('auth.registerSuccess'), 'success');
         setStep(2);
       } else {
-        setMessage(data?.error || 'Registracija nije uspjela. Provjeri podatke i pokušaj ponovo.', 'error');
+        setMessage(translateApiError(data) || t('auth.registerFailed'), 'error');
         resetTurnstileWidget();
         setCaptchaToken('');
       }
@@ -104,10 +124,10 @@ export default function AuthPage({ onLogin }) {
       const data = await verifyEmail(verifyForm);
       if (data?.success) {
         setLoginForm((prev) => ({ ...prev, email: verifyForm.email }));
-        setMessage('Email je potvrđen. Sada se možeš prijaviti.', 'success');
+        setMessage(t('auth.verifySuccess'), 'success');
         setStep(3);
       } else {
-        setMessage(data?.error || 'Verifikacija nije uspjela. Provjeri kod i pokušaj ponovo.', 'error');
+        setMessage(translateApiError(data) || t('auth.verifyFailed'), 'error');
       }
     } finally {
       setBusy(false);
@@ -118,7 +138,7 @@ export default function AuthPage({ onLogin }) {
     event.preventDefault();
     setBusy(true);
     const data = await forgotPassword(forgotForm.email);
-    setMessage(data?.message || 'Provjeri email.', data?.success ? 'success' : 'error');
+    setMessage(data?.message || t('auth.checkEmail'), data?.success ? 'success' : 'error');
     if (data?.success) {
       setResetForm((p) => ({ ...p, email: forgotForm.email }));
       setStep(5);
@@ -131,11 +151,11 @@ export default function AuthPage({ onLogin }) {
     setBusy(true);
     const data = await resetPassword(resetForm);
     if (data?.success) {
-      setMessage('Lozinka promijenjena. Prijavi se.', 'success');
+      setMessage(t('auth.resetSuccess'), 'success');
       setLoginForm((p) => ({ ...p, email: resetForm.email }));
       setStep(3);
     } else {
-      setMessage(data?.error || 'Reset nije uspio.', 'error');
+      setMessage(translateApiError(data) || t('auth.resetFailed'), 'error');
     }
     setBusy(false);
   }
@@ -148,9 +168,10 @@ export default function AuthPage({ onLogin }) {
       const data = await login(loginForm);
       if (data?.success) {
         trackEvent('Login');
+        if (data.profile?.locale) setLocale(data.profile.locale);
         onLogin(data.token, data.profile);
       } else {
-        setMessage(data?.error || 'Prijava nije uspjela. Provjeri email i lozinku.', 'error');
+        setMessage(translateApiError(data) || t('auth.loginFailed'), 'error');
       }
     } finally {
       setBusy(false);
@@ -160,16 +181,17 @@ export default function AuthPage({ onLogin }) {
   return (
     <main className="page auth-page">
       <section className="hero auth-hero">
-        <h1>{loginOnly && step === 3 ? 'Prijavi se' : 'Dobrodošao/la u Ravnopar'}</h1>
+        <div className="auth-hero-top">
+          <h1>{loginOnly && step === 3 ? t('auth.welcomeLogin') : t('auth.welcome')}</h1>
+          <LanguageSwitcher />
+        </div>
         <p className="subtitle">
-          {loginOnly && step === 3
-            ? 'Unesi email i lozinku za pristup svom profilu.'
-            : 'Tri jednostavna koraka do tvog profila.'}
+          {loginOnly && step === 3 ? t('auth.subtitleLogin') : t('auth.subtitleRegister')}
         </p>
       </section>
 
       {!loginOnly && (
-      <div className="stepper" aria-label="Koraci registracije">
+      <div className="stepper" aria-label={t('auth.subtitleRegister')}>
         {(step <= 3 ? REG_STEPS : STEPS.filter((s) => s.id >= 4)).map((item) => (
           <button
             key={item.id}
@@ -188,13 +210,13 @@ export default function AuthPage({ onLogin }) {
 
       {step === 1 && (
         <form onSubmit={submitRegister} className="card auth-card">
-          <h2 className="section-title">1. Kreiraj račun</h2>
+          <h2 className="section-title">{t('auth.createAccount')}</h2>
           {registerForm.referralCode && (
-            <p className="status-banner status-info">Pozivnica primijenjena — hvala što si došao/la preko prijatelja.</p>
+            <p className="status-banner status-info">{t('auth.referralApplied')}</p>
           )}
           <div className="form-grid">
             <label>
-              Email
+              {t('auth.email')}
               <input
                 type="email"
                 autoComplete="email"
@@ -204,7 +226,7 @@ export default function AuthPage({ onLogin }) {
               />
             </label>
             <label>
-              Lozinka
+              {t('auth.password')}
               <input
                 type="password"
                 autoComplete="new-password"
@@ -215,24 +237,22 @@ export default function AuthPage({ onLogin }) {
               />
             </label>
             <label>
-              Ime za prikaz
+              {t('auth.displayName')}
               <input
                 value={registerForm.displayName}
                 onChange={(e) => setRegisterForm((p) => ({ ...p, displayName: e.target.value }))}
                 required
               />
             </label>
-            <label>
-              Datum rođenja
-              <input
-                type="date"
+            <div className="dob-picker-wrap">
+              <span className="field-label-text">{t('auth.dateOfBirth')}</span>
+              <DateOfBirthPicker
                 value={registerForm.dateOfBirth}
-                onChange={(e) => setRegisterForm((p) => ({ ...p, dateOfBirth: e.target.value }))}
-                required
+                onChange={(dateOfBirth) => setRegisterForm((p) => ({ ...p, dateOfBirth }))}
               />
-            </label>
+            </div>
             <label>
-              Grad
+              {t('auth.city')}
               <input
                 value={registerForm.city}
                 onChange={(e) => setRegisterForm((p) => ({ ...p, city: e.target.value }))}
@@ -240,77 +260,84 @@ export default function AuthPage({ onLogin }) {
               />
             </label>
             <label>
-              Tvoj identitet
+              {t('auth.country')}
+              <CountrySelect
+                value={registerForm.country}
+                onChange={(country) => setRegisterForm((p) => ({ ...p, country }))}
+              />
+            </label>
+            <label>
+              {t('auth.identity')}
               <select value={registerForm.identity} onChange={(e) => setRegisterForm((p) => ({ ...p, identity: e.target.value }))}>
-                {Object.entries(IDENTITY_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
+                {IDENTITY_KEYS.map((value) => (
+                  <option key={value} value={value}>{t(`identity.${value}`)}</option>
                 ))}
               </select>
             </label>
             <label>
-              Tip profila
+              {t('auth.profileType')}
               <select value={registerForm.profileType} onChange={(e) => setRegisterForm((p) => ({ ...p, profileType: e.target.value }))}>
-                {Object.entries(PROFILE_TYPE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
+                {PROFILE_TYPE_KEYS.map((value) => (
+                  <option key={value} value={value}>{t(`profileType.${value}`)}</option>
                 ))}
               </select>
             </label>
           </div>
 
           <label>
-            O meni (opcionalno)
+            {t('auth.aboutOptional')}
             <textarea
               rows={3}
               maxLength={500}
               value={registerForm.bio}
               onChange={(e) => setRegisterForm((p) => ({ ...p, bio: e.target.value }))}
-              placeholder="Kratko se predstavi..."
+              placeholder={t('auth.aboutPlaceholder')}
             />
           </label>
 
           <fieldset className="choice-group">
-            <legend>Koga tražiš</legend>
+            <legend>{t('auth.seekingWho')}</legend>
             <div className="choice-row">
-              {Object.entries(IDENTITY_LABELS).map(([value, label]) => (
+              {IDENTITY_KEYS.map((value) => (
                 <label key={value} className="choice-chip">
                   <input
                     type="checkbox"
                     checked={registerForm.seekingIdentities.includes(value)}
                     onChange={() => toggleListField('seekingIdentities', value)}
                   />
-                  {label}
+                  {t(`identity.${value}`)}
                 </label>
               ))}
             </div>
           </fieldset>
 
           <fieldset className="choice-group">
-            <legend>Tip profila koji tražiš</legend>
+            <legend>{t('auth.seekingType')}</legend>
             <div className="choice-row">
-              {Object.entries(PROFILE_TYPE_LABELS).map(([value, label]) => (
+              {PROFILE_TYPE_KEYS.map((value) => (
                 <label key={value} className="choice-chip">
                   <input
                     type="checkbox"
                     checked={registerForm.seekingProfileTypes.includes(value)}
                     onChange={() => toggleListField('seekingProfileTypes', value)}
                   />
-                  {label}
+                  {t(`profileType.${value}`)}
                 </label>
               ))}
             </div>
           </fieldset>
 
           <fieldset className="choice-group">
-            <legend>Što tražiš</legend>
+            <legend>{t('auth.seekingIntent')}</legend>
             <div className="choice-row">
-              {Object.entries(INTENT_LABELS).map(([value, label]) => (
+              {INTENT_KEYS.map((value) => (
                 <label key={value} className="choice-chip">
                   <input
                     type="checkbox"
                     checked={registerForm.intents.includes(value)}
                     onChange={() => toggleListField('intents', value)}
                   />
-                  {label}
+                  {t(`intent.${value}`)}
                 </label>
               ))}
             </div>
@@ -322,13 +349,13 @@ export default function AuthPage({ onLogin }) {
 
           <div className="form-actions">
             <button type="submit" className="button button-primary" disabled={busy}>
-              {busy ? 'Spremanje...' : 'Nastavi na verifikaciju'}
+              {busy ? t('auth.saving') : t('auth.continueVerify')}
             </button>
           </div>
           <p className="auth-footer muted">
-            Već imaš račun?{' '}
+            {t('auth.hasAccount')}{' '}
             <Link to="/auth?login=1" onClick={() => setStep(3)}>
-              Prijavi se
+              {t('auth.signIn')}
             </Link>
           </p>
         </form>
@@ -336,10 +363,10 @@ export default function AuthPage({ onLogin }) {
 
       {step === 2 && (
         <form onSubmit={submitVerify} className="card auth-card">
-          <h2 className="section-title">2. Potvrdi email</h2>
-          <p className="muted">Unesi 6-znamenkasti kod koji si primio/la na email.</p>
+          <h2 className="section-title">{t('auth.verifyTitle')}</h2>
+          <p className="muted">{t('auth.verifyHint')}</p>
           <label>
-            Email
+            {t('auth.email')}
             <input
               type="email"
               value={verifyForm.email}
@@ -348,7 +375,7 @@ export default function AuthPage({ onLogin }) {
             />
           </label>
           <label>
-            Verifikacijski kod
+            {t('auth.verifyCode')}
             <input
               inputMode="numeric"
               pattern="\d{6}"
@@ -360,10 +387,10 @@ export default function AuthPage({ onLogin }) {
           </label>
           <div className="form-actions row">
             <button type="button" className="button button-secondary" onClick={() => setStep(1)}>
-              Natrag
+              {t('auth.back')}
             </button>
             <button type="submit" className="button button-primary" disabled={busy}>
-              {busy ? 'Provjera...' : 'Potvrdi email'}
+              {busy ? t('auth.checking') : t('auth.confirmEmail')}
             </button>
           </div>
         </form>
@@ -371,9 +398,9 @@ export default function AuthPage({ onLogin }) {
 
       {step === 3 && (
         <form onSubmit={submitLogin} className="card auth-card">
-          <h2 className="section-title">{loginOnly ? 'Prijava' : '3. Prijavi se'}</h2>
+          <h2 className="section-title">{loginOnly ? t('auth.loginTitleOnly') : t('auth.loginTitle')}</h2>
           <label>
-            Email
+            {t('auth.email')}
             <input
               type="email"
               autoComplete="email"
@@ -383,7 +410,7 @@ export default function AuthPage({ onLogin }) {
             />
           </label>
           <label>
-            Lozinka
+            {t('auth.password')}
             <input
               type="password"
               autoComplete="current-password"
@@ -394,55 +421,55 @@ export default function AuthPage({ onLogin }) {
           </label>
           <p className="auth-footer">
             <button type="button" className="button button-ghost" onClick={() => setStep(4)}>
-              Zaboravljena lozinka?
+              {t('auth.forgotPassword')}
             </button>
           </p>
           <div className="form-actions row">
             {!loginOnly && (
               <button type="button" className="button button-secondary" onClick={() => setStep(2)}>
-                Natrag
+                {t('auth.back')}
               </button>
             )}
             <button type="submit" className="button button-primary" disabled={busy}>
-              {busy ? 'Prijava...' : 'Uđi u Ravnopar'}
+              {busy ? t('auth.loggingIn') : t('auth.enterApp')}
             </button>
           </div>
           <p className="auth-footer muted">
-            Nemaš račun? <Link to="/auth">Registriraj se</Link>
+            {t('auth.noAccount')} <Link to="/auth">{t('auth.register')}</Link>
           </p>
         </form>
       )}
 
       {step === 4 && (
         <form onSubmit={submitForgot} className="card auth-card">
-          <h2 className="section-title">Reset lozinke</h2>
-          <p className="muted">Poslat ćemo kod na email ako račun postoji.</p>
+          <h2 className="section-title">{t('auth.resetTitle')}</h2>
+          <p className="muted">{t('auth.resetHint')}</p>
           <label>
-            Email
+            {t('auth.email')}
             <input type="email" value={forgotForm.email} onChange={(e) => setForgotForm({ email: e.target.value })} required />
           </label>
           <div className="form-actions row">
-            <button type="button" className="button button-secondary" onClick={() => setStep(3)}>Natrag</button>
-            <button type="submit" className="button button-primary" disabled={busy}>{busy ? 'Slanje...' : 'Pošalji kod'}</button>
+            <button type="button" className="button button-secondary" onClick={() => setStep(3)}>{t('auth.back')}</button>
+            <button type="submit" className="button button-primary" disabled={busy}>{busy ? t('auth.sending') : t('auth.sendCode')}</button>
           </div>
         </form>
       )}
 
       {step === 5 && (
         <form onSubmit={submitReset} className="card auth-card">
-          <h2 className="section-title">Nova lozinka</h2>
-          <label>Email<input type="email" value={resetForm.email} onChange={(e) => setResetForm((p) => ({ ...p, email: e.target.value }))} required /></label>
-          <label>Kod<input inputMode="numeric" maxLength={6} value={resetForm.code} onChange={(e) => setResetForm((p) => ({ ...p, code: e.target.value }))} required /></label>
-          <label>Nova lozinka<input type="password" minLength={8} value={resetForm.newPassword} onChange={(e) => setResetForm((p) => ({ ...p, newPassword: e.target.value }))} required /></label>
+          <h2 className="section-title">{t('auth.newPasswordTitle')}</h2>
+          <label>{t('auth.email')}<input type="email" value={resetForm.email} onChange={(e) => setResetForm((p) => ({ ...p, email: e.target.value }))} required /></label>
+          <label>{t('auth.verifyCode')}<input inputMode="numeric" maxLength={6} value={resetForm.code} onChange={(e) => setResetForm((p) => ({ ...p, code: e.target.value }))} required /></label>
+          <label>{t('auth.newPassword')}<input type="password" minLength={8} value={resetForm.newPassword} onChange={(e) => setResetForm((p) => ({ ...p, newPassword: e.target.value }))} required /></label>
           <div className="form-actions row">
-            <button type="button" className="button button-secondary" onClick={() => setStep(4)}>Natrag</button>
-            <button type="submit" className="button button-primary" disabled={busy}>{busy ? 'Spremanje...' : 'Spremi lozinku'}</button>
+            <button type="button" className="button button-secondary" onClick={() => setStep(4)}>{t('auth.back')}</button>
+            <button type="submit" className="button button-primary" disabled={busy}>{busy ? t('auth.saving') : t('auth.savePassword')}</button>
           </div>
         </form>
       )}
 
       <p className="auth-footer muted">
-        <Link to="/">← Natrag na početnu</Link>
+        <Link to="/">{t('auth.backHome')}</Link>
       </p>
     </main>
   );

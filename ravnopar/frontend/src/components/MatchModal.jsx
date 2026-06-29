@@ -1,7 +1,10 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useI18n } from '../lib/i18n/index.jsx';
 
 export default function MatchModal({ partnerName, pairId, onClose }) {
+  const { t } = useI18n();
+
   useEffect(() => {
     document.body.classList.add('match-modal-open');
     return () => document.body.classList.remove('match-modal-open');
@@ -17,25 +20,23 @@ export default function MatchModal({ partnerName, pairId, onClose }) {
         ))}
       </div>
       <article className="match-modal card">
-        <p className="eyebrow match-eyebrow">Obostrani kontakt</p>
+        <p className="eyebrow match-eyebrow">{t('match.eyebrow')}</p>
         <h2 id="match-title" className="match-title">
-          Imate match!
+          {t('match.title')}
         </h2>
-        <p className="match-lead">
-          Ti i <strong>{partnerName}</strong> ste spremni za razgovor.
-        </p>
+        <p className="match-lead">{t('match.lead', { partner: partnerName })}</p>
         <div className="match-actions">
           {pairId ? (
             <Link className="button button-primary button-lg" to={`/app/chat/${pairId}`} onClick={onClose}>
-              Počni razgovor
+              {t('match.startChat')}
             </Link>
           ) : (
             <Link className="button button-primary button-lg" to="/app" onClick={onClose}>
-              Natrag u app
+              {t('match.backToApp')}
             </Link>
           )}
           <button type="button" className="button button-secondary" onClick={onClose}>
-            Nastavi pregled
+            {t('match.continueBrowsing')}
           </button>
         </div>
       </article>

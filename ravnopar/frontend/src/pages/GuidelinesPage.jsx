@@ -1,12 +1,16 @@
 import LegalContentPage from '../components/LegalContentPage.jsx';
-import { GUIDELINES_SECTIONS } from '../lib/legal-content.js';
+import { getGuidelinesSections } from '../lib/legal-content.js';
+import { useI18n } from '../lib/i18n/index.jsx';
 
 export default function GuidelinesPage() {
+  const { catalog } = useI18n();
+  const legal = catalog.legal?.guidelines ?? {};
+
   return (
     <LegalContentPage
-      title="Pravila zajednice"
-      description="Što je dozvoljeno, što nije i kako ostati siguran/na na Ravnoparu."
-      sections={GUIDELINES_SECTIONS}
+      title={legal.title}
+      description={legal.description}
+      sections={getGuidelinesSections(catalog)}
     />
   );
 }

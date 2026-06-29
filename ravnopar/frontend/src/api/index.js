@@ -1,9 +1,19 @@
+import { getStoredLocale } from '../lib/i18n/index.jsx';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4200/api';
+
+function jsonHeaders(token) {
+  return {
+    'Content-Type': 'application/json',
+    'Accept-Language': getStoredLocale(),
+    ...(token ? { authorization: `Bearer ${token}` } : {})
+  };
+}
 
 export async function register(payload) {
   const res = await fetch(`${API_BASE_URL}/auth/register`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: jsonHeaders(),
     body: JSON.stringify(payload)
   });
   return res.json();
@@ -12,7 +22,7 @@ export async function register(payload) {
 export async function verifyEmail(payload) {
   const res = await fetch(`${API_BASE_URL}/auth/verify-email`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: jsonHeaders(),
     body: JSON.stringify(payload)
   });
   return res.json();
@@ -21,7 +31,7 @@ export async function verifyEmail(payload) {
 export async function login(payload) {
   const res = await fetch(`${API_BASE_URL}/auth/login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: jsonHeaders(),
     body: JSON.stringify(payload)
   });
   return res.json();
@@ -90,10 +100,7 @@ export async function createPlanCheckout(token, planId) {
 }
 
 function authHeaders(token) {
-  return {
-    'Content-Type': 'application/json',
-    authorization: `Bearer ${token}`
-  };
+  return jsonHeaders(token);
 }
 
 export async function getFeed(token) {
@@ -274,7 +281,7 @@ export async function getMyOrders(token) {
 export async function forgotPassword(email) {
   const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: jsonHeaders(),
     body: JSON.stringify({ email })
   });
   return res.json();
@@ -283,7 +290,7 @@ export async function forgotPassword(email) {
 export async function resetPassword(payload) {
   const res = await fetch(`${API_BASE_URL}/auth/reset-password`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: jsonHeaders(),
     body: JSON.stringify(payload)
   });
   return res.json();

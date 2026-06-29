@@ -1,12 +1,16 @@
 import LegalContentPage from '../components/LegalContentPage.jsx';
-import { TERMS_SECTIONS } from '../lib/legal-content.js';
+import { getTermsSections } from '../lib/legal-content.js';
+import { useI18n } from '../lib/i18n/index.jsx';
 
 export default function TermsPage() {
+  const { catalog } = useI18n();
+  const legal = catalog.legal?.terms ?? {};
+
   return (
     <LegalContentPage
-      title="Uvjeti korištenja"
-      description="Pravila korištenja Ravnopar platforme."
-      sections={TERMS_SECTIONS}
+      title={legal.title}
+      description={legal.description}
+      sections={getTermsSections(catalog)}
     />
   );
 }

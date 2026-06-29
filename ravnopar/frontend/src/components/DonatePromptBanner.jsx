@@ -1,20 +1,12 @@
 import { Link } from 'react-router-dom';
 import { dismissDonateForever, dismissDonatePrompt } from '../lib/donate-prompt.js';
-
-const COPY = {
-  match: {
-    title: 'Čestitamo na kontaktu!',
-    text: 'Ako ti Ravnopar pomaže u upoznavanju, možeš dobrovoljno podržati održavanje platforme.'
-  },
-  milestone: {
-    title: 'Hvala što koristiš Ravnopar',
-    text: 'Već neko vrijeme si s nama. Ako želiš pomoći pokrivanje servera, donacija je dobrodošla — ali nije obavezna.'
-  }
-};
+import { useI18n } from '../lib/i18n/index.jsx';
 
 export default function DonatePromptBanner({ reason, onDismiss }) {
-  if (!reason || !COPY[reason]) return null;
-  const copy = COPY[reason];
+  const { catalog } = useI18n();
+  const copy = catalog?.donatePrompt?.[reason];
+
+  if (!reason || !copy) return null;
 
   function close() {
     dismissDonatePrompt(reason);
@@ -32,13 +24,13 @@ export default function DonatePromptBanner({ reason, onDismiss }) {
       <p className="muted">{copy.text}</p>
       <div className="donate-prompt-actions">
         <Link className="button button-primary" to="/app/podrzi" onClick={close}>
-          Podrži projekt
+          {catalog.donatePrompt.support}
         </Link>
         <button type="button" className="button button-secondary" onClick={close}>
-          Ne sada
+          {catalog.donatePrompt.notNow}
         </button>
         <button type="button" className="button button-ghost" onClick={neverAgain}>
-          Ne prikazuj ponovo
+          {catalog.donatePrompt.neverAgain}
         </button>
       </div>
     </section>

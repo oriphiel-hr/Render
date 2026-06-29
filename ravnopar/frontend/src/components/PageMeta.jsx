@@ -1,8 +1,16 @@
 import { useEffect } from 'react';
+import { useI18n } from '../lib/i18n/index.jsx';
 
-export default function PageMeta({ title, description }) {
+export default function PageMeta({ title, description, titleKey, descriptionKey }) {
+  const { t } = useI18n();
+
   useEffect(() => {
-    const fullTitle = title ? `${title} — Ravnopar` : 'Ravnopar — fer dating bez paywalla';
+    const resolvedTitle = title ?? (titleKey ? t(`meta.titles.${titleKey}`) : null);
+    const resolvedDescription =
+      description ?? (descriptionKey ? t(`meta.descriptions.${descriptionKey}`) : null);
+    const siteName = t('meta.defaultTitle');
+    const fullTitle = resolvedTitle ? `${resolvedTitle} — ${siteName}` : siteName;
+
     document.title = fullTitle;
 
     let meta = document.querySelector('meta[name="description"]');
@@ -11,11 +19,8 @@ export default function PageMeta({ title, description }) {
       meta.setAttribute('name', 'description');
       document.head.appendChild(meta);
     }
-    meta.setAttribute(
-      'content',
-      description || 'Ravnopar — fer platforma za upoznavanje u Hrvatskoj. Bez skrivenog dosega, bez paywalla za razgovor.'
-    );
-  }, [title, description]);
+    meta.setAttribute('content', resolvedDescription || t('meta.defaultDescription'));
+  }, [title, description, titleKey, descriptionKey, t]);
 
   return null;
 }

@@ -1,6 +1,8 @@
 import { useCallback, useState } from 'react';
+import { useI18n } from '../lib/i18n/index.jsx';
 
 export default function PhotoGallery({ photos = [], alt = '', className = '' }) {
+  const { t } = useI18n();
   const list = Array.isArray(photos) ? photos.filter(Boolean) : [];
   const [index, setIndex] = useState(0);
   const [dragX, setDragX] = useState(0);
@@ -65,10 +67,10 @@ export default function PhotoGallery({ photos = [], alt = '', className = '' }) 
               />
             ))}
           </div>
-          <button type="button" className="photo-nav photo-nav-prev" onClick={() => go(-1)} aria-label="Prethodna">
+          <button type="button" className="photo-nav photo-nav-prev" onClick={() => go(-1)} aria-label={t('gallery.prev')}>
             ‹
           </button>
-          <button type="button" className="photo-nav photo-nav-next" onClick={() => go(1)} aria-label="Sljedeća">
+          <button type="button" className="photo-nav photo-nav-next" onClick={() => go(1)} aria-label={t('gallery.next')}>
             ›
           </button>
         </>

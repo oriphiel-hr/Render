@@ -1,20 +1,21 @@
 import { Link } from 'react-router-dom';
 import PageMeta from '../components/PageMeta.jsx';
-import { FAQ_ITEMS } from '../lib/faq.js';
+import { getFaqItems } from '../lib/faq.js';
+import { useI18n } from '../lib/i18n/index.jsx';
 
 export default function FaqPage() {
+  const { t, catalog } = useI18n();
+  const faqItems = getFaqItems(catalog);
+
   return (
     <main className="page faq-page">
-      <PageMeta
-        title="Pomoć i FAQ"
-        description="Česta pitanja o Ravnoparu — besplatno korištenje, match, chat, sigurnost i postavke."
-      />
+      <PageMeta titleKey="faq" descriptionKey="faq" />
       <section className="hero legal-hero">
-        <h1>Pomoć i FAQ</h1>
-        <p className="subtitle">Odgovori na najčešća pitanja o Ravnoparu.</p>
+        <h1>{t('faq.title')}</h1>
+        <p className="subtitle">{t('faq.subtitle')}</p>
       </section>
       <div className="faq-list">
-        {FAQ_ITEMS.map((item) => (
+        {faqItems.map((item) => (
           <article key={item.q} className="card faq-item">
             <h2 className="section-title">{item.q}</h2>
             <p className="muted">{item.a}</p>
@@ -22,9 +23,9 @@ export default function FaqPage() {
         ))}
       </div>
       <p className="auth-footer">
-        <Link to="/">← Natrag na početnu</Link>
+        <Link to="/">{t('faq.backHome')}</Link>
         {' · '}
-        <Link to="/kontakt">Kontakt</Link>
+        <Link to="/kontakt">{t('faq.contact')}</Link>
       </p>
     </main>
   );

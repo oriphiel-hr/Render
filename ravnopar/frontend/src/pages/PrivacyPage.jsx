@@ -1,12 +1,16 @@
 import LegalContentPage from '../components/LegalContentPage.jsx';
-import { PRIVACY_SECTIONS } from '../lib/legal-content.js';
+import { getPrivacySections } from '../lib/legal-content.js';
+import { useI18n } from '../lib/i18n/index.jsx';
 
 export default function PrivacyPage() {
+  const { catalog } = useI18n();
+  const legal = catalog.legal?.privacy ?? {};
+
   return (
     <LegalContentPage
-      title="Politika privatnosti"
-      description="Kako Ravnopar prikuplja, koristi i štiti tvoje podatke."
-      sections={PRIVACY_SECTIONS}
+      title={legal.title}
+      description={legal.description}
+      sections={getPrivacySections(catalog)}
     />
   );
 }

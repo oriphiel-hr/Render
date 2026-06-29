@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useI18n } from '../lib/i18n/index.jsx';
 
 const KEY = 'ravnoparCookieConsent';
 
 export default function CookieBanner() {
+  const { t } = useI18n();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -19,13 +21,13 @@ export default function CookieBanner() {
   }
 
   return (
-    <div className="cookie-banner" role="dialog" aria-label="Kolačići">
+    <div className="cookie-banner" role="dialog" aria-label={t('cookie.ariaLabel')}>
       <p>
-        Koristimo nužne kolačiće za prijavu i analitiku samo ako je uključena. Više u{' '}
-        <Link to="/privatnost">politici privatnosti</Link>.
+        {t('cookie.message')}{' '}
+        <Link to="/privatnost">{t('cookie.privacyLink')}</Link>.
       </p>
       <button type="button" className="button button-primary button-sm" onClick={accept}>
-        Razumijem
+        {t('cookie.accept')}
       </button>
     </div>
   );

@@ -2,22 +2,22 @@ import { Link } from 'react-router-dom';
 import PageMeta from '../components/PageMeta.jsx';
 import PricingHeartSection from '../components/PricingHeartSection.jsx';
 import SupportContent from '../components/SupportContent.jsx';
+import { useI18n } from '../lib/i18n/index.jsx';
 
 export default function PlanoviPage() {
+  const { t } = useI18n();
+
   return (
     <main className="page planovi-page">
-      <PageMeta title="Planovi" description="Transparentan model naplate Ravnopara — besplatan chat, premium paketi unaprijed pripremljeni." />
+      <PageMeta titleKey="plans" descriptionKey="plans" />
       <section className="landing-hero planovi-hero-warm">
-        <p className="eyebrow">Fer i otvoreno</p>
-        <h1>Planovi s ljudskim licem</h1>
-        <p className="landing-lead">
-          Ravnopar nije tu da te iscijedi novcem prije prvog razgovora. Ovdje pišemo kako
-          platforma danas radi — i kako će raditi kad porastemo, bez iznenađenja.
-        </p>
+        <p className="eyebrow">{t('pricing.heroEyebrow')}</p>
+        <h1>{t('pricing.heroTitle')}</h1>
+        <p className="landing-lead">{t('pricing.heroLead')}</p>
         <div className="landing-chips">
-          <span className="chip">♥ Besplatan razgovor</span>
-          <span className="chip">Bez skrivenog dosega</span>
-          <span className="chip">Obavijest 30 dana unaprijed</span>
+          <span className="chip">{t('pricing.heroChipChat')}</span>
+          <span className="chip">{t('pricing.heroChipFair')}</span>
+          <span className="chip">{t('pricing.heroChipNotice')}</span>
         </div>
       </section>
 
@@ -26,16 +26,14 @@ export default function PlanoviPage() {
       <SupportContent showDonate={false} />
 
       <section className="card planovi-cta">
-        <h2>Spreman/na za fer upoznavanje?</h2>
-        <p className="muted">
-          Registracija je besplatna. Ako ti se sviđa pristup — dobrodošao/la si u zajednicu.
-        </p>
+        <h2>{t('pricing.ctaTitle')}</h2>
+        <p className="muted">{t('pricing.ctaLead')}</p>
         <div className="planovi-cta-actions">
           <Link className="button button-primary" to="/auth">
-            Kreni besplatno
+            {t('pricing.ctaStart')}
           </Link>
           <Link className="button button-secondary" to="/">
-            Natrag na početnu
+            {t('pricing.ctaBack')}
           </Link>
         </div>
       </section>

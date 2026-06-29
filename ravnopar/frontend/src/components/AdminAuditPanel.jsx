@@ -5,17 +5,28 @@ import {
   getAdminModerationDecisions,
   getAdminRetentionPolicy
 } from '../api/index.js';
-import { formatDateTime, labelAuditAction, labelAuditCategory, labelIdentity, labelModerationAction } from '../lib/labels.js';
+import { useI18n } from '../lib/i18n/index.jsx';
 
-const AUDIT_TABS = [
-  { id: 'timeline', label: 'Dnevnik' },
-  { id: 'moderation', label: 'Moderacija' },
-  { id: 'fairness', label: 'Poštenost' },
-  { id: 'feed', label: 'Feed rang' },
-  { id: 'compliance', label: 'Compliance' }
+const AUDIT_TAB_IDS = ['timeline', 'moderation', 'fairness', 'feed', 'compliance'];
+
+const AUDIT_CATEGORY_OPTIONS = [
+  { value: '', key: 'allCategories' },
+  { value: 'ADMIN_ACTION', key: 'categoryAdmin' },
+  { value: 'MODERATION', key: 'categoryModeration' },
+  { value: 'SECURITY', key: 'categorySecurity' },
+  { value: 'FEED_RANKING', key: 'categoryFeed' },
+  { value: 'COMPLIANCE', key: 'categoryCompliance' }
 ];
 
+const OUTCOME_LABEL_KEYS = {
+  RESOLVED: 'outcomeResolved',
+  DISMISSED: 'outcomeDismissed'
+};
+
 export default function AdminAuditPanel({ token, audit, users, onRefresh, onMessage }) {
+  const { t, labels } = useI18n();
+  const { formatDateTime, labelAuditCategory, labelAuditAction, labelModerationAction, labelIdentity } = labels;
+
   const [tab, setTab] = useState('timeline');
   const [category, setCategory] = useState('');
   const [events, setEvents] = useState([]);
@@ -43,7 +54,7 @@ export default function AdminAuditPanel({ token, audit, users, onRefresh, onMess
     if (!viewerId) return;
     const data = await getAdminFeedExplain(token, viewerId);
     if (data?.success) setFeedExplain(data);
-    else onMessage(data?.error || 'Feed explain nije dostupan.', 'error');
+    else onMessage(data?.error || t('audit.feedExplainFailed'), 'error');
   }
 
   useEffect(() => {
@@ -54,17 +65,17 @@ export default function AdminAuditPanel({ token, audit, users, onRefresh, onMess
 
   return (
     <section className="card admin-audit-panel">
-      <h2 className="section-title">Revizija i audit</h2>
+      <h2 className="section-title">{t('audit.title')}</h2>
       <div className="admin-audit-tabs" role="tablist">
-        {AUDIT_TABS.map((item) => (
+        {AUDIT_TAB_IDS.map((id) => (
           <button
-            key={item.id}
+            key={id}
             type="button"
             role="tab"
-            className={tab === item.id ? 'button button-secondary button-sm active' : 'button button-ghost button-sm'}
-            onClick={() => setTab(item.id)}
+            className={tab === id ? 'button button-secondary button-sm active' : 'button button-ghost button-sm'}
+            onClick={() => setTab(id)}
           >
-            {item.label}
+            {t(`audit.tabs.${id}`)}
           </button>
         ))}
       </div>
@@ -72,20 +83,19 @@ export default function AdminAuditPanel({ token, audit, users, onRefresh, onMess
       {tab === 'timeline' && (
         <div className="admin-audit-body">
           <div className="admin-audit-filters">
-            <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Kategorija audita">
-              <option value="">Sve kategorije</option>
-              <option value="ADMIN_ACTION">Admin akcije</option>
-              <option value="MODERATION">Moderacija</option>
-              <option value="SECURITY">Sigurnost</option>
-              <option value="FEED_RANKING">Feed rang</option>
-              <option value="COMPLIANCE">Compliance</option>
+            <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label={t('audit.allCategories')}>
+              {AUDIT_CATEGORY_OPTIONS.map((opt) => (
+                <option key={opt.value || 'all'} value={opt.value}>
+                  {t(`audit.${opt.key}`)}
+                </option>
+              ))}
             </select>
             <button type="button" className="button button-ghost button-sm" onClick={loadTimeline}>
-              Osvježi
+              {t('audit.refresh')}
             </button>
           </div>
           <ul className="audit-timeline">
-            {events.length === 0 && <li className="muted">Nema zapisa.</li>}
+            {events.length === 0 && <li className="muted">{t('audit.noEvents')}</li>}
             {events.map((event) => (
               <li key={event.id} className="audit-timeline-item">
                 <div className="audit-timeline-head">
@@ -95,8 +105,8 @@ export default function AdminAuditPanel({ token, audit, users, onRefresh, onMess
                 </div>
                 <p>{event.summary}</p>
                 <p className="muted audit-timeline-meta">
-                  {event.actor?.displayName && <>Od: {event.actor.displayName} · </>}
-                  {event.target?.displayName && <>Na: {event.target.displayName}</>}
+                  {event.actor?.displayName && <>{t('audit.actor')} {event.actor.displayName} · </>}
+                  {event.target?.displayName && <>{t('audit.target')} {event.target.displayName}</>}
                 </p>
               </li>
             ))}
@@ -106,13 +116,13 @@ export default function AdminAuditPanel({ token, audit, users, onRefresh, onMess
 
       {tab === 'moderation' && (
         <div className="admin-audit-body">
-          <p className="muted">Povijest odluka o prijavama — tko je riješio, koja akcija, suspend/brisanje.</p>
+          <p className="muted">{t('audit.moderationHint')}</p>
           <ul className="audit-timeline">
-            {decisions.length === 0 && <li className="muted">Još nema odluka.</li>}
+            {decisions.length === 0 && <li className="muted">{t('audit.noDecisions')}</li>}
             {decisions.map((row) => (
               <li key={row.id} className="audit-timeline-item">
                 <div className="audit-timeline-head">
-                  <span className="chip">{row.outcome}</span>
+                  <span className="chip">{t(`audit.${OUTCOME_LABEL_KEYS[row.outcome] || 'outcomeResolved'}`)}</span>
                   <span className="chip">{labelModerationAction(row.actionTaken)}</span>
                   <time className="muted">{formatDateTime(row.createdAt)}</time>
                 </div>
@@ -121,7 +131,7 @@ export default function AdminAuditPanel({ token, audit, users, onRefresh, onMess
                   {row.report?.reason ? ` — ${row.report.reason}` : ''}
                 </p>
                 <p className="muted">
-                  Riješio/la: {row.resolver?.displayName || '—'}
+                  {t('audit.resolvedBy')} {row.resolver?.displayName || '—'}
                   {row.notes ? ` · ${row.notes}` : ''}
                 </p>
               </li>
@@ -139,29 +149,35 @@ export default function AdminAuditPanel({ token, audit, users, onRefresh, onMess
           </ul>
           {audit.trends && (
             <>
-              <h3 className="subsection-title">Po gradu (dostupni)</h3>
+              <h3 className="subsection-title">{t('audit.byCity')}</h3>
               <ul className="compact-list">
                 {(audit.trends.byCity || []).map((row) => (
                   <li key={row.city}>{row.city}: {row.available}</li>
                 ))}
               </ul>
-              <h3 className="subsection-title">Po identitetu</h3>
+              <h3 className="subsection-title">{t('audit.byIdentity')}</h3>
               <ul className="compact-list">
                 {(audit.trends.byIdentity || []).map((row) => (
                   <li key={row.identity}>{labelIdentity(row.identity)}: {row.available}</li>
                 ))}
               </ul>
-              <h3 className="subsection-title">Novi korisnici</h3>
+              <h3 className="subsection-title">{t('audit.newUsers')}</h3>
               <p className="muted">
-                7d: {audit.trends.newUsers?.last7d ?? '—'} · 30d: {audit.trends.newUsers?.last30d ?? '—'} ·
-                bez kontakta (7d): {audit.trends.newUsers?.withoutIncoming7d ?? '—'}
+                {t('audit.newUsersStats', {
+                  last7d: audit.trends.newUsers?.last7d ?? '—',
+                  last30d: audit.trends.newUsers?.last30d ?? '—',
+                  withoutIncoming7d: audit.trends.newUsers?.withoutIncoming7d ?? '—'
+                })}
               </p>
             </>
           )}
           {audit.metrics && (
             <p className="muted">
-              Bez dolaznih (7d): {audit.metrics.usersWithoutIncoming7d} · Pending: {audit.metrics.pendingRequests7d} ·
-              Accepted: {audit.metrics.acceptedRequests7d}
+              {t('audit.metrics', {
+                withoutIncoming: audit.metrics.usersWithoutIncoming7d,
+                pending: audit.metrics.pendingRequests7d,
+                accepted: audit.metrics.acceptedRequests7d
+              })}
             </p>
           )}
         </div>
@@ -169,16 +185,16 @@ export default function AdminAuditPanel({ token, audit, users, onRefresh, onMess
 
       {tab === 'feed' && (
         <div className="admin-audit-body">
-          <p className="muted">Zašto je profil X iznad Y — transparentno objašnjenje rangiranja (paket ne daje bodove).</p>
+          <p className="muted">{t('audit.feedHint')}</p>
           <div className="admin-search-row">
-            <select value={feedViewerId} onChange={(e) => setFeedViewerId(e.target.value)} aria-label="Korisnik čiji feed">
-              <option value="">Odaberi korisnika…</option>
+            <select value={feedViewerId} onChange={(e) => setFeedViewerId(e.target.value)} aria-label={t('audit.feedViewer')}>
+              <option value="">{t('audit.selectUser')}</option>
               {users.map((u) => (
                 <option key={u.id} value={u.id}>{u.displayName} ({u.email})</option>
               ))}
             </select>
             <button type="button" className="button button-secondary" onClick={() => loadFeedExplain(feedViewerId)} disabled={!feedViewerId}>
-              Prikaži rang
+              {t('audit.showRanking')}
             </button>
           </div>
           {feedExplain?.principles && (
@@ -193,11 +209,11 @@ export default function AdminAuditPanel({ token, audit, users, onRefresh, onMess
               <table className="admin-table">
                 <thead>
                   <tr>
-                    <th>#</th>
-                    <th>Profil</th>
-                    <th>Grad</th>
-                    <th>Bodovi</th>
-                    <th>Faktori</th>
+                    <th>{t('audit.tableRank')}</th>
+                    <th>{t('audit.tableProfile')}</th>
+                    <th>{t('audit.tableCity')}</th>
+                    <th>{t('audit.tableScore')}</th>
+                    <th>{t('audit.tableFactors')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -226,7 +242,7 @@ export default function AdminAuditPanel({ token, audit, users, onRefresh, onMess
       {tab === 'compliance' && retention && (
         <div className="admin-audit-body">
           <p>{retention.description}</p>
-          <p className="muted">Zadržavanje audit zapisa: {retention.auditRetentionDays} dana</p>
+          <p className="muted">{t('audit.retentionDays', { days: retention.auditRetentionDays })}</p>
           <ul className="compact-list">
             {(retention.categories || []).map((cat) => (
               <li key={cat.id}>
@@ -241,26 +257,27 @@ export default function AdminAuditPanel({ token, audit, users, onRefresh, onMess
 }
 
 export function ModerationResolveForm({ reportId, form, onChange, onSubmit }) {
+  const { t } = useI18n();
   const value = form || { outcome: 'RESOLVED', actionTaken: 'NONE', notes: '' };
   return (
     <div className="moderation-resolve-form">
-      <select value={value.outcome} onChange={(e) => onChange(reportId, 'outcome', e.target.value)} aria-label="Ishod">
-        <option value="RESOLVED">Riješeno</option>
-        <option value="DISMISSED">Odbijeno</option>
+      <select value={value.outcome} onChange={(e) => onChange(reportId, 'outcome', e.target.value)} aria-label={t('audit.resolveOutcome')}>
+        <option value="RESOLVED">{t('audit.outcomeResolved')}</option>
+        <option value="DISMISSED">{t('audit.outcomeDismissed')}</option>
       </select>
-      <select value={value.actionTaken} onChange={(e) => onChange(reportId, 'actionTaken', e.target.value)} aria-label="Akcija">
-        <option value="NONE">Bez akcije</option>
-        <option value="WARN">Upozorenje</option>
-        <option value="SUSPEND">Suspend</option>
-        <option value="DELETE">Obriši korisnika</option>
+      <select value={value.actionTaken} onChange={(e) => onChange(reportId, 'actionTaken', e.target.value)} aria-label={t('audit.resolveAction')}>
+        <option value="NONE">{t('audit.actionNone')}</option>
+        <option value="WARN">{t('audit.actionWarn')}</option>
+        <option value="SUSPEND">{t('audit.actionSuspend')}</option>
+        <option value="DELETE">{t('audit.actionDelete')}</option>
       </select>
       <input
-        placeholder="Bilješka (opcionalno)"
+        placeholder={t('audit.resolveNotes')}
         value={value.notes}
         onChange={(e) => onChange(reportId, 'notes', e.target.value)}
       />
       <button type="button" className="button button-primary button-sm" onClick={() => onSubmit(reportId)}>
-        Riješi i zapiši
+        {t('audit.resolveSubmit')}
       </button>
     </div>
   );

@@ -21,10 +21,11 @@ import {
   markMatchDonateMoment,
   recordMemberSinceIfNeeded
 } from '../lib/donate-prompt.js';
-import { labelAvailability } from '../lib/labels.js';
 import { trackEvent } from '../lib/analytics.js';
+import { useI18n } from '../lib/i18n/index.jsx';
 
 export default function UserDashboardPage({ token, profile }) {
+  const { t, labels } = useI18n();
   const [feed, setFeed] = useState([]);
   const [feedIndex, setFeedIndex] = useState(0);
   const [myState, setMyState] = useState(null);
@@ -103,26 +104,35 @@ export default function UserDashboardPage({ token, profile }) {
     setActionBusy(true);
     const data = await sendContactRequest(token, id);
     if (data?.success) {
-      setMessage(data.warning ? `Zahtjev poslan. ${data.warning}` : 'Zahtjev za kontakt je poslan.', 'success');
+      setMessage(
+        data.warning ? t('dashboard.contactSentWarning', { warning: data.warning }) : t('dashboard.contactSent'),
+        'success'
+      );
       advanceFeed();
     } else {
-      setMessage(data?.error || 'Slanje zahtjeva nije uspjelo.', 'error');
+      setMessage(data?.error || t('dashboard.contactFailed'), 'error');
     }
     setActionBusy(false);
   }
 
   async function block(profileId) {
     setActionBusy(true);
-    const data = await blockUser(token, profileId, 'Korisnička preferenca');
-    setMessage(data?.success ? 'Korisnik je blokiran.' : data?.error || 'Blokiranje nije uspjelo.', data?.success ? 'success' : 'error');
+    const data = await blockUser(token, profileId, t('dashboard.blockReason'));
+    setMessage(
+      data?.success ? t('dashboard.blocked') : data?.error || t('dashboard.blockFailed'),
+      data?.success ? 'success' : 'error'
+    );
     if (data?.success) advanceFeed();
     await reload();
     setActionBusy(false);
   }
 
   async function report(profileId) {
-    const data = await reportUser(token, profileId, 'Neprimjereno ponašanje', 'Prijava iz korisničkog sučelja.');
-    setMessage(data?.success ? 'Prijava je zaprimljena. Hvala.' : data?.error || 'Prijava nije uspjela.', data?.success ? 'success' : 'error');
+    const data = await reportUser(token, profileId, t('dashboard.reportReason'), t('dashboard.reportNote'));
+    setMessage(
+      data?.success ? t('dashboard.reported') : data?.error || t('dashboard.reportFailed'),
+      data?.success ? 'success' : 'error'
+    );
   }
 
   async function respond(contactId, action, requesterName) {
@@ -132,16 +142,16 @@ export default function UserDashboardPage({ token, profile }) {
       markMatchDonateMoment();
       refreshDonatePrompt();
       setMatchModal({
-        partnerName: data.partnerName || requesterName || 'Korisnik',
+        partnerName: data.partnerName || requesterName || t('common.user'),
         pairId: data.pairId
       });
     }
     setMessage(
       data?.success
         ? action === 'ACCEPT'
-          ? 'Kontakt je prihvaćen.'
-          : 'Zahtjev je odbijen.'
-        : data?.error || 'Odgovor nije spremljen.',
+          ? t('dashboard.accepted')
+          : t('dashboard.declined')
+        : data?.error || t('dashboard.respondFailed'),
       data?.success ? 'success' : 'error'
     );
     await reload();
@@ -150,9 +160,9 @@ export default function UserDashboardPage({ token, profile }) {
 
   async function closeCurrentPair() {
     if (!myState?.activePair) return;
-    const data = await closePair(token, myState.activePair.id, 'Korisnik je zatvorio kontakt');
+    const data = await closePair(token, myState.activePair.id, t('dashboard.closeReason'));
     setMessage(
-      data?.success ? 'Kontakt zatvoren. Ponovno si dostupan/na u feedu.' : data?.error || 'Zatvaranje nije uspjelo.',
+      data?.success ? t('dashboard.closed') : data?.error || t('dashboard.closeFailed'),
       data?.success ? 'success' : 'error'
     );
     await reload();
@@ -173,22 +183,22 @@ export default function UserDashboardPage({ token, profile }) {
       )}
 
       <section className="hero dashboard-hero">
-        <h1>Pozdrav, {profile?.displayName}</h1>
-        <p className="subtitle">Swipeaj profile ili koristi gumbe — jedan po jedan, bez žurbe.</p>
+        <h1>{t('dashboard.greeting', { name: profile?.displayName })}</h1>
+        <p className="subtitle">{t('dashboard.subtitle')}</p>
         {!loading && feed.length > 0 && (
           <p className="dashboard-feed-count">
-            <span className="chip chip-feed-count">{feed.length} profila u tvom feedu</span>
+            <span className="chip chip-feed-count">{t('dashboard.feedCount', { count: feed.length })}</span>
           </p>
         )}
         {!loading && feed.length === 0 && (
-          <p className="muted">Trenutno nema kompatibilnih profila u tvom feedu.</p>
+          <p className="muted">{t('dashboard.feedEmpty')}</p>
         )}
         <p className="auth-footer dashboard-links">
-          <Link to="/app/postavke">Postavke profila</Link>
+          <Link to="/app/postavke">{t('dashboard.settingsLink')}</Link>
         </p>
       </section>
 
-      {loading && <p className="status-banner status-info">Učitavanje...</p>}
+      {loading && <p className="status-banner status-info">{t('dashboard.loading')}</p>}
       {status && <p className={`status-banner status-${statusKind}`}>{status}</p>}
 
       {donatePrompt.show && (
@@ -200,25 +210,33 @@ export default function UserDashboardPage({ token, profile }) {
 
       {(myState?.completeness ?? 0) < 80 && feedReady && (
         <section className="card onboarding-hint">
-          <p><strong>Profil ti još nije kompletan ({myState?.completeness ?? 0}%).</strong></p>
-          <p className="muted">Dodaj fotografiju, bio i icebreaker — to povećava šanse za kontakt.</p>
-          <Link className="button button-secondary" to="/app/postavke">Dovrši profil</Link>
+          <p>
+            <strong>
+              {t('dashboard.incompleteTitle', { percent: myState?.completeness ?? 0 })}
+            </strong>
+          </p>
+          <p className="muted">{t('dashboard.incompleteHint')}</p>
+          <Link className="button button-secondary" to="/app/postavke">
+            {t('dashboard.completeProfile')}
+          </Link>
         </section>
       )}
 
       {inbox.items.length > 0 && (
         <section>
           <h2 className="section-title">
-            Razgovori{inbox.unreadTotal > 0 ? ` (${inbox.unreadTotal} novo)` : ''}
+            {inbox.unreadTotal > 0
+              ? t('dashboard.conversationsUnread', { count: inbox.unreadTotal })
+              : t('dashboard.conversations')}
           </h2>
           <div className="inbox-list">
             {inbox.items.map((row) => (
               <Link key={row.pairId} className="card inbox-item" to={`/app/chat/${row.pairId}`}>
                 <strong>{row.partnerName}</strong>
                 {row.unread > 0 ? (
-                  <span className="chip inbox-unread">{row.unread} novo</span>
+                  <span className="chip inbox-unread">{t('common.unreadCount', { count: row.unread })}</span>
                 ) : (
-                  <span className="muted">Otvori chat</span>
+                  <span className="muted">{t('dashboard.openChat')}</span>
                 )}
               </Link>
             ))}
@@ -228,7 +246,7 @@ export default function UserDashboardPage({ token, profile }) {
 
       {policyWarnings.length > 0 && (
         <section className="card warning">
-          <strong>Uz preference</strong>
+          <strong>{t('dashboard.policyTitle')}</strong>
           <ul className="compact-list">
             {policyWarnings.map((warning) => (
               <li key={warning}>{warning}</li>
@@ -238,18 +256,20 @@ export default function UserDashboardPage({ token, profile }) {
       )}
 
       <section className="card status-card">
-        <h2 className="section-title">Tvoj status</h2>
+        <h2 className="section-title">{t('dashboard.statusTitle')}</h2>
         <div className="status-grid">
           <div>
-            <span className="muted">Dostupnost</span>
-            <p><span className="chip">{labelAvailability(myState?.profile?.availability)}</span></p>
+            <span className="muted">{t('dashboard.availability')}</span>
+            <p>
+              <span className="chip">{labels.labelAvailability(myState?.profile?.availability)}</span>
+            </p>
           </div>
           <div>
-            <span className="muted">Popunjenost</span>
-            <p><strong>{myState?.completeness ?? 0}%</strong></p>
+            <span className="muted">{t('dashboard.completeness')}</span>
+            <p><strong>{t('common.percent', { percent: myState?.completeness ?? 0 })}</strong></p>
           </div>
           <div>
-            <span className="muted">Prosječna ocjena</span>
+            <span className="muted">{t('dashboard.rating')}</span>
             <p>
               <strong>{myState?.rating?.average ? myState.rating.average.toFixed(1) : '—'}</strong>
               {myState?.rating?.count ? ` (${myState.rating.count})` : ''}
@@ -258,31 +278,33 @@ export default function UserDashboardPage({ token, profile }) {
         </div>
         {myState?.activePair ? (
           <div className="active-contact">
-            <p>Trenutno razgovaraš s <strong>{myState.activePair.partnerName}</strong>.</p>
+            <p>{t('dashboard.activeContact', { name: myState.activePair.partnerName })}</p>
             <div className="card-actions">
               <Link className="button button-primary" to={`/app/chat/${myState.activePair.id}`}>
-                Otvori chat
+                {t('dashboard.openChatBtn')}
               </Link>
               <button type="button" className="button button-secondary" onClick={closeCurrentPair}>
-                Završi razgovor
+                {t('dashboard.closeContact')}
               </button>
             </div>
           </div>
         ) : (
-          <p className="muted">Vidljiv/a si u feedu — swipeaj profile ispod.</p>
+          <p className="muted">{t('dashboard.visibleInFeed')}</p>
         )}
       </section>
 
       {incoming.length > 0 && (
         <section>
-          <h2 className="section-title">Zahtjevi za kontakt</h2>
+          <h2 className="section-title">{t('dashboard.incomingTitle')}</h2>
           <div className="incoming-stack">
             {incoming.map((row) => (
               <article key={row.id} className="card incoming-card">
                 <PhotoGallery photos={row.requester?.photos} alt={row.requester?.displayName} />
                 <div className="incoming-card-body">
-                  <h3>{row.requester?.displayName || 'Korisnik'}</h3>
-                  <p className="muted">{row.requester?.city}, {row.requester?.age} god.</p>
+                  <h3>{row.requester?.displayName || t('common.user')}</h3>
+                  <p className="muted">
+                    {row.requester?.city}, {row.requester?.age} {t('common.yearsShort')}
+                  </p>
                   {row.requester?.bio && <p className="profile-bio">{row.requester.bio}</p>}
                   <div className="card-actions">
                     <button
@@ -291,7 +313,7 @@ export default function UserDashboardPage({ token, profile }) {
                       disabled={actionBusy}
                       onClick={() => respond(row.id, 'ACCEPT', row.requester?.displayName)}
                     >
-                      Prihvati
+                      {t('dashboard.accept')}
                     </button>
                     <button
                       type="button"
@@ -299,7 +321,7 @@ export default function UserDashboardPage({ token, profile }) {
                       disabled={actionBusy}
                       onClick={() => respond(row.id, 'DECLINE')}
                     >
-                      Odbij
+                      {t('dashboard.decline')}
                     </button>
                   </div>
                 </div>
@@ -311,41 +333,45 @@ export default function UserDashboardPage({ token, profile }) {
 
       <section className="feed-section">
         <h2 className="section-title">
-          Otkrij profile
+          {t('dashboard.discoverTitle')}
           {!loading && feed.length > 0 && feedReady && (
-            <span className="muted feed-section-count"> · {feed.length} za tebe</span>
+            <span className="muted feed-section-count">
+              {t('dashboard.discoverCount', { count: feed.length })}
+            </span>
           )}
         </h2>
 
         {!loading && !feedReady && (
           <div className="card empty-state empty-state-rich profile-gate">
             <span className="empty-icon" aria-hidden="true">📷</span>
-            <h3>Profil nije spreman za feed</h3>
-            <p className="muted">
-              Dodaj fotografiju i bio (min. 10 znakova) prije slanja zahtjeva i swipea.
-            </p>
-            <Link className="button button-primary" to="/app/postavke">Dovrši profil</Link>
-            <Link className="button button-ghost" to="/app/onboarding">Pogledaj uvod</Link>
+            <h3>{t('dashboard.gateTitle')}</h3>
+            <p className="muted">{t('dashboard.gateHint')}</p>
+            <Link className="button button-primary" to="/app/postavke">
+              {t('dashboard.completeProfile')}
+            </Link>
+            <Link className="button button-ghost" to="/app/onboarding">
+              {t('dashboard.gateOnboarding')}
+            </Link>
           </div>
         )}
 
         {feedReady && !loading && feed.length === 0 && (
           <div className="card empty-state empty-state-rich">
             <span className="empty-icon" aria-hidden="true">♥</span>
-            <h3>Nema novih profila</h3>
-            <p className="muted">
-              Proširi grad ili preference u Postavkama — ili se vrati uskoro kad se netko novi registrira.
-            </p>
-            <Link className="button button-primary" to="/app/postavke">Proširi preference</Link>
+            <h3>{t('dashboard.emptyTitle')}</h3>
+            <p className="muted">{t('dashboard.emptyHint')}</p>
+            <Link className="button button-primary" to="/app/postavke">
+              {t('dashboard.expandPreferences')}
+            </Link>
           </div>
         )}
         {feedReady && !loading && feed.length > 0 && feedIndex >= feed.length && (
           <div className="card empty-state empty-state-rich">
             <span className="empty-icon" aria-hidden="true">✨</span>
-            <h3>Pregledao/la si sve</h3>
-            <p className="muted">Vrati se kasnije — novi profili se pojavljuju redovito.</p>
+            <h3>{t('dashboard.seenAllTitle')}</h3>
+            <p className="muted">{t('dashboard.seenAllHint')}</p>
             <button type="button" className="button button-secondary" onClick={() => setFeedIndex(0)}>
-              Pogledaj ponovo
+              {t('dashboard.seenAllAgain')}
             </button>
           </div>
         )}
@@ -362,7 +388,7 @@ export default function UserDashboardPage({ token, profile }) {
         )}
         {feedReady && feed.length > 0 && feedIndex < feed.length && (
           <p className="muted feed-counter">
-            {feedIndex + 1} / {feed.length}
+            {t('dashboard.feedCounter', { current: feedIndex + 1, total: feed.length })}
           </p>
         )}
       </section>

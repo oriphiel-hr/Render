@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { createDonateCheckout, getDonateStatus } from '../api/index.js';
+import { useI18n } from '../lib/i18n/index.jsx';
 
 const IBAN = import.meta.env.VITE_DONATE_IBAN?.trim() || '';
 const RECIPIENT = import.meta.env.VITE_DONATE_RECIPIENT?.trim() || '';
-const REFERENCE = import.meta.env.VITE_DONATE_REFERENCE?.trim() || 'Ravnopar donacija';
 const REVOLUT_URL = import.meta.env.VITE_DONATE_REVOLUT_URL?.trim() || '';
 const STRIPE_PAYMENT_LINK = import.meta.env.VITE_DONATE_STRIPE_URL?.trim() || '';
 
@@ -13,6 +13,8 @@ function copyText(value, onDone) {
 }
 
 export default function DonateSection() {
+  const { t } = useI18n();
+  const reference = import.meta.env.VITE_DONATE_REFERENCE?.trim() || t('donate.defaultReference');
   const [copied, setCopied] = useState('');
   const [stripeEnabled, setStripeEnabled] = useState(false);
   const [amountsEur, setAmountsEur] = useState([3, 5, 10, 20]);
@@ -59,7 +61,7 @@ export default function DonateSection() {
         window.location.href = data.checkoutUrl;
         return;
       }
-      setCardError(data?.error || 'Plaćanje karticom trenutno nije dostupno.');
+      setCardError(data?.error || t('donate.stripeFailed'));
     } finally {
       setBusyAmount(null);
     }
@@ -67,34 +69,29 @@ export default function DonateSection() {
 
   return (
     <section className="card donate-section" aria-labelledby="donate-heading">
-      <p className="eyebrow">Podrška projektu</p>
-      <h2 id="donate-heading" className="section-title">Podrži Ravnopar</h2>
-      <p className="muted">
-        Ako ti platforma pomogne u upoznavanju, možeš dobrovoljno pomoći s troškovima servera.
-        Svaka kuna (ili euro) stvarno pomaže — a ti ne dobivaš nikakvu prednost u feedu.
-      </p>
-      <p className="muted donate-note">
-        Donacija je potpuno dobrovoljna. Hvala ti što razmišljaš o tome. ♥
-      </p>
+      <p className="eyebrow">{t('donate.sectionEyebrow')}</p>
+      <h2 id="donate-heading" className="section-title">{t('donate.sectionTitle')}</h2>
+      <p className="muted">{t('donate.sectionLead')}</p>
+      <p className="muted donate-note">{t('donate.note')}</p>
 
       {hasRevolut && (
         <div className="donate-card-block">
-          <h3 className="subsection-title">Kartica (Revolut)</h3>
-          <p className="muted">Brza uplata karticom — otvara se sigurna Revolut stranica.</p>
+          <h3 className="subsection-title">{t('donate.revolutTitle')}</h3>
+          <p className="muted">{t('donate.revolutHint')}</p>
           <a
             className="button button-primary"
             href={REVOLUT_URL}
             target="_blank"
             rel="noopener noreferrer"
           >
-            Doniraj karticom
+            {t('donate.revolutBtn')}
           </a>
         </div>
       )}
 
       {hasStripe && (
         <div className="donate-card-block">
-          <h3 className="subsection-title">Kartica (Stripe)</h3>
+          <h3 className="subsection-title">{t('donate.stripeTitle')}</h3>
           <div className="donate-amounts">
             {amountsEur.map((amount) => (
               <button
@@ -104,27 +101,27 @@ export default function DonateSection() {
                 disabled={busyAmount !== null}
                 onClick={() => donateWithStripe(amount)}
               >
-                {busyAmount === amount ? 'Preusmjeravanje...' : `${amount} €`}
+                {busyAmount === amount ? t('donate.stripeRedirecting') : `${amount} €`}
               </button>
             ))}
           </div>
           {cardError && <p className="status-banner status-error">{cardError}</p>}
-          <p className="muted donate-note">Plaćanje obrađuje Stripe.</p>
+          <p className="muted donate-note">{t('donate.stripeNote')}</p>
         </div>
       )}
 
       {hasBank && (
         <>
-          {(hasRevolut || hasStripe) && <h3 className="subsection-title">Bankovna uplata</h3>}
+          {(hasRevolut || hasStripe) && <h3 className="subsection-title">{t('donate.bankTitle')}</h3>}
           <dl className="donate-details">
             {RECIPIENT && (
               <div className="donate-row">
-                <dt>Primatelj</dt>
+                <dt>{t('donate.recipient')}</dt>
                 <dd>{RECIPIENT}</dd>
               </div>
             )}
             <div className="donate-row">
-              <dt>IBAN</dt>
+              <dt>{t('donate.iban')}</dt>
               <dd>
                 <code className="donate-code">{IBAN}</code>
                 <button
@@ -132,20 +129,20 @@ export default function DonateSection() {
                   className="button button-ghost button-sm"
                   onClick={() => handleCopy('iban', IBAN.replace(/\s+/g, ''))}
                 >
-                  {copied === 'iban' ? 'Kopirano' : 'Kopiraj IBAN'}
+                  {copied === 'iban' ? t('common.copied') : t('donate.copyIban')}
                 </button>
               </dd>
             </div>
             <div className="donate-row">
-              <dt>Poziv na broj / opis</dt>
+              <dt>{t('donate.reference')}</dt>
               <dd>
-                <code className="donate-code">{REFERENCE}</code>
+                <code className="donate-code">{reference}</code>
                 <button
                   type="button"
                   className="button button-ghost button-sm"
-                  onClick={() => handleCopy('ref', REFERENCE)}
+                  onClick={() => handleCopy('ref', reference)}
                 >
-                  {copied === 'ref' ? 'Kopirano' : 'Kopiraj'}
+                  {copied === 'ref' ? t('common.copied') : t('donate.copyRef')}
                 </button>
               </dd>
             </div>

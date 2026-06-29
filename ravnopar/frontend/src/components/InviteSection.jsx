@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { getReferralInfo } from '../api/index.js';
+import { useI18n } from '../lib/i18n/index.jsx';
 
 export default function InviteSection({ token }) {
+  const { t } = useI18n();
   const [info, setInfo] = useState(null);
   const [copied, setCopied] = useState(false);
 
@@ -22,20 +24,20 @@ export default function InviteSection({ token }) {
 
   return (
     <section className="card invite-section">
-      <h2 className="section-title">Pozovi prijatelja</h2>
+      <h2 className="section-title">{t('invite.title')}</h2>
+      <p className="muted">{t('invite.hint')}</p>
       <p className="muted">
-        Podijeli link — besplatno je, bez nagrada za sada, ali pomaže maloj zajednici da raste.
-      </p>
-      <p className="muted">
-        Pozvanih registracija: <strong>{info.invitedCount ?? 0}</strong>
+        {t('invite.invitedCount')} <strong>{info.invitedCount ?? 0}</strong>
       </p>
       <div className="invite-link-row">
-        <input className="input" readOnly value={info.inviteUrl} aria-label="Referral link" />
+        <input className="input" readOnly value={info.inviteUrl} aria-label={t('invite.copyLink')} />
         <button type="button" className="button button-secondary" onClick={copyLink}>
-          {copied ? 'Kopirano' : 'Kopiraj link'}
+          {copied ? t('common.copied') : t('invite.copyLink')}
         </button>
       </div>
-      <p className="muted invite-code">Tvoj kod: <code>{info.referralCode}</code></p>
+      <p className="muted invite-code">
+        {t('invite.yourCode')} <code>{info.referralCode}</code>
+      </p>
     </section>
   );
 }

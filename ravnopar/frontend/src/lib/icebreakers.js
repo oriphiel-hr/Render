@@ -1,13 +1,6 @@
-export const ICEBREAKER_PROMPTS = [
-  'Omiljena kava u tvom gradu?',
-  'Idealni vikend izgleda ovako…',
-  'Nešto što me odmah nasmije:',
-  'Moja go-to comfort hrana:',
-  'Plan za prvi susret:',
-  'Trenutno me zanima:',
-  'Pjesma koja me opisuje:',
-  'Putovanje koje bih odmah krenuo/la:'
-];
+export function getIcebreakerPrompts(catalog) {
+  return catalog?.icebreakers?.prompts ?? [];
+}
 
 export function normalizeIcebreakers(value) {
   if (!Array.isArray(value)) return [];

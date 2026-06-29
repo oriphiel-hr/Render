@@ -97,6 +97,8 @@ model UserProfile {
   age           Int
   dateOfBirth   DateTime
   city          String
+  country       String              @default("HR")
+  locale        String              @default("hr")
   bio           String?
   identity      String              @default("OTHER")
   profileType   String              @default("INDIVIDUAL")

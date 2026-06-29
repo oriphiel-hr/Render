@@ -3,15 +3,18 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
 import { applyTheme, getInitialTheme } from './components/ThemeToggle.jsx';
+import { I18nProvider } from './lib/i18n/index.jsx';
 import './styles.css';
 
 applyTheme(getInitialTheme());
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <I18nProvider>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </I18nProvider>
   </React.StrictMode>
 );
 

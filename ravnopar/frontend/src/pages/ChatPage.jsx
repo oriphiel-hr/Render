@@ -9,10 +9,12 @@ import {
   sendTypingPulse
 } from '../api/index.js';
 import PageMeta from '../components/PageMeta.jsx';
+import { useI18n } from '../lib/i18n/index.jsx';
 
 const REACTIONS = ['❤️', '😂', '👍', '🔥'];
 
 export default function ChatPage({ token, profile, onRead }) {
+  const { t, labels } = useI18n();
   const { pairId } = useParams();
   const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
@@ -34,7 +36,7 @@ export default function ChatPage({ token, profile, onRead }) {
         sinceRef.current = data.items[data.items.length - 1].createdAt;
       }
     } else {
-      setStatus(data?.error || 'Chat nije dostupan.');
+      setStatus(data?.error || t('chat.unavailable'));
     }
   }
 
@@ -108,7 +110,7 @@ export default function ChatPage({ token, profile, onRead }) {
         setBody('');
         await loadMessages();
       } else {
-        setStatus(data?.error || 'Slanje poruke nije uspjelo.');
+        setStatus(data?.error || t('chat.sendFailed'));
       }
     } finally {
       setBusy(false);
@@ -125,23 +127,25 @@ export default function ChatPage({ token, profile, onRead }) {
 
   return (
     <main className="page chat-page">
-      <PageMeta title="Razgovor" />
-      <p className="auth-footer"><Link to="/app">← Moj prostor</Link></p>
+      <PageMeta titleKey="chat" />
+      <p className="auth-footer"><Link to="/app">{t('chat.backToApp')}</Link></p>
       <section className="card chat-panel">
-        <h1 className="section-title">Razgovor</h1>
-        {loading && <p className="muted">Učitavanje...</p>}
+        <h1 className="section-title">{t('chat.title')}</h1>
+        {loading && <p className="muted">{t('chat.loading')}</p>}
         {status && <p className="status-banner status-error">{status}</p>}
         <div className="chat-messages">
-          {messages.length === 0 && !loading && <p className="muted chat-empty">Pošalji prvu poruku — možeš i icebreaker s profila.</p>}
+          {messages.length === 0 && !loading && (
+            <p className="muted chat-empty">{t('chat.empty')}</p>
+          )}
           {messages.map((msg) => (
             <div key={msg.id} className={`chat-bubble-wrap ${msg.senderId === profile?.id ? 'mine' : 'theirs'}`}>
               <div className={`chat-bubble ${msg.senderId === profile?.id ? 'mine' : 'theirs'}`}>
                 <p>{msg.body}</p>
                 {msg.reaction && <span className="chat-reaction">{msg.reaction}</span>}
                 <div className="chat-meta">
-                  <time className="chat-time">{new Date(msg.createdAt).toLocaleString('hr-HR')}</time>
+                  <time className="chat-time">{labels.formatDateTime(msg.createdAt)}</time>
                   {msg.senderId === profile?.id && msg.readByPartner && (
-                    <span className="chat-read">Pročitano</span>
+                    <span className="chat-read">{t('chat.read')}</span>
                   )}
                 </div>
               </div>
@@ -149,7 +153,7 @@ export default function ChatPage({ token, profile, onRead }) {
                 type="button"
                 className="chat-react-btn"
                 onClick={() => setReactionFor(reactionFor === msg.id ? null : msg.id)}
-                aria-label="Reagiraj"
+                aria-label={t('chat.react')}
               >
                 +
               </button>
@@ -164,7 +168,7 @@ export default function ChatPage({ token, profile, onRead }) {
               )}
             </div>
           ))}
-          {partnerTyping && <p className="chat-typing">Piše…</p>}
+          {partnerTyping && <p className="chat-typing">{t('chat.typing')}</p>}
           <div ref={bottomRef} />
         </div>
         <form className="chat-form" onSubmit={submit}>
@@ -172,7 +176,7 @@ export default function ChatPage({ token, profile, onRead }) {
             className="input"
             rows={3}
             maxLength={2000}
-            placeholder="Napiši poruku..."
+            placeholder={t('chat.placeholder')}
             value={body}
             onChange={(e) => {
               setBody(e.target.value);
@@ -181,10 +185,10 @@ export default function ChatPage({ token, profile, onRead }) {
           />
           <div className="form-actions row">
             <button type="submit" className="button button-primary" disabled={busy || !body.trim()}>
-              {busy ? 'Slanje...' : 'Pošalji'}
+              {busy ? t('chat.sending') : t('chat.send')}
             </button>
             <button type="button" className="button button-ghost" onClick={() => navigate('/app')}>
-              Natrag
+              {t('chat.back')}
             </button>
           </div>
         </form>

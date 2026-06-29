@@ -1,3 +1,5 @@
+import { useI18n } from '../lib/i18n/index.jsx';
+
 function youtubeId(url) {
   try {
     const parsed = new URL(url);
@@ -18,6 +20,8 @@ function vimeoId(url) {
 }
 
 export default function VideoEmbed({ url }) {
+  const { t } = useI18n();
+
   if (!url) return null;
 
   const yt = youtubeId(url);
@@ -25,7 +29,7 @@ export default function VideoEmbed({ url }) {
     return (
       <div className="video-embed">
         <iframe
-          title="Video profil"
+          title={t('video.embedTitle')}
           src={`https://www.youtube.com/embed/${yt}`}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
@@ -39,7 +43,7 @@ export default function VideoEmbed({ url }) {
     return (
       <div className="video-embed">
         <iframe
-          title="Video profil"
+          title={t('video.embedTitle')}
           src={`https://player.vimeo.com/video/${vimeo}`}
           allow="autoplay; fullscreen; picture-in-picture"
           allowFullScreen
@@ -51,7 +55,7 @@ export default function VideoEmbed({ url }) {
   return (
     <p className="video-link-wrap">
       <a className="button button-secondary" href={url} target="_blank" rel="noopener noreferrer">
-        Pogledaj video profil
+        {t('video.externalLink')}
       </a>
     </p>
   );

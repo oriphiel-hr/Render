@@ -1,11 +1,16 @@
-import { FOUNDER_NOTE, PRICING_VALUES } from '../lib/plans.js';
+import { getFounderNote, getPricingValues } from '../lib/plans.js';
+import { useI18n } from '../lib/i18n/index.jsx';
 
 export default function PricingHeartSection() {
+  const { t, catalog } = useI18n();
+  const values = getPricingValues(catalog);
+  const founderNote = getFounderNote(catalog);
+
   return (
     <>
-      <section className="values-strip" aria-label="Vrijednosti Ravnopara">
+      <section className="values-strip" aria-label={t('pricing.valuesAriaLabel')}>
         <div className="values-grid">
-          {PRICING_VALUES.map((item) => (
+          {values.map((item) => (
             <article key={item.title} className="card value-card">
               <span className="value-icon" aria-hidden="true">
                 {item.icon}
@@ -18,8 +23,8 @@ export default function PricingHeartSection() {
       </section>
 
       <blockquote className="card founder-note">
-        <p className="founder-quote">{FOUNDER_NOTE.quote}</p>
-        <footer className="founder-signature">{FOUNDER_NOTE.signature}</footer>
+        <p className="founder-quote">{founderNote.quote}</p>
+        <footer className="founder-signature">{founderNote.signature}</footer>
       </blockquote>
     </>
   );

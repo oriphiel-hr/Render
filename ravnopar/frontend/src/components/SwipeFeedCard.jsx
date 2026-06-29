@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import PhotoGallery from './PhotoGallery.jsx';
-import { labelIdentity, labelIntent, labelProfileType } from '../lib/labels.js';
+import { useI18n } from '../lib/i18n/index.jsx';
 
 export default function SwipeFeedCard({ person, myCity, onLike, onPass, onBlock, onReport, busy }) {
+  const { t, labels } = useI18n();
+  const { labelIdentity, labelProfileType, labelIntent } = labels;
   const [offsetX, setOffsetX] = useState(0);
   const [swiping, setSwiping] = useState(false);
   const touchStart = { x: 0, y: 0 };
@@ -41,8 +43,8 @@ export default function SwipeFeedCard({ person, myCity, onLike, onPass, onBlock,
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      {likeHint && <span className="swipe-stamp swipe-stamp-like">Zanimljivo</span>}
-      {passHint && <span className="swipe-stamp swipe-stamp-pass">Preskoči</span>}
+      {likeHint && <span className="swipe-stamp swipe-stamp-like">{t('swipe.stampLike')}</span>}
+      {passHint && <span className="swipe-stamp swipe-stamp-pass">{t('swipe.stampPass')}</span>}
 
       <PhotoGallery photos={person.photos} alt={person.displayName} className="swipe-card-gallery" />
 
@@ -53,9 +55,9 @@ export default function SwipeFeedCard({ person, myCity, onLike, onPass, onBlock,
             {person.photoVerified && <span className="chip chip-verified">✓</span>}
           </h3>
           <p className="muted">
-            {person.city}, {person.age} god.
+            {person.city}, {person.age} {t('common.yearsShort')}
             {person.distanceLabel && <span className="chip chip-distance">{person.distanceLabel}</span>}
-            {!person.distanceLabel && sameCity && <span className="chip chip-near">Isti grad</span>}
+            {!person.distanceLabel && sameCity && <span className="chip chip-near">{t('swipe.sameCity')}</span>}
           </p>
         </div>
 
@@ -77,24 +79,26 @@ export default function SwipeFeedCard({ person, myCity, onLike, onPass, onBlock,
           <span className="chip">{labelProfileType(person.profileType)}</span>
         </div>
         {intents.length > 0 && (
-          <p className="profile-intents muted">Traži: {intents.map((i) => labelIntent(i)).join(', ')}</p>
+          <p className="profile-intents muted">
+            {t('swipe.seeking')} {intents.map((i) => labelIntent(i)).join(', ')}
+          </p>
         )}
       </div>
 
       <div className="swipe-actions">
-        <button type="button" className="swipe-btn swipe-btn-pass" disabled={busy} onClick={onPass} aria-label="Preskoči">
+        <button type="button" className="swipe-btn swipe-btn-pass" disabled={busy} onClick={onPass} aria-label={t('swipe.ariaPass')}>
           ✕
         </button>
-        <button type="button" className="swipe-btn swipe-btn-like" disabled={busy} onClick={onLike} aria-label="Pošalji zahtjev">
+        <button type="button" className="swipe-btn swipe-btn-like" disabled={busy} onClick={onLike} aria-label={t('swipe.ariaLike')}>
           ♥
         </button>
       </div>
       <div className="swipe-secondary-actions">
         <button type="button" className="button button-ghost button-sm" disabled={busy} onClick={onReport}>
-          Prijavi
+          {t('swipe.report')}
         </button>
         <button type="button" className="button button-ghost button-sm" disabled={busy} onClick={onBlock}>
-          Blokiraj
+          {t('swipe.block')}
         </button>
       </div>
     </article>

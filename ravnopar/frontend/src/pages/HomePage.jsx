@@ -4,61 +4,9 @@ import PageMeta from '../components/PageMeta.jsx';
 import StructuredData from '../components/StructuredData.jsx';
 import LandingShowcase from '../components/LandingShowcase.jsx';
 import { getPublicStats } from '../api/index.js';
+import { useI18n } from '../lib/i18n/index.jsx';
 
-const STEPS = [
-  {
-    title: 'Registriraj se',
-    text: 'Napravi profil, dodaj fotografiju i bio, odaberi koga tražiš.'
-  },
-  {
-    title: 'Upoznaj ljude',
-    text: 'Pregledaj feed dostupnih profila bez skrivenog smanjenja dosega.'
-  },
-  {
-    title: 'Razgovaraj fer',
-    text: 'Kad se uspostavi obostrani kontakt, otvori chat i razgovaraj u aplikaciji.'
-  }
-];
-
-const VALUES = [
-  {
-    title: 'Bez paywalla za razgovor',
-    text: 'Osnovna komunikacija je dostupna svima — bez umjetnih barijera.'
-  },
-  {
-    title: 'Poštena vidljivost',
-    text: 'Aktivni parovi privremeno izlaze iz feeda kako bi ostali dobili priliku.'
-  },
-  {
-    title: 'Zaštita i kontrola',
-    text: 'Blokiranje, prijave i anti-spam limiti čuvaju kvalitetu zajednice.'
-  }
-];
-
-const SAFETY_ITEMS = [
-  {
-    icon: '🛡️',
-    title: 'Blokiraj i prijavi',
-    text: 'Neugodan profil možeš blokirati ili prijaviti admin timu.'
-  },
-  {
-    icon: '✉️',
-    title: 'Verificiran email',
-    text: 'Registracija zahtijeva potvrdu emaila — manje lažnih profila.'
-  },
-  {
-    icon: '🤝',
-    title: 'Pravila zajednice',
-    text: 'Jasna pravila ponašanja i poštivanje granica drugih korisnika.'
-  },
-  {
-    icon: '⏸️',
-    title: 'Kontrola vidljivosti',
-    text: 'Pauziraj profil ili obriši račun kad god želiš — u Postavkama.'
-  }
-];
-
-function LandingSocialProof({ stats }) {
+function LandingSocialProof({ stats, t }) {
   if (!stats) return null;
 
   const showCommunitySize = stats.activeCount >= 20;
@@ -67,14 +15,14 @@ function LandingSocialProof({ stats }) {
   return (
     <div className="social-proof">
       {showCommunitySize && (
-        <span className="chip">{stats.activeCount}+ dostupno u zajednici</span>
+        <span className="chip">{t('home.communityCount', { count: stats.activeCount })}</span>
       )}
       {stats.contactsLast30Days > 0 && (
-        <span className="chip">{stats.contactsLast30Days} kontakata (30 dana)</span>
+        <span className="chip">{t('home.contacts30d', { count: stats.contactsLast30Days })}</span>
       )}
       {topCities.length > 0 && (
         <span className="chip social-proof-cities">
-          Aktivno: {topCities.map((row) => row.city).join(', ')}
+          {t('home.activeCities', { cities: topCities.map((row) => row.city).join(', ') })}
         </span>
       )}
     </div>
@@ -82,9 +30,14 @@ function LandingSocialProof({ stats }) {
 }
 
 export default function HomePage() {
+  const { t, catalog } = useI18n();
   const [searchParams] = useSearchParams();
   const donateThanks = searchParams.get('donate') === 'thanks';
   const [stats, setStats] = useState(null);
+
+  const steps = catalog.home?.steps ?? [];
+  const values = catalog.home?.values ?? [];
+  const safetyItems = catalog.home?.safetyItems ?? [];
 
   useEffect(() => {
     getPublicStats().then((data) => {
@@ -95,43 +48,36 @@ export default function HomePage() {
   return (
     <main className="page landing-page">
       <StructuredData />
-      <PageMeta
-        title="Početna"
-        description="Ravnopar — fer dating platforma za Hrvatsku. Bez paywalla za razgovor, s chatom nakon matcha i transparentnim pravilima."
-      />
+      <PageMeta titleKey="home" descriptionKey="home" />
       {donateThanks && (
-        <p className="status-banner status-success">
-          Hvala na donaciji! Tvoja podrška pomaže održavanju Ravnopara.
-        </p>
+        <p className="status-banner status-success">{t('home.donateThanks')}</p>
       )}
       <section className="landing-hero landing-hero-animated">
-        <p className="eyebrow">Dating bez manipulacije dosega</p>
-        <h1>Ravnopar</h1>
-        <p className="landing-lead">
-          Fer platforma za upoznavanje: profili s fotografijom, chat nakon matcha i pravila koja su jasna unaprijed.
-        </p>
-        {stats && <LandingSocialProof stats={stats} />}
+        <p className="eyebrow">{t('home.eyebrow')}</p>
+        <h1>{t('home.title')}</h1>
+        <p className="landing-lead">{t('home.lead')}</p>
+        {stats && <LandingSocialProof stats={stats} t={t} />}
         <div className="landing-actions">
           <Link className="button button-primary button-lg" to="/auth">
-            Kreni
+            {t('home.ctaStart')}
           </Link>
           <Link className="button button-secondary button-lg" to="/auth?login=1">
-            Već imam račun
+            {t('home.ctaLogin')}
           </Link>
         </div>
         <div className="landing-chips">
-          <span className="chip">Bez skrivanja dosega</span>
-          <span className="chip">Chat nakon matcha</span>
-          <span className="chip">Zaštita od spama</span>
+          <span className="chip">{t('home.chipNoPaywall')}</span>
+          <span className="chip">{t('home.chipChatAfterMatch')}</span>
+          <span className="chip">{t('home.chipAntiSpam')}</span>
         </div>
       </section>
 
       <LandingShowcase />
 
       <section className="landing-section">
-        <h2 className="landing-heading">Kako funkcionira</h2>
+        <h2 className="landing-heading">{t('home.howItWorks')}</h2>
         <div className="steps-grid">
-          {STEPS.map((step, index) => (
+          {steps.map((step, index) => (
             <article key={step.title} className="card step-card">
               <span className="step-number">{index + 1}</span>
               <h3>{step.title}</h3>
@@ -142,9 +88,9 @@ export default function HomePage() {
       </section>
 
       <section className="landing-section">
-        <h2 className="landing-heading">Sigurnost i zajednica</h2>
+        <h2 className="landing-heading">{t('home.safetyTitle')}</h2>
         <div className="safety-grid">
-          {SAFETY_ITEMS.map((item) => (
+          {safetyItems.map((item) => (
             <article key={item.title} className="card safety-card">
               <span className="safety-icon" aria-hidden="true">{item.icon}</span>
               <h3 className="section-title">{item.title}</h3>
@@ -153,14 +99,14 @@ export default function HomePage() {
           ))}
         </div>
         <p className="landing-section-link">
-          <Link to="/pravila">Pročitaj pravila zajednice →</Link>
+          <Link to="/pravila">{t('home.safetyLink')}</Link>
         </p>
       </section>
 
       <section className="landing-section">
-        <h2 className="landing-heading">Zašto Ravnopar</h2>
+        <h2 className="landing-heading">{t('home.whyTitle')}</h2>
         <div className="grid-2">
-          {VALUES.map((item) => (
+          {values.map((item) => (
             <article key={item.title} className="card">
               <h3 className="section-title">{item.title}</h3>
               <p className="muted">{item.text}</p>
@@ -170,40 +116,35 @@ export default function HomePage() {
       </section>
 
       <section className="landing-section">
-        <h2 className="landing-heading">Model naplate</h2>
+        <h2 className="landing-heading">{t('home.pricingTitle')}</h2>
         <article className="card pricing-teaser">
-          <p className="eyebrow">Bez iznenađenja</p>
-          <p className="pricing-teaser-lead">
-            Ravnopar je besplatan za razgovor — i to ostaje temelj. Premium će doći tek kad
-            platforma bude stabilna, a ti ćeš znati unaprijed.
-          </p>
+          <p className="eyebrow">{t('home.pricingEyebrow')}</p>
+          <p className="pricing-teaser-lead">{t('home.pricingLead')}</p>
           <div className="landing-chips">
-            <span className="chip">♥ Bez paywalla</span>
-            <span className="chip">Fer vidljivost</span>
+            <span className="chip">{t('home.pricingChipNoPaywall')}</span>
+            <span className="chip">{t('home.pricingChipFair')}</span>
           </div>
           <Link className="button button-secondary" to="/planovi">
-            Pročitaj model naplate
+            {t('home.pricingLink')}
           </Link>
         </article>
       </section>
 
       <section className="landing-section">
-        <h2 className="landing-heading">Pitanja?</h2>
+        <h2 className="landing-heading">{t('home.faqTitle')}</h2>
         <article className="card">
-          <p className="muted">
-            Kako radi match, chat, pauza profila i email obavijesti — sve na jednom mjestu.
-          </p>
+          <p className="muted">{t('home.faqLead')}</p>
           <Link className="button button-secondary" to="/pomoc">
-            Pomoć i FAQ
+            {t('home.faqLink')}
           </Link>
         </article>
       </section>
 
       <section className="landing-cta card">
-        <h2>Spreman/na za fer upoznavanje?</h2>
-        <p className="muted">Registracija traje nekoliko minuta. Potrebno je imati 18+ godina.</p>
+        <h2>{t('home.ctaTitle')}</h2>
+        <p className="muted">{t('home.ctaSubtitle')}</p>
         <Link className="button button-primary" to="/auth">
-          Kreni besplatno
+          {t('home.ctaFree')}
         </Link>
       </section>
     </main>

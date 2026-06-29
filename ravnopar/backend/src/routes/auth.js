@@ -14,6 +14,10 @@ import { persistVerificationSelfie } from '../lib/verification-selfie.js';
 import { normalizeVideoUrl } from '../lib/video-url.js';
 import { rateLimit } from '../lib/rate-limit.js';
 import { ensureReferralCode, generateReferralCode } from '../lib/referral.js';
+import { sendError } from '../lib/api-errors.js';
+import { SUPPORTED_LOCALES } from '../lib/locales.js';
+
+const localeSchema = z.enum(SUPPORTED_LOCALES);
 
 export const authRouter = Router();
 
@@ -26,6 +30,8 @@ const registerSchema = z.object({
   displayName: z.string().min(2).max(80),
   dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   city: z.string().min(2).max(80),
+  country: z.string().length(2).default('HR'),
+  locale: localeSchema.default('hr'),
   bio: z.string().max(500).optional(),
   identity: z.enum(['MALE', 'FEMALE', 'NON_BINARY', 'OTHER']),
   profileType: z.enum(['INDIVIDUAL', 'COUPLE']),
@@ -66,23 +72,23 @@ authRouter.post('/register', async (req, res) => {
   try {
     const captcha = verifyRegisterCaptcha(req.body);
     if (!captcha.ok) {
-      return res.status(400).json({ success: false, error: captcha.error });
+      return sendError(req, res, 400, captcha.code || 'INVALID_SUBMISSION');
     }
     if (captcha.secret && captcha.token) {
       const valid = await validateTurnstile(captcha.token, captcha.secret);
-      if (!valid) return res.status(400).json({ success: false, error: 'Captcha nije prošla.' });
+      if (!valid) return sendError(req, res, 400, 'CAPTCHA_FAILED');
     }
 
     const payload = registerSchema.parse(req.body);
     const age = calculateAge(payload.dateOfBirth);
     if (Number.isNaN(age) || age < 18) {
-      return res.status(400).json({ success: false, error: 'Only adults (18+) can register.' });
+      return sendError(req, res, 400, 'ADULTS_ONLY');
     }
     const existing = await prisma.userProfile.findUnique({
       where: { email: payload.email }
     });
     if (existing) {
-      return res.status(409).json({ success: false, error: 'Email already exists' });
+      return sendError(req, res, 409, 'EMAIL_EXISTS');
     }
 
     const passwordHash = await bcrypt.hash(payload.password, 10);
@@ -109,6 +115,8 @@ authRouter.post('/register', async (req, res) => {
           age,
           dateOfBirth: new Date(payload.dateOfBirth),
           city: payload.city,
+          country: payload.country,
+          locale: payload.locale,
           bio: payload.bio || null,
           identity: payload.identity,
           profileType: payload.profileType,
@@ -144,7 +152,7 @@ authRouter.post('/register', async (req, res) => {
       devVerificationCode: process.env.NODE_ENV === 'production' ? undefined : code
     });
   } catch (_error) {
-    return res.status(400).json({ success: false, error: 'Invalid payload' });
+    return sendError(req, res, 400, 'INVALID_PAYLOAD');
   }
 });
 
@@ -162,7 +170,7 @@ authRouter.post('/verify-email', async (req, res) => {
     });
 
     if (!codeRow) {
-      return res.status(400).json({ success: false, error: 'Invalid or expired code' });
+      return sendError(req, res, 400, 'INVALID_CODE');
     }
 
     await prisma.$transaction(async (tx) => {
@@ -184,7 +192,7 @@ authRouter.post('/verify-email', async (req, res) => {
 
     return res.json({ success: true });
   } catch (_error) {
-    return res.status(400).json({ success: false, error: 'Invalid payload' });
+    return sendError(req, res, 400, 'INVALID_PAYLOAD');
   }
 });
 
@@ -195,25 +203,25 @@ authRouter.post('/login', async (req, res) => {
       where: { email: payload.email }
     });
     if (!profile) {
-      return res.status(401).json({ success: false, error: 'Invalid credentials' });
+      return sendError(req, res, 401, 'INVALID_CREDENTIALS');
     }
 
     const account = await prisma.userAccount.findUnique({
       where: { profileId: profile.id }
     });
     if (!account) {
-      return res.status(401).json({ success: false, error: 'Invalid credentials' });
+      return sendError(req, res, 401, 'INVALID_CREDENTIALS');
     }
     if (!account.verifiedAt) {
-      return res.status(403).json({ success: false, error: 'Email not verified' });
+      return sendError(req, res, 403, 'EMAIL_NOT_VERIFIED');
     }
     if (account.suspendedAt) {
-      return res.status(403).json({ success: false, error: 'Račun je suspendiran. Kontaktiraj podršku.' });
+      return sendError(req, res, 403, 'ACCOUNT_SUSPENDED');
     }
 
     const ok = await bcrypt.compare(payload.password, account.passwordHash);
     if (!ok) {
-      return res.status(401).json({ success: false, error: 'Invalid credentials' });
+      return sendError(req, res, 401, 'INVALID_CREDENTIALS');
     }
 
     const token = issueAuthToken(account);
@@ -224,6 +232,8 @@ authRouter.post('/login', async (req, res) => {
         id: profile.id,
         displayName: profile.displayName,
         city: profile.city,
+        country: profile.country,
+        locale: profile.locale,
         availability: profile.availability,
         planTier: profile.planTier || 'free',
         onboardingDone: profile.onboardingDone,
@@ -231,7 +241,7 @@ authRouter.post('/login', async (req, res) => {
       }
     });
   } catch (_error) {
-    return res.status(400).json({ success: false, error: 'Invalid payload' });
+    return sendError(req, res, 400, 'INVALID_PAYLOAD');
   }
 });
 
@@ -356,6 +366,8 @@ authRouter.get('/export-data', requireAuth, async (req, res) => {
 const profileUpdateSchema = z.object({
   displayName: z.string().min(2).max(80).optional(),
   city: z.string().min(2).max(80).optional(),
+  country: z.string().length(2).optional(),
+  locale: localeSchema.optional(),
   bio: z.string().max(500).nullable().optional(),
   identity: z.enum(['MALE', 'FEMALE', 'NON_BINARY', 'OTHER']).optional(),
   profileType: z.enum(['INDIVIDUAL', 'COUPLE']).optional(),
@@ -379,13 +391,15 @@ const profileUpdateSchema = z.object({
 
 authRouter.get('/profile', requireAuth, async (req, res) => {
   const profile = await prisma.userProfile.findUnique({ where: { id: req.auth.profileId } });
-  if (!profile) return res.status(404).json({ success: false, error: 'Profile not found' });
+  if (!profile) return sendError(req, res, 404, 'PROFILE_NOT_FOUND');
   return res.json({
     success: true,
     profile: {
       ...toPublicProfile(profile),
       email: profile.email,
       dateOfBirth: profile.dateOfBirth,
+      country: profile.country,
+      locale: profile.locale,
       notifyEmail: profile.notifyEmail,
       shareLocation: profile.shareLocation,
       verificationPending: profile.verificationPending,
@@ -494,6 +508,8 @@ authRouter.patch('/profile', requireAuth, async (req, res) => {
         ...toPublicProfile(updated),
         email: updated.email,
         dateOfBirth: updated.dateOfBirth,
+        country: updated.country,
+        locale: updated.locale,
         notifyEmail: updated.notifyEmail,
         shareLocation: updated.shareLocation,
         verificationPending: updated.verificationPending,

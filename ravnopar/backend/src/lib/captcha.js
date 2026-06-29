@@ -1,6 +1,6 @@
 export function verifyRegisterCaptcha(body) {
   if (body?.website && String(body.website).trim().length > 0) {
-    return { ok: false, error: 'Invalid submission' };
+    return { ok: false, code: 'INVALID_SUBMISSION' };
   }
 
   const secret = process.env.TURNSTILE_SECRET_KEY?.trim();
@@ -8,7 +8,7 @@ export function verifyRegisterCaptcha(body) {
   if (!secret) return { ok: true };
 
   if (!token) {
-    return { ok: false, error: 'Captcha verification required' };
+    return { ok: false, code: 'CAPTCHA_REQUIRED' };
   }
 
   return { ok: true, token, secret };
