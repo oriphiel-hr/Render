@@ -16,7 +16,7 @@ export default {
   },
   langPicker: {
     label: "Choose language",
-    hint: "Available in 13 languages — pick yours (e.g. HU, IT, EN)"
+    hint: "13 languages — pick yours (e.g. Magyar, Italiano, English)"
   },
 
   nav: {

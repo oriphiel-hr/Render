@@ -46,6 +46,9 @@ function Topbar({ token, profile, onLogout, unreadTotal }) {
             {menuOpen ? t('nav.close') : t('nav.menu')}
           </button>
         </div>
+        <div className="topbar-lang-row">
+          <LanguageSwitcher className="topbar-lang" />
+        </div>
         <div className={`topbar-links ${menuOpen ? 'open' : ''}`}>
           {!token && (
             <>
@@ -80,7 +83,6 @@ function Topbar({ token, profile, onLogout, unreadTotal }) {
           {profile?.role === 'ADMIN' && (
             <Link className={location.pathname === '/admin' ? 'nav-link active' : 'nav-link'} to="/admin" onClick={closeMenu}>{t('nav.admin')}</Link>
           )}
-          <LanguageSwitcher className="topbar-lang" variant="select" />
           <ThemeToggle />
         </div>
       </nav>

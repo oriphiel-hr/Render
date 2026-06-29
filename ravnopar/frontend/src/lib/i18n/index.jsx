@@ -20,7 +20,7 @@ export { SUPPORTED_LOCALES };
 
 const STORAGE_KEY = 'ravnoparLocale';
 
-/** UI jezik — mijenja se u dropdownu; sprema se u localStorage i sinkronizira u profil (za emailove). */
+/** UI jezik — korisnik bira u izborniku; sprema se u localStorage i sinkronizira u profil. */
 
 const I18nContext = createContext(null);
 
@@ -44,12 +44,7 @@ function resolveMessage(locale, key) {
 export function getStoredLocale() {
   const stored = localStorage.getItem(STORAGE_KEY);
   if (SUPPORTED_LOCALES.includes(stored)) return stored;
-  const detected = detectBrowserLocale();
-  if (detected) {
-    localStorage.setItem(STORAGE_KEY, detected);
-    return detected;
-  }
-  return 'hr';
+  return detectBrowserLocale() || 'en';
 }
 
 export function translateApiError(data, locale = getStoredLocale()) {
