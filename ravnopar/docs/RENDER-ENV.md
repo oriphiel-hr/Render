@@ -7,7 +7,7 @@
 | `NODE_ENV` | `production` |
 | `DATABASE_URL` | Internal Database URL iz `ravnopar-db` |
 | `JWT_SECRET` | jak random string (min. 32 znaka) |
-| `FRONTEND_BASE_URL` | `https://ravnopar-frontend.onrender.com` |
+| `FRONTEND_BASE_URL` | `https://ravnopar.onrender.com` |
 | `DAILY_CONTACT_LIMIT` | `30` |
 | `FIRST_USER_IS_ADMIN` | `false` |
 
@@ -84,7 +84,7 @@ Migracije se pokreću automatski u build koraku (`prisma migrate deploy`).
 
 ---
 
-## ravnopar-frontend
+## ravnopar (frontend)
 
 | Key | Vrijednost |
 |-----|------------|
@@ -113,7 +113,7 @@ Migracije se pokreću automatski u build koraku (`prisma migrate deploy`).
 **Root:** `ravnopar/frontend`  
 **Rewrite (obavezno za SPA):** `/*` → `/index.html` (200)
 
-Ako je frontend servis kreiran ručno (ne iz Blueprinta), u Render Dashboardu otvori **ravnopar-frontend → Redirects/Rewrites** i dodaj:
+Ako je frontend servis kreiran ručno (ne iz Blueprinta), u Render Dashboardu otvori **ravnopar → Redirects/Rewrites** i dodaj:
 
 | Source | Destination | Action |
 |--------|-------------|--------|

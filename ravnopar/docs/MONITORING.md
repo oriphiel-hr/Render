@@ -37,7 +37,7 @@ Ako baza nije dostupna → **503** i `"database": "error"`.
 Opcionalno drugi monitor za frontend:
 
 ```
-https://ravnopar-frontend.onrender.com/
+https://ravnopar.onrender.com/
 ```
 
 ---

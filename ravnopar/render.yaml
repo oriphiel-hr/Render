@@ -30,7 +30,7 @@ services:
           name: ravnopar-db
           property: connectionString
       - key: FRONTEND_BASE_URL
-        value: https://ravnopar-frontend.onrender.com
+        value: https://ravnopar.onrender.com
       - key: DAILY_CONTACT_LIMIT
         value: "30"
       - key: FIRST_USER_IS_ADMIN
@@ -69,7 +69,7 @@ services:
         value: auto
 
   - type: web
-    name: ravnopar-frontend
+    name: ravnopar
     runtime: static
     plan: free
     region: frankfurt
