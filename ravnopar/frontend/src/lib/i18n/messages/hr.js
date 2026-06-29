@@ -15,6 +15,11 @@ export default {
     sk: 'Slovenčina'
   },
 
+  langPicker: {
+    label: 'Odaberi jezik',
+    hint: 'Dostupno na 13 jezika — odaberi svoj (npr. HU, IT, EN)'
+  },
+
   nav: {
     home: 'Početna',
     login: 'Prijava',

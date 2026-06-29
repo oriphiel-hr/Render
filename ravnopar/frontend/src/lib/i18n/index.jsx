@@ -13,7 +13,7 @@ import fr from './locales/fr.js';
 import es from './locales/es.js';
 import sk from './locales/sk.js';
 import { COUNTRY_CODES } from './countries.js';
-import { SUPPORTED_LOCALES } from './locale-meta.js';
+import { SUPPORTED_LOCALES, detectBrowserLocale } from './locale-meta.js';
 
 const MESSAGES = { hr, en, de, sl, bs, sr, it, hu, pl, cs, fr, es, sk };
 export { SUPPORTED_LOCALES };
@@ -43,7 +43,13 @@ function resolveMessage(locale, key) {
 
 export function getStoredLocale() {
   const stored = localStorage.getItem(STORAGE_KEY);
-  return SUPPORTED_LOCALES.includes(stored) ? stored : 'hr';
+  if (SUPPORTED_LOCALES.includes(stored)) return stored;
+  const detected = detectBrowserLocale();
+  if (detected) {
+    localStorage.setItem(STORAGE_KEY, detected);
+    return detected;
+  }
+  return 'hr';
 }
 
 export function translateApiError(data, locale = getStoredLocale()) {

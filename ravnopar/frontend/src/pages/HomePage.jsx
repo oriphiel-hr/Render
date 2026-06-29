@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import PageMeta from '../components/PageMeta.jsx';
 import StructuredData from '../components/StructuredData.jsx';
 import LandingShowcase from '../components/LandingShowcase.jsx';
+import LanguageSwitcher from '../components/LanguageSwitcher.jsx';
 import { getPublicStats } from '../api/index.js';
 import { useI18n } from '../lib/i18n/index.jsx';
 
@@ -56,6 +57,10 @@ export default function HomePage() {
         <p className="eyebrow">{t('home.eyebrow')}</p>
         <h1>{t('home.title')}</h1>
         <p className="landing-lead">{t('home.lead')}</p>
+        <div className="landing-lang-picker">
+          <p className="lang-picker-hint">{t('langPicker.hint')}</p>
+          <LanguageSwitcher />
+        </div>
         {stats && <LandingSocialProof stats={stats} t={t} />}
         <div className="landing-actions">
           <Link className="button button-primary button-lg" to="/auth">

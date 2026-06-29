@@ -14,6 +14,11 @@ export default {
     es: "Español",
     sk: "Slovenčina"
   },
+  langPicker: {
+    label: "Choose language",
+    hint: "Available in 13 languages — pick yours (e.g. HU, IT, EN)"
+  },
+
   nav: {
     home: "Home",
     login: "Log in",

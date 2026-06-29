@@ -16,3 +16,18 @@ export const LOCALE_LABELS = {
   es: 'Español',
   sk: 'Slovenčina'
 };
+
+/** Prvi posjet: uskladi s jezikom preglednika ako ga podržavamo. */
+export function detectBrowserLocale() {
+  if (typeof navigator === 'undefined') return null;
+  const candidates = navigator.languages?.length
+    ? Array.from(navigator.languages)
+    : navigator.language
+      ? [navigator.language]
+      : [];
+  for (const raw of candidates) {
+    const base = String(raw).split('-')[0].toLowerCase();
+    if (SUPPORTED_LOCALES.includes(base)) return base;
+  }
+  return null;
+}
