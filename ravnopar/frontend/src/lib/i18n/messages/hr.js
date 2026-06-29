@@ -95,6 +95,12 @@ export default {
     resetFailed: 'Reset nije uspio.',
     checkEmail: 'Provjeri email.',
     dobInvalid: 'Odaberi valjan datum rođenja (18+).',
+    dobInvalidMonth: 'Nepostojeći mjesec — upiši broj od 01 do 12.',
+    dobInvalidDay: 'Dan mora biti najmanje 01.',
+    dobInvalidDayForMonth: 'U tom mjesecu nema {day}. dana (maksimalno {max}).',
+    dobFeb29NotLeap: '29. veljače {year}. ne postoji — ta godina nije prijestupna.',
+    dobInvalidYear: 'Godina mora biti između {min} i {max}.',
+    dobUnderage: 'Moraš imati najmanje 18 godina.',
     dobPlaceholder: '15.03.1985.',
     dobFormatHint: 'Jedno polje — upiši dan, mjesec i godinu (npr. 15.03.1985.).',
     dobSelected: 'Odabrano: {date}'

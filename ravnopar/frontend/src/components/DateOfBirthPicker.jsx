@@ -18,33 +18,75 @@ function formatWhileTyping(raw) {
   return `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`;
 }
 
-function isValidCalendarDate(year, month, day) {
-  if (!year || !month || !day) return false;
-  const y = Number(year);
-  const m = Number(month);
-  const d = Number(day);
-  if (m < 1 || m > 12 || d < 1) return false;
-  const date = new Date(y, m - 1, d);
-  return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d;
+function isLeapYear(year) {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
 }
 
-function parseDobText(raw) {
+function daysInMonth(year, month) {
+  if (month < 1 || month > 12) return 0;
+  return new Date(year, month, 0).getDate();
+}
+
+function extractParts(raw) {
   const trimmed = raw.trim().replace(/\.$/, '');
   const dotted = trimmed.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
   if (dotted) {
-    const [, d, m, y] = dotted;
-    if (!isValidCalendarDate(y, m, d)) return '';
-    return `${y}-${pad2(m)}-${pad2(d)}`;
+    return {
+      day: Number(dotted[1]),
+      month: Number(dotted[2]),
+      year: Number(dotted[3])
+    };
   }
   const digits = trimmed.replace(/\D/g, '');
   if (digits.length === 8) {
-    const day = digits.slice(0, 2);
-    const month = digits.slice(2, 4);
-    const year = digits.slice(4, 8);
-    if (!isValidCalendarDate(year, month, day)) return '';
-    return `${year}-${month}-${day}`;
+    return {
+      day: Number(digits.slice(0, 2)),
+      month: Number(digits.slice(2, 4)),
+      year: Number(digits.slice(4, 8))
+    };
   }
-  return '';
+  return null;
+}
+
+function getAllowedYearRange() {
+  const maxYear = new Date().getFullYear() - 18;
+  return { minYear: maxYear - 82, maxYear };
+}
+
+/** @returns {null | 'INVALID_MONTH' | 'INVALID_DAY' | 'INVALID_DAY_FOR_MONTH' | 'FEB_29_NOT_LEAP' | 'INVALID_YEAR' | 'UNDERAGE'} */
+export function validateDobParts(day, month, year) {
+  if (!Number.isFinite(day) || !Number.isFinite(month) || !Number.isFinite(year)) {
+    return null;
+  }
+
+  if (month < 1 || month > 12) return 'INVALID_MONTH';
+  if (day < 1) return 'INVALID_DAY';
+
+  const { minYear, maxYear } = getAllowedYearRange();
+  if (year < minYear || year > maxYear) return 'INVALID_YEAR';
+
+  if (month === 2 && day === 29 && !isLeapYear(year)) {
+    return 'FEB_29_NOT_LEAP';
+  }
+
+  const maxDay = daysInMonth(year, month);
+  if (day > maxDay) {
+    return 'INVALID_DAY_FOR_MONTH';
+  }
+
+  const iso = `${year}-${pad2(month)}-${pad2(day)}`;
+  if (!isAdult(iso)) return 'UNDERAGE';
+
+  return null;
+}
+
+function partsToIso(parts) {
+  if (!parts || validateDobParts(parts.day, parts.month, parts.year)) return '';
+  return `${parts.year}-${pad2(parts.month)}-${pad2(parts.day)}`;
+}
+
+function parseDobText(raw) {
+  return partsToIso(extractParts(raw));
 }
 
 function isAdult(isoDate) {
@@ -82,10 +124,37 @@ export default function DateOfBirthPicker({ value, onChange, id }) {
     onChange(parseDobText(next));
   }
 
-  const iso = parseDobText(text);
+  const parts = extractParts(text);
+  const digitCount = text.replace(/\D/g, '').length;
+  const errorCode = parts ? validateDobParts(parts.day, parts.month, parts.year) : null;
+  const iso = partsToIso(parts);
   const hintId = id ? `${id}-hint` : undefined;
-  const showInvalid = touched && text.length >= 8 && !iso;
-  const showUnderage = Boolean(iso && !isAdult(iso));
+  const showError = Boolean(errorCode && (touched || digitCount === 8));
+
+  function errorMessage() {
+    if (!errorCode || !parts) return t('auth.dobInvalid');
+    switch (errorCode) {
+      case 'INVALID_MONTH':
+        return t('auth.dobInvalidMonth');
+      case 'INVALID_DAY':
+        return t('auth.dobInvalidDay');
+      case 'INVALID_DAY_FOR_MONTH':
+        return t('auth.dobInvalidDayForMonth', {
+          day: parts.day,
+          max: daysInMonth(parts.year, parts.month)
+        });
+      case 'FEB_29_NOT_LEAP':
+        return t('auth.dobFeb29NotLeap', { year: parts.year });
+      case 'INVALID_YEAR': {
+        const { minYear, maxYear } = getAllowedYearRange();
+        return t('auth.dobInvalidYear', { min: minYear, max: maxYear });
+      }
+      case 'UNDERAGE':
+        return t('auth.dobUnderage');
+      default:
+        return t('auth.dobInvalid');
+    }
+  }
 
   return (
     <div className="dob-picker-single" id={id}>
@@ -100,19 +169,18 @@ export default function DateOfBirthPicker({ value, onChange, id }) {
         onBlur={() => setTouched(true)}
         required
         aria-describedby={hintId}
+        aria-invalid={showError || undefined}
         maxLength={11}
       />
       <p className="dob-hint muted" id={hintId}>
         {t('auth.dobFormatHint')}
       </p>
-      {iso && isAdult(iso) && (
+      {iso && (
         <p className="dob-confirmed" role="status">
           {t('auth.dobSelected', { date: formatDisplayLong(iso, t) })}
         </p>
       )}
-      {(showInvalid || showUnderage) && (
-        <p className="dob-hint dob-hint-error">{t('auth.dobInvalid')}</p>
-      )}
+      {showError && <p className="dob-hint dob-hint-error">{errorMessage()}</p>}
     </div>
   );
 }

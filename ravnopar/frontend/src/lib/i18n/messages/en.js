@@ -93,6 +93,12 @@ export default {
     resetFailed: "Reset failed.",
     checkEmail: "Check your email.",
     dobInvalid: "Choose a valid date of birth (18+).",
+    dobInvalidMonth: "Invalid month — enter a number from 01 to 12.",
+    dobInvalidDay: "Day must be at least 01.",
+    dobInvalidDayForMonth: "That month has no day {day} (maximum is {max}).",
+    dobFeb29NotLeap: "29 February {year} does not exist — that year is not a leap year.",
+    dobInvalidYear: "Year must be between {min} and {max}.",
+    dobUnderage: "You must be at least 18 years old.",
     dobPlaceholder: "15.03.1985",
     dobFormatHint: "One field — enter day, month and year (e.g. 15.03.1985).",
     dobSelected: "Selected: {date}"
