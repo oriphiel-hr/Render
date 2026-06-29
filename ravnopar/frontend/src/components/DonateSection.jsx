@@ -1,11 +1,19 @@
 import { useEffect, useState } from 'react';
 import { createDonateCheckout, getDonateStatus } from '../api/index.js';
+import {
+  getDonateIban,
+  getDonateRecipient,
+  getDonateRevolutUrl,
+  getDonateStripeUrl,
+  hasIban,
+  hasRevolut
+} from '../lib/donate-config.js';
 import { useI18n } from '../lib/i18n/index.jsx';
 
-const IBAN = import.meta.env.VITE_DONATE_IBAN?.trim() || '';
-const RECIPIENT = import.meta.env.VITE_DONATE_RECIPIENT?.trim() || '';
-const REVOLUT_URL = import.meta.env.VITE_DONATE_REVOLUT_URL?.trim() || '';
-const STRIPE_PAYMENT_LINK = import.meta.env.VITE_DONATE_STRIPE_URL?.trim() || '';
+const IBAN = getDonateIban();
+const RECIPIENT = getDonateRecipient();
+const REVOLUT_URL = getDonateRevolutUrl();
+const STRIPE_PAYMENT_LINK = getDonateStripeUrl();
 
 function copyText(value, onDone) {
   if (!value) return;
@@ -21,8 +29,8 @@ export default function DonateSection() {
   const [busyAmount, setBusyAmount] = useState(null);
   const [cardError, setCardError] = useState('');
 
-  const hasBank = Boolean(IBAN);
-  const hasRevolut = Boolean(REVOLUT_URL);
+  const hasBank = hasIban();
+  const hasRevolutLink = hasRevolut();
   const hasStripe = stripeEnabled || Boolean(STRIPE_PAYMENT_LINK);
 
   useEffect(() => {
@@ -38,7 +46,7 @@ export default function DonateSection() {
     load();
   }, []);
 
-  if (!hasBank && !hasRevolut && !hasStripe) return null;
+  if (!hasBank && !hasRevolutLink && !hasStripe) return null;
 
   function handleCopy(field, value) {
     copyText(value, () => {
@@ -74,7 +82,7 @@ export default function DonateSection() {
       <p className="muted">{t('donate.sectionLead')}</p>
       <p className="muted donate-note">{t('donate.note')}</p>
 
-      {hasRevolut && (
+      {hasRevolutLink && (
         <div className="donate-card-block">
           <h3 className="subsection-title">{t('donate.revolutTitle')}</h3>
           <p className="muted">{t('donate.revolutHint')}</p>
@@ -112,7 +120,7 @@ export default function DonateSection() {
 
       {hasBank && (
         <>
-          {(hasRevolut || hasStripe) && <h3 className="subsection-title">{t('donate.bankTitle')}</h3>}
+          {(hasRevolutLink || hasStripe) && <h3 className="subsection-title">{t('donate.bankTitle')}</h3>}
           <dl className="donate-details">
             {RECIPIENT && (
               <div className="donate-row">

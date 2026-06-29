@@ -998,6 +998,17 @@ button:disabled,
   justify-content: center;
 }
 
+.planovi-support {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.planovi-support-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
 .planovi-hero,
 .donate-hero {
   margin-bottom: 0.5rem;

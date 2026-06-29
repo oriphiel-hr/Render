@@ -2,9 +2,10 @@ import { Link } from 'react-router-dom';
 import PageMeta from '../components/PageMeta.jsx';
 import PricingHeartSection from '../components/PricingHeartSection.jsx';
 import SupportContent from '../components/SupportContent.jsx';
+import VoluntarySupportTeaser from '../components/VoluntarySupportTeaser.jsx';
 import { useI18n } from '../lib/i18n/index.jsx';
 
-export default function PlanoviPage() {
+export default function PlanoviPage({ token }) {
   const { t } = useI18n();
 
   return (
@@ -24,6 +25,8 @@ export default function PlanoviPage() {
       <PricingHeartSection />
 
       <SupportContent showDonate={false} />
+
+      <VoluntarySupportTeaser token={token} />
 
       <section className="card planovi-cta">
         <h2>{t('pricing.ctaTitle')}</h2>

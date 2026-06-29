@@ -28,7 +28,8 @@ export default {
     close: 'Zatvori',
     greeting: 'Pozdrav, {name}',
     quickNav: 'Brza navigacija',
-    mySpaceUnread: 'Moj prostor ({count})'
+    mySpaceUnread: 'Moj prostor ({count})',
+    donate: 'Podrži'
   },
 
   auth: {
@@ -806,6 +807,12 @@ export default {
     ctaLead: 'Registracija je besplatna. Ako ti se sviđa pristup — dobrodošao/la si u zajednicu.',
     ctaStart: 'Kreni besplatno',
     ctaBack: 'Natrag na početnu',
+    supportEyebrow: 'Dobrovoljno',
+    supportTitle: 'Dobrovoljna podrška',
+    supportLead:
+      'Ako ti se sviđa pristup Ravnopara, možeš dobrovoljno pomoći s troškovima održavanja — bez ikakve prednosti u feedu.',
+    supportRevolutBtn: 'Podrži na Revolutu',
+    supportAppLink: 'Sve opcije plaćanja',
     policyEyebrow: 'Transparentno unaprijed',
     policy: {
       headline: 'Novac ne smije stajati između ljudi',

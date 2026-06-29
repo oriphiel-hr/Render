@@ -27,7 +27,8 @@ export default {
     close: "Close",
     greeting: "Hello, {name}",
     quickNav: "Quick navigation",
-    mySpaceUnread: "My space ({count})"
+    mySpaceUnread: "My space ({count})",
+    donate: "Support"
   },
   auth: {
     welcome: "Welcome to Ravnopar",
@@ -751,6 +752,12 @@ export default {
     ctaLead: "Registration is free. If you like the approach — welcome to the community.",
     ctaStart: "Start for free",
     ctaBack: "Back to home",
+    supportEyebrow: "Voluntary",
+    supportTitle: "Voluntary support",
+    supportLead:
+      "If you like how Ravnopar works, you can voluntarily help cover running costs — with no feed advantage.",
+    supportRevolutBtn: "Support on Revolut",
+    supportAppLink: "All payment options",
     policyEyebrow: "Transparent from the start",
     policy: {
       headline: "Money should not stand between people",

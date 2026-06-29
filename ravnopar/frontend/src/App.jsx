@@ -20,6 +20,7 @@ import SettingsPage from './pages/SettingsPage.jsx';
 import TermsPage from './pages/TermsPage.jsx';
 import UserDashboardPage from './pages/UserDashboardPage.jsx';
 import { getInboxSummary, getProfile } from './api/index.js';
+import { isDonateConfigured } from './lib/donate-config.js';
 import { recordMemberSinceIfNeeded } from './lib/donate-prompt.js';
 import { useI18n } from './lib/i18n/index.jsx';
 import LanguageSwitcher from './components/LanguageSwitcher.jsx';
@@ -59,6 +60,15 @@ function Topbar({ token, profile, onLogout, unreadTotal }) {
                 {unreadTotal > 0 ? t('nav.mySpaceUnread', { count: unreadTotal }) : t('nav.mySpace')}
               </Link>
               <Link className={location.pathname.startsWith('/app/postavke') ? 'nav-link active' : 'nav-link'} to="/app/postavke" onClick={closeMenu}>{t('nav.settings')}</Link>
+              {isDonateConfigured() && (
+                <Link
+                  className={location.pathname === '/app/podrzi' ? 'nav-link active' : 'nav-link'}
+                  to="/app/podrzi"
+                  onClick={closeMenu}
+                >
+                  {t('nav.donate')}
+                </Link>
+              )}
               <span className="nav-user">
                 {t('nav.greeting', { name: profile?.displayName })}
                 {profile?.role === 'ADMIN' && <span className="chip chip-admin nav-role">{t('nav.admin')}</span>}
@@ -88,6 +98,7 @@ function MobileDock({ token, profile, unreadTotal }) {
         {unreadTotal > 0 ? t('nav.mySpaceUnread', { count: unreadTotal }) : t('nav.mySpace')}
       </Link>
       <Link className="dock-link" to="/app/postavke">{t('nav.settings')}</Link>
+      {isDonateConfigured() && <Link className="dock-link" to="/app/podrzi">{t('nav.donate')}</Link>}
       {profile?.role === 'ADMIN' && <Link className="dock-link" to="/admin">{t('nav.admin')}</Link>}
     </nav>
   );
@@ -155,7 +166,7 @@ export default function App() {
       <Topbar token={token} profile={profile} onLogout={onLogout} unreadTotal={unreadTotal} />
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/planovi" element={<PlanoviPage />} />
+        <Route path="/planovi" element={<PlanoviPage token={token} />} />
         <Route path="/pomoc" element={<FaqPage />} />
         <Route path="/pravila" element={<GuidelinesPage />} />
         <Route path="/privatnost" element={<PrivacyPage />} />
