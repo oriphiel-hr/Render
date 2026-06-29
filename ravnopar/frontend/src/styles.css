@@ -194,6 +194,20 @@ a {
   .form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .form-grid .dob-picker-wrap {
+    grid-column: 1 / -1;
+  }
+
+  .form-grid label {
+    align-content: start;
+  }
+
+  .form-grid label > input,
+  .form-grid label > select,
+  .form-grid label > textarea {
+    align-self: start;
+  }
 }
 
 @media (min-width: 1040px) {
@@ -1656,8 +1670,14 @@ body:has(.mobile-dock) .cookie-banner {
 }
 
 .dob-input {
+  width: 100%;
+  min-height: 2.75rem;
+  line-height: 1.4;
+  padding: 0.6rem 0.75rem;
+  box-sizing: border-box;
+  font-size: 1rem;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
 }
 
 .dob-confirmed {
@@ -1680,6 +1700,7 @@ body:has(.mobile-dock) .cookie-banner {
 .dob-picker-wrap {
   display: grid;
   gap: 0.35rem;
+  min-width: 0;
 }
 
 .field-label-text,

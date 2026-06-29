@@ -88,10 +88,10 @@ export default function DateOfBirthPicker({ value, onChange, id }) {
   const showUnderage = Boolean(iso && !isAdult(iso));
 
   return (
-    <div className="dob-picker dob-picker-single" id={id}>
+    <div className="dob-picker-single" id={id}>
       <input
         type="text"
-        className="input dob-input"
+        className="dob-input"
         inputMode="numeric"
         autoComplete="bday"
         placeholder={t('auth.dobPlaceholder')}
