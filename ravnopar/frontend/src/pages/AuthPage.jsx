@@ -182,7 +182,7 @@ export default function AuthPage({ onLogin }) {
       <section className="hero auth-hero">
         <div className="auth-hero-top">
           <h1>{loginOnly && step === 3 ? t('auth.welcomeLogin') : t('auth.welcome')}</h1>
-          <LanguageSwitcher />
+          <LanguageSwitcher variant="popover" />
         </div>
         <p className="subtitle">
           {loginOnly && step === 3 ? t('auth.subtitleLogin') : t('auth.subtitleRegister')}

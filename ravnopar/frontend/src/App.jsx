@@ -76,14 +76,12 @@ function Topbar({ token, profile, onLogout, unreadTotal }) {
             {profile?.role === 'ADMIN' && (
               <Link className={location.pathname === '/admin' ? 'nav-link active' : 'nav-link'} to="/admin" onClick={closeMenu}>{t('nav.admin')}</Link>
             )}
+            <LanguageSwitcher variant="popover" className="topbar-lang" />
             <ThemeToggle />
           </div>
           <button type="button" className="menu-toggle" aria-expanded={menuOpen} onClick={() => setMenuOpen((o) => !o)}>
             {menuOpen ? t('nav.close') : t('nav.menu')}
           </button>
-        </div>
-        <div className="topbar-lang-row">
-          <LanguageSwitcher className="topbar-lang" dense />
         </div>
       </nav>
     </header>

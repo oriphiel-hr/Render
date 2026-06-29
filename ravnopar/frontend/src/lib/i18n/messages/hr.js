@@ -17,7 +17,7 @@ export default {
 
   langPicker: {
     label: 'Odaberi jezik',
-    hint: '13 jezika — odaberi svoj (npr. Magyar, Italiano, English)'
+    hint: '13 jezika — odaberi svoj'
   },
 
   nav: {
