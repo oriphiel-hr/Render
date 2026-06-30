@@ -355,7 +355,7 @@ export default {
   meta: {
     defaultTitle: 'Ravnopar',
     defaultDescription:
-      'Ravnopar — fer dating platforma za Hrvatsku. Bez paywalla za razgovor, s chatom nakon matcha i transparentnim pravilima.',
+      'Ravnopar — fer dating platforma za Europu. Bez paywalla za razgovor, chat nakon matcha i transparentna pravila.',
     titles: {
       home: 'Početna',
       auth: 'Prijava i registracija',
@@ -371,11 +371,14 @@ export default {
       privacy: 'Politika privatnosti',
       terms: 'Uvjeti korištenja',
       contact: 'Kontakt',
+      fairFeed: 'Kako radi fer feed',
+      fairnessReport: 'Fer izvještaj',
+      donatePublic: 'Podrži projekt',
       admin: 'Admin'
     },
     descriptions: {
       home:
-        'Ravnopar — fer dating platforma za Hrvatsku. Bez paywalla za razgovor, s chatom nakon matcha i transparentnim pravilima.',
+        'Ravnopar — fer dating platforma za Europu. Besplatan chat nakon matcha, bez paywalla za razgovor i transparentna pravila.',
       auth: 'Registracija i prijava na Ravnopar — fer platformu za upoznavanje.',
       settings: 'Uredi profil, fotografije, obavijesti i privatnost.',
       app: 'Tvoj feed, zahtjevi za kontakt i razgovori na Ravnoparu.',
@@ -390,6 +393,9 @@ export default {
       privacy: 'Kako Ravnopar prikuplja, koristi i štiti tvoje podatke.',
       terms: 'Pravila korištenja Ravnopar platforme.',
       contact: 'Kontaktiraj Ravnopar tim za podršku, privatnost i prijave.',
+      fairFeed: 'Kako Ravnopar rangira profile — transparentna pravila bez plaćenog boosta.',
+      fairnessReport: 'Javne metrike fer ponašanja i crvene linije premiuma.',
+      donatePublic: 'Dobrovoljna podrška troškovima servera — bez prednosti u feedu.',
       admin: 'Ravnopar admin centar.'
     }
   },
@@ -397,6 +403,8 @@ export default {
   footer: {
     plans: 'Planovi',
     help: 'Pomoć',
+    fairFeed: 'Fer feed',
+    fairnessReport: 'Izvještaj',
     guidelines: 'Pravila',
     privacy: 'Privatnost',
     terms: 'Uvjeti',
@@ -615,7 +623,19 @@ export default {
     deleteConfirm: 'Trajno obrisati račun? Ova radnja se ne može poništiti.',
     deleteFailed: 'Brisanje računa nije uspjelo.',
     planSuccess: 'Uplata zaprimljena. Premium aktivacija slijedi nakon provjere.',
-    checkoutFailed: 'Premium checkout nije dostupan.'
+    checkoutFailed: 'Premium checkout nije dostupan.',
+    ordersTitle: 'Povijest uplata',
+    ordersHint: 'Donacije i premium uplate povezane s tvojim računom.',
+    orderDonation: 'Donacija',
+    orderPlan: 'Premium paket',
+    orderOther: 'Uplata',
+    orderStatus_PAID: 'Plaćeno',
+    orderStatus_PENDING: 'Na čekanju',
+    orderStatus_FAILED: 'Neuspjelo',
+    orderStatus_CANCELLED: 'Otkazano',
+    donorBadgeVisible: 'Prikaži značku podržavatelja na profilu',
+    donorBadgeHint:
+      'Značka ne daje prednost u feedu — samo pokazuje da si podržao/la projekt. Možeš je sakriti u bilo kojem trenutku.'
   },
 
   dashboard: {
@@ -695,12 +715,70 @@ export default {
     sendFailed: 'Slanje poruke nije uspjelo.'
   },
 
+  fairFeed: {
+    title: 'Kako radi fer feed',
+    subtitle: 'Transparentno — bez skrivenog smanjenja dosega.',
+    intro:
+      'Ravnopar ne prodaje vidljivost. Evo što utječe na to koga vidiš u feedu — i što nikad ne utječe.',
+    principlesTitle: 'Načela rangiranja',
+    neverTitle: 'Nikad ne utječe',
+    neverItems: [
+      'Plaćanje ili donacija',
+      'Premium paket (Plus / Supporter)',
+      'Broj swipeova ili vrijeme u appu'
+    ],
+    doesTitle: 'Može utjecati (malo i transparentno)',
+    explainLink: 'Pogledaj fer izvještaj',
+    faqLink: 'Pitanja i odgovori',
+    principles: {
+      compatibility_filter: 'Kompatibilnost — preferencije i namjere moraju odgovarati',
+      no_plan_boost: 'Paket (free/plus/supporter) ne daje bodove u feedu',
+      fair_waiting_boost: 'Fer boost ako korisnik dugo čeka bez dolaznih zahtjeva',
+      interest_lifestyle_points: 'Mali bonus za zajedničke interese i životne navike',
+      completeness_verification: 'Potpunost profila i verifikacija (mali, jasni bodovi)',
+      active_pairs_hidden: 'Aktivni parovi privremeno izlaze iz feeda'
+    }
+  },
+
+  fairnessReport: {
+    title: 'Fer izvještaj',
+    subtitle: 'Javni pregled aktivnosti i pravila — ažurirano pri učitavanju.',
+    statsTitle: 'Zajednica (30 dana)',
+    changesTitle: 'Promjene pravila (90 dana)',
+    noChanges: 'Nema promjena limita ili pravila u zadnjih 90 dana.',
+    premiumTitle: 'Crvene linije Premiuma',
+    premiumItems: [
+      'Premium ne daje boost u feedu',
+      'Chat ostaje besplatan',
+      'Donacije ne daju prednost',
+      'Premium = udobnost, ne pristup'
+    ]
+  },
+
+  feedSignals: {
+    shared_interests: 'Zajednički interesi',
+    verified: 'Verificiran profil',
+    complete_profile: 'Potpun profil',
+    fair_waiting: 'Fer boost — čeka kontakt',
+    community_supporter: 'Podržavatelj zajednice',
+    whyTitle: 'Zašto ovaj profil?'
+  },
+
+  notifications: {
+    title: 'Obavijesti',
+    empty: 'Nema novih obavijesti.',
+    markAllRead: 'Označi sve pročitano',
+    open: 'Otvori'
+  },
+
   profile: {
     back: '← Natrag',
     loading: 'Učitavanje...',
     unavailable: 'Profil nije dostupan.',
     verified: 'Verificiran profil',
     supporter: 'Supporter',
+    planPlus: 'Plus',
+    donorSupporter: 'Podržavatelj',
     video: 'Video',
     seeking: 'Traži:',
     interests: 'Interesi',
@@ -776,7 +854,28 @@ export default {
     reference: 'Poziv na broj / opis',
     copyIban: 'Kopiraj IBAN',
     copyRef: 'Kopiraj',
-    defaultReference: 'Ravnopar donacija'
+    defaultReference: 'Ravnopar donacija',
+    impactTitle: 'Utjecaj zajednice',
+    impactLead: 'Brojke se ažuriraju iz stvarnih podataka platforme.',
+    impactMembers: 'Članova zajednice',
+    impactContacts: 'Kontakata (30 dana)',
+    impactSupporters: 'Podržavatelja',
+    impactDonated: 'Donirano (30 dana)',
+    impactCoverage: 'Pokriveno troškova ovaj mjesec',
+    impactMonthlyCost: 'Procijenjeni mjesečni trošak',
+    costBreakdownTitle: 'Kamo ide novac',
+    costServer: 'Server i baza (Render)',
+    costEmail: 'Email obavijesti',
+    costDomain: 'Domena i SSL',
+    whatDonationDoesNot: 'Donacija ne kupuje',
+    notBuyBoost: 'boost ili prednost u feedu',
+    notBuyVisibility: 'veću vidljivost profila',
+    notBuyMessages: 'paywall na razgovor',
+    whatDonationDoes: 'Donacija pomaže',
+    helpsServer: 'držati platformu online',
+    helpsCommunity: 'zajednici koja želi fer dating',
+    thanksBadge: 'Badge „Podržavatelj” (bez utjecaja na rang)',
+    publicThanks: 'Hvala svim podržavateljima koji pomažu Ravnopar ostati online.'
   },
 
   invite: {
@@ -892,14 +991,17 @@ export default {
       'Besplatni paket pokriva sve bitno. Premium opcije su već pripremljene, ali namjerno isključene dok zajednica ne bude spremna.',
     planStatusActive: 'Aktivan',
     planStatusSoon: 'Uskoro',
+    planStatusBuy: 'Dostupno',
     planStatusDisabled: 'U pripremi',
     planBtnIncluded: 'Uključeno u aplikaciji',
     planBtnSoon: 'Uskoro dostupno',
+    planBtnBuy: 'Kupi paket',
     planBtnDisabled: 'Još nije dostupno',
     planDisabledTitle:
       'Paket još nije dostupan. Obavijestit ćemo unaprijed prije uvođenja naplate.',
     planHintCheckout:
       'Premium checkout dostupan u Postavkama nakon prijave.',
+    planHintLogin: 'Prijavi se da kupiš premium paket.',
     planHintLater:
       'Aktiviramo kad proizvod i zajednica budu spremni — obavijest stiže unaprijed.',
     freePrice: '0 €',
@@ -995,6 +1097,18 @@ export default {
       {
         q: 'Tko može koristiti Ravnopar?',
         a: 'Odrasli (18+) s verificiranim emailom. Poštuj pravila zajednice i granice drugih korisnika.'
+      },
+      {
+        q: 'Što je ghosting i što Ravnopar radi protiv njega?',
+        a: 'Ghosting je kad netko prihvati kontakt, a zatim prestane odgovarati. Nakon 48 h neaktivnosti šaljemo upozorenje; nakon 72 h razgovor se automatski zatvara i oboje ponovno postajete dostupni u feedu. Stari neodgovoreni zahtjevi istječu nakon 14 dana.'
+      },
+      {
+        q: 'Daju li donacije prednost u feedu?',
+        a: 'Ne. Donacije pomažu troškovima servera i mogu prikazati značku podržavatelja — ali nikad ne utječu na redoslijed profila. Detalje vidi na stranici Fer feed.'
+      },
+      {
+        q: 'Što premium paketi neće raditi?',
+        a: 'Premium neće davati boost u feedu, skrivati te od drugih niti ograničavati besplatni chat. Crvene linije su javno objavljene na stranici Fer izvještaj.'
       }
     ]
   },

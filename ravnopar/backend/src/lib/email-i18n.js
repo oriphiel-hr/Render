@@ -269,6 +269,90 @@ const TEMPLATES = {
         'Odprite aplikacijo: {appUrl}'
       ]
     }
+  },
+  donationThanks: {
+    subject: { hr: 'Ravnopar — hvala na podršci', en: 'Ravnopar — thank you for your support' },
+    lines: {
+      hr: [
+        'Hvala ti!',
+        '',
+        'Primili smo tvoju donaciju od {amountEur} €.',
+        'Donacija ne daje prednost u feedu — ali pomaže održati Ravnopar online za sve.',
+        '',
+        'Aplikacija: {appUrl}'
+      ],
+      en: [
+        'Thank you!',
+        '',
+        'We received your donation of {amountEur} €.',
+        'Donations do not affect feed ranking — they help keep Ravnopar online for everyone.',
+        '',
+        'App: {appUrl}'
+      ]
+    }
+  },
+  pairInactivityWarning: {
+    subject: { hr: 'Ravnopar — razgovor čeka odgovor', en: 'Ravnopar — conversation awaiting reply' },
+    lines: {
+      hr: [
+        'Pozdrav {name},',
+        '',
+        'U jednom od tvojih razgovora dugo nema poruka (preko {hours} h).',
+        'Odgovori ili zatvori kontakt — tako drugima ostaje prilika.',
+        '',
+        'App: {appUrl}'
+      ],
+      en: [
+        'Hello {name},',
+        '',
+        'One of your conversations has been quiet for over {hours} hours.',
+        'Reply or close the contact so others get a fair chance.',
+        '',
+        'App: {appUrl}'
+      ]
+    }
+  },
+  pairAutoClosed: {
+    subject: { hr: 'Ravnopar — razgovor zatvoren', en: 'Ravnopar — conversation closed' },
+    lines: {
+      hr: [
+        'Pozdrav {name},',
+        '',
+        'Razgovor je zatvoren zbog neaktivnosti (preko {hours} h).',
+        'Ponovno si dostupan/na u feedu.',
+        '',
+        'App: {appUrl}'
+      ],
+      en: [
+        'Hello {name},',
+        '',
+        'A conversation was closed due to inactivity (over {hours} hours).',
+        'You are available in the feed again.',
+        '',
+        'App: {appUrl}'
+      ]
+    }
+  },
+  contactExpired: {
+    subject: { hr: 'Ravnopar — zahtjev istekao', en: 'Ravnopar — request expired' },
+    lines: {
+      hr: [
+        'Pozdrav {name},',
+        '',
+        'Tvoj zahtjev za kontakt nije prihvaćen na vrijeme i automatski je zatvoren.',
+        'Možeš poslati novi zahtjev kasnije.',
+        '',
+        'App: {appUrl}'
+      ],
+      en: [
+        'Hello {name},',
+        '',
+        'Your contact request was not accepted in time and was automatically closed.',
+        'You can send a new request later.',
+        '',
+        'App: {appUrl}'
+      ]
+    }
   }
 };
 

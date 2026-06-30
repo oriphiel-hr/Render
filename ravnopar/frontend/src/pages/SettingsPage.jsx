@@ -4,6 +4,7 @@ import {
   createPlanCheckout,
   deleteAccount,
   exportMyData,
+  getMyOrders,
   getPlansStatus,
   getProfile,
   updateProfile
@@ -40,6 +41,23 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
   const [statusKind, setStatusKind] = useState('info');
   const [busy, setBusy] = useState(false);
   const [plansStatus, setPlansStatus] = useState(null);
+  const [orders, setOrders] = useState([]);
+
+  function formatOrderAmount(cents) {
+    return `${(cents / 100).toFixed(2).replace('.', ',')} €`;
+  }
+
+  function formatOrderType(order) {
+    if (order.orderType === 'DONATION') return t('settings.orderDonation');
+    if (order.orderType === 'PLAN') return t('settings.orderPlan');
+    return t('settings.orderOther');
+  }
+
+  function formatOrderStatus(status) {
+    const key = `settings.orderStatus_${status}`;
+    const label = t(key);
+    return label === key ? status : label;
+  }
 
   function setMessage(message, kind = 'info') {
     setStatus(message);
@@ -47,12 +65,17 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
   }
 
   async function load() {
-    const [profileData, plansData] = await Promise.all([getProfile(token), getPlansStatus()]);
+    const [profileData, plansData, ordersData] = await Promise.all([
+      getProfile(token),
+      getPlansStatus(),
+      getMyOrders(token)
+    ]);
     if (profileData?.success) {
       setForm(profileData.profile);
       setCompleteness(profileData.completeness || 0);
     }
     if (plansData?.success) setPlansStatus(plansData);
+    if (ordersData?.success) setOrders(ordersData.items || []);
     if (searchParams.get('plan') === 'success') {
       setMessage(t('settings.planSuccess'), 'success');
     }
@@ -192,6 +215,7 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
         sameCountryOnly: Boolean(form.sameCountryOnly),
         availability: form.availability,
         notifyEmail: form.notifyEmail,
+        donorBadgeVisible: form.donorBadgeVisible,
         photos: form.photos || [],
         icebreakers: form.icebreakers || [],
         publicTags: form.publicTags || [],
@@ -723,6 +747,20 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
           {t('settings.notifyEmail')}
         </label>
 
+        {(form.lifetimeDonatedCents || 0) > 0 && (
+          <label className="choice-chip notify-toggle">
+            <input
+              type="checkbox"
+              checked={form.donorBadgeVisible !== false}
+              onChange={(e) => setForm({ ...form, donorBadgeVisible: e.target.checked })}
+            />
+            {t('settings.donorBadgeVisible')}
+          </label>
+        )}
+        {(form.lifetimeDonatedCents || 0) > 0 && (
+          <p className="muted">{t('settings.donorBadgeHint')}</p>
+        )}
+
         <div className="form-actions row">
           <button type="submit" className="button button-primary" disabled={busy}>
             {busy ? t('settings.saving') : t('settings.saveProfile')}
@@ -747,6 +785,27 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
               </button>
             ))}
           </div>
+        </section>
+      )}
+
+      {orders.length > 0 && (
+        <section className="card">
+          <h2 className="section-title">{t('settings.ordersTitle')}</h2>
+          <p className="muted">{t('settings.ordersHint')}</p>
+          <ul className="orders-list">
+            {orders.map((order) => (
+              <li key={order.id} className="order-row">
+                <span className="order-type">{formatOrderType(order)}</span>
+                <span className="order-amount">{formatOrderAmount(order.amountCents)}</span>
+                <span className={`order-status order-status-${order.status.toLowerCase()}`}>
+                  {formatOrderStatus(order.status)}
+                </span>
+                <time className="order-date" dateTime={order.createdAt}>
+                  {new Date(order.createdAt).toLocaleDateString(locale)}
+                </time>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 

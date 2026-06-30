@@ -49,6 +49,12 @@ enum PaymentStatus {
   CANCELLED
 }
 
+enum PaymentOrderType {
+  DONATION
+  PLAN
+  CUSTOM
+}
+
 enum AuditCategory {
   ADMIN_ACTION
   MODERATION
@@ -130,6 +136,9 @@ model UserProfile {
   verificationPending Boolean        @default(false)
   referralCode      String?          @unique
   referredByProfileId String?
+  supporterSince    DateTime?
+  lifetimeDonatedCents Int           @default(0)
+  donorBadgeVisible Boolean          @default(true)
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
   account       UserAccount?
@@ -276,18 +285,45 @@ model PairMessage {
 }
 
 model PaymentOrder {
-  id                  String         @id @default(cuid())
-  userProfileId       String
+  id                  String            @id @default(cuid())
+  userProfileId       String?
+  orderType           PaymentOrderType  @default(CUSTOM)
+  planId              String?
   provider            PaymentProvider
-  status              PaymentStatus  @default(PENDING)
+  status              PaymentStatus     @default(PENDING)
   amountCents         Int
-  currency            String         @default("EUR")
+  currency            String            @default("EUR")
   description         String
   stripeSessionId     String?
   bankTransferReference String?
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
 
   @@index([userProfileId, createdAt])
   @@index([status, createdAt])
+  @@index([orderType, status, createdAt])
+}
+
+model InAppNotification {
+  id         String    @id @default(cuid())
+  profileId  String
+  type       String
+  title      String
+  body       String
+  linkPath   String?
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([profileId, readAt, createdAt])
+}
+
+model PushSubscription {
+  id         String   @id @default(cuid())
+  profileId  String
+  endpoint   String   @unique
+  p256dh     String
+  auth       String
+  createdAt  DateTime @default(now())
+
+  @@index([profileId])
 }

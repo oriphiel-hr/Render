@@ -347,6 +347,9 @@ export default {
       privacy: "Privacy policy",
       terms: "Terms of service",
       contact: "Contact",
+      fairFeed: "How the fair feed works",
+      fairnessReport: "Fairness report",
+      donatePublic: "Support the project",
       admin: "Admin"
     },
     descriptions: {
@@ -364,12 +367,17 @@ export default {
       privacy: "How Ravnopar collects, uses, and protects your data.",
       terms: "Terms for using the Ravnopar platform.",
       contact: "Contact the Ravnopar team for support, privacy, and reports.",
+      fairFeed: "How Ravnopar ranks profiles — transparent rules, no paid boost.",
+      fairnessReport: "Public fairness metrics and premium red lines.",
+      donatePublic: "Voluntarily support Ravnopar server costs — no feed advantage.",
       admin: "Ravnopar admin center."
     }
   },
   footer: {
     plans: "Plans",
     help: "Help",
+    fairFeed: "Fair feed",
+    fairnessReport: "Report",
     guidelines: "Guidelines",
     privacy: "Privacy",
     terms: "Terms",
@@ -574,7 +582,19 @@ export default {
     deleteConfirm: "Permanently delete account? This action cannot be undone.",
     deleteFailed: "Account deletion failed.",
     planSuccess: "Payment received. Premium activation follows after verification.",
-    checkoutFailed: "Premium checkout is not available."
+    checkoutFailed: "Premium checkout is not available.",
+    ordersTitle: "Payment history",
+    ordersHint: "Donations and premium payments linked to your account.",
+    orderDonation: "Donation",
+    orderPlan: "Premium plan",
+    orderOther: "Payment",
+    orderStatus_PAID: "Paid",
+    orderStatus_PENDING: "Pending",
+    orderStatus_FAILED: "Failed",
+    orderStatus_CANCELLED: "Cancelled",
+    donorBadgeVisible: "Show supporter badge on profile",
+    donorBadgeHint:
+      "The badge does not give feed priority — it only shows you supported the project. You can hide it anytime."
   },
   dashboard: {
     greeting: "Hello, {name}",
@@ -656,6 +676,8 @@ export default {
     unavailable: "Profile is not available.",
     verified: "Verified profile",
     supporter: "Supporter",
+    planPlus: "Plus",
+    donorSupporter: "Supporter",
     video: "Video",
     seeking: "Looking for:",
     interests: "Interests",
@@ -725,7 +747,75 @@ export default {
     reference: "Reference / description",
     copyIban: "Copy IBAN",
     copyRef: "Kopiraj",
-    defaultReference: "Ravnopar donacija"
+    defaultReference: "Ravnopar donation",
+    impactTitle: "Community impact",
+    impactLead: "Numbers are loaded from real platform data.",
+    impactMembers: "Community members",
+    impactContacts: "Contacts (30 days)",
+    impactSupporters: "Supporters",
+    impactDonated: "Donated (30 days)",
+    impactCoverage: "Operating costs covered this month",
+    impactMonthlyCost: "Estimated monthly cost",
+    costBreakdownTitle: "Where the money goes",
+    costServer: "Server and database (Render)",
+    costEmail: "Email notifications",
+    costDomain: "Domain and SSL",
+    whatDonationDoesNot: "Donations do not buy",
+    notBuyBoost: "feed boost or ranking advantage",
+    notBuyVisibility: "greater profile visibility",
+    notBuyMessages: "paywall on conversation",
+    whatDonationDoes: "Donations help",
+    helpsServer: "keep the platform online",
+    helpsCommunity: "a community that wants fair dating",
+    thanksBadge: "Supporter badge (no ranking effect)",
+    publicThanks: "Thank you to everyone helping Ravnopar stay online."
+  },
+  fairFeed: {
+    title: "How the fair feed works",
+    subtitle: "Transparent — no hidden reach throttling.",
+    intro: "Ravnopar does not sell visibility. Here is what affects who you see — and what never does.",
+    principlesTitle: "Ranking principles",
+    neverTitle: "Never affects ranking",
+    neverItems: ["Payment or donations", "Premium plan (Plus / Supporter)", "Number of swipes or time in app"],
+    doesTitle: "May affect ranking (small and transparent)",
+    explainLink: "View fairness report",
+    faqLink: "Questions and answers",
+    principles: {
+      compatibility_filter: "Compatibility — preferences and intents must match",
+      no_plan_boost: "Plan tier (free/plus/supporter) adds no feed points",
+      fair_waiting_boost: "Fair boost if someone waits long without incoming requests",
+      interest_lifestyle_points: "Small bonus for shared interests and lifestyle match",
+      completeness_verification: "Profile completeness and verification (small clear points)",
+      active_pairs_hidden: "Active pairs are temporarily hidden from the feed"
+    }
+  },
+  fairnessReport: {
+    title: "Fairness report",
+    subtitle: "Public activity and rules overview — updated on load.",
+    statsTitle: "Community (30 days)",
+    changesTitle: "Rule changes (90 days)",
+    noChanges: "No limit or ranking rule changes in the last 90 days.",
+    premiumTitle: "Premium red lines",
+    premiumItems: [
+      "Premium does not boost the feed",
+      "Chat stays free",
+      "Donations give no advantage",
+      "Premium = comfort, not access"
+    ]
+  },
+  feedSignals: {
+    shared_interests: "Shared interests",
+    verified: "Verified profile",
+    complete_profile: "Complete profile",
+    fair_waiting: "Fair boost — awaiting contact",
+    community_supporter: "Community supporter",
+    whyTitle: "Why this profile?"
+  },
+  notifications: {
+    title: "Notifications",
+    empty: "No new notifications.",
+    markAllRead: "Mark all read",
+    open: "Open"
   },
   invite: {
     title: "Invite a friend",
@@ -844,12 +934,15 @@ export default {
     plansLead: "The free plan covers everything essential. Premium options are already prepared, but intentionally disabled until the community is ready.",
     planStatusActive: "Active",
     planStatusSoon: "Coming soon",
+    planStatusBuy: "Available",
     planStatusDisabled: "In preparation",
     planBtnIncluded: "Included in the app",
     planBtnSoon: "Coming soon",
+    planBtnBuy: "Buy plan",
     planBtnDisabled: "Not available yet",
     planDisabledTitle: "This plan is not available yet. We will notify you in advance before billing is introduced.",
     planHintCheckout: "Premium checkout is available in Settings after you log in.",
+    planHintLogin: "Log in to buy a premium plan.",
     planHintLater: "We will activate it when the product and community are ready — notice will come in advance.",
     freePrice: "0 €",
     plans: [
@@ -943,6 +1036,18 @@ export default {
       {
         q: "Who can use Ravnopar?",
         a: "Adults (18+) with a verified email. Respect community rules and other users’ boundaries."
+      },
+      {
+        q: "What is ghosting and what does Ravnopar do about it?",
+        a: "Ghosting is when someone accepts contact but then stops replying. After 48 hours of inactivity we send a warning; after 72 hours the conversation auto-closes and you both become available in the feed again. Old unanswered requests expire after 14 days."
+      },
+      {
+        q: "Do donations give feed priority?",
+        a: "No. Donations help server costs and may show a supporter badge — but they never affect profile order. See the Fair feed page for details."
+      },
+      {
+        q: "What will premium plans never do?",
+        a: "Premium will not boost you in the feed, hide you from others, or limit free chat. Red lines are published on the Fairness report page."
       }
     ]
   },

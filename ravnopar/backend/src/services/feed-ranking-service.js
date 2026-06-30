@@ -170,21 +170,43 @@ export async function buildRankedFeed(me, { blockedIds, logSnapshot = false, rec
     recordSnapshot(me.id, withRank).catch(() => {});
   }
 
-  const items = withRank.map((row) =>
-    toPublicProfile(row.candidate, {
+  const items = withRank.map((row) => {
+    const overlap = tagsOverlap(me.publicTags, row.candidate.publicTags);
+    const feedSignals = [];
+    if (overlap.length > 0) feedSignals.push('shared_interests');
+    if (row.candidate.photoVerified) feedSignals.push('verified');
+    if (row.completeness >= 85) feedSignals.push('complete_profile');
+    if (row.incoming7d === 0 && row.waitingDays >= 3) feedSignals.push('fair_waiting');
+    if (row.candidate.lifetimeDonatedCents > 0 && row.candidate.donorBadgeVisible !== false) {
+      feedSignals.push('community_supporter');
+    }
+
+    return toPublicProfile(row.candidate, {
       completeness: row.completeness,
       distanceLabel: distanceLabelForProfiles(me, row.candidate),
-      commonTags: tagsOverlap(me.publicTags, row.candidate.publicTags),
+      commonTags: overlap,
+      feedSignals,
       awaitingContact: shouldShowAwaitingContact({
         incoming7d: row.incoming7d,
         waitingDays: row.waitingDays
       }),
-      fullProfile: row.completeness >= 90
-    })
-  );
+      fullProfile: row.completeness >= 90,
+      isDonorSupporter:
+        row.candidate.lifetimeDonatedCents > 0 && row.candidate.donorBadgeVisible !== false
+    });
+  });
 
   return { items, rankings: withRank };
 }
+
+export const FEED_PRINCIPLE_KEYS = [
+  'compatibility_filter',
+  'no_plan_boost',
+  'fair_waiting_boost',
+  'interest_lifestyle_points',
+  'completeness_verification',
+  'active_pairs_hidden'
+];
 
 export async function explainFeedForViewer(viewerProfileId) {
   const me = await prisma.userProfile.findUnique({ where: { id: viewerProfileId } });
@@ -202,7 +224,8 @@ export async function explainFeedForViewer(viewerProfileId) {
   const { rankings } = await buildRankedFeed(me, { blockedIds, logSnapshot: false });
   return {
     viewer: { id: me.id, displayName: me.displayName, city: me.city, identity: me.identity },
-    principles: [
+    principles: FEED_PRINCIPLE_KEYS,
+    principlesLegacy: [
       'Kompatibilnost (preferencije + namjere) je obavezni filter',
       'Dobni raspon i udaljenost filtriraju feed kad su postavljeni',
       'Paket (free/plus/supporter) ne daje bodove za rang',

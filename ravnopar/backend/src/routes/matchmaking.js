@@ -7,7 +7,15 @@ import { setTyping, getTypingInPair } from '../lib/typing-state.js';
 import { distanceLabelForProfiles } from '../lib/geo.js';
 import { getDemoFeedState } from '../services/fairness-service.js';
 import { buildExtendedFairnessAudit } from '../services/fairness-audit-service.js';
-import { buildRankedFeed, isFeedCompatible } from '../services/feed-ranking-service.js';
+import { buildRankedFeed, isFeedCompatible, FEED_PRINCIPLE_KEYS, explainFeedForViewer } from '../services/feed-ranking-service.js';
+import { getPublicImpactStats } from '../services/impact-stats-service.js';
+import { runInactivitySweep } from '../services/inactivity-sweep-service.js';
+import {
+  listNotifications,
+  countUnreadNotifications,
+  markNotificationRead,
+  markAllNotificationsRead
+} from '../lib/in-app-notifications.js';
 import { recordFeedRankingSnapshot, recordSecurityEvent } from '../services/audit-service.js';
 import { evaluateContactLimiter, evaluatePreferencePolicy } from '../services/policy-service.js';
 import { normalizeMaxDistanceKm, normalizeSeekingAgeRange } from '../lib/match-preferences.js';
@@ -59,23 +67,63 @@ async function assertPairMember(pairId, profileId) {
 }
 
 matchmakingRouter.get('/public-stats', async (_req, res) => {
-  const since30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  const [memberCount, activeCount, contactCount, cityGroups] = await Promise.all([
-    prisma.userProfile.count(),
-    prisma.userProfile.count({ where: { availability: { not: 'PAUSED' } } }),
-    prisma.matchContact.count({ where: { status: 'ACCEPTED', createdAt: { gt: since30d } } }),
-    prisma.userProfile.groupBy({ by: ['city'], _count: { city: true }, orderBy: { _count: { city: 'desc' } }, take: 5 })
-  ]);
+  const stats = await getPublicImpactStats();
+  return res.json({ success: true, stats });
+});
 
+matchmakingRouter.get('/fairness-report', async (_req, res) => {
+  const stats = await getPublicImpactStats();
   return res.json({
     success: true,
-    stats: {
-      memberCount,
-      activeCount,
-      contactsLast30Days: contactCount,
-      topCities: cityGroups.map((row) => ({ city: row.city, count: row._count.city }))
+    report: {
+      generatedAt: new Date().toISOString(),
+      stats,
+      principles: FEED_PRINCIPLE_KEYS,
+      premiumRedLines: [
+        'no_feed_boost',
+        'no_paywall_chat',
+        'donations_no_advantage',
+        'premium_comfort_only'
+      ]
     }
   });
+});
+
+matchmakingRouter.get('/feed/principles', (_req, res) => {
+  return res.json({ success: true, principles: FEED_PRINCIPLE_KEYS });
+});
+
+matchmakingRouter.get('/feed/explain', requireAuth, async (req, res) => {
+  const data = await explainFeedForViewer(req.auth.profileId);
+  if (!data) return res.status(404).json({ success: false, error: 'Profile not found' });
+  return res.json({ success: true, data });
+});
+
+matchmakingRouter.get('/notifications', requireAuth, async (req, res) => {
+  const [items, unread] = await Promise.all([
+    listNotifications(req.auth.profileId),
+    countUnreadNotifications(req.auth.profileId)
+  ]);
+  return res.json({ success: true, items, unread });
+});
+
+matchmakingRouter.post('/notifications/read-all', requireAuth, async (req, res) => {
+  await markAllNotificationsRead(req.auth.profileId);
+  return res.json({ success: true });
+});
+
+matchmakingRouter.post('/notifications/:id/read', requireAuth, async (req, res) => {
+  await markNotificationRead(req.auth.profileId, req.params.id);
+  return res.json({ success: true });
+});
+
+matchmakingRouter.post('/internal/cron/sweep', async (req, res) => {
+  const secret = process.env.CRON_SECRET?.trim();
+  if (!secret || req.header('x-cron-secret') !== secret) {
+    return res.status(403).json({ success: false, error: 'Forbidden' });
+  }
+  const result = await runInactivitySweep();
+  return res.json({ success: true, result });
 });
 
 matchmakingRouter.get('/fairness-state', async (_req, res) => {
@@ -482,33 +530,11 @@ matchmakingRouter.post('/pairs/:pairId/close', requireAuth, async (req, res) => 
 
 matchmakingRouter.post('/pairs/timeout-sweep', requireAuth, requireAdmin, async (req, res) => {
   const thresholdHours = Number(req.query.thresholdHours || 72);
-  const cutoff = new Date(Date.now() - thresholdHours * 60 * 60 * 1000);
-
-  const stalePairs = await prisma.engagedPair.findMany({
-    where: { status: 'ACTIVE', startedAt: { lt: cutoff } }
+  const result = await runInactivitySweep({
+    warnHours: Math.max(24, thresholdHours - 24),
+    closeHours: thresholdHours
   });
-
-  for (const pair of stalePairs) {
-    await prisma.$transaction(async (tx) => {
-      await tx.engagedPair.update({
-        where: { id: pair.id },
-        data: {
-          status: 'CLOSED',
-          endedAt: new Date(),
-          closeReason: `Auto timeout after ${thresholdHours}h`
-        }
-      });
-      await tx.userProfile.updateMany({
-        where: {
-          id: { in: [pair.userAId, pair.userBId] },
-          availability: 'FOCUSED_CONTACT'
-        },
-        data: { availability: 'AVAILABLE' }
-      });
-    });
-  }
-
-  return res.json({ success: true, closedPairs: stalePairs.length });
+  return res.json({ success: true, ...result });
 });
 
 matchmakingRouter.get('/admin-risk-overview', requireAuth, requireAdmin, async (_req, res) => {
@@ -687,9 +713,13 @@ matchmakingRouter.get('/profiles/:profileId', requireAuth, async (req, res) => {
 
 matchmakingRouter.get('/inbox-summary', requireAuth, async (req, res) => {
   const profileId = req.auth.profileId;
-  const pairs = await prisma.engagedPair.findMany({
-    where: { status: 'ACTIVE', OR: [{ userAId: profileId }, { userBId: profileId }] }
-  });
+  const [pairs, pendingIncoming, notificationUnread] = await Promise.all([
+    prisma.engagedPair.findMany({
+      where: { status: 'ACTIVE', OR: [{ userAId: profileId }, { userBId: profileId }] }
+    }),
+    prisma.matchContact.count({ where: { targetId: profileId, status: 'PENDING' } }),
+    countUnreadNotifications(profileId)
+  ]);
 
   let unreadTotal = 0;
   const items = [];
@@ -719,7 +749,13 @@ matchmakingRouter.get('/inbox-summary', requireAuth, async (req, res) => {
     });
   }
 
-  return res.json({ success: true, unreadTotal, items });
+  return res.json({
+    success: true,
+    unreadTotal,
+    pendingIncoming,
+    notificationUnread,
+    items
+  });
 });
 
 matchmakingRouter.post('/pairs/:pairId/read', requireAuth, async (req, res) => {

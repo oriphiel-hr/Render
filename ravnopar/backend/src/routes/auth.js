@@ -54,7 +54,10 @@ function ownerProfileExtras(profile) {
     smoking: normalizeSmoking(profile.smoking),
     relationshipStatus: normalizeRelationshipStatus(profile.relationshipStatus),
     verificationPending: profile.verificationPending,
-    verificationSelfie: profile.verificationSelfie || null
+    verificationSelfie: profile.verificationSelfie || null,
+    lifetimeDonatedCents: profile.lifetimeDonatedCents || 0,
+    donorBadgeVisible: profile.donorBadgeVisible !== false,
+    supporterSince: profile.supporterSince || null
   };
 }
 
@@ -419,6 +422,7 @@ const profileUpdateSchema = z.object({
   intents: z.array(z.enum(['CHAT', 'CASUAL', 'RELATIONSHIP', 'MARRIAGE', 'ADVENTURE'])).min(1).max(5).optional(),
   availability: z.enum(['AVAILABLE', 'PAUSED']).optional(),
   notifyEmail: z.boolean().optional(),
+  donorBadgeVisible: z.boolean().optional(),
   onboardingDone: z.boolean().optional(),
   photos: z.array(z.string()).max(3).optional(),
   icebreakers: z
@@ -557,6 +561,9 @@ authRouter.patch('/profile', requireAuth, async (req, res) => {
     }
     if (payload.relationshipStatus !== undefined) {
       data.relationshipStatus = normalizeRelationshipStatus(payload.relationshipStatus);
+    }
+    if (payload.donorBadgeVisible !== undefined && (profile.lifetimeDonatedCents || 0) <= 0) {
+      delete data.donorBadgeVisible;
     }
     if (payload.verificationSelfie !== undefined) {
       if (payload.verificationSelfie === null) {

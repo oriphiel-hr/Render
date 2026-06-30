@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { blockUser, getPublicProfile, reportUser, sendContactRequest } from '../api/index.js';
-import PageMeta from '../components/PageMeta.jsx';
+import SupporterBadge from '../components/SupporterBadge.jsx';
 import PhotoGallery from '../components/PhotoGallery.jsx';
 import { ActivityChip, CommonTagsLine, LifestyleChipList, ProfileSignalChips, ProfileTagList } from '../components/ProfileTagList.jsx';
 import VideoEmbed from '../components/VideoEmbed.jsx';
@@ -67,7 +67,7 @@ export default function ProfileDetailPage({ token, myProfileId }) {
               </p>
               <div className="profile-tags">
                 {person.photoVerified && <span className="chip chip-verified">{t('profile.verified')}</span>}
-                {person.planTier !== 'free' && <span className="chip">{t('profile.supporter')}</span>}
+                <SupporterBadge person={person} />
                 <span className="chip">{labels.labelIdentity(person.identity)}</span>
                 <span className="chip">{labels.labelProfileType(person.profileType)}</span>
               </div>

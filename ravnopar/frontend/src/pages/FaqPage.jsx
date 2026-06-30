@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import PageMeta from '../components/PageMeta.jsx';
+import FaqStructuredData from '../components/FaqStructuredData.jsx';
 import { getFaqItems } from '../lib/faq.js';
 import { CONTACT_EMAIL } from '../lib/legal-content.js';
 import { useI18n } from '../lib/i18n/index.jsx';
@@ -10,6 +11,7 @@ export default function FaqPage() {
 
   return (
     <main className="page faq-page">
+      <FaqStructuredData />
       <PageMeta titleKey="faq" descriptionKey="faq" />
       <section className="hero legal-hero">
         <h1>{t('faq.title')}</h1>

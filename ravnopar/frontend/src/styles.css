@@ -885,6 +885,10 @@ button:disabled,
   opacity: 0.92;
 }
 
+.plan-card-buy {
+  border-color: #bfdbfe;
+}
+
 .plan-card-active {
   border-color: #a7f3d0;
   background: linear-gradient(180deg, #f0fdf4 0%, #fff 100%);
@@ -950,6 +954,11 @@ button:disabled,
 .plan-badge-soon {
   background: #e2e8f0;
   color: #475569;
+}
+
+.plan-badge-buy {
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 
 .plan-price {
@@ -1439,6 +1448,156 @@ body:has(.mobile-dock) .public-footer {
   padding-left: 1.25rem;
   display: grid;
   gap: 0.35rem;
+}
+
+.orders-list {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.order-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 0.75rem 1rem;
+  align-items: center;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.order-status-paid {
+  color: var(--success, #4ade80);
+}
+
+.order-status-pending {
+  color: var(--warning, #fbbf24);
+}
+
+@media (max-width: 640px) {
+  .order-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .order-date {
+    grid-column: 1 / -1;
+    font-size: 0.82rem;
+    opacity: 0.75;
+  }
+}
+
+.impact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 0.75rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.impact-stat {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.impact-columns {
+  display: grid;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+@media (min-width: 720px) {
+  .impact-columns {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.feed-explain-hint {
+  margin-top: 0.5rem;
+}
+
+.feed-explain-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.feed-explain-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.chip-donor {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+}
+
+.chip-plan-plus,
+.chip-plan-supporter {
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+.notification-center {
+  position: relative;
+}
+
+.notification-bell {
+  position: relative;
+  min-width: 2.25rem;
+}
+
+.notification-badge {
+  position: absolute;
+  top: 0.1rem;
+  right: 0.1rem;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 0.25rem;
+  border-radius: 999px;
+  background: var(--danger, #dc2626);
+  color: #fff;
+  font-size: 0.65rem;
+  line-height: 1rem;
+  text-align: center;
+}
+
+.notification-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.35rem);
+  width: min(22rem, 92vw);
+  z-index: 40;
+  max-height: 24rem;
+  overflow: auto;
+}
+
+.notification-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.notification-list {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.notification-list li.unread {
+  border-left: 3px solid var(--primary);
+  padding-left: 0.5rem;
+}
+
+.notification-link {
+  font-size: 0.88rem;
 }
 
 .contact-topics li {

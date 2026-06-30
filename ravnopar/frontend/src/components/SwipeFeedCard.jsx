@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import PhotoGallery from './PhotoGallery.jsx';
+import FeedExplainHint from './FeedExplainHint.jsx';
+import SupporterBadge from './SupporterBadge.jsx';
 import { ActivityChip, CommonTagsLine, LifestyleChipList, ProfileSignalChips, ProfileTagList } from './ProfileTagList.jsx';
 import { useI18n } from '../lib/i18n/index.jsx';
 
@@ -54,6 +56,7 @@ export default function SwipeFeedCard({ person, myCity, onLike, onPass, onBlock,
           <h3>
             <Link to={`/app/profile/${person.id}`}>{person.displayName}</Link>
             {person.photoVerified && <span className="chip chip-verified">✓</span>}
+            <SupporterBadge person={person} />
           </h3>
           <p className="muted">
             {person.city}, {person.age} {t('common.yearsShort')}
@@ -69,6 +72,7 @@ export default function SwipeFeedCard({ person, myCity, onLike, onPass, onBlock,
         <ProfileTagList tags={person.publicTags} scope="public" />
         <LifestyleChipList person={person} labels={labels} />
         <CommonTagsLine tags={person.commonTags} />
+        <FeedExplainHint signals={person.feedSignals} />
 
         {person.icebreakers?.length > 0 && (
           <ul className="icebreaker-list">

@@ -2,6 +2,7 @@ import { sendEmail } from '../lib/mail.js';
 import { buildEmail } from '../lib/email-i18n.js';
 import { prisma } from '../lib/prisma.js';
 import { canSendMessageEmail, markMessageEmailSent } from '../lib/message-email-throttle.js';
+import { createInAppNotification } from '../lib/in-app-notifications.js';
 
 const frontendBase = () => (process.env.FRONTEND_BASE_URL || 'http://localhost:5173').replace(/\/$/, '');
 
@@ -15,7 +16,17 @@ export async function sendVerificationEmail(email, code, locale = 'hr') {
 
 export async function notifyContactRequest(targetProfileId, requesterName) {
   const target = await prisma.userProfile.findUnique({ where: { id: targetProfileId } });
-  if (!target?.email || target.notifyEmail === false) return { skipped: true };
+  if (!target) return { skipped: true };
+
+  await createInAppNotification({
+    profileId: targetProfileId,
+    type: 'CONTACT_REQUEST',
+    title: 'Novi zahtjev za kontakt',
+    body: `${requesterName} želi kontakt s tobom.`,
+    linkPath: '/app'
+  });
+
+  if (!target.email || target.notifyEmail === false) return { skipped: true };
 
   const { subject, text } = buildEmail('contactRequest', target.locale, {
     name: target.displayName,
@@ -27,7 +38,17 @@ export async function notifyContactRequest(targetProfileId, requesterName) {
 
 export async function notifyContactAccepted(requesterProfileId, accepterName) {
   const requester = await prisma.userProfile.findUnique({ where: { id: requesterProfileId } });
-  if (!requester?.email || requester.notifyEmail === false) return { skipped: true };
+  if (!requester) return { skipped: true };
+
+  await createInAppNotification({
+    profileId: requesterProfileId,
+    type: 'CONTACT_ACCEPTED',
+    title: 'Kontakt prihvaćen',
+    body: `${accepterName} je prihvatio/la tvoj zahtjev — možeš otvoriti chat.`,
+    linkPath: '/app'
+  });
+
+  if (!requester.email || requester.notifyEmail === false) return { skipped: true };
 
   const { subject, text } = buildEmail('contactAccepted', requester.locale, {
     name: requester.displayName,
@@ -88,4 +109,47 @@ export async function notifyNewMessage(recipientProfileId, senderName, pairId) {
   }
 
   return result;
+}
+
+export async function sendDonationThankYouEmail(email, amountEur, locale = 'hr') {
+  const { subject, text } = buildEmail('donationThanks', locale, {
+    amountEur,
+    appUrl: `${frontendBase()}/app`
+  });
+  return sendEmail({ to: email, subject, text });
+}
+
+export async function notifyPairInactivityWarning(profileId, warnHours) {
+  const profile = await prisma.userProfile.findUnique({ where: { id: profileId } });
+  if (!profile?.email || profile.notifyEmail === false) return { skipped: true };
+
+  const { subject, text } = buildEmail('pairInactivityWarning', profile.locale, {
+    name: profile.displayName,
+    hours: warnHours,
+    appUrl: `${frontendBase()}/app`
+  });
+  return sendEmail({ to: profile.email, subject, text });
+}
+
+export async function notifyPairAutoClosed(profileId, closeHours) {
+  const profile = await prisma.userProfile.findUnique({ where: { id: profileId } });
+  if (!profile?.email || profile.notifyEmail === false) return { skipped: true };
+
+  const { subject, text } = buildEmail('pairAutoClosed', profile.locale, {
+    name: profile.displayName,
+    hours: closeHours,
+    appUrl: `${frontendBase()}/app`
+  });
+  return sendEmail({ to: profile.email, subject, text });
+}
+
+export async function notifyPendingContactExpired(profileId) {
+  const profile = await prisma.userProfile.findUnique({ where: { id: profileId } });
+  if (!profile?.email || profile.notifyEmail === false) return { skipped: true };
+
+  const { subject, text } = buildEmail('contactExpired', profile.locale, {
+    name: profile.displayName,
+    appUrl: `${frontendBase()}/app`
+  });
+  return sendEmail({ to: profile.email, subject, text });
 }

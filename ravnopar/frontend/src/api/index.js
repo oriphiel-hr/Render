@@ -244,12 +244,48 @@ export async function getDonateStatus() {
   return res.json();
 }
 
-export async function createDonateCheckout(amountCents) {
+export async function createDonateCheckout(amountCents, token) {
   const res = await fetch(`${API_BASE_URL}/payments/donate/stripe`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: jsonHeaders(token),
     body: JSON.stringify({ amountCents })
   });
+  return res.json();
+}
+
+export async function getDonateImpact() {
+  const res = await fetch(`${API_BASE_URL}/payments/donate/impact`);
+  return res.json();
+}
+
+export async function getFairnessReport() {
+  const res = await fetch(`${API_BASE_URL}/matchmaking/fairness-report`);
+  return res.json();
+}
+
+export async function getNotifications(token) {
+  const res = await fetch(`${API_BASE_URL}/matchmaking/notifications`, { headers: authHeaders(token) });
+  return res.json();
+}
+
+export async function markNotificationRead(token, id) {
+  const res = await fetch(`${API_BASE_URL}/matchmaking/notifications/${id}/read`, {
+    method: 'POST',
+    headers: authHeaders(token)
+  });
+  return res.json();
+}
+
+export async function markAllNotificationsRead(token) {
+  const res = await fetch(`${API_BASE_URL}/matchmaking/notifications/read-all`, {
+    method: 'POST',
+    headers: authHeaders(token)
+  });
+  return res.json();
+}
+
+export async function getMyOrders(token) {
+  const res = await fetch(`${API_BASE_URL}/payments/my-orders`, { headers: authHeaders(token) });
   return res.json();
 }
 
@@ -267,13 +303,6 @@ export async function createBankTransferOrder(token, amountCents, description) {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({ amountCents, description })
-  });
-  return res.json();
-}
-
-export async function getMyOrders(token) {
-  const res = await fetch(`${API_BASE_URL}/payments/my-orders`, {
-    headers: authHeaders(token)
   });
   return res.json();
 }

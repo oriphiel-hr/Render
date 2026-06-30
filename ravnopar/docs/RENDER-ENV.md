@@ -50,6 +50,10 @@ Bez SMTP-a kodovi se logiraju u backend konzolu (Render → Logs).
 
 Vidi [MONITORING.md](./MONITORING.md) — UptimeRobot na `/health`.
 
+### SEO
+
+Vidi [SEO.md](./SEO.md) — Search Console, sitemap, hreflang.
+
 ### Stripe Premium
 
 | Key | Opis |
@@ -57,6 +61,15 @@ Vidi [MONITORING.md](./MONITORING.md) — UptimeRobot na `/health`.
 | `STRIPE_SECRET_KEY` | Stripe secret key |
 | `STRIPE_WEBHOOK_SECRET` | Webhook signing secret (`checkout.session.completed`) |
 | `PLANS_ENABLED` | `true` kad želiš uključiti Premium checkout |
+
+### Strategija (donacije, anti-ghosting)
+
+| Key | Opis |
+|-----|------|
+| `CRON_SECRET` | Tajna za `POST /api/matchmaking/internal/cron/sweep` (header `x-cron-secret`) |
+| `MONTHLY_OPERATING_COST_CENTS` | Mjesečni trošak za % pokrivenosti donacijama (default `2500` = 25 €) |
+
+Vidi [MONITORING.md](./MONITORING.md) za cron poziv.
 
 Webhook URL u Stripe Dashboardu:
 ```

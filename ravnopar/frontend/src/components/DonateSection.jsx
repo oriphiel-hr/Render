@@ -22,7 +22,7 @@ function copyText(value, onDone) {
   navigator.clipboard?.writeText(value).then(onDone).catch(() => {});
 }
 
-export default function DonateSection() {
+export default function DonateSection({ token }) {
   const { t } = useI18n();
   const reference = import.meta.env.VITE_DONATE_REFERENCE?.trim() || t('donate.defaultReference');
   const [copied, setCopied] = useState('');
@@ -66,7 +66,7 @@ export default function DonateSection() {
     setCardError('');
     setBusyAmount(amountEur);
     try {
-      const data = await createDonateCheckout(amountEur * 100);
+      const data = await createDonateCheckout(amountEur * 100, token);
       if (data?.success && data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
         return;

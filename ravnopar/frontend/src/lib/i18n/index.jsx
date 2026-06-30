@@ -14,6 +14,7 @@ import es from './locales/es.js';
 import sk from './locales/sk.js';
 import { COUNTRY_CODES } from './countries.js';
 import { SUPPORTED_LOCALES, detectBrowserLocale } from './locale-meta.js';
+import { readLangFromUrl, syncLangInUrl } from '../seo.js';
 
 const MESSAGES = { hr, en, de, sl, bs, sr, it, hu, pl, cs, fr, es, sk };
 export { SUPPORTED_LOCALES };
@@ -42,6 +43,8 @@ function resolveMessage(locale, key) {
 }
 
 export function getStoredLocale() {
+  const fromUrl = readLangFromUrl();
+  if (fromUrl) return fromUrl;
   const stored = localStorage.getItem(STORAGE_KEY);
   if (SUPPORTED_LOCALES.includes(stored)) return stored;
   return detectBrowserLocale() || 'en';
@@ -110,6 +113,7 @@ export function I18nProvider({ children, initialLocale }) {
     if (!SUPPORTED_LOCALES.includes(next)) return;
     localStorage.setItem(STORAGE_KEY, next);
     setLocaleState(next);
+    syncLangInUrl(next);
   }, []);
 
   const catalog = useMemo(() => MESSAGES[locale] ?? MESSAGES.en ?? MESSAGES.hr, [locale]);

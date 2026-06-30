@@ -62,6 +62,21 @@ curl https://ravnopar-backend.onrender.com/api/matchmaking/public-stats
 
 ---
 
+## Cron (anti-ghosting)
+
+Postavi `CRON_SECRET` na backendu i pozivaj dnevno:
+
+```bash
+curl -X POST https://ravnopar-backend.onrender.com/api/matchmaking/internal/cron/sweep \
+  -H "x-cron-secret: YOUR_SECRET"
+```
+
+Zatvara neaktivne razgovore, šalje upozorenja i istječe stare PENDING zahtjeve.
+
+Opcionalno: `MONTHLY_OPERATING_COST_CENTS=2500` za postotak pokrivenosti donacijama.
+
+---
+
 ## Env (opcionalno)
 
 | Key | Opis |

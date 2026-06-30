@@ -23,10 +23,16 @@ import { getInboxSummary, getProfile } from './api/index.js';
 import { isDonateConfigured } from './lib/donate-config.js';
 import { recordMemberSinceIfNeeded } from './lib/donate-prompt.js';
 import { useI18n } from './lib/i18n/index.jsx';
+import FairFeedPage from './pages/FairFeedPage.jsx';
+import FairnessReportPage from './pages/FairnessReportPage.jsx';
+import PublicDonatePage from './pages/PublicDonatePage.jsx';
+import NotificationCenter from './components/NotificationCenter.jsx';
 import LanguageSwitcher from './components/LanguageSwitcher.jsx';
 import LocaleProfileSync from './components/LocaleProfileSync.jsx';
+import SeoLocaleSync from './components/SeoLocaleSync.jsx';
+import PrivateRouteSeo from './components/PrivateRouteSeo.jsx';
 
-function Topbar({ token, profile, onLogout, unreadTotal }) {
+function Topbar({ token, profile, onLogout, unreadTotal, notificationUnread, onNotificationsChange }) {
   const location = useLocation();
   const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -79,6 +85,9 @@ function Topbar({ token, profile, onLogout, unreadTotal }) {
               <Link className={location.pathname === '/admin' ? 'nav-link active' : 'nav-link'} to="/admin" onClick={closeMenu}>{t('nav.admin')}</Link>
             )}
             <LanguageSwitcher variant="popover" className="topbar-lang" />
+            {token && (
+              <NotificationCenter token={token} onChange={onNotificationsChange} />
+            )}
             <ThemeToggle />
           </div>
           <button type="button" className="menu-toggle" aria-expanded={menuOpen} onClick={() => setMenuOpen((o) => !o)}>
@@ -114,6 +123,7 @@ export default function App() {
     return raw ? JSON.parse(raw) : null;
   });
   const [unreadTotal, setUnreadTotal] = useState(0);
+  const [notificationUnread, setNotificationUnread] = useState(0);
   const [onboardingDone, setOnboardingDone] = useState(true);
   const [feedReady, setFeedReady] = useState(true);
 
@@ -127,7 +137,10 @@ export default function App() {
     });
     const refreshInbox = () => {
       getInboxSummary(token).then((data) => {
-        if (data?.success) setUnreadTotal(data.unreadTotal || 0);
+        if (data?.success) {
+          setUnreadTotal(data.unreadTotal || 0);
+          setNotificationUnread(data.notificationUnread || 0);
+        }
       });
     };
     refreshInbox();
@@ -173,11 +186,23 @@ export default function App() {
     <>
       <Analytics />
       <CookieBanner />
+      <SeoLocaleSync />
+      <PrivateRouteSeo />
       <LocaleProfileSync token={token} profile={profile} onProfileLocaleSaved={onProfileLocaleSaved} />
-      <Topbar token={token} profile={profile} onLogout={onLogout} unreadTotal={unreadTotal} />
+      <Topbar
+        token={token}
+        profile={profile}
+        onLogout={onLogout}
+        unreadTotal={unreadTotal + notificationUnread}
+        notificationUnread={notificationUnread}
+        onNotificationsChange={setNotificationUnread}
+      />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/planovi" element={<PlanoviPage token={token} />} />
+        <Route path="/kako-radi-feed" element={<FairFeedPage />} />
+        <Route path="/fer-izvjestaj" element={<FairnessReportPage />} />
+        <Route path="/doniraj" element={<PublicDonatePage />} />
         <Route path="/pomoc" element={<FaqPage />} />
         <Route path="/pravila" element={<GuidelinesPage />} />
         <Route path="/privatnost" element={<PrivacyPage />} />
@@ -189,7 +214,7 @@ export default function App() {
         <Route path="/app/postavke" element={token ? <SettingsPage token={token} profile={profile} onLogout={onLogout} onProfileUpdate={onProfileUpdate} /> : <Navigate to="/auth" replace />} />
         <Route path="/app/profile/:profileId" element={token ? <ProfileDetailPage token={token} myProfileId={profile?.id} /> : <Navigate to="/auth" replace />} />
         <Route path="/app/chat/:pairId" element={token ? <ChatPage token={token} profile={profile} onRead={() => getInboxSummary(token).then((d) => d?.success && setUnreadTotal(d.unreadTotal || 0))} /> : <Navigate to="/auth" replace />} />
-        <Route path="/app/podrzi" element={token ? <DonatePage /> : <Navigate to="/auth" replace />} />
+        <Route path="/app/podrzi" element={token ? <DonatePage token={token} /> : <Navigate to="/doniraj" replace />} />
         <Route path="/admin" element={token && profile?.role === 'ADMIN' ? <AdminPage token={token} profile={profile} /> : <Navigate to="/auth" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

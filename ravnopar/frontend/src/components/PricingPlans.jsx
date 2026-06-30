@@ -1,26 +1,43 @@
 import { arePlansPurchasable, formatPlanPrice, getPlans } from '../lib/plans.js';
+import { createPlanCheckout } from '../api/index.js';
 import { useI18n } from '../lib/i18n/index.jsx';
+import { useState } from 'react';
 
-function planStatus(plan, t) {
+function planStatus(plan, t, purchasable) {
   if (plan.tier === 'free') {
     return { label: t('pricing.planStatusActive'), kind: 'active' };
   }
-  if (arePlansPurchasable()) {
-    return { label: t('pricing.planStatusSoon'), kind: 'soon' };
+  if (purchasable) {
+    return { label: t('pricing.planStatusBuy'), kind: 'buy' };
   }
   return { label: t('pricing.planStatusDisabled'), kind: 'disabled' };
 }
 
-function planButtonLabel(plan, t) {
+function planButtonLabel(plan, t, purchasable) {
   if (plan.tier === 'free') return t('pricing.planBtnIncluded');
-  if (arePlansPurchasable()) return t('pricing.planBtnSoon');
+  if (purchasable) return t('pricing.planBtnBuy');
   return t('pricing.planBtnDisabled');
 }
 
-export default function PricingPlans() {
+export default function PricingPlans({ token }) {
   const { t, catalog } = useI18n();
   const plans = getPlans(catalog);
-  const purchasable = arePlansPurchasable();
+  const purchasable = arePlansPurchasable() && Boolean(token);
+  const [busyPlanId, setBusyPlanId] = useState(null);
+  const [error, setError] = useState('');
+
+  async function buyPlan(planId) {
+    if (!token) return;
+    setBusyPlanId(planId);
+    setError('');
+    const data = await createPlanCheckout(token, planId);
+    if (data?.success && data.checkoutUrl) {
+      window.location.href = data.checkoutUrl;
+      return;
+    }
+    setError(data?.error || t('settings.checkoutFailed'));
+    setBusyPlanId(null);
+  }
 
   return (
     <section className="pricing-plans" aria-labelledby="pricing-plans-heading">
@@ -29,17 +46,19 @@ export default function PricingPlans() {
         {t('pricing.plansTitle')}
       </h2>
       <p className="muted">{t('pricing.plansLead')}</p>
+      {error && <p className="status-banner status-error">{error}</p>}
       <div className="plan-grid">
         {plans.map((plan) => {
-          const status = planStatus(plan, t);
+          const status = planStatus(plan, t, purchasable);
           const isFree = plan.tier === 'free';
-          const disabled = !isFree;
+          const disabled = isFree || (!purchasable && plan.tier !== 'free');
+          const canBuy = purchasable && !isFree;
 
           return (
             <article
               key={plan.id}
               className={`card plan-card plan-card-${status.kind}`}
-              aria-disabled={disabled}
+              aria-disabled={disabled && !canBuy}
             >
               <div className="plan-card-top">
                 <span className="plan-icon" aria-hidden="true">
@@ -66,15 +85,16 @@ export default function PricingPlans() {
               <button
                 type="button"
                 className={isFree ? 'button button-secondary' : 'button button-primary'}
-                disabled={disabled || isFree}
-                title={disabled ? t('pricing.planDisabledTitle') : undefined}
+                disabled={isFree || (!canBuy && disabled) || busyPlanId === plan.id}
+                title={!canBuy && !isFree ? t('pricing.planDisabledTitle') : undefined}
+                onClick={() => canBuy && buyPlan(plan.id)}
               >
-                {planButtonLabel(plan, t)}
+                {busyPlanId === plan.id ? t('common.loading') : planButtonLabel(plan, t, purchasable)}
               </button>
-              {disabled && purchasable && (
-                <p className="muted plan-hint">{t('pricing.planHintCheckout')}</p>
+              {!canBuy && !isFree && arePlansPurchasable() && !token && (
+                <p className="muted plan-hint">{t('pricing.planHintLogin')}</p>
               )}
-              {disabled && !purchasable && (
+              {!canBuy && !isFree && !arePlansPurchasable() && (
                 <p className="muted plan-hint">{t('pricing.planHintLater')}</p>
               )}
             </article>

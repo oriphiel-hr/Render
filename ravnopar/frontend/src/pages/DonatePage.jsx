@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 import PageMeta from '../components/PageMeta.jsx';
+import DonateImpactSection from '../components/DonateImpactSection.jsx';
 import SupportContent from '../components/SupportContent.jsx';
 import { useI18n } from '../lib/i18n/index.jsx';
 
-export default function DonatePage() {
+export default function DonatePage({ token }) {
   const { t } = useI18n();
 
   return (
@@ -13,13 +14,16 @@ export default function DonatePage() {
         <Link to="/app">{t('donate.backToApp')}</Link>
         {' · '}
         <Link to="/planovi">{t('donate.pricingLink')}</Link>
+        {' · '}
+        <Link to="/fer-izvjestaj">{t('fairnessReport.title')}</Link>
       </p>
       <section className="hero donate-hero donate-hero-warm">
         <p className="eyebrow">{t('donate.eyebrow')}</p>
         <h1>{t('donate.title')}</h1>
         <p className="landing-lead">{t('donate.lead')}</p>
       </section>
-      <SupportContent />
+      <DonateImpactSection />
+      <SupportContent token={token} />
     </main>
   );
 }
