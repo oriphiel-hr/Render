@@ -31,6 +31,7 @@ import LanguageSwitcher from './components/LanguageSwitcher.jsx';
 import LocaleProfileSync from './components/LocaleProfileSync.jsx';
 import SeoLocaleSync from './components/SeoLocaleSync.jsx';
 import PrivateRouteSeo from './components/PrivateRouteSeo.jsx';
+import LocalePathLayout from './components/LocalePathLayout.jsx';
 
 function Topbar({ token, profile, onLogout, unreadTotal, notificationUnread, onNotificationsChange }) {
   const location = useLocation();
@@ -208,6 +209,18 @@ export default function App() {
         <Route path="/privatnost" element={<PrivacyPage />} />
         <Route path="/uvjeti" element={<TermsPage />} />
         <Route path="/kontakt" element={<ContactPage />} />
+        <Route path="/:locale" element={<LocalePathLayout />}>
+          <Route index element={<HomePage />} />
+          <Route path="planovi" element={<PlanoviPage token={token} />} />
+          <Route path="kako-radi-feed" element={<FairFeedPage />} />
+          <Route path="fer-izvjestaj" element={<FairnessReportPage />} />
+          <Route path="doniraj" element={<PublicDonatePage />} />
+          <Route path="pomoc" element={<FaqPage />} />
+          <Route path="pravila" element={<GuidelinesPage />} />
+          <Route path="privatnost" element={<PrivacyPage />} />
+          <Route path="uvjeti" element={<TermsPage />} />
+          <Route path="kontakt" element={<ContactPage />} />
+        </Route>
         <Route path="/auth" element={token ? <Navigate to="/app" replace /> : <AuthPage onLogin={onLogin} />} />
         <Route path="/app/onboarding" element={token ? <OnboardingPage token={token} onDone={() => { setOnboardingDone(true); setFeedReady(true); }} /> : <Navigate to="/auth" replace />} />
         <Route path="/app" element={token ? (needsOnboarding || needsProfileSetup ? <Navigate to="/app/onboarding" replace /> : <UserDashboardPage token={token} profile={profile} />) : <Navigate to="/auth" replace />} />

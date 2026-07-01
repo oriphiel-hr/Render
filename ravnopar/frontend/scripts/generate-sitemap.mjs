@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 /**
- * Generira sitemap.xml u dist/ nakon Vite builda.
- * Pokriva sve javne rute × 13 jezika (?lang=).
+ * Generira sitemap.xml u dist/ — putanje s jezičnim prefiksom /{lang}/...
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -25,17 +24,15 @@ const routes = [
   { path: '/uvjeti', priority: '0.5', changefreq: 'yearly' }
 ];
 
-function locFor(routePath, locale) {
-  const base = routePath === '/' ? siteUrl : `${siteUrl}${routePath}`;
-  const url = new URL(base);
-  url.searchParams.set('lang', locale);
-  return url.toString();
+function locFor(locale, routePath) {
+  if (routePath === '/') return `${siteUrl}/${locale}`;
+  return `${siteUrl}/${locale}${routePath}`;
 }
 
 const urls = [];
 for (const route of routes) {
   for (const locale of locales) {
-    urls.push({ ...route, loc: locFor(route.path, locale) });
+    urls.push({ ...route, loc: locFor(locale, route.path) });
   }
 }
 

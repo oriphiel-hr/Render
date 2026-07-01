@@ -3,7 +3,7 @@ import { useI18n } from '../lib/i18n/index.jsx';
 import { SITE_URL } from '../lib/seo.js';
 
 export default function FaqStructuredData() {
-  const { catalog, t } = useI18n();
+  const { catalog, t, locale } = useI18n();
   const items = getFaqItems(catalog);
 
   if (!items.length) return null;
@@ -13,7 +13,7 @@ export default function FaqStructuredData() {
     '@type': 'FAQPage',
     name: t('meta.titles.faq'),
     description: t('meta.descriptions.faq'),
-    url: `${SITE_URL}/pomoc`,
+    url: `${SITE_URL}/${locale}/pomoc`,
     mainEntity: items.map((item) => ({
       '@type': 'Question',
       name: item.q,

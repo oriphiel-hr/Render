@@ -5,5 +5,8 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     conditions: ['production', 'module', 'browser', 'default']
+  },
+  ssr: {
+    noExternal: ['react-router', 'react-router-dom']
   }
 });

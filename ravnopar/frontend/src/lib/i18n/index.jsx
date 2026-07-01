@@ -15,6 +15,7 @@ import sk from './locales/sk.js';
 import { COUNTRY_CODES } from './countries.js';
 import { SUPPORTED_LOCALES, detectBrowserLocale } from './locale-meta.js';
 import { readLangFromUrl, syncLangInUrl } from '../seo.js';
+import { withSeoBlocks } from './seo-locale-blocks.js';
 
 const MESSAGES = { hr, en, de, sl, bs, sr, it, hu, pl, cs, fr, es, sk };
 export { SUPPORTED_LOCALES };
@@ -35,9 +36,10 @@ function getNested(obj, path) {
 }
 
 function resolveMessage(locale, key) {
+  const catalog = withSeoBlocks(locale, MESSAGES[locale] ?? MESSAGES.en);
   return (
-    getNested(MESSAGES[locale], key) ??
-    getNested(MESSAGES.en, key) ??
+    getNested(catalog, key) ??
+    getNested(withSeoBlocks('en', MESSAGES.en), key) ??
     getNested(MESSAGES.hr, key)
   );
 }
@@ -116,7 +118,10 @@ export function I18nProvider({ children, initialLocale }) {
     syncLangInUrl(next);
   }, []);
 
-  const catalog = useMemo(() => MESSAGES[locale] ?? MESSAGES.en ?? MESSAGES.hr, [locale]);
+  const catalog = useMemo(() => {
+    const base = MESSAGES[locale] ?? MESSAGES.en ?? MESSAGES.hr;
+    return withSeoBlocks(locale, base);
+  }, [locale]);
 
   const t = useCallback(
     (key, vars = {}) => {

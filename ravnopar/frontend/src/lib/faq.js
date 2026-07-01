@@ -1,3 +1,5 @@
 export function getFaqItems(catalog) {
-  return catalog?.faq?.items ?? [];
+  const base = catalog?.faq?.items ?? [];
+  const extra = catalog?.faq?.seoExtraItems ?? [];
+  return [...base, ...extra];
 }

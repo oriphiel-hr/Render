@@ -6,7 +6,8 @@ Tehnički SEO je ugrađen u frontend build. Ovo je checklist za organski promet.
 
 - **Meta tagovi** po stranici (title, description, robots)
 - **Open Graph + Twitter Card** za dijeljenje linkova
-- **Canonical URL** + **hreflang** za 13 jezika (`?lang=de`, `?lang=pl`, …)
+- **Canonical URL** + **hreflang** za 13 jezika (`/de/pomoc`, `/hr/planovi`, …)
+- **SSR prerender** — 130 statičnih HTML stranica pri buildu (bez Puppeteera)
 - **JSON-LD**: Organization, WebSite, WebApplication (početna), FAQPage (`/pomoc`)
 - **`robots.txt`** — blokira `/app/`, `/auth`, `/admin`
 - **`sitemap.xml`** — generira se pri buildu (10 javnih ruta × 13 jezika = 130 URL-ova)
@@ -32,7 +33,13 @@ Tehnički SEO je ugrađen u frontend build. Ovo je checklist za organski promet.
 
 ## Ograničenja (SPA)
 
-Ravnopar je React SPA — Google renderira JavaScript, ali indeksiranje je sporije nego kod statičnog HTML-a. Za maksimalni SEO u budućnosti razmotri **prerender** ili **SSR** javnih stranica.
+Klijentski React i dalje hidrira stranicu nakon učitavanja, ali **javne stranice imaju prerenderirani HTML** u `dist/{lang}/.../index.html` — Google odmah vidi naslove, tekst i FAQ.
+
+Stare URL-ove s `?lang=` automatski preusmjeravamo na `/de/pomoc` itd.
+
+## Nakon deploya
+
+U Search Console **ponovno pošalji** `sitemap.xml` (URL-ovi sada koriste jezične prefikse, npr. `/hr/pomoc` umjesto `?lang=hr`).
 
 ## Što još pomaže (ručno, besplatno)
 
