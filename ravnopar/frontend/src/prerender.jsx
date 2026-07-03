@@ -41,7 +41,7 @@ export function renderPublicPage(locale, path) {
 
   const body = renderToString(
     <StaticRouter location={urlPath}>
-      <I18nProvider initialLocale={locale}>
+      <I18nProvider initialLocale={locale} key={`prerender-${locale}-${path}`}>
         <Page {...props} />
       </I18nProvider>
     </StaticRouter>

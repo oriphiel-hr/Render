@@ -45,11 +45,12 @@ function resolveMessage(locale, key) {
 }
 
 export function getStoredLocale() {
+  if (typeof window === 'undefined') return 'hr';
   const fromUrl = readLangFromUrl();
   if (fromUrl) return fromUrl;
   const stored = localStorage.getItem(STORAGE_KEY);
   if (SUPPORTED_LOCALES.includes(stored)) return stored;
-  return detectBrowserLocale() || 'en';
+  return detectBrowserLocale() || 'hr';
 }
 
 export function translateApiError(data, locale = getStoredLocale()) {
@@ -105,7 +106,10 @@ export function makeLabels(t, locale = 'hr') {
 }
 
 export function I18nProvider({ children, initialLocale }) {
-  const [locale, setLocaleState] = useState(() => initialLocale || getStoredLocale());
+  const [locale, setLocaleState] = useState(() => {
+    if (initialLocale && SUPPORTED_LOCALES.includes(initialLocale)) return initialLocale;
+    return getStoredLocale();
+  });
 
   useEffect(() => {
     document.documentElement.lang = locale;

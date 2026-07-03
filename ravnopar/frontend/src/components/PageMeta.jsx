@@ -104,7 +104,7 @@ export default function PageMeta({
     appendSeoNode('link', {
       rel: 'alternate',
       hreflang: 'x-default',
-      href: buildPageUrl(pathname, 'en')
+      href: buildPageUrl(pathname, 'hr')
     });
 
     return () => removeSeoNodes();

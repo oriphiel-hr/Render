@@ -15096,7 +15096,7 @@ const hr = {
     defaultTitle: "Ravnopar",
     defaultDescription: "Ravnopar — fer dating platforma za Europu. Bez paywalla za razgovor, chat nakon matcha i transparentna pravila.",
     titles: {
-      home: "Početna",
+      home: "Fer upoznavanje bez paywalla",
       auth: "Prijava i registracija",
       settings: "Postavke",
       app: "Moj prostor",
@@ -15116,7 +15116,7 @@ const hr = {
       admin: "Admin"
     },
     descriptions: {
-      home: "Ravnopar — fer dating platforma za Europu. Besplatan chat nakon matcha, bez paywalla za razgovor i transparentna pravila.",
+      home: "Upoznaj ljude fer na Ravnoparu — besplatan chat nakon matcha, bez skrivenih limita dosega i transparentna pravila. 18+.",
       auth: "Registracija i prijava na Ravnopar — fer platformu za upoznavanje.",
       settings: "Uredi profil, fotografije, obavijesti i privatnost.",
       app: "Tvoj feed, zahtjevi za kontakt i razgovori na Ravnoparu.",
@@ -16429,7 +16429,7 @@ const en = {
     defaultTitle: "Ravnopar",
     defaultDescription: "Ravnopar — a fair dating platform. No paywall for conversation, chat after a match, and transparent rules.",
     titles: {
-      home: "Home",
+      home: "Fair dating without a paywall",
       auth: "Sign up / Log in",
       settings: "Settings",
       app: "My space",
@@ -16449,7 +16449,7 @@ const en = {
       admin: "Admin"
     },
     descriptions: {
-      home: "Ravnopar — a fair dating platform. No paywall for conversation, chat after a match, and transparent rules.",
+      home: "Meet people fairly on Ravnopar — free chat after a match, no hidden reach limits, transparent rules. 18+.",
       auth: "Create your Ravnopar account or log in.",
       settings: "Edit your profile, photos, notifications, and privacy.",
       app: "Your Ravnopar feed, conversations, and contact requests.",
@@ -30009,11 +30009,13 @@ const SEO_LOCALE_BLOCKS = {
   de: {
     meta: {
       titles: {
+        home: "Faires Dating ohne Paywall",
         fairFeed: "So funktioniert der faire Feed",
         fairnessReport: "Fairness-Bericht",
         donatePublic: "Projekt unterstützen"
       },
       descriptions: {
+        home: "Lerne Leute fair auf Ravnopar kennen — kostenloser Chat nach einem Match, ohne versteckte Reichweitenlimits. 18+.",
         fairFeed: "Wie Ravnopar Profile einordnet — transparente Regeln ohne bezahlten Boost.",
         fairnessReport: "Öffentliche Fairness-Kennzahlen und Premium-Rote-Linien.",
         donatePublic: "Freiwillige Unterstützung der Serverkosten — ohne Feed-Vorteil."
@@ -30088,11 +30090,13 @@ const SEO_LOCALE_BLOCKS = {
   sl: {
     meta: {
       titles: {
+        home: "Pošteno spoznavanje brez paywalla",
         fairFeed: "Kako deluje pošten feed",
         fairnessReport: "Poročilo o poštenosti",
         donatePublic: "Podpri projekt"
       },
       descriptions: {
+        home: "Spoznaj ljudi pošteno na Ravnopar — brezplačen klepet po ujemanju, brez skritih omejitev dosega. 18+.",
         fairFeed: "Kako Ravnopar razvršča profile — transparentna pravila brez plačanega boosta.",
         fairnessReport: "Javne metrike poštenosti in rdeče črte premiuma.",
         donatePublic: "Prostovoljna podpora stroškom strežnika — brez prednosti v feedu."
@@ -30167,11 +30171,13 @@ const SEO_LOCALE_BLOCKS = {
   bs: {
     meta: {
       titles: {
+        home: "Fer upoznavanje bez paywalla",
         fairFeed: "Kako radi fer feed",
         fairnessReport: "Izvještaj o fer ponašanju",
         donatePublic: "Podrži projekt"
       },
       descriptions: {
+        home: "Upoznaj ljude fer na Ravnoparu — besplatan chat nakon matcha, bez skrivenih limita dosega. 18+.",
         fairFeed: "Kako Ravnopar rangira profile — transparentna pravila bez plaćenog boosta.",
         fairnessReport: "Javne metrike fer ponašanja i crvene linije premiuma.",
         donatePublic: "Dobrovoljna podrška troškovima servera — bez prednosti u feedu."
@@ -30246,11 +30252,13 @@ const SEO_LOCALE_BLOCKS = {
   sr: {
     meta: {
       titles: {
+        home: "Фер упознавање без paywall-а",
         fairFeed: "Како ради фер feed",
         fairnessReport: "Извештај о фер понашању",
         donatePublic: "Подржи пројекат"
       },
       descriptions: {
+        home: "Упознај људе фер на Ravnoparu — бесплатан чет након match-а, без скривених лимита досега. 18+.",
         fairFeed: "Како Ravnopar рангира профиле — транспарентна правила без плаћеног boost-а.",
         fairnessReport: "Јавне метрике фер понашања и црвене линије premium-а.",
         donatePublic: "Добровољна подршка трошковима сервера — без предности у feed-у."
@@ -30325,11 +30333,13 @@ const SEO_LOCALE_BLOCKS = {
   it: {
     meta: {
       titles: {
+        home: "Incontri equi senza paywall",
         fairFeed: "Come funziona il feed equo",
         fairnessReport: "Rapporto di equità",
         donatePublic: "Sostieni il progetto"
       },
       descriptions: {
+        home: "Conosci persone in modo equo su Ravnopar — chat gratuita dopo il match, senza limiti nascosti di visibilità. 18+.",
         fairFeed: "Come Ravnopar classifica i profili — regole trasparenti senza boost a pagamento.",
         fairnessReport: "Metriche pubbliche di equità e linee rosse del premium.",
         donatePublic: "Supporto volontario ai costi del server — senza vantaggio nel feed."
@@ -30404,11 +30414,13 @@ const SEO_LOCALE_BLOCKS = {
   hu: {
     meta: {
       titles: {
+        home: "Fair ismerkedés paywall nélkül",
         fairFeed: "Hogyan működik a fair feed",
         fairnessReport: "Fairness jelentés",
         donatePublic: "Támogasd a projektet"
       },
       descriptions: {
+        home: "Ismerkedj fair módon a Ravnoparon — ingyenes chat match után, rejtett elérési limitek nélkül. 18+.",
         fairFeed: "Hogyan rangsorolja a Ravnopar a profilokat — átlátható szabályok fizetős boost nélkül.",
         fairnessReport: "Nyilvános fairness mutatók és premium piros vonalak.",
         donatePublic: "Önkéntes szerverköltség-támogatás — feed előny nélkül."
@@ -30483,11 +30495,13 @@ const SEO_LOCALE_BLOCKS = {
   pl: {
     meta: {
       titles: {
+        home: "Fair randki bez paywalla",
         fairFeed: "Jak działa fair feed",
         fairnessReport: "Raport fair play",
         donatePublic: "Wesprzyj projekt"
       },
       descriptions: {
+        home: "Poznawaj ludzi fair na Ravnopar — darmowy czat po matchu, bez ukrytych limitów zasięgu. 18+.",
         fairFeed: "Jak Ravnopar rankinguje profile — przejrzyste zasady bez płatnego boosta.",
         fairnessReport: "Publiczne metryki fair play i czerwone linie premium.",
         donatePublic: "Dobrowolne wsparcie kosztów serwera — bez przewagi w feedzie."
@@ -30562,11 +30576,13 @@ const SEO_LOCALE_BLOCKS = {
   cs: {
     meta: {
       titles: {
+        home: "Férové seznamování bez paywallu",
         fairFeed: "Jak funguje fair feed",
         fairnessReport: "Zpráva o férovosti",
         donatePublic: "Podpořte projekt"
       },
       descriptions: {
+        home: "Poznávej lidi férově na Ravnopar — bezplatný chat po matchi, bez skrytých limitů dosahu. 18+.",
         fairFeed: "Jak Ravnopar řadí profily — transparentní pravidla bez placeného boostu.",
         fairnessReport: "Veřejné metriky férovosti a červené linie premium.",
         donatePublic: "Dobrovolná podpora nákladů na server — bez výhody ve feedu."
@@ -30641,11 +30657,13 @@ const SEO_LOCALE_BLOCKS = {
   fr: {
     meta: {
       titles: {
+        home: "Rencontres équitables sans paywall",
         fairFeed: "Comment fonctionne le feed équitable",
         fairnessReport: "Rapport d'équité",
         donatePublic: "Soutenir le projet"
       },
       descriptions: {
+        home: "Rencontrez des personnes équitablement sur Ravnopar — chat gratuit après un match, sans limites de portée cachées. 18+.",
         fairFeed: "Comment Ravnopar classe les profils — règles transparentes sans boost payant.",
         fairnessReport: "Métriques publiques d'équité et lignes rouges du premium.",
         donatePublic: "Soutien volontaire aux coûts serveur — sans avantage dans le feed."
@@ -30720,11 +30738,13 @@ const SEO_LOCALE_BLOCKS = {
   es: {
     meta: {
       titles: {
+        home: "Citas justas sin paywall",
         fairFeed: "Cómo funciona el feed justo",
         fairnessReport: "Informe de equidad",
         donatePublic: "Apoyar el proyecto"
       },
       descriptions: {
+        home: "Conoce gente de forma justa en Ravnopar — chat gratis tras un match, sin límites ocultos de alcance. 18+.",
         fairFeed: "Cómo Ravnopar ordena perfiles — reglas transparentes sin boost de pago.",
         fairnessReport: "Métricas públicas de equidad y líneas rojas del premium.",
         donatePublic: "Apoyo voluntario a costes del servidor — sin ventaja en el feed."
@@ -30799,11 +30819,13 @@ const SEO_LOCALE_BLOCKS = {
   sk: {
     meta: {
       titles: {
+        home: "Férové zoznamovanie bez paywallu",
         fairFeed: "Ako funguje fair feed",
         fairnessReport: "Správa o férovosti",
         donatePublic: "Podporte projekt"
       },
       descriptions: {
+        home: "Spoznávaj ľudí férovo na Ravnopar — bezplatný chat po matchi, bez skrytých limitov dosahu. 18+.",
         fairFeed: "Ako Ravnopar radí profily — transparentné pravidlá bez plateného boostu.",
         fairnessReport: "Verejné metriky férovosti a červené línie premium.",
         donatePublic: "Dobrovoľná podpora nákladov na server — bez výhody vo feede."
@@ -30911,11 +30933,12 @@ function resolveMessage(locale, key) {
   return getNested(catalog, key) ?? getNested(withSeoBlocks("en", MESSAGES.en), key) ?? getNested(MESSAGES.hr, key);
 }
 function getStoredLocale() {
+  if (typeof window === "undefined") return "hr";
   const fromUrl = readLangFromUrl();
   if (fromUrl) return fromUrl;
   const stored = localStorage.getItem(STORAGE_KEY);
   if (SUPPORTED_LOCALES.includes(stored)) return stored;
-  return detectBrowserLocale() || "en";
+  return detectBrowserLocale() || "hr";
 }
 function makeLabels(t, locale = "hr") {
   const pick = (prefix) => (value) => {
@@ -30960,7 +30983,10 @@ function makeLabels(t, locale = "hr") {
   };
 }
 function I18nProvider({ children, initialLocale }) {
-  const [locale, setLocaleState] = useState(() => initialLocale || getStoredLocale());
+  const [locale, setLocaleState] = useState(() => {
+    if (initialLocale && SUPPORTED_LOCALES.includes(initialLocale)) return initialLocale;
+    return getStoredLocale();
+  });
   useEffect(() => {
     document.documentElement.lang = locale;
   }, [locale]);
@@ -31085,7 +31111,7 @@ function PageMeta({
     appendSeoNode("link", {
       rel: "alternate",
       hreflang: "x-default",
-      href: buildPageUrl(pathname, "en")
+      href: buildPageUrl(pathname, "hr")
     });
     return () => removeSeoNodes();
   }, [
@@ -32017,7 +32043,7 @@ function getFaqItems(catalog) {
   return [...base, ...extra];
 }
 function FaqStructuredData() {
-  const { catalog, t } = useI18n();
+  const { catalog, t, locale } = useI18n();
   const items = getFaqItems(catalog);
   if (!items.length) return null;
   const data2 = {
@@ -32025,7 +32051,7 @@ function FaqStructuredData() {
     "@type": "FAQPage",
     name: t("meta.titles.faq"),
     description: t("meta.descriptions.faq"),
-    url: `${SITE_URL}/pomoc`,
+    url: `${SITE_URL}/${locale}/pomoc`,
     mainEntity: items.map((item) => ({
       "@type": "Question",
       name: item.q,
@@ -32184,7 +32210,7 @@ function renderPublicPage(locale, path) {
   const urlPath = path === "/" ? `/${locale}` : `/${locale}${path}`;
   const props = pageProps(path);
   const body = renderToString(
-    /* @__PURE__ */ jsx(distExports.StaticRouter, { location: urlPath, children: /* @__PURE__ */ jsx(I18nProvider, { initialLocale: locale, children: /* @__PURE__ */ jsx(Page, { ...props }) }) })
+    /* @__PURE__ */ jsx(distExports.StaticRouter, { location: urlPath, children: /* @__PURE__ */ jsx(I18nProvider, { initialLocale: locale, children: /* @__PURE__ */ jsx(Page, { ...props }) }, `prerender-${locale}-${path}`) })
   );
   return { body, urlPath, outFile: buildPrerenderFilePath(locale, path) };
 }

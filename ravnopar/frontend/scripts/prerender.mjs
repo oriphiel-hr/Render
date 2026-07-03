@@ -76,7 +76,7 @@ function injectHead(html, { fullTitle, description, canonical, lang }) {
       `<meta property="og:title" content="${esc(fullTitle)}" />`
     )
     .replace(
-      /<meta property="og:description" content="[\s\S]*?"\s*\/>/,
+      /<meta\s+property="og:description"\s+content="[\s\S]*?"\s*\/>/,
       `<meta property="og:description" content="${esc(description)}" />`
     );
 }
@@ -97,13 +97,13 @@ for (const { locale, path } of listPrerenderJobs()) {
   count += 1;
 }
 
-// Zadani SPA shell (en) na root i legacy putanjama
-const enHome = renderPublicPage('en', '/');
-if (enHome) {
-  const head = pageHead('en', '/');
+// Zadani SPA shell (hr) na root — primarno tržište + hrvatski Google
+const hrHome = renderPublicPage('hr', '/');
+if (hrHome) {
+  const head = pageHead('hr', '/');
   const html = injectHead(
-    template.replace('<div id="root"></div>', `<div id="root">${enHome.body}</div>`),
-    { ...head, canonical: `${SITE_URL}/en` }
+    template.replace('<div id="root"></div>', `<div id="root">${hrHome.body}</div>`),
+    { ...head, canonical: `${SITE_URL}/hr` }
   );
   writeFileSync(join(distDir, 'index.html'), html, 'utf8');
 }

@@ -333,7 +333,7 @@ export default {
     defaultTitle: "Ravnopar",
     defaultDescription: "Ravnopar — a fair dating platform. No paywall for conversation, chat after a match, and transparent rules.",
     titles: {
-      home: "Home",
+      home: "Fair dating without a paywall",
       auth: "Sign up / Log in",
       settings: "Settings",
       app: "My space",
@@ -353,7 +353,7 @@ export default {
       admin: "Admin"
     },
     descriptions: {
-      home: "Ravnopar — a fair dating platform. No paywall for conversation, chat after a match, and transparent rules.",
+      home: "Meet people fairly on Ravnopar — free chat after a match, no hidden reach limits, transparent rules. 18+.",
       auth: "Create your Ravnopar account or log in.",
       settings: "Edit your profile, photos, notifications, and privacy.",
       app: "Your Ravnopar feed, conversations, and contact requests.",

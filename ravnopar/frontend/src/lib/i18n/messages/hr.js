@@ -357,7 +357,7 @@ export default {
     defaultDescription:
       'Ravnopar — fer dating platforma za Europu. Bez paywalla za razgovor, chat nakon matcha i transparentna pravila.',
     titles: {
-      home: 'Početna',
+      home: 'Fer upoznavanje bez paywalla',
       auth: 'Prijava i registracija',
       settings: 'Postavke',
       app: 'Moj prostor',
@@ -378,7 +378,7 @@ export default {
     },
     descriptions: {
       home:
-        'Ravnopar — fer dating platforma za Europu. Besplatan chat nakon matcha, bez paywalla za razgovor i transparentna pravila.',
+        'Upoznaj ljude fer na Ravnoparu — besplatan chat nakon matcha, bez skrivenih limita dosega i transparentna pravila. 18+.',
       auth: 'Registracija i prijava na Ravnopar — fer platformu za upoznavanje.',
       settings: 'Uredi profil, fotografije, obavijesti i privatnost.',
       app: 'Tvoj feed, zahtjevi za kontakt i razgovori na Ravnoparu.',
