@@ -18,7 +18,9 @@ export default function StructuredData() {
         email: CONTACT_EMAIL,
         logo: {
           '@type': 'ImageObject',
-          url: `${SITE_URL}/icon.svg`
+          url: `${SITE_URL}/icon-192.png`,
+          width: 192,
+          height: 192
         }
       },
       {
@@ -26,6 +28,7 @@ export default function StructuredData() {
         '@id': `${SITE_URL}/#website`,
         url: SITE_URL,
         name,
+        alternateName: ['ravnopar.onrender.com'],
         description,
         inLanguage: locale,
         publisher: { '@id': `${SITE_URL}/#organization` }

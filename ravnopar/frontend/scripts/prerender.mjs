@@ -48,13 +48,14 @@ function pageHead(locale, path) {
   const title = catalog.meta?.titles?.[key] || catalog.meta?.defaultTitle;
   const description = catalog.meta?.descriptions?.[key] || catalog.meta?.defaultDescription;
   const siteName = catalog.meta?.defaultTitle || 'Ravnopar';
-  const fullTitle = `${title} — ${siteName}`;
+  const fullTitle =
+    key === 'home' ? `${siteName} — ${title}` : `${title} — ${siteName}`;
   const canonical =
     path === '/' ? `${SITE_URL}/${locale}` : `${SITE_URL}/${locale}${path}`;
-  return { fullTitle, description, canonical, lang: locale };
+  return { fullTitle, description, canonical, lang: locale, siteName };
 }
 
-function injectHead(html, { fullTitle, description, canonical, lang }) {
+function injectHead(html, { fullTitle, description, canonical, lang, siteName = 'Ravnopar' }) {
   const esc = (s) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
   return html
     .replace(/<html lang="[^"]*">/, `<html lang="${lang}">`)
@@ -74,6 +75,10 @@ function injectHead(html, { fullTitle, description, canonical, lang }) {
     .replace(
       /<meta property="og:title" content="[^"]*"\s*\/>/,
       `<meta property="og:title" content="${esc(fullTitle)}" />`
+    )
+    .replace(
+      /<meta property="og:site_name" content="[^"]*"\s*\/>/,
+      `<meta property="og:site_name" content="${esc(siteName)}" />`
     )
     .replace(
       /<meta\s+property="og:description"\s+content="[\s\S]*?"\s*\/>/,

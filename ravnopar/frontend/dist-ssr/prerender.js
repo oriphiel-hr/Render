@@ -31071,7 +31071,7 @@ function PageMeta({
     const resolvedTitle = title ?? (titleKey ? t(`meta.titles.${titleKey}`) : null);
     const resolvedDescription = description ?? (descriptionKey ? t(`meta.descriptions.${descriptionKey}`) : null);
     const siteName = t("meta.defaultTitle");
-    const fullTitle = resolvedTitle ? `${resolvedTitle} — ${siteName}` : siteName;
+    const fullTitle = resolvedTitle ? titleKey === "home" ? `${siteName} — ${resolvedTitle}` : `${resolvedTitle} — ${siteName}` : siteName;
     const metaDescription = resolvedDescription || t("meta.defaultDescription");
     const publicPage = isPublicPath(pathname);
     const blockIndex = noindex || shouldNoindex(pathname) || indexable === false || !publicPage;
@@ -31159,7 +31159,9 @@ function StructuredData() {
         email: CONTACT_EMAIL,
         logo: {
           "@type": "ImageObject",
-          url: `${SITE_URL}/icon.svg`
+          url: `${SITE_URL}/icon-192.png`,
+          width: 192,
+          height: 192
         }
       },
       {
@@ -31167,6 +31169,7 @@ function StructuredData() {
         "@id": `${SITE_URL}/#website`,
         url: SITE_URL,
         name,
+        alternateName: ["ravnopar.onrender.com"],
         description,
         inLanguage: locale,
         publisher: { "@id": `${SITE_URL}/#organization` }

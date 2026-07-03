@@ -56,7 +56,11 @@ export default function PageMeta({
     const resolvedDescription =
       description ?? (descriptionKey ? t(`meta.descriptions.${descriptionKey}`) : null);
     const siteName = t('meta.defaultTitle');
-    const fullTitle = resolvedTitle ? `${resolvedTitle} — ${siteName}` : siteName;
+    const fullTitle = resolvedTitle
+      ? titleKey === 'home'
+        ? `${siteName} — ${resolvedTitle}`
+        : `${resolvedTitle} — ${siteName}`
+      : siteName;
     const metaDescription = resolvedDescription || t('meta.defaultDescription');
     const publicPage = isPublicPath(pathname);
     const blockIndex = noindex || shouldNoindex(pathname) || indexable === false || !publicPage;
