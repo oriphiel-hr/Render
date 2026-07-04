@@ -211,7 +211,7 @@ export default {
     ADMIN_ACTION: "Admin",
     MODERATION: "Moderazione",
     SECURITY: "Sicurezza",
-    FEED_RANKING: "Ranking feed",
+    FEED_RANKING: "Ranking profili",
     COMPLIANCE: "Conformità"
   },
   auditAction: {
@@ -228,7 +228,7 @@ export default {
     REPORT_RESOLVED: "Segnalazione risolta",
     BLOCK: "Blocca",
     REPORT: "Segnala",
-    FEED_SNAPSHOT: "Snapshot feed",
+    FEED_SNAPSHOT: "Snapshot profili",
     DATA_EXPORT: "Esportazione dati",
     ACCOUNT_DELETE_SELF: "Eliminazione account",
     ACCOUNT_DELETE: "Eliminazione account",
@@ -288,7 +288,7 @@ export default {
       home: "Ravnopar — una piattaforma di incontri equa. Nessun paywall per la conversazione, chat dopo un match e regole trasparenti.",
       auth: "Crea il tuo account Ravnopar o accedi.",
       settings: "Modifica profilo, foto, notifiche e privacy.",
-      app: "Il tuo feed Ravnopar, conversazioni e richieste di contatto.",
+      app: "Il tuo elenco profili Ravnopar, conversazioni e richieste di contatto.",
       chat: "Chat privata con il tuo match.",
       profile: "Visualizza un profilo Ravnopar.",
       onboarding: "Una guida rapida a Ravnopar.",
@@ -351,18 +351,18 @@ export default {
     chipAntiSpam: "Protezione anti-spam",
     showcaseEyebrow: "Anteprima esperienza",
     showcaseTitle: "Conosci persone come in un'app di incontri — senza paywall",
-    showcasetext: "Crea il profilo, aggiungi una foto e una breve presentazione, e scegli chi stai cercando.",
+    showcaseText: "Schede profilo, gallerie foto e chat dopo un match. Le regole eque restano le stesse.",
     showcaseMockName: "Maya, 28 · Zagabria",
     showcaseMockBio: "Adoro il caffè, le escursioni e le conversazioni sincere.",
     howItWorks: "Come funziona",
     steps: [
       {
         title: "Registrati",
-        text: "Crea il profilo, aggiungi una foto e una bio, e scegli chi stai cercando."
+        text: "Crea il profilo, aggiungi una foto e una breve presentazione, e scegli chi stai cercando."
       },
       {
         title: "Incontra persone",
-        text: "Sfoglia un feed di profili disponibili senza riduzioni di visibilità nascoste."
+        text: "Sfoglia un elenco di profili disponibili senza riduzioni di visibilità nascoste."
       },
       {
         title: "Parla in modo equo",
@@ -401,7 +401,7 @@ export default {
       },
       {
         title: "Visibilità equa",
-        text: "Le coppie attive escono temporaneamente dal feed così altri hanno ancora una chance."
+        text: "Le coppie attive escono temporaneamente dall'elenco profili così altri hanno ancora una chance."
       },
       {
         title: "Protezione e controllo",
@@ -452,13 +452,13 @@ export default {
     seekingIdentityLegend: "Identità cercata",
     intentLegend: "Intento",
     availabilityLabel: "Visibilità profilo",
-    availabilityAvailable: "Disponibile nel feed",
+    availabilityAvailable: "Disponibile nell'elenco profili",
     availabilityPaused: "In pausa (nascosto)",
     availabilityFocused: "In conversazione attiva",
     notifyEmail: "Notifiche email (nuove richieste, match, messaggi)",
     saveProfile: "Salva profilo",
     premiumTitle: "Piani premium",
-    premiumHint: "Checkout pronto — attivazione piano dopo il pagamento.",
+    premiumHint: "Pagamento pronto — attivazione piano dopo il pagamento.",
     gdprTitle: "Privacy (GDPR)",
     gdprHint: "Scarica una copia dei tuoi dati in formato JSON.",
     exportData: "Scarica i miei dati",
@@ -480,13 +480,13 @@ export default {
     deleteConfirm: "Eliminare definitivamente l'account? Questa azione non può essere annullata.",
     deleteFailed: "Eliminazione account fallita.",
     planSuccess: "Pagamento ricevuto. L'attivazione premium segue dopo la verifica.",
-    checkoutFailed: "Il checkout premium non è disponibile."
+    checkoutFailed: "Il pagamento premium non è disponibile."
   },
   dashboard: {
     greeting: "Ciao, {name}",
     subtitle: "Scorri i profili o usa i pulsanti — uno alla volta, senza fretta.",
-    feedCount: "{count} profili nel tuo feed",
-    feedEmpty: "Attualmente non ci sono profili compatibili nel tuo feed.",
+    feedCount: "{count} profili nel tuo elenco profili",
+    feedEmpty: "Attualmente non ci sono profili compatibili nel tuo elenco profili.",
     settingsLink: "Impostazioni profilo",
     loading: "Caricamento...",
     incompleteTitle: "Il tuo profilo non è ancora completo ({percent}%).",
@@ -503,13 +503,13 @@ export default {
     activeContact: "Stai parlando con {partner}.",
     openChatBtn: "Apri chat",
     closeContact: "Termina conversazione",
-    visibleInFeed: "Sei visibile nel feed — scorri i profili qui sotto.",
+    visibleInFeed: "Sei visibile nell'elenco profili — scorri i profili qui sotto.",
     incomingTitle: "Richieste di contatto",
     accept: "Accetta",
     decline: "Rifiuta",
     discoverTitle: "Scopri profili",
     discoverCount: " · {count} per te",
-    gateTitle: "Profilo non pronto per il feed",
+    gateTitle: "Profilo non pronto per l'elenco profili",
     gateHint: "Aggiungi una foto e una breve presentazione (min. 10 caratteri) prima di inviare richieste e scorrere.",
     gateOnboarding: "Vedi introduzione",
     emptyTitle: "Nessun nuovo profilo",
@@ -529,7 +529,7 @@ export default {
     accepted: "Contatto accettato.",
     declined: "Richiesta rifiutata.",
     respondFailed: "La risposta non è stata salvata.",
-    closed: "Contatto chiuso. Sei di nuovo disponibile nel feed.",
+    closed: "Contatto chiuso. Sei di nuovo disponibile nell'elenco profili.",
     closeFailed: "Chiusura fallita.",
     reportReason: "Comportamento inappropriato",
     reportNote: "Segnalazione dall’interfaccia utente.",
@@ -573,7 +573,7 @@ export default {
   onboarding: {
     eyebrow: "Benvenuto",
     title: "Un profilo che si distingue",
-    lead: "Prima di entrare nel feed, aggiungi una foto e una breve descrizione — entrambi sono necessari per inviare richieste.",
+    lead: "Prima di entrare nell'elenco profili, aggiungi una foto e una breve descrizione — entrambi sono necessari per inviare richieste.",
     stepPhoto: "1. Foto",
     stepPhotoHint: "I profili con foto ricevono più risposte.",
     changePhoto: "Cambia foto",
@@ -582,9 +582,9 @@ export default {
     stepBioHint: "Di' brevemente chi sei e cosa cerchi.",
     editBio: "Modifica presentazione",
     writeBio: "Scrivi su di te",
-    stepFeed: "3. Feed",
+    stepFeed: "3. Profili",
     stepFeedHint: "Quando il profilo è pronto, scorri e invia la prima richiesta.",
-    finishReady: "Termina introduzione e apri il feed",
+    finishReady: "Termina introduzione e apri l'elenco profili",
     finishIncomplete: "Completa profilo in Impostazioni",
     finishHint: "Completa prima foto e presentazione in Impostazioni",
     incompleteError: "Aggiungi una foto e una breve presentazione (min. 10 caratteri) in Impostazioni prima di continuare.",
@@ -606,7 +606,7 @@ export default {
     lead: "Manteniamo Ravnopar con molto impegno e un piccolo budget. Se la piattaforma ti è utile, puoi aiutare volontariamente — senza pressione e senza funzionalità extra in cambio.",
     sectionEyebrow: "Supporto al progetto",
     sectionTitle: "Sostieni Ravnopar",
-    sectionLead: "Se la piattaforma ti aiuta a incontrare persone, puoi contribuire volontariamente ai costi del server. Ogni contributo aiuta davvero — e non ottieni alcun vantaggio nel feed.",
+    sectionLead: "Se la piattaforma ti aiuta a incontrare persone, puoi contribuire volontariamente ai costi del server. Ogni contributo aiuta davvero — e non ottieni alcun vantaggio nell'elenco profili.",
     note: "Le donazioni sono completamente volontarie. Grazie per averlo considerato. ♥",
     revolutTitle: "Carta (Revolut)",
     revolutHint: "Pagamento rapido con carta — apre una pagina Revolut sicura.",
@@ -683,7 +683,7 @@ export default {
       {
         icon: "🤝",
         title: "Donazioni volontarie",
-        text: "Se doni, non ottieni priorità nel feed — solo il nostro sincero grazie."
+        text: "Se doni, non ottieni priorità nell'elenco profili — solo il nostro sincero grazie."
       }
     ],
     triggers: [
@@ -736,7 +736,7 @@ export default {
     planBtnSoon: "In arrivo",
     planBtnDisabled: "Non ancora disponibile",
     planDisabledTitle: "Questo piano non è ancora disponibile. Ti avviseremo in anticipo prima di qualsiasi addebito.",
-    planHintCheckout: "Il checkout premium è disponibile in Impostazioni dopo l'accesso.",
+    planHintCheckout: "Il pagamento premium è disponibile in Impostazioni dopo l'accesso.",
     planHintLater: "Lo attiveremo quando prodotto e community saranno pronti — l'avviso arriverà in anticipo.",
     freePrice: "0 €",
     plans: [
@@ -749,7 +749,7 @@ export default {
         tagline: "Il tuo inizio",
         description: "Tutto ciò che serve per incontri equi — oggi e quando introdurremo Premium.",
         features: [
-          "Profilo e visibilità nel feed",
+          "Profilo e visibilità nell'elenco profili",
           "Invio e accettazione richieste",
           "Blocchi, segnalazioni e protezione anti-spam",
           "Nessuna riduzione di visibilità nascosta"
@@ -763,7 +763,7 @@ export default {
         priceEur: 4.99,
         period: "/ mese",
         tagline: "Più controllo sul profilo",
-        description: "Per chi vuole maggiore controllo — senza influenzare gli altri nel feed.",
+        description: "Per chi vuole maggiore controllo — senza influenzare gli altri nell'elenco profili.",
         features: [
           "Più foto sul profilo",
           "Filtri avanzati (equi per tutti)",
@@ -801,15 +801,15 @@ export default {
     items: [
       {
         q: "Ravnopar è gratuito?",
-        a: "Sì — inviare richieste, accettare contatti e conversare nell'app è gratuito. Le donazioni sono volontarie e non danno priorità nel feed."
+        a: "Sì — inviare richieste, accettare contatti e conversare nell'app è gratuito. Le donazioni sono volontarie e non danno priorità nell'elenco profili."
       },
       {
         q: "Come funziona un match?",
-        a: "Sfogli i profili nel feed e invii una richiesta di contatto. Se l'altra persona accetta, si apre una chat privata e siete entrambi temporaneamente concentrati sulla conversazione."
+        a: "Sfogli i profili nell'elenco profili e invii una richiesta di contatto. Se l'altra persona accetta, si apre una chat privata e siete entrambi temporaneamente concentrati sulla conversazione."
       },
       {
         q: "Cosa succede dopo che il contatto è accettato?",
-        a: "Puoi aprire la chat con la persona e parlare nell'app. Le coppie attive escono temporaneamente dal feed così altri hanno ancora una chance."
+        a: "Puoi aprire la chat con la persona e parlare nell'app. Le coppie attive escono temporaneamente dall'elenco profili così altri hanno ancora una chance."
       },
       {
         q: "Farete pagare la conversazione?",
@@ -869,7 +869,7 @@ export default {
         },
         {
           title: "Dati che raccogliamo",
-          body: "Dati di identità e contatto (email, nome visualizzato), profilo (città, bio, foto, preferenze di dating, risposte alle domande), link video opzionale, messaggi dopo un match, log tecnici (tempo attività), posizione approssimata opzionale (coordinate solo se abiliti la condivisione distanza), selfie di verifica (non pubblico), codice referral e dati di pagamento/donazione se li usi."
+          body: "Dati di identità e contatto (email, nome visualizzato), profilo (città, breve presentazione, foto, preferenze di dating, risposte alle domande), link video opzionale, messaggi dopo un match, log tecnici (tempo attività), posizione approssimata opzionale (coordinate solo se abiliti la condivisione distanza), selfie di verifica (non pubblico), codice referral e dati di pagamento/donazione se li usi."
         },
         {
           title: "Posizione e distanza",
@@ -904,7 +904,7 @@ export default {
           body: "I cookie/token essenziali sono usati per l'accesso. L'analytics (es. Plausible/Umami) si carica solo se accetti il banner cookie. L'analytics non usa profili pubblicitari per impostazione predefinita — dipende dallo strumento scelto."
         },
         {
-          title: "Referral",
+          title: "Inviti",
           body: "Se usi un invito, registriamo il codice referral della persona che ti ha invitato solo per statistiche interne. Non condividiamo il tuo indirizzo email con chi ti ha invitato."
         },
         {
@@ -927,7 +927,7 @@ export default {
         },
         {
           title: "Account e profilo",
-          body: "Sei responsabile dell'accuratezza dei dati, della sicurezza della password e dei contenuti del profilo. Un profilo con foto e bio è necessario per inviare richieste agli altri. Profili falsi e falsa età sono vietati."
+          body: "Sei responsabile dell'accuratezza dei dati, della sicurezza della password e dei contenuti del profilo. Un profilo con foto e breve presentazione è necessario per inviare richieste agli altri. Profili falsi e falsa età sono vietati."
         },
         {
           title: "Comportamenti vietati",
@@ -969,11 +969,11 @@ export default {
         },
         {
           title: "Modello equo Ravnopar",
-          body: "Nessun paywall per la chat di base. Le coppie attive escono temporaneamente dal feed. I limiti anti-spam proteggono la community. Non esistono boost/super-like."
+          body: "Nessun paywall per la chat di base. Le coppie attive escono temporaneamente dall'elenco profili. I limiti anti-spam proteggono la community. Non esistono boost/super-like."
         },
         {
           title: "Profilo con foto",
-          body: "Senza foto e una breve bio non puoi inviare richieste — protegge la qualità della community e riduce i profili falsi."
+          body: "Senza foto e una breve presentazione non puoi inviare richieste — protegge la qualità della community e riduce i profili falsi."
         },
         {
           title: "Sicurezza quando ci si incontra",
@@ -1060,14 +1060,14 @@ export default {
       timeline: "Log",
       moderation: "Moderazione",
       fairness: "Equità",
-      feed: "Ranking feed",
+      feed: "Ranking profili",
       compliance: "Conformità"
     },
     allCategories: "Tutte le categorie",
     categoryAdmin: "Azioni admin",
     categoryModeration: "Moderazione",
     categorySecurity: "Sicurezza",
-    categoryFeed: "Ranking feed",
+    categoryFeed: "Ranking profili",
     categoryCompliance: "Conformità",
     refresh: "Aggiorna",
     noEvents: "Nessun record.",
@@ -1085,7 +1085,7 @@ export default {
     feedViewer: "Perché il profilo X è sopra Y — spiegazione trasparente del ranking (il piano non aggiunge punti).",
     selectUser: "Seleziona utente…",
     showRanking: "Mostra ranking",
-    feedExplainFailed: "Feed explain non disponibile.",
+    feedExplainFailed: "Spiegazione del ranking non disponibile.",
     tableRank: "#",
     tableProfile: "Profilo",
     tableCity: "Città",
@@ -1098,9 +1098,9 @@ export default {
     resolveSubmit: "Risolvi e registra",
     outcomeResolved: "Risolto",
     outcomeDismissed: "Respinto",
-    actionNone: "Bez akcije",
-    actionWarn: "Upozorenje",
-    actionSuspend: "Suspend",
+    actionNone: "Nessuna azione",
+    actionWarn: "Avviso",
+    actionSuspend: "Sospendi",
     actionDelete: "Elimina utente"
   },
   icebreakers: {

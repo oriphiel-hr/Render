@@ -3,11 +3,11 @@
 const discoveryFaqHr = [
   {
     q: 'Je li Ravnopar alternativa Tinderu u Hrvatskoj?',
-    a: 'Ako tražiš besplatno upoznavanje s chatom nakon matcha — bez paywalla za razgovor — Ravnopar može biti dobra opcija. Fokus je na fer pravilima i transparentnom feedu, ne na kopiranju druge aplikacije.'
+    a: 'Ako tražiš besplatno upoznavanje s chatom nakon matcha — bez paywalla za razgovor — Ravnopar može biti dobra opcija. Fokus je na fer pravilima i transparentnom prikazu, ne na kopiranju druge aplikacije.'
   },
   {
     q: 'Mogu li upoznavati ljude besplatno, bez pretplate?',
-    a: 'Da. Slanje zahtjeva, prihvaćanje kontakta i chat nakon matcha su besplatni. Nema obaveznog premiuma za razgovor — donacije su dobrovoljne i ne daju prednost u feedu.'
+    a: 'Da. Slanje zahtjeva, prihvaćanje kontakta i chat nakon matcha su besplatni. Nema obaveznog premiuma za razgovor — donacije su dobrovoljne i ne daju prednost u prikazu.'
   },
   {
     q: 'Moram li plaćati poruke nakon matcha?',
@@ -15,7 +15,7 @@ const discoveryFaqHr = [
   },
   {
     q: 'Kako se Ravnopar razlikuje od drugih dating aplikacija?',
-    a: 'Fokus je na fer matchu — bez plaćenog boosta u feedu, bez skrivanja dosega i s jasnim pravilima protiv ghostinga. Premium (kad bude dostupan) neće ograničavati besplatni chat — detalje vidi na stranici Fer feed.'
+    a: 'Fokus je na fer matchu — bez plaćenog boosta u prikazu, bez skrivanja dosega i s jasnim pravilima protiv ghostinga. Premium (kad bude dostupan) neće ograničavati besplatni chat — detalje vidi na stranici Fer prikaz.'
   },
   {
     q: 'Radi li Ravnopar u Hrvatskoj i Europi?',
@@ -30,11 +30,11 @@ const discoveryFaqHr = [
 const discoveryFaqEn = [
   {
     q: 'Is Ravnopar a Tinder alternative?',
-    a: 'If you want free dating with chat after a match — without a paywall for conversation — Ravnopar can be a good option. The focus is fair rules and a transparent feed, not copying another app.'
+    a: 'If you want free dating with chat after a match — without a paywall for conversation — Ravnopar can be a good option. The focus is fair rules and a transparent prikaz, not copying another app.'
   },
   {
     q: 'Can I meet people for free, without a subscription?',
-    a: 'Yes. Sending requests, accepting contact, and post-match chat are free. There is no required premium to talk — donations are voluntary and do not give feed priority.'
+    a: 'Yes. Sending requests, accepting contact, and post-match chat are free. There is no required premium to talk — donations are voluntary and do not give prikaz priority.'
   },
   {
     q: 'Do I have to pay for messages after a match?',
@@ -42,7 +42,7 @@ const discoveryFaqEn = [
   },
   {
     q: 'How is Ravnopar different from other dating apps?',
-    a: 'The focus is fair matching — no paid feed boost, no hidden reach limits, and clear anti-ghosting rules. Premium (when available) will not limit free chat — see the Fair feed page.'
+    a: 'The focus is fair matching — no paid prikaz boost, no hidden reach limits, and clear anti-ghosting rules. Premium (when available) will not limit free chat — see the Fair prikaz page.'
   },
   {
     q: 'Does Ravnopar work in Croatia and Europe?',
@@ -57,15 +57,15 @@ const discoveryFaqEn = [
 const homeCompareHr = {
   title: 'Fer upoznavanje bez paywalla',
   lead:
-    'Tražiš besplatno upoznavanje bez skrivenih limita dosega? Ravnopar nudi match i chat nakon obostranog kontakta — bez plaćanja poruka i bez plaćenog boosta u feedu.',
+    'Tražiš besplatno upoznavanje bez skrivenih limita dosega? Ravnopar nudi match i chat nakon obostranog kontakta — bez plaćanja poruka i bez plaćenog boosta u prikazu.',
   points: [
     {
       title: 'Chat nakon matcha',
       text: 'Razgovor se otvara kad obje strane prihvate kontakt — nema paywalla za osnovnu komunikaciju.'
     },
     {
-      title: 'Fer feed bez plaćenog boosta',
-      text: 'Donacije i premium ne daju prednost u vidljivosti. Pravila rangiranja su javna na stranici Fer feed.'
+      title: 'Fer prikaz bez plaćenog boosta',
+      text: 'Donacije i premium ne daju prednost u vidljivosti. Pravila rangiranja su javna na stranici Fer prikaz.'
     },
     {
       title: 'Zaštita od ghostinga',
@@ -82,7 +82,7 @@ const homeFreeHr = {
   points: [
     {
       title: 'Registracija i profil',
-      text: 'Napravi profil s fotografijom, odaberi koga tražiš i pregledaj feed dostupnih osoba.'
+      text: 'Napravi profil s fotografijom, odaberi koga tražiš i pregledaj prikaz dostupnih osoba.'
     },
     {
       title: 'Match bez skrivenih troškova',
@@ -99,15 +99,15 @@ const homeFreeHr = {
 const homeCompareEn = {
   title: 'Fair dating without a paywall',
   lead:
-    'Looking for free dating without hidden reach limits? Ravnopar offers matches and chat after mutual contact — no paid messages and no paid feed boost.',
+    'Looking for free dating without hidden reach limits? Ravnopar offers matches and chat after mutual contact — no paid messages and no paid prikaz boost.',
   points: [
     {
       title: 'Chat after a match',
       text: 'Conversation opens when both sides accept contact — no paywall for basic communication.'
     },
     {
-      title: 'Fair feed without paid boost',
-      text: 'Donations and premium do not increase visibility. Ranking rules are public on the Fair feed page.'
+      title: 'Fair prikaz without paid boost',
+      text: 'Donations and premium do not increase visibility. Ranking rules are public on the Fair prikaz page.'
     },
     {
       title: 'Anti-ghosting protection',
@@ -124,7 +124,7 @@ const homeFreeEn = {
   points: [
     {
       title: 'Sign up and profile',
-      text: 'Create a profile with a photo, choose who you seek, and browse available people in the feed.'
+      text: 'Create a profile with a photo, choose who you seek, and browse available people in the prikaz.'
     },
     {
       title: 'Match without hidden fees',
@@ -144,7 +144,7 @@ export const SEO_DISCOVERY_BLOCKS = {
       descriptions: {
         home:
           'Besplatno upoznavanje bez paywalla — fer dating aplikacija za HR i Europu. Chat nakon matcha, transparentna pravila. 18+.',
-        faq: 'Besplatno upoznavanje, chat bez pretplate, fer feed — česta pitanja o Ravnoparu.'
+        faq: 'Besplatno upoznavanje, chat bez pretplate, fer prikaz — česta pitanja o Ravnoparu.'
       }
     },
     home: { seoCompare: homeCompareHr, seoFree: homeFreeHr },
@@ -155,7 +155,7 @@ export const SEO_DISCOVERY_BLOCKS = {
       descriptions: {
         home:
           'Free dating without a paywall — fair dating for Europe. Chat after a match, transparent rules. 18+.',
-        faq: 'Free dating, chat without subscription, fair feed — FAQ about Ravnopar.'
+        faq: 'Free dating, chat without subscription, fair prikaz — FAQ about Ravnopar.'
       }
     },
     home: { seoCompare: homeCompareEn, seoFree: homeFreeEn },
@@ -183,7 +183,7 @@ export const SEO_DISCOVERY_BLOCKS = {
         title: 'Kostenloses Dating — kein Abo zum Chatten',
         lead: 'Anfragen, Match und Chat sind in der Basisnutzung enthalten — Fokus auf echtes Kennenlernen.',
         points: [
-          { title: 'Profil anlegen', text: 'Foto, Bio, Präferenzen — dann Feed durchstöbern.' },
+          { title: 'Profil anlegen', text: 'Foto, kurze Beschreibung, Präferenzen — dann Feed durchstöbern.' },
           { title: 'Match ohne versteckte Kosten', text: 'Bei Annahme öffnet sich der Chat — kostenlos.' },
           { title: '18+, mehrsprachig', text: 'Für Europa, mehrere Sprachen.' }
         ],
@@ -210,7 +210,7 @@ export const SEO_DISCOVERY_BLOCKS = {
   sl: {
     meta: {
       descriptions: {
-        home: 'Brezplačno spoznavanje brez paywalla — pošten feed, klepet po ujemanju. 18+.',
+        home: 'Brezplačno spoznavanje brez paywalla — pošten prikaz, klepet po ujemanju. 18+.',
         faq: 'Brezplačno spoznavanje, klepet brez naročnine — FAQ o Ravnopar.'
       }
     },
@@ -220,7 +220,7 @@ export const SEO_DISCOVERY_BLOCKS = {
         lead: 'Brezplačno spoznavanje brez skritih omejitev dosega — ujemanje in klepet po obojestranskem kontaktu.',
         points: [
           { title: 'Klepet po ujemanju', text: 'Pogovor se odpre, ko oba sprejmeta kontakt.' },
-          { title: 'Pošten feed', text: 'Donacije in premium ne dajejo prednosti.' },
+          { title: 'Pošten prikaz', text: 'Donacije in premium ne dajejo prednosti.' },
           { title: 'Zaščita pred ghostingom', text: 'Opozorila in samodejno zapiranje neaktivnih pogovorov.' }
         ],
         link: 'Vsa vprašanja v pomoči →'
@@ -229,7 +229,7 @@ export const SEO_DISCOVERY_BLOCKS = {
         title: 'Brezplačno spoznavanje — brez naročnine',
         lead: 'Zahteve, ujemanje in klepet so vključeni v osnovno uporabo.',
         points: [
-          { title: 'Registracija', text: 'Profil s fotografijo in brskanje po feedu.' },
+          { title: 'Registracija', text: 'Profil s fotografijo in brskanje po prikazu.' },
           { title: 'Ujemanje brez skritih stroškov', text: 'Zasebni klepet brezplačno po sprejetju.' },
           { title: '18+, več jezikov', text: 'Za Evropo, več jezikov.' }
         ],
@@ -241,7 +241,7 @@ export const SEO_DISCOVERY_BLOCKS = {
         { q: 'Je Ravnopar alternativa Tinderju?', a: 'Če iščeš brezplačno spoznavanje s klepetom po ujemanju — brez paywalla — je Ravnopar dobra opcija. Poudarek na poštenih pravilih.' },
         { q: 'Ali lahko spoznavam brezplačno?', a: 'Da. Zahteve, sprejetje in klepet so brezplačni.' },
         { q: 'Ali moram plačati sporočila po ujemanju?', a: 'Ne. Zasebni klepet je brezplačen.' },
-        { q: 'Kako se Ravnopar razlikuje od drugih dating aplikacij?', a: 'Pošten feed, brez plačanega boosta, jasna pravila proti ghostingu.' },
+        { q: 'Kako se Ravnopar razlikuje od drugih dating aplikacij?', a: 'Pošten prikaz, brez plačanega boosta, jasna pravila proti ghostingu.' },
         { q: 'Ali deluje v Evropi?', a: 'Da — več jezikov, registracija 18+.' },
         { q: 'Za resno ali le zabavo?', a: 'Oboje — odvisno od profila.' }
       ]
@@ -250,7 +250,7 @@ export const SEO_DISCOVERY_BLOCKS = {
   bs: {
     meta: {
       descriptions: {
-        home: 'Besplatno upoznavanje bez paywalla — fer feed, chat nakon matcha. 18+.',
+        home: 'Besplatno upoznavanje bez paywalla — fer prikaz, chat nakon matcha. 18+.',
         faq: 'Besplatno upoznavanje, chat bez pretplate — FAQ o Ravnoparu.'
       }
     },
@@ -260,7 +260,7 @@ export const SEO_DISCOVERY_BLOCKS = {
   sr: {
     meta: {
       descriptions: {
-        home: 'Besplatno upoznavanje bez paywalla — fer feed, chat nakon matcha. 18+.',
+        home: 'Besplatno upoznavanje bez paywalla — fer prikaz, chat nakon matcha. 18+.',
         faq: 'Besplatno upoznavanje, chat bez pretplate — FAQ o Ravnoparu.'
       }
     },
@@ -273,7 +273,7 @@ export const SEO_DISCOVERY_BLOCKS = {
         title: 'Besplatno upoznavanje — bez pretplate',
         lead: 'Zahtevi, match i chat uključeni su u osnovnu upotrebu.',
         points: [
-          { title: 'Registracija', text: 'Profil sa fotografijom i pregled feeda.' },
+          { title: 'Registracija', text: 'Profil sa fotografijom i pregled prikaza.' },
           { title: 'Match bez skrivenih troškova', text: 'Privatni chat besplatno.' },
           { title: '18+, više jezika', text: 'Platforma za Evropu.' }
         ],
@@ -294,7 +294,7 @@ export const SEO_DISCOVERY_BLOCKS = {
   it: {
     meta: {
       descriptions: {
-        home: 'Incontri gratuiti senza paywall — feed equo, chat dopo il match. 18+.',
+        home: 'Incontri gratuiti senza paywall — prikaz equo, chat dopo il match. 18+.',
         faq: 'Incontri gratis, chat senza abbonamento — FAQ su Ravnopar.'
       }
     },
@@ -304,7 +304,7 @@ export const SEO_DISCOVERY_BLOCKS = {
         lead: 'Incontri gratuiti senza limiti nascosti — match e chat dopo contatto reciproco.',
         points: [
           { title: 'Chat dopo il match', text: 'Conversazione quando entrambi accettano — nessun paywall.' },
-          { title: 'Feed equo', text: 'Donazioni e premium non danno priorità.' },
+          { title: 'Elenco profili equo', text: 'Donazioni e premium non danno priorità.' },
           { title: 'Anti-ghosting', text: 'Avvisi e chiusura automatica delle chat inattive.' }
         ],
         link: 'Tutte le domande →'
@@ -313,7 +313,7 @@ export const SEO_DISCOVERY_BLOCKS = {
         title: 'Incontri gratuiti — senza abbonamento',
         lead: 'Richieste, match e chat inclusi nell’uso base.',
         points: [
-          { title: 'Profilo', text: 'Foto, preferenze e feed.' },
+          { title: 'Profilo', text: 'Foto, preferenze e prikaz.' },
           { title: 'Match senza costi nascosti', text: 'Chat privata gratuita dopo accettazione.' },
           { title: '18+, più lingue', text: 'Per l’Europa.' }
         ],
@@ -334,7 +334,7 @@ export const SEO_DISCOVERY_BLOCKS = {
   hu: {
     meta: {
       descriptions: {
-        home: 'Ingyenes társkeresés paywall nélkül — fair feed, chat match után. 18+.',
+        home: 'Ingyenes társkeresés paywall nélkül — fair prikaz, chat match után. 18+.',
         faq: 'Ingyenes társkeresés, chat előfizetés nélkül — GYIK a Ravnoparról.'
       }
     },
@@ -344,7 +344,7 @@ export const SEO_DISCOVERY_BLOCKS = {
         lead: 'Ingyenes ismerkedés rejtett elérési limitek nélkül — match és chat kölcsönös elfogadás után.',
         points: [
           { title: 'Chat match után', text: 'Beszélgetés, ha mindketten elfogadják.' },
-          { title: 'Fair feed', text: 'Adományok és prémium nem ad előnyt.' },
+          { title: 'Fair prikaz', text: 'Adományok és prémium nem ad előnyt.' },
           { title: 'Ghosting elleni védelem', text: 'Figyelmeztetések és inaktív csevegések zárása.' }
         ],
         link: 'Minden kérdés a súgóban →'
@@ -353,7 +353,7 @@ export const SEO_DISCOVERY_BLOCKS = {
         title: 'Ingyenes társkeresés — nincs előfizetés',
         lead: 'Kérések, match és chat az alaphasználatban benne van.',
         points: [
-          { title: 'Regisztráció', text: 'Profil fotóval, feed böngészése.' },
+          { title: 'Regisztráció', text: 'Profil fotóval, prikaz böngészése.' },
           { title: 'Match rejtett díjak nélkül', text: 'Ingyenes privát chat elfogadás után.' },
           { title: '18+, több nyelv', text: 'Európára.' }
         ],
@@ -374,7 +374,7 @@ export const SEO_DISCOVERY_BLOCKS = {
   pl: {
     meta: {
       descriptions: {
-        home: 'Darmowe randki bez paywalla — uczciwy feed, czat po matchu. 18+.',
+        home: 'Darmowe randki bez paywalla — uczciwy prikaz, czat po matchu. 18+.',
         faq: 'Darmowe randki, czat bez subskrypcji — FAQ Ravnopar.'
       }
     },
@@ -384,7 +384,7 @@ export const SEO_DISCOVERY_BLOCKS = {
         lead: 'Darmowe randki bez ukrytych limitów — match i czat po obustronnym kontakcie.',
         points: [
           { title: 'Czat po matchu', text: 'Rozmowa po obustronnej akceptacji.' },
-          { title: 'Uczciwy feed', text: 'Darowizny i premium nie dają przewagi.' },
+          { title: 'Uczciwy prikaz', text: 'Darowizny i premium nie dają przewagi.' },
           { title: 'Ochrona przed ghostingiem', text: 'Ostrzeżenia i auto-zamykanie nieaktywnych czatów.' }
         ],
         link: 'Wszystkie pytania →'
@@ -393,7 +393,7 @@ export const SEO_DISCOVERY_BLOCKS = {
         title: 'Darmowe randki — bez subskrypcji',
         lead: 'Prośby, match i czat w podstawowym użyciu.',
         points: [
-          { title: 'Profil', text: 'Zdjęcie, preferencje, feed.' },
+          { title: 'Profil', text: 'Zdjęcie, preferencje, prikaz.' },
           { title: 'Match bez ukrytych opłat', text: 'Darmowy czat po akceptacji.' },
           { title: '18+, wiele języków', text: 'Dla Europy.' }
         ],
@@ -414,7 +414,7 @@ export const SEO_DISCOVERY_BLOCKS = {
   cs: {
     meta: {
       descriptions: {
-        home: 'Seznamování zdarma bez paywallu — férový feed, chat po matchi. 18+.',
+        home: 'Seznamování zdarma bez paywallu — férový prikaz, chat po matchi. 18+.',
         faq: 'Seznamování zdarma, chat bez předplatného — FAQ Ravnopar.'
       }
     },
@@ -424,7 +424,7 @@ export const SEO_DISCOVERY_BLOCKS = {
         lead: 'Seznamování zdarma bez skrytých limitů — match a chat po oboustranném kontaktu.',
         points: [
           { title: 'Chat po matchi', text: 'Konverzace po oboustranném souhlasu.' },
-          { title: 'Férový feed', text: 'Dary a premium nedávají prioritu.' },
+          { title: 'Férový prikaz', text: 'Dary a premium nedávají prioritu.' },
           { title: 'Ochrana před ghostingem', text: 'Varování a uzavření neaktivních chatů.' }
         ],
         link: 'Všechny otázky →'
@@ -433,7 +433,7 @@ export const SEO_DISCOVERY_BLOCKS = {
         title: 'Seznamování zdarma — bez předplatného',
         lead: 'Žádosti, match a chat v základním použití.',
         points: [
-          { title: 'Registrace', text: 'Profil s fotkou, feed.' },
+          { title: 'Registrace', text: 'Profil s fotkou, prikaz.' },
           { title: 'Match bez skrytých poplatků', text: 'Soukromý chat zdarma.' },
           { title: '18+, více jazyků', text: 'Pro Evropu.' }
         ],
@@ -454,7 +454,7 @@ export const SEO_DISCOVERY_BLOCKS = {
   fr: {
     meta: {
       descriptions: {
-        home: 'Rencontres gratuites sans paywall — fil équitable, chat après match. 18+.',
+        home: 'Rencontres gratuites sans paywall — affichage équitable, chat après match. 18+.',
         faq: 'Rencontres gratuites, chat sans abonnement — FAQ Ravnopar.'
       }
     },
@@ -464,7 +464,7 @@ export const SEO_DISCOVERY_BLOCKS = {
         lead: 'Rencontres gratuites sans limites cachées — match et chat après contact mutuel.',
         points: [
           { title: 'Chat après le match', text: 'Conversation quand les deux acceptent.' },
-          { title: 'Fil équitable', text: 'Dons et premium ne donnent pas de priorité.' },
+          { title: 'Affichage équitable', text: 'Dons et premium ne donnent pas de priorité.' },
           { title: 'Anti-ghosting', text: 'Avertissements et fermeture des chats inactifs.' }
         ],
         link: 'Toutes les questions →'
@@ -473,7 +473,7 @@ export const SEO_DISCOVERY_BLOCKS = {
         title: 'Rencontres gratuites — sans abonnement',
         lead: 'Demandes, match et chat inclus dans l’usage de base.',
         points: [
-          { title: 'Profil', text: 'Photo, préférences, fil.' },
+          { title: 'Profil', text: 'Photo, préférences, profils.' },
           { title: 'Match sans frais cachés', text: 'Chat privé gratuit après acceptation.' },
           { title: '18+, plusieurs langues', text: 'Pour l’Europe.' }
         ],
@@ -494,7 +494,7 @@ export const SEO_DISCOVERY_BLOCKS = {
   es: {
     meta: {
       descriptions: {
-        home: 'Citas gratis sin paywall — feed justo, chat tras el match. 18+.',
+        home: 'Citas gratis sin paywall — prikaz justo, chat tras el match. 18+.',
         faq: 'Citas gratis, chat sin suscripción — FAQ Ravnopar.'
       }
     },
@@ -504,7 +504,7 @@ export const SEO_DISCOVERY_BLOCKS = {
         lead: 'Citas gratis sin límites ocultos — match y chat tras contacto mutuo.',
         points: [
           { title: 'Chat tras el match', text: 'Conversación cuando ambos aceptan.' },
-          { title: 'Feed justo', text: 'Donaciones y premium no dan prioridad.' },
+          { title: 'Lista justa de perfiles', text: 'Donaciones y premium no dan prioridad.' },
           { title: 'Anti-ghosting', text: 'Avisos y cierre de chats inactivos.' }
         ],
         link: 'Todas las preguntas →'
@@ -513,7 +513,7 @@ export const SEO_DISCOVERY_BLOCKS = {
         title: 'Citas gratis — sin suscripción',
         lead: 'Solicitudes, match y chat incluidos en el uso básico.',
         points: [
-          { title: 'Perfil', text: 'Foto, preferencias, feed.' },
+          { title: 'Perfil', text: 'Foto, preferencias, prikaz.' },
           { title: 'Match sin costes ocultos', text: 'Chat privado gratis.' },
           { title: '18+, varios idiomas', text: 'Para Europa.' }
         ],
@@ -534,7 +534,7 @@ export const SEO_DISCOVERY_BLOCKS = {
   sk: {
     meta: {
       descriptions: {
-        home: 'Zoznamovanie zadarmo bez paywallu — férový feed, chat po matchi. 18+.',
+        home: 'Zoznamovanie zadarmo bez paywallu — férový prikaz, chat po matchi. 18+.',
         faq: 'Zoznamovanie zadarmo, chat bez predplatného — FAQ Ravnopar.'
       }
     },
@@ -544,7 +544,7 @@ export const SEO_DISCOVERY_BLOCKS = {
         lead: 'Zoznamovanie zadarmo bez skrytých limitov — match a chat po obojstrannom kontakte.',
         points: [
           { title: 'Chat po matchi', text: 'Konverzácia po obojstrannom súhlase.' },
-          { title: 'Férový feed', text: 'Dary a premium nedávajú prioritu.' },
+          { title: 'Férový prikaz', text: 'Dary a premium nedávajú prioritu.' },
           { title: 'Ochrana pred ghostingom', text: 'Varovania a uzavretie neaktívnych chatov.' }
         ],
         link: 'Všetky otázky →'
@@ -553,7 +553,7 @@ export const SEO_DISCOVERY_BLOCKS = {
         title: 'Zoznamovanie zadarmo — bez predplatného',
         lead: 'Žiadosti, match a chat v základnom používaní.',
         points: [
-          { title: 'Registrácia', text: 'Profil s fotkou, feed.' },
+          { title: 'Registrácia', text: 'Profil s fotkou, prikaz.' },
           { title: 'Match bez skrytých poplatkov', text: 'Súkromný chat zadarmo.' },
           { title: '18+, viac jazykov', text: 'Pre Európu.' }
         ],

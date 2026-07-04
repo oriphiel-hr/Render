@@ -211,7 +211,7 @@ export default {
     ADMIN_ACTION: "Admin",
     MODERATION: "Moderacija",
     SECURITY: "Varnost",
-    FEED_RANKING: "Razvrstitev v feedu",
+    FEED_RANKING: "Razvrstitev v prikazu",
     COMPLIANCE: "Skladnost"
   },
   auditAction: {
@@ -228,7 +228,7 @@ export default {
     REPORT_RESOLVED: "Prijava rešena",
     BLOCK: "Blokiraj",
     REPORT: "Prijavi",
-    FEED_SNAPSHOT: "Posnetek feeda",
+    FEED_SNAPSHOT: "Posnetek prikaza",
     DATA_EXPORT: "Izvoz podatkov",
     ACCOUNT_DELETE_SELF: "Brisanje računa",
     ACCOUNT_DELETE: "Brisanje računa",
@@ -288,7 +288,7 @@ export default {
       home: "Ravnopar — poštena platforma za zmenke. Brez plačilnega zidu za pogovor, klepet po ujemanju in jasna pravila.",
       auth: "Ustvarite račun Ravnopar ali se prijavite.",
       settings: "Uredite profil, fotografije, obvestila in zasebnost.",
-      app: "Vaš Ravnopar feed, pogovori in zahteve za stik.",
+      app: "Vaš Ravnopar prikaz, pogovori in zahteve za stik.",
       chat: "Zasebni klepet z vašim ujemanjem.",
       profile: "Ogled profila Ravnopar.",
       onboarding: "Kratki vodič po Ravnopar.",
@@ -351,7 +351,7 @@ export default {
     chipAntiSpam: "Zaščita pred spamom",
     showcaseEyebrow: "Predogled izkušnje",
     showcaseTitle: "Spoznaj ljudi kot v dating aplikaciji — brez paywalla",
-    showcaseText: "Swipe kartice, foto galerije in klepet po ujemanju. Poštena pravila ostajajo ista.",
+    showcaseText: "Kartice profilov, foto galerije in klepet po ujemanju. Poštena pravila ostajajo ista.",
     showcaseMockName: "Maja, 28 · Zagreb",
     showcaseMockBio: "Obožujem kavo, pohode in iskren pogovor.",
     howItWorks: "Kako deluje",
@@ -362,7 +362,7 @@ export default {
       },
       {
         title: "Spoznaj ljudi",
-        text: "Brskaj po feedu razpoložljivih profilov brez skritega zmanjšanja dosega."
+        text: "Brskaj po prikazu razpoložljivih profilov brez skritega zmanjšanja dosega."
       },
       {
         title: "Pogovarjaj se pošteno",
@@ -401,7 +401,7 @@ export default {
       },
       {
         title: "Poštena vidnost",
-        text: "Aktivni pari začasno zapustijo feed, da imajo drugi še vedno priložnost."
+        text: "Aktivni pari začasno zapustijo prikaz, da imajo drugi še vedno priložnost."
       },
       {
         title: "Zaščita in nadzor",
@@ -432,9 +432,9 @@ export default {
     city: "Mesto",
     bio: "O meni",
     bioPlaceholder: "Na kratko se predstavi — kaj iščeš, kaj imaš rad/a...",
-    icebreakersLegend: "Icebreaker vprašanja (do 3)",
+    icebreakersLegend: "Vprašanja za spoznavanje (do 3)",
     icebreakersHint: "Kratka vprašanja in odgovori — pomagajo pri prvem stiku.",
-    addIcebreaker: "Dodaj icebreaker",
+    addIcebreaker: "Dodaj vprašanje",
     locationLegend: "Razdalja (zasebno)",
     locationHint: "Koordinate niso prikazane drugim — le približna razdalja (npr. “5–15 km”). Možnost morata omogočiti oba.",
     shareLocation: "Pokaži razdaljo od mene do drugih uporabnikov",
@@ -452,13 +452,13 @@ export default {
     seekingIdentityLegend: "Iščem identiteto",
     intentLegend: "Namen",
     availabilityLabel: "Vidnost profila",
-    availabilityAvailable: "Na voljo v feedu",
+    availabilityAvailable: "Na voljo v prikazu",
     availabilityPaused: "Pavzirano (skrito)",
     availabilityFocused: "V aktivnem pogovoru",
     notifyEmail: "E-poštna obvestila (nove zahteve, ujemanja, sporočila)",
     saveProfile: "Shrani profil",
     premiumTitle: "Premium paketi",
-    premiumHint: "Checkout je pripravljen — aktivacija paketa po plačilu.",
+    premiumHint: "Plačilo je pripravljeno — aktivacija paketa po plačilu.",
     gdprTitle: "Zasebnost (GDPR)",
     gdprHint: "Prenesite kopijo svojih podatkov v JSON obliki.",
     exportData: "Prenesi moje podatke",
@@ -480,17 +480,17 @@ export default {
     deleteConfirm: "Trajno izbrisati račun? Tega dejanja ni mogoče razveljaviti.",
     deleteFailed: "Brisanje računa ni uspelo.",
     planSuccess: "Plačilo prejeto. Aktivacija premiuma sledi po preverjanju.",
-    checkoutFailed: "Premium checkout ni na voljo."
+    checkoutFailed: "Premium plačilo ni na voljo."
   },
   dashboard: {
     greeting: "Pozdravljen/a, {name}",
-    subtitle: "Swipeaj profile ali uporabi gumbe — enega po enega, brez hitenja.",
-    feedCount: "{count} profilov v tvojem feedu",
-    feedEmpty: "Trenutno v tvojem feedu ni združljivih profilov.",
+    subtitle: "Pregleduj profile ali uporabi gumbe — enega po enega, brez hitenja.",
+    feedCount: "{count} profilov v tvojem prikazu",
+    feedEmpty: "Trenutno v tvojem prikazu ni združljivih profilov.",
     settingsLink: "Nastavitve profila",
     loading: "Nalaganje...",
     incompleteTitle: "Vaš profil še ni popoln ({percent}%).",
-    incompleteHint: "Dodajte fotografijo, opis in icebreaker — to poveča možnosti za stik.",
+    incompleteHint: "Dodaj fotografijo, kratek opis in vprašanje za spoznavanje — to poveča možnosti za stik.",
     completeProfile: "Dopolni profil",
     conversations: "Pogovori",
     conversationsUnread: "Pogovori ({unread} novih)",
@@ -503,13 +503,13 @@ export default {
     activeContact: "Trenutno se pogovarjaš z {partner}.",
     openChatBtn: "Odpri klepet",
     closeContact: "Zaključi pogovor",
-    visibleInFeed: "Vidni ste v feedu — swipeajte profile spodaj.",
+    visibleInFeed: "Vidni ste v prikazu — pregledujte profile spodaj.",
     incomingTitle: "Zahteve za stik",
     accept: "Sprejmi",
     decline: "Zavrni",
     discoverTitle: "Odkrij profile",
     discoverCount: " · {count} zate",
-    gateTitle: "Profil ni pripravljen za feed",
+    gateTitle: "Profil ni pripravljen za prikaz",
     gateHint: "Dodaj fotografijo in opis (min. 10 znakov), preden pošiljaš zahteve in swipaš.",
     gateOnboarding: "Oglej si uvod",
     emptyTitle: "Ni novih profilov",
@@ -529,7 +529,7 @@ export default {
     accepted: "Stik sprejet.",
     declined: "Zahteva zavrnjena.",
     respondFailed: "Odgovor ni bil shranjen.",
-    closed: "Stik zaključen. Spet ste na voljo v feedu.",
+    closed: "Stik zaključen. Spet ste na voljo v prikazu.",
     closeFailed: "Zaključevanje ni uspelo.",
     reportReason: "Neprimerno vedenje",
     reportNote: "Prijava iz uporabniškega vmesnika.",
@@ -541,7 +541,7 @@ export default {
     title: "Pogovor",
     loading: "Nalaganje...",
     unavailable: "Klepet ni na voljo.",
-    empty: "Pošljite prvo sporočilo — lahko uporabite tudi icebreaker s profila.",
+    empty: "Pošljite prvo sporočilo — lahko uporabite tudi vprašanje za spoznavanje s profila.",
     read: "Prebrano",
     react: "Reagiraj",
     typing: "Piše…",
@@ -573,7 +573,7 @@ export default {
   onboarding: {
     eyebrow: "Dobrodošli",
     title: "Profil, ki izstopa",
-    lead: "Preden vstopite v feed, dodajte fotografijo in kratek opis — oba sta potrebna za pošiljanje zahtev.",
+    lead: "Preden vstopite v prikaz, dodajte fotografijo in kratek opis — oba sta potrebna za pošiljanje zahtev.",
     stepPhoto: "1. Fotografija",
     stepPhotoHint: "Profili s fotografijami dobijo več odzivov.",
     changePhoto: "Zamenjaj fotografijo",
@@ -582,9 +582,9 @@ export default {
     stepBioHint: "Na kratko povej, kdo si in kaj iščeš.",
     editBio: "Uredi opis",
     writeBio: "Napiši o sebi",
-    stepFeed: "3. Feed",
-    stepFeedHint: "Ko je profil pripravljen, swipeaj in pošlji prvo zahtevo.",
-    finishReady: "Dokončaj uvod in odpri feed",
+    stepFeed: "3. Prikaz profilov",
+    stepFeedHint: "Ko je profil pripravljen, pregleduj profile in pošlji prvo zahtevo.",
+    finishReady: "Dokončaj uvod in odpri prikaz",
     finishIncomplete: "Dopolni profil v Nastavitvah",
     finishHint: "Najprej dokončaj fotografijo in opis o sebi",
     incompleteError: "Pred nadaljevanjem v Nastavitvah dodaj fotografijo in kratek opis (min. 10 znakov).",
@@ -606,7 +606,7 @@ export default {
     lead: "Ravnopar ohranjamo z veliko truda in majhnim proračunom. Če vam platforma pomeni, lahko prostovoljno pomagate — brez pritiska in brez dodatnih funkcij v zameno.",
     sectionEyebrow: "Podpora projektu",
     sectionTitle: "Podprite Ravnopar",
-    sectionLead: "Če vam platforma pomaga spoznati ljudi, lahko prostovoljno pomagate pri stroških strežnika. Vsak prispevek res pomaga — in ne dobite nobene prednosti v feedu.",
+    sectionLead: "Če vam platforma pomaga spoznati ljudi, lahko prostovoljno pomagate pri stroških strežnika. Vsak prispevek res pomaga — in ne dobite nobene prednosti v prikazu.",
     note: "Donacije so povsem prostovoljne. Hvala, ker razmišljate o tem. ♥",
     revolutTitle: "Kartica (Revolut)",
     revolutHint: "Hitro plačilo s kartico — odpre se varna stran Revolut.",
@@ -683,7 +683,7 @@ export default {
       {
         icon: "🤝",
         title: "Donacije ostanejo prostovoljne",
-        text: "Če donirate, ne dobite prednosti v feedu — le našo iskreno zahvalo."
+        text: "Če donirate, ne dobite prednosti v prikazu — le našo iskreno zahvalo."
       }
     ],
     triggers: [
@@ -736,7 +736,7 @@ export default {
     planBtnSoon: "Kmalu",
     planBtnDisabled: "Še ni na voljo",
     planDisabledTitle: "Ta paket še ni na voljo. Pred uvedbo plačila vas bomo vnaprej obvestili.",
-    planHintCheckout: "Premium checkout je na voljo v Nastavitvah po prijavi.",
+    planHintCheckout: "Premium plačilo je na voljo v Nastavitvah po prijavi.",
     planHintLater: "Aktivirali ga bomo, ko bosta izdelek in skupnost pripravljena — obvestilo bo prišlo vnaprej.",
     freePrice: "0 €",
     plans: [
@@ -749,7 +749,7 @@ export default {
         tagline: "Vaš začetek",
         description: "Vse, kar potrebujete za poštene zmenke — danes in ko uvedemo Premium.",
         features: [
-          "Profil in vidnost v feedu",
+          "Profil in vidnost v prikazu",
           "Pošiljanje in sprejemanje zahtev",
           "Blokiranje, prijave in zaščita pred spamom",
           "Brez skritega zmanjšanja dosega"
@@ -763,7 +763,7 @@ export default {
         priceEur: 4.99,
         period: "/ mes",
         tagline: "Več za vaš profil",
-        description: "Za tiste, ki želijo dodatni nadzor — brez vpliva na druge v feedu.",
+        description: "Za tiste, ki želijo dodatni nadzor — brez vpliva na druge v prikazu.",
         features: [
           "Več fotografij na profilu",
           "Napredni filtri (pošteni za vse)",
@@ -801,15 +801,15 @@ export default {
     items: [
       {
         q: "Ali je Ravnopar brezplačen?",
-        a: "Da — pošiljanje zahtev, sprejemanje stikov in pogovor v aplikaciji so brezplačni. Donacije so prostovoljne in ne dajejo prednosti v feedu."
+        a: "Da — pošiljanje zahtev, sprejemanje stikov in pogovor v aplikaciji so brezplačni. Donacije so prostovoljne in ne dajejo prednosti v prikazu."
       },
       {
         q: "Kako deluje ujemanje?",
-        a: "Brskate po profilih v feedu in pošljete zahtevo za stik. Če druga oseba sprejme, se odpre zasebni klepet in oba sta začasno osredotočena na pogovor."
+        a: "Brskate po profilih v prikazu in pošljete zahtevo za stik. Če druga oseba sprejme, se odpre zasebni klepet in oba sta začasno osredotočena na pogovor."
       },
       {
         q: "Kaj se zgodi po sprejetem stiku?",
-        a: "Odprete klepet z osebo in se pogovarjate v aplikaciji. Aktivni pari začasno zapustijo feed, da imajo drugi še vedno priložnost."
+        a: "Odprete klepet z osebo in se pogovarjate v aplikaciji. Aktivni pari začasno zapustijo prikaz, da imajo drugi še vedno priložnost."
       },
       {
         q: "Ali boste zaračunavali pogovor?",
@@ -869,7 +869,7 @@ export default {
         },
         {
           title: "Podatki, ki jih zbiramo",
-          body: "Identiteta in kontaktni podatki (e-pošta, prikazno ime), profil (mesto, bio, fotografije, preference zmenkov, icebreaker odgovori), neobvezna video povezava, sporočila po ujemanju, tehnični zapisi (čas aktivnosti), neobvezna približno zaokrožena lokacija (koordinate le, če omogočite deljenje razdalje), verifikacijski selfi (ni javno viden), koda priporočila ter podatki o plačilih/donacijah, če jih uporabljate."
+          body: "Identiteta in kontaktni podatki (e-pošta, prikazno ime), profil (mesto, kratek opis, fotografije, preference zmenkov, odgovori na vprašanja za spoznavanje), neobvezna video povezava, sporočila po ujemanju, tehnični zapisi (čas aktivnosti), neobvezna približno zaokrožena lokacija (koordinate le, če omogočite deljenje razdalje), verifikacijski selfi (ni javno viden), koda priporočila ter podatki o plačilih/donacijah, če jih uporabljate."
         },
         {
           title: "Lokacija in razdalja",
@@ -881,7 +881,7 @@ export default {
         },
         {
           title: "Namen obdelave",
-          body: "Zagotavljanje storitve zmenkov, prikaz profila, ujemanje, klepet, varnost (blokiranje, prijave), e-poštna obvestila, ki jih odobrite, referral program, analitika (le z dovoljenjem za piškotke) in vzdrževanje platforme."
+          body: "Zagotavljanje storitve zmenkov, prikaz profila, ujemanje, klepet, varnost (blokiranje, prijave), e-poštna obvestila, ki jih odobrite, program povabil, analitika (le z dovoljenjem za piškotke) in vzdrževanje platforme."
         },
         {
           title: "Pravna podlaga (GDPR)",
@@ -904,7 +904,7 @@ export default {
           body: "Nujni piškotki/žetoni se uporabljajo za prijavo. Analitika (npr. Plausible/Umami) se naloži le, če sprejmete pasico s piškotki. Analitika privzeto ne uporablja oglaševalskih profilov — odvisno od izbranega orodja."
         },
         {
-          title: "Referral",
+          title: "Povabila",
           body: "Če uporabite povabilo, zabeležimo kodo priporočila osebe, ki vas je povabila, le za interno statistiko. Vašega e-poštnega naslova ne delimo s povabiteljem."
         },
         {
@@ -927,7 +927,7 @@ export default {
         },
         {
           title: "Račun in profil",
-          body: "Odgovorni ste za točnost podatkov, varnost gesla in vsebino profila. Profil s fotografijo in bio opisom je potreben za pošiljanje zahtev drugim. Lažni profili in napačna starost so prepovedani."
+          body: "Odgovorni ste za točnost podatkov, varnost gesla in vsebino profila. Profil s fotografijo in kratkim opisom je potreben za pošiljanje zahtev drugim. Lažni profili in napačna starost so prepovedani."
         },
         {
           title: "Prepovedano vedenje",
@@ -969,11 +969,11 @@ export default {
         },
         {
           title: "Pošten model Ravnopar",
-          body: "Brez paywalla za osnovni klepet. Aktivni pari začasno zapustijo feed. Anti-spam omejitve ščitijo skupnost. Boost/super-like ne obstajajo."
+          body: "Brez paywalla za osnovni klepet. Aktivni pari začasno zapustijo prikaz. Anti-spam omejitve ščitijo skupnost. Boost/super-like ne obstajajo."
         },
         {
           title: "Profil s fotografijo",
-          body: "Brez fotografije in kratkega bio opisa ne morete pošiljati zahtev — to varuje kakovost skupnosti in zmanjšuje lažne profile."
+          body: "Brez fotografije in kratkega opisa ne morete pošiljati zahtev — to varuje kakovost skupnosti in zmanjšuje lažne profile."
         },
         {
           title: "Varnost ob srečanju",
@@ -1060,14 +1060,14 @@ export default {
       timeline: "Dnevnik",
       moderation: "Moderacija",
       fairness: "Poštenost",
-      feed: "Razvrstitev feeda",
+      feed: "Razvrstitev prikaza",
       compliance: "Skladnost"
     },
     allCategories: "Vse kategorije",
     categoryAdmin: "Admin dejanja",
     categoryModeration: "Moderacija",
     categorySecurity: "Varnost",
-    categoryFeed: "Razvrstitev feeda",
+    categoryFeed: "Razvrstitev prikaza",
     categoryCompliance: "Skladnost",
     refresh: "Osveži",
     noEvents: "Ni zapisov.",
@@ -1085,7 +1085,7 @@ export default {
     feedViewer: "Zakaj je profil X nad Y — transparentna razlaga rangiranja (paket ne doda točk).",
     selectUser: "Izberite uporabnika…",
     showRanking: "Prikaži rangiranje",
-    feedExplainFailed: "Razlaga feeda ni na voljo.",
+    feedExplainFailed: "Razlaga prikaza ni na voljo.",
     tableRank: "#",
     tableProfile: "Profil",
     tableCity: "Mesto",
@@ -1098,9 +1098,9 @@ export default {
     resolveSubmit: "Reši in zapiši",
     outcomeResolved: "Rešeno",
     outcomeDismissed: "Zavrnjeno",
-    actionNone: "Bez akcije",
-    actionWarn: "Upozorenje",
-    actionSuspend: "Suspend",
+    actionNone: "Brez ukrepa",
+    actionWarn: "Opozorilo",
+    actionSuspend: "Suspendiraj",
     actionDelete: "Izbriši uporabnika"
   },
   icebreakers: {

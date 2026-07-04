@@ -15039,7 +15039,7 @@ const hr = {
     ADMIN_ACTION: "Admin",
     MODERATION: "Moderacija",
     SECURITY: "Sigurnost",
-    FEED_RANKING: "Feed rang",
+    FEED_RANKING: "Rang prikaza",
     COMPLIANCE: "Compliance"
   },
   auditAction: {
@@ -15056,7 +15056,7 @@ const hr = {
     REPORT_RESOLVED: "Prijava riješena",
     BLOCK: "Blok",
     REPORT: "Prijava",
-    FEED_SNAPSHOT: "Feed snapshot",
+    FEED_SNAPSHOT: "Snimka prikaza",
     DATA_EXPORT: "Export podataka",
     ACCOUNT_DELETE_SELF: "Brisanje računa",
     ACCOUNT_DELETE: "Brisanje računa",
@@ -15110,7 +15110,7 @@ const hr = {
       privacy: "Politika privatnosti",
       terms: "Uvjeti korištenja",
       contact: "Kontakt",
-      fairFeed: "Kako radi fer feed",
+      fairFeed: "Kako radi fer prikaz",
       fairnessReport: "Fer izvještaj",
       donatePublic: "Podrži projekt",
       admin: "Admin"
@@ -15119,27 +15119,27 @@ const hr = {
       home: "Besplatno upoznavanje bez paywalla — fer dating aplikacija za HR i Europu. Chat nakon matcha, transparentna pravila. 18+.",
       auth: "Registracija i prijava na Ravnopar — fer platformu za upoznavanje.",
       settings: "Uredi profil, fotografije, obavijesti i privatnost.",
-      app: "Tvoj feed, zahtjevi za kontakt i razgovori na Ravnoparu.",
+      app: "Tvoj prikaz, zahtjevi za kontakt i razgovori na Ravnoparu.",
       chat: "Privatni razgovor nakon obostranog kontakta.",
       profile: "Javni profil korisnika na Ravnoparu.",
       onboarding: "Brzi vodič kroz Ravnopar.",
       donate: "Dobrovoljna podrška održavanju Ravnopara.",
       plans: "Transparentan model naplate Ravnopara — besplatan chat, premium paketi unaprijed pripremljeni.",
-      faq: "Besplatno upoznavanje, chat bez pretplate, fer feed — česta pitanja o Ravnoparu.",
+      faq: "Besplatno upoznavanje, chat bez pretplate, fer prikaz — česta pitanja o Ravnoparu.",
       guidelines: "Što je dozvoljeno, što nije i kako ostati siguran/na na Ravnoparu.",
       privacy: "Kako Ravnopar prikuplja, koristi i štiti tvoje podatke.",
       terms: "Pravila korištenja Ravnopar platforme.",
       contact: "Kontaktiraj Ravnopar tim za podršku, privatnost i prijave.",
       fairFeed: "Kako Ravnopar rangira profile — transparentna pravila bez plaćenog boosta.",
       fairnessReport: "Javne metrike fer ponašanja i crvene linije premiuma.",
-      donatePublic: "Dobrovoljna podrška troškovima servera — bez prednosti u feedu.",
+      donatePublic: "Dobrovoljna podrška troškovima servera — bez prednosti u prikazu.",
       admin: "Ravnopar admin centar."
     }
   },
   footer: {
     plans: "Planovi",
     help: "Pomoć",
-    fairFeed: "Fer feed",
+    fairFeed: "Fer prikaz",
     fairnessReport: "Izvještaj",
     guidelines: "Pravila",
     privacy: "Privatnost",
@@ -15187,18 +15187,18 @@ const hr = {
     chipAntiSpam: "Zaštita od spama",
     showcaseEyebrow: "Pregled iskustva",
     showcaseTitle: "Upoznaj ljude kao u dating appu — bez paywalla",
-    showcaseText: "Swipe kartice, galerija fotografija i chat nakon matcha. Fer pravila ostaju ista.",
+    showcaseText: "Kartice profila, galerija fotografija i chat nakon matcha. Fer pravila ostaju ista.",
     showcaseMockName: "Maja, 28 · Zagreb",
     showcaseMockBio: "Volim kavu, planinarenje i fer razgovor.",
     howItWorks: "Kako funkcionira",
     steps: [
       {
         title: "Registriraj se",
-        text: "Napravi profil, dodaj fotografiju i bio, odaberi koga tražiš."
+        text: "Napravi profil, dodaj fotografiju i kratki opis, odaberi koga tražiš."
       },
       {
         title: "Upoznaj ljude",
-        text: "Pregledaj feed dostupnih profila bez skrivenog smanjenja dosega."
+        text: "Pregledaj prikaz dostupnih profila bez skrivenog smanjenja dosega."
       },
       {
         title: "Razgovaraj fer",
@@ -15237,7 +15237,7 @@ const hr = {
       },
       {
         title: "Poštena vidljivost",
-        text: "Aktivni parovi privremeno izlaze iz feeda kako bi ostali dobili priliku."
+        text: "Aktivni parovi privremeno izlaze iz prikaza kako bi ostali dobili priliku."
       },
       {
         title: "Zaštita i kontrola",
@@ -15266,23 +15266,23 @@ const hr = {
     photosHint: "JPG/PNG, automatski smanjeno. Maks. 3 fotografije.",
     displayName: "Ime za prikaz",
     city: "Grad",
-    bio: "O meni (bio)",
+    bio: "O meni",
     bioPlaceholder: "Kratko se predstavi — što tražiš, što voliš...",
     publicTagsLegend: "Interesi i hobiji (javno)",
-    publicTagsHint: "Do 5 tagova — vidljivo na profilu i u feedu. Pomaže drugima da vide što voliš (čitanje, životinje, sport…).",
+    publicTagsHint: "Do 5 tagova — vidljivo na profilu i u prikazu. Pomaže drugima da vide što voliš (čitanje, životinje, sport…).",
     privateTagsLegend: "Intimne preference (privatno)",
     privateTagsHint: "Do 5 tagova — vidljivo tek nakon prihvaćenog kontakta. Jasno označava što tražiš u intimnom smislu (npr. ležerno, bez žurbe).",
     lifestyleLegend: "Životni detalji (opcionalno)",
-    lifestyleHint: "Pomaže drugima da razumiju kontekst — nije filter u pretrazi, ali daje mali bonus u feedu kad se vrijednosti podudaraju.",
+    lifestyleHint: "Pomaže drugima da razumiju kontekst — nije filter u pretrazi, ali daje mali bonus u prikazu kad se vrijednosti podudaraju.",
     childrenLabel: "Djeca",
     smokingLabel: "Pušenje",
     relationshipLabel: "Status",
     lifestyleUnset: "— ne želim navesti",
-    icebreakersLegend: "Icebreaker pitanja (do 3)",
+    icebreakersLegend: "Pitanja za upoznavanje (do 3)",
     icebreakersHint: "Kratka pitanja i odgovori — pomažu pri prvom kontaktu.",
-    addIcebreaker: "Dodaj icebreaker",
+    addIcebreaker: "Dodaj pitanje",
     preferencesLegend: "Preference upoznavanja",
-    preferencesHint: "Određuju koje profile vidiš u feedu — uz identitet, namjeru i kompatibilnost.",
+    preferencesHint: "Određuju koje profile vidiš u prikazu — uz identitet, namjeru i kompatibilnost.",
     seekingAgeMin: "Tražim dob od",
     seekingAgeMax: "do",
     seekingAgeHint: "Obostrano — i drugi moraju tražiti tvoju dob. Minimalno 18 godina.",
@@ -15314,13 +15314,13 @@ const hr = {
     seekingIdentityLegend: "Tražim identitet",
     intentLegend: "Namjera",
     availabilityLabel: "Vidljivost profila",
-    availabilityAvailable: "Dostupan/na u feedu",
+    availabilityAvailable: "Dostupan/na u prikazu",
     availabilityPaused: "Pauzirano (skriven/a)",
     availabilityFocused: "U aktivnom razgovoru",
     notifyEmail: "Email obavijesti (novi zahtjevi, match, poruke)",
     saveProfile: "Spremi profil",
     premiumTitle: "Premium paketi",
-    premiumHint: "Checkout je spreman — aktivacija paketa nakon uplate.",
+    premiumHint: "Plaćanje je spremno — aktivacija paketa nakon uplate.",
     gdprTitle: "Privatnost (GDPR)",
     gdprHint: "Preuzmi kopiju svojih podataka u JSON formatu.",
     exportData: "Preuzmi moje podatke",
@@ -15328,7 +15328,7 @@ const hr = {
     dangerHint: "Brisanje računa uklanja profil, poruke i povijest kontakata.",
     deleteAccount: "Obriši račun",
     photoAdded: "Fotografija dodana — klikni Spremi profil.",
-    photoUploadFailed: "Upload fotografije nije uspio.",
+    photoUploadFailed: "Prijenos fotografije nije uspio.",
     exportDone: "Izvoz podataka preuzet.",
     exportFailed: "Izvoz nije uspio.",
     selfieAdded: "Selfie dodan — spremi profil za slanje na provjeru.",
@@ -15342,7 +15342,7 @@ const hr = {
     deleteConfirm: "Trajno obrisati račun? Ova radnja se ne može poništiti.",
     deleteFailed: "Brisanje računa nije uspjelo.",
     planSuccess: "Uplata zaprimljena. Premium aktivacija slijedi nakon provjere.",
-    checkoutFailed: "Premium checkout nije dostupan.",
+    checkoutFailed: "Premium plaćanje nije dostupno.",
     ordersTitle: "Povijest uplata",
     ordersHint: "Donacije i premium uplate povezane s tvojim računom.",
     orderDonation: "Donacija",
@@ -15353,17 +15353,17 @@ const hr = {
     orderStatus_FAILED: "Neuspjelo",
     orderStatus_CANCELLED: "Otkazano",
     donorBadgeVisible: "Prikaži značku podržavatelja na profilu",
-    donorBadgeHint: "Značka ne daje prednost u feedu — samo pokazuje da si podržao/la projekt. Možeš je sakriti u bilo kojem trenutku."
+    donorBadgeHint: "Značka ne daje prednost u prikazu — samo pokazuje da si podržao/la projekt. Možeš je sakriti u bilo kojem trenutku."
   },
   dashboard: {
     greeting: "Pozdrav, {name}",
-    subtitle: "Swipeaj profile ili koristi gumbe — jedan po jedan, bez žurbe.",
-    feedCount: "{count} profila u tvom feedu",
-    feedEmpty: "Trenutno nema kompatibilnih profila u tvom feedu.",
+    subtitle: "Pregledavaj profile ili koristi gumbe — jedan po jedan, bez žurbe.",
+    feedCount: "{count} profila u tvom prikazu",
+    feedEmpty: "Trenutno nema kompatibilnih profila u tvom prikazu.",
     settingsLink: "Postavke profila",
     loading: "Učitavanje...",
     incompleteTitle: "Profil ti još nije kompletan ({percent}%).",
-    incompleteHint: "Dodaj fotografiju, bio i icebreaker — to povećava šanse za kontakt.",
+    incompleteHint: "Dodaj fotografiju, kratki opis i pitanje za upoznavanje — to povećava šanse za kontakt.",
     completeProfile: "Dovrši profil",
     conversations: "Razgovori",
     conversationsUnread: "Razgovori ({count} novo)",
@@ -15371,7 +15371,7 @@ const hr = {
     policyTitle: "Uz preference",
     policyNarrowAge: "Dobni raspon je vrlo uzak — razmisli o širem rasponu za više prilika.",
     policySameCountry: "Filtriraš samo svoju državu — to značajno smanjuje broj profila.",
-    policySmallDistance: "Mala udaljenost ({km} km) može ograničiti broj profila u feedu.",
+    policySmallDistance: "Mala udaljenost ({km} km) može ograničiti broj profila u prikazu.",
     policyDistanceNoLocation: "Postavio/la si maks. udaljenost, ali lokacija nije uključena — filtar neće raditi dok je ne učitaš u Postavkama.",
     statusTitle: "Tvoj status",
     availability: "Dostupnost",
@@ -15380,14 +15380,14 @@ const hr = {
     activeContact: "Trenutno razgovaraš s {name}.",
     openChatBtn: "Otvori chat",
     closeContact: "Završi razgovor",
-    visibleInFeed: "Vidljiv/a si u feedu — swipeaj profile ispod.",
+    visibleInFeed: "Vidljiv/a si u prikazu — pregledavaj profile ispod.",
     incomingTitle: "Zahtjevi za kontakt",
     accept: "Prihvati",
     decline: "Odbij",
     discoverTitle: "Otkrij profile",
     discoverCount: " · {count} za tebe",
-    gateTitle: "Profil nije spreman za feed",
-    gateHint: "Dodaj fotografiju i bio (min. 10 znakova) prije slanja zahtjeva i swipea.",
+    gateTitle: "Profil nije spreman za prikaz",
+    gateHint: "Dodaj fotografiju i kratki opis (min. 10 znakova) prije slanja zahtjeva i pregledavanja profila.",
     gateOnboarding: "Pogledaj uvod",
     emptyTitle: "Nema novih profila",
     emptyHint: "Proširi grad ili preference u Postavkama — ili se vrati uskoro kad se netko novi registrira.",
@@ -15406,7 +15406,7 @@ const hr = {
     accepted: "Kontakt je prihvaćen.",
     declined: "Zahtjev je odbijen.",
     respondFailed: "Odgovor nije spremljen.",
-    closed: "Kontakt zatvoren. Ponovno si dostupan/na u feedu.",
+    closed: "Kontakt zatvoren. Ponovno si dostupan/na u prikazu.",
     closeFailed: "Zatvaranje nije uspjelo.",
     reportReason: "Neprimjereno ponašanje",
     reportNote: "Prijava iz korisničkog sučelja.",
@@ -15418,7 +15418,7 @@ const hr = {
     title: "Razgovor",
     loading: "Učitavanje...",
     unavailable: "Chat nije dostupan.",
-    empty: "Pošalji prvu poruku — možeš i icebreaker s profila.",
+    empty: "Pošalji prvu poruku — možeš koristiti i pitanje za upoznavanje s profila.",
     read: "Pročitano",
     react: "Reagiraj",
     typing: "Piše…",
@@ -15429,26 +15429,26 @@ const hr = {
     sendFailed: "Slanje poruke nije uspjelo."
   },
   fairFeed: {
-    title: "Kako radi fer feed",
+    title: "Kako radi fer prikaz",
     subtitle: "Transparentno — bez skrivenog smanjenja dosega.",
-    intro: "Ravnopar ne prodaje vidljivost. Evo što utječe na to koga vidiš u feedu — i što nikad ne utječe.",
+    intro: "Ravnopar ne prodaje vidljivost. Evo što utječe na to koga vidiš u prikazu — i što nikad ne utječe.",
     principlesTitle: "Načela rangiranja",
     neverTitle: "Nikad ne utječe",
     neverItems: [
       "Plaćanje ili donacija",
       "Premium paket (Plus / Supporter)",
-      "Broj swipeova ili vrijeme u appu"
+      "Broj pregleda profila ili vrijeme u aplikaciji"
     ],
     doesTitle: "Može utjecati (malo i transparentno)",
     explainLink: "Pogledaj fer izvještaj",
     faqLink: "Pitanja i odgovori",
     principles: {
       compatibility_filter: "Kompatibilnost — preferencije i namjere moraju odgovarati",
-      no_plan_boost: "Paket (free/plus/supporter) ne daje bodove u feedu",
+      no_plan_boost: "Paket (free/plus/supporter) ne daje bodove u prikazu",
       fair_waiting_boost: "Fer boost ako korisnik dugo čeka bez dolaznih zahtjeva",
       interest_lifestyle_points: "Mali bonus za zajedničke interese i životne navike",
       completeness_verification: "Potpunost profila i verifikacija (mali, jasni bodovi)",
-      active_pairs_hidden: "Aktivni parovi privremeno izlaze iz feeda"
+      active_pairs_hidden: "Aktivni parovi privremeno izlaze iz prikaza"
     }
   },
   fairnessReport: {
@@ -15459,7 +15459,7 @@ const hr = {
     noChanges: "Nema promjena limita ili pravila u zadnjih 90 dana.",
     premiumTitle: "Crvene linije Premiuma",
     premiumItems: [
-      "Premium ne daje boost u feedu",
+      "Premium ne daje boost u prikazu",
       "Chat ostaje besplatan",
       "Donacije ne daju prednost",
       "Premium = udobnost, ne pristup"
@@ -15508,21 +15508,21 @@ const hr = {
   onboarding: {
     eyebrow: "Dobrodošao/la",
     title: "Profil koji privlači pažnju",
-    lead: "Prije nego kreneš u feed, dodaj fotografiju i kratki opis — to je obavezno za slanje zahtjeva.",
+    lead: "Prije nego kreneš u prikaz, dodaj fotografiju i kratki opis — to je obavezno za slanje zahtjeva.",
     stepPhoto: "1. Fotografija",
     stepPhotoHint: "Profili s fotkom dobivaju više odgovora.",
     changePhoto: "Promijeni fotku",
     addPhoto: "Dodaj fotografiju",
-    stepBio: "2. Bio (min. 10 znakova)",
+    stepBio: "2. O meni (min. 10 znakova)",
     stepBioHint: "Kratko reci tko si i što tražiš.",
-    editBio: "Uredi bio",
-    writeBio: "Napiši bio",
-    stepFeed: "3. Feed",
-    stepFeedHint: "Kad profil bude spreman, swipeaj i pošalji prvi zahtjev.",
-    finishReady: "Završi uvod i otvori feed",
+    editBio: "Uredi opis",
+    writeBio: "Napiši o sebi",
+    stepFeed: "3. Prikaz profila",
+    stepFeedHint: "Kad profil bude spreman, pregledavaj profile i pošalji prvi zahtjev.",
+    finishReady: "Završi uvod i otvori prikaz",
     finishIncomplete: "Dovrši profil u Postavkama",
-    finishHint: "Prvo dovrši fotografiju i bio",
-    incompleteError: "Dodaj fotografiju i bio (min. 10 znakova) u Postavkama prije nastavka.",
+    finishHint: "Prvo dovrši fotografiju i opis o sebi",
+    incompleteError: "Dodaj fotografiju i kratki opis (min. 10 znakova) u Postavkama prije nastavka.",
     saveFailed: "Spremanje nije uspjelo."
   },
   match: {
@@ -15541,7 +15541,7 @@ const hr = {
     lead: "Ravnopar održavamo s puno truda i malo budžeta. Ako ti platforma znači, možeš dobrovoljno pomoći — bez pritiska i bez dodatnih funkcija u zamjenu.",
     sectionEyebrow: "Podrška projektu",
     sectionTitle: "Podrži Ravnopar",
-    sectionLead: "Ako ti platforma pomogne u upoznavanju, možeš dobrovoljno pomoći s troškovima servera. Svaki euro stvarno pomaže — a ti ne dobivaš nikakvu prednost u feedu.",
+    sectionLead: "Ako ti platforma pomogne u upoznavanju, možeš dobrovoljno pomoći s troškovima servera. Svaki euro stvarno pomaže — a ti ne dobivaš nikakvu prednost u prikazu.",
     note: "Donacija je potpuno dobrovoljna. Hvala ti što razmišljaš o tome. ♥",
     revolutTitle: "Kartica (Revolut)",
     revolutHint: "Brza uplata karticom — otvara se sigurna Revolut stranica.",
@@ -15570,7 +15570,7 @@ const hr = {
     costEmail: "Email obavijesti",
     costDomain: "Domena i SSL",
     whatDonationDoesNot: "Donacija ne kupuje",
-    notBuyBoost: "boost ili prednost u feedu",
+    notBuyBoost: "boost ili prednost u prikazu",
     notBuyVisibility: "veću vidljivost profila",
     notBuyMessages: "paywall na razgovor",
     whatDonationDoes: "Donacija pomaže",
@@ -15612,7 +15612,7 @@ const hr = {
     ctaBack: "Natrag na početnu",
     supportEyebrow: "Dobrovoljno",
     supportTitle: "Dobrovoljna podrška",
-    supportLead: "Ako ti se sviđa pristup Ravnopara, možeš dobrovoljno pomoći s troškovima održavanja — bez ikakve prednosti u feedu.",
+    supportLead: "Ako ti se sviđa pristup Ravnopara, možeš dobrovoljno pomoći s troškovima održavanja — bez ikakve prednosti u prikazu.",
     supportRevolutBtn: "Podrži na Revolutu",
     supportAppLink: "Sve opcije plaćanja",
     policyEyebrow: "Transparentno unaprijed",
@@ -15647,7 +15647,7 @@ const hr = {
       {
         icon: "🤝",
         title: "Donacije ostaju dobrovoljne",
-        text: "Ako doniraš, ne dobivaš prednost u feedu — samo našu iskrenu zahvalu."
+        text: "Ako doniraš, ne dobivaš prednost u prikazu — samo našu iskrenu zahvalu."
       }
     ],
     triggers: [
@@ -15690,7 +15690,7 @@ const hr = {
     planBtnBuy: "Kupi paket",
     planBtnDisabled: "Još nije dostupno",
     planDisabledTitle: "Paket još nije dostupan. Obavijestit ćemo unaprijed prije uvođenja naplate.",
-    planHintCheckout: "Premium checkout dostupan u Postavkama nakon prijave.",
+    planHintCheckout: "Premium plaćanje dostupno u Postavkama nakon prijave.",
     planHintLogin: "Prijavi se da kupiš premium paket.",
     planHintLater: "Aktiviramo kad proizvod i zajednica budu spremni — obavijest stiže unaprijed.",
     freePrice: "0 €",
@@ -15704,7 +15704,7 @@ const hr = {
         tagline: "Tvoj start",
         description: "Sve što trebaš za fer upoznavanje — danas i kad uvedemo Premium.",
         features: [
-          "Profil i vidljivost u feedu",
+          "Profil i vidljivost u prikazu",
           "Slanje i prihvaćanje zahtjeva",
           "Blokiranje, prijave i zaštita od spama",
           "Bez skrivenog smanjenja dosega"
@@ -15718,7 +15718,7 @@ const hr = {
         priceEur: 4.99,
         period: "/ mj",
         tagline: "Više za profil",
-        description: "Za one koji žele dodatnu kontrolu — bez utjecaja na druge u feedu.",
+        description: "Za one koji žele dodatnu kontrolu — bez utjecaja na druge u prikazu.",
         features: [
           "Više fotografija na profilu",
           "Napredni filtri (fer prema svima)",
@@ -15756,15 +15756,15 @@ const hr = {
     items: [
       {
         q: "Je li Ravnopar besplatan?",
-        a: "Da — slanje zahtjeva, prihvaćanje kontakta i razgovor u aplikaciji su besplatni. Donacije su dobrovoljne i ne daju prednost u feedu."
+        a: "Da — slanje zahtjeva, prihvaćanje kontakta i razgovor u aplikaciji su besplatni. Donacije su dobrovoljne i ne daju prednost u prikazu."
       },
       {
         q: "Kako funkcionira match?",
-        a: "Pregledaš profile u feedu i šalješ zahtjev za kontakt. Ako druga strana prihvati, otvara se privatni chat i oboje ste privremeno fokusirani na razgovor."
+        a: "Pregledaš profile u prikazu i šalješ zahtjev za kontakt. Ako druga strana prihvati, otvara se privatni chat i oboje ste privremeno fokusirani na razgovor."
       },
       {
         q: "Što se događa nakon prihvaćenog kontakta?",
-        a: "Možeš otvoriti chat s osobom i razgovarati u aplikaciji. Aktivni parovi privremeno izlaze iz feeda kako bi ostali imali priliku."
+        a: "Možeš otvoriti chat s osobom i razgovarati u aplikaciji. Aktivni parovi privremeno izlaze iz prikaza kako bi ostali imali priliku."
       },
       {
         q: "Hoćete li naplaćivati razgovor?",
@@ -15788,15 +15788,15 @@ const hr = {
       },
       {
         q: "Što je ghosting i što Ravnopar radi protiv njega?",
-        a: "Ghosting je kad netko prihvati kontakt, a zatim prestane odgovarati. Nakon 48 h neaktivnosti šaljemo upozorenje; nakon 72 h razgovor se automatski zatvara i oboje ponovno postajete dostupni u feedu. Stari neodgovoreni zahtjevi istječu nakon 14 dana."
+        a: "Ghosting je kad netko prihvati kontakt, a zatim prestane odgovarati. Nakon 48 h neaktivnosti šaljemo upozorenje; nakon 72 h razgovor se automatski zatvara i oboje ponovno postajete dostupni u prikazu. Stari neodgovoreni zahtjevi istječu nakon 14 dana."
       },
       {
-        q: "Daju li donacije prednost u feedu?",
-        a: "Ne. Donacije pomažu troškovima servera i mogu prikazati značku podržavatelja — ali nikad ne utječu na redoslijed profila. Detalje vidi na stranici Fer feed."
+        q: "Daju li donacije prednost u prikazu?",
+        a: "Ne. Donacije pomažu troškovima servera i mogu prikazati značku podržavatelja — ali nikad ne utječu na redoslijed profila. Detalje vidi na stranici Fer prikaz."
       },
       {
         q: "Što premium paketi neće raditi?",
-        a: "Premium neće davati boost u feedu, skrivati te od drugih niti ograničavati besplatni chat. Crvene linije su javno objavljene na stranici Fer izvještaj."
+        a: "Premium neće davati boost u prikazu, skrivati te od drugih niti ograničavati besplatni chat. Crvene linije su javno objavljene na stranici Fer izvještaj."
       }
     ]
   },
@@ -15835,7 +15835,7 @@ const hr = {
         },
         {
           title: "Podaci koje prikupljamo",
-          body: "Identifikacijski i kontakt podaci (email, ime za prikaz), profil (grad, bio, fotografije, preferencije upoznavanja, icebreaker odgovori), opcionalni video link, poruke nakon matcha, tehnički zapisi (vrijeme aktivnosti), opcionalna grubo zaokružena lokacija (koordinate samo ako uključiš dijeljenje udaljenosti), verifikacijski selfie (nije javan), referral kod te podaci o plaćanjima/donacijama ako ih koristiš."
+          body: "Identifikacijski i kontakt podaci (email, ime za prikaz), profil (grad, kratki opis, fotografije, preferencije upoznavanja, odgovori na pitanja za upoznavanje), opcionalni video link, poruke nakon matcha, tehnički zapisi (vrijeme aktivnosti), opcionalna grubo zaokružena lokacija (koordinate samo ako uključiš dijeljenje udaljenosti), verifikacijski selfie (nije javan), kod pozivnice te podaci o plaćanjima/donacijama ako ih koristiš."
         },
         {
           title: "Lokacija i udaljenost",
@@ -15847,7 +15847,7 @@ const hr = {
         },
         {
           title: "Svrha obrade",
-          body: "Pružanje usluge upoznavanja, prikaz profila, sparivanje, chat, sigurnost (blokiranje, prijave), email obavijesti koje odobriš, referral program, agregirana analitika posjeta te održavanje platforme."
+          body: "Pružanje usluge upoznavanja, prikaz profila, sparivanje, chat, sigurnost (blokiranje, prijave), email obavijesti koje odobriš, program pozivnica, agregirana analitika posjeta te održavanje platforme."
         },
         {
           title: "Pravna osnova (GDPR)",
@@ -15870,8 +15870,8 @@ const hr = {
           body: "Nužni kolačići/tokeni služe za prijavu. Analitika (Plausible) je bez praćenih kolačića i ne koristi oglašivačke profile — prikuplja samo agregirane podatke o posjetama (stranice, izvori, uređaji). Banner služi za informiranje, ne blokira analitiku."
         },
         {
-          title: "Referral",
-          body: "Ako koristiš pozivnicu, zabilježavamo referral kod osobe koja te pozvala isključivo u statističke svrhe unutar platforme. Ne javljamo tvoju email adresu pozivatelju."
+          title: "Pozivnice",
+          body: "Ako koristiš pozivnicu, zabilježavamo kod pozivnice osobe koja te pozvala isključivo u statističke svrhe unutar platforme. Ne javljamo tvoju email adresu pozivatelju."
         },
         {
           title: "Izmjene politike",
@@ -15893,7 +15893,7 @@ const hr = {
         },
         {
           title: "Račun i profil",
-          body: "Odgovoran/na si za točnost podataka, sigurnost lozinke i sadržaj profila. Profil s fotografijom i bio tekstom potreban je za slanje zahtjeva drugima. Lažni profili i lažna dob su zabranjeni."
+          body: "Odgovoran/na si za točnost podataka, sigurnost lozinke i sadržaj profila. Profil s fotografijom i kratkim opisom potreban je za slanje zahtjeva drugima. Lažni profili i lažna dob su zabranjeni."
         },
         {
           title: "Zabranjeno ponašanje",
@@ -15935,11 +15935,11 @@ const hr = {
         },
         {
           title: "Fer model Ravnopara",
-          body: "Nema paywalla za osnovni chat. Aktivni parovi privremeno izlaze iz feeda. Anti-spam limiti štite zajednicu. Boost/super-like ne postoje."
+          body: "Nema paywalla za osnovni chat. Aktivni parovi privremeno izlaze iz prikaza. Anti-spam limiti štite zajednicu. Boost/super-like ne postoje."
         },
         {
           title: "Profil s fotografijom",
-          body: "Bez fotografije i kratkog bio teksta ne možeš slati zahtjeve — to štiti kvalitetu zajednice i smanjuje lažne profile."
+          body: "Bez fotografije i kratkog opisa o sebi ne možeš slati zahtjeve — to štiti kvalitetu zajednice i smanjuje lažne profile."
         },
         {
           title: "Sigurnost na susretu",
@@ -16045,14 +16045,14 @@ const hr = {
       timeline: "Dnevnik",
       moderation: "Moderacija",
       fairness: "Poštenost",
-      feed: "Feed rang",
+      feed: "Rang prikaza",
       compliance: "Compliance"
     },
     allCategories: "Sve kategorije",
     categoryAdmin: "Admin akcije",
     categoryModeration: "Moderacija",
     categorySecurity: "Sigurnost",
-    categoryFeed: "Feed rang",
+    categoryFeed: "Rang prikaza",
     categoryCompliance: "Compliance",
     refresh: "Osvježi",
     noEvents: "Nema zapisa.",
@@ -16067,10 +16067,10 @@ const hr = {
     newUsersStats: "7d: {last7d} · 30d: {last30d} · bez kontakta (7d): {withoutIncoming7d}",
     metrics: "Bez dolaznih (7d): {withoutIncoming} · Pending: {pending} · Accepted: {accepted}",
     feedHint: "Zašto je profil X iznad Y — transparentno objašnjenje rangiranja (paket ne daje bodove).",
-    feedViewer: "Korisnik čiji feed",
+    feedViewer: "Korisnik čiji prikaz",
     selectUser: "Odaberi korisnika…",
     showRanking: "Prikaži rang",
-    feedExplainFailed: "Feed explain nije dostupan.",
+    feedExplainFailed: "Objašnjenje poredaka nije dostupno.",
     tableRank: "#",
     tableProfile: "Profil",
     tableCity: "Grad",
@@ -16085,7 +16085,7 @@ const hr = {
     outcomeDismissed: "Odbijeno",
     actionNone: "Bez akcije",
     actionWarn: "Upozorenje",
-    actionSuspend: "Suspend",
+    actionSuspend: "Suspendiraj",
     actionDelete: "Obriši korisnika"
   },
   icebreakers: {
@@ -16546,7 +16546,7 @@ const en = {
     steps: [
       {
         title: "Sign up",
-        text: "Create your profile, add a photo and bio, and choose who you are looking for."
+        text: "Create your profile, add a photo and a short description, and choose who you are looking for."
       },
       {
         title: "Meet people",
@@ -16618,7 +16618,7 @@ const en = {
     photosHint: "JPG/PNG, automatically resized. Max. 3 photos.",
     displayName: "Display name",
     city: "City",
-    bio: "About me (bio)",
+    bio: "About me",
     bioPlaceholder: "Introduce yourself briefly — what you are looking for, what you enjoy...",
     publicTagsLegend: "Interests and hobbies (public)",
     publicTagsHint: "Up to 5 tags — visible on your profile and in the feed. Helps others see what you enjoy (reading, animals, sports…).",
@@ -16715,7 +16715,7 @@ const en = {
     settingsLink: "Profile settings",
     loading: "Loading...",
     incompleteTitle: "Your profile is not complete yet ({percent}%).",
-    incompleteHint: "Add a photo, bio, and icebreaker — that increases your chances of contact.",
+    incompleteHint: "Add a photo, short description, and icebreaker — that increases your chances of contact.",
     completeProfile: "Complete profile",
     conversations: "Conversations",
     conversationsUnread: "Conversations ({unread} new)",
@@ -16739,7 +16739,7 @@ const en = {
     discoverTitle: "Discover profiles",
     discoverCount: " · {count} for you",
     gateTitle: "Profile not ready for feed",
-    gateHint: "Add a photo and bio (min. 10 characters) before sending requests and swiping.",
+    gateHint: "Add a photo and short description (min. 10 characters) before sending requests and swiping.",
     gateOnboarding: "View intro",
     emptyTitle: "No new profiles",
     emptyHint: "Expand your city or preferences in Settings — or check back soon when someone new joins.",
@@ -16814,16 +16814,16 @@ const en = {
     stepPhotoHint: "Profiles with photos get more responses.",
     changePhoto: "Change photo",
     addPhoto: "Add photo",
-    stepBio: "2. Bio (min. 10 characters)",
+    stepBio: "2. About me (min. 10 characters)",
     stepBioHint: "Briefly say who you are and what you are looking for.",
-    editBio: "Edit bio",
-    writeBio: "Write bio",
+    editBio: "Edit description",
+    writeBio: "Write about yourself",
     stepFeed: "3. Feed",
     stepFeedHint: "Once your profile is ready, swipe and send your first request.",
     finishReady: "Finish intro and open feed",
     finishIncomplete: "Complete profile in Settings",
-    finishHint: "Complete photo and bio in Settings first",
-    incompleteError: "Add a photo and bio (min. 10 characters) in Settings before continuing.",
+    finishHint: "Complete your photo and description in Settings first",
+    incompleteError: "Add a photo and short description (min. 10 characters) in Settings before continuing.",
     saveFailed: "Save failed."
   },
   match: {
@@ -17195,7 +17195,7 @@ const en = {
         },
         {
           title: "Data we collect",
-          body: "Identity and contact data (email, display name), profile (city, bio, photos, dating preferences, icebreaker answers), optional video link, messages after a match, technical logs (activity time), optional roughly rounded location (coordinates only if you enable distance sharing), verification selfie (not public), referral code, and payment/donation data if you use them."
+          body: "Identity and contact data (email, display name), profile (city, short description, photos, dating preferences, icebreaker answers), optional video link, messages after a match, technical logs (activity time), optional roughly rounded location (coordinates only if you enable distance sharing), verification selfie (not public), referral code, and payment/donation data if you use them."
         },
         {
           title: "Location and distance",
@@ -17253,7 +17253,7 @@ const en = {
         },
         {
           title: "Account and profile",
-          body: "You are responsible for accurate data, password security, and profile content. A profile with a photo and bio is required to send requests to others. Fake profiles and false age are prohibited."
+          body: "You are responsible for accurate data, password security, and profile content. A profile with a photo and short description is required to send requests to others. Fake profiles and false age are prohibited."
         },
         {
           title: "Prohibited behavior",
@@ -17299,7 +17299,7 @@ const en = {
         },
         {
           title: "Profile with photo",
-          body: "Without a photo and short bio, you cannot send requests — that protects community quality and reduces fake profiles."
+          body: "Without a photo and short description, you cannot send requests — that protects community quality and reduces fake profiles."
         },
         {
           title: "Safety when meeting",
@@ -17430,7 +17430,7 @@ const en = {
     feedViewer: "Why profile X ranks above Y — transparent ranking explanation (plan does not add points).",
     selectUser: "Select user…",
     showRanking: "Show ranking",
-    feedExplainFailed: "Feed explain is not available.",
+    feedExplainFailed: "Ranking explanation is not available.",
     tableRank: "#",
     tableProfile: "Profile",
     tableCity: "City",
@@ -17443,8 +17443,8 @@ const en = {
     resolveSubmit: "Resolve and log",
     outcomeResolved: "Resolved",
     outcomeDismissed: "Dismissed",
-    actionNone: "Bez akcije",
-    actionWarn: "Upozorenje",
+    actionNone: "No action",
+    actionWarn: "Warning",
     actionSuspend: "Suspend",
     actionDelete: "Delete user"
   },
@@ -17832,7 +17832,7 @@ const de = {
     steps: [
       {
         title: "Registrieren",
-        text: "Erstelle dein Profil, füge ein Foto und eine Bio hinzu und wähle, wen du suchst."
+        text: "Erstelle dein Profil, füge ein Foto und eine kurze Beschreibung hinzu und wähle, wen du suchst."
       },
       {
         title: "Menschen kennenlernen",
@@ -17904,11 +17904,11 @@ const de = {
     photosHint: "JPG/PNG, automatisch skaliert. Max. 3 Fotos.",
     displayName: "Anzeigename",
     city: "Stadt",
-    bio: "Über mich (Bio)",
+    bio: "Über mich",
     bioPlaceholder: "Stell dich kurz vor — was du suchst, was dir gefällt...",
-    icebreakersLegend: "Icebreaker-Fragen (bis zu 3)",
+    icebreakersLegend: "Eisbrecher-Fragen (bis zu 3)",
     icebreakersHint: "Kurze Fragen und Antworten — sie helfen beim ersten Kontakt.",
-    addIcebreaker: "Icebreaker hinzufügen",
+    addIcebreaker: "Eisbrecher hinzufügen",
     locationLegend: "Entfernung (privat)",
     locationHint: "Koordinaten werden anderen nicht angezeigt — nur eine grobe Entfernung (z. B. „5–15 km“). Beide Personen müssen die Option aktivieren.",
     shareLocation: "Entfernung von mir zu anderen Nutzern anzeigen",
@@ -17932,7 +17932,7 @@ const de = {
     notifyEmail: "E-Mail-Benachrichtigungen (neue Anfragen, Matches, Nachrichten)",
     saveProfile: "Profil speichern",
     premiumTitle: "Premium-Tarife",
-    premiumHint: "Checkout ist bereit — Aktivierung nach Zahlung.",
+    premiumHint: "Zahlung ist bereit — Aktivierung nach Zahlung.",
     gdprTitle: "Datenschutz (DSGVO)",
     gdprHint: "Lade eine Kopie deiner Daten im JSON-Format herunter.",
     exportData: "Meine Daten herunterladen",
@@ -17954,7 +17954,7 @@ const de = {
     deleteConfirm: "Konto dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
     deleteFailed: "Kontolöschung fehlgeschlagen.",
     planSuccess: "Zahlung erhalten. Premium-Aktivierung folgt nach Prüfung.",
-    checkoutFailed: "Premium-Checkout ist nicht verfügbar."
+    checkoutFailed: "Premium-Zahlung ist nicht verfügbar."
   },
   dashboard: {
     greeting: "Hallo, {name}",
@@ -17964,7 +17964,7 @@ const de = {
     settingsLink: "Profileinstellungen",
     loading: "Wird geladen...",
     incompleteTitle: "Dein Profil ist noch nicht vollständig ({percent}%).",
-    incompleteHint: "Füge ein Foto, eine Bio und einen Icebreaker hinzu — das erhöht deine Chancen auf Kontakt.",
+    incompleteHint: "Füge ein Foto, eine kurze Beschreibung und einen Eisbrecher hinzu — das erhöht deine Chancen auf Kontakt.",
     completeProfile: "Profil vervollständigen",
     conversations: "Gespräche",
     conversationsUnread: "Gespräche ({unread} neu)",
@@ -17984,7 +17984,7 @@ const de = {
     discoverTitle: "Profile entdecken",
     discoverCount: " · {count} für dich",
     gateTitle: "Profil nicht bereit für den Feed",
-    gateHint: "Füge ein Foto und eine Bio (min. 10 Zeichen) hinzu, bevor du Anfragen sendest und swipest.",
+    gateHint: "Füge ein Foto und eine kurze Beschreibung (min. 10 Zeichen) hinzu, bevor du Anfragen sendest und swipest.",
     gateOnboarding: "Intro ansehen",
     emptyTitle: "Keine neuen Profile",
     emptyHint: "Erweitere deine Stadt oder Präferenzen in den Einstellungen — oder schau bald wieder vorbei, wenn jemand Neues beitritt.",
@@ -18015,7 +18015,7 @@ const de = {
     title: "Gespräch",
     loading: "Wird geladen...",
     unavailable: "Chat ist nicht verfügbar.",
-    empty: "Sende die erste Nachricht — du kannst auch einen Icebreaker aus dem Profil nutzen.",
+    empty: "Sende die erste Nachricht — du kannst auch einen Eisbrecher aus dem Profil nutzen.",
     read: "Gelesen",
     react: "Reagieren",
     typing: "Tippt…",
@@ -18052,16 +18052,16 @@ const de = {
     stepPhotoHint: "Profile mit Fotos erhalten mehr Antworten.",
     changePhoto: "Foto ändern",
     addPhoto: "Foto hinzufügen",
-    stepBio: "2. Bio (min. 10 Zeichen)",
+    stepBio: "2. Über mich (min. 10 Zeichen)",
     stepBioHint: "Sag kurz, wer du bist und was du suchst.",
-    editBio: "Bio bearbeiten",
-    writeBio: "Bio schreiben",
+    editBio: "Beschreibung bearbeiten",
+    writeBio: "Über dich schreiben",
     stepFeed: "3. Feed",
     stepFeedHint: "Sobald dein Profil bereit ist, swipe und sende deine erste Anfrage.",
     finishReady: "Intro abschließen und Feed öffnen",
     finishIncomplete: "Profil in den Einstellungen vervollständigen",
-    finishHint: "Zuerst Foto und Bio in den Einstellungen vervollständigen",
-    incompleteError: "Füge ein Foto und eine Bio (min. 10 Zeichen) in den Einstellungen hinzu, bevor du fortfährst.",
+    finishHint: "Zuerst Foto und Beschreibung in den Einstellungen vervollständigen",
+    incompleteError: "Füge ein Foto und eine kurze Beschreibung (min. 10 Zeichen) in den Einstellungen hinzu, bevor du fortfährst.",
     saveFailed: "Speichern fehlgeschlagen."
   },
   match: {
@@ -18210,7 +18210,7 @@ const de = {
     planBtnSoon: "Bald verfügbar",
     planBtnDisabled: "Noch nicht verfügbar",
     planDisabledTitle: "Dieser Tarif ist noch nicht verfügbar. Wir informieren dich im Voraus, bevor Abrechnung eingeführt wird.",
-    planHintCheckout: "Premium-Checkout ist in den Einstellungen verfügbar, nachdem du dich anmeldest.",
+    planHintCheckout: "Premium-Zahlung ist in den Einstellungen verfügbar, nachdem du dich anmeldest.",
     planHintLater: "Wir aktivieren es, wenn Produkt und Community bereit sind — Vorankündigung folgt.",
     freePrice: "0 €",
     plans: [
@@ -18342,7 +18342,7 @@ const de = {
         },
         {
           title: "Daten, die wir sammeln",
-          body: "Identitäts- und Kontaktdaten (E-Mail, Anzeigename), Profil (Stadt, Bio, Fotos, Dating-Präferenzen, Icebreaker-Antworten), optionaler Videolink, Nachrichten nach einem Match, technische Logs (Aktivitätszeit), optional grob gerundeter Standort (Koordinaten nur, wenn du die Entfernung teilst), Verifizierungs-Selfie (nicht öffentlich), Empfehlungscode sowie Zahlungs-/Spendendaten, falls du sie nutzt."
+          body: "Identitäts- und Kontaktdaten (E-Mail, Anzeigename), Profil (Stadt, Kurzbeschreibung, Fotos, Dating-Präferenzen, Eisbrecher-Antworten), optionaler Videolink, Nachrichten nach einem Match, technische Logs (Aktivitätszeit), optional grob gerundeter Standort (Koordinaten nur, wenn du die Entfernung teilst), Verifizierungs-Selfie (nicht öffentlich), Empfehlungscode sowie Zahlungs-/Spendendaten, falls du sie nutzt."
         },
         {
           title: "Standort und Entfernung",
@@ -18400,7 +18400,7 @@ const de = {
         },
         {
           title: "Konto und Profil",
-          body: "Du bist verantwortlich für korrekte Daten, Passwortsicherheit und Profilinhalte. Ein Profil mit Foto und Bio ist erforderlich, um Anfragen an andere zu senden. Fake-Profile und falsches Alter sind verboten."
+          body: "Du bist verantwortlich für korrekte Daten, Passwortsicherheit und Profilinhalte. Ein Profil mit Foto und Kurzbeschreibung ist erforderlich, um Anfragen an andere zu senden. Fake-Profile und falsches Alter sind verboten."
         },
         {
           title: "Verbotenes Verhalten",
@@ -18446,7 +18446,7 @@ const de = {
         },
         {
           title: "Profil mit Foto",
-          body: "Ohne Foto und kurze Bio kannst du keine Anfragen senden — das schützt die Community-Qualität und reduziert Fake-Profile."
+          body: "Ohne Foto und kurze Beschreibung kannst du keine Anfragen senden — das schützt die Community-Qualität und reduziert Fake-Profile."
         },
         {
           title: "Sicherheit beim Treffen",
@@ -18571,9 +18571,9 @@ const de = {
     resolveSubmit: "Lösen und protokollieren",
     outcomeResolved: "Gelöst",
     outcomeDismissed: "Abgewiesen",
-    actionNone: "Bez akcije",
-    actionWarn: "Upozorenje",
-    actionSuspend: "Suspend",
+    actionNone: "Keine Aktion",
+    actionWarn: "Warnung",
+    actionSuspend: "Sperren",
     actionDelete: "Nutzer löschen"
   },
   icebreakers: {
@@ -18813,7 +18813,7 @@ const sl = {
     ADMIN_ACTION: "Admin",
     MODERATION: "Moderacija",
     SECURITY: "Varnost",
-    FEED_RANKING: "Razvrstitev v feedu",
+    FEED_RANKING: "Razvrstitev v prikazu",
     COMPLIANCE: "Skladnost"
   },
   auditAction: {
@@ -18830,7 +18830,7 @@ const sl = {
     REPORT_RESOLVED: "Prijava rešena",
     BLOCK: "Blokiraj",
     REPORT: "Prijavi",
-    FEED_SNAPSHOT: "Posnetek feeda",
+    FEED_SNAPSHOT: "Posnetek prikaza",
     DATA_EXPORT: "Izvoz podatkov",
     ACCOUNT_DELETE_SELF: "Brisanje računa",
     ACCOUNT_DELETE: "Brisanje računa",
@@ -18890,7 +18890,7 @@ const sl = {
       home: "Ravnopar — poštena platforma za zmenke. Brez plačilnega zidu za pogovor, klepet po ujemanju in jasna pravila.",
       auth: "Ustvarite račun Ravnopar ali se prijavite.",
       settings: "Uredite profil, fotografije, obvestila in zasebnost.",
-      app: "Vaš Ravnopar feed, pogovori in zahteve za stik.",
+      app: "Vaš Ravnopar prikaz, pogovori in zahteve za stik.",
       chat: "Zasebni klepet z vašim ujemanjem.",
       profile: "Ogled profila Ravnopar.",
       onboarding: "Kratki vodič po Ravnopar.",
@@ -18953,7 +18953,7 @@ const sl = {
     chipAntiSpam: "Zaščita pred spamom",
     showcaseEyebrow: "Predogled izkušnje",
     showcaseTitle: "Spoznaj ljudi kot v dating aplikaciji — brez paywalla",
-    showcaseText: "Swipe kartice, foto galerije in klepet po ujemanju. Poštena pravila ostajajo ista.",
+    showcaseText: "Kartice profilov, foto galerije in klepet po ujemanju. Poštena pravila ostajajo ista.",
     showcaseMockName: "Maja, 28 · Zagreb",
     showcaseMockBio: "Obožujem kavo, pohode in iskren pogovor.",
     howItWorks: "Kako deluje",
@@ -18964,7 +18964,7 @@ const sl = {
       },
       {
         title: "Spoznaj ljudi",
-        text: "Brskaj po feedu razpoložljivih profilov brez skritega zmanjšanja dosega."
+        text: "Brskaj po prikazu razpoložljivih profilov brez skritega zmanjšanja dosega."
       },
       {
         title: "Pogovarjaj se pošteno",
@@ -19003,7 +19003,7 @@ const sl = {
       },
       {
         title: "Poštena vidnost",
-        text: "Aktivni pari začasno zapustijo feed, da imajo drugi še vedno priložnost."
+        text: "Aktivni pari začasno zapustijo prikaz, da imajo drugi še vedno priložnost."
       },
       {
         title: "Zaščita in nadzor",
@@ -19032,11 +19032,11 @@ const sl = {
     photosHint: "JPG/PNG, samodejno prilagojeno. Največ 3 fotografije.",
     displayName: "Prikazno ime",
     city: "Mesto",
-    bio: "O meni (bio)",
+    bio: "O meni",
     bioPlaceholder: "Na kratko se predstavi — kaj iščeš, kaj imaš rad/a...",
-    icebreakersLegend: "Icebreaker vprašanja (do 3)",
+    icebreakersLegend: "Vprašanja za spoznavanje (do 3)",
     icebreakersHint: "Kratka vprašanja in odgovori — pomagajo pri prvem stiku.",
-    addIcebreaker: "Dodaj icebreaker",
+    addIcebreaker: "Dodaj vprašanje",
     locationLegend: "Razdalja (zasebno)",
     locationHint: "Koordinate niso prikazane drugim — le približna razdalja (npr. “5–15 km”). Možnost morata omogočiti oba.",
     shareLocation: "Pokaži razdaljo od mene do drugih uporabnikov",
@@ -19054,13 +19054,13 @@ const sl = {
     seekingIdentityLegend: "Iščem identiteto",
     intentLegend: "Namen",
     availabilityLabel: "Vidnost profila",
-    availabilityAvailable: "Na voljo v feedu",
+    availabilityAvailable: "Na voljo v prikazu",
     availabilityPaused: "Pavzirano (skrito)",
     availabilityFocused: "V aktivnem pogovoru",
     notifyEmail: "E-poštna obvestila (nove zahteve, ujemanja, sporočila)",
     saveProfile: "Shrani profil",
     premiumTitle: "Premium paketi",
-    premiumHint: "Checkout je pripravljen — aktivacija paketa po plačilu.",
+    premiumHint: "Plačilo je pripravljeno — aktivacija paketa po plačilu.",
     gdprTitle: "Zasebnost (GDPR)",
     gdprHint: "Prenesite kopijo svojih podatkov v JSON obliki.",
     exportData: "Prenesi moje podatke",
@@ -19082,17 +19082,17 @@ const sl = {
     deleteConfirm: "Trajno izbrisati račun? Tega dejanja ni mogoče razveljaviti.",
     deleteFailed: "Brisanje računa ni uspelo.",
     planSuccess: "Plačilo prejeto. Aktivacija premiuma sledi po preverjanju.",
-    checkoutFailed: "Premium checkout ni na voljo."
+    checkoutFailed: "Premium plačilo ni na voljo."
   },
   dashboard: {
     greeting: "Pozdravljen/a, {name}",
-    subtitle: "Swipeaj profile ali uporabi gumbe — enega po enega, brez hitenja.",
-    feedCount: "{count} profilov v tvojem feedu",
-    feedEmpty: "Trenutno v tvojem feedu ni združljivih profilov.",
+    subtitle: "Pregleduj profile ali uporabi gumbe — enega po enega, brez hitenja.",
+    feedCount: "{count} profilov v tvojem prikazu",
+    feedEmpty: "Trenutno v tvojem prikazu ni združljivih profilov.",
     settingsLink: "Nastavitve profila",
     loading: "Nalaganje...",
     incompleteTitle: "Vaš profil še ni popoln ({percent}%).",
-    incompleteHint: "Dodajte fotografijo, opis in icebreaker — to poveča možnosti za stik.",
+    incompleteHint: "Dodaj fotografijo, kratek opis in vprašanje za spoznavanje — to poveča možnosti za stik.",
     completeProfile: "Dopolni profil",
     conversations: "Pogovori",
     conversationsUnread: "Pogovori ({unread} novih)",
@@ -19105,13 +19105,13 @@ const sl = {
     activeContact: "Trenutno se pogovarjaš z {partner}.",
     openChatBtn: "Odpri klepet",
     closeContact: "Zaključi pogovor",
-    visibleInFeed: "Vidni ste v feedu — swipeajte profile spodaj.",
+    visibleInFeed: "Vidni ste v prikazu — pregledujte profile spodaj.",
     incomingTitle: "Zahteve za stik",
     accept: "Sprejmi",
     decline: "Zavrni",
     discoverTitle: "Odkrij profile",
     discoverCount: " · {count} zate",
-    gateTitle: "Profil ni pripravljen za feed",
+    gateTitle: "Profil ni pripravljen za prikaz",
     gateHint: "Dodaj fotografijo in opis (min. 10 znakov), preden pošiljaš zahteve in swipaš.",
     gateOnboarding: "Oglej si uvod",
     emptyTitle: "Ni novih profilov",
@@ -19131,7 +19131,7 @@ const sl = {
     accepted: "Stik sprejet.",
     declined: "Zahteva zavrnjena.",
     respondFailed: "Odgovor ni bil shranjen.",
-    closed: "Stik zaključen. Spet ste na voljo v feedu.",
+    closed: "Stik zaključen. Spet ste na voljo v prikazu.",
     closeFailed: "Zaključevanje ni uspelo.",
     reportReason: "Neprimerno vedenje",
     reportNote: "Prijava iz uporabniškega vmesnika.",
@@ -19143,7 +19143,7 @@ const sl = {
     title: "Pogovor",
     loading: "Nalaganje...",
     unavailable: "Klepet ni na voljo.",
-    empty: "Pošljite prvo sporočilo — lahko uporabite tudi icebreaker s profila.",
+    empty: "Pošljite prvo sporočilo — lahko uporabite tudi vprašanje za spoznavanje s profila.",
     read: "Prebrano",
     react: "Reagiraj",
     typing: "Piše…",
@@ -19175,21 +19175,21 @@ const sl = {
   onboarding: {
     eyebrow: "Dobrodošli",
     title: "Profil, ki izstopa",
-    lead: "Preden vstopite v feed, dodajte fotografijo in kratek opis — oba sta potrebna za pošiljanje zahtev.",
+    lead: "Preden vstopite v prikaz, dodajte fotografijo in kratek opis — oba sta potrebna za pošiljanje zahtev.",
     stepPhoto: "1. Fotografija",
     stepPhotoHint: "Profili s fotografijami dobijo več odzivov.",
     changePhoto: "Zamenjaj fotografijo",
     addPhoto: "Dodaj fotografijo",
-    stepBio: "2. Bio (min. 10 znakov)",
+    stepBio: "2. O meni (min. 10 znakov)",
     stepBioHint: "Na kratko povej, kdo si in kaj iščeš.",
-    editBio: "Uredi bio",
-    writeBio: "Napiši bio",
-    stepFeed: "3. Feed",
-    stepFeedHint: "Ko je profil pripravljen, swipeaj in pošlji prvo zahtevo.",
-    finishReady: "Dokončaj uvod in odpri feed",
+    editBio: "Uredi opis",
+    writeBio: "Napiši o sebi",
+    stepFeed: "3. Prikaz profilov",
+    stepFeedHint: "Ko je profil pripravljen, pregleduj profile in pošlji prvo zahtevo.",
+    finishReady: "Dokončaj uvod in odpri prikaz",
     finishIncomplete: "Dopolni profil v Nastavitvah",
-    finishHint: "Najprej dokončaj fotografijo in bio v Nastavitvah",
-    incompleteError: "Pred nadaljevanjem v Nastavitvah dodaj fotografijo in bio (min. 10 znakov).",
+    finishHint: "Najprej dokončaj fotografijo in opis o sebi",
+    incompleteError: "Pred nadaljevanjem v Nastavitvah dodaj fotografijo in kratek opis (min. 10 znakov).",
     saveFailed: "Shranjevanje ni uspelo."
   },
   match: {
@@ -19208,7 +19208,7 @@ const sl = {
     lead: "Ravnopar ohranjamo z veliko truda in majhnim proračunom. Če vam platforma pomeni, lahko prostovoljno pomagate — brez pritiska in brez dodatnih funkcij v zameno.",
     sectionEyebrow: "Podpora projektu",
     sectionTitle: "Podprite Ravnopar",
-    sectionLead: "Če vam platforma pomaga spoznati ljudi, lahko prostovoljno pomagate pri stroških strežnika. Vsak prispevek res pomaga — in ne dobite nobene prednosti v feedu.",
+    sectionLead: "Če vam platforma pomaga spoznati ljudi, lahko prostovoljno pomagate pri stroških strežnika. Vsak prispevek res pomaga — in ne dobite nobene prednosti v prikazu.",
     note: "Donacije so povsem prostovoljne. Hvala, ker razmišljate o tem. ♥",
     revolutTitle: "Kartica (Revolut)",
     revolutHint: "Hitro plačilo s kartico — odpre se varna stran Revolut.",
@@ -19285,7 +19285,7 @@ const sl = {
       {
         icon: "🤝",
         title: "Donacije ostanejo prostovoljne",
-        text: "Če donirate, ne dobite prednosti v feedu — le našo iskreno zahvalo."
+        text: "Če donirate, ne dobite prednosti v prikazu — le našo iskreno zahvalo."
       }
     ],
     triggers: [
@@ -19338,7 +19338,7 @@ const sl = {
     planBtnSoon: "Kmalu",
     planBtnDisabled: "Še ni na voljo",
     planDisabledTitle: "Ta paket še ni na voljo. Pred uvedbo plačila vas bomo vnaprej obvestili.",
-    planHintCheckout: "Premium checkout je na voljo v Nastavitvah po prijavi.",
+    planHintCheckout: "Premium plačilo je na voljo v Nastavitvah po prijavi.",
     planHintLater: "Aktivirali ga bomo, ko bosta izdelek in skupnost pripravljena — obvestilo bo prišlo vnaprej.",
     freePrice: "0 €",
     plans: [
@@ -19351,7 +19351,7 @@ const sl = {
         tagline: "Vaš začetek",
         description: "Vse, kar potrebujete za poštene zmenke — danes in ko uvedemo Premium.",
         features: [
-          "Profil in vidnost v feedu",
+          "Profil in vidnost v prikazu",
           "Pošiljanje in sprejemanje zahtev",
           "Blokiranje, prijave in zaščita pred spamom",
           "Brez skritega zmanjšanja dosega"
@@ -19365,7 +19365,7 @@ const sl = {
         priceEur: 4.99,
         period: "/ mes",
         tagline: "Več za vaš profil",
-        description: "Za tiste, ki želijo dodatni nadzor — brez vpliva na druge v feedu.",
+        description: "Za tiste, ki želijo dodatni nadzor — brez vpliva na druge v prikazu.",
         features: [
           "Več fotografij na profilu",
           "Napredni filtri (pošteni za vse)",
@@ -19403,15 +19403,15 @@ const sl = {
     items: [
       {
         q: "Ali je Ravnopar brezplačen?",
-        a: "Da — pošiljanje zahtev, sprejemanje stikov in pogovor v aplikaciji so brezplačni. Donacije so prostovoljne in ne dajejo prednosti v feedu."
+        a: "Da — pošiljanje zahtev, sprejemanje stikov in pogovor v aplikaciji so brezplačni. Donacije so prostovoljne in ne dajejo prednosti v prikazu."
       },
       {
         q: "Kako deluje ujemanje?",
-        a: "Brskate po profilih v feedu in pošljete zahtevo za stik. Če druga oseba sprejme, se odpre zasebni klepet in oba sta začasno osredotočena na pogovor."
+        a: "Brskate po profilih v prikazu in pošljete zahtevo za stik. Če druga oseba sprejme, se odpre zasebni klepet in oba sta začasno osredotočena na pogovor."
       },
       {
         q: "Kaj se zgodi po sprejetem stiku?",
-        a: "Odprete klepet z osebo in se pogovarjate v aplikaciji. Aktivni pari začasno zapustijo feed, da imajo drugi še vedno priložnost."
+        a: "Odprete klepet z osebo in se pogovarjate v aplikaciji. Aktivni pari začasno zapustijo prikaz, da imajo drugi še vedno priložnost."
       },
       {
         q: "Ali boste zaračunavali pogovor?",
@@ -19470,7 +19470,7 @@ const sl = {
         },
         {
           title: "Podatki, ki jih zbiramo",
-          body: "Identiteta in kontaktni podatki (e-pošta, prikazno ime), profil (mesto, bio, fotografije, preference zmenkov, icebreaker odgovori), neobvezna video povezava, sporočila po ujemanju, tehnični zapisi (čas aktivnosti), neobvezna približno zaokrožena lokacija (koordinate le, če omogočite deljenje razdalje), verifikacijski selfi (ni javno viden), koda priporočila ter podatki o plačilih/donacijah, če jih uporabljate."
+          body: "Identiteta in kontaktni podatki (e-pošta, prikazno ime), profil (mesto, kratek opis, fotografije, preference zmenkov, odgovori na vprašanja za spoznavanje), neobvezna video povezava, sporočila po ujemanju, tehnični zapisi (čas aktivnosti), neobvezna približno zaokrožena lokacija (koordinate le, če omogočite deljenje razdalje), verifikacijski selfi (ni javno viden), koda priporočila ter podatki o plačilih/donacijah, če jih uporabljate."
         },
         {
           title: "Lokacija in razdalja",
@@ -19482,7 +19482,7 @@ const sl = {
         },
         {
           title: "Namen obdelave",
-          body: "Zagotavljanje storitve zmenkov, prikaz profila, ujemanje, klepet, varnost (blokiranje, prijave), e-poštna obvestila, ki jih odobrite, referral program, analitika (le z dovoljenjem za piškotke) in vzdrževanje platforme."
+          body: "Zagotavljanje storitve zmenkov, prikaz profila, ujemanje, klepet, varnost (blokiranje, prijave), e-poštna obvestila, ki jih odobrite, program povabil, analitika (le z dovoljenjem za piškotke) in vzdrževanje platforme."
         },
         {
           title: "Pravna podlaga (GDPR)",
@@ -19505,7 +19505,7 @@ const sl = {
           body: "Nujni piškotki/žetoni se uporabljajo za prijavo. Analitika (npr. Plausible/Umami) se naloži le, če sprejmete pasico s piškotki. Analitika privzeto ne uporablja oglaševalskih profilov — odvisno od izbranega orodja."
         },
         {
-          title: "Referral",
+          title: "Povabila",
           body: "Če uporabite povabilo, zabeležimo kodo priporočila osebe, ki vas je povabila, le za interno statistiko. Vašega e-poštnega naslova ne delimo s povabiteljem."
         },
         {
@@ -19528,7 +19528,7 @@ const sl = {
         },
         {
           title: "Račun in profil",
-          body: "Odgovorni ste za točnost podatkov, varnost gesla in vsebino profila. Profil s fotografijo in bio opisom je potreben za pošiljanje zahtev drugim. Lažni profili in napačna starost so prepovedani."
+          body: "Odgovorni ste za točnost podatkov, varnost gesla in vsebino profila. Profil s fotografijo in kratkim opisom je potreben za pošiljanje zahtev drugim. Lažni profili in napačna starost so prepovedani."
         },
         {
           title: "Prepovedano vedenje",
@@ -19570,11 +19570,11 @@ const sl = {
         },
         {
           title: "Pošten model Ravnopar",
-          body: "Brez paywalla za osnovni klepet. Aktivni pari začasno zapustijo feed. Anti-spam omejitve ščitijo skupnost. Boost/super-like ne obstajajo."
+          body: "Brez paywalla za osnovni klepet. Aktivni pari začasno zapustijo prikaz. Anti-spam omejitve ščitijo skupnost. Boost/super-like ne obstajajo."
         },
         {
           title: "Profil s fotografijo",
-          body: "Brez fotografije in kratkega bio opisa ne morete pošiljati zahtev — to varuje kakovost skupnosti in zmanjšuje lažne profile."
+          body: "Brez fotografije in kratkega opisa ne morete pošiljati zahtev — to varuje kakovost skupnosti in zmanjšuje lažne profile."
         },
         {
           title: "Varnost ob srečanju",
@@ -19661,14 +19661,14 @@ const sl = {
       timeline: "Dnevnik",
       moderation: "Moderacija",
       fairness: "Poštenost",
-      feed: "Razvrstitev feeda",
+      feed: "Razvrstitev prikaza",
       compliance: "Skladnost"
     },
     allCategories: "Vse kategorije",
     categoryAdmin: "Admin dejanja",
     categoryModeration: "Moderacija",
     categorySecurity: "Varnost",
-    categoryFeed: "Razvrstitev feeda",
+    categoryFeed: "Razvrstitev prikaza",
     categoryCompliance: "Skladnost",
     refresh: "Osveži",
     noEvents: "Ni zapisov.",
@@ -19686,7 +19686,7 @@ const sl = {
     feedViewer: "Zakaj je profil X nad Y — transparentna razlaga rangiranja (paket ne doda točk).",
     selectUser: "Izberite uporabnika…",
     showRanking: "Prikaži rangiranje",
-    feedExplainFailed: "Razlaga feeda ni na voljo.",
+    feedExplainFailed: "Razlaga prikaza ni na voljo.",
     tableRank: "#",
     tableProfile: "Profil",
     tableCity: "Mesto",
@@ -19699,9 +19699,9 @@ const sl = {
     resolveSubmit: "Reši in zapiši",
     outcomeResolved: "Rešeno",
     outcomeDismissed: "Zavrnjeno",
-    actionNone: "Bez akcije",
-    actionWarn: "Upozorenje",
-    actionSuspend: "Suspend",
+    actionNone: "Brez ukrepa",
+    actionWarn: "Opozorilo",
+    actionSuspend: "Suspendiraj",
     actionDelete: "Izbriši uporabnika"
   },
   icebreakers: {
@@ -19941,7 +19941,7 @@ const bs = {
     ADMIN_ACTION: "Admin",
     MODERATION: "Moderacija",
     SECURITY: "Sigurnost",
-    FEED_RANKING: "Rangiranje feeda",
+    FEED_RANKING: "Rangiranje prikaza",
     COMPLIANCE: "Usklađenost"
   },
   auditAction: {
@@ -19958,7 +19958,7 @@ const bs = {
     REPORT_RESOLVED: "Prijava riješena",
     BLOCK: "Blokiraj",
     REPORT: "Prijavi",
-    FEED_SNAPSHOT: "Snimak feeda",
+    FEED_SNAPSHOT: "Snimak prikaza",
     DATA_EXPORT: "Izvoz podataka",
     ACCOUNT_DELETE_SELF: "Brisanje računa",
     ACCOUNT_DELETE: "Brisanje računa",
@@ -20018,7 +20018,7 @@ const bs = {
       home: "Ravnopar — fer platforma za upoznavanje. Bez paywalla za razgovor, chat nakon matcha i transparentna pravila.",
       auth: "Kreiraj Ravnopar račun ili se prijavi.",
       settings: "Uredi profil, fotografije, obavijesti i privatnost.",
-      app: "Tvoj Ravnopar feed, razgovori i zahtjevi za kontakt.",
+      app: "Tvoj Ravnopar prikaz, razgovori i zahtjevi za kontakt.",
       chat: "Privatni chat s tvojim matchom.",
       profile: "Pogledaj Ravnopar profil.",
       onboarding: "Brzi vodič kroz Ravnopar.",
@@ -20081,18 +20081,18 @@ const bs = {
     chipAntiSpam: "Zaštita od spama",
     showcaseEyebrow: "Pregled iskustva",
     showcaseTitle: "Upoznaj ljude kao u dating aplikaciji — bez paywalla",
-    showcaseText: "Swipe kartice, galerije fotografija i chat nakon matcha. Fer pravila ostaju ista.",
+    showcaseText: "Kartice profila, galerije fotografija i chat nakon matcha. Fer pravila ostaju ista.",
     showcaseMockName: "Maja, 28 · Zagreb",
     showcaseMockBio: "Volim kafu, planinarenje i iskren razgovor.",
     howItWorks: "Kako funkcioniše",
     steps: [
       {
         title: "Registruj se",
-        text: "Napravi profil, dodaj fotografiju i bio, odaberi koga tražiš."
+        text: "Napravi profil, dodaj fotografiju i kratki opis, odaberi koga tražiš."
       },
       {
         title: "Upoznaj ljude",
-        text: "Pregledaj feed dostupnih profila bez skrivenog smanjenja dosega."
+        text: "Pregledaj prikaz dostupnih profila bez skrivenog smanjenja dosega."
       },
       {
         title: "Razgovaraj fer",
@@ -20131,7 +20131,7 @@ const bs = {
       },
       {
         title: "Fer vidljivost",
-        text: "Aktivni parovi privremeno izlaze iz feeda kako bi ostali dobili priliku."
+        text: "Aktivni parovi privremeno izlaze iz prikaza kako bi ostali dobili priliku."
       },
       {
         title: "Zaštita i kontrola",
@@ -20160,11 +20160,11 @@ const bs = {
     photosHint: "JPG/PNG, automatski smanjeno. Maks. 3 fotografije.",
     displayName: "Ime za prikaz",
     city: "Grad",
-    bio: "O meni (bio)",
+    bio: "O meni",
     bioPlaceholder: "Kratko se predstavi — šta tražiš, šta voliš...",
-    icebreakersLegend: "Icebreaker pitanja (do 3)",
+    icebreakersLegend: "Pitanja za upoznavanje (do 3)",
     icebreakersHint: "Kratka pitanja i odgovori — pomažu pri prvom kontaktu.",
-    addIcebreaker: "Dodaj icebreaker",
+    addIcebreaker: "Dodaj pitanje",
     locationLegend: "Udaljenost (privatno)",
     locationHint: "Koordinate se ne prikazuju drugima — samo gruba udaljenost (npr. “5–15 km”). Opciju moraju uključiti obje osobe.",
     shareLocation: "Prikaži udaljenost od mene do drugih korisnika",
@@ -20182,13 +20182,13 @@ const bs = {
     seekingIdentityLegend: "Traženi identitet",
     intentLegend: "Namjera",
     availabilityLabel: "Vidljivost profila",
-    availabilityAvailable: "Dostupan/na u feedu",
+    availabilityAvailable: "Dostupan/na u prikazu",
     availabilityPaused: "Pauzirano (skriveno)",
     availabilityFocused: "U aktivnom razgovoru",
     notifyEmail: "Email obavijesti (novi zahtjevi, match, poruke)",
     saveProfile: "Spasi profil",
     premiumTitle: "Premium paketi",
-    premiumHint: "Checkout je spreman — aktivacija paketa nakon uplate.",
+    premiumHint: "Plaćanje je spremno — aktivacija paketa nakon uplate.",
     gdprTitle: "Privatnost (GDPR)",
     gdprHint: "Preuzmi kopiju svojih podataka u JSON formatu.",
     exportData: "Preuzmi moje podatke",
@@ -20210,17 +20210,17 @@ const bs = {
     deleteConfirm: "Trajno izbrisati račun? Ovu radnju nije moguće poništiti.",
     deleteFailed: "Brisanje računa nije uspjelo.",
     planSuccess: "Uplata je primljena. Premium aktivacija slijedi nakon provjere.",
-    checkoutFailed: "Premium checkout nije dostupan."
+    checkoutFailed: "Premium plaćanje nije dostupno."
   },
   dashboard: {
     greeting: "Pozdrav, {name}",
-    subtitle: "Swipeaj profile ili koristi dugmad — jedan po jedan, bez žurbe.",
-    feedCount: "{count} profila u tvom feedu",
-    feedEmpty: "Trenutno nema kompatibilnih profila u tvom feedu.",
+    subtitle: "Pregledavaj profile ili koristi dugmad — jedan po jedan, bez žurbe.",
+    feedCount: "{count} profila u tvom prikazu",
+    feedEmpty: "Trenutno nema kompatibilnih profila u tvom prikazu.",
     settingsLink: "Postavke profila",
     loading: "Učitavanje...",
     incompleteTitle: "Tvoj profil još nije kompletan ({percent}%).",
-    incompleteHint: "Dodaj fotografiju, bio i icebreaker — to povećava šanse za kontakt.",
+    incompleteHint: "Dodaj fotografiju, kratki opis i pitanje za upoznavanje — to povećava šanse za kontakt.",
     completeProfile: "Dovrši profil",
     conversations: "Razgovori",
     conversationsUnread: "Razgovori ({unread} novih)",
@@ -20233,14 +20233,14 @@ const bs = {
     activeContact: "Trenutno razgovaraš s {partner}.",
     openChatBtn: "Otvori chat",
     closeContact: "Završi razgovor",
-    visibleInFeed: "Vidljiv/a si u feedu — swipeaj profile ispod.",
+    visibleInFeed: "Vidljiv/a si u prikazu — pregledavaj profile ispod.",
     incomingTitle: "Zahtjevi za kontakt",
     accept: "Prihvati",
     decline: "Odbij",
     discoverTitle: "Otkrij profile",
     discoverCount: " · {count} za tebe",
-    gateTitle: "Profil nije spreman za feed",
-    gateHint: "Dodaj fotografiju i bio (min. 10 znakova) prije slanja zahtjeva i swipea.",
+    gateTitle: "Profil nije spreman za prikaz",
+    gateHint: "Dodaj fotografiju i kratki opis (min. 10 znakova) prije slanja zahtjeva i pregledavanja profila.",
     gateOnboarding: "Pogledaj uvod",
     emptyTitle: "Nema novih profila",
     emptyHint: "Proširi grad ili preference u Postavkama — ili se vrati uskoro kada se neko novi registruje.",
@@ -20259,7 +20259,7 @@ const bs = {
     accepted: "Kontakt prihvaćen.",
     declined: "Zahtjev odbijen.",
     respondFailed: "Odgovor nije sačuvan.",
-    closed: "Kontakt zatvoren. Ponovo si dostupan/na u feedu.",
+    closed: "Kontakt zatvoren. Ponovo si dostupan/na u prikazu.",
     closeFailed: "Zatvaranje nije uspjelo.",
     reportReason: "Neprimjereno ponašanje",
     reportNote: "Prijava iz korisničkog sučelja.",
@@ -20271,7 +20271,7 @@ const bs = {
     title: "Razgovor",
     loading: "Učitavanje...",
     unavailable: "Chat nije dostupan.",
-    empty: "Pošalji prvu poruku — možeš koristiti i icebreaker s profila.",
+    empty: "Pošalji prvu poruku — možeš koristiti i pitanje za upoznavanje s profila.",
     read: "Pročitano",
     react: "Reagiraj",
     typing: "Piše…",
@@ -20303,21 +20303,21 @@ const bs = {
   onboarding: {
     eyebrow: "Dobrodošli",
     title: "Profil koji se ističe",
-    lead: "Prije ulaska u feed, dodaj fotografiju i kratak opis — oboje je potrebno za slanje zahtjeva.",
+    lead: "Prije ulaska u prikaz, dodaj fotografiju i kratak opis — oboje je potrebno za slanje zahtjeva.",
     stepPhoto: "1. Fotografija",
     stepPhotoHint: "Profili s fotografijama dobijaju više odgovora.",
     changePhoto: "Promijeni fotografiju",
     addPhoto: "Dodaj fotografiju",
-    stepBio: "2. Bio (min. 10 znakova)",
+    stepBio: "2. O meni (min. 10 znakova)",
     stepBioHint: "Kratko reci ko si i šta tražiš.",
-    editBio: "Uredi bio",
-    writeBio: "Napiši bio",
-    stepFeed: "3. Feed",
-    stepFeedHint: "Kada je profil spreman, swipeaj i pošalji prvi zahtjev.",
-    finishReady: "Završi uvod i otvori feed",
+    editBio: "Uredi opis",
+    writeBio: "Napiši o sebi",
+    stepFeed: "3. Prikaz profila",
+    stepFeedHint: "Kada je profil spreman, pregledavaj profile i pošalji prvi zahtjev.",
+    finishReady: "Završi uvod i otvori prikaz",
     finishIncomplete: "Dovrši profil u Postavkama",
-    finishHint: "Prvo dovrši fotografiju i bio u Postavkama",
-    incompleteError: "Dodaj fotografiju i bio (min. 10 znakova) u Postavkama prije nastavka.",
+    finishHint: "Prvo dovrši fotografiju i opis o sebi",
+    incompleteError: "Dodaj fotografiju i kratki opis (min. 10 znakova) u Postavkama prije nastavka.",
     saveFailed: "Spremanje nije uspjelo."
   },
   match: {
@@ -20336,7 +20336,7 @@ const bs = {
     lead: "Ravnopar održavamo uz puno truda i mali budžet. Ako ti platforma znači, možeš dobrovoljno pomoći — bez pritiska i bez dodatnih funkcija zauzvrat.",
     sectionEyebrow: "Podrška projektu",
     sectionTitle: "Podrži Ravnopar",
-    sectionLead: "Ako ti platforma pomaže da upoznaš ljude, možeš dobrovoljno pomoći sa troškovima servera. Svaki doprinos stvarno pomaže — a ne dobijaš prednost u feedu.",
+    sectionLead: "Ako ti platforma pomaže da upoznaš ljude, možeš dobrovoljno pomoći sa troškovima servera. Svaki doprinos stvarno pomaže — a ne dobijaš prednost u prikazu.",
     note: "Donacije su potpuno dobrovoljne. Hvala što razmišljaš o tome. ♥",
     revolutTitle: "Kartica (Revolut)",
     revolutHint: "Brza uplata karticom — otvara se sigurna Revolut stranica.",
@@ -20413,7 +20413,7 @@ const bs = {
       {
         icon: "🤝",
         title: "Donacije ostaju dobrovoljne",
-        text: "Ako doniraš, ne dobijaš prioritet u feedu — samo našu iskrenu zahvalnost."
+        text: "Ako doniraš, ne dobijaš prioritet u prikazu — samo našu iskrenu zahvalnost."
       }
     ],
     triggers: [
@@ -20466,7 +20466,7 @@ const bs = {
     planBtnSoon: "Uskoro",
     planBtnDisabled: "Još nije dostupno",
     planDisabledTitle: "Ovaj plan još nije dostupan. Obavijestit ćemo te unaprijed prije uvođenja naplate.",
-    planHintCheckout: "Premium checkout je dostupan u Postavkama nakon prijave.",
+    planHintCheckout: "Premium plaćanje je dostupno u Postavkama nakon prijave.",
     planHintLater: "Aktiviramo ga kada proizvod i zajednica budu spremni — obavijest dolazi unaprijed.",
     freePrice: "0 €",
     plans: [
@@ -20479,7 +20479,7 @@ const bs = {
         tagline: "Tvoj početak",
         description: "Sve što ti treba za fer upoznavanje — danas i kad uvedemo Premium.",
         features: [
-          "Profil i vidljivost u feedu",
+          "Profil i vidljivost u prikazu",
           "Slanje i prihvatanje zahtjeva",
           "Blokiranje, prijave i zaštita od spama",
           "Bez skrivenog smanjenja dosega"
@@ -20493,7 +20493,7 @@ const bs = {
         priceEur: 4.99,
         period: "/ mj",
         tagline: "Više za tvoj profil",
-        description: "Za one koji žele dodatnu kontrolu — bez uticaja na druge u feedu.",
+        description: "Za one koji žele dodatnu kontrolu — bez uticaja na druge u prikazu.",
         features: [
           "Više fotografija na profilu",
           "Napredni filteri (fer prema svima)",
@@ -20531,15 +20531,15 @@ const bs = {
     items: [
       {
         q: "Da li je Ravnopar besplatan?",
-        a: "Da — slanje zahtjeva, prihvatanje kontakta i razgovor u aplikaciji su besplatni. Donacije su dobrovoljne i ne daju prednost u feedu."
+        a: "Da — slanje zahtjeva, prihvatanje kontakta i razgovor u aplikaciji su besplatni. Donacije su dobrovoljne i ne daju prednost u prikazu."
       },
       {
         q: "Kako funkcioniše match?",
-        a: "Pregledaš profile u feedu i šalješ zahtjev za kontakt. Ako druga osoba prihvati, otvara se privatni chat i oboje ste privremeno fokusirani na razgovor."
+        a: "Pregledaš profile u prikazu i šalješ zahtjev za kontakt. Ako druga osoba prihvati, otvara se privatni chat i oboje ste privremeno fokusirani na razgovor."
       },
       {
         q: "Šta se dešava nakon prihvaćenog kontakta?",
-        a: "Možeš otvoriti chat s osobom i razgovarati u aplikaciji. Aktivni parovi privremeno izlaze iz feeda kako bi ostali imali priliku."
+        a: "Možeš otvoriti chat s osobom i razgovarati u aplikaciji. Aktivni parovi privremeno izlaze iz prikaza kako bi ostali imali priliku."
       },
       {
         q: "Hoćete li naplaćivati razgovor?",
@@ -20598,7 +20598,7 @@ const bs = {
         },
         {
           title: "Podaci koje prikupljamo",
-          body: "Identifikacioni i kontakt podaci (email, ime za prikaz), profil (grad, bio, fotografije, preferencije upoznavanja, icebreaker odgovori), opcionalni video link, poruke nakon matcha, tehnički zapisi (vrijeme aktivnosti), opcionalna grubo zaokružena lokacija (koordinate samo ako uključiš dijeljenje udaljenosti), verifikacioni selfie (nije javan), referral kod i podaci o plaćanjima/donacijama ako ih koristiš."
+          body: "Identifikacioni i kontakt podaci (email, ime za prikaz), profil (grad, kratki opis, fotografije, preferencije upoznavanja, odgovori na pitanja za upoznavanje), opcionalni video link, poruke nakon matcha, tehnički zapisi (vrijeme aktivnosti), opcionalna grubo zaokružena lokacija (koordinate samo ako uključiš dijeljenje udaljenosti), verifikacioni selfie (nije javan), kod pozivnice i podaci o plaćanjima/donacijama ako ih koristiš."
         },
         {
           title: "Lokacija i udaljenost",
@@ -20610,7 +20610,7 @@ const bs = {
         },
         {
           title: "Svrha obrade",
-          body: "Pružanje usluge upoznavanja, prikaz profila, sparivanje, chat, sigurnost (blokiranje, prijave), email obavijesti koje odobriš, referral program, analitika (samo uz pristanak na kolačiće) i održavanje platforme."
+          body: "Pružanje usluge upoznavanja, prikaz profila, sparivanje, chat, sigurnost (blokiranje, prijave), email obavijesti koje odobriš, program pozivnica, analitika (samo uz pristanak na kolačiće) i održavanje platforme."
         },
         {
           title: "Pravna osnova (GDPR)",
@@ -20633,8 +20633,8 @@ const bs = {
           body: "Nužni kolačići/tokeni koriste se za prijavu. Analitika (npr. Plausible/Umami) učitava se samo ako prihvatiš banner kolačića. Analitika ne koristi oglašivačke profile po defaultu — zavisi od izabranog alata."
         },
         {
-          title: "Referral",
-          body: "Ako koristiš pozivnicu, bilježimo referral kod osobe koja te pozvala isključivo u statističke svrhe. Ne dijelimo tvoju email adresu s pozivateljem."
+          title: "Pozivnice",
+          body: "Ako koristiš pozivnicu, bilježimo kod pozivnice osobe koja te pozvala isključivo u statističke svrhe. Ne dijelimo tvoju email adresu s pozivateljem."
         },
         {
           title: "Promjene politike",
@@ -20656,7 +20656,7 @@ const bs = {
         },
         {
           title: "Račun i profil",
-          body: "Odgovoran/na si za tačnost podataka, sigurnost lozinke i sadržaj profila. Profil s fotografijom i bio tekstom potreban je za slanje zahtjeva drugima. Lažni profili i lažna dob su zabranjeni."
+          body: "Odgovoran/na si za tačnost podataka, sigurnost lozinke i sadržaj profila. Profil s fotografijom i kratkim opisom potreban je za slanje zahtjeva drugima. Lažni profili i lažna dob su zabranjeni."
         },
         {
           title: "Zabranjeno ponašanje",
@@ -20698,11 +20698,11 @@ const bs = {
         },
         {
           title: "Fer model Ravnopara",
-          body: "Bez paywalla za osnovni chat. Aktivni parovi privremeno izlaze iz feeda. Anti-spam limiti štite zajednicu. Boost/super-like ne postoje."
+          body: "Bez paywalla za osnovni chat. Aktivni parovi privremeno izlaze iz prikaza. Anti-spam limiti štite zajednicu. Boost/super-like ne postoje."
         },
         {
           title: "Profil s fotografijom",
-          body: "Bez fotografije i kratkog bio teksta ne možeš slati zahtjeve — to štiti kvalitet zajednice i smanjuje lažne profile."
+          body: "Bez fotografije i kratkog opisa ne možeš slati zahtjeve — to štiti kvalitet zajednice i smanjuje lažne profile."
         },
         {
           title: "Sigurnost na susretu",
@@ -20789,14 +20789,14 @@ const bs = {
       timeline: "Dnevnik",
       moderation: "Moderacija",
       fairness: "Fer pravila",
-      feed: "Rangiranje feeda",
+      feed: "Rangiranje prikaza",
       compliance: "Usklađenost"
     },
     allCategories: "Sve kategorije",
     categoryAdmin: "Admin akcije",
     categoryModeration: "Moderacija",
     categorySecurity: "Sigurnost",
-    categoryFeed: "Rangiranje feeda",
+    categoryFeed: "Rangiranje prikaza",
     categoryCompliance: "Usklađenost",
     refresh: "Osvježi",
     noEvents: "Nema zapisa.",
@@ -20814,7 +20814,7 @@ const bs = {
     feedViewer: "Zašto je profil X iznad Y — transparentno objašnjenje rangiranja (paket ne daje bodove).",
     selectUser: "Izaberi korisnika…",
     showRanking: "Prikaži rangiranje",
-    feedExplainFailed: "Feed explain nije dostupan.",
+    feedExplainFailed: "Objašnjenje poredaka nije dostupno.",
     tableRank: "#",
     tableProfile: "Profil",
     tableCity: "Grad",
@@ -20829,7 +20829,7 @@ const bs = {
     outcomeDismissed: "Odbijeno",
     actionNone: "Bez akcije",
     actionWarn: "Upozorenje",
-    actionSuspend: "Suspend",
+    actionSuspend: "Suspendiraj",
     actionDelete: "Izbriši korisnika"
   },
   icebreakers: {
@@ -21069,7 +21069,7 @@ const sr = {
     ADMIN_ACTION: "Admin",
     MODERATION: "Moderacija",
     SECURITY: "Bezbednost",
-    FEED_RANKING: "Rangiranje feeda",
+    FEED_RANKING: "Rangiranje prikaza",
     COMPLIANCE: "Usklađenost"
   },
   auditAction: {
@@ -21086,7 +21086,7 @@ const sr = {
     REPORT_RESOLVED: "Prijava rešena",
     BLOCK: "Blokiraj",
     REPORT: "Prijavi",
-    FEED_SNAPSHOT: "Snimak feeda",
+    FEED_SNAPSHOT: "Snimak prikaza",
     DATA_EXPORT: "Izvoz podataka",
     ACCOUNT_DELETE_SELF: "Brisanje naloga",
     ACCOUNT_DELETE: "Brisanje naloga",
@@ -21146,7 +21146,7 @@ const sr = {
       home: "Ravnopar — fer platforma za upoznavanje. Bez paywalla za razgovor, chat nakon matcha i transparentna pravila.",
       auth: "Kreiraj Ravnopar nalog ili se prijavi.",
       settings: "Uredi profil, fotografije, obaveštenja i privatnost.",
-      app: "Tvoj Ravnopar feed, razgovori i zahtevi za kontakt.",
+      app: "Tvoj Ravnopar prikaz, razgovori i zahtevi za kontakt.",
       chat: "Privatni chat sa tvojim matchom.",
       profile: "Prikaži Ravnopar profil.",
       onboarding: "Kratak vodič kroz Ravnopar.",
@@ -21209,18 +21209,18 @@ const sr = {
     chipAntiSpam: "Zaštita od spama",
     showcaseEyebrow: "Pregled iskustva",
     showcaseTitle: "Upoznaj ljude kao u dating aplikaciji — bez paywalla",
-    showcaseText: "Swipe kartice, galerije fotografija i chat nakon matcha. Fer pravila ostaju ista.",
+    showcaseText: "Kartice profila, galerije fotografija i chat nakon matcha. Fer pravila ostaju ista.",
     showcaseMockName: "Maja, 28 · Zagreb",
     showcaseMockBio: "Volim kafu, planinarenje i iskren razgovor.",
     howItWorks: "Kako funkcioniše",
     steps: [
       {
         title: "Registruj se",
-        text: "Napravi profil, dodaj fotografiju i bio, odaberi koga tražiš."
+        text: "Napravi profil, dodaj fotografiju i kratki opis, odaberi koga tražiš."
       },
       {
         title: "Upoznaj ljude",
-        text: "Pregledaj feed dostupnih profila bez skrivenog smanjenja dosega."
+        text: "Pregledaj prikaz dostupnih profila bez skrivenog smanjenja dosega."
       },
       {
         title: "Razgovaraj fer",
@@ -21259,7 +21259,7 @@ const sr = {
       },
       {
         title: "Fer vidljivost",
-        text: "Aktivni parovi privremeno izlaze iz feeda kako bi ostali dobili priliku."
+        text: "Aktivni parovi privremeno izlaze iz prikaza kako bi ostali dobili priliku."
       },
       {
         title: "Zaštita i kontrola",
@@ -21288,11 +21288,11 @@ const sr = {
     photosHint: "JPG/PNG, automatski smanjeno. Maks. 3 fotografije.",
     displayName: "Ime za prikaz",
     city: "Grad",
-    bio: "O meni (bio)",
+    bio: "O meni",
     bioPlaceholder: "Kratko se predstavi — šta tražiš, šta voliš...",
-    icebreakersLegend: "Icebreaker pitanja (do 3)",
+    icebreakersLegend: "Pitanja za upoznavanje (do 3)",
     icebreakersHint: "Kratka pitanja i odgovori — pomažu pri prvom kontaktu.",
-    addIcebreaker: "Dodaj icebreaker",
+    addIcebreaker: "Dodaj pitanje",
     locationLegend: "Udaljenost (privatno)",
     locationHint: "Koordinate se ne prikazuju drugima — samo gruba udaljenost (npr. “5–15 km”). Opciju moraju uključiti obe osobe.",
     shareLocation: "Prikaži udaljenost od mene do drugih korisnika",
@@ -21310,13 +21310,13 @@ const sr = {
     seekingIdentityLegend: "Traženi identitet",
     intentLegend: "Namjera",
     availabilityLabel: "Vidljivost profila",
-    availabilityAvailable: "Dostupan/na u feedu",
+    availabilityAvailable: "Dostupan/na u prikazu",
     availabilityPaused: "Pauzirano (skriveno)",
     availabilityFocused: "U aktivnom razgovoru",
     notifyEmail: "Email obaveštenja (novi zahtevi, match, poruke)",
     saveProfile: "Sačuvaj profil",
     premiumTitle: "Premium paketi",
-    premiumHint: "Checkout je spreman — aktivacija paketa nakon uplate.",
+    premiumHint: "Plaćanje je spremno — aktivacija paketa nakon uplate.",
     gdprTitle: "Privatnost (GDPR)",
     gdprHint: "Preuzmi kopiju svojih podataka u JSON formatu.",
     exportData: "Preuzmi moje podatke",
@@ -21338,17 +21338,17 @@ const sr = {
     deleteConfirm: "Trajno obrisati nalog? Ovu radnju nije moguće poništiti.",
     deleteFailed: "Brisanje naloga nije uspelo.",
     planSuccess: "Uplata je primljena. Premium aktivacija sledi nakon provere.",
-    checkoutFailed: "Premium checkout nije dostupan."
+    checkoutFailed: "Premium plaćanje nije dostupno."
   },
   dashboard: {
     greeting: "Zdravo, {name}",
-    subtitle: "Swipeaj profile ili koristi dugmad — jedan po jedan, bez žurbe.",
-    feedCount: "{count} profila u tvom feedu",
-    feedEmpty: "Trenutno nema kompatibilnih profila u tvom feedu.",
+    subtitle: "Pregledavaj profile ili koristi dugmad — jedan po jedan, bez žurbe.",
+    feedCount: "{count} profila u tvom prikazu",
+    feedEmpty: "Trenutno nema kompatibilnih profila u tvom prikazu.",
     settingsLink: "Podešavanja profila",
     loading: "Učitavanje...",
     incompleteTitle: "Tvoj profil još nije kompletan ({percent}%).",
-    incompleteHint: "Dodaj fotografiju, bio i icebreaker — to povećava šanse za kontakt.",
+    incompleteHint: "Dodaj fotografiju, kratki opis i pitanje za upoznavanje — to povećava šanse za kontakt.",
     completeProfile: "Dovrši profil",
     conversations: "Razgovori",
     conversationsUnread: "Razgovori ({unread} novih)",
@@ -21361,14 +21361,14 @@ const sr = {
     activeContact: "Trenutno razgovaraš sa {partner}.",
     openChatBtn: "Otvori chat",
     closeContact: "Završi razgovor",
-    visibleInFeed: "Vidljiv/a si u feedu — swipeaj profile ispod.",
+    visibleInFeed: "Vidljiv/a si u prikazu — pregledavaj profile ispod.",
     incomingTitle: "Zahtevi za kontakt",
     accept: "Прихвати",
     decline: "Одбиј",
     discoverTitle: "Otkrij profile",
     discoverCount: " · {count} za tebe",
-    gateTitle: "Profil nije spreman za feed",
-    gateHint: "Dodaj fotografiju i bio (min. 10 znakova) pre slanja zahteva i swipeovanja.",
+    gateTitle: "Profil nije spreman za prikaz",
+    gateHint: "Dodaj fotografiju i kratki opis (min. 10 znakova) pre slanja zahteva i pregledavanja profila.",
     gateOnboarding: "Pogledaj uvod",
     emptyTitle: "Nema novih profila",
     emptyHint: "Proširi grad ili preference u Podešavanjima — ili se vrati uskoro kada se neko novi registruje.",
@@ -21387,7 +21387,7 @@ const sr = {
     accepted: "Kontakt prihvaćen.",
     declined: "Zahtev odbijen.",
     respondFailed: "Odgovor nije sačuvan.",
-    closed: "Kontakt zatvoren. Ponovo si dostupan/na u feedu.",
+    closed: "Kontakt zatvoren. Ponovo si dostupan/na u prikazu.",
     closeFailed: "Zatvaranje nije uspelo.",
     reportReason: "Непримерено понашање",
     reportNote: "Пријава из корисничког сучеља.",
@@ -21399,7 +21399,7 @@ const sr = {
     title: "Razgovor",
     loading: "Učitavanje...",
     unavailable: "Chat nije dostupan.",
-    empty: "Pošalji prvu poruku — možeš koristiti i icebreaker sa profila.",
+    empty: "Pošalji prvu poruku — možeš koristiti i pitanje za upoznavanje sa profila.",
     read: "Pročitano",
     react: "Reaguj",
     typing: "Piše…",
@@ -21431,21 +21431,21 @@ const sr = {
   onboarding: {
     eyebrow: "Dobrodošli",
     title: "Profil koji se ističe",
-    lead: "Pre ulaska u feed, dodaj fotografiju i kratak opis — oboje je potrebno za slanje zahteva.",
+    lead: "Pre ulaska u prikaz, dodaj fotografiju i kratak opis — oboje je potrebno za slanje zahteva.",
     stepPhoto: "1. Fotografija",
     stepPhotoHint: "Profili sa fotografijama dobijaju više odgovora.",
     changePhoto: "Promeni fotografiju",
     addPhoto: "Dodaj fotografiju",
-    stepBio: "2. Bio (min. 10 znakova)",
+    stepBio: "2. O meni (min. 10 znakova)",
     stepBioHint: "Kratko reci ko si i šta tražiš.",
-    editBio: "Uredi bio",
-    writeBio: "Napiši bio",
-    stepFeed: "3. Feed",
-    stepFeedHint: "Kada je profil spreman, swipeaj i pošalji prvi zahtev.",
-    finishReady: "Završi uvod i otvori feed",
+    editBio: "Uredi opis",
+    writeBio: "Napiši o sebi",
+    stepFeed: "3. Prikaz profila",
+    stepFeedHint: "Kada je profil spreman, pregledavaj profile i pošalji prvi zahtev.",
+    finishReady: "Završi uvod i otvori prikaz",
     finishIncomplete: "Dovrši profil u Podešavanjima",
-    finishHint: "Prvo dovrši fotografiju i bio u Podešavanjima",
-    incompleteError: "Dodaj fotografiju i bio (min. 10 znakova) u Podešavanjima pre nastavka.",
+    finishHint: "Prvo dovrši fotografiju i opis o sebi",
+    incompleteError: "Dodaj fotografiju i kratki opis (min. 10 znakova) u Podešavanjima pre nastavka.",
     saveFailed: "Čuvanje nije uspelo."
   },
   match: {
@@ -21464,7 +21464,7 @@ const sr = {
     lead: "Ravnopar održavamo uz mnogo truda i mali budžet. Ako ti platforma znači, možeš dobrovoljno pomoći — bez pritiska i bez dodatnih funkcija zauzvrat.",
     sectionEyebrow: "Podrška projektu",
     sectionTitle: "Podrži Ravnopar",
-    sectionLead: "Ako ti platforma pomaže da upoznaš ljude, možeš dobrovoljno pomoći sa troškovima servera. Svaki doprinos stvarno pomaže — a ne dobijaš prednost u feedu.",
+    sectionLead: "Ako ti platforma pomaže da upoznaš ljude, možeš dobrovoljno pomoći sa troškovima servera. Svaki doprinos stvarno pomaže — a ne dobijaš prednost u prikazu.",
     note: "Donacije su potpuno dobrovoljne. Hvala što razmišljaš o tome. ♥",
     revolutTitle: "Kartica (Revolut)",
     revolutHint: "Brza uplata karticom — otvara se sigurna Revolut stranica.",
@@ -21541,7 +21541,7 @@ const sr = {
       {
         icon: "🤝",
         title: "Donacije ostaju dobrovoljne",
-        text: "Ako doniraš, ne dobijaš prioritet u feedu — samo našu iskrenu zahvalnost."
+        text: "Ako doniraš, ne dobijaš prioritet u prikazu — samo našu iskrenu zahvalnost."
       }
     ],
     triggers: [
@@ -21594,7 +21594,7 @@ const sr = {
     planBtnSoon: "Uskoro",
     planBtnDisabled: "Još nije dostupno",
     planDisabledTitle: "Ovaj plan još nije dostupan. Obavestićemo te unapred pre uvođenja naplate.",
-    planHintCheckout: "Premium checkout je dostupan u Podešavanjima nakon prijave.",
+    planHintCheckout: "Premium plaćanje je dostupno u Podešavanjima nakon prijave.",
     planHintLater: "Aktiviraćemo ga kada proizvod i zajednica budu spremni — obaveštenje stiže unapred.",
     freePrice: "0 €",
     plans: [
@@ -21607,7 +21607,7 @@ const sr = {
         tagline: "Tvoj početak",
         description: "Sve što ti treba za fer upoznavanje — danas i kada uvedemo Premium.",
         features: [
-          "Profil i vidljivost u feedu",
+          "Profil i vidljivost u prikazu",
           "Slanje i prihvatanje zahteva",
           "Blokiranje, prijave i zaštita od spama",
           "Bez skrivenog smanjenja dosega"
@@ -21621,7 +21621,7 @@ const sr = {
         priceEur: 4.99,
         period: "/ mes",
         tagline: "Više za tvoj profil",
-        description: "Za one koji žele dodatnu kontrolu — bez uticaja na druge u feedu.",
+        description: "Za one koji žele dodatnu kontrolu — bez uticaja na druge u prikazu.",
         features: [
           "Više fotografija na profilu",
           "Napredni filteri (fer prema svima)",
@@ -21659,15 +21659,15 @@ const sr = {
     items: [
       {
         q: "Da li je Ravnopar besplatan?",
-        a: "Da — slanje zahteva, prihvatanje kontakta i razgovor u aplikaciji su besplatni. Donacije su dobrovoljne i ne daju prednost u feedu."
+        a: "Da — slanje zahteva, prihvatanje kontakta i razgovor u aplikaciji su besplatni. Donacije su dobrovoljne i ne daju prednost u prikazu."
       },
       {
         q: "Kako funkcioniše match?",
-        a: "Pregledaš profile u feedu i šalješ zahtev za kontakt. Ako druga osoba prihvati, otvara se privatni chat i oboje ste privremeno fokusirani na razgovor."
+        a: "Pregledaš profile u prikazu i šalješ zahtev za kontakt. Ako druga osoba prihvati, otvara se privatni chat i oboje ste privremeno fokusirani na razgovor."
       },
       {
         q: "Šta se dešava nakon prihvaćenog kontakta?",
-        a: "Možeš otvoriti chat sa osobom i razgovarati u aplikaciji. Aktivni parovi privremeno izlaze iz feeda kako bi ostali imali priliku."
+        a: "Možeš otvoriti chat sa osobom i razgovarati u aplikaciji. Aktivni parovi privremeno izlaze iz prikaza kako bi ostali imali priliku."
       },
       {
         q: "Hoćete li naplaćivati razgovor?",
@@ -21726,7 +21726,7 @@ const sr = {
         },
         {
           title: "Podaci koje prikupljamo",
-          body: "Identifikacioni i kontakt podaci (email, ime za prikaz), profil (grad, bio, fotografije, preferencije upoznavanja, icebreaker odgovori), opciona video veza, poruke nakon matcha, tehnički zapisi (vreme aktivnosti), opcionalna grubo zaokružena lokacija (koordinate samo ako uključiš deljenje udaljenosti), verifikacioni selfie (nije javan), referral kod i podaci o plaćanjima/donacijama ako ih koristiš."
+          body: "Identifikacioni i kontakt podaci (email, ime za prikaz), profil (grad, kratki opis, fotografije, preferencije upoznavanja, odgovori na pitanja za upoznavanje), opciona video veza, poruke nakon matcha, tehnički zapisi (vreme aktivnosti), opcionalna grubo zaokružena lokacija (koordinate samo ako uključiš deljenje udaljenosti), verifikacioni selfie (nije javan), kod pozivnice i podaci o plaćanjima/donacijama ako ih koristiš."
         },
         {
           title: "Lokacija i udaljenost",
@@ -21738,7 +21738,7 @@ const sr = {
         },
         {
           title: "Svrha obrade",
-          body: "Pružanje usluge upoznavanja, prikaz profila, sparivanje, chat, bezbednost (blokiranje, prijave), email obaveštenja koja odobriš, referral program, analitika (samo uz pristanak na kolačiće) i održavanje platforme."
+          body: "Pružanje usluge upoznavanja, prikaz profila, sparivanje, chat, bezbednost (blokiranje, prijave), email obaveštenja koja odobriš, program pozivnica, analitika (samo uz pristanak na kolačiće) i održavanje platforme."
         },
         {
           title: "Pravni osnov (GDPR)",
@@ -21761,8 +21761,8 @@ const sr = {
           body: "Nužni kolačići/tokeni koriste se za prijavu. Analitika (npr. Plausible/Umami) učitava se samo ako prihvatiš banner kolačića. Analitika ne koristi oglašivačke profile po defaultu — zavisi od izabranog alata."
         },
         {
-          title: "Referral",
-          body: "Ako koristiš pozivnicu, beležimo referral kod osobe koja te je pozvala isključivo u statističke svrhe. Ne delimo tvoju email adresu sa pozivaocem."
+          title: "Pozivnice",
+          body: "Ako koristiš pozivnicu, beležimo kod pozivnice osobe koja te je pozvala isključivo u statističke svrhe. Ne delimo tvoju email adresu sa pozivaocem."
         },
         {
           title: "Promene politike",
@@ -21784,7 +21784,7 @@ const sr = {
         },
         {
           title: "Nalog i profil",
-          body: "Odgovoran/na si za tačnost podataka, bezbednost lozinke i sadržaj profila. Profil sa fotografijom i bio tekstom potreban je za slanje zahteva drugima. Lažni profili i lažna starost su zabranjeni."
+          body: "Odgovoran/na si za tačnost podataka, bezbednost lozinke i sadržaj profila. Profil sa fotografijom i kratkim opisom potreban je za slanje zahteva drugima. Lažni profili i lažna starost su zabranjeni."
         },
         {
           title: "Zabranjeno ponašanje",
@@ -21826,11 +21826,11 @@ const sr = {
         },
         {
           title: "Fer model Ravnopara",
-          body: "Bez paywalla za osnovni chat. Aktivni parovi privremeno izlaze iz feeda. Anti-spam limiti štite zajednicu. Boost/super-like ne postoje."
+          body: "Bez paywalla za osnovni chat. Aktivni parovi privremeno izlaze iz prikaza. Anti-spam limiti štite zajednicu. Boost/super-like ne postoje."
         },
         {
           title: "Profil sa fotografijom",
-          body: "Bez fotografije i kratkog bio teksta ne možeš slati zahteve — to štiti kvalitet zajednice i smanjuje lažne profile."
+          body: "Bez fotografije i kratkog opisa ne možeš slati zahteve — to štiti kvalitet zajednice i smanjuje lažne profile."
         },
         {
           title: "Bezbednost na susretu",
@@ -21917,14 +21917,14 @@ const sr = {
       timeline: "Dnevnik",
       moderation: "Moderacija",
       fairness: "Fer pravila",
-      feed: "Rangiranje feeda",
+      feed: "Rangiranje prikaza",
       compliance: "Usklađenost"
     },
     allCategories: "Sve kategorije",
     categoryAdmin: "Admin akcije",
     categoryModeration: "Moderacija",
     categorySecurity: "Bezbednost",
-    categoryFeed: "Rangiranje feeda",
+    categoryFeed: "Rangiranje prikaza",
     categoryCompliance: "Usklađenost",
     refresh: "Osveži",
     noEvents: "Nema zapisa.",
@@ -21942,7 +21942,7 @@ const sr = {
     feedViewer: "Zašto je profil X iznad Y — transparentno objašnjenje rangiranja (paket ne daje bodove).",
     selectUser: "Izaberi korisnika…",
     showRanking: "Prikaži rangiranje",
-    feedExplainFailed: "Feed explain nije dostupan.",
+    feedExplainFailed: "Objašnjenje poredaka nije dostupno.",
     tableRank: "#",
     tableProfile: "Profil",
     tableCity: "Grad",
@@ -21957,7 +21957,7 @@ const sr = {
     outcomeDismissed: "Odbijeno",
     actionNone: "Bez akcije",
     actionWarn: "Upozorenje",
-    actionSuspend: "Suspend",
+    actionSuspend: "Suspenduj",
     actionDelete: "Obriši korisnika"
   },
   icebreakers: {
@@ -22197,7 +22197,7 @@ const it = {
     ADMIN_ACTION: "Admin",
     MODERATION: "Moderazione",
     SECURITY: "Sicurezza",
-    FEED_RANKING: "Ranking feed",
+    FEED_RANKING: "Ranking profili",
     COMPLIANCE: "Conformità"
   },
   auditAction: {
@@ -22214,7 +22214,7 @@ const it = {
     REPORT_RESOLVED: "Segnalazione risolta",
     BLOCK: "Blocca",
     REPORT: "Segnala",
-    FEED_SNAPSHOT: "Snapshot feed",
+    FEED_SNAPSHOT: "Snapshot profili",
     DATA_EXPORT: "Esportazione dati",
     ACCOUNT_DELETE_SELF: "Eliminazione account",
     ACCOUNT_DELETE: "Eliminazione account",
@@ -22274,7 +22274,7 @@ const it = {
       home: "Ravnopar — una piattaforma di incontri equa. Nessun paywall per la conversazione, chat dopo un match e regole trasparenti.",
       auth: "Crea il tuo account Ravnopar o accedi.",
       settings: "Modifica profilo, foto, notifiche e privacy.",
-      app: "Il tuo feed Ravnopar, conversazioni e richieste di contatto.",
+      app: "Il tuo elenco profili Ravnopar, conversazioni e richieste di contatto.",
       chat: "Chat privata con il tuo match.",
       profile: "Visualizza un profilo Ravnopar.",
       onboarding: "Una guida rapida a Ravnopar.",
@@ -22337,18 +22337,18 @@ const it = {
     chipAntiSpam: "Protezione anti-spam",
     showcaseEyebrow: "Anteprima esperienza",
     showcaseTitle: "Conosci persone come in un'app di incontri — senza paywall",
-    showcaseText: "Swipe di schede, gallerie foto e chat dopo un match. Le regole eque restano uguali.",
+    showcaseText: "Schede profilo, gallerie foto e chat dopo un match. Le regole eque restano le stesse.",
     showcaseMockName: "Maya, 28 · Zagabria",
     showcaseMockBio: "Adoro il caffè, le escursioni e le conversazioni sincere.",
     howItWorks: "Come funziona",
     steps: [
       {
         title: "Registrati",
-        text: "Crea il profilo, aggiungi una foto e una bio, e scegli chi stai cercando."
+        text: "Crea il profilo, aggiungi una foto e una breve presentazione, e scegli chi stai cercando."
       },
       {
         title: "Incontra persone",
-        text: "Sfoglia un feed di profili disponibili senza riduzioni di visibilità nascoste."
+        text: "Sfoglia un elenco di profili disponibili senza riduzioni di visibilità nascoste."
       },
       {
         title: "Parla in modo equo",
@@ -22387,7 +22387,7 @@ const it = {
       },
       {
         title: "Visibilità equa",
-        text: "Le coppie attive escono temporaneamente dal feed così altri hanno ancora una chance."
+        text: "Le coppie attive escono temporaneamente dall'elenco profili così altri hanno ancora una chance."
       },
       {
         title: "Protezione e controllo",
@@ -22416,7 +22416,7 @@ const it = {
     photosHint: "JPG/PNG, ridimensionate automaticamente. Max 3 foto.",
     displayName: "Nome visualizzato",
     city: "Città",
-    bio: "Su di me (bio)",
+    bio: "Su di me",
     bioPlaceholder: "Presentati brevemente — cosa cerchi, cosa ti piace...",
     icebreakersLegend: "Domande rompighiaccio (fino a 3)",
     icebreakersHint: "Domande e risposte brevi — aiutano nel primo contatto.",
@@ -22438,13 +22438,13 @@ const it = {
     seekingIdentityLegend: "Identità cercata",
     intentLegend: "Intento",
     availabilityLabel: "Visibilità profilo",
-    availabilityAvailable: "Disponibile nel feed",
+    availabilityAvailable: "Disponibile nell'elenco profili",
     availabilityPaused: "In pausa (nascosto)",
     availabilityFocused: "In conversazione attiva",
     notifyEmail: "Notifiche email (nuove richieste, match, messaggi)",
     saveProfile: "Salva profilo",
     premiumTitle: "Piani premium",
-    premiumHint: "Checkout pronto — attivazione piano dopo il pagamento.",
+    premiumHint: "Pagamento pronto — attivazione piano dopo il pagamento.",
     gdprTitle: "Privacy (GDPR)",
     gdprHint: "Scarica una copia dei tuoi dati in formato JSON.",
     exportData: "Scarica i miei dati",
@@ -22466,17 +22466,17 @@ const it = {
     deleteConfirm: "Eliminare definitivamente l'account? Questa azione non può essere annullata.",
     deleteFailed: "Eliminazione account fallita.",
     planSuccess: "Pagamento ricevuto. L'attivazione premium segue dopo la verifica.",
-    checkoutFailed: "Il checkout premium non è disponibile."
+    checkoutFailed: "Il pagamento premium non è disponibile."
   },
   dashboard: {
     greeting: "Ciao, {name}",
     subtitle: "Scorri i profili o usa i pulsanti — uno alla volta, senza fretta.",
-    feedCount: "{count} profili nel tuo feed",
-    feedEmpty: "Attualmente non ci sono profili compatibili nel tuo feed.",
+    feedCount: "{count} profili nel tuo elenco profili",
+    feedEmpty: "Attualmente non ci sono profili compatibili nel tuo elenco profili.",
     settingsLink: "Impostazioni profilo",
     loading: "Caricamento...",
     incompleteTitle: "Il tuo profilo non è ancora completo ({percent}%).",
-    incompleteHint: "Aggiungi una foto, una bio e una domanda rompighiaccio — aumenti le possibilità di contatto.",
+    incompleteHint: "Aggiungi una foto, una breve presentazione e una domanda rompighiaccio — aumenti le possibilità di contatto.",
     completeProfile: "Completa profilo",
     conversations: "Conversazioni",
     conversationsUnread: "Conversazioni ({unread} nuove)",
@@ -22489,14 +22489,14 @@ const it = {
     activeContact: "Stai parlando con {partner}.",
     openChatBtn: "Apri chat",
     closeContact: "Termina conversazione",
-    visibleInFeed: "Sei visibile nel feed — scorri i profili qui sotto.",
+    visibleInFeed: "Sei visibile nell'elenco profili — scorri i profili qui sotto.",
     incomingTitle: "Richieste di contatto",
     accept: "Accetta",
     decline: "Rifiuta",
     discoverTitle: "Scopri profili",
     discoverCount: " · {count} per te",
-    gateTitle: "Profilo non pronto per il feed",
-    gateHint: "Aggiungi una foto e una bio (min. 10 caratteri) prima di inviare richieste e scorrere.",
+    gateTitle: "Profilo non pronto per l'elenco profili",
+    gateHint: "Aggiungi una foto e una breve presentazione (min. 10 caratteri) prima di inviare richieste e scorrere.",
     gateOnboarding: "Vedi introduzione",
     emptyTitle: "Nessun nuovo profilo",
     emptyHint: "Espandi città o preferenze in Impostazioni — o torna presto quando qualcuno di nuovo si unisce.",
@@ -22515,7 +22515,7 @@ const it = {
     accepted: "Contatto accettato.",
     declined: "Richiesta rifiutata.",
     respondFailed: "La risposta non è stata salvata.",
-    closed: "Contatto chiuso. Sei di nuovo disponibile nel feed.",
+    closed: "Contatto chiuso. Sei di nuovo disponibile nell'elenco profili.",
     closeFailed: "Chiusura fallita.",
     reportReason: "Comportamento inappropriato",
     reportNote: "Segnalazione dall’interfaccia utente.",
@@ -22559,21 +22559,21 @@ const it = {
   onboarding: {
     eyebrow: "Benvenuto",
     title: "Un profilo che si distingue",
-    lead: "Prima di entrare nel feed, aggiungi una foto e una breve descrizione — entrambi sono necessari per inviare richieste.",
+    lead: "Prima di entrare nell'elenco profili, aggiungi una foto e una breve descrizione — entrambi sono necessari per inviare richieste.",
     stepPhoto: "1. Foto",
     stepPhotoHint: "I profili con foto ricevono più risposte.",
     changePhoto: "Cambia foto",
     addPhoto: "Aggiungi foto",
-    stepBio: "2. Bio (min. 10 caratteri)",
+    stepBio: "2. Su di me (min. 10 caratteri)",
     stepBioHint: "Di' brevemente chi sei e cosa cerchi.",
-    editBio: "Modifica bio",
-    writeBio: "Scrivi bio",
-    stepFeed: "3. Feed",
+    editBio: "Modifica presentazione",
+    writeBio: "Scrivi su di te",
+    stepFeed: "3. Profili",
     stepFeedHint: "Quando il profilo è pronto, scorri e invia la prima richiesta.",
-    finishReady: "Termina introduzione e apri il feed",
+    finishReady: "Termina introduzione e apri l'elenco profili",
     finishIncomplete: "Completa profilo in Impostazioni",
-    finishHint: "Completa prima foto e bio in Impostazioni",
-    incompleteError: "Aggiungi una foto e una bio (min. 10 caratteri) in Impostazioni prima di continuare.",
+    finishHint: "Completa prima foto e presentazione in Impostazioni",
+    incompleteError: "Aggiungi una foto e una breve presentazione (min. 10 caratteri) in Impostazioni prima di continuare.",
     saveFailed: "Salvataggio fallito."
   },
   match: {
@@ -22592,7 +22592,7 @@ const it = {
     lead: "Manteniamo Ravnopar con molto impegno e un piccolo budget. Se la piattaforma ti è utile, puoi aiutare volontariamente — senza pressione e senza funzionalità extra in cambio.",
     sectionEyebrow: "Supporto al progetto",
     sectionTitle: "Sostieni Ravnopar",
-    sectionLead: "Se la piattaforma ti aiuta a incontrare persone, puoi contribuire volontariamente ai costi del server. Ogni contributo aiuta davvero — e non ottieni alcun vantaggio nel feed.",
+    sectionLead: "Se la piattaforma ti aiuta a incontrare persone, puoi contribuire volontariamente ai costi del server. Ogni contributo aiuta davvero — e non ottieni alcun vantaggio nell'elenco profili.",
     note: "Le donazioni sono completamente volontarie. Grazie per averlo considerato. ♥",
     revolutTitle: "Carta (Revolut)",
     revolutHint: "Pagamento rapido con carta — apre una pagina Revolut sicura.",
@@ -22669,7 +22669,7 @@ const it = {
       {
         icon: "🤝",
         title: "Donazioni volontarie",
-        text: "Se doni, non ottieni priorità nel feed — solo il nostro sincero grazie."
+        text: "Se doni, non ottieni priorità nell'elenco profili — solo il nostro sincero grazie."
       }
     ],
     triggers: [
@@ -22722,7 +22722,7 @@ const it = {
     planBtnSoon: "In arrivo",
     planBtnDisabled: "Non ancora disponibile",
     planDisabledTitle: "Questo piano non è ancora disponibile. Ti avviseremo in anticipo prima di qualsiasi addebito.",
-    planHintCheckout: "Il checkout premium è disponibile in Impostazioni dopo l'accesso.",
+    planHintCheckout: "Il pagamento premium è disponibile in Impostazioni dopo l'accesso.",
     planHintLater: "Lo attiveremo quando prodotto e community saranno pronti — l'avviso arriverà in anticipo.",
     freePrice: "0 €",
     plans: [
@@ -22735,7 +22735,7 @@ const it = {
         tagline: "Il tuo inizio",
         description: "Tutto ciò che serve per incontri equi — oggi e quando introdurremo Premium.",
         features: [
-          "Profilo e visibilità nel feed",
+          "Profilo e visibilità nell'elenco profili",
           "Invio e accettazione richieste",
           "Blocchi, segnalazioni e protezione anti-spam",
           "Nessuna riduzione di visibilità nascosta"
@@ -22749,7 +22749,7 @@ const it = {
         priceEur: 4.99,
         period: "/ mese",
         tagline: "Più controllo sul profilo",
-        description: "Per chi vuole maggiore controllo — senza influenzare gli altri nel feed.",
+        description: "Per chi vuole maggiore controllo — senza influenzare gli altri nell'elenco profili.",
         features: [
           "Più foto sul profilo",
           "Filtri avanzati (equi per tutti)",
@@ -22787,15 +22787,15 @@ const it = {
     items: [
       {
         q: "Ravnopar è gratuito?",
-        a: "Sì — inviare richieste, accettare contatti e conversare nell'app è gratuito. Le donazioni sono volontarie e non danno priorità nel feed."
+        a: "Sì — inviare richieste, accettare contatti e conversare nell'app è gratuito. Le donazioni sono volontarie e non danno priorità nell'elenco profili."
       },
       {
         q: "Come funziona un match?",
-        a: "Sfogli i profili nel feed e invii una richiesta di contatto. Se l'altra persona accetta, si apre una chat privata e siete entrambi temporaneamente concentrati sulla conversazione."
+        a: "Sfogli i profili nell'elenco profili e invii una richiesta di contatto. Se l'altra persona accetta, si apre una chat privata e siete entrambi temporaneamente concentrati sulla conversazione."
       },
       {
         q: "Cosa succede dopo che il contatto è accettato?",
-        a: "Puoi aprire la chat con la persona e parlare nell'app. Le coppie attive escono temporaneamente dal feed così altri hanno ancora una chance."
+        a: "Puoi aprire la chat con la persona e parlare nell'app. Le coppie attive escono temporaneamente dall'elenco profili così altri hanno ancora una chance."
       },
       {
         q: "Farete pagare la conversazione?",
@@ -22854,7 +22854,7 @@ const it = {
         },
         {
           title: "Dati che raccogliamo",
-          body: "Dati di identità e contatto (email, nome visualizzato), profilo (città, bio, foto, preferenze di dating, risposte alle domande), link video opzionale, messaggi dopo un match, log tecnici (tempo attività), posizione approssimata opzionale (coordinate solo se abiliti la condivisione distanza), selfie di verifica (non pubblico), codice referral e dati di pagamento/donazione se li usi."
+          body: "Dati di identità e contatto (email, nome visualizzato), profilo (città, breve presentazione, foto, preferenze di dating, risposte alle domande), link video opzionale, messaggi dopo un match, log tecnici (tempo attività), posizione approssimata opzionale (coordinate solo se abiliti la condivisione distanza), selfie di verifica (non pubblico), codice referral e dati di pagamento/donazione se li usi."
         },
         {
           title: "Posizione e distanza",
@@ -22889,7 +22889,7 @@ const it = {
           body: "I cookie/token essenziali sono usati per l'accesso. L'analytics (es. Plausible/Umami) si carica solo se accetti il banner cookie. L'analytics non usa profili pubblicitari per impostazione predefinita — dipende dallo strumento scelto."
         },
         {
-          title: "Referral",
+          title: "Inviti",
           body: "Se usi un invito, registriamo il codice referral della persona che ti ha invitato solo per statistiche interne. Non condividiamo il tuo indirizzo email con chi ti ha invitato."
         },
         {
@@ -22912,7 +22912,7 @@ const it = {
         },
         {
           title: "Account e profilo",
-          body: "Sei responsabile dell'accuratezza dei dati, della sicurezza della password e dei contenuti del profilo. Un profilo con foto e bio è necessario per inviare richieste agli altri. Profili falsi e falsa età sono vietati."
+          body: "Sei responsabile dell'accuratezza dei dati, della sicurezza della password e dei contenuti del profilo. Un profilo con foto e breve presentazione è necessario per inviare richieste agli altri. Profili falsi e falsa età sono vietati."
         },
         {
           title: "Comportamenti vietati",
@@ -22954,11 +22954,11 @@ const it = {
         },
         {
           title: "Modello equo Ravnopar",
-          body: "Nessun paywall per la chat di base. Le coppie attive escono temporaneamente dal feed. I limiti anti-spam proteggono la community. Non esistono boost/super-like."
+          body: "Nessun paywall per la chat di base. Le coppie attive escono temporaneamente dall'elenco profili. I limiti anti-spam proteggono la community. Non esistono boost/super-like."
         },
         {
           title: "Profilo con foto",
-          body: "Senza foto e una breve bio non puoi inviare richieste — protegge la qualità della community e riduce i profili falsi."
+          body: "Senza foto e una breve presentazione non puoi inviare richieste — protegge la qualità della community e riduce i profili falsi."
         },
         {
           title: "Sicurezza quando ci si incontra",
@@ -23045,14 +23045,14 @@ const it = {
       timeline: "Log",
       moderation: "Moderazione",
       fairness: "Equità",
-      feed: "Ranking feed",
+      feed: "Ranking profili",
       compliance: "Conformità"
     },
     allCategories: "Tutte le categorie",
     categoryAdmin: "Azioni admin",
     categoryModeration: "Moderazione",
     categorySecurity: "Sicurezza",
-    categoryFeed: "Ranking feed",
+    categoryFeed: "Ranking profili",
     categoryCompliance: "Conformità",
     refresh: "Aggiorna",
     noEvents: "Nessun record.",
@@ -23070,7 +23070,7 @@ const it = {
     feedViewer: "Perché il profilo X è sopra Y — spiegazione trasparente del ranking (il piano non aggiunge punti).",
     selectUser: "Seleziona utente…",
     showRanking: "Mostra ranking",
-    feedExplainFailed: "Feed explain non disponibile.",
+    feedExplainFailed: "Spiegazione del ranking non disponibile.",
     tableRank: "#",
     tableProfile: "Profilo",
     tableCity: "Città",
@@ -23083,9 +23083,9 @@ const it = {
     resolveSubmit: "Risolvi e registra",
     outcomeResolved: "Risolto",
     outcomeDismissed: "Respinto",
-    actionNone: "Bez akcije",
-    actionWarn: "Upozorenje",
-    actionSuspend: "Suspend",
+    actionNone: "Nessuna azione",
+    actionWarn: "Avviso",
+    actionSuspend: "Sospendi",
     actionDelete: "Elimina utente"
   },
   icebreakers: {
@@ -23325,7 +23325,7 @@ const hu = {
     ADMIN_ACTION: "Admin",
     MODERATION: "Moderáció",
     SECURITY: "Biztonság",
-    FEED_RANKING: "Hírfolyam rangsor",
+    FEED_RANKING: "Profilnézet rangsor",
     COMPLIANCE: "Megfelelőség"
   },
   auditAction: {
@@ -23402,7 +23402,7 @@ const hu = {
       home: "Ravnopar — tisztességes társkereső platform. Nincs fizetőfal a beszélgetéshez, csevegés egyezés után, és átlátható szabályok.",
       auth: "Hozd létre a Ravnopar fiókod vagy jelentkezz be.",
       settings: "Profil, fotók, értesítések és adatvédelem szerkesztése.",
-      app: "A Ravnopar hírfolyamod, beszélgetéseid és kapcsolatkérelmeid.",
+      app: "A Ravnopar profilnézeted, beszélgetéseid és kapcsolatkérelmeid.",
       chat: "Privát chat a pároddal.",
       profile: "Ravnopar profil megtekintése.",
       onboarding: "Gyors útmutató a Ravnoparhoz.",
@@ -23515,7 +23515,7 @@ const hu = {
       },
       {
         title: "Tisztességes láthatóság",
-        text: "Az aktív párok ideiglenesen kikerülnek a hírfolyamból, így mások is esélyt kapnak."
+        text: "Az aktív párok ideiglenesen kikerülnek a profilnézetből, így mások is esélyt kapnak."
       },
       {
         title: "Védelem és kontroll",
@@ -23544,7 +23544,7 @@ const hu = {
     photosHint: "JPG/PNG, automatikus átméretezés. Max. 3 fotó.",
     displayName: "Megjelenített név",
     city: "Város",
-    bio: "Rólam (bio)",
+    bio: "Rólam",
     bioPlaceholder: "Mutatkozz be röviden — mit keresel, mit szeretsz...",
     icebreakersLegend: "Jégtörő kérdések (max. 3)",
     icebreakersHint: "Rövid kérdések és válaszok — segítenek az első kapcsolatfelvételnél.",
@@ -23566,7 +23566,7 @@ const hu = {
     seekingIdentityLegend: "Keresett identitás",
     intentLegend: "Szándék",
     availabilityLabel: "Profil láthatósága",
-    availabilityAvailable: "Elérhető a hírfolyamban",
+    availabilityAvailable: "Elérhető a profilnézetben",
     availabilityPaused: "Szüneteltetve (rejtett)",
     availabilityFocused: "Aktív beszélgetésben",
     notifyEmail: "E-mail értesítések (új kérések, egyezések, üzenetek)",
@@ -23599,12 +23599,12 @@ const hu = {
   dashboard: {
     greeting: "Szia, {name}",
     subtitle: "Lapozz profilokat vagy használd a gombokat — nyugodtan, egyesével.",
-    feedCount: "{count} profil a hírfolyamban",
-    feedEmpty: "Jelenleg nincs kompatibilis profil a hírfolyamodban.",
+    feedCount: "{count} profil a profilnézetben",
+    feedEmpty: "Jelenleg nincs kompatibilis profil a profilnézetedben.",
     settingsLink: "Profilbeállítások",
     loading: "Betöltés...",
     incompleteTitle: "A profilod még nem teljes ({percent}%).",
-    incompleteHint: "Adj hozzá fotót, biót és jégtörőket — így nő az esélyed a kapcsolatra.",
+    incompleteHint: "Adj hozzá fotót, rövid bemutatkozást és jégtörőt — növeli az esélyed a kapcsolatra.",
     completeProfile: "Profil befejezése",
     conversations: "Beszélgetések",
     conversationsUnread: "Beszélgetések ({unread} új)",
@@ -23617,14 +23617,14 @@ const hu = {
     activeContact: "Jelenleg {partner} partnerrel beszélgetsz.",
     openChatBtn: "Chat megnyitása",
     closeContact: "Beszélgetés lezárása",
-    visibleInFeed: "Látható vagy a hírfolyamban — lapozz profilokat lent.",
+    visibleInFeed: "Látható vagy a profilnézetben — lapozz profilokat lent.",
     incomingTitle: "Kapcsolatkérések",
     accept: "Elfogad",
     decline: "Elutasít",
     discoverTitle: "Fedezz fel profilokat",
     discoverCount: " · {count} neked",
-    gateTitle: "A profil még nem kész a hírfolyamhoz",
-    gateHint: "Adj hozzá fotót és biót (min. 10 karakter), mielőtt kéréseket küldesz vagy lapozol.",
+    gateTitle: "A profil még nem kész a profilnézethez",
+    gateHint: "Adj hozzá fotót és rövid bemutatkozást (min. 10 karakter) kérések küldése és swipe előtt.",
     gateOnboarding: "Bemutató megtekintése",
     emptyTitle: "Nincs új profil",
     emptyHint: "Bővítsd a városod vagy a preferenciáid a Beállításokban — vagy nézz vissza később.",
@@ -23643,7 +23643,7 @@ const hu = {
     accepted: "Kapcsolat elfogadva.",
     declined: "Kérés elutasítva.",
     respondFailed: "A válasz nem lett mentve.",
-    closed: "Kapcsolat lezárva. Újra elérhető vagy a hírfolyamban.",
+    closed: "Kapcsolat lezárva. Újra elérhető vagy a profilnézetben.",
     closeFailed: "Lezárás sikertelen.",
     reportReason: "Nem megfelelő viselkedés",
     reportNote: "Bejelentés a felhasználói felületről.",
@@ -23687,21 +23687,21 @@ const hu = {
   onboarding: {
     eyebrow: "Üdvözlünk",
     title: "Egy profil, ami kitűnik",
-    lead: "Mielőtt belépnél a hírfolyamba, adj hozzá fotót és rövid leírást — mindkettő szükséges a kérések küldéséhez.",
+    lead: "Mielőtt belépnél a profilnézetbe, adj hozzá fotót és rövid leírást — mindkettő szükséges a kérések küldéséhez.",
     stepPhoto: "1. Fotó",
     stepPhotoHint: "A fotós profilok több választ kapnak.",
     changePhoto: "Fotó cseréje",
     addPhoto: "Fotó hozzáadása",
-    stepBio: "2. Bio (min. 10 karakter)",
+    stepBio: "2. Rólam (min. 10 karakter)",
     stepBioHint: "Röviden írd le, ki vagy és mit keresel.",
-    editBio: "Bio szerkesztése",
-    writeBio: "Bio írása",
-    stepFeed: "3. Hírfolyam",
+    editBio: "Bemutatkozás szerkesztése",
+    writeBio: "Írj magadról",
+    stepFeed: "3. Profilnézet",
     stepFeedHint: "Ha kész a profilod, lapozz és küldd el az első kérésed.",
-    finishReady: "Bemutató befejezése és a hírfolyam megnyitása",
+    finishReady: "Bemutató befejezése és a profilnézet megnyitása",
     finishIncomplete: "Profil befejezése a Beállításokban",
-    finishHint: "Előbb fejezd be a fotót és biót a Beállításokban",
-    incompleteError: "Adj hozzá fotót és biót (min. 10 karakter) a Beállításokban a folytatáshoz.",
+    finishHint: "Először fejezd be a fotót és a bemutatkozást a Beállításokban",
+    incompleteError: "Adj hozzá fotót és rövid bemutatkozást (min. 10 karakter) a Beállításokban a folytatás előtt.",
     saveFailed: "Mentés sikertelen."
   },
   match: {
@@ -23720,7 +23720,7 @@ const hu = {
     lead: "Sok munkával és kis költségvetéssel tartjuk életben a Ravnopart. Ha fontos számodra a platform, önként segíthetsz — nyomás és extra funkciók nélkül.",
     sectionEyebrow: "Projekt támogatása",
     sectionTitle: "Támogasd a Ravnopart",
-    sectionLead: "Ha a platform segít ismerkedni, önként hozzájárulhatsz a szerverköltségekhez. Minden támogatás számít — és nem kapsz előnyt a hírfolyamban.",
+    sectionLead: "Ha a platform segít ismerkedni, önként hozzájárulhatsz a szerverköltségekhez. Minden támogatás számít — és nem kapsz előnyt a profilnézetben.",
     note: "Az adományok teljesen önkéntesek. Köszönjük, hogy fontolóra veszed. ♥",
     revolutTitle: "Kártya (Revolut)",
     revolutHint: "Gyors kártyás fizetés — biztonságos Revolut oldalra visz.",
@@ -23797,7 +23797,7 @@ const hu = {
       {
         icon: "🤝",
         title: "Az adományok önkéntesek maradnak",
-        text: "Ha adományozol, nem kapsz hírfolyam előnyt — csak őszinte köszönetet."
+        text: "Ha adományozol, nem kapsz profilnézet előnyt — csak őszinte köszönetet."
       }
     ],
     triggers: [
@@ -23863,7 +23863,7 @@ const hu = {
         tagline: "Kezdésed",
         description: "Minden, amire a tisztességes társkereséshez szükség van — ma és akkor is, ha bevezetjük a Prémiumot.",
         features: [
-          "Profil és láthatóság a hírfolyamban",
+          "Profil és láthatóság a profilnézetben",
           "Kérések küldése és elfogadása",
           "Tiltás, jelentések és spam védelem",
           "Nincs rejtett eléréscsökkentés"
@@ -23915,15 +23915,15 @@ const hu = {
     items: [
       {
         q: "Ingyenes a Ravnopar?",
-        a: "Igen — a kérések küldése, elfogadása és a csevegés ingyenes. Az adományok önkéntesek és nem adnak hírfolyam előnyt."
+        a: "Igen — a kérések küldése, elfogadása és a csevegés ingyenes. Az adományok önkéntesek és nem adnak profilnézet előnyt."
       },
       {
         q: "Hogyan működik az egyezés?",
-        a: "Böngészed a profilokat a hírfolyamban, és küldesz egy kapcsolatkérelmet. Ha a másik elfogadja, privát chat nyílik, és mindketten ideiglenesen a beszélgetésre fókuszáltak lesztek."
+        a: "Böngészed a profilokat a profilnézetben, és küldesz egy kapcsolatkérelmet. Ha a másik elfogadja, privát chat nyílik, és mindketten ideiglenesen a beszélgetésre fókuszáltak lesztek."
       },
       {
         q: "Mi történik, ha a kapcsolatot elfogadják?",
-        a: "Megnyithatod a chatet és beszélgethetsz az appban. Az aktív párok ideiglenesen kikerülnek a hírfolyamból, így mások is esélyt kapnak."
+        a: "Megnyithatod a chatet és beszélgethetsz az appban. Az aktív párok ideiglenesen kikerülnek a profilnézetből, így mások is esélyt kapnak."
       },
       {
         q: "Fizetős lesz a beszélgetés?",
@@ -23982,7 +23982,7 @@ const hu = {
         },
         {
           title: "Milyen adatokat gyűjtünk",
-          body: "Személyazonosító és kapcsolati adatok (e-mail, megjelenített név), profil (város, bio, fotók, társkeresési preferenciák, jégtörő válaszok), opcionális videólink, üzenetek egyezés után, technikai naplók (aktivitási idő), opcionálisan kerekített helyadat (koordináták csak távolságszámításhoz), ellenőrző szelfi (nem nyilvános), ajánlókód, valamint fizetési/adományozási adatok, ha használod őket."
+          body: "Személyazonosító és kapcsolati adatok (e-mail, megjelenített név), profil (város, rövid bemutatkozás, fotók, társkeresési preferenciák, jégtörő válaszok), opcionális videólink, üzenetek egyezés után, technikai naplók (aktivitási idő), opcionálisan kerekített helyadat (koordináták csak távolságszámításhoz), ellenőrző szelfi (nem nyilvános), ajánlókód, valamint fizetési/adományozási adatok, ha használod őket."
         },
         {
           title: "Helymeghatározás és távolság",
@@ -24082,11 +24082,11 @@ const hu = {
         },
         {
           title: "Ravnopar tisztességes modell",
-          body: "Nincs fizetőfal az alap chathez. Az aktív párok ideiglenesen kikerülnek a hírfolyamból. A spam elleni korlátok védik a közösséget. Nincs boost/super-like."
+          body: "Nincs fizetőfal az alap chathez. Az aktív párok ideiglenesen kikerülnek a profilnézetből. A spam elleni korlátok védik a közösséget. Nincs boost/super-like."
         },
         {
           title: "Fotós profil",
-          body: "Fotó és rövid bio nélkül nem küldhetsz kéréseket — ez védi a közösség minőségét és csökkenti a hamis profilokat."
+          body: "Fotó és rövid bemutatkozás nélkül nem küldhetsz kéréseket — ez védi a közösség minőségét és csökkenti a hamis profilokat."
         },
         {
           title: "Biztonság találkozáskor",
@@ -24173,14 +24173,14 @@ const hu = {
       timeline: "Napló",
       moderation: "Moderáció",
       fairness: "Tisztesség",
-      feed: "Hírfolyam rangsor",
+      feed: "Profilnézet rangsor",
       compliance: "Megfelelőség"
     },
     allCategories: "Összes kategória",
     categoryAdmin: "Admin műveletek",
     categoryModeration: "Moderáció",
     categorySecurity: "Biztonság",
-    categoryFeed: "Hírfolyam rangsor",
+    categoryFeed: "Profilnézet rangsor",
     categoryCompliance: "Megfelelőség",
     refresh: "Frissítés",
     noEvents: "Nincs bejegyzés.",
@@ -24211,9 +24211,9 @@ const hu = {
     resolveSubmit: "Lezárás és naplózás",
     outcomeResolved: "Lezárva",
     outcomeDismissed: "Elutasítva",
-    actionNone: "Bez akcije",
-    actionWarn: "Upozorenje",
-    actionSuspend: "Suspend",
+    actionNone: "Nincs művelet",
+    actionWarn: "Figyelmeztetés",
+    actionSuspend: "Felfüggesztés",
     actionDelete: "Felhasználó törlése"
   },
   icebreakers: {
@@ -24453,7 +24453,7 @@ const pl = {
     ADMIN_ACTION: "Admin",
     MODERATION: "Moderacja",
     SECURITY: "Bezpieczeństwo",
-    FEED_RANKING: "Ranking feedu",
+    FEED_RANKING: "Ranking widoku profili",
     COMPLIANCE: "Zgodność"
   },
   auditAction: {
@@ -24470,7 +24470,7 @@ const pl = {
     REPORT_RESOLVED: "Zgłoszenie rozwiązane",
     BLOCK: "Zablokuj",
     REPORT: "Zgłoś",
-    FEED_SNAPSHOT: "Migawka feedu",
+    FEED_SNAPSHOT: "Migawka widoku profili",
     DATA_EXPORT: "Eksport danych",
     ACCOUNT_DELETE_SELF: "Usunięcie konta",
     ACCOUNT_DELETE: "Usunięcie konta",
@@ -24530,7 +24530,7 @@ const pl = {
       home: "Ravnopar — uczciwa platforma randkowa. Bez paywalla za rozmowę, czat po dopasowaniu i przejrzyste zasady.",
       auth: "Utwórz konto Ravnopar lub zaloguj się.",
       settings: "Edytuj profil, zdjęcia, powiadomienia i prywatność.",
-      app: "Twój feed Ravnopar, rozmowy i prośby o kontakt.",
+      app: "Twój widok profili Ravnopar, rozmowy i prośby o kontakt.",
       chat: "Prywatny czat z dopasowaniem.",
       profile: "Wyświetl profil Ravnopar.",
       onboarding: "Krótki przewodnik po Ravnopar.",
@@ -24643,7 +24643,7 @@ const pl = {
       },
       {
         title: "Uczciwa widoczność",
-        text: "Aktywne pary tymczasowo znikają z feedu, aby inni też mieli szansę."
+        text: "Aktywne pary tymczasowo znikają z widoku profili, aby inni też mieli szansę."
       },
       {
         title: "Ochrona i kontrola",
@@ -24672,7 +24672,7 @@ const pl = {
     photosHint: "JPG/PNG, automatyczne zmniejszenie. Maks. 3 zdjęcia.",
     displayName: "Nazwa wyświetlana",
     city: "Miasto",
-    bio: "O mnie (bio)",
+    bio: "O mnie",
     bioPlaceholder: "Przedstaw się krótko — czego szukasz, co lubisz...",
     icebreakersLegend: "Pytania na przełamanie lodów (max. 3)",
     icebreakersHint: "Krótkie pytania i odpowiedzi — pomagają przy pierwszym kontakcie.",
@@ -24694,7 +24694,7 @@ const pl = {
     seekingIdentityLegend: "Szukana tożsamość",
     intentLegend: "Intencja",
     availabilityLabel: "Widoczność profilu",
-    availabilityAvailable: "Dostępny w feedzie",
+    availabilityAvailable: "Dostępny w widoku profili",
     availabilityPaused: "Wstrzymany (ukryty)",
     availabilityFocused: "W aktywnej rozmowie",
     notifyEmail: "Powiadomienia email (nowe prośby, dopasowania, wiadomości)",
@@ -24727,8 +24727,8 @@ const pl = {
   dashboard: {
     greeting: "Cześć, {name}",
     subtitle: "Przeglądaj profile lub użyj przycisków — bez pośpiechu, jeden po drugim.",
-    feedCount: "{count} profili w Twoim feedzie",
-    feedEmpty: "Obecnie brak kompatybilnych profili w Twoim feedzie.",
+    feedCount: "{count} profili w Twoim widoku profili",
+    feedEmpty: "Obecnie brak kompatybilnych profili w Twoim widoku profili.",
     settingsLink: "Ustawienia profilu",
     loading: "Ładowanie...",
     incompleteTitle: "Twój profil nie jest jeszcze kompletny ({percent}%).",
@@ -24745,13 +24745,13 @@ const pl = {
     activeContact: "Obecnie rozmawiasz z {partner}.",
     openChatBtn: "Otwórz czat",
     closeContact: "Zakończ rozmowę",
-    visibleInFeed: "Jesteś widoczny w feedzie — przeglądaj profile poniżej.",
+    visibleInFeed: "Jesteś widoczny w widoku profili — przeglądaj profile poniżej.",
     incomingTitle: "Prośby o kontakt",
     accept: "Akceptuj",
     decline: "Odrzuć",
     discoverTitle: "Odkrywaj profile",
     discoverCount: " · {count} dla Ciebie",
-    gateTitle: "Profil nie jest gotowy na feed",
+    gateTitle: "Profil nie jest gotowy do widoku profili",
     gateHint: "Dodaj zdjęcie i opis (min. 10 znaków), zanim wysyłasz prośby lub przeglądasz.",
     gateOnboarding: "Zobacz intro",
     emptyTitle: "Brak nowych profili",
@@ -24771,7 +24771,7 @@ const pl = {
     accepted: "Kontakt zaakceptowany.",
     declined: "Prośba odrzucona.",
     respondFailed: "Odpowiedź nie została zapisana.",
-    closed: "Kontakt zamknięty. Jesteś ponownie dostępny w feedzie.",
+    closed: "Kontakt zamknięty. Jesteś ponownie dostępny w widoku profili.",
     closeFailed: "Zamknięcie nie powiodło się.",
     reportReason: "Nieodpowiednie zachowanie",
     reportNote: "Zgłoszenie z interfejsu użytkownika.",
@@ -24815,7 +24815,7 @@ const pl = {
   onboarding: {
     eyebrow: "Witamy",
     title: "Profil, który się wyróżnia",
-    lead: "Zanim wejdziesz do feedu, dodaj zdjęcie i krótki opis — oba są wymagane do wysyłania próśb.",
+    lead: "Zanim wejdziesz do widoku profili, dodaj zdjęcie i krótki opis — oba są wymagane do wysyłania próśb.",
     stepPhoto: "1. Zdjęcie",
     stepPhotoHint: "Profile ze zdjęciami dostają więcej odpowiedzi.",
     changePhoto: "Zmień zdjęcie",
@@ -24824,9 +24824,9 @@ const pl = {
     stepBioHint: "Napisz krótko, kim jesteś i czego szukasz.",
     editBio: "Edytuj opis",
     writeBio: "Napisz opis",
-    stepFeed: "3. Feed",
+    stepFeed: "3. Widok profili",
     stepFeedHint: "Gdy profil będzie gotowy, przeglądaj i wyślij pierwszą prośbę.",
-    finishReady: "Zakończ intro i otwórz feed",
+    finishReady: "Zakończ intro i otwórz widok profili",
     finishIncomplete: "Uzupełnij profil w Ustawieniach",
     finishHint: "Najpierw uzupełnij zdjęcie i opis w Ustawieniach",
     incompleteError: "Dodaj zdjęcie i opis (min. 10 znaków) w Ustawieniach przed kontynuacją.",
@@ -24848,7 +24848,7 @@ const pl = {
     lead: "Utrzymujemy Ravnopar dzięki dużemu wysiłkowi i niewielkiemu budżetowi. Jeśli platforma jest dla Ciebie ważna, możesz pomóc dobrowolnie — bez presji i bez dodatkowych funkcji w zamian.",
     sectionEyebrow: "Wsparcie projektu",
     sectionTitle: "Wesprzyj Ravnopar",
-    sectionLead: "Jeśli platforma pomaga Ci poznać ludzi, możesz dobrowolnie wesprzeć koszty serwerów. Każda wpłata ma znaczenie — i nie daje przewagi w feedzie.",
+    sectionLead: "Jeśli platforma pomaga Ci poznać ludzi, możesz dobrowolnie wesprzeć koszty serwerów. Każda wpłata ma znaczenie — i nie daje przewagi w widoku profili.",
     note: "Wpłaty są całkowicie dobrowolne. Dziękujemy, że to rozważasz. ♥",
     revolutTitle: "Karta (Revolut)",
     revolutHint: "Szybka płatność kartą — otwiera bezpieczną stronę Revolut.",
@@ -24925,7 +24925,7 @@ const pl = {
       {
         icon: "🤝",
         title: "Wpłaty pozostają dobrowolne",
-        text: "Jeśli wspierasz, nie zyskujesz priorytetu w feedzie — tylko nasze szczere podziękowania."
+        text: "Jeśli wspierasz, nie zyskujesz priorytetu w widoku profili — tylko nasze szczere podziękowania."
       }
     ],
     triggers: [
@@ -24991,7 +24991,7 @@ const pl = {
         tagline: "Twój start",
         description: "Wszystko, czego potrzebujesz do uczciwych randek — dziś i wtedy, gdy wprowadzimy Premium.",
         features: [
-          "Profil i widoczność w feedzie",
+          "Profil i widoczność w widoku profili",
           "Wysyłanie i akceptowanie próśb",
           "Blokowanie, zgłoszenia i ochrona przed spamem",
           "Brak ukrytego ograniczania zasięgu"
@@ -25005,7 +25005,7 @@ const pl = {
         priceEur: 4.99,
         period: "/ mies.",
         tagline: "Więcej dla Twojego profilu",
-        description: "Dla tych, którzy chcą dodatkowej kontroli — bez wpływu na innych w feedzie.",
+        description: "Dla tych, którzy chcą dodatkowej kontroli — bez wpływu na innych w widoku profili.",
         features: [
           "Więcej zdjęć w profilu",
           "Zaawansowane filtry (uczciwe dla wszystkich)",
@@ -25043,15 +25043,15 @@ const pl = {
     items: [
       {
         q: "Czy Ravnopar jest darmowy?",
-        a: "Tak — wysyłanie próśb, akceptowanie kontaktu i rozmowy w aplikacji są darmowe. Wsparcie jest dobrowolne i nie daje priorytetu w feedzie."
+        a: "Tak — wysyłanie próśb, akceptowanie kontaktu i rozmowy w aplikacji są darmowe. Wsparcie jest dobrowolne i nie daje priorytetu w widoku profili."
       },
       {
         q: "Jak działa dopasowanie?",
-        a: "Przeglądasz profile w feedzie i wysyłasz prośbę o kontakt. Jeśli druga osoba zaakceptuje, otwiera się prywatny czat, a obie strony są tymczasowo skupione na rozmowie."
+        a: "Przeglądasz profile w widoku profili i wysyłasz prośbę o kontakt. Jeśli druga osoba zaakceptuje, otwiera się prywatny czat, a obie strony są tymczasowo skupione na rozmowie."
       },
       {
         q: "Co się dzieje po zaakceptowaniu kontaktu?",
-        a: "Możesz otworzyć czat i rozmawiać w aplikacji. Aktywne pary tymczasowo opuszczają feed, aby inni mieli szansę."
+        a: "Możesz otworzyć czat i rozmawiać w aplikacji. Aktywne pary tymczasowo opuszczają profili, aby inni mieli szansę."
       },
       {
         q: "Czy będzie opłata za rozmowę?",
@@ -25210,7 +25210,7 @@ const pl = {
         },
         {
           title: "Uczciwy model Ravnopar",
-          body: "Brak paywalla za podstawowy czat. Aktywne pary tymczasowo opuszczają feed. Limity antyspamowe chronią społeczność. Boost/super-like nie istnieją."
+          body: "Brak paywalla za podstawowy czat. Aktywne pary tymczasowo opuszczają profili. Limity antyspamowe chronią społeczność. Boost/super-like nie istnieją."
         },
         {
           title: "Profil ze zdjęciem",
@@ -25301,14 +25301,14 @@ const pl = {
       timeline: "Log",
       moderation: "Moderacja",
       fairness: "Uczciwość",
-      feed: "Ranking feedu",
+      feed: "Ranking widoku profili",
       compliance: "Zgodność"
     },
     allCategories: "Wszystkie kategorie",
     categoryAdmin: "Akcje admina",
     categoryModeration: "Moderacja",
     categorySecurity: "Bezpieczeństwo",
-    categoryFeed: "Ranking feedu",
+    categoryFeed: "Ranking widoku profili",
     categoryCompliance: "Zgodność",
     refresh: "Odśwież",
     noEvents: "Brak wpisów.",
@@ -25339,9 +25339,9 @@ const pl = {
     resolveSubmit: "Rozstrzygnij i zapisz",
     outcomeResolved: "Rozwiązane",
     outcomeDismissed: "Odrzucone",
-    actionNone: "Bez akcije",
-    actionWarn: "Upozorenje",
-    actionSuspend: "Suspend",
+    actionNone: "Brak akcji",
+    actionWarn: "Ostrzeżenie",
+    actionSuspend: "Zawieś",
     actionDelete: "Usuń użytkownika"
   },
   icebreakers: {
@@ -25581,7 +25581,7 @@ const cs = {
     ADMIN_ACTION: "Admin",
     MODERATION: "Moderace",
     SECURITY: "Bezpečnost",
-    FEED_RANKING: "Hodnocení feedu",
+    FEED_RANKING: "Hodnocení přehledu profilů",
     COMPLIANCE: "Soulad"
   },
   auditAction: {
@@ -25598,7 +25598,7 @@ const cs = {
     REPORT_RESOLVED: "Zpráva vyřešena",
     BLOCK: "Blokovat",
     REPORT: "Nahlásit",
-    FEED_SNAPSHOT: "Snímek feedu",
+    FEED_SNAPSHOT: "Snímek přehledu profilů",
     DATA_EXPORT: "Export dat",
     ACCOUNT_DELETE_SELF: "Smazání účtu",
     ACCOUNT_DELETE: "Smazání účtu",
@@ -25658,7 +25658,7 @@ const cs = {
       home: "Ravnopar — férová seznamovací platforma. Bez paywallu pro konverzaci, chat po shodě a transparentní pravidla.",
       auth: "Vytvořte si účet Ravnopar nebo se přihlaste.",
       settings: "Upravte profil, fotky, oznámení a soukromí.",
-      app: "Váš feed Ravnopar, konverzace a žádosti o kontakt.",
+      app: "Váš přehled profilů Ravnopar, konverzace a žádosti o kontakt.",
       chat: "Soukromý chat s vaším protějškem.",
       profile: "Zobrazit profil Ravnopar.",
       onboarding: "Rychlý průvodce Ravnopar.",
@@ -25721,18 +25721,18 @@ const cs = {
     chipAntiSpam: "Ochrana proti spamu",
     showcaseEyebrow: "Ukázka zážitku",
     showcaseTitle: "Poznejte lidi jako v seznamce — bez paywallu",
-    showcaseText: "Swipe karty, galerie fotek a chat po shodě. Férová pravidla zůstávají stejná.",
+    showcaseText: "Karty profilů, galerie fotek a chat po shodě. Férová pravidla zůstávají stejná.",
     showcaseMockName: "Maya, 28 · Zagreb",
     showcaseMockBio: "Miluji kávu, túry a upřímné rozhovory.",
     howItWorks: "Jak to funguje",
     steps: [
       {
         title: "Zaregistrujte se",
-        text: "Vytvořte profil, přidejte fotku a bio a vyberte, koho hledáte."
+        text: "Vytvořte profil, přidejte fotku a krátký popis a vyberte, koho hledáte."
       },
       {
         title: "Poznávejte lidi",
-        text: "Procházejte feed dostupných profilů bez skrytého snižování dosahu."
+        text: "Procházejte přehled dostupných profilů bez skrytého snižování dosahu."
       },
       {
         title: "Mluvte férově",
@@ -25771,7 +25771,7 @@ const cs = {
       },
       {
         title: "Férová viditelnost",
-        text: "Aktivní páry dočasně opouštějí feed, aby ostatní měli také šanci."
+        text: "Aktivní páry dočasně opouštějí přehled profilů, aby ostatní měli také šanci."
       },
       {
         title: "Ochrana a kontrola",
@@ -25800,7 +25800,7 @@ const cs = {
     photosHint: "JPG/PNG, automatické zmenšení. Max. 3 fotky.",
     displayName: "Zobrazované jméno",
     city: "Město",
-    bio: "O mně (bio)",
+    bio: "O mně",
     bioPlaceholder: "Představte se stručně — co hledáte, co vás baví...",
     icebreakersLegend: "Otázky na prolomení ledu (max. 3)",
     icebreakersHint: "Krátké otázky a odpovědi — pomáhají při prvním kontaktu.",
@@ -25822,7 +25822,7 @@ const cs = {
     seekingIdentityLegend: "Hledaná identita",
     intentLegend: "Záměr",
     availabilityLabel: "Viditelnost profilu",
-    availabilityAvailable: "Dostupný ve feedu",
+    availabilityAvailable: "Dostupný v přehledu profilů",
     availabilityPaused: "Pozastaveno (skryto)",
     availabilityFocused: "V aktivní konverzaci",
     notifyEmail: "E-mailová oznámení (nové žádosti, shody, zprávy)",
@@ -25855,12 +25855,12 @@ const cs = {
   dashboard: {
     greeting: "Ahoj, {name}",
     subtitle: "Procházejte profily nebo používejte tlačítka — v klidu, jeden po druhém.",
-    feedCount: "{count} profilů ve vašem feedu",
-    feedEmpty: "Momentálně nejsou ve vašem feedu žádné kompatibilní profily.",
+    feedCount: "{count} profilů ve vašem přehledu profilů",
+    feedEmpty: "Momentálně nejsou ve vašem přehledu profilů žádné kompatibilní profily.",
     settingsLink: "Nastavení profilu",
     loading: "Načítání...",
     incompleteTitle: "Váš profil ještě není kompletní ({percent}%).",
-    incompleteHint: "Přidejte fotku, bio a otázky — zvýšíte šanci na kontakt.",
+    incompleteHint: "Přidejte fotku, krátký popis a otázky — zvýšíte šanci na kontakt.",
     completeProfile: "Dokončit profil",
     conversations: "Konverzace",
     conversationsUnread: "Konverzace ({unread} nových)",
@@ -25873,14 +25873,14 @@ const cs = {
     activeContact: "Právě si povídáte s {partner}.",
     openChatBtn: "Otevřít chat",
     closeContact: "Ukončit konverzaci",
-    visibleInFeed: "Jste viditelní ve feedu — procházejte profily níže.",
+    visibleInFeed: "Jste viditelní v přehledu profilů — procházejte profily níže.",
     incomingTitle: "Žádosti o kontakt",
     accept: "Přijmout",
     decline: "Odmítnout",
     discoverTitle: "Objevujte profily",
     discoverCount: " · {count} pro vás",
-    gateTitle: "Profil není připraven na feed",
-    gateHint: "Přidejte fotku a bio (min. 10 znaků) před odesíláním žádostí nebo swipováním.",
+    gateTitle: "Profil není připraven do přehledu profilů",
+    gateHint: "Přidejte fotku a krátký popis (min. 10 znaků) před odesíláním žádostí nebo prohlížením profilů.",
     gateOnboarding: "Zobrazit intro",
     emptyTitle: "Žádné nové profily",
     emptyHint: "Rozšiřte město nebo preference v Nastavení — nebo se vraťte později.",
@@ -25899,7 +25899,7 @@ const cs = {
     accepted: "Kontakt přijat.",
     declined: "Žádost odmítnuta.",
     respondFailed: "Odpověď nebyla uložena.",
-    closed: "Kontakt uzavřen. Jste opět dostupní ve feedu.",
+    closed: "Kontakt uzavřen. Jste opět dostupní v přehledu profilů.",
     closeFailed: "Uzavření se nezdařilo.",
     reportReason: "Nevhodné chování",
     reportNote: "Nahlášení z uživatelského rozhraní.",
@@ -25943,21 +25943,21 @@ const cs = {
   onboarding: {
     eyebrow: "Vítejte",
     title: "Profil, který zaujme",
-    lead: "Než vstoupíte do feedu, přidejte fotku a krátký popis — obojí je nutné pro odesílání žádostí.",
+    lead: "Než vstoupíte do přehledu profilů, přidejte fotku a krátký popis — obojí je nutné pro odesílání žádostí.",
     stepPhoto: "1. Fotka",
     stepPhotoHint: "Profily s fotkami mají více odpovědí.",
     changePhoto: "Změnit fotku",
     addPhoto: "Přidat fotku",
-    stepBio: "2. Bio (min. 10 znaků)",
+    stepBio: "2. O mně (min. 10 znaků)",
     stepBioHint: "Krátce napište, kdo jste a co hledáte.",
-    editBio: "Upravit bio",
-    writeBio: "Napsat bio",
-    stepFeed: "3. Feed",
+    editBio: "Upravit popis",
+    writeBio: "Napsat o sobě",
+    stepFeed: "3. Přehled profilů",
     stepFeedHint: "Jakmile je profil připraven, swipujte a pošlete první žádost.",
-    finishReady: "Dokončit intro a otevřít feed",
+    finishReady: "Dokončit intro a otevřít přehled profilů",
     finishIncomplete: "Dokončit profil v Nastavení",
-    finishHint: "Nejdříve dokončete fotku a bio v Nastavení",
-    incompleteError: "Přidejte fotku a bio (min. 10 znaků) v Nastavení před pokračováním.",
+    finishHint: "Nejdříve dokončete fotku a popis v Nastavení",
+    incompleteError: "Přidejte fotku a krátký popis (min. 10 znaků) v Nastavení před pokračováním.",
     saveFailed: "Uložení se nezdařilo."
   },
   match: {
@@ -25976,7 +25976,7 @@ const cs = {
     lead: "Ravnopar udržujeme díky velkému úsilí a malému rozpočtu. Pokud je pro vás platforma důležitá, můžete pomoci dobrovolně — bez tlaku a bez dalších funkcí na oplátku.",
     sectionEyebrow: "Podpora projektu",
     sectionTitle: "Podpořte Ravnopar",
-    sectionLead: "Pokud vám platforma pomáhá poznávat lidi, můžete dobrovolně přispět na serverové náklady. Každý příspěvek se počítá — a nezískáte žádnou výhodu ve feedu.",
+    sectionLead: "Pokud vám platforma pomáhá poznávat lidi, můžete dobrovolně přispět na serverové náklady. Každý příspěvek se počítá — a nezískáte žádnou výhodu v přehledu profilů.",
     note: "Příspěvky jsou zcela dobrovolné. Děkujeme, že o tom uvažujete. ♥",
     revolutTitle: "Karta (Revolut)",
     revolutHint: "Rychlá platba kartou — otevře zabezpečenou stránku Revolut.",
@@ -26053,7 +26053,7 @@ const cs = {
       {
         icon: "🤝",
         title: "Příspěvky zůstanou dobrovolné",
-        text: "Pokud přispějete, nezískáte prioritu ve feedu — jen naši upřímnou vděčnost."
+        text: "Pokud přispějete, nezískáte prioritu v přehledu profilů — jen naši upřímnou vděčnost."
       }
     ],
     triggers: [
@@ -26119,7 +26119,7 @@ const cs = {
         tagline: "Váš start",
         description: "Vše, co potřebujete pro férové seznamování — dnes i po zavedení Premium.",
         features: [
-          "Profil a viditelnost ve feedu",
+          "Profil a viditelnost v přehledu profilů",
           "Odesílání a přijímání žádostí",
           "Blokování, hlášení a ochrana proti spamu",
           "Bez skrytého snižování dosahu"
@@ -26133,7 +26133,7 @@ const cs = {
         priceEur: 4.99,
         period: "/ měs.",
         tagline: "Více pro váš profil",
-        description: "Pro ty, kteří chtějí více kontroly — bez dopadu na ostatní ve feedu.",
+        description: "Pro ty, kteří chtějí více kontroly — bez dopadu na ostatní v přehledu profilů.",
         features: [
           "Více fotek v profilu",
           "Pokročilé filtry (férové pro všechny)",
@@ -26171,15 +26171,15 @@ const cs = {
     items: [
       {
         q: "Je Ravnopar zdarma?",
-        a: "Ano — odesílání žádostí, přijímání kontaktu a chat v aplikaci jsou zdarma. Příspěvky jsou dobrovolné a nedávají prioritu ve feedu."
+        a: "Ano — odesílání žádostí, přijímání kontaktu a chat v aplikaci jsou zdarma. Příspěvky jsou dobrovolné a nedávají prioritu v přehledu profilů."
       },
       {
         q: "Jak funguje shoda?",
-        a: "Procházíte profily ve feedu a odešlete žádost o kontakt. Pokud druhá osoba přijme, otevře se soukromý chat a oba dočasně zaměříte pozornost na konverzaci."
+        a: "Procházíte profily v přehledu profilů a odešlete žádost o kontakt. Pokud druhá osoba přijme, otevře se soukromý chat a oba dočasně zaměříte pozornost na konverzaci."
       },
       {
         q: "Co se stane po přijetí kontaktu?",
-        a: "Můžete otevřít chat a komunikovat v aplikaci. Aktivní páry dočasně opustí feed, aby ostatní měli šanci."
+        a: "Můžete otevřít chat a komunikovat v aplikaci. Aktivní páry dočasně opustí profilů, aby ostatní měli šanci."
       },
       {
         q: "Budete účtovat konverzaci?",
@@ -26238,7 +26238,7 @@ const cs = {
         },
         {
           title: "Data, která sbíráme",
-          body: "Identifikační a kontaktní údaje (e-mail, zobrazované jméno), profil (město, bio, fotky, seznamovací preference, odpovědi na otázky), volitelný odkaz na video, zprávy po shodě, technické logy (čas aktivity), volitelná zaokrouhlená poloha (souřadnice jen při sdílení vzdálenosti), ověřovací selfie (neveřejné), referenční kód a platební/darovací údaje, pokud je používáte."
+          body: "Identifikační a kontaktní údaje (e-mail, zobrazované jméno), profil (město, krátký popis, fotky, seznamovací preference, odpovědi na otázky), volitelný odkaz na video, zprávy po shodě, technické logy (čas aktivity), volitelná zaokrouhlená poloha (souřadnice jen při sdílení vzdálenosti), ověřovací selfie (neveřejné), referenční kód a platební/darovací údaje, pokud je používáte."
         },
         {
           title: "Poloha a vzdálenost",
@@ -26250,7 +26250,7 @@ const cs = {
         },
         {
           title: "Účel zpracování",
-          body: "Poskytování seznamovací služby, zobrazení profilu, párování, chat, bezpečnost (blokování, hlášení), e-mailová upozornění, která schválíte, referral program, analytika (jen se souhlasem cookies) a údržba platformy."
+          body: "Poskytování seznamovací služby, zobrazení profilu, párování, chat, bezpečnost (blokování, hlášení), e-mailová upozornění, která schválíte, program pozvánek, analytika (jen se souhlasem cookies) a údržba platformy."
         },
         {
           title: "Právní základ (GDPR)",
@@ -26296,7 +26296,7 @@ const cs = {
         },
         {
           title: "Účet a profil",
-          body: "Jste odpovědní za správné údaje, bezpečnost hesla a obsah profilu. Profil s fotkou a bio je vyžadován pro odesílání žádostí. Falešné profily a nepravdivý věk jsou zakázány."
+          body: "Jste odpovědní za správné údaje, bezpečnost hesla a obsah profilu. Profil s fotkou a krátkým popisem je vyžadován pro odesílání žádostí. Falešné profily a nepravdivý věk jsou zakázány."
         },
         {
           title: "Zakázané chování",
@@ -26338,11 +26338,11 @@ const cs = {
         },
         {
           title: "Férový model Ravnopar",
-          body: "Bez paywallu pro základní chat. Aktivní páry dočasně opouštějí feed. Anti-spam limity chrání komunitu. Boost/super-like neexistují."
+          body: "Bez paywallu pro základní chat. Aktivní páry dočasně opouštějí přehled profilů. Anti-spam limity chrání komunitu. Boost/super-like neexistují."
         },
         {
           title: "Profil s fotkou",
-          body: "Bez fotky a krátkého bio nemůžete posílat žádosti — chrání to kvalitu komunity a snižuje falešné profily."
+          body: "Bez fotky a krátkého popisu nemůžete posílat žádosti — chrání to kvalitu komunity a snižuje falešné profily."
         },
         {
           title: "Bezpečnost při setkání",
@@ -26429,14 +26429,14 @@ const cs = {
       timeline: "Log",
       moderation: "Moderace",
       fairness: "Férovost",
-      feed: "Hodnocení feedu",
+      feed: "Hodnocení přehledu profilů",
       compliance: "Soulad"
     },
     allCategories: "Všechny kategorie",
     categoryAdmin: "Admin akce",
     categoryModeration: "Moderace",
     categorySecurity: "Bezpečnost",
-    categoryFeed: "Hodnocení feedu",
+    categoryFeed: "Hodnocení přehledu profilů",
     categoryCompliance: "Soulad",
     refresh: "Obnovit",
     noEvents: "Žádné záznamy.",
@@ -26467,9 +26467,9 @@ const cs = {
     resolveSubmit: "Vyřešit a zapsat",
     outcomeResolved: "Vyřešeno",
     outcomeDismissed: "Zamítnuto",
-    actionNone: "Bez akcije",
-    actionWarn: "Upozorenje",
-    actionSuspend: "Suspend",
+    actionNone: "Bez akce",
+    actionWarn: "Varování",
+    actionSuspend: "Pozastavit",
     actionDelete: "Smazat uživatele"
   },
   icebreakers: {
@@ -26709,7 +26709,7 @@ const fr = {
     ADMIN_ACTION: "Admin",
     MODERATION: "Modération",
     SECURITY: "Sécurité",
-    FEED_RANKING: "Classement du feed",
+    FEED_RANKING: "Classement des profils",
     COMPLIANCE: "Conformité"
   },
   auditAction: {
@@ -26726,7 +26726,7 @@ const fr = {
     REPORT_RESOLVED: "Signalement résolu",
     BLOCK: "Bloquer",
     REPORT: "Signaler",
-    FEED_SNAPSHOT: "Instantané du feed",
+    FEED_SNAPSHOT: "Instantané des profils",
     DATA_EXPORT: "Export de données",
     ACCOUNT_DELETE_SELF: "Suppression du compte",
     ACCOUNT_DELETE: "Suppression du compte",
@@ -26786,7 +26786,7 @@ const fr = {
       home: "Ravnopar — une plateforme de rencontre équitable. Pas de paywall pour la conversation, chat après un match, règles transparentes.",
       auth: "Créez votre compte Ravnopar ou connectez-vous.",
       settings: "Modifier votre profil, photos, notifications et confidentialité.",
-      app: "Votre feed Ravnopar, conversations et demandes de contact.",
+      app: "Votre affichage Ravnopar, conversations et demandes de contact.",
       chat: "Chat privé avec votre match.",
       profile: "Voir un profil Ravnopar.",
       onboarding: "Un guide rapide de Ravnopar.",
@@ -26856,11 +26856,11 @@ const fr = {
     steps: [
       {
         title: "Inscription",
-        text: "Créez votre profil, ajoutez une photo et une bio, et choisissez qui vous recherchez."
+        text: "Créez votre profil, ajoutez une photo et une courte présentation, et choisissez qui vous recherchez."
       },
       {
         title: "Rencontrer des personnes",
-        text: "Parcourez un feed de profils disponibles sans réduction de portée cachée."
+        text: "Parcourez un affichage de profils disponibles sans réduction de portée cachée."
       },
       {
         title: "Discuter équitablement",
@@ -26899,7 +26899,7 @@ const fr = {
       },
       {
         title: "Visibilité équitable",
-        text: "Les couples actifs quittent temporairement le feed pour laisser une chance aux autres."
+        text: "Les couples actifs quittent temporairement l'affichage pour laisser une chance aux autres."
       },
       {
         title: "Protection et contrôle",
@@ -26928,7 +26928,7 @@ const fr = {
     photosHint: "JPG/PNG, redimensionnées automatiquement. Max. 3 photos.",
     displayName: "Nom affiché",
     city: "Ville",
-    bio: "À propos (bio)",
+    bio: "À propos de moi",
     bioPlaceholder: "Présentez-vous brièvement — ce que vous recherchez, ce que vous aimez...",
     icebreakersLegend: "Questions brise-glace (jusqu'à 3)",
     icebreakersHint: "Questions et réponses courtes — elles aident au premier contact.",
@@ -26950,7 +26950,7 @@ const fr = {
     seekingIdentityLegend: "Identité recherchée",
     intentLegend: "Intention",
     availabilityLabel: "Visibilité du profil",
-    availabilityAvailable: "Disponible dans le feed",
+    availabilityAvailable: "Disponible dans l'affichage",
     availabilityPaused: "En pause (caché)",
     availabilityFocused: "En conversation active",
     notifyEmail: "Notifications e-mail (nouvelles demandes, matchs, messages)",
@@ -26983,12 +26983,12 @@ const fr = {
   dashboard: {
     greeting: "Bonjour, {name}",
     subtitle: "Faites défiler les profils ou utilisez les boutons — un à la fois, sans stress.",
-    feedCount: "{count} profils dans votre feed",
-    feedEmpty: "Il n'y a actuellement aucun profil compatible dans votre feed.",
+    feedCount: "{count} profils dans votre affichage",
+    feedEmpty: "Il n'y a actuellement aucun profil compatible dans votre affichage.",
     settingsLink: "Paramètres du profil",
     loading: "Chargement...",
     incompleteTitle: "Votre profil n'est pas encore complet ({percent}%).",
-    incompleteHint: "Ajoutez une photo, une bio et un brise-glace — cela augmente vos chances de contact.",
+    incompleteHint: "Ajoutez une photo, une courte présentation et un brise-glace — cela augmente vos chances de contact.",
     completeProfile: "Compléter le profil",
     conversations: "Conversations",
     conversationsUnread: "Conversations ({unread} nouvelles)",
@@ -27001,14 +27001,14 @@ const fr = {
     activeContact: "Vous discutez actuellement avec {partner}.",
     openChatBtn: "Ouvrir le chat",
     closeContact: "Terminer la conversation",
-    visibleInFeed: "Vous êtes visible dans le feed — faites défiler les profils ci-dessous.",
+    visibleInFeed: "Vous êtes visible dans l'affichage — faites défiler les profils ci-dessous.",
     incomingTitle: "Demandes de contact",
     accept: "Accepter",
     decline: "Refuser",
     discoverTitle: "Découvrir des profils",
     discoverCount: " · {count} pour vous",
-    gateTitle: "Profil pas prêt pour le feed",
-    gateHint: "Ajoutez une photo et une bio (min. 10 caractères) avant d'envoyer des demandes et de swiper.",
+    gateTitle: "Profil pas prêt pour l'affichage",
+    gateHint: "Ajoutez une photo et une courte présentation (min. 10 caractères) avant d'envoyer des demandes et de swiper.",
     gateOnboarding: "Voir l'intro",
     emptyTitle: "Aucun nouveau profil",
     emptyHint: "Élargissez votre ville ou vos préférences dans Paramètres — ou revenez bientôt quand quelqu'un de nouveau rejoint.",
@@ -27027,7 +27027,7 @@ const fr = {
     accepted: "Contact accepté.",
     declined: "Demande refusée.",
     respondFailed: "La réponse n'a pas été enregistrée.",
-    closed: "Contact clos. Vous êtes de nouveau disponible dans le feed.",
+    closed: "Contact clos. Vous êtes de nouveau disponible dans l'affichage.",
     closeFailed: "Échec de la fermeture.",
     reportReason: "Comportement inapproprié",
     reportNote: "Signalement depuis l’interface utilisateur.",
@@ -27071,21 +27071,21 @@ const fr = {
   onboarding: {
     eyebrow: "Bienvenue",
     title: "Un profil qui se démarque",
-    lead: "Avant d'entrer dans le feed, ajoutez une photo et une courte description — les deux sont nécessaires pour envoyer des demandes.",
+    lead: "Avant d'entrer dans l'affichage, ajoutez une photo et une courte description — les deux sont nécessaires pour envoyer des demandes.",
     stepPhoto: "1. Photo",
     stepPhotoHint: "Les profils avec photo reçoivent plus de réponses.",
     changePhoto: "Changer la photo",
     addPhoto: "Ajouter une photo",
-    stepBio: "2. Bio (min. 10 caractères)",
+    stepBio: "2. Présentation (min. 10 caractères)",
     stepBioHint: "Dites brièvement qui vous êtes et ce que vous recherchez.",
-    editBio: "Modifier la bio",
-    writeBio: "Écrire une bio",
-    stepFeed: "3. Feed",
+    editBio: "Modifier la présentation",
+    writeBio: "Écrire votre présentation",
+    stepFeed: "3. Profils",
     stepFeedHint: "Une fois votre profil prêt, faites défiler et envoyez votre première demande.",
-    finishReady: "Terminer l'intro et ouvrir le feed",
+    finishReady: "Terminer l'intro et ouvrir l'affichage",
     finishIncomplete: "Compléter le profil dans Paramètres",
-    finishHint: "Terminez d'abord la photo et la bio dans Paramètres",
-    incompleteError: "Ajoutez une photo et une bio (min. 10 caractères) dans Paramètres avant de continuer.",
+    finishHint: "Terminez d'abord la photo et la présentation dans Paramètres",
+    incompleteError: "Ajoutez une photo et une courte présentation (min. 10 caractères) dans Paramètres avant de continuer.",
     saveFailed: "Échec de l'enregistrement."
   },
   match: {
@@ -27104,7 +27104,7 @@ const fr = {
     lead: "Nous faisons tourner Ravnopar avec beaucoup d'efforts et un petit budget. Si la plateforme compte pour vous, vous pouvez aider volontairement — sans pression et sans fonctionnalités supplémentaires en retour.",
     sectionEyebrow: "Soutien au projet",
     sectionTitle: "Soutenir Ravnopar",
-    sectionLead: "Si la plateforme vous aide à rencontrer des personnes, vous pouvez aider volontairement à couvrir les coûts serveur. Chaque contribution compte — et vous n'obtenez aucun avantage dans le feed.",
+    sectionLead: "Si la plateforme vous aide à rencontrer des personnes, vous pouvez aider volontairement à couvrir les coûts serveur. Chaque contribution compte — et vous n'obtenez aucun avantage dans l'affichage.",
     note: "Les dons sont entièrement volontaires. Merci d'y penser. ♥",
     revolutTitle: "Carte (Revolut)",
     revolutHint: "Paiement rapide par carte — ouvre une page Revolut sécurisée.",
@@ -27181,7 +27181,7 @@ const fr = {
       {
         icon: "🤝",
         title: "Dons volontaires",
-        text: "Si vous faites un don, vous n'obtenez pas de priorité dans le feed — seulement notre sincère merci."
+        text: "Si vous faites un don, vous n'obtenez pas de priorité dans l'affichage — seulement notre sincère merci."
       }
     ],
     triggers: [
@@ -27247,7 +27247,7 @@ const fr = {
         tagline: "Votre départ",
         description: "Tout ce qu'il faut pour des rencontres équitables — aujourd'hui et quand nous introduirons Premium.",
         features: [
-          "Profil et visibilité dans le feed",
+          "Profil et visibilité dans l'affichage",
           "Envoi et acceptation de demandes",
           "Blocages, signalements et protection anti-spam",
           "Pas de réduction de portée cachée"
@@ -27261,7 +27261,7 @@ const fr = {
         priceEur: 4.99,
         period: "/ mois",
         tagline: "Plus pour votre profil",
-        description: "Pour ceux qui veulent plus de contrôle — sans impacter les autres dans le feed.",
+        description: "Pour ceux qui veulent plus de contrôle — sans impacter les autres dans l'affichage.",
         features: [
           "Plus de photos sur le profil",
           "Filtres avancés (équitables pour tous)",
@@ -27299,15 +27299,15 @@ const fr = {
     items: [
       {
         q: "Ravnopar est-il gratuit ?",
-        a: "Oui — envoyer des demandes, accepter un contact et discuter dans l'app est gratuit. Les dons sont volontaires et ne donnent pas de priorité dans le feed."
+        a: "Oui — envoyer des demandes, accepter un contact et discuter dans l'app est gratuit. Les dons sont volontaires et ne donnent pas de priorité dans l'affichage."
       },
       {
         q: "Comment fonctionne un match ?",
-        a: "Vous parcourez les profils du feed et envoyez une demande de contact. Si l'autre personne accepte, un chat privé s'ouvre et vous êtes tous deux temporairement concentrés sur la conversation."
+        a: "Vous parcourez les profils de l'affichage et envoyez une demande de contact. Si l'autre personne accepte, un chat privé s'ouvre et vous êtes tous deux temporairement concentrés sur la conversation."
       },
       {
         q: "Que se passe-t-il après l'acceptation du contact ?",
-        a: "Vous pouvez ouvrir un chat avec la personne et discuter dans l'app. Les paires actives quittent temporairement le feed pour laisser une chance aux autres."
+        a: "Vous pouvez ouvrir un chat avec la personne et discuter dans l'app. Les paires actives quittent temporairement l'affichage pour laisser une chance aux autres."
       },
       {
         q: "Allez-vous facturer la conversation ?",
@@ -27366,7 +27366,7 @@ const fr = {
         },
         {
           title: "Données collectées",
-          body: "Données d'identité et de contact (e-mail, nom affiché), profil (ville, bio, photos, préférences de dating, réponses brise-glace), lien vidéo optionnel, messages après un match, logs techniques (temps d'activité), localisation approximative optionnelle (coordonnées uniquement si vous activez le partage de distance), selfie de vérification (non public), code de parrainage et données de paiement/don si utilisées."
+          body: "Données d'identité et de contact (e-mail, nom affiché), profil (ville, courte présentation, photos, préférences de dating, réponses brise-glace), lien vidéo optionnel, messages après un match, logs techniques (temps d'activité), localisation approximative optionnelle (coordonnées uniquement si vous activez le partage de distance), selfie de vérification (non public), code de parrainage et données de paiement/don si utilisées."
         },
         {
           title: "Localisation et distance",
@@ -27424,7 +27424,7 @@ const fr = {
         },
         {
           title: "Compte et profil",
-          body: "Vous êtes responsable de l'exactitude des données, de la sécurité du mot de passe et du contenu du profil. Un profil avec photo et bio est requis pour envoyer des demandes. Les faux profils et la fausse âge sont interdits."
+          body: "Vous êtes responsable de l'exactitude des données, de la sécurité du mot de passe et du contenu du profil. Un profil avec photo et courte présentation est requis pour envoyer des demandes. Les faux profils et la fausse âge sont interdits."
         },
         {
           title: "Comportements interdits",
@@ -27466,11 +27466,11 @@ const fr = {
         },
         {
           title: "Modèle équitable Ravnopar",
-          body: "Pas de paywall pour le chat de base. Les paires actives quittent temporairement le feed. Les limites anti-spam protègent la communauté. Pas de boost/super-like."
+          body: "Pas de paywall pour le chat de base. Les paires actives quittent temporairement l'affichage. Les limites anti-spam protègent la communauté. Pas de boost/super-like."
         },
         {
           title: "Profil avec photo",
-          body: "Sans photo et courte bio, vous ne pouvez pas envoyer de demandes — cela protège la qualité de la communauté et réduit les faux profils."
+          body: "Sans photo et courte présentation, vous ne pouvez pas envoyer de demandes — cela protège la qualité de la communauté et réduit les faux profils."
         },
         {
           title: "Sécurité lors des rencontres",
@@ -27557,14 +27557,14 @@ const fr = {
       timeline: "Journal",
       moderation: "Modération",
       fairness: "Équité",
-      feed: "Classement du feed",
+      feed: "Classement des profils",
       compliance: "Conformité"
     },
     allCategories: "Toutes les catégories",
     categoryAdmin: "Actions admin",
     categoryModeration: "Modération",
     categorySecurity: "Sécurité",
-    categoryFeed: "Classement du feed",
+    categoryFeed: "Classement des profils",
     categoryCompliance: "Conformité",
     refresh: "Actualiser",
     noEvents: "Aucun enregistrement.",
@@ -27582,7 +27582,7 @@ const fr = {
     feedViewer: "Pourquoi le profil X est au-dessus de Y — explication transparente du classement (le forfait n'ajoute pas de points).",
     selectUser: "Sélectionner un utilisateur…",
     showRanking: "Afficher le classement",
-    feedExplainFailed: "Feed explain indisponible.",
+    feedExplainFailed: "Explication du classement indisponible.",
     tableRank: "#",
     tableProfile: "Profil",
     tableCity: "Ville",
@@ -27595,9 +27595,9 @@ const fr = {
     resolveSubmit: "Résoudre et consigner",
     outcomeResolved: "Résolu",
     outcomeDismissed: "Rejeté",
-    actionNone: "Bez akcije",
-    actionWarn: "Upozorenje",
-    actionSuspend: "Suspend",
+    actionNone: "Aucune action",
+    actionWarn: "Avertissement",
+    actionSuspend: "Suspendre",
     actionDelete: "Supprimer l'utilisateur"
   },
   icebreakers: {
@@ -27837,7 +27837,7 @@ const es = {
     ADMIN_ACTION: "Admin",
     MODERATION: "Moderación",
     SECURITY: "Seguridad",
-    FEED_RANKING: "Ranking del feed",
+    FEED_RANKING: "Ranking de perfiles",
     COMPLIANCE: "Cumplimiento"
   },
   auditAction: {
@@ -27854,7 +27854,7 @@ const es = {
     REPORT_RESOLVED: "Reporte resuelto",
     BLOCK: "Bloquear",
     REPORT: "Reportar",
-    FEED_SNAPSHOT: "Instantánea del feed",
+    FEED_SNAPSHOT: "Instantánea de perfiles",
     DATA_EXPORT: "Exportación de datos",
     ACCOUNT_DELETE_SELF: "Eliminación de cuenta",
     ACCOUNT_DELETE: "Eliminación de cuenta",
@@ -27914,7 +27914,7 @@ const es = {
       home: "Ravnopar — una plataforma de citas justa. Sin paywall para conversar, chat tras un match y reglas transparentes.",
       auth: "Crea tu cuenta de Ravnopar o inicia sesión.",
       settings: "Edita tu perfil, fotos, notificaciones y privacidad.",
-      app: "Tu feed de Ravnopar, conversaciones y solicitudes de contacto.",
+      app: "Tu lista de perfiles Ravnopar, conversaciones y solicitudes de contacto.",
       chat: "Chat privado con tu match.",
       profile: "Ver un perfil de Ravnopar.",
       onboarding: "Una guía rápida de Ravnopar.",
@@ -27977,18 +27977,18 @@ const es = {
     chipAntiSpam: "Protección anti-spam",
     showcaseEyebrow: "Vista previa de la experiencia",
     showcaseTitle: "Conoce gente como en una app de citas — sin paywall",
-    showcaseText: "Swipe de tarjetas, galerías de fotos y chat tras un match. Las reglas justas se mantienen iguales.",
+    showcaseText: "Tarjetas de perfil, galerías de fotos y chat tras un match. Las reglas justas siguen igual.",
     showcaseMockName: "Maya, 28 · Zagreb",
     showcaseMockBio: "Me encanta el café, el senderismo y las conversaciones sinceras.",
     howItWorks: "Cómo funciona",
     steps: [
       {
         title: "Regístrate",
-        text: "Crea tu perfil, añade una foto y una bio, y elige a quién buscas."
+        text: "Crea tu perfil, añade una foto y una breve presentación, y elige a quién buscas."
       },
       {
         title: "Conoce personas",
-        text: "Explora un feed de perfiles disponibles sin reducción de alcance oculto."
+        text: "Explora una lista de perfiles disponibles sin reducción de alcance oculto."
       },
       {
         title: "Habla de forma justa",
@@ -28027,7 +28027,7 @@ const es = {
       },
       {
         title: "Visibilidad justa",
-        text: "Las parejas activas salen temporalmente del feed para que otros aún tengan oportunidad."
+        text: "Las parejas activas salen temporalmente de la lista para que otros aún tengan oportunidad."
       },
       {
         title: "Protección y control",
@@ -28056,7 +28056,7 @@ const es = {
     photosHint: "JPG/PNG, redimensionadas automáticamente. Máx. 3 fotos.",
     displayName: "Nombre visible",
     city: "Ciudad",
-    bio: "Sobre mí (bio)",
+    bio: "Sobre mí",
     bioPlaceholder: "Preséntate brevemente — qué buscas, qué te gusta...",
     icebreakersLegend: "Preguntas rompehielos (hasta 3)",
     icebreakersHint: "Preguntas y respuestas cortas — ayudan en el primer contacto.",
@@ -28078,7 +28078,7 @@ const es = {
     seekingIdentityLegend: "Identidad buscada",
     intentLegend: "Intención",
     availabilityLabel: "Visibilidad del perfil",
-    availabilityAvailable: "Disponible en el feed",
+    availabilityAvailable: "Disponible en la lista de perfiles",
     availabilityPaused: "En pausa (oculto)",
     availabilityFocused: "En conversación activa",
     notifyEmail: "Notificaciones por correo (nuevas solicitudes, matches, mensajes)",
@@ -28111,12 +28111,12 @@ const es = {
   dashboard: {
     greeting: "Hola, {name}",
     subtitle: "Desliza perfiles o usa los botones — uno a la vez, sin prisa.",
-    feedCount: "{count} perfiles en tu feed",
-    feedEmpty: "Actualmente no hay perfiles compatibles en tu feed.",
+    feedCount: "{count} perfiles en tu lista de perfiles",
+    feedEmpty: "Actualmente no hay perfiles compatibles en tu lista de perfiles.",
     settingsLink: "Ajustes del perfil",
     loading: "Cargando...",
     incompleteTitle: "Tu perfil aún no está completo ({percent}%).",
-    incompleteHint: "Añade una foto, una bio y un rompehielos — aumentas tus posibilidades de contacto.",
+    incompleteHint: "Añade una foto, una breve presentación y un rompehielos — aumentas tus posibilidades de contacto.",
     completeProfile: "Completar perfil",
     conversations: "Conversaciones",
     conversationsUnread: "Conversaciones ({unread} nuevas)",
@@ -28129,14 +28129,14 @@ const es = {
     activeContact: "Estás conversando con {partner}.",
     openChatBtn: "Abrir chat",
     closeContact: "Finalizar conversación",
-    visibleInFeed: "Eres visible en el feed — desliza los perfiles de abajo.",
+    visibleInFeed: "Eres visible en la lista de perfiles — desliza los perfiles de abajo.",
     incomingTitle: "Solicitudes de contacto",
     accept: "Aceptar",
     decline: "Rechazar",
     discoverTitle: "Descubrir perfiles",
     discoverCount: " · {count} para ti",
-    gateTitle: "Perfil no listo para el feed",
-    gateHint: "Añade una foto y una bio (mín. 10 caracteres) antes de enviar solicitudes y deslizar.",
+    gateTitle: "Perfil no listo para la lista de perfiles",
+    gateHint: "Añade una foto y una breve presentación (mín. 10 caracteres) antes de enviar solicitudes y deslizar.",
     gateOnboarding: "Ver introducción",
     emptyTitle: "No hay perfiles nuevos",
     emptyHint: "Amplía tu ciudad o preferencias en Ajustes — o vuelve pronto cuando alguien nuevo se una.",
@@ -28155,7 +28155,7 @@ const es = {
     accepted: "Contacto aceptado.",
     declined: "Solicitud rechazada.",
     respondFailed: "La respuesta no se guardó.",
-    closed: "Contacto cerrado. Estás disponible de nuevo en el feed.",
+    closed: "Contacto cerrado. Estás disponible de nuevo en la lista de perfiles.",
     closeFailed: "Error al cerrar.",
     reportReason: "Comportamiento inapropiado",
     reportNote: "Reporte desde la interfaz de usuario.",
@@ -28199,21 +28199,21 @@ const es = {
   onboarding: {
     eyebrow: "Bienvenido/a",
     title: "Un perfil que destaca",
-    lead: "Antes de entrar en el feed, añade una foto y una descripción breve — ambos son necesarios para enviar solicitudes.",
+    lead: "Antes de entrar en la lista de perfiles, añade una foto y una descripción breve — ambos son necesarios para enviar solicitudes.",
     stepPhoto: "1. Foto",
     stepPhotoHint: "Los perfiles con foto reciben más respuestas.",
     changePhoto: "Cambiar foto",
     addPhoto: "Añadir foto",
-    stepBio: "2. Bio (mín. 10 caracteres)",
+    stepBio: "2. Sobre mí (mín. 10 caracteres)",
     stepBioHint: "Di brevemente quién eres y qué buscas.",
-    editBio: "Editar bio",
-    writeBio: "Escribir bio",
-    stepFeed: "3. Feed",
+    editBio: "Editar presentación",
+    writeBio: "Escribe sobre ti",
+    stepFeed: "3. Perfiles",
     stepFeedHint: "Cuando tu perfil esté listo, desliza y envía tu primera solicitud.",
-    finishReady: "Terminar introducción y abrir el feed",
+    finishReady: "Terminar introducción y abrir la lista de perfiles",
     finishIncomplete: "Completar perfil en Ajustes",
-    finishHint: "Completa primero foto y bio en Ajustes",
-    incompleteError: "Añade una foto y una bio (mín. 10 caracteres) en Ajustes antes de continuar.",
+    finishHint: "Completa primero foto y presentación en Ajustes",
+    incompleteError: "Añade una foto y una breve presentación (mín. 10 caracteres) en Ajustes antes de continuar.",
     saveFailed: "Error al guardar."
   },
   match: {
@@ -28232,7 +28232,7 @@ const es = {
     lead: "Mantenemos Ravnopar con mucho esfuerzo y un presupuesto pequeño. Si la plataforma te importa, puedes ayudar voluntariamente — sin presión y sin funciones extra a cambio.",
     sectionEyebrow: "Apoyo al proyecto",
     sectionTitle: "Apoya Ravnopar",
-    sectionLead: "Si la plataforma te ayuda a conocer personas, puedes ayudar voluntariamente con los costos del servidor. Cada aporte ayuda — y no obtienes ninguna ventaja en el feed.",
+    sectionLead: "Si la plataforma te ayuda a conocer personas, puedes ayudar voluntariamente con los costos del servidor. Cada aporte ayuda — y no obtienes ninguna ventaja en la lista de perfiles.",
     note: "Las donaciones son completamente voluntarias. Gracias por considerarlo. ♥",
     revolutTitle: "Tarjeta (Revolut)",
     revolutHint: "Pago rápido con tarjeta — abre una página segura de Revolut.",
@@ -28309,7 +28309,7 @@ const es = {
       {
         icon: "🤝",
         title: "Donaciones voluntarias",
-        text: "Si donas, no obtienes prioridad en el feed — solo nuestro sincero agradecimiento."
+        text: "Si donas, no obtienes prioridad en la lista de perfiles — solo nuestro sincero agradecimiento."
       }
     ],
     triggers: [
@@ -28375,7 +28375,7 @@ const es = {
         tagline: "Tu comienzo",
         description: "Todo lo que necesitas para citas justas — hoy y cuando introduzcamos Premium.",
         features: [
-          "Perfil y visibilidad en el feed",
+          "Perfil y visibilidad en la lista de perfiles",
           "Enviar y aceptar solicitudes",
           "Bloqueos, reportes y protección anti-spam",
           "Sin reducción de alcance oculta"
@@ -28389,7 +28389,7 @@ const es = {
         priceEur: 4.99,
         period: "/ mes",
         tagline: "Más para tu perfil",
-        description: "Para quienes quieren más control — sin afectar a otros en el feed.",
+        description: "Para quienes quieren más control — sin afectar a otros en la lista de perfiles.",
         features: [
           "Más fotos en el perfil",
           "Filtros avanzados (justos para todos)",
@@ -28427,15 +28427,15 @@ const es = {
     items: [
       {
         q: "¿Ravnopar es gratis?",
-        a: "Sí — enviar solicitudes, aceptar contacto y conversar en la app es gratis. Las donaciones son voluntarias y no dan prioridad en el feed."
+        a: "Sí — enviar solicitudes, aceptar contacto y conversar en la app es gratis. Las donaciones son voluntarias y no dan prioridad en la lista de perfiles."
       },
       {
         q: "¿Cómo funciona un match?",
-        a: "Exploras perfiles en el feed y envías una solicitud de contacto. Si la otra persona acepta, se abre un chat privado y ambos quedáis temporalmente enfocados en la conversación."
+        a: "Exploras perfiles en la lista de perfiles y envías una solicitud de contacto. Si la otra persona acepta, se abre un chat privado y ambos quedáis temporalmente enfocados en la conversación."
       },
       {
         q: "¿Qué pasa después de aceptar un contacto?",
-        a: "Puedes abrir el chat con la persona y hablar en la app. Las parejas activas salen temporalmente del feed para que otros tengan oportunidad."
+        a: "Puedes abrir el chat con la persona y hablar en la app. Las parejas activas salen temporalmente de la lista para que otros tengan oportunidad."
       },
       {
         q: "¿Cobraréis por conversar?",
@@ -28494,7 +28494,7 @@ const es = {
         },
         {
           title: "Datos que recopilamos",
-          body: "Datos de identidad y contacto (correo, nombre visible), perfil (ciudad, bio, fotos, preferencias de citas, respuestas rompehielos), enlace de video opcional, mensajes tras un match, registros técnicos (tiempo de actividad), ubicación aproximada opcional (coordenadas solo si habilitas compartir distancia), selfie de verificación (no público), código de referidos y datos de pago/donación si los usas."
+          body: "Datos de identidad y contacto (correo, nombre visible), perfil (ciudad, breve presentación, fotos, preferencias de citas, respuestas rompehielos), enlace de video opcional, mensajes tras un match, registros técnicos (tiempo de actividad), ubicación aproximada opcional (coordenadas solo si habilitas compartir distancia), selfie de verificación (no público), código de referidos y datos de pago/donación si los usas."
         },
         {
           title: "Ubicación y distancia",
@@ -28552,7 +28552,7 @@ const es = {
         },
         {
           title: "Cuenta y perfil",
-          body: "Eres responsable de la exactitud de los datos, la seguridad de la contraseña y el contenido del perfil. Se requiere un perfil con foto y bio para enviar solicitudes. Los perfiles falsos y la edad falsa están prohibidos."
+          body: "Eres responsable de la exactitud de los datos, la seguridad de la contraseña y el contenido del perfil. Se requiere un perfil con foto y breve presentación para enviar solicitudes. Los perfiles falsos y la edad falsa están prohibidos."
         },
         {
           title: "Comportamientos prohibidos",
@@ -28594,11 +28594,11 @@ const es = {
         },
         {
           title: "Modelo justo de Ravnopar",
-          body: "Sin paywall para el chat básico. Las parejas activas salen temporalmente del feed. Los límites anti-spam protegen la comunidad. No existen boost/super-like."
+          body: "Sin paywall para el chat básico. Las parejas activas salen temporalmente de la lista. Los límites anti-spam protegen la comunidad. No existen boost/super-like."
         },
         {
           title: "Perfil con foto",
-          body: "Sin foto y una bio corta, no puedes enviar solicitudes — esto protege la calidad de la comunidad y reduce perfiles falsos."
+          body: "Sin foto y una breve presentación, no puedes enviar solicitudes — esto protege la calidad de la comunidad y reduce perfiles falsos."
         },
         {
           title: "Seguridad al reunirse",
@@ -28685,14 +28685,14 @@ const es = {
       timeline: "Registro",
       moderation: "Moderación",
       fairness: "Equidad",
-      feed: "Ranking del feed",
+      feed: "Ranking de perfiles",
       compliance: "Cumplimiento"
     },
     allCategories: "Todas las categorías",
     categoryAdmin: "Acciones admin",
     categoryModeration: "Moderación",
     categorySecurity: "Seguridad",
-    categoryFeed: "Ranking del feed",
+    categoryFeed: "Ranking de perfiles",
     categoryCompliance: "Cumplimiento",
     refresh: "Actualizar",
     noEvents: "Sin registros.",
@@ -28710,7 +28710,7 @@ const es = {
     feedViewer: "Por qué el perfil X está sobre Y — explicación transparente del ranking (el plan no suma puntos).",
     selectUser: "Selecciona usuario…",
     showRanking: "Mostrar ranking",
-    feedExplainFailed: "Feed explain no disponible.",
+    feedExplainFailed: "La explicación del ranking no está disponible.",
     tableRank: "#",
     tableProfile: "Perfil",
     tableCity: "Ciudad",
@@ -28723,9 +28723,9 @@ const es = {
     resolveSubmit: "Resolver y registrar",
     outcomeResolved: "Resuelto",
     outcomeDismissed: "Descartado",
-    actionNone: "Bez akcije",
-    actionWarn: "Upozorenje",
-    actionSuspend: "Suspend",
+    actionNone: "Sin acción",
+    actionWarn: "Advertencia",
+    actionSuspend: "Suspender",
     actionDelete: "Eliminar usuario"
   },
   icebreakers: {
@@ -28965,7 +28965,7 @@ const sk = {
     ADMIN_ACTION: "Admin",
     MODERATION: "Moderácia",
     SECURITY: "Bezpečnosť",
-    FEED_RANKING: "Rebríček feedu",
+    FEED_RANKING: "Rebríček prehľadu profilov",
     COMPLIANCE: "Súlad"
   },
   auditAction: {
@@ -28982,7 +28982,7 @@ const sk = {
     REPORT_RESOLVED: "Hlásenie vyriešené",
     BLOCK: "Blokovať",
     REPORT: "Nahlásiť",
-    FEED_SNAPSHOT: "Snímka feedu",
+    FEED_SNAPSHOT: "Snímka prehľadu profilov",
     DATA_EXPORT: "Export dát",
     ACCOUNT_DELETE_SELF: "Zmazanie účtu",
     ACCOUNT_DELETE: "Zmazanie účtu",
@@ -29042,7 +29042,7 @@ const sk = {
       home: "Ravnopar — férová zoznamovacia platforma. Bez paywallu na konverzáciu, chat po zhode a transparentné pravidlá.",
       auth: "Vytvorte si účet Ravnopar alebo sa prihláste.",
       settings: "Upravte profil, fotky, oznámenia a súkromie.",
-      app: "Váš feed Ravnopar, rozhovory a žiadosti o kontakt.",
+      app: "Váš prehľad profilov Ravnopar, rozhovory a žiadosti o kontakt.",
       chat: "Súkromný chat s vašou zhodou.",
       profile: "Zobraziť profil Ravnopar.",
       onboarding: "Krátky sprievodca Ravnopar.",
@@ -29105,18 +29105,18 @@ const sk = {
     chipAntiSpam: "Ochrana proti spamu",
     showcaseEyebrow: "Ukážka zážitku",
     showcaseTitle: "Spoznávajte ľudí ako v zoznamke — bez paywallu",
-    showcaseText: "Swipe karty, fotogalérie a chat po zhode. Férové pravidlá zostávajú rovnaké.",
+    showcaseText: "Karty profilov, galérie fotiek a chat po zhode. Férové pravidlá zostávajú rovnaké.",
     showcaseMockName: "Maya, 28 · Zagreb",
     showcaseMockBio: "Milujem kávu, túry a úprimný rozhovor.",
     howItWorks: "Ako to funguje",
     steps: [
       {
         title: "Zaregistrujte sa",
-        text: "Vytvorte profil, pridajte fotku a bio a vyberte, koho hľadáte."
+        text: "Vytvorte profil, pridajte fotku a krátky popis a vyberte, koho hľadáte."
       },
       {
         title: "Spoznávajte ľudí",
-        text: "Prezerajte feed dostupných profilov bez skrytého znižovania dosahu."
+        text: "Prezerajte prehľad dostupných profilov bez skrytého znižovania dosahu."
       },
       {
         title: "Rozprávajte sa férovo",
@@ -29155,7 +29155,7 @@ const sk = {
       },
       {
         title: "Férová viditeľnosť",
-        text: "Aktívne páry dočasne opúšťajú feed, aby mali šancu aj ostatní."
+        text: "Aktívne páry dočasne opúšťajú prehľad profilov, aby mali šancu aj ostatní."
       },
       {
         title: "Ochrana a kontrola",
@@ -29184,7 +29184,7 @@ const sk = {
     photosHint: "JPG/PNG, automatické zmenšenie. Max. 3 fotky.",
     displayName: "Zobrazované meno",
     city: "Mesto",
-    bio: "O mne (bio)",
+    bio: "O mne",
     bioPlaceholder: "Predstavte sa stručne — čo hľadáte, čo vás baví...",
     icebreakersLegend: "Otázky na prelomenie ľadov (max. 3)",
     icebreakersHint: "Krátke otázky a odpovede — pomáhajú pri prvom kontakte.",
@@ -29206,7 +29206,7 @@ const sk = {
     seekingIdentityLegend: "Hľadaná identita",
     intentLegend: "Zámer",
     availabilityLabel: "Viditeľnosť profilu",
-    availabilityAvailable: "Dostupný vo feede",
+    availabilityAvailable: "Dostupný v prehľade profilov",
     availabilityPaused: "Pozastavený (skrytý)",
     availabilityFocused: "V aktívnom rozhovore",
     notifyEmail: "E-mailové oznámenia (nové žiadosti, zhody, správy)",
@@ -29239,12 +29239,12 @@ const sk = {
   dashboard: {
     greeting: "Ahoj, {name}",
     subtitle: "Prezerajte profily alebo použite tlačidlá — v kľude, jeden po druhom.",
-    feedCount: "{count} profilov vo vašom feede",
-    feedEmpty: "Momentálne nie sú vo vašom feede žiadne kompatibilné profily.",
+    feedCount: "{count} profilov vo vašom prehľade profilov",
+    feedEmpty: "Momentálne nie sú vo vašom prehľade profilov žiadne kompatibilné profily.",
     settingsLink: "Nastavenia profilu",
     loading: "Načítanie...",
     incompleteTitle: "Váš profil ešte nie je kompletný ({percent}%).",
-    incompleteHint: "Pridajte fotku, bio a otázky — zvýšite šancu na kontakt.",
+    incompleteHint: "Pridajte fotku, krátky popis a otázky — zvýšite šancu na kontakt.",
     completeProfile: "Dokončiť profil",
     conversations: "Rozhovory",
     conversationsUnread: "Rozhovory ({unread} nových)",
@@ -29257,14 +29257,14 @@ const sk = {
     activeContact: "Momentálne sa rozprávate s {partner}.",
     openChatBtn: "Otvoriť chat",
     closeContact: "Ukončiť rozhovor",
-    visibleInFeed: "Ste viditeľní vo feede — prezerajte profily nižšie.",
+    visibleInFeed: "Ste viditeľní v prehľade profilov — prezerajte profily nižšie.",
     incomingTitle: "Žiadosti o kontakt",
     accept: "Prijať",
     decline: "Odmietnuť",
     discoverTitle: "Objavujte profily",
     discoverCount: " · {count} pre vás",
-    gateTitle: "Profil nie je pripravený na feed",
-    gateHint: "Pridajte fotku a bio (min. 10 znakov) pred odosielaním žiadostí alebo swipovaním.",
+    gateTitle: "Profil nie je pripravený do prehľadu profilov",
+    gateHint: "Pridajte fotku a krátky popis (min. 10 znakov) pred odosielaním žiadostí alebo prezeraním profilov.",
     gateOnboarding: "Zobraziť intro",
     emptyTitle: "Žiadne nové profily",
     emptyHint: "Rozšírte mesto alebo preferencie v Nastaveniach — alebo sa vráťte neskôr.",
@@ -29283,7 +29283,7 @@ const sk = {
     accepted: "Kontakt prijatý.",
     declined: "Žiadosť odmietnutá.",
     respondFailed: "Odpoveď nebola uložená.",
-    closed: "Kontakt ukončený. Ste opäť dostupní vo feede.",
+    closed: "Kontakt ukončený. Ste opäť dostupní v prehľade profilov.",
     closeFailed: "Ukončenie zlyhalo.",
     reportReason: "Nevhodné správanie",
     reportNote: "Nahlásenie z používateľského rozhrania.",
@@ -29327,21 +29327,21 @@ const sk = {
   onboarding: {
     eyebrow: "Vitajte",
     title: "Profil, ktorý vyniká",
-    lead: "Pred vstupom do feedu pridajte fotku a krátky popis — obe sú potrebné na odosielanie žiadostí.",
+    lead: "Pred vstupom do prehľadu profilov pridajte fotku a krátky popis — obe sú potrebné na odosielanie žiadostí.",
     stepPhoto: "1. Fotka",
     stepPhotoHint: "Profily s fotkami dostávajú viac odpovedí.",
     changePhoto: "Zmeniť fotku",
     addPhoto: "Pridať fotku",
-    stepBio: "2. Bio (min. 10 znakov)",
+    stepBio: "2. O mne (min. 10 znakov)",
     stepBioHint: "Stručne napíšte, kto ste a čo hľadáte.",
-    editBio: "Upraviť bio",
-    writeBio: "Napísať bio",
-    stepFeed: "3. Feed",
-    stepFeedHint: "Keď je profil pripravený, swipeujte a pošlite prvú žiadosť.",
-    finishReady: "Dokončiť intro a otvoriť feed",
+    editBio: "Upraviť popis",
+    writeBio: "Napísať o sebe",
+    stepFeed: "3. Prehľad profilov",
+    stepFeedHint: "Keď je profil pripravený, prezerajte profily a pošlite prvú žiadosť.",
+    finishReady: "Dokončiť intro a otvoriť prehľad profilov",
     finishIncomplete: "Dokončiť profil v Nastaveniach",
-    finishHint: "Najprv dokončite fotku a bio v Nastaveniach",
-    incompleteError: "Pridajte fotku a bio (min. 10 znakov) v Nastaveniach pred pokračovaním.",
+    finishHint: "Najprv dokončite fotku a popis v Nastaveniach",
+    incompleteError: "Pridajte fotku a krátky popis (min. 10 znakov) v Nastaveniach pred pokračovaním.",
     saveFailed: "Uloženie zlyhalo."
   },
   match: {
@@ -29360,7 +29360,7 @@ const sk = {
     lead: "Ravnopar udržiavame vďaka veľkému úsiliu a malému rozpočtu. Ak je pre vás platforma dôležitá, môžete pomôcť dobrovoľne — bez tlaku a bez extra funkcií na oplátku.",
     sectionEyebrow: "Podpora projektu",
     sectionTitle: "Podporte Ravnopar",
-    sectionLead: "Ak vám platforma pomáha spoznávať ľudí, môžete dobrovoľne prispieť na serverové náklady. Každý príspevok sa počíta — a nezískate žiadnu výhodu vo feede.",
+    sectionLead: "Ak vám platforma pomáha spoznávať ľudí, môžete dobrovoľne prispieť na serverové náklady. Každý príspevok sa počíta — a nezískate žiadnu výhodu v prehľade profilov.",
     note: "Príspevky sú úplne dobrovoľné. Ďakujeme, že o tom uvažujete. ♥",
     revolutTitle: "Karta (Revolut)",
     revolutHint: "Rýchla platba kartou — otvorí zabezpečenú stránku Revolut.",
@@ -29437,7 +29437,7 @@ const sk = {
       {
         icon: "🤝",
         title: "Príspevky zostanú dobrovoľné",
-        text: "Ak prispejete, nezískate prioritu vo feede — len naše úprimné poďakovanie."
+        text: "Ak prispejete, nezískate prioritu v prehľade profilov — len naše úprimné poďakovanie."
       }
     ],
     triggers: [
@@ -29503,7 +29503,7 @@ const sk = {
         tagline: "Váš štart",
         description: "Všetko, čo potrebujete na férové zoznamovanie — dnes aj keď zavedie­me Premium.",
         features: [
-          "Profil a viditeľnosť vo feede",
+          "Profil a viditeľnosť v prehľade profilov",
           "Odosielanie a prijímanie žiadostí",
           "Blokovanie, hlásenia a ochrana proti spamu",
           "Bez skrytého znižovania dosahu"
@@ -29517,7 +29517,7 @@ const sk = {
         priceEur: 4.99,
         period: "/ mes.",
         tagline: "Viac pre váš profil",
-        description: "Pre tých, ktorí chcú viac kontroly — bez vplyvu na ostatných vo feede.",
+        description: "Pre tých, ktorí chcú viac kontroly — bez vplyvu na ostatných v prehľade profilov.",
         features: [
           "Viac fotiek v profile",
           "Pokročilé filtre (férové pre všetkých)",
@@ -29555,15 +29555,15 @@ const sk = {
     items: [
       {
         q: "Je Ravnopar zdarma?",
-        a: "Áno — odosielanie žiadostí, prijímanie kontaktov a chat v aplikácii sú zdarma. Príspevky sú dobrovoľné a nedávajú prioritu vo feede."
+        a: "Áno — odosielanie žiadostí, prijímanie kontaktov a chat v aplikácii sú zdarma. Príspevky sú dobrovoľné a nedávajú prioritu v prehľade profilov."
       },
       {
         q: "Ako funguje zhoda?",
-        a: "Prezeráte profily vo feede a odošlete žiadosť o kontakt. Ak druhá osoba prijme, otvorí sa súkromný chat a obaja sa dočasne sústredíte na rozhovor."
+        a: "Prezeráte profily v prehľade profilov a odošlete žiadosť o kontakt. Ak druhá osoba prijme, otvorí sa súkromný chat a obaja sa dočasne sústredíte na rozhovor."
       },
       {
         q: "Čo sa stane po prijatí kontaktu?",
-        a: "Môžete otvoriť chat a rozprávať sa v aplikácii. Aktívne páry dočasne opúšťajú feed, aby mali šancu aj ostatní."
+        a: "Môžete otvoriť chat a rozprávať sa v aplikácii. Aktívne páry dočasne opúšťajú prehľad profilov, aby mali šancu aj ostatní."
       },
       {
         q: "Budete účtovať za konverzáciu?",
@@ -29622,7 +29622,7 @@ const sk = {
         },
         {
           title: "Aké údaje zbierame",
-          body: "Identifikačné a kontaktné údaje (e-mail, zobrazované meno), profil (mesto, bio, fotky, zoznamovacie preferencie, odpovede na otázky), voliteľný odkaz na video, správy po zhode, technické logy (čas aktivity), voliteľná zaokrúhlená poloha (súradnice len pri zdieľaní vzdialenosti), overovacie selfie (nepublické), referenčný kód a platobné/darovacie údaje, ak ich používate."
+          body: "Identifikačné a kontaktné údaje (e-mail, zobrazované meno), profil (mesto, krátky popis, fotky, zoznamovacie preferencie, odpovede na otázky), voliteľný odkaz na video, správy po zhode, technické logy (čas aktivity), voliteľná zaokrúhlená poloha (súradnice len pri zdieľaní vzdialenosti), overovacie selfie (nepublické), referenčný kód a platobné/darovacie údaje, ak ich používate."
         },
         {
           title: "Poloha a vzdialenosť",
@@ -29634,7 +29634,7 @@ const sk = {
         },
         {
           title: "Účel spracovania",
-          body: "Poskytovanie zoznamovacej služby, zobrazenie profilu, párovanie, chat, bezpečnosť (blokovanie, hlásenia), e-mailové oznámenia, ktoré schválite, referral program, analytika (len so súhlasom cookies) a údržba platformy."
+          body: "Poskytovanie zoznamovacej služby, zobrazenie profilu, párovanie, chat, bezpečnosť (blokovanie, hlásenia), e-mailové oznámenia, ktoré schválite, program pozvánok, analytika (len so súhlasom cookies) a údržba platformy."
         },
         {
           title: "Právny základ (GDPR)",
@@ -29680,7 +29680,7 @@ const sk = {
         },
         {
           title: "Účet a profil",
-          body: "Zodpovedáte za správne údaje, bezpečnosť hesla a obsah profilu. Profil s fotkou a bio je potrebný na odosielanie žiadostí. Falošné profily a nepravdivý vek sú zakázané."
+          body: "Zodpovedáte za správne údaje, bezpečnosť hesla a obsah profilu. Profil s fotkou a krátkym popisom je potrebný na odosielanie žiadostí. Falošné profily a nepravdivý vek sú zakázané."
         },
         {
           title: "Zakázané správanie",
@@ -29722,11 +29722,11 @@ const sk = {
         },
         {
           title: "Férový model Ravnopar",
-          body: "Bez paywallu pre základný chat. Aktívne páry dočasne opúšťajú feed. Anti-spam limity chránia komunitu. Boost/super-like neexistujú."
+          body: "Bez paywallu pre základný chat. Aktívne páry dočasne opúšťajú prehľad profilov. Anti-spam limity chránia komunitu. Boost/super-like neexistujú."
         },
         {
           title: "Profil s fotkou",
-          body: "Bez fotky a krátkeho bio nemôžete posielať žiadosti — chráni to kvalitu komunity a znižuje falošné profily."
+          body: "Bez fotky a krátkeho popisu nemôžete posielať žiadosti — chráni to kvalitu komunity a znižuje falošné profily."
         },
         {
           title: "Bezpečnosť pri stretnutiach",
@@ -29813,14 +29813,14 @@ const sk = {
       timeline: "Log",
       moderation: "Moderácia",
       fairness: "Férovosť",
-      feed: "Rebríček feedu",
+      feed: "Rebríček prehľadu profilov",
       compliance: "Súlad"
     },
     allCategories: "Všetky kategórie",
     categoryAdmin: "Admin akcie",
     categoryModeration: "Moderácia",
     categorySecurity: "Bezpečnosť",
-    categoryFeed: "Rebríček feedu",
+    categoryFeed: "Rebríček prehľadu profilov",
     categoryCompliance: "Súlad",
     refresh: "Obnoviť",
     noEvents: "Žiadne záznamy.",
@@ -29851,9 +29851,9 @@ const sk = {
     resolveSubmit: "Vyriešiť a zapísať",
     outcomeResolved: "Vyriešené",
     outcomeDismissed: "Zamietnuté",
-    actionNone: "Bez akcije",
-    actionWarn: "Upozorenje",
-    actionSuspend: "Suspend",
+    actionNone: "Bez akcie",
+    actionWarn: "Upozornenie",
+    actionSuspend: "Pozastaviť",
     actionDelete: "Zmazať používateľa"
   },
   icebreakers: {
@@ -30046,11 +30046,11 @@ function getOgImageUrl() {
 const discoveryFaqHr = [
   {
     q: "Je li Ravnopar alternativa Tinderu u Hrvatskoj?",
-    a: "Ako tražiš besplatno upoznavanje s chatom nakon matcha — bez paywalla za razgovor — Ravnopar može biti dobra opcija. Fokus je na fer pravilima i transparentnom feedu, ne na kopiranju druge aplikacije."
+    a: "Ako tražiš besplatno upoznavanje s chatom nakon matcha — bez paywalla za razgovor — Ravnopar može biti dobra opcija. Fokus je na fer pravilima i transparentnom prikazu, ne na kopiranju druge aplikacije."
   },
   {
     q: "Mogu li upoznavati ljude besplatno, bez pretplate?",
-    a: "Da. Slanje zahtjeva, prihvaćanje kontakta i chat nakon matcha su besplatni. Nema obaveznog premiuma za razgovor — donacije su dobrovoljne i ne daju prednost u feedu."
+    a: "Da. Slanje zahtjeva, prihvaćanje kontakta i chat nakon matcha su besplatni. Nema obaveznog premiuma za razgovor — donacije su dobrovoljne i ne daju prednost u prikazu."
   },
   {
     q: "Moram li plaćati poruke nakon matcha?",
@@ -30058,7 +30058,7 @@ const discoveryFaqHr = [
   },
   {
     q: "Kako se Ravnopar razlikuje od drugih dating aplikacija?",
-    a: "Fokus je na fer matchu — bez plaćenog boosta u feedu, bez skrivanja dosega i s jasnim pravilima protiv ghostinga. Premium (kad bude dostupan) neće ograničavati besplatni chat — detalje vidi na stranici Fer feed."
+    a: "Fokus je na fer matchu — bez plaćenog boosta u prikazu, bez skrivanja dosega i s jasnim pravilima protiv ghostinga. Premium (kad bude dostupan) neće ograničavati besplatni chat — detalje vidi na stranici Fer prikaz."
   },
   {
     q: "Radi li Ravnopar u Hrvatskoj i Europi?",
@@ -30072,11 +30072,11 @@ const discoveryFaqHr = [
 const discoveryFaqEn = [
   {
     q: "Is Ravnopar a Tinder alternative?",
-    a: "If you want free dating with chat after a match — without a paywall for conversation — Ravnopar can be a good option. The focus is fair rules and a transparent feed, not copying another app."
+    a: "If you want free dating with chat after a match — without a paywall for conversation — Ravnopar can be a good option. The focus is fair rules and a transparent prikaz, not copying another app."
   },
   {
     q: "Can I meet people for free, without a subscription?",
-    a: "Yes. Sending requests, accepting contact, and post-match chat are free. There is no required premium to talk — donations are voluntary and do not give feed priority."
+    a: "Yes. Sending requests, accepting contact, and post-match chat are free. There is no required premium to talk — donations are voluntary and do not give prikaz priority."
   },
   {
     q: "Do I have to pay for messages after a match?",
@@ -30084,7 +30084,7 @@ const discoveryFaqEn = [
   },
   {
     q: "How is Ravnopar different from other dating apps?",
-    a: "The focus is fair matching — no paid feed boost, no hidden reach limits, and clear anti-ghosting rules. Premium (when available) will not limit free chat — see the Fair feed page."
+    a: "The focus is fair matching — no paid prikaz boost, no hidden reach limits, and clear anti-ghosting rules. Premium (when available) will not limit free chat — see the Fair prikaz page."
   },
   {
     q: "Does Ravnopar work in Croatia and Europe?",
@@ -30097,15 +30097,15 @@ const discoveryFaqEn = [
 ];
 const homeCompareHr = {
   title: "Fer upoznavanje bez paywalla",
-  lead: "Tražiš besplatno upoznavanje bez skrivenih limita dosega? Ravnopar nudi match i chat nakon obostranog kontakta — bez plaćanja poruka i bez plaćenog boosta u feedu.",
+  lead: "Tražiš besplatno upoznavanje bez skrivenih limita dosega? Ravnopar nudi match i chat nakon obostranog kontakta — bez plaćanja poruka i bez plaćenog boosta u prikazu.",
   points: [
     {
       title: "Chat nakon matcha",
       text: "Razgovor se otvara kad obje strane prihvate kontakt — nema paywalla za osnovnu komunikaciju."
     },
     {
-      title: "Fer feed bez plaćenog boosta",
-      text: "Donacije i premium ne daju prednost u vidljivosti. Pravila rangiranja su javna na stranici Fer feed."
+      title: "Fer prikaz bez plaćenog boosta",
+      text: "Donacije i premium ne daju prednost u vidljivosti. Pravila rangiranja su javna na stranici Fer prikaz."
     },
     {
       title: "Zaštita od ghostinga",
@@ -30120,7 +30120,7 @@ const homeFreeHr = {
   points: [
     {
       title: "Registracija i profil",
-      text: "Napravi profil s fotografijom, odaberi koga tražiš i pregledaj feed dostupnih osoba."
+      text: "Napravi profil s fotografijom, odaberi koga tražiš i pregledaj prikaz dostupnih osoba."
     },
     {
       title: "Match bez skrivenih troškova",
@@ -30135,15 +30135,15 @@ const homeFreeHr = {
 };
 const homeCompareEn = {
   title: "Fair dating without a paywall",
-  lead: "Looking for free dating without hidden reach limits? Ravnopar offers matches and chat after mutual contact — no paid messages and no paid feed boost.",
+  lead: "Looking for free dating without hidden reach limits? Ravnopar offers matches and chat after mutual contact — no paid messages and no paid prikaz boost.",
   points: [
     {
       title: "Chat after a match",
       text: "Conversation opens when both sides accept contact — no paywall for basic communication."
     },
     {
-      title: "Fair feed without paid boost",
-      text: "Donations and premium do not increase visibility. Ranking rules are public on the Fair feed page."
+      title: "Fair prikaz without paid boost",
+      text: "Donations and premium do not increase visibility. Ranking rules are public on the Fair prikaz page."
     },
     {
       title: "Anti-ghosting protection",
@@ -30158,7 +30158,7 @@ const homeFreeEn = {
   points: [
     {
       title: "Sign up and profile",
-      text: "Create a profile with a photo, choose who you seek, and browse available people in the feed."
+      text: "Create a profile with a photo, choose who you seek, and browse available people in the prikaz."
     },
     {
       title: "Match without hidden fees",
@@ -30176,7 +30176,7 @@ const SEO_DISCOVERY_BLOCKS = {
     meta: {
       descriptions: {
         home: "Besplatno upoznavanje bez paywalla — fer dating aplikacija za HR i Europu. Chat nakon matcha, transparentna pravila. 18+.",
-        faq: "Besplatno upoznavanje, chat bez pretplate, fer feed — česta pitanja o Ravnoparu."
+        faq: "Besplatno upoznavanje, chat bez pretplate, fer prikaz — česta pitanja o Ravnoparu."
       }
     },
     home: { seoCompare: homeCompareHr, seoFree: homeFreeHr },
@@ -30186,7 +30186,7 @@ const SEO_DISCOVERY_BLOCKS = {
     meta: {
       descriptions: {
         home: "Free dating without a paywall — fair dating for Europe. Chat after a match, transparent rules. 18+.",
-        faq: "Free dating, chat without subscription, fair feed — FAQ about Ravnopar."
+        faq: "Free dating, chat without subscription, fair prikaz — FAQ about Ravnopar."
       }
     },
     home: { seoCompare: homeCompareEn, seoFree: homeFreeEn },
@@ -30214,7 +30214,7 @@ const SEO_DISCOVERY_BLOCKS = {
         title: "Kostenloses Dating — kein Abo zum Chatten",
         lead: "Anfragen, Match und Chat sind in der Basisnutzung enthalten — Fokus auf echtes Kennenlernen.",
         points: [
-          { title: "Profil anlegen", text: "Foto, Bio, Präferenzen — dann Feed durchstöbern." },
+          { title: "Profil anlegen", text: "Foto, kurze Beschreibung, Präferenzen — dann Feed durchstöbern." },
           { title: "Match ohne versteckte Kosten", text: "Bei Annahme öffnet sich der Chat — kostenlos." },
           { title: "18+, mehrsprachig", text: "Für Europa, mehrere Sprachen." }
         ],
@@ -30241,7 +30241,7 @@ const SEO_DISCOVERY_BLOCKS = {
   sl: {
     meta: {
       descriptions: {
-        home: "Brezplačno spoznavanje brez paywalla — pošten feed, klepet po ujemanju. 18+.",
+        home: "Brezplačno spoznavanje brez paywalla — pošten prikaz, klepet po ujemanju. 18+.",
         faq: "Brezplačno spoznavanje, klepet brez naročnine — FAQ o Ravnopar."
       }
     },
@@ -30251,7 +30251,7 @@ const SEO_DISCOVERY_BLOCKS = {
         lead: "Brezplačno spoznavanje brez skritih omejitev dosega — ujemanje in klepet po obojestranskem kontaktu.",
         points: [
           { title: "Klepet po ujemanju", text: "Pogovor se odpre, ko oba sprejmeta kontakt." },
-          { title: "Pošten feed", text: "Donacije in premium ne dajejo prednosti." },
+          { title: "Pošten prikaz", text: "Donacije in premium ne dajejo prednosti." },
           { title: "Zaščita pred ghostingom", text: "Opozorila in samodejno zapiranje neaktivnih pogovorov." }
         ],
         link: "Vsa vprašanja v pomoči →"
@@ -30260,7 +30260,7 @@ const SEO_DISCOVERY_BLOCKS = {
         title: "Brezplačno spoznavanje — brez naročnine",
         lead: "Zahteve, ujemanje in klepet so vključeni v osnovno uporabo.",
         points: [
-          { title: "Registracija", text: "Profil s fotografijo in brskanje po feedu." },
+          { title: "Registracija", text: "Profil s fotografijo in brskanje po prikazu." },
           { title: "Ujemanje brez skritih stroškov", text: "Zasebni klepet brezplačno po sprejetju." },
           { title: "18+, več jezikov", text: "Za Evropo, več jezikov." }
         ],
@@ -30272,7 +30272,7 @@ const SEO_DISCOVERY_BLOCKS = {
         { q: "Je Ravnopar alternativa Tinderju?", a: "Če iščeš brezplačno spoznavanje s klepetom po ujemanju — brez paywalla — je Ravnopar dobra opcija. Poudarek na poštenih pravilih." },
         { q: "Ali lahko spoznavam brezplačno?", a: "Da. Zahteve, sprejetje in klepet so brezplačni." },
         { q: "Ali moram plačati sporočila po ujemanju?", a: "Ne. Zasebni klepet je brezplačen." },
-        { q: "Kako se Ravnopar razlikuje od drugih dating aplikacij?", a: "Pošten feed, brez plačanega boosta, jasna pravila proti ghostingu." },
+        { q: "Kako se Ravnopar razlikuje od drugih dating aplikacij?", a: "Pošten prikaz, brez plačanega boosta, jasna pravila proti ghostingu." },
         { q: "Ali deluje v Evropi?", a: "Da — več jezikov, registracija 18+." },
         { q: "Za resno ali le zabavo?", a: "Oboje — odvisno od profila." }
       ]
@@ -30281,7 +30281,7 @@ const SEO_DISCOVERY_BLOCKS = {
   bs: {
     meta: {
       descriptions: {
-        home: "Besplatno upoznavanje bez paywalla — fer feed, chat nakon matcha. 18+.",
+        home: "Besplatno upoznavanje bez paywalla — fer prikaz, chat nakon matcha. 18+.",
         faq: "Besplatno upoznavanje, chat bez pretplate — FAQ o Ravnoparu."
       }
     },
@@ -30291,7 +30291,7 @@ const SEO_DISCOVERY_BLOCKS = {
   sr: {
     meta: {
       descriptions: {
-        home: "Besplatno upoznavanje bez paywalla — fer feed, chat nakon matcha. 18+.",
+        home: "Besplatno upoznavanje bez paywalla — fer prikaz, chat nakon matcha. 18+.",
         faq: "Besplatno upoznavanje, chat bez pretplate — FAQ o Ravnoparu."
       }
     },
@@ -30304,7 +30304,7 @@ const SEO_DISCOVERY_BLOCKS = {
         title: "Besplatno upoznavanje — bez pretplate",
         lead: "Zahtevi, match i chat uključeni su u osnovnu upotrebu.",
         points: [
-          { title: "Registracija", text: "Profil sa fotografijom i pregled feeda." },
+          { title: "Registracija", text: "Profil sa fotografijom i pregled prikaza." },
           { title: "Match bez skrivenih troškova", text: "Privatni chat besplatno." },
           { title: "18+, više jezika", text: "Platforma za Evropu." }
         ],
@@ -30323,7 +30323,7 @@ const SEO_DISCOVERY_BLOCKS = {
   it: {
     meta: {
       descriptions: {
-        home: "Incontri gratuiti senza paywall — feed equo, chat dopo il match. 18+.",
+        home: "Incontri gratuiti senza paywall — prikaz equo, chat dopo il match. 18+.",
         faq: "Incontri gratis, chat senza abbonamento — FAQ su Ravnopar."
       }
     },
@@ -30333,7 +30333,7 @@ const SEO_DISCOVERY_BLOCKS = {
         lead: "Incontri gratuiti senza limiti nascosti — match e chat dopo contatto reciproco.",
         points: [
           { title: "Chat dopo il match", text: "Conversazione quando entrambi accettano — nessun paywall." },
-          { title: "Feed equo", text: "Donazioni e premium non danno priorità." },
+          { title: "Elenco profili equo", text: "Donazioni e premium non danno priorità." },
           { title: "Anti-ghosting", text: "Avvisi e chiusura automatica delle chat inattive." }
         ],
         link: "Tutte le domande →"
@@ -30342,7 +30342,7 @@ const SEO_DISCOVERY_BLOCKS = {
         title: "Incontri gratuiti — senza abbonamento",
         lead: "Richieste, match e chat inclusi nell’uso base.",
         points: [
-          { title: "Profilo", text: "Foto, preferenze e feed." },
+          { title: "Profilo", text: "Foto, preferenze e prikaz." },
           { title: "Match senza costi nascosti", text: "Chat privata gratuita dopo accettazione." },
           { title: "18+, più lingue", text: "Per l’Europa." }
         ],
@@ -30363,7 +30363,7 @@ const SEO_DISCOVERY_BLOCKS = {
   hu: {
     meta: {
       descriptions: {
-        home: "Ingyenes társkeresés paywall nélkül — fair feed, chat match után. 18+.",
+        home: "Ingyenes társkeresés paywall nélkül — fair prikaz, chat match után. 18+.",
         faq: "Ingyenes társkeresés, chat előfizetés nélkül — GYIK a Ravnoparról."
       }
     },
@@ -30373,7 +30373,7 @@ const SEO_DISCOVERY_BLOCKS = {
         lead: "Ingyenes ismerkedés rejtett elérési limitek nélkül — match és chat kölcsönös elfogadás után.",
         points: [
           { title: "Chat match után", text: "Beszélgetés, ha mindketten elfogadják." },
-          { title: "Fair feed", text: "Adományok és prémium nem ad előnyt." },
+          { title: "Fair prikaz", text: "Adományok és prémium nem ad előnyt." },
           { title: "Ghosting elleni védelem", text: "Figyelmeztetések és inaktív csevegések zárása." }
         ],
         link: "Minden kérdés a súgóban →"
@@ -30382,7 +30382,7 @@ const SEO_DISCOVERY_BLOCKS = {
         title: "Ingyenes társkeresés — nincs előfizetés",
         lead: "Kérések, match és chat az alaphasználatban benne van.",
         points: [
-          { title: "Regisztráció", text: "Profil fotóval, feed böngészése." },
+          { title: "Regisztráció", text: "Profil fotóval, prikaz böngészése." },
           { title: "Match rejtett díjak nélkül", text: "Ingyenes privát chat elfogadás után." },
           { title: "18+, több nyelv", text: "Európára." }
         ],
@@ -30403,7 +30403,7 @@ const SEO_DISCOVERY_BLOCKS = {
   pl: {
     meta: {
       descriptions: {
-        home: "Darmowe randki bez paywalla — uczciwy feed, czat po matchu. 18+.",
+        home: "Darmowe randki bez paywalla — uczciwy prikaz, czat po matchu. 18+.",
         faq: "Darmowe randki, czat bez subskrypcji — FAQ Ravnopar."
       }
     },
@@ -30413,7 +30413,7 @@ const SEO_DISCOVERY_BLOCKS = {
         lead: "Darmowe randki bez ukrytych limitów — match i czat po obustronnym kontakcie.",
         points: [
           { title: "Czat po matchu", text: "Rozmowa po obustronnej akceptacji." },
-          { title: "Uczciwy feed", text: "Darowizny i premium nie dają przewagi." },
+          { title: "Uczciwy prikaz", text: "Darowizny i premium nie dają przewagi." },
           { title: "Ochrona przed ghostingiem", text: "Ostrzeżenia i auto-zamykanie nieaktywnych czatów." }
         ],
         link: "Wszystkie pytania →"
@@ -30422,7 +30422,7 @@ const SEO_DISCOVERY_BLOCKS = {
         title: "Darmowe randki — bez subskrypcji",
         lead: "Prośby, match i czat w podstawowym użyciu.",
         points: [
-          { title: "Profil", text: "Zdjęcie, preferencje, feed." },
+          { title: "Profil", text: "Zdjęcie, preferencje, prikaz." },
           { title: "Match bez ukrytych opłat", text: "Darmowy czat po akceptacji." },
           { title: "18+, wiele języków", text: "Dla Europy." }
         ],
@@ -30443,7 +30443,7 @@ const SEO_DISCOVERY_BLOCKS = {
   cs: {
     meta: {
       descriptions: {
-        home: "Seznamování zdarma bez paywallu — férový feed, chat po matchi. 18+.",
+        home: "Seznamování zdarma bez paywallu — férový prikaz, chat po matchi. 18+.",
         faq: "Seznamování zdarma, chat bez předplatného — FAQ Ravnopar."
       }
     },
@@ -30453,7 +30453,7 @@ const SEO_DISCOVERY_BLOCKS = {
         lead: "Seznamování zdarma bez skrytých limitů — match a chat po oboustranném kontaktu.",
         points: [
           { title: "Chat po matchi", text: "Konverzace po oboustranném souhlasu." },
-          { title: "Férový feed", text: "Dary a premium nedávají prioritu." },
+          { title: "Férový prikaz", text: "Dary a premium nedávají prioritu." },
           { title: "Ochrana před ghostingem", text: "Varování a uzavření neaktivních chatů." }
         ],
         link: "Všechny otázky →"
@@ -30462,7 +30462,7 @@ const SEO_DISCOVERY_BLOCKS = {
         title: "Seznamování zdarma — bez předplatného",
         lead: "Žádosti, match a chat v základním použití.",
         points: [
-          { title: "Registrace", text: "Profil s fotkou, feed." },
+          { title: "Registrace", text: "Profil s fotkou, prikaz." },
           { title: "Match bez skrytých poplatků", text: "Soukromý chat zdarma." },
           { title: "18+, více jazyků", text: "Pro Evropu." }
         ],
@@ -30483,7 +30483,7 @@ const SEO_DISCOVERY_BLOCKS = {
   fr: {
     meta: {
       descriptions: {
-        home: "Rencontres gratuites sans paywall — fil équitable, chat après match. 18+.",
+        home: "Rencontres gratuites sans paywall — affichage équitable, chat après match. 18+.",
         faq: "Rencontres gratuites, chat sans abonnement — FAQ Ravnopar."
       }
     },
@@ -30493,7 +30493,7 @@ const SEO_DISCOVERY_BLOCKS = {
         lead: "Rencontres gratuites sans limites cachées — match et chat après contact mutuel.",
         points: [
           { title: "Chat après le match", text: "Conversation quand les deux acceptent." },
-          { title: "Fil équitable", text: "Dons et premium ne donnent pas de priorité." },
+          { title: "Affichage équitable", text: "Dons et premium ne donnent pas de priorité." },
           { title: "Anti-ghosting", text: "Avertissements et fermeture des chats inactifs." }
         ],
         link: "Toutes les questions →"
@@ -30502,7 +30502,7 @@ const SEO_DISCOVERY_BLOCKS = {
         title: "Rencontres gratuites — sans abonnement",
         lead: "Demandes, match et chat inclus dans l’usage de base.",
         points: [
-          { title: "Profil", text: "Photo, préférences, fil." },
+          { title: "Profil", text: "Photo, préférences, profils." },
           { title: "Match sans frais cachés", text: "Chat privé gratuit après acceptation." },
           { title: "18+, plusieurs langues", text: "Pour l’Europe." }
         ],
@@ -30523,7 +30523,7 @@ const SEO_DISCOVERY_BLOCKS = {
   es: {
     meta: {
       descriptions: {
-        home: "Citas gratis sin paywall — feed justo, chat tras el match. 18+.",
+        home: "Citas gratis sin paywall — prikaz justo, chat tras el match. 18+.",
         faq: "Citas gratis, chat sin suscripción — FAQ Ravnopar."
       }
     },
@@ -30533,7 +30533,7 @@ const SEO_DISCOVERY_BLOCKS = {
         lead: "Citas gratis sin límites ocultos — match y chat tras contacto mutuo.",
         points: [
           { title: "Chat tras el match", text: "Conversación cuando ambos aceptan." },
-          { title: "Feed justo", text: "Donaciones y premium no dan prioridad." },
+          { title: "Lista justa de perfiles", text: "Donaciones y premium no dan prioridad." },
           { title: "Anti-ghosting", text: "Avisos y cierre de chats inactivos." }
         ],
         link: "Todas las preguntas →"
@@ -30542,7 +30542,7 @@ const SEO_DISCOVERY_BLOCKS = {
         title: "Citas gratis — sin suscripción",
         lead: "Solicitudes, match y chat incluidos en el uso básico.",
         points: [
-          { title: "Perfil", text: "Foto, preferencias, feed." },
+          { title: "Perfil", text: "Foto, preferencias, prikaz." },
           { title: "Match sin costes ocultos", text: "Chat privado gratis." },
           { title: "18+, varios idiomas", text: "Para Europa." }
         ],
@@ -30563,7 +30563,7 @@ const SEO_DISCOVERY_BLOCKS = {
   sk: {
     meta: {
       descriptions: {
-        home: "Zoznamovanie zadarmo bez paywallu — férový feed, chat po matchi. 18+.",
+        home: "Zoznamovanie zadarmo bez paywallu — férový prikaz, chat po matchi. 18+.",
         faq: "Zoznamovanie zadarmo, chat bez predplatného — FAQ Ravnopar."
       }
     },
@@ -30573,7 +30573,7 @@ const SEO_DISCOVERY_BLOCKS = {
         lead: "Zoznamovanie zadarmo bez skrytých limitov — match a chat po obojstrannom kontakte.",
         points: [
           { title: "Chat po matchi", text: "Konverzácia po obojstrannom súhlase." },
-          { title: "Férový feed", text: "Dary a premium nedávajú prioritu." },
+          { title: "Férový prikaz", text: "Dary a premium nedávajú prioritu." },
           { title: "Ochrana pred ghostingom", text: "Varovania a uzavretie neaktívnych chatov." }
         ],
         link: "Všetky otázky →"
@@ -30582,7 +30582,7 @@ const SEO_DISCOVERY_BLOCKS = {
         title: "Zoznamovanie zadarmo — bez predplatného",
         lead: "Žiadosti, match a chat v základnom používaní.",
         points: [
-          { title: "Registrácia", text: "Profil s fotkou, feed." },
+          { title: "Registrácia", text: "Profil s fotkou, prikaz." },
           { title: "Match bez skrytých poplatkov", text: "Súkromný chat zadarmo." },
           { title: "18+, viac jazykov", text: "Pre Európu." }
         ],

@@ -351,14 +351,14 @@ export default {
     chipAntiSpam: "Spam-Schutz",
     showcaseEyebrow: "Einblick ins Erlebnis",
     showcaseTitle: "Menschen kennenlernen wie in einer Dating-App — ohne Bezahlschranke",
-    showcasetext: "Erstelle dein Profil, füge ein Foto und eine kurze Beschreibung hinzu und wähle, wen du suchst.",
+    showcaseText: "Swipe-Karten, Fotogalerien und Chat nach einem Match. Faire Regeln bleiben gleich.",
     showcaseMockName: "Maya, 28 · Zagreb",
     showcaseMockBio: "Ich liebe Kaffee, Wandern und ehrliche Gespräche.",
     howItWorks: "So funktioniert's",
     steps: [
       {
         title: "Registrieren",
-        text: "Erstelle dein Profil, füge ein Foto und eine Bio hinzu und wähle, wen du suchst."
+        text: "Erstelle dein Profil, füge ein Foto und eine kurze Beschreibung hinzu und wähle, wen du suchst."
       },
       {
         title: "Menschen kennenlernen",
@@ -432,9 +432,9 @@ export default {
     city: "Stadt",
     bio: "Über mich",
     bioPlaceholder: "Stell dich kurz vor — was du suchst, was dir gefällt...",
-    icebreakersLegend: "Icebreaker-Fragen (bis zu 3)",
+    icebreakersLegend: "Eisbrecher-Fragen (bis zu 3)",
     icebreakersHint: "Kurze Fragen und Antworten — sie helfen beim ersten Kontakt.",
-    addIcebreaker: "Icebreaker hinzufügen",
+    addIcebreaker: "Eisbrecher hinzufügen",
     locationLegend: "Entfernung (privat)",
     locationHint: "Koordinaten werden anderen nicht angezeigt — nur eine grobe Entfernung (z. B. „5–15 km“). Beide Personen müssen die Option aktivieren.",
     shareLocation: "Entfernung von mir zu anderen Nutzern anzeigen",
@@ -458,7 +458,7 @@ export default {
     notifyEmail: "E-Mail-Benachrichtigungen (neue Anfragen, Matches, Nachrichten)",
     saveProfile: "Profil speichern",
     premiumTitle: "Premium-Tarife",
-    premiumHint: "Checkout ist bereit — Aktivierung nach Zahlung.",
+    premiumHint: "Zahlung ist bereit — Aktivierung nach Zahlung.",
     gdprTitle: "Datenschutz (DSGVO)",
     gdprHint: "Lade eine Kopie deiner Daten im JSON-Format herunter.",
     exportData: "Meine Daten herunterladen",
@@ -480,7 +480,7 @@ export default {
     deleteConfirm: "Konto dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
     deleteFailed: "Kontolöschung fehlgeschlagen.",
     planSuccess: "Zahlung erhalten. Premium-Aktivierung folgt nach Prüfung.",
-    checkoutFailed: "Premium-Checkout ist nicht verfügbar."
+    checkoutFailed: "Premium-Zahlung ist nicht verfügbar."
   },
   dashboard: {
     greeting: "Hallo, {name}",
@@ -490,7 +490,7 @@ export default {
     settingsLink: "Profileinstellungen",
     loading: "Wird geladen...",
     incompleteTitle: "Dein Profil ist noch nicht vollständig ({percent}%).",
-    incompleteHint: "Füge ein Foto, eine kurze Beschreibung und einen Icebreaker hinzu — das erhöht deine Chancen auf Kontakt.",
+    incompleteHint: "Füge ein Foto, eine kurze Beschreibung und einen Eisbrecher hinzu — das erhöht deine Chancen auf Kontakt.",
     completeProfile: "Profil vervollständigen",
     conversations: "Gespräche",
     conversationsUnread: "Gespräche ({unread} neu)",
@@ -541,7 +541,7 @@ export default {
     title: "Gespräch",
     loading: "Wird geladen...",
     unavailable: "Chat ist nicht verfügbar.",
-    empty: "Sende die erste Nachricht — du kannst auch einen Icebreaker aus dem Profil nutzen.",
+    empty: "Sende die erste Nachricht — du kannst auch einen Eisbrecher aus dem Profil nutzen.",
     read: "Gelesen",
     react: "Reagieren",
     typing: "Tippt…",
@@ -736,7 +736,7 @@ export default {
     planBtnSoon: "Bald verfügbar",
     planBtnDisabled: "Noch nicht verfügbar",
     planDisabledTitle: "Dieser Tarif ist noch nicht verfügbar. Wir informieren dich im Voraus, bevor Abrechnung eingeführt wird.",
-    planHintCheckout: "Premium-Checkout ist in den Einstellungen verfügbar, nachdem du dich anmeldest.",
+    planHintCheckout: "Premium-Zahlung ist in den Einstellungen verfügbar, nachdem du dich anmeldest.",
     planHintLater: "Wir aktivieren es, wenn Produkt und Community bereit sind — Vorankündigung folgt.",
     freePrice: "0 €",
     plans: [
@@ -869,7 +869,7 @@ export default {
         },
         {
           title: "Daten, die wir sammeln",
-          body: "Identitäts- und Kontaktdaten (E-Mail, Anzeigename), Profil (Stadt, Bio, Fotos, Dating-Präferenzen, Icebreaker-Antworten), optionaler Videolink, Nachrichten nach einem Match, technische Logs (Aktivitätszeit), optional grob gerundeter Standort (Koordinaten nur, wenn du die Entfernung teilst), Verifizierungs-Selfie (nicht öffentlich), Empfehlungscode sowie Zahlungs-/Spendendaten, falls du sie nutzt."
+          body: "Identitäts- und Kontaktdaten (E-Mail, Anzeigename), Profil (Stadt, Kurzbeschreibung, Fotos, Dating-Präferenzen, Eisbrecher-Antworten), optionaler Videolink, Nachrichten nach einem Match, technische Logs (Aktivitätszeit), optional grob gerundeter Standort (Koordinaten nur, wenn du die Entfernung teilst), Verifizierungs-Selfie (nicht öffentlich), Empfehlungscode sowie Zahlungs-/Spendendaten, falls du sie nutzt."
         },
         {
           title: "Standort und Entfernung",
@@ -927,7 +927,7 @@ export default {
         },
         {
           title: "Konto und Profil",
-          body: "Du bist verantwortlich für korrekte Daten, Passwortsicherheit und Profilinhalte. Ein Profil mit Foto und Bio ist erforderlich, um Anfragen an andere zu senden. Fake-Profile und falsches Alter sind verboten."
+          body: "Du bist verantwortlich für korrekte Daten, Passwortsicherheit und Profilinhalte. Ein Profil mit Foto und Kurzbeschreibung ist erforderlich, um Anfragen an andere zu senden. Fake-Profile und falsches Alter sind verboten."
         },
         {
           title: "Verbotenes Verhalten",
@@ -973,7 +973,7 @@ export default {
         },
         {
           title: "Profil mit Foto",
-          body: "Ohne Foto und kurze Bio kannst du keine Anfragen senden — das schützt die Community-Qualität und reduziert Fake-Profile."
+          body: "Ohne Foto und kurze Beschreibung kannst du keine Anfragen senden — das schützt die Community-Qualität und reduziert Fake-Profile."
         },
         {
           title: "Sicherheit beim Treffen",
@@ -1098,9 +1098,9 @@ export default {
     resolveSubmit: "Lösen und protokollieren",
     outcomeResolved: "Gelöst",
     outcomeDismissed: "Abgewiesen",
-    actionNone: "Bez akcije",
-    actionWarn: "Upozorenje",
-    actionSuspend: "Suspend",
+    actionNone: "Keine Aktion",
+    actionWarn: "Warnung",
+    actionSuspend: "Sperren",
     actionDelete: "Nutzer löschen"
   },
   icebreakers: {

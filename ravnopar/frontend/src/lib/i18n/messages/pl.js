@@ -211,7 +211,7 @@ export default {
     ADMIN_ACTION: "Admin",
     MODERATION: "Moderacja",
     SECURITY: "Bezpieczeństwo",
-    FEED_RANKING: "Ranking feedu",
+    FEED_RANKING: "Ranking widoku profili",
     COMPLIANCE: "Zgodność"
   },
   auditAction: {
@@ -228,7 +228,7 @@ export default {
     REPORT_RESOLVED: "Zgłoszenie rozwiązane",
     BLOCK: "Zablokuj",
     REPORT: "Zgłoś",
-    FEED_SNAPSHOT: "Migawka feedu",
+    FEED_SNAPSHOT: "Migawka widoku profili",
     DATA_EXPORT: "Eksport danych",
     ACCOUNT_DELETE_SELF: "Usunięcie konta",
     ACCOUNT_DELETE: "Usunięcie konta",
@@ -288,7 +288,7 @@ export default {
       home: "Ravnopar — uczciwa platforma randkowa. Bez paywalla za rozmowę, czat po dopasowaniu i przejrzyste zasady.",
       auth: "Utwórz konto Ravnopar lub zaloguj się.",
       settings: "Edytuj profil, zdjęcia, powiadomienia i prywatność.",
-      app: "Twój feed Ravnopar, rozmowy i prośby o kontakt.",
+      app: "Twój widok profili Ravnopar, rozmowy i prośby o kontakt.",
       chat: "Prywatny czat z dopasowaniem.",
       profile: "Wyświetl profil Ravnopar.",
       onboarding: "Krótki przewodnik po Ravnopar.",
@@ -401,7 +401,7 @@ export default {
       },
       {
         title: "Uczciwa widoczność",
-        text: "Aktywne pary tymczasowo znikają z feedu, aby inni też mieli szansę."
+        text: "Aktywne pary tymczasowo znikają z widoku profili, aby inni też mieli szansę."
       },
       {
         title: "Ochrona i kontrola",
@@ -452,7 +452,7 @@ export default {
     seekingIdentityLegend: "Szukana tożsamość",
     intentLegend: "Intencja",
     availabilityLabel: "Widoczność profilu",
-    availabilityAvailable: "Dostępny w feedzie",
+    availabilityAvailable: "Dostępny w widoku profili",
     availabilityPaused: "Wstrzymany (ukryty)",
     availabilityFocused: "W aktywnej rozmowie",
     notifyEmail: "Powiadomienia email (nowe prośby, dopasowania, wiadomości)",
@@ -485,8 +485,8 @@ export default {
   dashboard: {
     greeting: "Cześć, {name}",
     subtitle: "Przeglądaj profile lub użyj przycisków — bez pośpiechu, jeden po drugim.",
-    feedCount: "{count} profili w Twoim feedzie",
-    feedEmpty: "Obecnie brak kompatybilnych profili w Twoim feedzie.",
+    feedCount: "{count} profili w Twoim widoku profili",
+    feedEmpty: "Obecnie brak kompatybilnych profili w Twoim widoku profili.",
     settingsLink: "Ustawienia profilu",
     loading: "Ładowanie...",
     incompleteTitle: "Twój profil nie jest jeszcze kompletny ({percent}%).",
@@ -503,13 +503,13 @@ export default {
     activeContact: "Obecnie rozmawiasz z {partner}.",
     openChatBtn: "Otwórz czat",
     closeContact: "Zakończ rozmowę",
-    visibleInFeed: "Jesteś widoczny w feedzie — przeglądaj profile poniżej.",
+    visibleInFeed: "Jesteś widoczny w widoku profili — przeglądaj profile poniżej.",
     incomingTitle: "Prośby o kontakt",
     accept: "Akceptuj",
     decline: "Odrzuć",
     discoverTitle: "Odkrywaj profile",
     discoverCount: " · {count} dla Ciebie",
-    gateTitle: "Profil nie jest gotowy na feed",
+    gateTitle: "Profil nie jest gotowy do widoku profili",
     gateHint: "Dodaj zdjęcie i opis (min. 10 znaków), zanim wysyłasz prośby lub przeglądasz.",
     gateOnboarding: "Zobacz intro",
     emptyTitle: "Brak nowych profili",
@@ -529,7 +529,7 @@ export default {
     accepted: "Kontakt zaakceptowany.",
     declined: "Prośba odrzucona.",
     respondFailed: "Odpowiedź nie została zapisana.",
-    closed: "Kontakt zamknięty. Jesteś ponownie dostępny w feedzie.",
+    closed: "Kontakt zamknięty. Jesteś ponownie dostępny w widoku profili.",
     closeFailed: "Zamknięcie nie powiodło się.",
     reportReason: "Nieodpowiednie zachowanie",
     reportNote: "Zgłoszenie z interfejsu użytkownika.",
@@ -573,7 +573,7 @@ export default {
   onboarding: {
     eyebrow: "Witamy",
     title: "Profil, który się wyróżnia",
-    lead: "Zanim wejdziesz do feedu, dodaj zdjęcie i krótki opis — oba są wymagane do wysyłania próśb.",
+    lead: "Zanim wejdziesz do widoku profili, dodaj zdjęcie i krótki opis — oba są wymagane do wysyłania próśb.",
     stepPhoto: "1. Zdjęcie",
     stepPhotoHint: "Profile ze zdjęciami dostają więcej odpowiedzi.",
     changePhoto: "Zmień zdjęcie",
@@ -582,9 +582,9 @@ export default {
     stepBioHint: "Napisz krótko, kim jesteś i czego szukasz.",
     editBio: "Edytuj opis",
     writeBio: "Napisz opis",
-    stepFeed: "3. Feed",
+    stepFeed: "3. Widok profili",
     stepFeedHint: "Gdy profil będzie gotowy, przeglądaj i wyślij pierwszą prośbę.",
-    finishReady: "Zakończ intro i otwórz feed",
+    finishReady: "Zakończ intro i otwórz widok profili",
     finishIncomplete: "Uzupełnij profil w Ustawieniach",
     finishHint: "Najpierw uzupełnij zdjęcie i opis w Ustawieniach",
     incompleteError: "Dodaj zdjęcie i opis (min. 10 znaków) w Ustawieniach przed kontynuacją.",
@@ -606,7 +606,7 @@ export default {
     lead: "Utrzymujemy Ravnopar dzięki dużemu wysiłkowi i niewielkiemu budżetowi. Jeśli platforma jest dla Ciebie ważna, możesz pomóc dobrowolnie — bez presji i bez dodatkowych funkcji w zamian.",
     sectionEyebrow: "Wsparcie projektu",
     sectionTitle: "Wesprzyj Ravnopar",
-    sectionLead: "Jeśli platforma pomaga Ci poznać ludzi, możesz dobrowolnie wesprzeć koszty serwerów. Każda wpłata ma znaczenie — i nie daje przewagi w feedzie.",
+    sectionLead: "Jeśli platforma pomaga Ci poznać ludzi, możesz dobrowolnie wesprzeć koszty serwerów. Każda wpłata ma znaczenie — i nie daje przewagi w widoku profili.",
     note: "Wpłaty są całkowicie dobrowolne. Dziękujemy, że to rozważasz. ♥",
     revolutTitle: "Karta (Revolut)",
     revolutHint: "Szybka płatność kartą — otwiera bezpieczną stronę Revolut.",
@@ -683,7 +683,7 @@ export default {
       {
         icon: "🤝",
         title: "Wpłaty pozostają dobrowolne",
-        text: "Jeśli wspierasz, nie zyskujesz priorytetu w feedzie — tylko nasze szczere podziękowania."
+        text: "Jeśli wspierasz, nie zyskujesz priorytetu w widoku profili — tylko nasze szczere podziękowania."
       }
     ],
     triggers: [
@@ -749,7 +749,7 @@ export default {
         tagline: "Twój start",
         description: "Wszystko, czego potrzebujesz do uczciwych randek — dziś i wtedy, gdy wprowadzimy Premium.",
         features: [
-          "Profil i widoczność w feedzie",
+          "Profil i widoczność w widoku profili",
           "Wysyłanie i akceptowanie próśb",
           "Blokowanie, zgłoszenia i ochrona przed spamem",
           "Brak ukrytego ograniczania zasięgu"
@@ -763,7 +763,7 @@ export default {
         priceEur: 4.99,
         period: "/ mies.",
         tagline: "Więcej dla Twojego profilu",
-        description: "Dla tych, którzy chcą dodatkowej kontroli — bez wpływu na innych w feedzie.",
+        description: "Dla tych, którzy chcą dodatkowej kontroli — bez wpływu na innych w widoku profili.",
         features: [
           "Więcej zdjęć w profilu",
           "Zaawansowane filtry (uczciwe dla wszystkich)",
@@ -801,15 +801,15 @@ export default {
     items: [
       {
         q: "Czy Ravnopar jest darmowy?",
-        a: "Tak — wysyłanie próśb, akceptowanie kontaktu i rozmowy w aplikacji są darmowe. Wsparcie jest dobrowolne i nie daje priorytetu w feedzie."
+        a: "Tak — wysyłanie próśb, akceptowanie kontaktu i rozmowy w aplikacji są darmowe. Wsparcie jest dobrowolne i nie daje priorytetu w widoku profili."
       },
       {
         q: "Jak działa dopasowanie?",
-        a: "Przeglądasz profile w feedzie i wysyłasz prośbę o kontakt. Jeśli druga osoba zaakceptuje, otwiera się prywatny czat, a obie strony są tymczasowo skupione na rozmowie."
+        a: "Przeglądasz profile w widoku profili i wysyłasz prośbę o kontakt. Jeśli druga osoba zaakceptuje, otwiera się prywatny czat, a obie strony są tymczasowo skupione na rozmowie."
       },
       {
         q: "Co się dzieje po zaakceptowaniu kontaktu?",
-        a: "Możesz otworzyć czat i rozmawiać w aplikacji. Aktywne pary tymczasowo opuszczają feed, aby inni mieli szansę."
+        a: "Możesz otworzyć czat i rozmawiać w aplikacji. Aktywne pary tymczasowo opuszczają profili, aby inni mieli szansę."
       },
       {
         q: "Czy będzie opłata za rozmowę?",
@@ -969,7 +969,7 @@ export default {
         },
         {
           title: "Uczciwy model Ravnopar",
-          body: "Brak paywalla za podstawowy czat. Aktywne pary tymczasowo opuszczają feed. Limity antyspamowe chronią społeczność. Boost/super-like nie istnieją."
+          body: "Brak paywalla za podstawowy czat. Aktywne pary tymczasowo opuszczają profili. Limity antyspamowe chronią społeczność. Boost/super-like nie istnieją."
         },
         {
           title: "Profil ze zdjęciem",
@@ -1060,14 +1060,14 @@ export default {
       timeline: "Log",
       moderation: "Moderacja",
       fairness: "Uczciwość",
-      feed: "Ranking feedu",
+      feed: "Ranking widoku profili",
       compliance: "Zgodność"
     },
     allCategories: "Wszystkie kategorie",
     categoryAdmin: "Akcje admina",
     categoryModeration: "Moderacja",
     categorySecurity: "Bezpieczeństwo",
-    categoryFeed: "Ranking feedu",
+    categoryFeed: "Ranking widoku profili",
     categoryCompliance: "Zgodność",
     refresh: "Odśwież",
     noEvents: "Brak wpisów.",
@@ -1098,9 +1098,9 @@ export default {
     resolveSubmit: "Rozstrzygnij i zapisz",
     outcomeResolved: "Rozwiązane",
     outcomeDismissed: "Odrzucone",
-    actionNone: "Bez akcije",
-    actionWarn: "Upozorenje",
-    actionSuspend: "Suspend",
+    actionNone: "Brak akcji",
+    actionWarn: "Ostrzeżenie",
+    actionSuspend: "Zawieś",
     actionDelete: "Usuń użytkownika"
   },
   icebreakers: {

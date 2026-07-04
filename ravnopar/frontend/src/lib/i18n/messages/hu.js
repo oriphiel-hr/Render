@@ -211,7 +211,7 @@ export default {
     ADMIN_ACTION: "Admin",
     MODERATION: "Moderáció",
     SECURITY: "Biztonság",
-    FEED_RANKING: "Hírfolyam rangsor",
+    FEED_RANKING: "Profilnézet rangsor",
     COMPLIANCE: "Megfelelőség"
   },
   auditAction: {
@@ -288,7 +288,7 @@ export default {
       home: "Ravnopar — tisztességes társkereső platform. Nincs fizetőfal a beszélgetéshez, csevegés egyezés után, és átlátható szabályok.",
       auth: "Hozd létre a Ravnopar fiókod vagy jelentkezz be.",
       settings: "Profil, fotók, értesítések és adatvédelem szerkesztése.",
-      app: "A Ravnopar hírfolyamod, beszélgetéseid és kapcsolatkérelmeid.",
+      app: "A Ravnopar profilnézeted, beszélgetéseid és kapcsolatkérelmeid.",
       chat: "Privát chat a pároddal.",
       profile: "Ravnopar profil megtekintése.",
       onboarding: "Gyors útmutató a Ravnoparhoz.",
@@ -401,7 +401,7 @@ export default {
       },
       {
         title: "Tisztességes láthatóság",
-        text: "Az aktív párok ideiglenesen kikerülnek a hírfolyamból, így mások is esélyt kapnak."
+        text: "Az aktív párok ideiglenesen kikerülnek a profilnézetből, így mások is esélyt kapnak."
       },
       {
         title: "Védelem és kontroll",
@@ -452,7 +452,7 @@ export default {
     seekingIdentityLegend: "Keresett identitás",
     intentLegend: "Szándék",
     availabilityLabel: "Profil láthatósága",
-    availabilityAvailable: "Elérhető a hírfolyamban",
+    availabilityAvailable: "Elérhető a profilnézetben",
     availabilityPaused: "Szüneteltetve (rejtett)",
     availabilityFocused: "Aktív beszélgetésben",
     notifyEmail: "E-mail értesítések (új kérések, egyezések, üzenetek)",
@@ -485,8 +485,8 @@ export default {
   dashboard: {
     greeting: "Szia, {name}",
     subtitle: "Lapozz profilokat vagy használd a gombokat — nyugodtan, egyesével.",
-    feedCount: "{count} profil a hírfolyamban",
-    feedEmpty: "Jelenleg nincs kompatibilis profil a hírfolyamodban.",
+    feedCount: "{count} profil a profilnézetben",
+    feedEmpty: "Jelenleg nincs kompatibilis profil a profilnézetedben.",
     settingsLink: "Profilbeállítások",
     loading: "Betöltés...",
     incompleteTitle: "A profilod még nem teljes ({percent}%).",
@@ -503,13 +503,13 @@ export default {
     activeContact: "Jelenleg {partner} partnerrel beszélgetsz.",
     openChatBtn: "Chat megnyitása",
     closeContact: "Beszélgetés lezárása",
-    visibleInFeed: "Látható vagy a hírfolyamban — lapozz profilokat lent.",
+    visibleInFeed: "Látható vagy a profilnézetben — lapozz profilokat lent.",
     incomingTitle: "Kapcsolatkérések",
     accept: "Elfogad",
     decline: "Elutasít",
     discoverTitle: "Fedezz fel profilokat",
     discoverCount: " · {count} neked",
-    gateTitle: "A profil még nem kész a hírfolyamhoz",
+    gateTitle: "A profil még nem kész a profilnézethez",
     gateHint: "Adj hozzá fotót és rövid bemutatkozást (min. 10 karakter) kérések küldése és swipe előtt.",
     gateOnboarding: "Bemutató megtekintése",
     emptyTitle: "Nincs új profil",
@@ -529,7 +529,7 @@ export default {
     accepted: "Kapcsolat elfogadva.",
     declined: "Kérés elutasítva.",
     respondFailed: "A válasz nem lett mentve.",
-    closed: "Kapcsolat lezárva. Újra elérhető vagy a hírfolyamban.",
+    closed: "Kapcsolat lezárva. Újra elérhető vagy a profilnézetben.",
     closeFailed: "Lezárás sikertelen.",
     reportReason: "Nem megfelelő viselkedés",
     reportNote: "Bejelentés a felhasználói felületről.",
@@ -573,7 +573,7 @@ export default {
   onboarding: {
     eyebrow: "Üdvözlünk",
     title: "Egy profil, ami kitűnik",
-    lead: "Mielőtt belépnél a hírfolyamba, adj hozzá fotót és rövid leírást — mindkettő szükséges a kérések küldéséhez.",
+    lead: "Mielőtt belépnél a profilnézetbe, adj hozzá fotót és rövid leírást — mindkettő szükséges a kérések küldéséhez.",
     stepPhoto: "1. Fotó",
     stepPhotoHint: "A fotós profilok több választ kapnak.",
     changePhoto: "Fotó cseréje",
@@ -582,9 +582,9 @@ export default {
     stepBioHint: "Röviden írd le, ki vagy és mit keresel.",
     editBio: "Bemutatkozás szerkesztése",
     writeBio: "Írj magadról",
-    stepFeed: "3. Hírfolyam",
+    stepFeed: "3. Profilnézet",
     stepFeedHint: "Ha kész a profilod, lapozz és küldd el az első kérésed.",
-    finishReady: "Bemutató befejezése és a hírfolyam megnyitása",
+    finishReady: "Bemutató befejezése és a profilnézet megnyitása",
     finishIncomplete: "Profil befejezése a Beállításokban",
     finishHint: "Először fejezd be a fotót és a bemutatkozást a Beállításokban",
     incompleteError: "Adj hozzá fotót és rövid bemutatkozást (min. 10 karakter) a Beállításokban a folytatás előtt.",
@@ -606,7 +606,7 @@ export default {
     lead: "Sok munkával és kis költségvetéssel tartjuk életben a Ravnopart. Ha fontos számodra a platform, önként segíthetsz — nyomás és extra funkciók nélkül.",
     sectionEyebrow: "Projekt támogatása",
     sectionTitle: "Támogasd a Ravnopart",
-    sectionLead: "Ha a platform segít ismerkedni, önként hozzájárulhatsz a szerverköltségekhez. Minden támogatás számít — és nem kapsz előnyt a hírfolyamban.",
+    sectionLead: "Ha a platform segít ismerkedni, önként hozzájárulhatsz a szerverköltségekhez. Minden támogatás számít — és nem kapsz előnyt a profilnézetben.",
     note: "Az adományok teljesen önkéntesek. Köszönjük, hogy fontolóra veszed. ♥",
     revolutTitle: "Kártya (Revolut)",
     revolutHint: "Gyors kártyás fizetés — biztonságos Revolut oldalra visz.",
@@ -683,7 +683,7 @@ export default {
       {
         icon: "🤝",
         title: "Az adományok önkéntesek maradnak",
-        text: "Ha adományozol, nem kapsz hírfolyam előnyt — csak őszinte köszönetet."
+        text: "Ha adományozol, nem kapsz profilnézet előnyt — csak őszinte köszönetet."
       }
     ],
     triggers: [
@@ -749,7 +749,7 @@ export default {
         tagline: "Kezdésed",
         description: "Minden, amire a tisztességes társkereséshez szükség van — ma és akkor is, ha bevezetjük a Prémiumot.",
         features: [
-          "Profil és láthatóság a hírfolyamban",
+          "Profil és láthatóság a profilnézetben",
           "Kérések küldése és elfogadása",
           "Tiltás, jelentések és spam védelem",
           "Nincs rejtett eléréscsökkentés"
@@ -801,15 +801,15 @@ export default {
     items: [
       {
         q: "Ingyenes a Ravnopar?",
-        a: "Igen — a kérések küldése, elfogadása és a csevegés ingyenes. Az adományok önkéntesek és nem adnak hírfolyam előnyt."
+        a: "Igen — a kérések küldése, elfogadása és a csevegés ingyenes. Az adományok önkéntesek és nem adnak profilnézet előnyt."
       },
       {
         q: "Hogyan működik az egyezés?",
-        a: "Böngészed a profilokat a hírfolyamban, és küldesz egy kapcsolatkérelmet. Ha a másik elfogadja, privát chat nyílik, és mindketten ideiglenesen a beszélgetésre fókuszáltak lesztek."
+        a: "Böngészed a profilokat a profilnézetben, és küldesz egy kapcsolatkérelmet. Ha a másik elfogadja, privát chat nyílik, és mindketten ideiglenesen a beszélgetésre fókuszáltak lesztek."
       },
       {
         q: "Mi történik, ha a kapcsolatot elfogadják?",
-        a: "Megnyithatod a chatet és beszélgethetsz az appban. Az aktív párok ideiglenesen kikerülnek a hírfolyamból, így mások is esélyt kapnak."
+        a: "Megnyithatod a chatet és beszélgethetsz az appban. Az aktív párok ideiglenesen kikerülnek a profilnézetből, így mások is esélyt kapnak."
       },
       {
         q: "Fizetős lesz a beszélgetés?",
@@ -869,7 +869,7 @@ export default {
         },
         {
           title: "Milyen adatokat gyűjtünk",
-          body: "Személyazonosító és kapcsolati adatok (e-mail, megjelenített név), profil (város, bio, fotók, társkeresési preferenciák, jégtörő válaszok), opcionális videólink, üzenetek egyezés után, technikai naplók (aktivitási idő), opcionálisan kerekített helyadat (koordináták csak távolságszámításhoz), ellenőrző szelfi (nem nyilvános), ajánlókód, valamint fizetési/adományozási adatok, ha használod őket."
+          body: "Személyazonosító és kapcsolati adatok (e-mail, megjelenített név), profil (város, rövid bemutatkozás, fotók, társkeresési preferenciák, jégtörő válaszok), opcionális videólink, üzenetek egyezés után, technikai naplók (aktivitási idő), opcionálisan kerekített helyadat (koordináták csak távolságszámításhoz), ellenőrző szelfi (nem nyilvános), ajánlókód, valamint fizetési/adományozási adatok, ha használod őket."
         },
         {
           title: "Helymeghatározás és távolság",
@@ -969,11 +969,11 @@ export default {
         },
         {
           title: "Ravnopar tisztességes modell",
-          body: "Nincs fizetőfal az alap chathez. Az aktív párok ideiglenesen kikerülnek a hírfolyamból. A spam elleni korlátok védik a közösséget. Nincs boost/super-like."
+          body: "Nincs fizetőfal az alap chathez. Az aktív párok ideiglenesen kikerülnek a profilnézetből. A spam elleni korlátok védik a közösséget. Nincs boost/super-like."
         },
         {
           title: "Fotós profil",
-          body: "Fotó és rövid bio nélkül nem küldhetsz kéréseket — ez védi a közösség minőségét és csökkenti a hamis profilokat."
+          body: "Fotó és rövid bemutatkozás nélkül nem küldhetsz kéréseket — ez védi a közösség minőségét és csökkenti a hamis profilokat."
         },
         {
           title: "Biztonság találkozáskor",
@@ -1060,14 +1060,14 @@ export default {
       timeline: "Napló",
       moderation: "Moderáció",
       fairness: "Tisztesség",
-      feed: "Hírfolyam rangsor",
+      feed: "Profilnézet rangsor",
       compliance: "Megfelelőség"
     },
     allCategories: "Összes kategória",
     categoryAdmin: "Admin műveletek",
     categoryModeration: "Moderáció",
     categorySecurity: "Biztonság",
-    categoryFeed: "Hírfolyam rangsor",
+    categoryFeed: "Profilnézet rangsor",
     categoryCompliance: "Megfelelőség",
     refresh: "Frissítés",
     noEvents: "Nincs bejegyzés.",
@@ -1098,9 +1098,9 @@ export default {
     resolveSubmit: "Lezárás és naplózás",
     outcomeResolved: "Lezárva",
     outcomeDismissed: "Elutasítva",
-    actionNone: "Bez akcije",
-    actionWarn: "Upozorenje",
-    actionSuspend: "Suspend",
+    actionNone: "Nincs művelet",
+    actionWarn: "Figyelmeztetés",
+    actionSuspend: "Felfüggesztés",
     actionDelete: "Felhasználó törlése"
   },
   icebreakers: {

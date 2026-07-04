@@ -211,7 +211,7 @@ export default {
     ADMIN_ACTION: "Admin",
     MODERATION: "Moderace",
     SECURITY: "Bezpečnost",
-    FEED_RANKING: "Hodnocení feedu",
+    FEED_RANKING: "Hodnocení přehledu profilů",
     COMPLIANCE: "Soulad"
   },
   auditAction: {
@@ -228,7 +228,7 @@ export default {
     REPORT_RESOLVED: "Zpráva vyřešena",
     BLOCK: "Blokovat",
     REPORT: "Nahlásit",
-    FEED_SNAPSHOT: "Snímek feedu",
+    FEED_SNAPSHOT: "Snímek přehledu profilů",
     DATA_EXPORT: "Export dat",
     ACCOUNT_DELETE_SELF: "Smazání účtu",
     ACCOUNT_DELETE: "Smazání účtu",
@@ -288,7 +288,7 @@ export default {
       home: "Ravnopar — férová seznamovací platforma. Bez paywallu pro konverzaci, chat po shodě a transparentní pravidla.",
       auth: "Vytvořte si účet Ravnopar nebo se přihlaste.",
       settings: "Upravte profil, fotky, oznámení a soukromí.",
-      app: "Váš feed Ravnopar, konverzace a žádosti o kontakt.",
+      app: "Váš přehled profilů Ravnopar, konverzace a žádosti o kontakt.",
       chat: "Soukromý chat s vaším protějškem.",
       profile: "Zobrazit profil Ravnopar.",
       onboarding: "Rychlý průvodce Ravnopar.",
@@ -351,18 +351,18 @@ export default {
     chipAntiSpam: "Ochrana proti spamu",
     showcaseEyebrow: "Ukázka zážitku",
     showcaseTitle: "Poznejte lidi jako v seznamce — bez paywallu",
-    showcaseText: "Swipe karty, galerie fotek a chat po shodě. Férová pravidla zůstávají stejná.",
+    showcaseText: "Karty profilů, galerie fotek a chat po shodě. Férová pravidla zůstávají stejná.",
     showcaseMockName: "Maya, 28 · Zagreb",
     showcaseMockBio: "Miluji kávu, túry a upřímné rozhovory.",
     howItWorks: "Jak to funguje",
     steps: [
       {
         title: "Zaregistrujte se",
-        text: "Vytvořte profil, přidejte fotku a bio a vyberte, koho hledáte."
+        text: "Vytvořte profil, přidejte fotku a krátký popis a vyberte, koho hledáte."
       },
       {
         title: "Poznávejte lidi",
-        text: "Procházejte feed dostupných profilů bez skrytého snižování dosahu."
+        text: "Procházejte přehled dostupných profilů bez skrytého snižování dosahu."
       },
       {
         title: "Mluvte férově",
@@ -401,7 +401,7 @@ export default {
       },
       {
         title: "Férová viditelnost",
-        text: "Aktivní páry dočasně opouštějí feed, aby ostatní měli také šanci."
+        text: "Aktivní páry dočasně opouštějí přehled profilů, aby ostatní měli také šanci."
       },
       {
         title: "Ochrana a kontrola",
@@ -452,7 +452,7 @@ export default {
     seekingIdentityLegend: "Hledaná identita",
     intentLegend: "Záměr",
     availabilityLabel: "Viditelnost profilu",
-    availabilityAvailable: "Dostupný ve feedu",
+    availabilityAvailable: "Dostupný v přehledu profilů",
     availabilityPaused: "Pozastaveno (skryto)",
     availabilityFocused: "V aktivní konverzaci",
     notifyEmail: "E-mailová oznámení (nové žádosti, shody, zprávy)",
@@ -485,8 +485,8 @@ export default {
   dashboard: {
     greeting: "Ahoj, {name}",
     subtitle: "Procházejte profily nebo používejte tlačítka — v klidu, jeden po druhém.",
-    feedCount: "{count} profilů ve vašem feedu",
-    feedEmpty: "Momentálně nejsou ve vašem feedu žádné kompatibilní profily.",
+    feedCount: "{count} profilů ve vašem přehledu profilů",
+    feedEmpty: "Momentálně nejsou ve vašem přehledu profilů žádné kompatibilní profily.",
     settingsLink: "Nastavení profilu",
     loading: "Načítání...",
     incompleteTitle: "Váš profil ještě není kompletní ({percent}%).",
@@ -503,14 +503,14 @@ export default {
     activeContact: "Právě si povídáte s {partner}.",
     openChatBtn: "Otevřít chat",
     closeContact: "Ukončit konverzaci",
-    visibleInFeed: "Jste viditelní ve feedu — procházejte profily níže.",
+    visibleInFeed: "Jste viditelní v přehledu profilů — procházejte profily níže.",
     incomingTitle: "Žádosti o kontakt",
     accept: "Přijmout",
     decline: "Odmítnout",
     discoverTitle: "Objevujte profily",
     discoverCount: " · {count} pro vás",
-    gateTitle: "Profil není připraven na feed",
-    gateHint: "Přidejte fotku a krátký popis (min. 10 znaků) před odesíláním žádostí nebo swipováním.",
+    gateTitle: "Profil není připraven do přehledu profilů",
+    gateHint: "Přidejte fotku a krátký popis (min. 10 znaků) před odesíláním žádostí nebo prohlížením profilů.",
     gateOnboarding: "Zobrazit intro",
     emptyTitle: "Žádné nové profily",
     emptyHint: "Rozšiřte město nebo preference v Nastavení — nebo se vraťte později.",
@@ -529,7 +529,7 @@ export default {
     accepted: "Kontakt přijat.",
     declined: "Žádost odmítnuta.",
     respondFailed: "Odpověď nebyla uložena.",
-    closed: "Kontakt uzavřen. Jste opět dostupní ve feedu.",
+    closed: "Kontakt uzavřen. Jste opět dostupní v přehledu profilů.",
     closeFailed: "Uzavření se nezdařilo.",
     reportReason: "Nevhodné chování",
     reportNote: "Nahlášení z uživatelského rozhraní.",
@@ -573,7 +573,7 @@ export default {
   onboarding: {
     eyebrow: "Vítejte",
     title: "Profil, který zaujme",
-    lead: "Než vstoupíte do feedu, přidejte fotku a krátký popis — obojí je nutné pro odesílání žádostí.",
+    lead: "Než vstoupíte do přehledu profilů, přidejte fotku a krátký popis — obojí je nutné pro odesílání žádostí.",
     stepPhoto: "1. Fotka",
     stepPhotoHint: "Profily s fotkami mají více odpovědí.",
     changePhoto: "Změnit fotku",
@@ -582,9 +582,9 @@ export default {
     stepBioHint: "Krátce napište, kdo jste a co hledáte.",
     editBio: "Upravit popis",
     writeBio: "Napsat o sobě",
-    stepFeed: "3. Feed",
+    stepFeed: "3. Přehled profilů",
     stepFeedHint: "Jakmile je profil připraven, swipujte a pošlete první žádost.",
-    finishReady: "Dokončit intro a otevřít feed",
+    finishReady: "Dokončit intro a otevřít přehled profilů",
     finishIncomplete: "Dokončit profil v Nastavení",
     finishHint: "Nejdříve dokončete fotku a popis v Nastavení",
     incompleteError: "Přidejte fotku a krátký popis (min. 10 znaků) v Nastavení před pokračováním.",
@@ -606,7 +606,7 @@ export default {
     lead: "Ravnopar udržujeme díky velkému úsilí a malému rozpočtu. Pokud je pro vás platforma důležitá, můžete pomoci dobrovolně — bez tlaku a bez dalších funkcí na oplátku.",
     sectionEyebrow: "Podpora projektu",
     sectionTitle: "Podpořte Ravnopar",
-    sectionLead: "Pokud vám platforma pomáhá poznávat lidi, můžete dobrovolně přispět na serverové náklady. Každý příspěvek se počítá — a nezískáte žádnou výhodu ve feedu.",
+    sectionLead: "Pokud vám platforma pomáhá poznávat lidi, můžete dobrovolně přispět na serverové náklady. Každý příspěvek se počítá — a nezískáte žádnou výhodu v přehledu profilů.",
     note: "Příspěvky jsou zcela dobrovolné. Děkujeme, že o tom uvažujete. ♥",
     revolutTitle: "Karta (Revolut)",
     revolutHint: "Rychlá platba kartou — otevře zabezpečenou stránku Revolut.",
@@ -683,7 +683,7 @@ export default {
       {
         icon: "🤝",
         title: "Příspěvky zůstanou dobrovolné",
-        text: "Pokud přispějete, nezískáte prioritu ve feedu — jen naši upřímnou vděčnost."
+        text: "Pokud přispějete, nezískáte prioritu v přehledu profilů — jen naši upřímnou vděčnost."
       }
     ],
     triggers: [
@@ -749,7 +749,7 @@ export default {
         tagline: "Váš start",
         description: "Vše, co potřebujete pro férové seznamování — dnes i po zavedení Premium.",
         features: [
-          "Profil a viditelnost ve feedu",
+          "Profil a viditelnost v přehledu profilů",
           "Odesílání a přijímání žádostí",
           "Blokování, hlášení a ochrana proti spamu",
           "Bez skrytého snižování dosahu"
@@ -763,7 +763,7 @@ export default {
         priceEur: 4.99,
         period: "/ měs.",
         tagline: "Více pro váš profil",
-        description: "Pro ty, kteří chtějí více kontroly — bez dopadu na ostatní ve feedu.",
+        description: "Pro ty, kteří chtějí více kontroly — bez dopadu na ostatní v přehledu profilů.",
         features: [
           "Více fotek v profilu",
           "Pokročilé filtry (férové pro všechny)",
@@ -801,15 +801,15 @@ export default {
     items: [
       {
         q: "Je Ravnopar zdarma?",
-        a: "Ano — odesílání žádostí, přijímání kontaktu a chat v aplikaci jsou zdarma. Příspěvky jsou dobrovolné a nedávají prioritu ve feedu."
+        a: "Ano — odesílání žádostí, přijímání kontaktu a chat v aplikaci jsou zdarma. Příspěvky jsou dobrovolné a nedávají prioritu v přehledu profilů."
       },
       {
         q: "Jak funguje shoda?",
-        a: "Procházíte profily ve feedu a odešlete žádost o kontakt. Pokud druhá osoba přijme, otevře se soukromý chat a oba dočasně zaměříte pozornost na konverzaci."
+        a: "Procházíte profily v přehledu profilů a odešlete žádost o kontakt. Pokud druhá osoba přijme, otevře se soukromý chat a oba dočasně zaměříte pozornost na konverzaci."
       },
       {
         q: "Co se stane po přijetí kontaktu?",
-        a: "Můžete otevřít chat a komunikovat v aplikaci. Aktivní páry dočasně opustí feed, aby ostatní měli šanci."
+        a: "Můžete otevřít chat a komunikovat v aplikaci. Aktivní páry dočasně opustí profilů, aby ostatní měli šanci."
       },
       {
         q: "Budete účtovat konverzaci?",
@@ -869,7 +869,7 @@ export default {
         },
         {
           title: "Data, která sbíráme",
-          body: "Identifikační a kontaktní údaje (e-mail, zobrazované jméno), profil (město, bio, fotky, seznamovací preference, odpovědi na otázky), volitelný odkaz na video, zprávy po shodě, technické logy (čas aktivity), volitelná zaokrouhlená poloha (souřadnice jen při sdílení vzdálenosti), ověřovací selfie (neveřejné), referenční kód a platební/darovací údaje, pokud je používáte."
+          body: "Identifikační a kontaktní údaje (e-mail, zobrazované jméno), profil (město, krátký popis, fotky, seznamovací preference, odpovědi na otázky), volitelný odkaz na video, zprávy po shodě, technické logy (čas aktivity), volitelná zaokrouhlená poloha (souřadnice jen při sdílení vzdálenosti), ověřovací selfie (neveřejné), referenční kód a platební/darovací údaje, pokud je používáte."
         },
         {
           title: "Poloha a vzdálenost",
@@ -881,7 +881,7 @@ export default {
         },
         {
           title: "Účel zpracování",
-          body: "Poskytování seznamovací služby, zobrazení profilu, párování, chat, bezpečnost (blokování, hlášení), e-mailová upozornění, která schválíte, referral program, analytika (jen se souhlasem cookies) a údržba platformy."
+          body: "Poskytování seznamovací služby, zobrazení profilu, párování, chat, bezpečnost (blokování, hlášení), e-mailová upozornění, která schválíte, program pozvánek, analytika (jen se souhlasem cookies) a údržba platformy."
         },
         {
           title: "Právní základ (GDPR)",
@@ -927,7 +927,7 @@ export default {
         },
         {
           title: "Účet a profil",
-          body: "Jste odpovědní za správné údaje, bezpečnost hesla a obsah profilu. Profil s fotkou a bio je vyžadován pro odesílání žádostí. Falešné profily a nepravdivý věk jsou zakázány."
+          body: "Jste odpovědní za správné údaje, bezpečnost hesla a obsah profilu. Profil s fotkou a krátkým popisem je vyžadován pro odesílání žádostí. Falešné profily a nepravdivý věk jsou zakázány."
         },
         {
           title: "Zakázané chování",
@@ -969,11 +969,11 @@ export default {
         },
         {
           title: "Férový model Ravnopar",
-          body: "Bez paywallu pro základní chat. Aktivní páry dočasně opouštějí feed. Anti-spam limity chrání komunitu. Boost/super-like neexistují."
+          body: "Bez paywallu pro základní chat. Aktivní páry dočasně opouštějí přehled profilů. Anti-spam limity chrání komunitu. Boost/super-like neexistují."
         },
         {
           title: "Profil s fotkou",
-          body: "Bez fotky a krátkého bio nemůžete posílat žádosti — chrání to kvalitu komunity a snižuje falešné profily."
+          body: "Bez fotky a krátkého popisu nemůžete posílat žádosti — chrání to kvalitu komunity a snižuje falešné profily."
         },
         {
           title: "Bezpečnost při setkání",
@@ -1060,14 +1060,14 @@ export default {
       timeline: "Log",
       moderation: "Moderace",
       fairness: "Férovost",
-      feed: "Hodnocení feedu",
+      feed: "Hodnocení přehledu profilů",
       compliance: "Soulad"
     },
     allCategories: "Všechny kategorie",
     categoryAdmin: "Admin akce",
     categoryModeration: "Moderace",
     categorySecurity: "Bezpečnost",
-    categoryFeed: "Hodnocení feedu",
+    categoryFeed: "Hodnocení přehledu profilů",
     categoryCompliance: "Soulad",
     refresh: "Obnovit",
     noEvents: "Žádné záznamy.",
@@ -1098,9 +1098,9 @@ export default {
     resolveSubmit: "Vyřešit a zapsat",
     outcomeResolved: "Vyřešeno",
     outcomeDismissed: "Zamítnuto",
-    actionNone: "Bez akcije",
-    actionWarn: "Upozorenje",
-    actionSuspend: "Suspend",
+    actionNone: "Bez akce",
+    actionWarn: "Varování",
+    actionSuspend: "Pozastavit",
     actionDelete: "Smazat uživatele"
   },
   icebreakers: {
