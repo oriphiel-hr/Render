@@ -125,7 +125,7 @@ Migracije se pokreću automatski u build koraku (`prisma migrate deploy`).
 
 | Key | Opis |
 |-----|------|
-| `VITE_ANALYTICS_URL` | Plausible/Umami script URL |
+| `VITE_ANALYTICS_URL` | Plausible script URL — npr. `https://plausible.io/js/pa-en9H0khVpSTdd-AfH6hU1.js` (učitava se nakon cookie pristanka) |
 | `VITE_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key |
 
 **Build:** `npm install && npm run build`  

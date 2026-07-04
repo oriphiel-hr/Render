@@ -6,11 +6,18 @@ const ANALYTICS_URL = import.meta.env.VITE_ANALYTICS_URL?.trim();
 
 function loadScript() {
   if (!ANALYTICS_URL || document.querySelector('script[data-ravnopar-analytics="1"]')) return;
+
+  if (typeof window.plausible !== 'function') {
+    const inline = document.createElement('script');
+    inline.textContent =
+      'window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()';
+    document.head.appendChild(inline);
+  }
+
   const script = document.createElement('script');
-  script.defer = true;
+  script.async = true;
   script.src = ANALYTICS_URL;
   script.dataset.ravnoparAnalytics = '1';
-  script.setAttribute('data-domain', window.location.hostname);
   document.head.appendChild(script);
 }
 

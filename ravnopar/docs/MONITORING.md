@@ -77,7 +77,21 @@ Opcionalno: `MONTHLY_OPERATING_COST_CENTS=2500` za postotak pokrivenosti donacij
 
 ---
 
-## Env (opcionalno)
+## Plausible (posjete stranici)
+
+Analitika se učitava **tek nakon** „Razumijem” na cookie banneru (GDPR).
+
+| Env | Vrijednost |
+|-----|------------|
+| `VITE_ANALYTICS_URL` | `https://plausible.io/js/pa-en9H0khVpSTdd-AfH6hU1.js` |
+
+Dashboard: [plausible.io](https://plausible.io) — posjete, stranice, izvori prometa.
+
+**Napomena:** Search Console i dalje pokazuje samo klikove iz Google pretrage; Plausible pokriva sve posjete (direktne, bookmark, društvene mreže).
+
+Na Renderu postavi isti `VITE_ANALYTICS_URL` i redeploy frontenda.
+
+---
 
 | Key | Opis |
 |-----|------|
