@@ -3,7 +3,7 @@
   --bg: #fdf2f8;
   --card: #ffffff;
   --text: #1e1033;
-  --muted: #6b5b7a;
+  --muted: #475569;
   --primary: #db2777;
   --primary-dark: #be185d;
   --accent: #7c3aed;
@@ -17,6 +17,7 @@
   --info-bg: #fdf4ff;
   --gradient-hero: linear-gradient(135deg, #fdf2f8 0%, #ede9fe 45%, #fce7f3 100%);
   --shadow-soft: 0 18px 40px rgba(190, 24, 93, 0.08);
+  --btn-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 4px 14px rgba(190, 24, 93, 0.16);
 }
 
 [data-theme='dark'] {
@@ -249,8 +250,9 @@ a {
 .landing-lead {
   max-width: 42rem;
   font-size: 1.08rem;
-  color: #334155;
+  color: #1e293b;
   margin: 0;
+  line-height: 1.6;
 }
 
 .landing-actions {
@@ -258,6 +260,27 @@ a {
   flex-wrap: wrap;
   gap: 0.75rem;
   margin: 1.25rem 0 1rem;
+}
+
+.landing-actions .button-lg {
+  min-width: 10rem;
+  border-radius: 12px;
+  padding: 0.85rem 1.35rem;
+}
+
+.landing-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.landing-chips .chip {
+  background: #fff;
+  border-color: #cbd5e1;
+  color: #1e293b;
+  font-weight: 500;
+  font-size: 0.86rem;
+  padding: 0.35rem 0.75rem;
 }
 
 .landing-chips,
@@ -356,7 +379,7 @@ textarea:focus {
 .button,
 button {
   border: 0;
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 0.65rem 0.95rem;
   min-height: 44px;
   cursor: pointer;
@@ -365,26 +388,34 @@ button {
   align-items: center;
   justify-content: center;
   gap: 0.35rem;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
 }
 
-.button-primary,
-button:not(.button-secondary):not(.button-ghost):not(.stepper-item) {
-  background: var(--primary);
-  color: white;
-}
-
-.button-primary:hover,
-button:not(.button-secondary):not(.button-ghost):not(.stepper-item):hover {
+.button-primary {
   background: var(--primary-dark);
+  color: #fff;
+  font-weight: 600;
+  border: 1px solid transparent;
+  box-shadow: var(--btn-shadow);
+}
+
+.button-primary:hover {
+  background: #9d174d;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.08), 0 6px 18px rgba(190, 24, 93, 0.22);
 }
 
 .button-secondary {
-  background: #e2e8f0;
+  background: #fff;
   color: #0f172a;
+  border: 1px solid #cbd5e1;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 .button-secondary:hover {
-  background: #cbd5e1;
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #020617;
 }
 
 .button-ghost {
@@ -2065,29 +2096,29 @@ body:has(.mobile-dock) .cookie-banner {
   justify-content: center;
   gap: 0.08rem;
   position: relative;
-  border: 1px solid var(--border);
+  border: 1px solid #cbd5e1;
   border-radius: 10px;
-  background: var(--card);
-  color: var(--text);
+  background: #fff;
+  color: #1e293b;
   font: inherit;
   padding: 0.35rem 0.2rem;
   min-height: 2.65rem;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  transition: border-color 0.15s, background 0.15s, color 0.15s, box-shadow 0.15s;
 }
 
 .lang-picker-code {
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.05em;
-  color: #475569;
+  color: #334155;
 }
 
 .lang-picker-name {
   font-size: 0.62rem;
   font-weight: 500;
   line-height: 1.1;
-  color: var(--muted);
+  color: #64748b;
   text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2096,23 +2127,24 @@ body:has(.mobile-dock) .cookie-banner {
 }
 
 .lang-picker-btn:hover {
-  border-color: #cbd5e1;
+  border-color: #94a3b8;
   background: #f8fafc;
 }
 
 .lang-picker-btn:hover .lang-picker-code,
 .lang-picker-btn:hover .lang-picker-name {
-  color: var(--primary-dark);
+  color: #0f172a;
 }
 
 .lang-picker-btn.active {
-  border-color: var(--primary);
-  background: #eef2ff;
+  border-color: var(--primary-dark);
+  background: var(--primary-dark);
+  box-shadow: 0 2px 8px rgba(190, 24, 93, 0.28);
 }
 
 .lang-picker-btn.active .lang-picker-code,
 .lang-picker-btn.active .lang-picker-name {
-  color: var(--primary-dark);
+  color: #fff;
 }
 
 .lang-picker-btn[data-tooltip]::after {
@@ -2211,8 +2243,9 @@ body:has(.mobile-dock) .cookie-banner {
 .lang-picker-hint {
   margin: 0 0 0.45rem;
   font-size: 0.92rem;
-  color: var(--muted);
+  color: #475569;
   text-align: center;
+  font-weight: 500;
 }
 
 .landing-lang-picker {
@@ -2378,11 +2411,6 @@ body:has(.mobile-dock) .cookie-banner {
 
 .turnstile-wrap {
   margin: 0.75rem 0;
-}
-
-.button-primary {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-  border-color: transparent;
 }
 
 .card {
@@ -2726,6 +2754,21 @@ body:has(.mobile-dock) .cookie-banner {
   padding: 0.2rem 0.35rem;
 }
 
+.chat-reaction-picker button {
+  background: transparent;
+  border: 0;
+  padding: 0.15rem 0.3rem;
+  cursor: pointer;
+  line-height: 1;
+  font-size: 1.05rem;
+  min-height: unset;
+  border-radius: 6px;
+}
+
+.chat-reaction-picker button:hover {
+  background: #f1f5f9;
+}
+
 .chat-reaction {
   position: absolute;
   bottom: -0.35rem;
@@ -2873,6 +2916,46 @@ body.match-modal-open {
 [data-theme='dark'] .inbox-unread {
   background: #3b0764;
   color: #fdf4ff;
+}
+
+[data-theme='dark'] .button-secondary {
+  background: var(--card);
+  color: var(--text);
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+[data-theme='dark'] .button-secondary:hover {
+  background: #2d1a40;
+  border-color: #7e22ce;
+}
+
+[data-theme='dark'] .lang-picker-btn {
+  background: var(--card);
+  border-color: var(--border);
+}
+
+[data-theme='dark'] .lang-picker-btn:hover {
+  background: #2d1a40;
+  border-color: #7e22ce;
+}
+
+[data-theme='dark'] .lang-picker-code {
+  color: #e9d5ff;
+}
+
+[data-theme='dark'] .lang-picker-name {
+  color: #c4b5fd;
+}
+
+[data-theme='dark'] .landing-chips .chip {
+  background: #2d1a40;
+  border-color: var(--border);
+  color: #fdf4ff;
+}
+
+[data-theme='dark'] .landing-lead {
+  color: #e9d5ff;
 }
 
 .chip-distance {
