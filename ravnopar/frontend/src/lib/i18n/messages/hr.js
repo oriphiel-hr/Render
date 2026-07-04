@@ -420,7 +420,7 @@ export default {
   cookie: {
     ariaLabel: 'Kolačići',
     message:
-      'Koristimo nužne kolačiće za prijavu i analitiku samo ako je uključena. Više u',
+      'Koristimo nužne kolačiće za prijavu. Analitiku (Plausible) koristimo bez praćenih kolačića — ne identificira te. Više u',
     privacyLink: 'politici privatnosti',
     accept: 'Razumijem'
   },
@@ -1168,12 +1168,12 @@ export default {
         {
           title: 'Svrha obrade',
           body:
-            'Pružanje usluge upoznavanja, prikaz profila, sparivanje, chat, sigurnost (blokiranje, prijave), email obavijesti koje odobriš, referral program, analitika (samo uz suglasnost za kolačiće) te održavanje platforme.'
+            'Pružanje usluge upoznavanja, prikaz profila, sparivanje, chat, sigurnost (blokiranje, prijave), email obavijesti koje odobriš, referral program, agregirana analitika posjeta te održavanje platforme.'
         },
         {
           title: 'Pravna osnova (GDPR)',
           body:
-            'Uglavnom izvršavanje ugovora (korištenje usluge), legitimni interes (sigurnost, sprječavanje zloupotrebe) te privola (email obavijesti, lokacija, analitika, kolačići izvan nužnih).'
+            'Uglavnom izvršavanje ugovora (korištenje usluge), legitimni interes (sigurnost, sprječavanje zloupotrebe, agregirana analitika posjeta) te privola (email obavijesti, lokacija, kolačići izvan nužnih).'
         },
         {
           title: 'Dijeljenje s trećim stranama',
@@ -1193,7 +1193,7 @@ export default {
         {
           title: 'Kolačići i analitika',
           body:
-            'Nužni kolačići/tokeni služe za prijavu. Analitika (npr. Plausible/Umami) učitava se samo ako prihvatiš banner kolačića. Analitika ne koristi oglašivačke profile po defaultu — ovisi o odabranom alatu.'
+            'Nužni kolačići/tokeni služe za prijavu. Analitika (Plausible) je bez praćenih kolačića i ne koristi oglašivačke profile — prikuplja samo agregirane podatke o posjetama (stranice, izvori, uređaji). Banner služi za informiranje, ne blokira analitiku.'
         },
         {
           title: 'Referral',
@@ -1304,6 +1304,27 @@ export default {
       matches30d: 'Match (30d)',
       messages7d: 'Poruke (7d)'
     },
+    analyticsTitle: 'Analitika posjeta (Plausible)',
+    analyticsSubtitle: 'Agregirani podaci za {site} — bez ručnog otvaranja Plausiblea.',
+    analyticsOpenExternal: 'Otvori u Plausibleu',
+    analyticsNotConfigured:
+      'Plausible nije povezan. Na backendu postavi PLAUSIBLE_API_KEY i PLAUSIBLE_SHARED_DASHBOARD_URL (Render → ravnopar-backend → Environment).',
+    analyticsPartialConfig:
+      'Postavi PLAUSIBLE_API_KEY za brojke ili PLAUSIBLE_SHARED_DASHBOARD_URL za ugrađeni dashboard.',
+    analyticsVisitorsToday: 'Posjetitelji (danas)',
+    analyticsPageviewsToday: 'Pregledi (danas)',
+    analyticsVisitors7d: 'Posjetitelji (7d)',
+    analyticsPageviews7d: 'Pregledi (7d)',
+    analyticsVisitors30d: 'Posjetitelji (30d)',
+    analyticsBounce7d: 'Bounce (7d)',
+    analyticsDuration7d: 'Trajanje posjeta (7d)',
+    analyticsTopPages: 'Top stranice (7d)',
+    analyticsTopSources: 'Izvori prometa (7d)',
+    analyticsPage: 'Stranica',
+    analyticsSource: 'Izvor',
+    analyticsVisitors: 'Posjetitelji',
+    analyticsPageviews: 'Pregledi',
+    analyticsDashboard: 'Plausible dashboard',
     quickActions: 'Brze akcije',
     inactivityThreshold: 'Prag neaktivnosti (h)',
     dailyContactLimit: 'Dnevni limit kontakata',

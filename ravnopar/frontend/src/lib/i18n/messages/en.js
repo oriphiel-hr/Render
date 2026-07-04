@@ -391,7 +391,8 @@ export default {
   },
   cookie: {
     ariaLabel: "Cookies",
-    message: "We use essential cookies for login and analytics only when enabled. Learn more in our",
+    message:
+      "We use essential cookies for login. Analytics (Plausible) runs without tracking cookies and does not identify you. Learn more in our",
     privacyLink: "privacy policy",
     accept: "Got it"
   },
@@ -1099,11 +1100,11 @@ export default {
         },
         {
           title: "Purpose of processing",
-          body: "Providing the dating service, profile display, matching, chat, safety (blocking, reports), email notifications you approve, referral program, analytics (only with cookie consent), and platform maintenance."
+          body: "Providing the dating service, profile display, matching, chat, safety (blocking, reports), email notifications you approve, referral program, aggregated visit analytics, and platform maintenance."
         },
         {
           title: "Legal basis (GDPR)",
-          body: "Mainly contract performance (using the service), legitimate interest (security, abuse prevention), and consent (email notifications, location, analytics, non-essential cookies)."
+          body: "Mainly contract performance (using the service), legitimate interest (security, abuse prevention, aggregated visit analytics), and consent (email notifications, location, non-essential cookies)."
         },
         {
           title: "Sharing with third parties",
@@ -1119,7 +1120,7 @@ export default {
         },
         {
           title: "Cookies and analytics",
-          body: "Essential cookies/tokens are used for login. Analytics (e.g. Plausible/Umami) loads only if you accept the cookie banner. Analytics does not use advertising profiles by default — it depends on the tool chosen."
+          body: "Essential cookies/tokens are used for login. Analytics (Plausible) is cookieless and does not use advertising profiles — it collects only aggregated visit data (pages, sources, devices). The banner is informational and does not block analytics."
         },
         {
           title: "Referral",
@@ -1219,6 +1220,27 @@ export default {
       matches30d: "Matches (30d)",
       messages7d: "Messages (7d)"
     },
+    analyticsTitle: "Visit analytics (Plausible)",
+    analyticsSubtitle: "Aggregated data for {site} — no need to open Plausible manually.",
+    analyticsOpenExternal: "Open in Plausible",
+    analyticsNotConfigured:
+      "Plausible is not connected. Set PLAUSIBLE_API_KEY and PLAUSIBLE_SHARED_DASHBOARD_URL on the backend (Render → ravnopar-backend → Environment).",
+    analyticsPartialConfig:
+      "Set PLAUSIBLE_API_KEY for numbers or PLAUSIBLE_SHARED_DASHBOARD_URL for the embedded dashboard.",
+    analyticsVisitorsToday: "Visitors (today)",
+    analyticsPageviewsToday: "Pageviews (today)",
+    analyticsVisitors7d: "Visitors (7d)",
+    analyticsPageviews7d: "Pageviews (7d)",
+    analyticsVisitors30d: "Visitors (30d)",
+    analyticsBounce7d: "Bounce rate (7d)",
+    analyticsDuration7d: "Visit duration (7d)",
+    analyticsTopPages: "Top pages (7d)",
+    analyticsTopSources: "Traffic sources (7d)",
+    analyticsPage: "Page",
+    analyticsSource: "Source",
+    analyticsVisitors: "Visitors",
+    analyticsPageviews: "Pageviews",
+    analyticsDashboard: "Plausible dashboard",
     quickActions: "Quick actions",
     inactivityThreshold: "Inactivity threshold (h)",
     dailyContactLimit: "Daily contact limit",

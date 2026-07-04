@@ -15154,7 +15154,7 @@ const hr = {
   },
   cookie: {
     ariaLabel: "Kolačići",
-    message: "Koristimo nužne kolačiće za prijavu i analitiku samo ako je uključena. Više u",
+    message: "Koristimo nužne kolačiće za prijavu. Analitiku (Plausible) koristimo bez praćenih kolačića — ne identificira te. Više u",
     privacyLink: "politici privatnosti",
     accept: "Razumijem"
   },
@@ -15847,11 +15847,11 @@ const hr = {
         },
         {
           title: "Svrha obrade",
-          body: "Pružanje usluge upoznavanja, prikaz profila, sparivanje, chat, sigurnost (blokiranje, prijave), email obavijesti koje odobriš, referral program, analitika (samo uz suglasnost za kolačiće) te održavanje platforme."
+          body: "Pružanje usluge upoznavanja, prikaz profila, sparivanje, chat, sigurnost (blokiranje, prijave), email obavijesti koje odobriš, referral program, agregirana analitika posjeta te održavanje platforme."
         },
         {
           title: "Pravna osnova (GDPR)",
-          body: "Uglavnom izvršavanje ugovora (korištenje usluge), legitimni interes (sigurnost, sprječavanje zloupotrebe) te privola (email obavijesti, lokacija, analitika, kolačići izvan nužnih)."
+          body: "Uglavnom izvršavanje ugovora (korištenje usluge), legitimni interes (sigurnost, sprječavanje zloupotrebe, agregirana analitika posjeta) te privola (email obavijesti, lokacija, kolačići izvan nužnih)."
         },
         {
           title: "Dijeljenje s trećim stranama",
@@ -15867,7 +15867,7 @@ const hr = {
         },
         {
           title: "Kolačići i analitika",
-          body: "Nužni kolačići/tokeni služe za prijavu. Analitika (npr. Plausible/Umami) učitava se samo ako prihvatiš banner kolačića. Analitika ne koristi oglašivačke profile po defaultu — ovisi o odabranom alatu."
+          body: "Nužni kolačići/tokeni služe za prijavu. Analitika (Plausible) je bez praćenih kolačića i ne koristi oglašivačke profile — prikuplja samo agregirane podatke o posjetama (stranice, izvori, uređaji). Banner služi za informiranje, ne blokira analitiku."
         },
         {
           title: "Referral",
@@ -15967,6 +15967,25 @@ const hr = {
       matches30d: "Match (30d)",
       messages7d: "Poruke (7d)"
     },
+    analyticsTitle: "Analitika posjeta (Plausible)",
+    analyticsSubtitle: "Agregirani podaci za {site} — bez ručnog otvaranja Plausiblea.",
+    analyticsOpenExternal: "Otvori u Plausibleu",
+    analyticsNotConfigured: "Plausible nije povezan. Na backendu postavi PLAUSIBLE_API_KEY i PLAUSIBLE_SHARED_DASHBOARD_URL (Render → ravnopar-backend → Environment).",
+    analyticsPartialConfig: "Postavi PLAUSIBLE_API_KEY za brojke ili PLAUSIBLE_SHARED_DASHBOARD_URL za ugrađeni dashboard.",
+    analyticsVisitorsToday: "Posjetitelji (danas)",
+    analyticsPageviewsToday: "Pregledi (danas)",
+    analyticsVisitors7d: "Posjetitelji (7d)",
+    analyticsPageviews7d: "Pregledi (7d)",
+    analyticsVisitors30d: "Posjetitelji (30d)",
+    analyticsBounce7d: "Bounce (7d)",
+    analyticsDuration7d: "Trajanje posjeta (7d)",
+    analyticsTopPages: "Top stranice (7d)",
+    analyticsTopSources: "Izvori prometa (7d)",
+    analyticsPage: "Stranica",
+    analyticsSource: "Izvor",
+    analyticsVisitors: "Posjetitelji",
+    analyticsPageviews: "Pregledi",
+    analyticsDashboard: "Plausible dashboard",
     quickActions: "Brze akcije",
     inactivityThreshold: "Prag neaktivnosti (h)",
     dailyContactLimit: "Dnevni limit kontakata",
@@ -16487,7 +16506,7 @@ const en = {
   },
   cookie: {
     ariaLabel: "Cookies",
-    message: "We use essential cookies for login and analytics only when enabled. Learn more in our",
+    message: "We use essential cookies for login. Analytics (Plausible) runs without tracking cookies and does not identify you. Learn more in our",
     privacyLink: "privacy policy",
     accept: "Got it"
   },
@@ -17188,11 +17207,11 @@ const en = {
         },
         {
           title: "Purpose of processing",
-          body: "Providing the dating service, profile display, matching, chat, safety (blocking, reports), email notifications you approve, referral program, analytics (only with cookie consent), and platform maintenance."
+          body: "Providing the dating service, profile display, matching, chat, safety (blocking, reports), email notifications you approve, referral program, aggregated visit analytics, and platform maintenance."
         },
         {
           title: "Legal basis (GDPR)",
-          body: "Mainly contract performance (using the service), legitimate interest (security, abuse prevention), and consent (email notifications, location, analytics, non-essential cookies)."
+          body: "Mainly contract performance (using the service), legitimate interest (security, abuse prevention, aggregated visit analytics), and consent (email notifications, location, non-essential cookies)."
         },
         {
           title: "Sharing with third parties",
@@ -17208,7 +17227,7 @@ const en = {
         },
         {
           title: "Cookies and analytics",
-          body: "Essential cookies/tokens are used for login. Analytics (e.g. Plausible/Umami) loads only if you accept the cookie banner. Analytics does not use advertising profiles by default — it depends on the tool chosen."
+          body: "Essential cookies/tokens are used for login. Analytics (Plausible) is cookieless and does not use advertising profiles — it collects only aggregated visit data (pages, sources, devices). The banner is informational and does not block analytics."
         },
         {
           title: "Referral",
@@ -17308,6 +17327,25 @@ const en = {
       matches30d: "Matches (30d)",
       messages7d: "Messages (7d)"
     },
+    analyticsTitle: "Visit analytics (Plausible)",
+    analyticsSubtitle: "Aggregated data for {site} — no need to open Plausible manually.",
+    analyticsOpenExternal: "Open in Plausible",
+    analyticsNotConfigured: "Plausible is not connected. Set PLAUSIBLE_API_KEY and PLAUSIBLE_SHARED_DASHBOARD_URL on the backend (Render → ravnopar-backend → Environment).",
+    analyticsPartialConfig: "Set PLAUSIBLE_API_KEY for numbers or PLAUSIBLE_SHARED_DASHBOARD_URL for the embedded dashboard.",
+    analyticsVisitorsToday: "Visitors (today)",
+    analyticsPageviewsToday: "Pageviews (today)",
+    analyticsVisitors7d: "Visitors (7d)",
+    analyticsPageviews7d: "Pageviews (7d)",
+    analyticsVisitors30d: "Visitors (30d)",
+    analyticsBounce7d: "Bounce rate (7d)",
+    analyticsDuration7d: "Visit duration (7d)",
+    analyticsTopPages: "Top pages (7d)",
+    analyticsTopSources: "Traffic sources (7d)",
+    analyticsPage: "Page",
+    analyticsSource: "Source",
+    analyticsVisitors: "Visitors",
+    analyticsPageviews: "Pageviews",
+    analyticsDashboard: "Plausible dashboard",
     quickActions: "Quick actions",
     inactivityThreshold: "Inactivity threshold (h)",
     dailyContactLimit: "Daily contact limit",
@@ -29907,7 +29945,7 @@ function detectBrowserLocale() {
   }
   return null;
 }
-const SITE_URL = (typeof import.meta !== "undefined" && ("https://ravnopar.onrender.com" == null ? void 0 : "https://ravnopar.onrender.com".trim()) || "https://ravnopar.onrender.com").replace(/\/$/, "");
+const SITE_URL = (typeof import.meta !== "undefined" && ("https://ravnopar.oriph.io" == null ? void 0 : "https://ravnopar.oriph.io".trim()) || "https://ravnopar.oriph.io").replace(/\/$/, "");
 const PUBLIC_PATHS = [
   "/",
   "/planovi",

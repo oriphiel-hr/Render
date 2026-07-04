@@ -17,15 +17,17 @@ Tehnički SEO je ugrađen u frontend build. Ovo je checklist za organski promet.
 
 | Key | Vrijednost |
 |-----|------------|
-| `VITE_SITE_URL` | `https://ravnopar.onrender.com` |
+| `VITE_SITE_URL` | `https://ravnopar.oriph.io` |
+
+Migracija s `onrender.com`: vidi [SEO-MIGRATION-ORIPH.md](./SEO-MIGRATION-ORIPH.md).
 
 ## Google Search Console (obavezno)
 
 1. [search.google.com/search-console](https://search.google.com/search-console)
-2. Dodaj property: `https://ravnopar.onrender.com`
-3. Verifikacija: HTML tag ili DNS
-4. **Sitemaps** → pošalji: `https://ravnopar.onrender.com/sitemap.xml`
-5. **URL inspection** → zatraži indeksiranje početne i `/pomoc?lang=hr`
+2. Dodaj property: `https://ravnopar.oriph.io` (zadrži i stari `ravnopar.onrender.com`)
+3. Verifikacija: DNS TXT ili HTML tag
+4. **Sitemaps** → pošalji: `https://ravnopar.oriph.io/sitemap.xml`
+5. **URL inspection** → zatraži indeksiranje `/hr` i `/`
 
 ## Bing Webmaster Tools (opcionalno)
 
@@ -58,8 +60,8 @@ U Search Console **ponovno pošalji** `sitemap.xml` (URL-ovi sada koriste jezič
 ## Provjera nakon deploya
 
 ```bash
-curl https://ravnopar.onrender.com/robots.txt
-curl https://ravnopar.onrender.com/sitemap.xml
+curl https://ravnopar.oriph.io/robots.txt
+curl https://ravnopar.oriph.io/sitemap.xml
 ```
 
 U pregledniku: View Source na `/pomoc?lang=de` — nakon učitavanja provjeri `<title>` i canonical u DevTools → Elements.

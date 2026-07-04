@@ -79,17 +79,54 @@ Opcionalno: `MONTHLY_OPERATING_COST_CENTS=2500` za postotak pokrivenosti donacij
 
 ## Plausible (posjete stranici)
 
-Analitika se učitava **tek nakon** „Razumijem” na cookie banneru (GDPR).
+Analitika se učitava **odmah** (Plausible je bez praćenih kolačića — ne čeka cookie banner).
 
-| Env | Vrijednost |
-|-----|------------|
-| `VITE_ANALYTICS_URL` | `https://plausible.io/js/pa-en9H0khVpSTdd-AfH6hU1.js` |
+| Servis | Env | Vrijednost |
+|--------|-----|------------|
+| **ravnopar** (frontend) | `VITE_ANALYTICS_URL` | `https://plausible.io/js/pa-en9H0khVpSTdd-AfH6hU1.js` |
+| **ravnopar-backend** | `PLAUSIBLE_SITE` | `ravnopar.oriph.io` |
+| **ravnopar-backend** | `PLAUSIBLE_API_KEY` | Stats API ključ (Plausible → Settings → API keys) |
+| **ravnopar-backend** | `PLAUSIBLE_SHARED_DASHBOARD_URL` | Shared link s dashboarda (Settings → Visibility) |
 
-Dashboard: [plausible.io](https://plausible.io) — posjete, stranice, izvori prometa.
+**Admin konzola** (`/admin`) prikazuje brojke i ugrađeni Plausible dashboard — ne moraš ručno otvarati plausible.io.
 
-**Napomena:** Search Console i dalje pokazuje samo klikove iz Google pretrage; Plausible pokriva sve posjete (direktne, bookmark, društvene mreže).
+1. U Plausibleu: **Settings → API keys** → kreiraj ključ → `PLAUSIBLE_API_KEY` na backendu
+2. **Settings → Visibility → Shared link** → kopiraj URL → `PLAUSIBLE_SHARED_DASHBOARD_URL` na backendu
+3. Redeploy **ravnopar-backend**
 
-Na Renderu postavi isti `VITE_ANALYTICS_URL` i redeploy frontenda.
+**Napomena:** Search Console pokazuje samo klikove iz Google pretrage; Plausible pokriva sve posjete (direktne, bookmark, društvene mreže).
+
+Na Renderu postavi `VITE_ANALYTICS_URL` i redeploy frontenda.
+
+---
+
+## Admin račun (produkcija)
+
+Admin konzola: `https://ravnopar.oriph.io/admin` — samo uloga **ADMIN**.
+
+Lokalno se ne može spojiti na Render bazu. Kreiraj admina u **Render Shellu**:
+
+1. [dashboard.render.com](https://dashboard.render.com) → **ravnopar-backend** → **Shell**
+2. Pokreni (zamijeni lozinku):
+
+```bash
+node scripts/create-admin.js ravnopar@oriph.io TvojaJakaLozinka123
+```
+
+3. Prijava na `/auth` s tim emailom → `/admin`
+
+Provjera uloge:
+
+```bash
+node scripts/check-user.js ravnopar@oriph.io
+```
+
+Lokalno (s `.env` koji ima `DATABASE_URL`):
+
+```bash
+cd ravnopar/backend
+npm run admin:create -- ravnopar@oriph.io TvojaLozinka
+```
 
 ---
 

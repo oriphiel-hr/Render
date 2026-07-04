@@ -3018,6 +3018,64 @@ body.match-modal-open {
   gap: 0.35rem;
 }
 
+.admin-analytics {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-analytics-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.admin-analytics-subtitle {
+  margin: 0.25rem 0 0;
+}
+
+.admin-analytics-setup {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+}
+
+.admin-analytics-stats {
+  margin-top: 0.25rem;
+}
+
+.admin-analytics-tables {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 900px) {
+  .admin-analytics-tables {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.admin-analytics-table-title {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.admin-analytics-embed {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.admin-analytics-iframe {
+  width: 100%;
+  min-height: 720px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+}
+
 .legal-disclaimer {
   font-size: 0.92rem;
   border-color: #fde68a;

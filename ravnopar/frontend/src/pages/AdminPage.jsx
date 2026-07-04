@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   deleteAdminUser,
+  getAdminAnalytics,
   getAdminOverview,
   getAdminPayments,
   getAdminRiskOverview,
@@ -15,6 +16,7 @@ import {
   updateFairnessConfig
 } from '../api/index.js';
 import AdminAuditPanel, { ModerationResolveForm } from '../components/AdminAuditPanel.jsx';
+import AdminAnalyticsPanel from '../components/AdminAnalyticsPanel.jsx';
 import PageMeta from '../components/PageMeta.jsx';
 import { useI18n } from '../lib/i18n/index.jsx';
 import { ADMIN_PLAN_TIERS } from '../lib/labels.js';
@@ -33,6 +35,7 @@ export default function AdminPage({ token, profile }) {
   const { labelRole, labelPlanTier, labelReportStatus, labelAvailability, formatDateTime } = labels;
 
   const [overview, setOverview] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
   const [users, setUsers] = useState([]);
   const [payments, setPayments] = useState([]);
   const [riskItems, setRiskItems] = useState([]);
@@ -53,8 +56,9 @@ export default function AdminPage({ token, profile }) {
   }
 
   async function loadAll() {
-    const [ov, userData, payData, modData, auditData, riskData, verifyData] = await Promise.all([
+    const [ov, analyticsData, userData, payData, modData, auditData, riskData, verifyData] = await Promise.all([
       getAdminOverview(token),
+      getAdminAnalytics(token),
       getAdminUsers(token),
       getAdminPayments(token),
       getModerationQueue(token),
@@ -63,6 +67,7 @@ export default function AdminPage({ token, profile }) {
       getAdminVerificationQueue(token)
     ]);
     if (ov?.success) setOverview(ov);
+    if (analyticsData?.success) setAnalytics(analyticsData.analytics);
     if (userData?.success) setUsers(userData.items || []);
     if (payData?.success) setPayments(payData.items || []);
     if (modData?.success) setModerationQueue(modData.items || []);
@@ -185,6 +190,8 @@ export default function AdminPage({ token, profile }) {
           <StatCard label={t('admin.stats.messages7d')} value={stats.messages7d} />
         </section>
       )}
+
+      <AdminAnalyticsPanel analytics={analytics} />
 
       <section className="card admin-tools">
         <h2 className="section-title">{t('admin.quickActions')}</h2>

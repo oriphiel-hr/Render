@@ -55,6 +55,12 @@ services:
         sync: false
       - key: ADMIN_NOTIFY_EMAIL
         sync: false
+      - key: PLAUSIBLE_SITE
+        value: ravnopar.oriph.io
+      - key: PLAUSIBLE_API_KEY
+        sync: false
+      - key: PLAUSIBLE_SHARED_DASHBOARD_URL
+        sync: false
       - key: TURNSTILE_SECRET_KEY
         sync: false
       - key: S3_BUCKET
@@ -86,6 +92,8 @@ services:
     envVars:
       - key: VITE_API_BASE_URL
         value: https://ravnopar-backend.onrender.com/api
+      - key: VITE_SITE_URL
+        value: https://ravnopar.oriph.io
       - key: VITE_CONTACT_EMAIL
         sync: false
       - key: VITE_PLANS_ENABLED

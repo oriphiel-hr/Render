@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const distDir = join(__dirname, '..', 'dist');
-const siteUrl = (process.env.VITE_SITE_URL || 'https://ravnopar.onrender.com').replace(/\/$/, '');
+const siteUrl = (process.env.VITE_SITE_URL || 'https://ravnopar.oriph.io').replace(/\/$/, '');
 
 const locales = ['hr', 'en', 'de', 'sl', 'bs', 'sr', 'it', 'hu', 'pl', 'cs', 'fr', 'es', 'sk'];
 const routes = [
@@ -57,4 +57,16 @@ ${body}
 
 mkdirSync(distDir, { recursive: true });
 writeFileSync(join(distDir, 'sitemap.xml'), xml, 'utf8');
+
+const robots = `User-agent: *
+Allow: /
+Disallow: /app/
+Disallow: /admin
+Disallow: /auth
+
+Sitemap: ${siteUrl}/sitemap.xml
+`;
+writeFileSync(join(distDir, 'robots.txt'), robots, 'utf8');
+
 console.log(`sitemap.xml → ${urls.length} URL-ova`);
+console.log(`robots.txt → Sitemap: ${siteUrl}/sitemap.xml`);

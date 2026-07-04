@@ -16,6 +16,7 @@ function loadScript() {
 
   const script = document.createElement('script');
   script.async = true;
+  script.defer = true;
   script.src = ANALYTICS_URL;
   script.dataset.ravnoparAnalytics = '1';
   document.head.appendChild(script);
@@ -33,14 +34,7 @@ function RouteChangeTracker() {
 
 export default function Analytics() {
   useEffect(() => {
-    function maybeLoad() {
-      if (localStorage.getItem('ravnoparCookieConsent') === 'accepted') {
-        loadScript();
-      }
-    }
-    maybeLoad();
-    window.addEventListener('ravnopar-cookie-consent', maybeLoad);
-    return () => window.removeEventListener('ravnopar-cookie-consent', maybeLoad);
+    loadScript();
   }, []);
 
   return ANALYTICS_URL ? <RouteChangeTracker /> : null;

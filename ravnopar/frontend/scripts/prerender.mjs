@@ -21,7 +21,7 @@ import fr from '../src/lib/i18n/messages/fr.js';
 import es from '../src/lib/i18n/messages/es.js';
 import sk from '../src/lib/i18n/messages/sk.js';
 
-const SITE_URL = (process.env.VITE_SITE_URL || 'https://ravnopar.onrender.com').replace(/\/$/, '');
+const SITE_URL = (process.env.VITE_SITE_URL || 'https://ravnopar.oriph.io').replace(/\/$/, '');
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const distDir = join(__dirname, '..', 'dist');

@@ -5,6 +5,7 @@ import { prisma } from '../lib/prisma.js';
 import { toPublicProfile } from '../lib/profile-public.js';
 import { calculateProfileCompleteness, deleteUserProfile } from '../services/profile-service.js';
 import { recordAdminAction, recordComplianceEvent, recordSecurityEvent } from '../services/audit-service.js';
+import { getPlausibleAdminSummary } from '../services/plausible-service.js';
 
 export const adminRouter = Router();
 
@@ -73,6 +74,11 @@ adminRouter.get('/overview', async (_req, res) => {
       reportedName: profileById.get(row.reportedId)?.displayName || '—'
     }))
   });
+});
+
+adminRouter.get('/analytics', async (_req, res) => {
+  const analytics = await getPlausibleAdminSummary();
+  return res.json({ success: true, analytics });
 });
 
 adminRouter.get('/users', async (req, res) => {

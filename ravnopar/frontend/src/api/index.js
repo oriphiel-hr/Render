@@ -355,6 +355,11 @@ export async function getAdminOverview(token) {
   return res.json();
 }
 
+export async function getAdminAnalytics(token) {
+  const res = await fetch(`${API_BASE_URL}/admin/analytics`, { headers: authHeaders(token) });
+  return res.json();
+}
+
 export async function getAdminUsers(token, q = '') {
   const query = q ? `?q=${encodeURIComponent(q)}` : '';
   const res = await fetch(`${API_BASE_URL}/admin/users${query}`, { headers: authHeaders(token) });

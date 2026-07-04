@@ -2,7 +2,7 @@ import { SUPPORTED_LOCALES } from './i18n/locale-meta.js';
 
 export const SITE_URL = (
   (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SITE_URL?.trim()) ||
-  'https://ravnopar.onrender.com'
+  'https://ravnopar.oriph.io'
 ).replace(/\/$/, '');
 
 /** Javne stranice koje indeksiramo (bez jezičnog prefiksa). */

@@ -11,6 +11,8 @@
     "migrate:deploy": "node ./node_modules/prisma/build/index.js migrate deploy",
     "seed": "node prisma/seed.js",
     "seed:reset": "cross-env ALLOW_SEED_RESET=true node prisma/reset-seed.js && node prisma/seed.js",
+    "admin:create": "node scripts/create-admin.js",
+    "admin:check": "node scripts/check-user.js",
     "test": "node --test test/smoke.test.js"
   },
   "prisma": {

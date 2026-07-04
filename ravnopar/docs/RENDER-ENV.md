@@ -90,6 +90,16 @@ https://ravnopar-backend.onrender.com/api/payments/stripe/webhook
 
 Bez S3-a fotografije ostaju u bazi (base64) — OK za start.
 
+### Plausible (admin analitika)
+
+| Key | Opis |
+|-----|------|
+| `PLAUSIBLE_SITE` | Domena u Plausibleu (default `ravnopar.oriph.io`) |
+| `PLAUSIBLE_API_KEY` | Stats API ključ — brojke u `/admin` |
+| `PLAUSIBLE_SHARED_DASHBOARD_URL` | Shared link URL — ugrađeni dashboard u `/admin` |
+
+Vidi [MONITORING.md](./MONITORING.md) za korake u Plausible dashboardu.
+
 ### Anti-bot (opcionalno)
 
 | Key | Opis |
@@ -110,6 +120,7 @@ Migracije se pokreću automatski u build koraku (`prisma migrate deploy`).
 | Key | Vrijednost |
 |-----|------------|
 | `VITE_API_BASE_URL` | `https://ravnopar-backend.onrender.com/api` |
+| `VITE_SITE_URL` | `https://ravnopar.oriph.io` — canonical, sitemap, OG (build-time) |
 | `VITE_CONTACT_EMAIL` | `ravnopar@oriph.io` (ista adresa kao `MAIL_FROM` / SMTP) |
 | `VITE_PLANS_ENABLED` | `false` (ili `true` uz Stripe) |
 
@@ -126,7 +137,7 @@ Migracije se pokreću automatski u build koraku (`prisma migrate deploy`).
 
 | Key | Opis |
 |-----|------|
-| `VITE_ANALYTICS_URL` | Plausible script URL — npr. `https://plausible.io/js/pa-en9H0khVpSTdd-AfH6hU1.js` (učitava se nakon cookie pristanka) |
+| `VITE_ANALYTICS_URL` | Plausible script URL — npr. `https://plausible.io/js/pa-en9H0khVpSTdd-AfH6hU1.js` (učitava se odmah, bez cookie pristanka) |
 | `VITE_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key |
 
 **Build:** `npm install && npm run build`  
