@@ -1,11 +1,11 @@
 # Ravnopar — Render env varijable
 
-**Produkcijski frontend:** [https://ravnopar.onrender.com](https://ravnopar.onrender.com)
+**Produkcijski frontend:** [https://ravnopar.oriph.io](https://ravnopar.oriph.io) (alias: [ravnopar.onrender.com](https://ravnopar.onrender.com))
 
-Nakon prebacivanja s `ravnopar-frontend.onrender.com`:
-1. **ravnopar-backend** → `FRONTEND_BASE_URL` = `https://ravnopar.onrender.com` → **Manual Deploy**
-2. Stari static site (`ravnopar-frontend`) → obustavi auto-deploy ili obriši
-3. UptimeRobot / bookmarkovi → novi URL
+Nakon promjene domene:
+1. **ravnopar-backend** → `FRONTEND_BASE_URL` = `https://ravnopar.oriph.io`
+2. **ravnopar-backend** → `CORS_ALLOWED_ORIGINS` = `https://ravnopar.onrender.com` (ako i dalje koristiš Render URL)
+3. **Manual Deploy** backenda
 
 ## ravnopar-backend
 
@@ -14,7 +14,8 @@ Nakon prebacivanja s `ravnopar-frontend.onrender.com`:
 | `NODE_ENV` | `production` |
 | `DATABASE_URL` | Internal Database URL iz `ravnopar-db` |
 | `JWT_SECRET` | jak random string (min. 32 znaka) |
-| `FRONTEND_BASE_URL` | `https://ravnopar.onrender.com` |
+| `FRONTEND_BASE_URL` | `https://ravnopar.oriph.io` — glavni domen (email linkovi, Stripe redirect) |
+| `CORS_ALLOWED_ORIGINS` | `https://ravnopar.onrender.com` — dodatni frontend origin-i, zarezom |
 | `DAILY_CONTACT_LIMIT` | `30` |
 | `FIRST_USER_IS_ADMIN` | `false` |
 
@@ -151,8 +152,9 @@ curl https://ravnopar-backend.onrender.com/api/matchmaking/public-stats
 ```
 
 Checklist:
-- [ ] `FRONTEND_BASE_URL` na backendu = `https://ravnopar.onrender.com`
-- [ ] Frontend radi na `https://ravnopar.onrender.com`
+- [ ] `FRONTEND_BASE_URL` na backendu = `https://ravnopar.oriph.io`
+- [ ] `CORS_ALLOWED_ORIGINS` uključuje sve frontend URL-ove (npr. `https://ravnopar.onrender.com`)
+- [ ] Frontend radi na `https://ravnopar.oriph.io`
 - [ ] Registracija + email kod (ili dev kod u logu)
 - [ ] Reset lozinke (`/auth?reset=1`)
 - [ ] Upload fotografije u Postavkama

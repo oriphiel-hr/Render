@@ -11,12 +11,22 @@ import { prisma } from './lib/prisma.js';
 const app = express();
 const startedAt = new Date().toISOString();
 
-const frontendBaseUrl = process.env.FRONTEND_BASE_URL?.replace(/\/$/, '');
-const corsOrigins = [
-  frontendBaseUrl,
-  'http://localhost:5173',
-  'http://127.0.0.1:5173'
-].filter(Boolean);
+function buildCorsOrigins() {
+  const extra = (process.env.CORS_ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((origin) => origin.trim().replace(/\/$/, ''))
+    .filter(Boolean);
+  return [...new Set(
+    [
+      process.env.FRONTEND_BASE_URL?.replace(/\/$/, ''),
+      ...extra,
+      'http://localhost:5173',
+      'http://127.0.0.1:5173'
+    ].filter(Boolean)
+  )];
+}
+
+const corsOrigins = buildCorsOrigins();
 
 app.use(cors({
   origin: corsOrigins.length ? corsOrigins : true,
