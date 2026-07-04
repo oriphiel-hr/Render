@@ -358,7 +358,7 @@ export default {
     steps: [
       {
         title: "Registruj se",
-        text: "Napravi profil, dodaj fotografiju i bio, odaberi koga tražiš."
+        text: "Napravi profil, dodaj fotografiju i kratki opis, odaberi koga tražiš."
       },
       {
         title: "Upoznaj ljude",
@@ -430,7 +430,7 @@ export default {
     photosHint: "JPG/PNG, automatski smanjeno. Maks. 3 fotografije.",
     displayName: "Ime za prikaz",
     city: "Grad",
-    bio: "O meni (bio)",
+    bio: "O meni",
     bioPlaceholder: "Kratko se predstavi — šta tražiš, šta voliš...",
     icebreakersLegend: "Icebreaker pitanja (do 3)",
     icebreakersHint: "Kratka pitanja i odgovori — pomažu pri prvom kontaktu.",
@@ -490,7 +490,7 @@ export default {
     settingsLink: "Podešavanja profila",
     loading: "Učitavanje...",
     incompleteTitle: "Tvoj profil još nije kompletan ({percent}%).",
-    incompleteHint: "Dodaj fotografiju, bio i icebreaker — to povećava šanse za kontakt.",
+    incompleteHint: "Dodaj fotografiju, kratki opis i icebreaker — to povećava šanse za kontakt.",
     completeProfile: "Dovrši profil",
     conversations: "Razgovori",
     conversationsUnread: "Razgovori ({unread} novih)",
@@ -510,7 +510,7 @@ export default {
     discoverTitle: "Otkrij profile",
     discoverCount: " · {count} za tebe",
     gateTitle: "Profil nije spreman za feed",
-    gateHint: "Dodaj fotografiju i bio (min. 10 znakova) pre slanja zahteva i swipeovanja.",
+    gateHint: "Dodaj fotografiju i kratki opis (min. 10 znakova) pre slanja zahteva i swipeovanja.",
     gateOnboarding: "Pogledaj uvod",
     emptyTitle: "Nema novih profila",
     emptyHint: "Proširi grad ili preference u Podešavanjima — ili se vrati uskoro kada se neko novi registruje.",
@@ -578,16 +578,16 @@ export default {
     stepPhotoHint: "Profili sa fotografijama dobijaju više odgovora.",
     changePhoto: "Promeni fotografiju",
     addPhoto: "Dodaj fotografiju",
-    stepBio: "2. Bio (min. 10 znakova)",
+    stepBio: "2. O meni (min. 10 znakova)",
     stepBioHint: "Kratko reci ko si i šta tražiš.",
-    editBio: "Uredi bio",
-    writeBio: "Napiši bio",
+    editBio: "Uredi opis",
+    writeBio: "Napiši o sebi",
     stepFeed: "3. Feed",
     stepFeedHint: "Kada je profil spreman, swipeaj i pošalji prvi zahtev.",
     finishReady: "Završi uvod i otvori feed",
     finishIncomplete: "Dovrši profil u Podešavanjima",
-    finishHint: "Prvo dovrši fotografiju i bio u Podešavanjima",
-    incompleteError: "Dodaj fotografiju i bio (min. 10 znakova) u Podešavanjima pre nastavka.",
+    finishHint: "Prvo dovrši fotografiju i opis o sebi",
+    incompleteError: "Dodaj fotografiju i kratki opis (min. 10 znakova) u Podešavanjima pre nastavka.",
     saveFailed: "Čuvanje nije uspelo."
   },
   match: {

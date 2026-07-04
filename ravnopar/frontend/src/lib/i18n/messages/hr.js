@@ -467,7 +467,7 @@ export default {
     steps: [
       {
         title: 'Registriraj se',
-        text: 'Napravi profil, dodaj fotografiju i bio, odaberi koga tražiš.'
+        text: 'Napravi profil, dodaj fotografiju i kratki opis, odaberi koga tražiš.'
       },
       {
         title: 'Upoznaj ljude',
@@ -542,7 +542,7 @@ export default {
     photosHint: 'JPG/PNG, automatski smanjeno. Maks. 3 fotografije.',
     displayName: 'Ime za prikaz',
     city: 'Grad',
-    bio: 'O meni (bio)',
+    bio: 'O meni',
     bioPlaceholder: 'Kratko se predstavi — što tražiš, što voliš...',
     publicTagsLegend: 'Interesi i hobiji (javno)',
     publicTagsHint: 'Do 5 tagova — vidljivo na profilu i u feedu. Pomaže drugima da vide što voliš (čitanje, životinje, sport…).',
@@ -646,7 +646,7 @@ export default {
     settingsLink: 'Postavke profila',
     loading: 'Učitavanje...',
     incompleteTitle: 'Profil ti još nije kompletan ({percent}%).',
-    incompleteHint: 'Dodaj fotografiju, bio i icebreaker — to povećava šanse za kontakt.',
+    incompleteHint: 'Dodaj fotografiju, kratki opis i icebreaker — to povećava šanse za kontakt.',
     completeProfile: 'Dovrši profil',
     conversations: 'Razgovori',
     conversationsUnread: 'Razgovori ({count} novo)',
@@ -671,7 +671,7 @@ export default {
     discoverTitle: 'Otkrij profile',
     discoverCount: ' · {count} za tebe',
     gateTitle: 'Profil nije spreman za feed',
-    gateHint: 'Dodaj fotografiju i bio (min. 10 znakova) prije slanja zahtjeva i swipea.',
+    gateHint: 'Dodaj fotografiju i kratki opis (min. 10 znakova) prije slanja zahtjeva i swipea.',
     gateOnboarding: 'Pogledaj uvod',
     emptyTitle: 'Nema novih profila',
     emptyHint:
@@ -807,16 +807,16 @@ export default {
     stepPhotoHint: 'Profili s fotkom dobivaju više odgovora.',
     changePhoto: 'Promijeni fotku',
     addPhoto: 'Dodaj fotografiju',
-    stepBio: '2. Bio (min. 10 znakova)',
+    stepBio: '2. O meni (min. 10 znakova)',
     stepBioHint: 'Kratko reci tko si i što tražiš.',
-    editBio: 'Uredi bio',
-    writeBio: 'Napiši bio',
+    editBio: 'Uredi opis',
+    writeBio: 'Napiši o sebi',
     stepFeed: '3. Feed',
     stepFeedHint: 'Kad profil bude spreman, swipeaj i pošalji prvi zahtjev.',
     finishReady: 'Završi uvod i otvori feed',
     finishIncomplete: 'Dovrši profil u Postavkama',
-    finishHint: 'Prvo dovrši fotografiju i bio',
-    incompleteError: 'Dodaj fotografiju i bio (min. 10 znakova) u Postavkama prije nastavka.',
+    finishHint: 'Prvo dovrši fotografiju i opis o sebi',
+    incompleteError: 'Dodaj fotografiju i kratki opis (min. 10 znakova) u Postavkama prije nastavka.',
     saveFailed: 'Spremanje nije uspjelo.'
   },
 
@@ -1153,7 +1153,7 @@ export default {
         {
           title: 'Podaci koje prikupljamo',
           body:
-            'Identifikacijski i kontakt podaci (email, ime za prikaz), profil (grad, bio, fotografije, preferencije upoznavanja, icebreaker odgovori), opcionalni video link, poruke nakon matcha, tehnički zapisi (vrijeme aktivnosti), opcionalna grubo zaokružena lokacija (koordinate samo ako uključiš dijeljenje udaljenosti), verifikacijski selfie (nije javan), referral kod te podaci o plaćanjima/donacijama ako ih koristiš.'
+            'Identifikacijski i kontakt podaci (email, ime za prikaz), profil (grad, kratki opis, fotografije, preferencije upoznavanja, icebreaker odgovori), opcionalni video link, poruke nakon matcha, tehnički zapisi (vrijeme aktivnosti), opcionalna grubo zaokružena lokacija (koordinate samo ako uključiš dijeljenje udaljenosti), verifikacijski selfie (nije javan), referral kod te podaci o plaćanjima/donacijama ako ih koristiš.'
         },
         {
           title: 'Lokacija i udaljenost',
@@ -1223,7 +1223,7 @@ export default {
         {
           title: 'Račun i profil',
           body:
-            'Odgovoran/na si za točnost podataka, sigurnost lozinke i sadržaj profila. Profil s fotografijom i bio tekstom potreban je za slanje zahtjeva drugima. Lažni profili i lažna dob su zabranjeni.'
+            'Odgovoran/na si za točnost podataka, sigurnost lozinke i sadržaj profila. Profil s fotografijom i kratkim opisom potreban je za slanje zahtjeva drugima. Lažni profili i lažna dob su zabranjeni.'
         },
         {
           title: 'Zabranjeno ponašanje',
@@ -1275,7 +1275,7 @@ export default {
         },
         {
           title: 'Profil s fotografijom',
-          body: 'Bez fotografije i kratkog bio teksta ne možeš slati zahtjeve — to štiti kvalitetu zajednice i smanjuje lažne profile.'
+          body: 'Bez fotografije i kratkog opisa o sebi ne možeš slati zahtjeve — to štiti kvalitetu zajednice i smanjuje lažne profile.'
         },
         {
           title: 'Sigurnost na susretu',

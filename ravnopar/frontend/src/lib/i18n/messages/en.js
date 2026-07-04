@@ -432,7 +432,7 @@ export default {
     steps: [
       {
         title: "Sign up",
-        text: "Create your profile, add a photo and bio, and choose who you are looking for."
+        text: "Create your profile, add a photo and a short about-me, and choose who you are looking for."
       },
       {
         title: "Meet people",
@@ -504,7 +504,7 @@ export default {
     photosHint: "JPG/PNG, automatically resized. Max. 3 photos.",
     displayName: "Display name",
     city: "City",
-    bio: "About me (bio)",
+    bio: "About me",
     bioPlaceholder: "Introduce yourself briefly — what you are looking for, what you enjoy...",
     publicTagsLegend: "Interests and hobbies (public)",
     publicTagsHint: "Up to 5 tags — visible on your profile and in the feed. Helps others see what you enjoy (reading, animals, sports…).",
@@ -605,7 +605,7 @@ export default {
     settingsLink: "Profile settings",
     loading: "Loading...",
     incompleteTitle: "Your profile is not complete yet ({percent}%).",
-    incompleteHint: "Add a photo, bio, and icebreaker — that increases your chances of contact.",
+    incompleteHint: "Add a photo, short about-me, and icebreaker — that increases your chances of contact.",
     completeProfile: "Complete profile",
     conversations: "Conversations",
     conversationsUnread: "Conversations ({unread} new)",
@@ -630,7 +630,7 @@ export default {
     discoverTitle: "Discover profiles",
     discoverCount: " · {count} for you",
     gateTitle: "Profile not ready for feed",
-    gateHint: "Add a photo and bio (min. 10 characters) before sending requests and swiping.",
+    gateHint: "Add a photo and short about-me (min. 10 characters) before sending requests and swiping.",
     gateOnboarding: "View intro",
     emptyTitle: "No new profiles",
     emptyHint: "Expand your city or preferences in Settings — or check back soon when someone new joins.",
@@ -705,16 +705,16 @@ export default {
     stepPhotoHint: "Profiles with photos get more responses.",
     changePhoto: "Change photo",
     addPhoto: "Add photo",
-    stepBio: "2. Bio (min. 10 characters)",
+    stepBio: "2. About me (min. 10 characters)",
     stepBioHint: "Briefly say who you are and what you are looking for.",
-    editBio: "Edit bio",
-    writeBio: "Write bio",
+    editBio: "Edit about me",
+    writeBio: "Write about yourself",
     stepFeed: "3. Feed",
     stepFeedHint: "Once your profile is ready, swipe and send your first request.",
     finishReady: "Finish intro and open feed",
     finishIncomplete: "Complete profile in Settings",
-    finishHint: "Complete photo and bio in Settings first",
-    incompleteError: "Add a photo and bio (min. 10 characters) in Settings before continuing.",
+    finishHint: "Complete photo and about-me in Settings first",
+    incompleteError: "Add a photo and short about-me (min. 10 characters) in Settings before continuing.",
     saveFailed: "Save failed."
   },
   match: {
@@ -1088,7 +1088,7 @@ export default {
         },
         {
           title: "Data we collect",
-          body: "Identity and contact data (email, display name), profile (city, bio, photos, dating preferences, icebreaker answers), optional video link, messages after a match, technical logs (activity time), optional roughly rounded location (coordinates only if you enable distance sharing), verification selfie (not public), referral code, and payment/donation data if you use them."
+          body: "Identity and contact data (email, display name), profile (city, short about-me, photos, dating preferences, icebreaker answers), optional video link, messages after a match, technical logs (activity time), optional roughly rounded location (coordinates only if you enable distance sharing), verification selfie (not public), referral code, and payment/donation data if you use them."
         },
         {
           title: "Location and distance",
@@ -1146,7 +1146,7 @@ export default {
         },
         {
           title: "Account and profile",
-          body: "You are responsible for accurate data, password security, and profile content. A profile with a photo and bio is required to send requests to others. Fake profiles and false age are prohibited."
+          body: "You are responsible for accurate data, password security, and profile content. A profile with a photo and short about-me is required to send requests to others. Fake profiles and false age are prohibited."
         },
         {
           title: "Prohibited behavior",
@@ -1192,7 +1192,7 @@ export default {
         },
         {
           title: "Profile with photo",
-          body: "Without a photo and short bio, you cannot send requests — that protects community quality and reduces fake profiles."
+          body: "Without a photo and short about-me, you cannot send requests — that protects community quality and reduces fake profiles."
         },
         {
           title: "Safety when meeting",

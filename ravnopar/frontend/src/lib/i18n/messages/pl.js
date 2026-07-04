@@ -430,7 +430,7 @@ export default {
     photosHint: "JPG/PNG, automatyczne zmniejszenie. Maks. 3 zdjęcia.",
     displayName: "Nazwa wyświetlana",
     city: "Miasto",
-    bio: "O mnie (bio)",
+    bio: "O mnie",
     bioPlaceholder: "Przedstaw się krótko — czego szukasz, co lubisz...",
     icebreakersLegend: "Pytania na przełamanie lodów (max. 3)",
     icebreakersHint: "Krótkie pytania i odpowiedzi — pomagają przy pierwszym kontakcie.",
