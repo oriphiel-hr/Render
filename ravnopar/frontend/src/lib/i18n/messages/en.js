@@ -353,7 +353,7 @@ export default {
       admin: "Admin"
     },
     descriptions: {
-      home: "Meet people fairly on Ravnopar — free chat after a match, no hidden reach limits, transparent rules. 18+.",
+      home: "Free dating without a paywall — fair dating for Europe. Chat after a match, transparent rules. 18+.",
       auth: "Create your Ravnopar account or log in.",
       settings: "Edit your profile, photos, notifications, and privacy.",
       app: "Your Ravnopar feed, conversations, and contact requests.",
@@ -362,7 +362,7 @@ export default {
       onboarding: "A quick guide to Ravnopar.",
       donate: "Voluntarily support Ravnopar server costs.",
       plans: "Ravnopar pricing model — free chat, premium plans prepared in advance.",
-      faq: "Frequently asked questions about Ravnopar — free use, matches, chat, safety, and settings.",
+      faq: "Free dating, chat without subscription, fair feed — FAQ about Ravnopar.",
       guidelines: "What is allowed, what is not, and how to stay safe on Ravnopar.",
       privacy: "How Ravnopar collects, uses, and protects your data.",
       terms: "Terms for using the Ravnopar platform.",

@@ -39,6 +39,8 @@ export default function HomePage() {
   const steps = catalog.home?.steps ?? [];
   const values = catalog.home?.values ?? [];
   const safetyItems = catalog.home?.safetyItems ?? [];
+  const seoCompare = catalog.home?.seoCompare;
+  const seoFree = catalog.home?.seoFree;
 
   useEffect(() => {
     getPublicStats().then((data) => {
@@ -78,6 +80,42 @@ export default function HomePage() {
       </section>
 
       <LandingShowcase />
+
+      {seoCompare && (
+        <section className="landing-section landing-seo">
+          <h2 className="landing-heading">{seoCompare.title}</h2>
+          <p className="landing-seo-lead muted">{seoCompare.lead}</p>
+          <div className="grid-2 landing-seo-grid">
+            {seoCompare.points.map((point) => (
+              <article key={point.title} className="card landing-seo-card">
+                <h3 className="section-title">{point.title}</h3>
+                <p className="muted">{point.text}</p>
+              </article>
+            ))}
+          </div>
+          <p className="landing-section-link">
+            <Link to="/pomoc">{seoCompare.link}</Link>
+          </p>
+        </section>
+      )}
+
+      {seoFree && (
+        <section className="landing-section landing-seo">
+          <h2 className="landing-heading">{seoFree.title}</h2>
+          <p className="landing-seo-lead muted">{seoFree.lead}</p>
+          <div className="grid-2 landing-seo-grid">
+            {seoFree.points.map((point) => (
+              <article key={point.title} className="card landing-seo-card">
+                <h3 className="section-title">{point.title}</h3>
+                <p className="muted">{point.text}</p>
+              </article>
+            ))}
+          </div>
+          <p className="landing-section-link">
+            <Link to="/auth">{seoFree.link}</Link>
+          </p>
+        </section>
+      )}
 
       <section className="landing-section">
         <h2 className="landing-heading">{t('home.howItWorks')}</h2>

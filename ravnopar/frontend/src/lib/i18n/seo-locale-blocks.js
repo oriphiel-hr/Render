@@ -1,3 +1,5 @@
+import { SEO_DISCOVERY_BLOCKS } from './seo-discovery-blocks.js';
+
 /** SEO + strategy copy merged into non-hr/en locale catalogs. */
 export const SEO_LOCALE_BLOCKS = {
   de: {
@@ -910,7 +912,10 @@ function deepMerge(target, source) {
 }
 
 export function withSeoBlocks(locale, catalog) {
+  let out = catalog;
   const blocks = SEO_LOCALE_BLOCKS[locale];
-  if (!blocks) return catalog;
-  return deepMerge(catalog, blocks);
+  if (blocks) out = deepMerge(out, blocks);
+  const discovery = SEO_DISCOVERY_BLOCKS[locale];
+  if (discovery) out = deepMerge(out, discovery);
+  return out;
 }

@@ -1398,6 +1398,20 @@ body:has(.mobile-dock) .site-footer {
   font-size: 1.4rem;
 }
 
+.landing-seo-lead {
+  max-width: 42rem;
+  margin: 0 0 1.25rem;
+  line-height: 1.55;
+}
+
+.landing-seo-grid {
+  margin-bottom: 0.5rem;
+}
+
+.landing-seo-card h3 {
+  margin-top: 0;
+}
+
 .landing-section-link {
   margin: 0.75rem 0 0;
 }

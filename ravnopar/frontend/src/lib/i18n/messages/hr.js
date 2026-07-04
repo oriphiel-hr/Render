@@ -378,7 +378,7 @@ export default {
     },
     descriptions: {
       home:
-        'Upoznaj ljude fer na Ravnoparu — besplatan chat nakon matcha, bez skrivenih limita dosega i transparentna pravila. 18+.',
+        'Besplatno upoznavanje bez paywalla — fer dating aplikacija za HR i Europu. Chat nakon matcha, transparentna pravila. 18+.',
       auth: 'Registracija i prijava na Ravnopar — fer platformu za upoznavanje.',
       settings: 'Uredi profil, fotografije, obavijesti i privatnost.',
       app: 'Tvoj feed, zahtjevi za kontakt i razgovori na Ravnoparu.',
@@ -388,7 +388,7 @@ export default {
       donate: 'Dobrovoljna podrška održavanju Ravnopara.',
       plans:
         'Transparentan model naplate Ravnopara — besplatan chat, premium paketi unaprijed pripremljeni.',
-      faq: 'Česta pitanja o Ravnoparu — besplatno korištenje, match, chat, sigurnost i postavke.',
+      faq: 'Besplatno upoznavanje, chat bez pretplate, fer feed — česta pitanja o Ravnoparu.',
       guidelines: 'Što je dozvoljeno, što nije i kako ostati siguran/na na Ravnoparu.',
       privacy: 'Kako Ravnopar prikuplja, koristi i štiti tvoje podatke.',
       terms: 'Pravila korištenja Ravnopar platforme.',
