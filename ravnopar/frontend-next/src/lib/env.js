@@ -2,8 +2,14 @@
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || 'http://localhost:4200/api';
 
+/** Server-side fetch (build/SSR) — lokalni backend na istom VPS-u */
+export const SERVER_API_BASE_URL =
+  process.env.SERVER_API_BASE_URL?.trim() ||
+  process.env.API_BASE_URL?.trim() ||
+  'http://127.0.0.1:4200/api';
+
 export const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'https://ravnopar.oriph.io'
+  process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'https://ravnopar.com'
 ).replace(/\/$/, '');
 
 export const CONTACT_EMAIL =

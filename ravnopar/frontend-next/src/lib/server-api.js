@@ -1,16 +1,16 @@
-import { API_BASE_URL } from '../lib/env.js';
+import { SERVER_API_BASE_URL } from '../lib/env.js';
 
 async function serverFetch(path, init = {}) {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    next: { revalidate: 60 },
-    headers: {
-      Accept: 'application/json',
-      ...(init.headers || {})
-    }
-  });
-  if (!res.ok) return null;
   try {
+    const res = await fetch(`${SERVER_API_BASE_URL}${path}`, {
+      ...init,
+      next: { revalidate: 60 },
+      headers: {
+        Accept: 'application/json',
+        ...(init.headers || {})
+      }
+    });
+    if (!res.ok) return null;
     return await res.json();
   } catch {
     return null;
