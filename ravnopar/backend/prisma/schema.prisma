@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -71,7 +71,7 @@ model AuditEvent {
   targetProfileId String?
   entityType      String?
   entityId        String?
-  summary         String
+  summary         String        @db.Text
   payload         Json          @default("{}")
   createdAt       DateTime      @default(now())
 
@@ -88,7 +88,7 @@ model ModerationDecision {
   resolvedByProfileId String
   outcome             String
   actionTaken         String
-  notes               String?
+  notes               String?  @db.Text
   createdAt           DateTime @default(now())
 
   @@index([reportId])
@@ -105,7 +105,7 @@ model UserProfile {
   city          String
   country       String              @default("HR")
   locale        String              @default("hr")
-  bio           String?
+  bio           String?             @db.Text
   identity      String              @default("OTHER")
   profileType   String              @default("INDIVIDUAL")
   seekingIdentities Json
@@ -131,8 +131,8 @@ model UserProfile {
   childrenPref  String?
   smoking       String?
   relationshipStatus String?
-  videoUrl      String?
-  verificationSelfie String?
+  videoUrl      String?             @db.Text
+  verificationSelfie String?        @db.Text
   verificationPending Boolean        @default(false)
   referralCode      String?          @unique
   referredByProfileId String?
@@ -206,7 +206,7 @@ model UserBlock {
   id          String   @id @default(cuid())
   blockerId   String
   blockedId   String
-  reason      String?
+  reason      String?                @db.Text
   createdAt   DateTime @default(now())
 
   @@unique([blockerId, blockedId])
@@ -218,7 +218,7 @@ model UserReport {
   reporterId  String
   reportedId  String
   reason      String
-  details     String?
+  details     String?                @db.Text
   status      ModerationReportStatus @default(OPEN)
   priority    Int                    @default(1)
   createdAt   DateTime               @default(now())
@@ -233,7 +233,7 @@ model UserRating {
   fromUserId  String
   toUserId    String
   score       Int
-  comment     String?
+  comment     String?  @db.Text
   createdAt   DateTime @default(now())
 
   @@index([toUserId, createdAt])
@@ -245,7 +245,7 @@ model FairnessConfigChange {
   changedByUserId String?
   oldDailyLimit  Int
   newDailyLimit  Int
-  reason         String
+  reason         String   @db.Text
   createdAt      DateTime @default(now())
 
   @@index([createdAt])
@@ -277,7 +277,7 @@ model PairMessage {
   id        String   @id @default(cuid())
   pairId    String
   senderId  String
-  body      String
+  body      String   @db.Text
   reaction  String?
   createdAt DateTime @default(now())
 
@@ -293,7 +293,7 @@ model PaymentOrder {
   status              PaymentStatus     @default(PENDING)
   amountCents         Int
   currency            String            @default("EUR")
-  description         String
+  description         String            @db.Text
   stripeSessionId     String?
   bankTransferReference String?
   createdAt           DateTime          @default(now())
@@ -309,7 +309,7 @@ model InAppNotification {
   profileId  String
   type       String
   title      String
-  body       String
+  body       String    @db.Text
   linkPath   String?
   readAt     DateTime?
   createdAt  DateTime  @default(now())
