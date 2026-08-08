@@ -1,0 +1,3 @@
+export const CHILDREN_KEYS = ['NONE', 'HAS', 'WANTS_SOMEDAY', 'NOT_IMPORTANT'];
+export const SMOKING_KEYS = ['NO', 'SOMETIMES', 'YES'];
+export const RELATIONSHIP_KEYS = ['SINGLE', 'OPEN', 'COMPLICATED'];

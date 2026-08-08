@@ -1,0 +1,15 @@
+import FairFeedPage from '../../../views/FairFeedPage';
+import { createPublicMetadata } from '../../../lib/metadata';
+import { isSupportedLocale } from '../../../lib/i18n/server';
+import { notFound } from 'next/navigation';
+
+export async function generateMetadata({ params }) {
+  const { locale } = await params;
+  return createPublicMetadata(locale, '/kako-radi-feed', 'fairFeed', 'fairFeed');
+}
+
+export default async function Page({ params }) {
+  const { locale } = await params;
+  if (!isSupportedLocale(locale)) notFound();
+  return <FairFeedPage />;
+}
