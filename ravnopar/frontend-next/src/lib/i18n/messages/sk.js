@@ -332,6 +332,7 @@ export default {
   video: {
     embedTitle: "Video profilu",
     externalLink: "Pozrieť video profilu"
+    unsupported: "Prehliadač nepodporuje video"
   },
   avatar: {
     alt: "Profilová fotka: {name}"
@@ -440,9 +441,19 @@ export default {
     shareLocation: "Zobraziť vzdialenosť medzi mnou a ostatnými",
     loadLocation: "Načítať moju polohu",
     locationSaved: "Poloha uložená",
-    videoLegend: "Video profilu (odkaz)",
-    videoPlaceholder: "Odkaz na YouTube, Vimeo, Instagram alebo TikTok",
+    videoLegend: "Video profilu",
+    videoPlaceholder: "Alebo externy odkaz (YouTube, Vimeo, Instagram, TikTok)",
     videoUrlPlaceholder: "https://youtube.com/...",
+    videoHint: "Kratky klip o tebe (MP4/WebM/MOV, max 30 MB) alebo externy odkaz.",
+    videoUpload: "Nahrat video",
+    videoHostedNote: "Nahrate video je aktivne. Pre externy odkaz ho najprv odstran.",
+    videoRemove: "Odstranit video",
+    videoUploaded: "Video ulozene.",
+    videoUploadFailed: "Nahravanie videa zlyhalo.",
+    videoRemoved: "Video odstranene.",
+    videoRemoveFailed: "Video sa nepodarilo odstranit.",
+    videoTooLarge: "Video je prilis velke (max 30 MB).",
+    videoBadType: "Podporovane formaty: MP4, WebM, MOV.",
     verificationLegend: "Overenie profilu",
     verificationHint: "Selfie na ručné posúdenie admin tímom — porovnanie s profilovou fotkou. Nie je verejné.",
     verified: "Profil overený",

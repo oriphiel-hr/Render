@@ -436,7 +436,8 @@ export default {
 
   video: {
     embedTitle: 'Video profil',
-    externalLink: 'Pogledaj video profil'
+    externalLink: 'Pogledaj video profil',
+    unsupported: 'Preglednik ne podržava video'
   },
 
   avatar: {
@@ -582,9 +583,19 @@ export default {
     shareLocation: 'Prikaži udaljenost od mene drugim korisnicima',
     loadLocation: 'Učitaj moju lokaciju',
     locationSaved: 'Lokacija spremljena',
-    videoLegend: 'Video profil (link)',
-    videoPlaceholder: 'YouTube, Vimeo, Instagram ili TikTok link',
+    videoLegend: 'Video profil',
+    videoHint: 'Kratki klip o tebi (MP4/WebM/MOV, max 30 MB) ili vanjski link.',
+    videoUpload: 'Učitaj video',
+    videoPlaceholder: 'Ili vanjski link (YouTube, Vimeo, Instagram, TikTok)',
     videoUrlPlaceholder: 'https://youtube.com/...',
+    videoHostedNote: 'Učitani video je aktivan. Za vanjski link prvo ukloni video.',
+    videoRemove: 'Ukloni video',
+    videoUploaded: 'Video je spremljen.',
+    videoUploadFailed: 'Upload videa nije uspio.',
+    videoRemoved: 'Video je uklonjen.',
+    videoRemoveFailed: 'Uklanjanje videa nije uspjelo.',
+    videoTooLarge: 'Video je prevelik (max 30 MB).',
+    videoBadType: 'Podržani formati: MP4, WebM, MOV.',
     verificationLegend: 'Verifikacija profila',
     verificationHint:
       'Selfie za ručnu provjeru admin tima — usporedba s profilnom fotkom. Nije javno vidljivo.',

@@ -7,6 +7,7 @@ import { paymentsRouter, handleStripeWebhook } from './routes/payments.js';
 import { adminRouter } from './routes/admin.js';
 import { adminAuditRouter } from './routes/admin-audit.js';
 import { prisma } from './lib/prisma.js';
+import { ensureVideosRoot, getUploadsRoot } from './lib/video-storage.js';
 
 const app = express();
 const startedAt = new Date().toISOString();
@@ -40,6 +41,18 @@ app.post(
 );
 
 app.use(express.json({ limit: '2mb' }));
+
+await ensureVideosRoot();
+app.use(
+  '/media',
+  express.static(getUploadsRoot(), {
+    fallthrough: false,
+    maxAge: '7d',
+    setHeaders(res) {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+    }
+  })
+);
 
 app.get('/health', async (_req, res) => {
   try {

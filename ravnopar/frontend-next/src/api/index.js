@@ -57,6 +57,28 @@ export async function updateProfile(token, payload) {
   return res.json();
 }
 
+export async function uploadProfileVideo(token, file) {
+  const body = new FormData();
+  body.append('video', file);
+  const res = await fetch(`${API_BASE_URL}/auth/profile/video`, {
+    method: 'POST',
+    headers: {
+      'Accept-Language': getStoredLocale(),
+      ...(token ? { authorization: `Bearer ${token}` } : {})
+    },
+    body
+  });
+  return res.json();
+}
+
+export async function deleteProfileVideo(token) {
+  const res = await fetch(`${API_BASE_URL}/auth/profile/video`, {
+    method: 'DELETE',
+    headers: authHeaders(token)
+  });
+  return res.json();
+}
+
 export async function deleteAccount(token) {
   const res = await fetch(`${API_BASE_URL}/auth/account`, {
     method: 'DELETE',

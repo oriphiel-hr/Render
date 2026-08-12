@@ -1,4 +1,25 @@
+import { API_BASE_URL } from '../lib/env.js';
 import { useI18n } from '../lib/i18n/index.jsx';
+
+function resolveMediaUrl(url) {
+  if (!url) return null;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/media/')) {
+    const origin = API_BASE_URL.replace(/\/api\/?$/, '');
+    return `${origin}${url}`;
+  }
+  return url;
+}
+
+function isHostedVideo(url) {
+  if (!url) return false;
+  if (url.startsWith('/media/videos/')) return true;
+  try {
+    return new URL(url).pathname.startsWith('/media/videos/');
+  } catch (_error) {
+    return false;
+  }
+}
 
 function youtubeId(url) {
   try {
@@ -23,6 +44,17 @@ export default function VideoEmbed({ url }) {
   const { t } = useI18n();
 
   if (!url) return null;
+
+  if (isHostedVideo(url)) {
+    const src = resolveMediaUrl(url);
+    return (
+      <div className="video-embed video-embed-hosted">
+        <video controls playsInline preload="metadata" src={src}>
+          {t('video.unsupported')}
+        </video>
+      </div>
+    );
+  }
 
   const yt = youtubeId(url);
   if (yt) {

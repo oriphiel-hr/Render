@@ -17,7 +17,15 @@ import { sendVerificationEmail, sendPasswordResetEmail } from '../services/notif
 import { verifyRegisterCaptcha, validateTurnstile } from '../lib/captcha.js';
 import { persistPhotos } from '../lib/storage.js';
 import { persistVerificationSelfie } from '../lib/verification-selfie.js';
+import multer from 'multer';
 import { normalizeVideoUrl } from '../lib/video-url.js';
+import {
+  VIDEO_MAX_BYTES,
+  VIDEO_MIME_TO_EXT,
+  deleteHostedVideo,
+  isHostedVideoPath,
+  persistProfileVideo
+} from '../lib/video-storage.js';
 import { rateLimit } from '../lib/rate-limit.js';
 import { ensureReferralCode, generateReferralCode } from '../lib/referral.js';
 import { sendError } from '../lib/api-errors.js';
@@ -28,6 +36,18 @@ import {
   normalizeSeekingAgeRange,
   validateSeekingAgeRange
 } from '../lib/match-preferences.js';
+
+const videoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: VIDEO_MAX_BYTES, files: 1 },
+  fileFilter(_req, file, cb) {
+    if (VIDEO_MIME_TO_EXT[file.mimetype]) {
+      cb(null, true);
+      return;
+    }
+    cb(Object.assign(new Error('UNSUPPORTED_VIDEO_TYPE'), { code: 'UNSUPPORTED_VIDEO_TYPE' }));
+  }
+});
 
 const localeSchema = z.enum(SUPPORTED_LOCALES);
 
@@ -503,10 +523,21 @@ authRouter.patch('/profile', requireAuth, async (req, res) => {
       data.icebreakers = normalizeIcebreakers(payload.icebreakers);
     }
     if (payload.videoUrl !== undefined) {
-      data.videoUrl = payload.videoUrl ? normalizeVideoUrl(payload.videoUrl) : null;
-      if (payload.videoUrl && !data.videoUrl) {
+      const nextVideoUrl = payload.videoUrl ? normalizeVideoUrl(payload.videoUrl) : null;
+      if (payload.videoUrl && !nextVideoUrl) {
         return res.status(400).json({ success: false, error: 'Neispravan video link.' });
       }
+      if (
+        nextVideoUrl &&
+        isHostedVideoPath(nextVideoUrl) &&
+        !nextVideoUrl.includes(`/media/videos/${profile.id}/`)
+      ) {
+        return res.status(400).json({ success: false, error: 'Neispravan video link.' });
+      }
+      if (profile.videoUrl && isHostedVideoPath(profile.videoUrl) && profile.videoUrl !== nextVideoUrl) {
+        await deleteHostedVideo(profile.videoUrl);
+      }
+      data.videoUrl = nextVideoUrl;
     }
     if (payload.shareLocation === false) {
       data.shareLocation = false;
@@ -606,6 +637,81 @@ authRouter.patch('/profile', requireAuth, async (req, res) => {
   } catch (_error) {
     return res.status(400).json({ success: false, error: 'Invalid payload' });
   }
+});
+
+authRouter.post('/profile/video', requireAuth, (req, res) => {
+  videoUpload.single('video')(req, res, async (uploadError) => {
+    if (uploadError) {
+      if (uploadError.code === 'LIMIT_FILE_SIZE' || uploadError.code === 'VIDEO_TOO_LARGE') {
+        return res.status(400).json({ success: false, error: 'Video je prevelik (max 30 MB).' });
+      }
+      if (uploadError.code === 'UNSUPPORTED_VIDEO_TYPE') {
+        return res.status(400).json({ success: false, error: 'Podržani formati: MP4, WebM, MOV.' });
+      }
+      return res.status(400).json({ success: false, error: 'Upload nije uspio.' });
+    }
+
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, error: 'Nedostaje video datoteka.' });
+      }
+
+      const profile = await prisma.userProfile.findUnique({ where: { id: req.auth.profileId } });
+      if (!profile) return res.status(404).json({ success: false, error: 'Profile not found' });
+
+      const videoUrl = await persistProfileVideo(profile.id, req.file);
+      if (profile.videoUrl && isHostedVideoPath(profile.videoUrl) && profile.videoUrl !== videoUrl) {
+        await deleteHostedVideo(profile.videoUrl);
+      }
+
+      const updated = await prisma.userProfile.update({
+        where: { id: profile.id },
+        data: { videoUrl }
+      });
+
+      return res.json({
+        success: true,
+        profile: {
+          ...toPublicProfile(updated),
+          ...ownerProfileExtras(updated)
+        },
+        completeness: calculateProfileCompleteness(updated)
+      });
+    } catch (error) {
+      if (error?.code === 'UNSUPPORTED_VIDEO_TYPE') {
+        return res.status(400).json({ success: false, error: 'Podržani formati: MP4, WebM, MOV.' });
+      }
+      if (error?.code === 'VIDEO_TOO_LARGE') {
+        return res.status(400).json({ success: false, error: 'Video je prevelik (max 30 MB).' });
+      }
+      // eslint-disable-next-line no-console
+      console.error('[auth] video upload failed', error?.message);
+      return res.status(500).json({ success: false, error: 'Upload nije uspio.' });
+    }
+  });
+});
+
+authRouter.delete('/profile/video', requireAuth, async (req, res) => {
+  const profile = await prisma.userProfile.findUnique({ where: { id: req.auth.profileId } });
+  if (!profile) return res.status(404).json({ success: false, error: 'Profile not found' });
+
+  if (profile.videoUrl && isHostedVideoPath(profile.videoUrl)) {
+    await deleteHostedVideo(profile.videoUrl);
+  }
+
+  const updated = await prisma.userProfile.update({
+    where: { id: profile.id },
+    data: { videoUrl: null }
+  });
+
+  return res.json({
+    success: true,
+    profile: {
+      ...toPublicProfile(updated),
+      ...ownerProfileExtras(updated)
+    },
+    completeness: calculateProfileCompleteness(updated)
+  });
 });
 
 authRouter.delete('/account', requireAuth, async (req, res) => {

@@ -332,6 +332,7 @@ export default {
   video: {
     embedTitle: "Profilvideo",
     externalLink: "Profilvideo ansehen"
+    unsupported: "Dein Browser unterstützt kein Video"
   },
   avatar: {
     alt: "Profilfoto: {name}"
@@ -440,9 +441,19 @@ export default {
     shareLocation: "Entfernung von mir zu anderen Nutzern anzeigen",
     loadLocation: "Meinen Standort laden",
     locationSaved: "Standort gespeichert",
-    videoLegend: "Profilvideo (Link)",
-    videoPlaceholder: "YouTube-, Vimeo-, Instagram- oder TikTok-Link",
+    videoLegend: "Profilvideo",
+    videoPlaceholder: "Oder externer Link (YouTube, Vimeo, Instagram, TikTok)",
     videoUrlPlaceholder: "https://youtube.com/...",
+    videoHint: "Kurzer Clip über dich (MP4/WebM/MOV, max. 30 MB) oder externer Link.",
+    videoUpload: "Video hochladen",
+    videoHostedNote: "Hochgeladenes Video ist aktiv. Zum externen Link zuerst entfernen.",
+    videoRemove: "Video entfernen",
+    videoUploaded: "Video gespeichert.",
+    videoUploadFailed: "Video-Upload fehlgeschlagen.",
+    videoRemoved: "Video entfernt.",
+    videoRemoveFailed: "Video konnte nicht entfernt werden.",
+    videoTooLarge: "Video ist zu groß (max. 30 MB).",
+    videoBadType: "Unterstützte Formate: MP4, WebM, MOV.",
     verificationLegend: "Profilverifizierung",
     verificationHint: "Selfie zur manuellen Prüfung durch das Admin-Team — Vergleich mit deinem Profilfoto. Nicht öffentlich sichtbar.",
     verified: "Profil verifiziert",

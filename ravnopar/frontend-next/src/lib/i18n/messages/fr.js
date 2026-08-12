@@ -332,6 +332,7 @@ export default {
   video: {
     embedTitle: "Vidéo du profil",
     externalLink: "Voir la vidéo du profil"
+    unsupported: "Le navigateur ne prend pas en charge la vidéo"
   },
   avatar: {
     alt: "Photo de profil : {name}"
@@ -440,9 +441,19 @@ export default {
     shareLocation: "Afficher la distance entre moi et les autres utilisateurs",
     loadLocation: "Charger ma position",
     locationSaved: "Position enregistrée",
-    videoLegend: "Vidéo du profil (lien)",
-    videoPlaceholder: "Lien YouTube, Vimeo, Instagram ou TikTok",
+    videoLegend: "Video du profil",
+    videoPlaceholder: "Ou lien externe (YouTube, Vimeo, Instagram, TikTok)",
     videoUrlPlaceholder: "https://youtube.com/...",
+    videoHint: "Une courte video sur toi (MP4/WebM/MOV, max 30 Mo) ou un lien externe.",
+    videoUpload: "Televerser une video",
+    videoHostedNote: "La video televersee est active. Pour un lien externe, retire-la d abord.",
+    videoRemove: "Retirer la video",
+    videoUploaded: "Video enregistree.",
+    videoUploadFailed: "Echec du televersement.",
+    videoRemoved: "Video retiree.",
+    videoRemoveFailed: "Impossible de retirer la video.",
+    videoTooLarge: "Video trop volumineuse (max 30 Mo).",
+    videoBadType: "Formats pris en charge : MP4, WebM, MOV.",
     verificationLegend: "Vérification du profil",
     verificationHint: "Selfie pour examen manuel par l'équipe admin — comparé à votre photo de profil. Pas visible publiquement.",
     verified: "Profil vérifié",

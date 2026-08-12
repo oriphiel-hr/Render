@@ -40,6 +40,9 @@ export function isFeedReady(profile) {
 }
 
 export async function deleteUserProfile(prismaClient, profileId) {
+  const { deleteProfileVideoDir } = await import('../lib/video-storage.js');
+  await deleteProfileVideoDir(profileId);
+
   await prismaClient.$transaction(async (tx) => {
     await tx.engagedPair.updateMany({
       where: {

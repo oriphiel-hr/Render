@@ -332,6 +332,7 @@ export default {
   video: {
     embedTitle: "Profilvideó",
     externalLink: "Profilvideó megtekintése"
+    unsupported: "A böngésző nem támogatja a videót"
   },
   avatar: {
     alt: "Profilkép: {name}"
@@ -440,9 +441,19 @@ export default {
     shareLocation: "Távolság megjelenítése köztem és mások között",
     loadLocation: "Helyzetem betöltése",
     locationSaved: "Helyzet elmentve",
-    videoLegend: "Profilvideó (link)",
-    videoPlaceholder: "YouTube, Vimeo, Instagram vagy TikTok link",
+    videoLegend: "Profilvideo",
+    videoPlaceholder: "Vagy kulso link (YouTube, Vimeo, Instagram, TikTok)",
     videoUrlPlaceholder: "https://youtube.com/...",
+    videoHint: "Rovid klip rolad (MP4/WebM/MOV, max 30 MB) vagy kulso link.",
+    videoUpload: "Video feltoltese",
+    videoHostedNote: "A feltoltott video aktiv. Kulso linkhez elobb tavolitsd el.",
+    videoRemove: "Video eltavolitasa",
+    videoUploaded: "Video mentve.",
+    videoUploadFailed: "A video feltoltese sikertelen.",
+    videoRemoved: "Video eltavolitva.",
+    videoRemoveFailed: "A videot nem sikerult eltavolitani.",
+    videoTooLarge: "A video tul nagy (max 30 MB).",
+    videoBadType: "Tamogatott formatumok: MP4, WebM, MOV.",
     verificationLegend: "Profil ellenőrzése",
     verificationHint: "Szelfi kézi ellenőrzésre az admin csapatnál — összehasonlítjuk a profilképpel. Nem nyilvános.",
     verified: "Profil ellenőrizve",

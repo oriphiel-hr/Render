@@ -6,14 +6,17 @@ import { useNavigate, useSearchParams } from '../lib/next-router-compat.js';
 import {
   createPlanCheckout,
   deleteAccount,
+  deleteProfileVideo,
   exportMyData,
   getMyOrders,
   getPlansStatus,
   getProfile,
-  updateProfile
+  updateProfile,
+  uploadProfileVideo
 } from '../api/index.js';
 import PageMeta from '../components/PageMeta.jsx';
 import ProfileAvatar from '../components/ProfileAvatar.jsx';
+import VideoEmbed from '../components/VideoEmbed.jsx';
 import { resizeImageFile } from '../lib/photo-utils.js';
 import { getIcebreakerPrompts } from '../lib/icebreakers.js';
 import InviteSection from '../components/InviteSection.jsx';
@@ -111,6 +114,59 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
     } finally {
       setBusy(false);
       event.target.value = '';
+    }
+  }
+
+  async function handleVideoChange(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const maxBytes = 30 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      setMessage(t('settings.videoTooLarge'), 'error');
+      event.target.value = '';
+      return;
+    }
+    const allowed = ['video/mp4', 'video/webm', 'video/quicktime'];
+    if (!allowed.includes(file.type)) {
+      setMessage(t('settings.videoBadType'), 'error');
+      event.target.value = '';
+      return;
+    }
+    setBusy(true);
+    setMessage('');
+    try {
+      const data = await uploadProfileVideo(token, file);
+      if (data?.success) {
+        setForm(data.profile);
+        setCompleteness(data.completeness || completeness);
+        setMessage(t('settings.videoUploaded'), 'success');
+      } else {
+        setMessage(data?.error || t('settings.videoUploadFailed'), 'error');
+      }
+    } catch (_error) {
+      setMessage(t('settings.videoUploadFailed'), 'error');
+    } finally {
+      setBusy(false);
+      event.target.value = '';
+    }
+  }
+
+  async function handleVideoRemove() {
+    setBusy(true);
+    setMessage('');
+    try {
+      const data = await deleteProfileVideo(token);
+      if (data?.success) {
+        setForm(data.profile);
+        setCompleteness(data.completeness || completeness);
+        setMessage(t('settings.videoRemoved'), 'success');
+      } else {
+        setMessage(data?.error || t('settings.videoRemoveFailed'), 'error');
+      }
+    } catch (_error) {
+      setMessage(t('settings.videoRemoveFailed'), 'error');
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -229,7 +285,9 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
         shareLocation: Boolean(form.shareLocation),
         latitude: form.shareLocation ? form.latitude ?? null : null,
         longitude: form.shareLocation ? form.longitude ?? null : null,
-        videoUrl: form.videoUrl?.trim() || null,
+        videoUrl: form.videoUrl?.startsWith('/media/')
+          ? form.videoUrl
+          : form.videoUrl?.trim() || null,
         ...(form.verificationSelfie?.startsWith('data:image/')
           ? { verificationSelfie: form.verificationSelfie }
           : {})
@@ -613,16 +671,43 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
 
         <fieldset className="settings-fieldset">
           <legend>{t('settings.videoLegend')}</legend>
+          <p className="muted">{t('settings.videoHint')}</p>
+          <label className="field-label">
+            {t('settings.videoUpload')}
+            <input
+              type="file"
+              accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
+              onChange={handleVideoChange}
+              disabled={busy}
+            />
+          </label>
+          {form.videoUrl && (
+            <div className="settings-video-preview">
+              <VideoEmbed url={form.videoUrl} />
+              <button
+                type="button"
+                className="button button-secondary"
+                disabled={busy}
+                onClick={handleVideoRemove}
+              >
+                {t('settings.videoRemove')}
+              </button>
+            </div>
+          )}
           <label className="field-label">
             {t('settings.videoPlaceholder')}
             <input
               className="input"
               type="url"
               placeholder={t('settings.videoUrlPlaceholder')}
-              value={form.videoUrl || ''}
+              value={form.videoUrl?.startsWith('/media/') ? '' : form.videoUrl || ''}
               onChange={(e) => setForm({ ...form, videoUrl: e.target.value })}
+              disabled={busy || Boolean(form.videoUrl?.startsWith('/media/'))}
             />
           </label>
+          {form.videoUrl?.startsWith?.('/media/') && (
+            <p className="muted">{t('settings.videoHostedNote')}</p>
+          )}
         </fieldset>
 
         <fieldset className="settings-fieldset">
