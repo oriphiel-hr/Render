@@ -77,26 +77,35 @@ Opcionalno: `MONTHLY_OPERATING_COST_CENTS=2500` za postotak pokrivenosti donacij
 
 ---
 
-## Plausible (posjete stranici)
+## Umami (posjete stranici)
 
-Analitika se učitava **odmah** (Plausible je bez praćenih kolačića — ne čeka cookie banner).
+Self-host na VPS-u (`analytics.ravnopar.com`). Analitika se učitava **odmah** (bez praćenih kolačića — ne čeka cookie banner).
+
+**Setup (jednom):**
+
+```bash
+# DNS: A analytics → VPS IP
+cd /var/www/Render/ravnopar
+bash scripts/vps-setup-umami.sh
+```
+
+Zatim u Umami UI: promijeni default lozinku (`admin` / `umami`) → dodaj website `ravnopar.com` → kopiraj Website ID + API token.
 
 | Servis | Env | Vrijednost |
 |--------|-----|------------|
-| **ravnopar** (frontend) | `VITE_ANALYTICS_URL` | `https://plausible.io/js/pa-en9H0khVpSTdd-AfH6hU1.js` |
-| **ravnopar-backend** | `PLAUSIBLE_SITE` | `ravnopar.oriph.io` |
-| **ravnopar-backend** | `PLAUSIBLE_API_KEY` | Stats API ključ (Plausible → Settings → API keys) |
-| **ravnopar-backend** | `PLAUSIBLE_SHARED_DASHBOARD_URL` | Shared link s dashboarda (Settings → Visibility) |
+| **ravnopar-web** | `NEXT_PUBLIC_ANALYTICS_URL` | `https://analytics.ravnopar.com/script.js` |
+| **ravnopar-web** | `NEXT_PUBLIC_UMAMI_WEBSITE_ID` | UUID websitea |
+| **ravnopar-api** | `UMAMI_BASE_URL` | `https://analytics.ravnopar.com` |
+| **ravnopar-api** | `UMAMI_WEBSITE_ID` | isti UUID |
+| **ravnopar-api** | `UMAMI_API_TOKEN` | API token / JWT |
+| **ravnopar-api** | `UMAMI_SHARE_URL` | opcionalno, share link za iframe |
+| **ravnopar-api** | `UMAMI_SITE_LABEL` | `ravnopar.com` |
 
-**Admin konzola** (`/admin`) prikazuje brojke i ugrađeni Plausible dashboard — ne moraš ručno otvarati plausible.io.
+Nakon env: `npm run build` u `frontend-next` + `pm2 restart ravnopar-web ravnopar-api --update-env`.
 
-1. U Plausibleu: **Settings → API keys** → kreiraj ključ → `PLAUSIBLE_API_KEY` na backendu
-2. **Settings → Visibility → Shared link** → kopiraj URL → `PLAUSIBLE_SHARED_DASHBOARD_URL` na backendu
-3. Redeploy **ravnopar-backend**
+**Admin** (`/admin`) prikazuje brojke iz Umami API-ja.
 
-**Napomena:** Search Console pokazuje samo klikove iz Google pretrage; Plausible pokriva sve posjete (direktne, bookmark, društvene mreže).
-
-Na Renderu postavi `VITE_ANALYTICS_URL` i redeploy frontenda.
+**Napomena:** Search Console pokazuje samo Google klikove; Umami pokriva sve posjete.
 
 ---
 

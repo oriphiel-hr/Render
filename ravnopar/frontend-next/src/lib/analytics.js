@@ -1,11 +1,11 @@
 export function trackPageview(path) {
-  if (typeof window.plausible === 'function') {
-    window.plausible('pageview', { u: path });
+  if (typeof window.umami?.track === 'function') {
+    window.umami.track((props) => ({ ...props, url: path }));
   }
 }
 
 export function trackEvent(name, props = {}) {
-  if (typeof window.plausible === 'function') {
-    window.plausible(name, { props });
+  if (typeof window.umami?.track === 'function') {
+    window.umami.track(name, props);
   }
 }

@@ -392,7 +392,7 @@ export default {
   cookie: {
     ariaLabel: "Cookies",
     message:
-      "We use essential cookies for login. Analytics (Plausible) runs without tracking cookies and does not identify you. Learn more in our",
+      "We use essential cookies for login. Analytics (Umami) runs without tracking cookies and does not identify you. Learn more in our",
     privacyLink: "privacy policy",
     accept: "Got it"
   },
@@ -1148,7 +1148,7 @@ export default {
         },
         {
           title: "Cookies and analytics",
-          body: "Essential cookies/tokens are used for login. Analytics (Plausible) is cookieless and does not use advertising profiles — it collects only aggregated visit data (pages, sources, devices). The banner is informational and does not block analytics."
+          body: "Essential cookies/tokens are used for login. Analytics (Umami) is cookieless and does not use advertising profiles — it collects only aggregated visit data (pages, sources, devices). The banner is informational and does not block analytics."
         },
         {
           title: "Referral",
@@ -1248,13 +1248,13 @@ export default {
       matches30d: "Matches (30d)",
       messages7d: "Messages (7d)"
     },
-    analyticsTitle: "Visit analytics (Plausible)",
-    analyticsSubtitle: "Aggregated data for {site} — no need to open Plausible manually.",
-    analyticsOpenExternal: "Open in Plausible",
+    analyticsTitle: "Visit analytics (Umami)",
+    analyticsSubtitle: "Aggregated data for {site} — no need to open Umami manually.",
+    analyticsOpenExternal: "Open in Umami",
     analyticsNotConfigured:
-      "Plausible is not connected. Set PLAUSIBLE_API_KEY and PLAUSIBLE_SHARED_DASHBOARD_URL on the backend (Render → ravnopar-backend → Environment).",
+      "Umami is not connected. Set UMAMI_BASE_URL, UMAMI_WEBSITE_ID and UMAMI_API_TOKEN on the backend (VPS → backend/.env).",
     analyticsPartialConfig:
-      "Set PLAUSIBLE_API_KEY for numbers or PLAUSIBLE_SHARED_DASHBOARD_URL for the embedded dashboard.",
+      "Set UMAMI_API_TOKEN for numbers or UMAMI_SHARE_URL for the embedded dashboard.",
     analyticsVisitorsToday: "Visitors (today)",
     analyticsPageviewsToday: "Pageviews (today)",
     analyticsVisitors7d: "Visitors (7d)",
@@ -1268,7 +1268,7 @@ export default {
     analyticsSource: "Source",
     analyticsVisitors: "Visitors",
     analyticsPageviews: "Pageviews",
-    analyticsDashboard: "Plausible dashboard",
+    analyticsDashboard: "Umami dashboard",
     quickActions: "Quick actions",
     inactivityThreshold: "Inactivity threshold (h)",
     dailyContactLimit: "Daily contact limit",

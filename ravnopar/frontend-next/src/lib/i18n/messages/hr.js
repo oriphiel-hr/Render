@@ -420,7 +420,7 @@ export default {
   cookie: {
     ariaLabel: 'Kolačići',
     message:
-      'Koristimo nužne kolačiće za prijavu. Analitiku (Plausible) koristimo bez praćenih kolačića — ne identificira te. Više u',
+      'Koristimo nužne kolačiće za prijavu. Analitiku (Umami) koristimo bez praćenih kolačića — ne identificira te. Više u',
     privacyLink: 'politici privatnosti',
     accept: 'Razumijem'
   },
@@ -1221,7 +1221,7 @@ export default {
         {
           title: 'Kolačići i analitika',
           body:
-            'Nužni kolačići/tokeni služe za prijavu. Analitika (Plausible) je bez praćenih kolačića i ne koristi oglašivačke profile — prikuplja samo agregirane podatke o posjetama (stranice, izvori, uređaji). Banner služi za informiranje, ne blokira analitiku.'
+            'Nužni kolačići/tokeni služe za prijavu. Analitika (Umami) je bez praćenih kolačića i ne koristi oglašivačke profile — prikuplja samo agregirane podatke o posjetama (stranice, izvori, uređaji). Banner služi za informiranje, ne blokira analitiku.'
         },
         {
           title: 'Pozivnice',
@@ -1332,13 +1332,13 @@ export default {
       matches30d: 'Match (30d)',
       messages7d: 'Poruke (7d)'
     },
-    analyticsTitle: 'Analitika posjeta (Plausible)',
-    analyticsSubtitle: 'Agregirani podaci za {site} — bez ručnog otvaranja Plausiblea.',
-    analyticsOpenExternal: 'Otvori u Plausibleu',
+    analyticsTitle: 'Analitika posjeta (Umami)',
+    analyticsSubtitle: 'Agregirani podaci za {site} — bez ručnog otvaranja Umamija.',
+    analyticsOpenExternal: 'Otvori u Umamiju',
     analyticsNotConfigured:
-      'Plausible nije povezan. Na backendu postavi PLAUSIBLE_API_KEY i PLAUSIBLE_SHARED_DASHBOARD_URL (Render → ravnopar-backend → Environment).',
+      'Umami nije povezan. Na backendu postavi UMAMI_BASE_URL, UMAMI_WEBSITE_ID i UMAMI_API_TOKEN (VPS → backend/.env).',
     analyticsPartialConfig:
-      'Postavi PLAUSIBLE_API_KEY za brojke ili PLAUSIBLE_SHARED_DASHBOARD_URL za ugrađeni dashboard.',
+      'Postavi UMAMI_API_TOKEN za brojke ili UMAMI_SHARE_URL za ugrađeni dashboard.',
     analyticsVisitorsToday: 'Posjetitelji (danas)',
     analyticsPageviewsToday: 'Pregledi (danas)',
     analyticsVisitors7d: 'Posjetitelji (7d)',
@@ -1352,7 +1352,7 @@ export default {
     analyticsSource: 'Izvor',
     analyticsVisitors: 'Posjetitelji',
     analyticsPageviews: 'Pregledi',
-    analyticsDashboard: 'Plausible dashboard',
+    analyticsDashboard: 'Umami dashboard',
     quickActions: 'Brze akcije',
     inactivityThreshold: 'Prag neaktivnosti (h)',
     dailyContactLimit: 'Dnevni limit kontakata',

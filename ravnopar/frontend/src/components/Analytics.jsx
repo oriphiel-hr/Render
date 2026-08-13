@@ -3,21 +3,21 @@ import { useLocation } from 'react-router-dom';
 import { trackPageview } from '../lib/analytics.js';
 
 const ANALYTICS_URL = import.meta.env.VITE_ANALYTICS_URL?.trim();
+const UMAMI_WEBSITE_ID = import.meta.env.VITE_UMAMI_WEBSITE_ID?.trim();
 
 function loadScript() {
-  if (!ANALYTICS_URL || document.querySelector('script[data-ravnopar-analytics="1"]')) return;
-
-  if (typeof window.plausible !== 'function') {
-    const inline = document.createElement('script');
-    inline.textContent =
-      'window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()';
-    document.head.appendChild(inline);
+  if (
+    !ANALYTICS_URL ||
+    !UMAMI_WEBSITE_ID ||
+    document.querySelector('script[data-ravnopar-analytics="1"]')
+  ) {
+    return;
   }
 
   const script = document.createElement('script');
-  script.async = true;
   script.defer = true;
   script.src = ANALYTICS_URL;
+  script.dataset.websiteId = UMAMI_WEBSITE_ID;
   script.dataset.ravnoparAnalytics = '1';
   document.head.appendChild(script);
 }
@@ -37,5 +37,5 @@ export default function Analytics() {
     loadScript();
   }, []);
 
-  return ANALYTICS_URL ? <RouteChangeTracker /> : null;
+  return ANALYTICS_URL && UMAMI_WEBSITE_ID ? <RouteChangeTracker /> : null;
 }

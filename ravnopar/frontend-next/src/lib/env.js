@@ -17,7 +17,11 @@ export const CONTACT_EMAIL =
 
 export const PLANS_ENABLED = process.env.NEXT_PUBLIC_PLANS_ENABLED === 'true';
 
+/** Umami tracker script, e.g. https://analytics.ravnopar.com/script.js */
 export const ANALYTICS_URL = process.env.NEXT_PUBLIC_ANALYTICS_URL?.trim() || '';
+
+/** Umami website UUID from the Umami dashboard */
+export const UMAMI_WEBSITE_ID = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID?.trim() || '';
 
 export const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() || '';
 

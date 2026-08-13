@@ -36,7 +36,7 @@ if ! grep -q '^VAPID_PUBLIC_KEY=.\+' .env 2>/dev/null; then
   PRIV=$(node -e "const k=JSON.parse(process.argv[1]); process.stdout.write(k.privateKey)" "$KEYS")
   ensure_env_line .env VAPID_PUBLIC_KEY "$PUB"
   ensure_env_line .env VAPID_PRIVATE_KEY "$PRIV"
-  ensure_env_line .env VAPID_SUBJECT "mailto:ravnopar@oriph.io"
+  ensure_env_line .env VAPID_SUBJECT "mailto:info@ravnopar.com"
   echo "Generated VAPID keys into backend/.env"
 else
   PUB=$(grep '^VAPID_PUBLIC_KEY=' .env | cut -d= -f2-)
@@ -45,6 +45,8 @@ fi
 
 ensure_env_line .env UPLOAD_DIR "$UPLOAD_DIR"
 ensure_env_line .env NODE_ENV production
+ensure_env_line .env UMAMI_BASE_URL "https://analytics.ravnopar.com"
+ensure_env_line .env UMAMI_SITE_LABEL "ravnopar.com"
 
 FE_ENV="$FE/.env.production"
 if [[ ! -f "$FE_ENV" && -f "$FE/.env.local" ]]; then
@@ -59,6 +61,8 @@ ensure_env_line "$FE_ENV" NEXT_PUBLIC_API_BASE_URL "https://ravnopar.com/api"
 ensure_env_line "$FE_ENV" NEXT_PUBLIC_SITE_URL "https://ravnopar.com"
 ensure_env_line "$FE_ENV" SERVER_API_BASE_URL "http://127.0.0.1:4200/api"
 ensure_env_line "$FE_ENV" NEXT_PUBLIC_VAPID_PUBLIC_KEY "$PUB"
+ensure_env_line "$FE_ENV" NEXT_PUBLIC_ANALYTICS_URL "https://analytics.ravnopar.com/script.js"
+# NEXT_PUBLIC_UMAMI_WEBSITE_ID se postavlja ručno nakon kreiranja websitea u Umamiju
 echo "Frontend env: $FE_ENV"
 
 echo "==> nginx /media + body size"
