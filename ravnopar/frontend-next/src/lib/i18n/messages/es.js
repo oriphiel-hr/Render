@@ -331,7 +331,7 @@ export default {
   },
   video: {
     embedTitle: "Video del perfil",
-    externalLink: "Ver el video del perfil"
+    externalLink: "Ver el video del perfil",
     unsupported: "El navegador no admite video"
   },
   avatar: {

@@ -331,7 +331,7 @@ export default {
   },
   video: {
     embedTitle: "Video profilu",
-    externalLink: "Pozrieť video profilu"
+    externalLink: "Pozrieť video profilu",
     unsupported: "Prehliadač nepodporuje video"
   },
   avatar: {

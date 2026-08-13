@@ -331,7 +331,7 @@ export default {
   },
   video: {
     embedTitle: "Profilvideó",
-    externalLink: "Profilvideó megtekintése"
+    externalLink: "Profilvideó megtekintése",
     unsupported: "A böngésző nem támogatja a videót"
   },
   avatar: {
