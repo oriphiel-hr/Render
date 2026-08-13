@@ -1,36 +1,52 @@
-import { useState } from 'react';
-import Link from './/Link.jsx';
+import { useRef, useState } from 'react';
+import Link from './Link.jsx';
 import PhotoGallery from './PhotoGallery.jsx';
 import FeedExplainHint from './FeedExplainHint.jsx';
 import SupporterBadge from './SupporterBadge.jsx';
 import { ActivityChip, CommonTagsLine, LifestyleChipList, ProfileSignalChips, ProfileTagList } from './ProfileTagList.jsx';
 import { useI18n } from '../lib/i18n/index.jsx';
 
+const SWIPE_THRESHOLD = 90;
+
 export default function SwipeFeedCard({ person, myCity, onLike, onPass, onBlock, onReport, busy }) {
   const { t, labels } = useI18n();
   const { labelIdentity, labelProfileType, labelIntent } = labels;
   const [offsetX, setOffsetX] = useState(0);
   const [swiping, setSwiping] = useState(false);
-  const touchStart = { x: 0, y: 0 };
+  const touchStart = useRef({ x: 0, y: 0 });
+  const axisLock = useRef(null);
+  const offsetRef = useRef(0);
   const intents = Array.isArray(person.intents) ? person.intents : [];
   const sameCity = myCity && person.city && myCity.toLowerCase() === person.city.toLowerCase();
 
   function onTouchStart(e) {
-    touchStart.x = e.touches[0].clientX;
-    touchStart.y = e.touches[0].clientY;
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    axisLock.current = null;
+    offsetRef.current = 0;
     setSwiping(true);
   }
 
   function onTouchMove(e) {
-    const dx = e.touches[0].clientX - touchStart.x;
-    const dy = e.touches[0].clientY - touchStart.y;
-    if (Math.abs(dx) > Math.abs(dy)) setOffsetX(dx);
+    const dx = e.touches[0].clientX - touchStart.current.x;
+    const dy = e.touches[0].clientY - touchStart.current.y;
+    if (!axisLock.current && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+      axisLock.current = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+    }
+    if (axisLock.current !== 'x') return;
+    if (e.cancelable) e.preventDefault();
+    offsetRef.current = dx;
+    setOffsetX(dx);
   }
 
   function onTouchEnd() {
     setSwiping(false);
-    if (offsetX > 90) onPass?.();
-    else if (offsetX < -90) onLike?.();
+    const dx = offsetRef.current;
+    if (axisLock.current === 'x') {
+      if (dx > SWIPE_THRESHOLD) onPass?.();
+      else if (dx < -SWIPE_THRESHOLD) onLike?.();
+    }
+    axisLock.current = null;
+    offsetRef.current = 0;
     setOffsetX(0);
   }
 
@@ -45,6 +61,7 @@ export default function SwipeFeedCard({ person, myCity, onLike, onPass, onBlock,
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
+      onTouchCancel={onTouchEnd}
     >
       {likeHint && <span className="swipe-stamp swipe-stamp-like">{t('swipe.stampLike')}</span>}
       {passHint && <span className="swipe-stamp swipe-stamp-pass">{t('swipe.stampPass')}</span>}

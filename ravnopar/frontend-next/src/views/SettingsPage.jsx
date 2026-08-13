@@ -22,6 +22,7 @@ import { getIcebreakerPrompts } from '../lib/icebreakers.js';
 import InviteSection from '../components/InviteSection.jsx';
 import CountrySelect from '../components/CountrySelect.jsx';
 import LanguageSwitcher from '../components/LanguageSwitcher.jsx';
+import PushOptIn from '../components/PushOptIn.jsx';
 import { translateApiError, useI18n } from '../lib/i18n/index.jsx';
 import TagPicker from '../components/TagPicker.jsx';
 import { PRIVATE_TAG_KEYS, PUBLIC_TAG_KEYS } from '../lib/profile-tags.js';
@@ -115,6 +116,14 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
       setBusy(false);
       event.target.value = '';
     }
+  }
+
+  function removePhoto(index) {
+    setForm((prev) => ({
+      ...prev,
+      photos: (prev.photos || []).filter((_, i) => i !== index)
+    }));
+    setMessage(t('settings.photoRemoved'), 'info');
   }
 
   async function handleVideoChange(event) {
@@ -372,13 +381,29 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
           <div>
             <label className="field-label">
               {t('settings.photos', { current: (form.photos || []).length, max: 3 })}
-              <input type="file" accept="image/*" onChange={handlePhotoChange} disabled={busy || (form.photos || []).length >= 3} />
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handlePhotoChange}
+                disabled={busy || (form.photos || []).length >= 3}
+              />
             </label>
             <p className="muted">{t('settings.photosHint')}</p>
             {(form.photos || []).length > 0 && (
-              <div className="photo-gallery">
+              <div className="photo-gallery settings-photo-thumbs">
                 {form.photos.map((photo, index) => (
-                  <img key={`${index}-${photo.slice(-12)}`} src={photo} alt="" className="photo-thumb" />
+                  <div key={`${index}-${photo.slice(-12)}`} className="settings-photo-thumb-wrap">
+                    <img src={photo} alt="" className="photo-thumb" />
+                    <button
+                      type="button"
+                      className="button button-ghost button-sm settings-photo-remove"
+                      disabled={busy}
+                      onClick={() => removePhoto(index)}
+                    >
+                      {t('settings.photoRemove')}
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -721,7 +746,7 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
           )}
           <label className="field-label">
             {t('settings.verificationSelfie')}
-            <input type="file" accept="image/*" onChange={handleSelfieChange} disabled={busy} />
+            <input type="file" accept="image/*" capture="user" onChange={handleSelfieChange} disabled={busy} />
           </label>
           {form.verificationSelfie && (
             <img src={form.verificationSelfie} alt="" className="verification-selfie-preview" />
@@ -848,6 +873,11 @@ export default function SettingsPage({ token, profile, onLogout, onProfileUpdate
         {(form.lifetimeDonatedCents || 0) > 0 && (
           <p className="muted">{t('settings.donorBadgeHint')}</p>
         )}
+
+        <fieldset className="settings-fieldset">
+          <legend>{t('pwa.pushLegend')}</legend>
+          <PushOptIn />
+        </fieldset>
 
         <div className="form-actions row">
           <button type="submit" className="button button-primary" disabled={busy}>

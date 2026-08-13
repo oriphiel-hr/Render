@@ -1,0 +1,32 @@
+{
+  "appId": "com.ravnopar.app",
+  "appName": "Ravnopar",
+  "webDir": "www",
+  "server": {
+    "url": "https://ravnopar.com",
+    "cleartext": false,
+    "allowNavigation": [
+      "ravnopar.com",
+      "*.ravnopar.com",
+      "oriph.io",
+      "*.oriph.io"
+    ]
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "backgroundColor": "#0f766e"
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0f766e"
+    }
+  },
+  "android": {
+    "allowMixedContent": false
+  },
+  "ios": {
+    "contentInset": "automatic",
+    "preferredContentMode": "mobile"
+  }
+}

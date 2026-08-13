@@ -28,6 +28,7 @@ export default function ChatPage({ token, profile, onRead }) {
   const [partnerTyping, setPartnerTyping] = useState(false);
   const [reactionFor, setReactionFor] = useState(null);
   const bottomRef = useRef(null);
+  const messagesRef = useRef(null);
   const sinceRef = useRef(new Date().toISOString());
   const typingTimer = useRef(null);
 
@@ -42,6 +43,28 @@ export default function ChatPage({ token, profile, onRead }) {
       setStatus(data?.error || t('chat.unavailable'));
     }
   }
+
+  useEffect(() => {
+    document.body.classList.add('chat-open');
+    return () => document.body.classList.remove('chat-open');
+  }, []);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return undefined;
+    function syncKeyboardInset() {
+      const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      document.documentElement.style.setProperty('--keyboard-inset', `${inset}px`);
+    }
+    syncKeyboardInset();
+    vv.addEventListener('resize', syncKeyboardInset);
+    vv.addEventListener('scroll', syncKeyboardInset);
+    return () => {
+      vv.removeEventListener('resize', syncKeyboardInset);
+      vv.removeEventListener('scroll', syncKeyboardInset);
+      document.documentElement.style.removeProperty('--keyboard-inset');
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -93,7 +116,12 @@ export default function ChatPage({ token, profile, onRead }) {
   }, [token, pairId]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = messagesRef.current;
+    if (el) {
+      el.scrollTop = el.scrollHeight;
+      return;
+    }
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages, partnerTyping]);
 
   function notifyTyping() {
@@ -120,6 +148,15 @@ export default function ChatPage({ token, profile, onRead }) {
     }
   }
 
+  function onComposerKeyDown(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      if (!busy && body.trim()) {
+        event.currentTarget.form?.requestSubmit();
+      }
+    }
+  }
+
   async function pickReaction(messageId, emoji) {
     const data = await reactToMessage(token, pairId, messageId, emoji);
     if (data?.success) {
@@ -131,12 +168,14 @@ export default function ChatPage({ token, profile, onRead }) {
   return (
     <main className="page chat-page">
       <PageMeta titleKey="chat" />
-      <p className="auth-footer"><Link to="/app">{t('chat.backToApp')}</Link></p>
+      <p className="auth-footer chat-back-link">
+        <Link to="/app">{t('chat.backToApp')}</Link>
+      </p>
       <section className="card chat-panel">
         <h1 className="section-title">{t('chat.title')}</h1>
         {loading && <p className="muted">{t('chat.loading')}</p>}
         {status && <p className="status-banner status-error">{status}</p>}
-        <div className="chat-messages">
+        <div className="chat-messages" ref={messagesRef}>
           {messages.length === 0 && !loading && (
             <p className="muted chat-empty">{t('chat.empty')}</p>
           )}
@@ -176,17 +215,19 @@ export default function ChatPage({ token, profile, onRead }) {
         </div>
         <form className="chat-form" onSubmit={submit}>
           <textarea
-            className="input"
-            rows={3}
+            className="input chat-composer"
+            rows={2}
             maxLength={2000}
+            enterKeyHint="send"
             placeholder={t('chat.placeholder')}
             value={body}
             onChange={(e) => {
               setBody(e.target.value);
               notifyTyping();
             }}
+            onKeyDown={onComposerKeyDown}
           />
-          <div className="form-actions row">
+          <div className="form-actions row chat-form-actions">
             <button type="submit" className="button button-primary" disabled={busy || !body.trim()}>
               {busy ? t('chat.sending') : t('chat.send')}
             </button>

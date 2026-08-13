@@ -27,3 +27,6 @@ export const DONATE_REFERENCE =
   process.env.NEXT_PUBLIC_DONATE_REFERENCE?.trim() || 'Ravnopar donacija';
 export const DONATE_REVOLUT_URL = process.env.NEXT_PUBLIC_DONATE_REVOLUT_URL?.trim() || '';
 export const DONATE_STRIPE_URL = process.env.NEXT_PUBLIC_DONATE_STRIPE_URL?.trim() || '';
+
+/** Web Push VAPID public key (pair with backend VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY) */
+export const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim() || '';

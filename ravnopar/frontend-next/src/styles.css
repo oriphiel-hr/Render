@@ -1651,15 +1651,20 @@ body:has(.mobile-dock) .public-footer {
 
 .chat-panel {
   display: grid;
+  grid-template-rows: auto auto 1fr auto;
   gap: 0.75rem;
-  min-height: 60vh;
+  min-height: min(70dvh, 70vh);
+  max-height: none;
 }
 
 .chat-messages {
   display: grid;
   gap: 0.55rem;
-  max-height: 50vh;
+  min-height: 12rem;
+  max-height: min(52dvh, 52vh);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding: 0.25rem 0;
 }
 
@@ -1696,6 +1701,48 @@ body:has(.mobile-dock) .public-footer {
 .chat-form {
   display: grid;
   gap: 0.55rem;
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  padding-bottom: calc(0.35rem + env(safe-area-inset-bottom, 0px) + var(--keyboard-inset, 0px));
+  background: linear-gradient(to top, var(--card) 70%, transparent);
+}
+
+.chat-composer {
+  resize: none;
+  min-height: 2.75rem;
+  max-height: 8rem;
+  field-sizing: content;
+}
+
+body.chat-open .mobile-dock {
+  display: none !important;
+}
+
+body.chat-open .page.chat-page {
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px) + var(--keyboard-inset, 0px));
+}
+
+@media (max-width: 760px) {
+  .chat-panel {
+    border-radius: 16px;
+    min-height: calc(100dvh - 7.5rem - var(--keyboard-inset, 0px));
+  }
+
+  .chat-messages {
+    max-height: none;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .chat-page .chat-panel {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .chat-form-actions {
+    gap: 0.5rem;
+  }
 }
 
 .settings-form {
@@ -2505,10 +2552,17 @@ body:has(.mobile-dock) .cookie-banner {
   box-shadow: var(--shadow-soft);
   transition: transform 0.15s ease;
   touch-action: pan-y;
+  will-change: transform;
+}
+
+.swipe-card.swiping {
+  transition: none;
+  touch-action: none;
 }
 
 .swipe-card-gallery {
   border-radius: 0;
+  touch-action: pan-x;
 }
 
 .swipe-card-body {
@@ -3024,6 +3078,53 @@ body.match-modal-open {
 
 .profile-video-block {
   margin-top: 0.75rem;
+}
+
+.pwa-install-banner {
+  position: fixed;
+  left: max(0.75rem, env(safe-area-inset-left, 0px));
+  right: max(0.75rem, env(safe-area-inset-right, 0px));
+  bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+}
+
+.pwa-install-banner p {
+  margin: 0.2rem 0 0;
+}
+
+.pwa-install-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.push-opt-in {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.settings-photo-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.5rem;
+}
+
+.settings-photo-thumb-wrap {
+  display: grid;
+  gap: 0.35rem;
+  justify-items: start;
+}
+
+.settings-photo-remove {
+  padding-inline: 0.5rem;
 }
 
 .verify-compare {

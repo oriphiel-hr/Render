@@ -89,8 +89,10 @@ export function Topbar() {
 export function MobileDock() {
   const { t } = useI18n();
   const { token, profile, unreadTotal, notificationUnread } = useAuth();
+  const location = useLocation();
   const totalUnread = unreadTotal + notificationUnread;
   if (!token) return null;
+  if (location.pathname.includes('/app/chat/')) return null;
 
   return (
     <nav className="mobile-dock" aria-label={t('nav.quickNav')}>

@@ -276,6 +276,24 @@ export async function createDonateCheckout(amountCents, token) {
   return res.json();
 }
 
+export async function subscribePush(token, subscription) {
+  const res = await fetch(`${API_BASE_URL}/payments/push/subscribe`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(subscription)
+  });
+  return res.json();
+}
+
+export async function unsubscribePush(token, endpoint) {
+  const res = await fetch(`${API_BASE_URL}/payments/push/subscribe`, {
+    method: 'DELETE',
+    headers: authHeaders(token),
+    body: JSON.stringify({ endpoint })
+  });
+  return res.json();
+}
+
 export async function getDonateImpact() {
   const res = await fetch(`${API_BASE_URL}/payments/donate/impact`);
   return res.json();

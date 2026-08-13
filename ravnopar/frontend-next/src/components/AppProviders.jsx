@@ -8,13 +8,17 @@ import CookieBanner from './CookieBanner.jsx';
 import LocaleProfileSync from './LocaleProfileSync.jsx';
 import PublicFooter from './PublicFooter.jsx';
 import { MobileDock, Topbar } from './SiteChrome.jsx';
+import ServiceWorkerRegister from './ServiceWorkerRegister.jsx';
+import PwaInstallBanner from './PwaInstallBanner.jsx';
 
 function ShellInner({ children }) {
   const { token, profile, onProfileLocaleSaved } = useAuth();
   return (
     <>
+      <ServiceWorkerRegister />
       <Analytics />
       <CookieBanner />
+      <PwaInstallBanner />
       <LocaleProfileSync token={token} profile={profile} onProfileLocaleSaved={onProfileLocaleSaved} />
       <Topbar />
       {children}

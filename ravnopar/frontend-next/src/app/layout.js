@@ -15,7 +15,25 @@ export const metadata = {
     ],
     apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }]
   },
-  manifest: '/manifest.webmanifest'
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Ravnopar'
+  },
+  other: {
+    'mobile-web-app-capable': 'yes'
+  }
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#0f766e' },
+    { media: '(prefers-color-scheme: dark)', color: '#0f766e' }
+  ]
 };
 
 export default function RootLayout({ children }) {

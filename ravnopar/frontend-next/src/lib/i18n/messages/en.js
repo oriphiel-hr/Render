@@ -408,6 +408,21 @@ export default {
     externalLink: "Watch profile video",
     unsupported: "Your browser does not support video"
   },
+
+  pwa: {
+    installTitle: "Install Ravnopar",
+    installHint: "Add to your home screen for faster access and push notifications.",
+    install: "Install",
+    later: "Later",
+    pushLegend: "Push notifications",
+    pushHint: "Get alerts for messages and requests even when the app is closed.",
+    pushEnable: "Enable push",
+    pushDisable: "Disable push",
+    pushEnabled: "Push notifications enabled.",
+    pushDisabled: "Push notifications disabled.",
+    pushDenied: "Notification permission was denied.",
+    pushFailed: "Push failed. Check VAPID keys and HTTPS."
+  },
   avatar: {
     alt: "Profile photo: {name}"
   },
@@ -580,6 +595,8 @@ export default {
     dangerHint: "Deleting your account removes your profile, messages, and contact history.",
     deleteAccount: "Delete account",
     photoAdded: "Photo added — click Save profile.",
+    photoRemoved: "Photo removed — click Save profile.",
+    photoRemove: "Remove",
     photoUploadFailed: "Photo upload failed.",
     exportDone: "Data export downloaded.",
     exportFailed: "Export failed.",

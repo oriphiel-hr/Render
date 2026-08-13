@@ -1,10 +1,13 @@
 import { prisma } from './prisma.js';
+import { sendWebPushToProfile } from './web-push.js';
 
 export async function createInAppNotification({ profileId, type, title, body, linkPath = null }) {
   if (!profileId) return null;
-  return prisma.inAppNotification.create({
+  const row = await prisma.inAppNotification.create({
     data: { profileId, type, title, body, linkPath }
   });
+  sendWebPushToProfile(profileId, { title, body, linkPath }).catch(() => {});
+  return row;
 }
 
 export async function listNotifications(profileId, { limit = 40 } = {}) {

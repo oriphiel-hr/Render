@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useI18n } from '../lib/i18n/index.jsx';
 
 export default function PhotoGallery({ photos = [], alt = '', className = '' }) {
@@ -6,7 +6,9 @@ export default function PhotoGallery({ photos = [], alt = '', className = '' }) 
   const list = Array.isArray(photos) ? photos.filter(Boolean) : [];
   const [index, setIndex] = useState(0);
   const [dragX, setDragX] = useState(0);
-  const touchStart = { x: 0 };
+  const touchStart = useRef({ x: 0 });
+  const dragRef = useRef(0);
+  const locked = useRef(false);
 
   const go = useCallback(
     (delta) => {
@@ -27,17 +29,29 @@ export default function PhotoGallery({ photos = [], alt = '', className = '' }) 
   }
 
   function onTouchStart(e) {
-    touchStart.x = e.touches[0].clientX;
+    touchStart.current = { x: e.touches[0].clientX };
+    dragRef.current = 0;
+    locked.current = false;
     setDragX(0);
   }
 
   function onTouchMove(e) {
-    setDragX(e.touches[0].clientX - touchStart.x);
+    const dx = e.touches[0].clientX - touchStart.current.x;
+    if (Math.abs(dx) > 10) {
+      locked.current = true;
+      e.stopPropagation();
+    }
+    dragRef.current = dx;
+    setDragX(dx);
   }
 
-  function onTouchEnd() {
-    if (dragX > 60) go(-1);
-    else if (dragX < -60) go(1);
+  function onTouchEnd(e) {
+    if (locked.current) e.stopPropagation();
+    const dx = dragRef.current;
+    if (dx > 60) go(-1);
+    else if (dx < -60) go(1);
+    dragRef.current = 0;
+    locked.current = false;
     setDragX(0);
   }
 
@@ -47,6 +61,7 @@ export default function PhotoGallery({ photos = [], alt = '', className = '' }) 
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
+      onTouchCancel={onTouchEnd}
     >
       <img
         src={list[index]}
@@ -54,6 +69,8 @@ export default function PhotoGallery({ photos = [], alt = '', className = '' }) 
         className="photo-gallery-main"
         style={{ transform: dragX ? `translateX(${dragX * 0.15}px)` : undefined }}
         draggable={false}
+        loading="lazy"
+        decoding="async"
       />
       {list.length > 1 && (
         <>

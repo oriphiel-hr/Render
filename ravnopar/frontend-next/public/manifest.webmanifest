@@ -1,12 +1,16 @@
 {
+  "id": "/",
   "name": "Ravnopar",
   "short_name": "Ravnopar",
   "description": "Fer dating platforma — bez paywalla za razgovor.",
-  "start_url": "/",
+  "start_url": "/app",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#ffffff",
-  "theme_color": "#4f46e5",
+  "theme_color": "#0f766e",
   "lang": "hr",
+  "categories": ["social", "lifestyle"],
   "icons": [
     {
       "src": "/icon-48.png",
@@ -25,6 +29,12 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/icon.svg",

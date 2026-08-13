@@ -440,6 +440,21 @@ export default {
     unsupported: 'Preglednik ne podržava video'
   },
 
+  pwa: {
+    installTitle: 'Instaliraj Ravnopar',
+    installHint: 'Dodaj na početni zaslon za brži pristup i push obavijesti.',
+    install: 'Instaliraj',
+    later: 'Kasnije',
+    pushLegend: 'Push obavijesti',
+    pushHint: 'Primaj obavijesti o porukama i zahtjevima i kad je aplikacija zatvorena.',
+    pushEnable: 'Uključi push',
+    pushDisable: 'Isključi push',
+    pushEnabled: 'Push obavijesti uključene.',
+    pushDisabled: 'Push obavijesti isključene.',
+    pushDenied: 'Dopuštenje za obavijesti je odbijeno.',
+    pushFailed: 'Push nije uspio. Provjeri VAPID ključeve i HTTPS.'
+  },
+
   avatar: {
     alt: 'Profilna fotografija: {name}'
   },
@@ -620,6 +635,8 @@ export default {
     dangerHint: 'Brisanje računa uklanja profil, poruke i povijest kontakata.',
     deleteAccount: 'Obriši račun',
     photoAdded: 'Fotografija dodana — klikni Spremi profil.',
+    photoRemoved: 'Fotografija uklonjena — klikni Spremi profil.',
+    photoRemove: 'Ukloni',
     photoUploadFailed: 'Prijenos fotografije nije uspio.',
     exportDone: 'Izvoz podataka preuzet.',
     exportFailed: 'Izvoz nije uspio.',
