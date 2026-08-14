@@ -16,6 +16,7 @@ import {
 import DonatePromptBanner from '../components/DonatePromptBanner.jsx';
 import MatchModal from '../components/MatchModal.jsx';
 import PhotoGallery from '../components/PhotoGallery.jsx';
+import ShareRavnopar from '../components/ShareRavnopar.jsx';
 import SwipeFeedCard from '../components/SwipeFeedCard.jsx';
 import { isDonateConfigured } from '../lib/donate-config.js';
 import {
@@ -378,9 +379,13 @@ export default function UserDashboardPage({ token, profile }) {
             <span className="empty-icon" aria-hidden="true">♥</span>
             <h3>{t('dashboard.emptyTitle')}</h3>
             <p className="muted">{t('dashboard.emptyHint')}</p>
-            <Link className="button button-primary" to="/app/postavke">
-              {t('dashboard.expandPreferences')}
-            </Link>
+            <p className="muted">{t('dashboard.emptyShareHint')}</p>
+            <div className="empty-state-actions">
+              <ShareRavnopar />
+              <Link className="button button-ghost" to="/app/postavke">
+                {t('dashboard.expandPreferences')}
+              </Link>
+            </div>
           </div>
         )}
         {feedReady && !loading && feed.length > 0 && feedIndex >= feed.length && (

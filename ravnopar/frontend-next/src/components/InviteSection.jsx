@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getReferralInfo } from '../api/index.js';
+import ShareRavnopar from './ShareRavnopar.jsx';
 import { useI18n } from '../lib/i18n/index.jsx';
 
 export default function InviteSection({ token }) {
@@ -26,6 +27,7 @@ export default function InviteSection({ token }) {
     <section className="card invite-section">
       <h2 className="section-title">{t('invite.title')}</h2>
       <p className="muted">{t('invite.hint')}</p>
+      <ShareRavnopar url={info.inviteUrl} compact />
       <p className="muted">
         {t('invite.invitedCount')} <strong>{info.invitedCount ?? 0}</strong>
       </p>

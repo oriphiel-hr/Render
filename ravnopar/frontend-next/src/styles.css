@@ -2709,6 +2709,25 @@ body:has(.mobile-dock) .cookie-banner {
   padding: 2rem 1.25rem;
 }
 
+.empty-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: center;
+  margin-top: 1.1rem;
+}
+
+.share-ravnopar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: center;
+}
+
+.share-ravnopar-compact {
+  margin: 0.75rem 0 1rem;
+}
+
 .empty-icon {
   font-size: 2.5rem;
   display: block;

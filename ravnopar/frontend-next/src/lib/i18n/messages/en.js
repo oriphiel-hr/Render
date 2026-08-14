@@ -629,7 +629,7 @@ export default {
     greeting: "Hello, {name}",
     subtitle: "Swipe profiles or use the buttons — one at a time, no rush.",
     feedCount: "{count} profiles in your feed",
-    feedEmpty: "There are currently no compatible profiles in your feed.",
+    feedEmpty: "No compatible profiles yet — the platform is just getting started.",
     settingsLink: "Profile settings",
     loading: "Loading...",
     incompleteTitle: "Your profile is not complete yet ({percent}%).",
@@ -660,8 +660,11 @@ export default {
     gateTitle: "Profile not ready for feed",
     gateHint: "Add a photo and short description (min. 10 characters) before sending requests and swiping.",
     gateOnboarding: "View intro",
-    emptyTitle: "No new profiles",
-    emptyHint: "Expand your city or preferences in Settings — or check back soon when someone new joins.",
+    emptyTitle: "Nobody in the feed yet",
+    emptyHint:
+      "Ravnopar is new. There are no fake profiles — the feed fills only with real people. Empty is intentional, not a bug.",
+    emptyShareHint:
+      "Critical mass comes from sharing the public link (groups, networks, forums) — not from fake members.",
     expandPreferences: "Expand preferences",
     seenAllTitle: "You have seen everyone",
     seenAllHint: "Come back later — new profiles appear regularly.",
@@ -847,11 +850,16 @@ export default {
     open: "Open"
   },
   invite: {
-    title: "Invite a friend",
-    hint: "Share your link — it is free, no rewards for now, but it helps a small community grow.",
-    invitedCount: "Invited registrations: {count}",
+    title: "Share Ravnopar",
+    hint: "A public link helps new people find the app. No rewards for invites — just community growth.",
+    invitedCount: "Sign-ups via your link: {count}",
     copyLink: "Copy link",
     yourCode: "Your code: {code}"
+  },
+  share: {
+    cta: "Share Ravnopar",
+    copyLink: "Copy public link",
+    text: "Ravnopar — fair dating without a paywall."
   },
   swipe: {
     stampLike: "Interested",

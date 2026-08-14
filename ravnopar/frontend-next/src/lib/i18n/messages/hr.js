@@ -670,7 +670,7 @@ export default {
     greeting: 'Pozdrav, {name}',
     subtitle: 'Pregledavaj profile ili koristi gumbe — jedan po jedan, bez žurbe.',
     feedCount: '{count} profila u tvom prikazu',
-    feedEmpty: 'Trenutno nema kompatibilnih profila u tvom prikazu.',
+    feedEmpty: 'Još nema kompatibilnih profila — platforma je na početku.',
     settingsLink: 'Postavke profila',
     loading: 'Učitavanje...',
     incompleteTitle: 'Profil ti još nije kompletan ({percent}%).',
@@ -701,9 +701,11 @@ export default {
     gateTitle: 'Profil nije spreman za prikaz',
     gateHint: 'Dodaj fotografiju i kratki opis (min. 10 znakova) prije slanja zahtjeva i pregledavanja profila.',
     gateOnboarding: 'Pogledaj uvod',
-    emptyTitle: 'Nema novih profila',
+    emptyTitle: 'Još nema nikoga u prikazu',
     emptyHint:
-      'Proširi grad ili preference u Postavkama — ili se vrati uskoro kad se netko novi registrira.',
+      'Ravnopar je nov. Nema lažnih profila — prikaz se puni samo stvarnim ljudima. To je namjerno prazno, ne bug.',
+    emptyShareHint:
+      'Kritična masa dolazi kad se link širi javno (grupe, mreže, forumi) — ne od lažnih članova.',
     expandPreferences: 'Proširi preference',
     seenAllTitle: 'Pregledao/la si sve',
     seenAllHint: 'Vrati se kasnije — novi profili se pojavljuju redovito.',
@@ -907,11 +909,16 @@ export default {
   },
 
   invite: {
-    title: 'Pozovi prijatelja',
-    hint: 'Podijeli link — besplatno je, bez nagrada za sada, ali pomaže maloj zajednici da raste.',
-    invitedCount: 'Pozvanih registracija:',
+    title: 'Podijeli Ravnopar',
+    hint: 'Javni link pomaže da dođu novi ljudi. Nema nagrada za pozive — samo rast zajednice.',
+    invitedCount: 'Registracija preko tvog linka:',
     copyLink: 'Kopiraj link',
     yourCode: 'Tvoj kod:'
+  },
+  share: {
+    cta: 'Podijeli Ravnopar',
+    copyLink: 'Kopiraj javni link',
+    text: 'Ravnopar — fer upoznavanje bez paywalla.'
   },
 
   swipe: {
