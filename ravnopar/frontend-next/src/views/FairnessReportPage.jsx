@@ -19,22 +19,30 @@ export default function FairnessReportPage({ report = null }) {
         <article className="card">
           <h2 className="section-title">{t('fairnessReport.statsTitle')}</h2>
           <div className="impact-grid">
-            <div className="impact-stat">
-              <strong>{stats.contactsLast30Days}</strong>
-              <span className="muted">{t('donate.impactContacts')}</span>
-            </div>
-            <div className="impact-stat">
-              <strong>{stats.matchesLast30Days ?? '—'}</strong>
-              <span className="muted">Matchova (30d)</span>
-            </div>
-            <div className="impact-stat">
-              <strong>{stats.supporterCount}</strong>
-              <span className="muted">{t('donate.impactSupporters')}</span>
-            </div>
-            <div className="impact-stat">
-              <strong>{stats.donationCoveragePercent}%</strong>
-              <span className="muted">{t('donate.impactCoverage')}</span>
-            </div>
+            {stats.contactsLast30Days != null && (
+              <div className="impact-stat">
+                <strong>{stats.contactsLast30Days}</strong>
+                <span className="muted">{t('donate.impactContacts')}</span>
+              </div>
+            )}
+            {stats.matchesLast30Days != null && (
+              <div className="impact-stat">
+                <strong>{stats.matchesLast30Days}</strong>
+                <span className="muted">Matchova (30d)</span>
+              </div>
+            )}
+            {stats.supporterCount != null && (
+              <div className="impact-stat">
+                <strong>{stats.supporterCount}</strong>
+                <span className="muted">{t('donate.impactSupporters')}</span>
+              </div>
+            )}
+            {stats.donationCoveragePercent != null && (
+              <div className="impact-stat">
+                <strong>{stats.donationCoveragePercent}%</strong>
+                <span className="muted">{t('donate.impactCoverage')}</span>
+              </div>
+            )}
           </div>
         </article>
       )}

@@ -13,18 +13,24 @@ export default function DonateImpactSection({ stats = null }) {
       <h2 className="section-title">{t('donate.impactTitle')}</h2>
       <p className="muted">{t('donate.impactLead')}</p>
       <div className="impact-grid">
-        <div className="impact-stat">
-          <strong>{stats.activeCount ?? stats.memberCount}</strong>
-          <span className="muted">{t('donate.impactMembers')}</span>
-        </div>
-        <div className="impact-stat">
-          <strong>{stats.contactsLast30Days}</strong>
-          <span className="muted">{t('donate.impactContacts')}</span>
-        </div>
-        <div className="impact-stat">
-          <strong>{stats.supporterCount}</strong>
-          <span className="muted">{t('donate.impactSupporters')}</span>
-        </div>
+        {stats.activeCount != null || stats.memberCount != null ? (
+          <div className="impact-stat">
+            <strong>{stats.activeCount ?? stats.memberCount}</strong>
+            <span className="muted">{t('donate.impactMembers')}</span>
+          </div>
+        ) : null}
+        {stats.contactsLast30Days != null ? (
+          <div className="impact-stat">
+            <strong>{stats.contactsLast30Days}</strong>
+            <span className="muted">{t('donate.impactContacts')}</span>
+          </div>
+        ) : null}
+        {stats.supporterCount != null ? (
+          <div className="impact-stat">
+            <strong>{stats.supporterCount}</strong>
+            <span className="muted">{t('donate.impactSupporters')}</span>
+          </div>
+        ) : null}
         <div className="impact-stat">
           <strong>{stats.donatedEur30d} €</strong>
           <span className="muted">{t('donate.impactDonated')}</span>

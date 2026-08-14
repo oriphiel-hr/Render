@@ -6,7 +6,7 @@ import { optionalAuth } from '../lib/optional-auth.js';
 import { createInAppNotification } from '../lib/in-app-notifications.js';
 import { prisma } from '../lib/prisma.js';
 import { sendDonationThankYouEmail } from '../services/notification-service.js';
-import { getPublicImpactStats } from '../services/impact-stats-service.js';
+import { getPublicImpactStats, redactCommunityStatsForGuests } from '../services/impact-stats-service.js';
 
 export const paymentsRouter = Router();
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
@@ -20,7 +20,7 @@ paymentsRouter.get('/donate/status', (_req, res) => {
 });
 
 paymentsRouter.get('/donate/impact', async (_req, res) => {
-  const stats = await getPublicImpactStats();
+  const stats = redactCommunityStatsForGuests(await getPublicImpactStats());
   return res.json({ success: true, stats });
 });
 

@@ -63,3 +63,22 @@ export async function getPublicImpactStats() {
     }))
   };
 }
+
+const COMMUNITY_KEYS = [
+  'memberCount',
+  'activeCount',
+  'contactsLast30Days',
+  'matchesLast30Days',
+  'topCities',
+  'supporterCount'
+];
+
+/** Guests never see small community size (empty app). */
+export function redactCommunityStatsForGuests(stats) {
+  if (!stats) return stats;
+  const min = Number(process.env.PUBLIC_COMMUNITY_STATS_MIN || 20);
+  if ((stats.activeCount || 0) >= min) return stats;
+  const out = { ...stats };
+  for (const key of COMMUNITY_KEYS) delete out[key];
+  return out;
+}

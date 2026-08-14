@@ -9,15 +9,18 @@ import { useI18n } from '../lib/i18n/index.jsx';
 function LandingSocialProof({ stats, t }) {
   if (!stats) return null;
 
-  const showCommunitySize = stats.activeCount >= 20;
-  const topCities = (stats.topCities || []).slice(0, 3);
+  const showCommunitySize = Number(stats.activeCount) >= 20;
+  const topCities = showCommunitySize ? (stats.topCities || []).slice(0, 3) : [];
+  const showContacts = showCommunitySize && Number(stats.contactsLast30Days) > 0;
+
+  if (!showCommunitySize && !showContacts && topCities.length === 0) return null;
 
   return (
     <div className="social-proof">
       {showCommunitySize && (
         <span className="chip">{t('home.communityCount', { count: stats.activeCount })}</span>
       )}
-      {stats.contactsLast30Days > 0 && (
+      {showContacts && (
         <span className="chip">{t('home.contacts30d', { count: stats.contactsLast30Days })}</span>
       )}
       {topCities.length > 0 && (

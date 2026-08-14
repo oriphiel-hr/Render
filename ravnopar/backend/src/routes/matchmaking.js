@@ -8,7 +8,7 @@ import { distanceLabelForProfiles } from '../lib/geo.js';
 import { getDemoFeedState } from '../services/fairness-service.js';
 import { buildExtendedFairnessAudit } from '../services/fairness-audit-service.js';
 import { buildRankedFeed, isFeedCompatible, FEED_PRINCIPLE_KEYS, explainFeedForViewer } from '../services/feed-ranking-service.js';
-import { getPublicImpactStats } from '../services/impact-stats-service.js';
+import { getPublicImpactStats, redactCommunityStatsForGuests } from '../services/impact-stats-service.js';
 import { runInactivitySweep } from '../services/inactivity-sweep-service.js';
 import {
   listNotifications,
@@ -67,12 +67,12 @@ async function assertPairMember(pairId, profileId) {
 }
 
 matchmakingRouter.get('/public-stats', async (_req, res) => {
-  const stats = await getPublicImpactStats();
+  const stats = redactCommunityStatsForGuests(await getPublicImpactStats());
   return res.json({ success: true, stats });
 });
 
 matchmakingRouter.get('/fairness-report', async (_req, res) => {
-  const stats = await getPublicImpactStats();
+  const stats = redactCommunityStatsForGuests(await getPublicImpactStats());
   return res.json({
     success: true,
     report: {
