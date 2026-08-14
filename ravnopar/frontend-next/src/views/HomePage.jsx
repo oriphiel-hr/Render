@@ -68,6 +68,7 @@ export default function HomePage({ stats = null, donateThanks = false }) {
         <div className="landing-chips">
           <span className="chip">{t('home.chipNoPaywall')}</span>
           <span className="chip">{t('home.chipChatAfterMatch')}</span>
+          <span className="chip">{t('home.chipNoBots')}</span>
           <span className="chip">{t('home.chipAntiSpam')}</span>
         </div>
       </section>

@@ -26,6 +26,7 @@ export default function FairFeedPage() {
       <article className="card">
         <h2 className="section-title">{t('fairFeed.neverTitle')}</h2>
         <ul className="contact-topics">
+          <li>{t('fairFeed.noBots')}</li>
           {neverItems.map((item) => (
             <li key={item}>{item}</li>
           ))}

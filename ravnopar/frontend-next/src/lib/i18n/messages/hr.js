@@ -472,6 +472,7 @@ export default {
     ctaLogin: 'Već imam račun',
     chipNoPaywall: 'Bez skrivanja dosega',
     chipChatAfterMatch: 'Chat nakon matcha',
+    chipNoBots: 'Bez botova',
     chipAntiSpam: 'Zaštita od spama',
     showcaseEyebrow: 'Pregled iskustva',
     showcaseTitle: 'Upoznaj ljude kao u dating appu — bez paywalla',
@@ -750,6 +751,8 @@ export default {
     subtitle: 'Transparentno — bez skrivenog smanjenja dosega.',
     intro:
       'Ravnopar ne prodaje vidljivost. Evo što utječe na to koga vidiš u prikazu — i što nikad ne utječe.',
+    noBots:
+      'Nema lažnih profila ni botova za statistiku — u prikazu su samo stvarni ljudi.',
     principlesTitle: 'Načela rangiranja',
     neverTitle: 'Nikad ne utječe',
     neverItems: [
@@ -781,6 +784,7 @@ export default {
       'Premium ne daje boost u prikazu',
       'Chat ostaje besplatan',
       'Donacije ne daju prednost',
+      'Nema botova ni lažnih profila za brojke',
       'Premium = udobnost, ne pristup'
     ]
   },
@@ -1104,6 +1108,10 @@ export default {
       {
         q: 'Je li Ravnopar besplatan?',
         a: 'Da — slanje zahtjeva, prihvaćanje kontakta i razgovor u aplikaciji su besplatni. Donacije su dobrovoljne i ne daju prednost u prikazu.'
+      },
+      {
+        q: 'Ima li botova ili lažnih profila?',
+        a: 'Ne. Ne punimo prikaz lažnim članovima da izgleda kao da ima više ljudi. Ako je prazno, to je zato što je zajednica još mala — ne zbog statistike.'
       },
       {
         q: 'Kako funkcionira match?',

@@ -438,6 +438,7 @@ export default {
     ctaLogin: "I already have an account",
     chipNoPaywall: "No hidden reach limits",
     chipChatAfterMatch: "Chat after a match",
+    chipNoBots: "No bots",
     chipAntiSpam: "Spam protection",
     showcaseEyebrow: "Experience preview",
     showcaseTitle: "Meet people like in a dating app — without a paywall",
@@ -806,6 +807,7 @@ export default {
     title: "How the fair feed works",
     subtitle: "Transparent — no hidden reach throttling.",
     intro: "Ravnopar does not sell visibility. Here is what affects who you see — and what never does.",
+    noBots: "No fake profiles or bots for stats — the feed is only real people.",
     principlesTitle: "Ranking principles",
     neverTitle: "Never affects ranking",
     neverItems: ["Payment or donations", "Premium plan (Plus / Supporter)", "Number of swipes or time in app"],
@@ -832,6 +834,7 @@ export default {
       "Premium does not boost the feed",
       "Chat stays free",
       "Donations give no advantage",
+      "No bots or fake profiles for numbers",
       "Premium = comfort, not access"
     ]
   },
@@ -1045,6 +1048,10 @@ export default {
       {
         q: "Is Ravnopar free?",
         a: "Yes — sending requests, accepting contact, and in-app conversation are free. Donations are voluntary and do not give feed priority."
+      },
+      {
+        q: "Are there bots or fake profiles?",
+        a: "No. We do not fill the feed with fake members to look busier. If it is empty, the community is still small — not a stats trick."
       },
       {
         q: "How does a match work?",
