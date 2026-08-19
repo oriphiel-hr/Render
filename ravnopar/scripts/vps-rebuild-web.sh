@@ -16,8 +16,9 @@ if [[ "${SKIP_GIT:-}" != "1" ]]; then
   git clean -fd ravnopar/ 2>/dev/null || true
 fi
 
-echo "==> build frontend"
+echo "==> build frontend (clean .next)"
 cd "$FE"
+rm -rf .next
 npm ci
 npm run build
 
