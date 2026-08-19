@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from '../components/Link.jsx';
 import { useSearchParams } from '../lib/next-router-compat.js';
 import { forgotPassword, login, register, resetPassword, verifyEmail } from '../api/index.js';
@@ -9,7 +9,7 @@ import DateOfBirthPicker, { isAdultDob } from '../components/DateOfBirthPicker.j
 import CountrySelect from '../components/CountrySelect.jsx';
 import LanguageSwitcher from '../components/LanguageSwitcher.jsx';
 import TurnstileWidget, { isTurnstileEnabled, resetTurnstileWidget } from '../components/TurnstileWidget.jsx';
-import { trackEvent } from '../lib/analytics.js';
+import { trackEvent, ANALYTICS_EVENTS } from '../lib/analytics.js';
 
 const IDENTITY_KEYS = ['MALE', 'FEMALE', 'NON_BINARY', 'OTHER'];
 const PROFILE_TYPE_KEYS = ['INDIVIDUAL', 'COUPLE'];
@@ -63,10 +63,17 @@ export default function AuthPage({ onLogin }) {
   const [captchaToken, setCaptchaToken] = useState('');
   const [status, setStatus] = useState('');
   const [statusKind, setStatusKind] = useState('info');
+  const signupStartedRef = useRef(false);
 
   useEffect(() => {
     setRegisterForm((prev) => ({ ...prev, locale }));
   }, [locale]);
+
+  useEffect(() => {
+    if (loginOnly || step !== 1 || signupStartedRef.current) return;
+    signupStartedRef.current = true;
+    trackEvent(ANALYTICS_EVENTS.SIGNUP_STARTED, { locale });
+  }, [loginOnly, step, locale]);
 
   useEffect(() => {
     if (searchParams.get('reset') === '1') setStep(4);
@@ -105,7 +112,6 @@ export default function AuthPage({ onLogin }) {
       if (!payload.referralCode) delete payload.referralCode;
       const data = await register(payload);
       if (data?.success) {
-        trackEvent('Register');
         setVerifyForm((prev) => ({ ...prev, email: registerForm.email }));
         setMessage(t('auth.registerSuccess'), 'success');
         setStep(2);
@@ -126,6 +132,7 @@ export default function AuthPage({ onLogin }) {
     try {
       const data = await verifyEmail(verifyForm);
       if (data?.success) {
+        trackEvent(ANALYTICS_EVENTS.SIGNUP_COMPLETED, { locale });
         setLoginForm((prev) => ({ ...prev, email: verifyForm.email }));
         setMessage(t('auth.verifySuccess'), 'success');
         setStep(3);

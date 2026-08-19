@@ -1,4 +1,5 @@
 import Link from './/Link.jsx';
+import { ANALYTICS_EVENTS, trackEvent } from '../lib/analytics.js';
 import { dismissDonateForever, dismissDonatePrompt } from '../lib/donate-prompt.js';
 import { useI18n } from '../lib/i18n/index.jsx';
 
@@ -23,7 +24,14 @@ export default function DonatePromptBanner({ reason, onDismiss }) {
       <h2 className="section-title">{copy.title}</h2>
       <p className="muted">{copy.text}</p>
       <div className="donate-prompt-actions">
-        <Link className="button button-primary" to="/app/podrzi" onClick={close}>
+        <Link
+          className="button button-primary"
+          to="/app/podrzi"
+          onClick={() => {
+            trackEvent(ANALYTICS_EVENTS.DONATE_CLICK, { method: 'app', source: 'prompt' });
+            close();
+          }}
+        >
           {catalog.donatePrompt.support}
         </Link>
         <button type="button" className="button button-secondary" onClick={close}>

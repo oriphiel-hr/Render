@@ -12,6 +12,7 @@ import {
   hasIban,
   hasRevolut
 } from '../lib/donate-config.js';
+import { ANALYTICS_EVENTS, trackEvent } from '../lib/analytics.js';
 import { useI18n } from '../lib/i18n/index.jsx';
 
 const IBAN = getDonateIban();
@@ -61,6 +62,8 @@ export default function DonateSection({ token }) {
   }
 
   async function donateWithStripe(amountEur) {
+    trackEvent(ANALYTICS_EVENTS.DONATE_CLICK, { method: 'stripe', amount: amountEur });
+
     if (STRIPE_PAYMENT_LINK) {
       window.open(STRIPE_PAYMENT_LINK, '_blank', 'noopener,noreferrer');
       return;
@@ -96,6 +99,7 @@ export default function DonateSection({ token }) {
             href={REVOLUT_URL}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackEvent(ANALYTICS_EVENTS.DONATE_CLICK, { method: 'revolut' })}
           >
             {t('donate.revolutBtn')}
           </a>

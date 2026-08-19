@@ -1,15 +1,21 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from '../components/Link.jsx';
 import PricingHeartSection from '../components/PricingHeartSection.jsx';
 import SupportContent from '../components/SupportContent.jsx';
 import VoluntarySupportTeaser from '../components/VoluntarySupportTeaser.jsx';
+import { ANALYTICS_EVENTS, trackEvent } from '../lib/analytics.js';
 import { useI18n } from '../lib/i18n/index.jsx';
 import { useAuth } from '../components/AuthProvider.jsx';
 
 export default function PlanoviPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { token } = useAuth();
+
+  useEffect(() => {
+    trackEvent(ANALYTICS_EVENTS.PLAN_VIEW, { locale });
+  }, [locale]);
 
   return (
     <main className="page planovi-page">

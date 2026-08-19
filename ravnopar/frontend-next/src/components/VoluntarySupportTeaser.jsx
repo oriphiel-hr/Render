@@ -1,6 +1,7 @@
 'use client';
 
 import Link from './/Link.jsx';
+import { ANALYTICS_EVENTS, trackEvent } from '../lib/analytics.js';
 import { getDonateRevolutUrl, hasRevolut, isDonateConfigured } from '../lib/donate-config.js';
 import { useI18n } from '../lib/i18n/index.jsx';
 
@@ -23,12 +24,17 @@ export default function VoluntarySupportTeaser({ token }) {
             href={revolutUrl}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackEvent(ANALYTICS_EVENTS.DONATE_CLICK, { method: 'revolut', source: 'planovi' })}
           >
             {t('pricing.supportRevolutBtn')}
           </a>
         )}
         {token && (
-          <Link className="button button-ghost" to="/app/podrzi">
+          <Link
+            className="button button-ghost"
+            to="/app/podrzi"
+            onClick={() => trackEvent(ANALYTICS_EVENTS.DONATE_CLICK, { method: 'app', source: 'planovi' })}
+          >
             {t('pricing.supportAppLink')}
           </Link>
         )}

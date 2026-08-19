@@ -16,6 +16,7 @@ function loadScript() {
   script.defer = true;
   script.src = ANALYTICS_URL;
   script.dataset.websiteId = UMAMI_WEBSITE_ID;
+  script.dataset.autoTrack = 'false';
   script.dataset.ravnoparAnalytics = '1';
   document.head.appendChild(script);
 }

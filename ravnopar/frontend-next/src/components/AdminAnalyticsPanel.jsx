@@ -22,8 +22,54 @@ function formatPercent(value) {
   return `${Math.round(Number(value))}%`;
 }
 
+function formatLanguage(code) {
+  if (!code || code === '—') return '—';
+  try {
+    const name = new Intl.DisplayNames(['hr'], { type: 'language' }).of(code.split('-')[0]);
+    return name ? `${name} (${code})` : code;
+  } catch {
+    return code;
+  }
+}
+
+function eventLabel(name, t) {
+  const key = `admin.analyticsEvents.${name}`;
+  const label = t(key);
+  return label === key ? name : label;
+}
+
+function MetricsTable({ title, rows, nameLabel, visitorsLabel, pageviewsLabel, formatName }) {
+  if (!rows?.length) return null;
+
+  return (
+    <div>
+      <h3 className="admin-analytics-table-title">{title}</h3>
+      <div className="admin-table-wrap">
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>{nameLabel}</th>
+              <th>{visitorsLabel}</th>
+              {pageviewsLabel && <th>{pageviewsLabel}</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.name}>
+                <td>{formatName ? formatName(row.name) : row.name}</td>
+                <td>{row.visitors}</td>
+                {pageviewsLabel && <td>{row.pageviews}</td>}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminAnalyticsPanel({ analytics, loading = false }) {
-  const { t } = useI18n();
+  const { t, countryName } = useI18n();
 
   if (loading || !analytics) {
     return (
@@ -35,6 +81,11 @@ export default function AdminAnalyticsPanel({ analytics, loading = false }) {
   }
 
   const { configured, summary, error, shareUrl, externalUrl, siteId } = analytics;
+  const tableProps = {
+    nameLabel: t('admin.analyticsName'),
+    visitorsLabel: t('admin.analyticsVisitors'),
+    pageviewsLabel: t('admin.analyticsPageviews')
+  };
 
   return (
     <section className="card admin-analytics">
@@ -59,10 +110,12 @@ export default function AdminAnalyticsPanel({ analytics, loading = false }) {
       {summary && (
         <>
           <div className="stat-grid stat-grid-compact admin-analytics-stats">
+            <StatCard label={t('admin.analyticsActiveNow')} value={summary.activeNow} />
             <StatCard label={t('admin.analyticsVisitorsToday')} value={summary.visitorsToday} />
             <StatCard label={t('admin.analyticsPageviewsToday')} value={summary.pageviewsToday} />
             <StatCard label={t('admin.analyticsVisitors7d')} value={summary.visitors7d} />
             <StatCard label={t('admin.analyticsPageviews7d')} value={summary.pageviews7d} />
+            <StatCard label={t('admin.analyticsVisits7d')} value={summary.visits7d} />
             <StatCard label={t('admin.analyticsVisitors30d')} value={summary.visitors30d} />
             <StatCard label={t('admin.analyticsBounce7d')} value={formatPercent(summary.bounceRate7d)} />
             <StatCard
@@ -72,55 +125,54 @@ export default function AdminAnalyticsPanel({ analytics, loading = false }) {
           </div>
 
           <div className="admin-analytics-tables">
-            {summary.topPages?.length > 0 && (
-              <div>
-                <h3 className="admin-analytics-table-title">{t('admin.analyticsTopPages')}</h3>
-                <div className="admin-table-wrap">
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>{t('admin.analyticsPage')}</th>
-                        <th>{t('admin.analyticsVisitors')}</th>
-                        <th>{t('admin.analyticsPageviews')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {summary.topPages.map((row) => (
-                        <tr key={row.page}>
-                          <td>{row.page}</td>
-                          <td>{row.visitors}</td>
-                          <td>{row.pageviews}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {summary.topSources?.length > 0 && (
-              <div>
-                <h3 className="admin-analytics-table-title">{t('admin.analyticsTopSources')}</h3>
-                <div className="admin-table-wrap">
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>{t('admin.analyticsSource')}</th>
-                        <th>{t('admin.analyticsVisitors')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {summary.topSources.map((row) => (
-                        <tr key={row.source}>
-                          <td>{row.source}</td>
-                          <td>{row.visitors}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
+            <MetricsTable
+              title={t('admin.analyticsTopEvents')}
+              rows={summary.topEvents}
+              nameLabel={t('admin.analyticsEvent')}
+              visitorsLabel={t('admin.analyticsEventCount')}
+              formatName={(name) => eventLabel(name, t)}
+            />
+            <MetricsTable
+              title={t('admin.analyticsTopPages')}
+              rows={summary.topPages}
+              {...tableProps}
+            />
+            <MetricsTable
+              title={t('admin.analyticsTopSources')}
+              rows={summary.topSources}
+              nameLabel={t('admin.analyticsSource')}
+              visitorsLabel={t('admin.analyticsVisitors')}
+            />
+            <MetricsTable
+              title={t('admin.analyticsTopCountries')}
+              rows={summary.topCountries}
+              nameLabel={t('admin.analyticsCountry')}
+              visitorsLabel={t('admin.analyticsVisitors')}
+              pageviewsLabel={t('admin.analyticsPageviews')}
+              formatName={(code) => countryName(code) || code}
+            />
+            <MetricsTable
+              title={t('admin.analyticsTopCities')}
+              rows={summary.topCities}
+              nameLabel={t('admin.analyticsCity')}
+              visitorsLabel={t('admin.analyticsVisitors')}
+              pageviewsLabel={t('admin.analyticsPageviews')}
+            />
+            <MetricsTable
+              title={t('admin.analyticsTopDevices')}
+              rows={summary.topDevices}
+              nameLabel={t('admin.analyticsDevice')}
+              visitorsLabel={t('admin.analyticsVisitors')}
+              pageviewsLabel={t('admin.analyticsPageviews')}
+            />
+            <MetricsTable
+              title={t('admin.analyticsTopLanguages')}
+              rows={summary.topLanguages}
+              nameLabel={t('admin.analyticsLanguage')}
+              visitorsLabel={t('admin.analyticsVisitors')}
+              pageviewsLabel={t('admin.analyticsPageviews')}
+              formatName={formatLanguage}
+            />
           </div>
         </>
       )}

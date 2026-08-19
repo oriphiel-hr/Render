@@ -140,17 +140,16 @@ async function umamiGet(path, query = {}, tokenOverride = null) {
   return res.json();
 }
 
-/** Umami v3 uses type=path; v2 accepts type=url */
 async function umamiMetrics(id, range, dimension, limit) {
   try {
-    return await umamiGet(`/api/websites/${id}/metrics`, {
+    return await umamiGet(`/api/websites/${id}/metrics/expanded`, {
       ...range,
       type: dimension,
       limit
     });
   } catch (err) {
     if (dimension === 'path' && err.status === 400) {
-      return umamiGet(`/api/websites/${id}/metrics`, {
+      return umamiGet(`/api/websites/${id}/metrics/expanded`, {
         ...range,
         type: 'url',
         limit
@@ -174,17 +173,38 @@ function avgDuration(stats) {
   return total / visits;
 }
 
-function mapMetricRows(rows, { pageKey = false } = {}) {
+function mapBreakdownRows(rows, limit = 10) {
   const list = Array.isArray(rows) ? rows : [];
-  return list.slice(0, 10).map((row) => {
-    const label = row.x ?? row.name ?? '—';
-    const views = num(row.y) ?? 0;
-    const visitors = num(row.z) ?? views;
-    if (pageKey) {
-      return { page: label, visitors, pageviews: views };
-    }
-    return { source: label || '(direct)', visitors };
+  return list.slice(0, limit).map((row) => {
+    const raw = row.name ?? row.x ?? '';
+    const name = raw || '(direct)';
+    const visitors = num(row.visitors) ?? num(row.z) ?? num(row.y) ?? 0;
+    const pageviews = num(row.pageviews) ?? visitors;
+    return { name, visitors, pageviews };
   });
+}
+
+const CONVERSION_EVENTS = ['signup_started', 'signup_completed', 'donate_click', 'plan_view'];
+
+function sortConversionEvents(rows) {
+  const list = mapBreakdownRows(rows, 20);
+  return [...list].sort((a, b) => {
+    const ai = CONVERSION_EVENTS.indexOf(a.name);
+    const bi = CONVERSION_EVENTS.indexOf(b.name);
+    if (ai !== -1 && bi !== -1) return ai - bi;
+    if (ai !== -1) return -1;
+    if (bi !== -1) return 1;
+    return b.visitors - a.visitors;
+  });
+}
+
+async function umamiActive(id) {
+  try {
+    const data = await umamiGet(`/api/websites/${id}/active`);
+    return num(data?.visitors);
+  } catch {
+    return null;
+  }
 }
 
 export async function getUmamiAdminSummary() {
@@ -214,25 +234,52 @@ export async function getUmamiAdminSummary() {
       const last7d = rangeMs(7);
       const last30d = rangeMs(30);
 
-      const [statsToday, stats7d, stats30d, topPages, topSources] = await Promise.all([
+      const [
+        statsToday,
+        stats7d,
+        stats30d,
+        activeNow,
+        topPages,
+        topSources,
+        topCountries,
+        topCities,
+        topDevices,
+        topLanguages,
+        topEvents
+      ] = await Promise.all([
         umamiGet(`/api/websites/${id}/stats`, today),
         umamiGet(`/api/websites/${id}/stats`, last7d),
         umamiGet(`/api/websites/${id}/stats`, last30d),
+        umamiActive(id),
         umamiMetrics(id, last7d, 'path', 10),
-        umamiMetrics(id, last7d, 'referrer', 8)
+        umamiMetrics(id, last7d, 'referrer', 8),
+        umamiMetrics(id, last7d, 'country', 10),
+        umamiMetrics(id, last7d, 'city', 10),
+        umamiMetrics(id, last7d, 'device', 6),
+        umamiMetrics(id, last7d, 'language', 8),
+        umamiMetrics(id, last7d, 'event', 20)
       ]);
 
       summary = {
+        activeNow,
         visitorsToday: num(statsToday?.visitors),
         pageviewsToday: num(statsToday?.pageviews),
+        visitsToday: num(statsToday?.visits),
         visitors7d: num(stats7d?.visitors),
         pageviews7d: num(stats7d?.pageviews),
+        visits7d: num(stats7d?.visits),
         bounceRate7d: bounceRate(stats7d),
         visitDuration7d: avgDuration(stats7d),
         visitors30d: num(stats30d?.visitors),
         pageviews30d: num(stats30d?.pageviews),
-        topPages: mapMetricRows(topPages, { pageKey: true }),
-        topSources: mapMetricRows(topSources)
+        visits30d: num(stats30d?.visits),
+        topPages: mapBreakdownRows(topPages, 10),
+        topSources: mapBreakdownRows(topSources, 8),
+        topCountries: mapBreakdownRows(topCountries, 10),
+        topCities: mapBreakdownRows(topCities, 10),
+        topDevices: mapBreakdownRows(topDevices, 6),
+        topLanguages: mapBreakdownRows(topLanguages, 8),
+        topEvents: sortConversionEvents(topEvents)
       };
     } catch (err) {
       error = err.message || 'Umami API error';
