@@ -12,6 +12,9 @@ services:
       APP_SECRET: ${UMAMI_APP_SECRET:?set UMAMI_APP_SECRET}
       TRACKER_SCRIPT_NAME: script.js
       DISABLE_TELEMETRY: "1"
+      # Comma-separated IPs/CIDR to exclude (owner home IP, office, etc.)
+      IGNORE_IP: ${IGNORE_IP:-}
+      IGNORE_HOSTNAME: ${IGNORE_HOSTNAME:-}
     depends_on:
       umami-db:
         condition: service_healthy

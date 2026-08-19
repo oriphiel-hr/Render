@@ -1350,6 +1350,11 @@ export default {
     analyticsTitle: 'Analitika posjeta (Umami)',
     analyticsLoading: 'Učitavanje analitike…',
     analyticsSubtitle: 'Agregirani podaci za {site} — bez ručnog otvaranja Umamija.',
+    analyticsFilterNote:
+      'Botovi se filtriraju automatski (Umami + preglednik). Admin posjeti i tvoj IP (IGNORE_IP) nisu uključeni u nove podatke.',
+    analyticsOptOut: 'Ne broji moje posjete',
+    analyticsOptIn: 'Broji moje posjete',
+    analyticsOptOutActive: 'Analitika je isključena u ovom pregledniku — tvoji klikovi se ne šalju u Umami.',
     analyticsOpenExternal: 'Otvori u Umamiju',
     analyticsNotConfigured:
       'Umami nije povezan. Na backendu postavi UMAMI_BASE_URL, UMAMI_WEBSITE_ID i UMAMI_API_TOKEN (VPS → backend/.env).',

@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { isAnalyticsOptedOut, setAnalyticsOptOut } from '../lib/analytics.js';
 import { useI18n } from '../lib/i18n/index.jsx';
 
 function StatCard({ label, value }) {
@@ -70,6 +72,7 @@ function MetricsTable({ title, rows, nameLabel, visitorsLabel, pageviewsLabel, f
 
 export default function AdminAnalyticsPanel({ analytics, loading = false }) {
   const { t, countryName } = useI18n();
+  const [optedOut, setOptedOut] = useState(() => isAnalyticsOptedOut());
 
   if (loading || !analytics) {
     return (
@@ -93,13 +96,31 @@ export default function AdminAnalyticsPanel({ analytics, loading = false }) {
         <div>
           <h2 className="section-title">{t('admin.analyticsTitle')}</h2>
           <p className="muted admin-analytics-subtitle">{t('admin.analyticsSubtitle', { site: siteId || '—' })}</p>
+          <p className="muted admin-analytics-filter-note">{t('admin.analyticsFilterNote')}</p>
         </div>
-        {externalUrl && (
-          <a href={externalUrl} target="_blank" rel="noopener noreferrer" className="button button-secondary button-sm">
-            {t('admin.analyticsOpenExternal')}
-          </a>
-        )}
+        <div className="admin-analytics-header-actions">
+          <button
+            type="button"
+            className={`button button-sm ${optedOut ? 'button-primary' : 'button-ghost'}`}
+            onClick={() => {
+              const next = !optedOut;
+              setAnalyticsOptOut(next);
+              setOptedOut(next);
+            }}
+          >
+            {optedOut ? t('admin.analyticsOptIn') : t('admin.analyticsOptOut')}
+          </button>
+          {externalUrl && (
+            <a href={externalUrl} target="_blank" rel="noopener noreferrer" className="button button-secondary button-sm">
+              {t('admin.analyticsOpenExternal')}
+            </a>
+          )}
+        </div>
       </div>
+
+      {optedOut && (
+        <p className="status-banner status-info">{t('admin.analyticsOptOutActive')}</p>
+      )}
 
       {!configured && (
         <p className="admin-analytics-setup">{t('admin.analyticsNotConfigured')}</p>

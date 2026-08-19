@@ -1,7 +1,12 @@
 import { useEffect } from 'react';
 import { useLocation } from '../lib/next-router-compat.js';
-import { trackPageview } from '../lib/analytics.js';
+import {
+  setAnalyticsContext,
+  shouldTrackAnalytics,
+  trackPageview
+} from '../lib/analytics.js';
 import { ANALYTICS_URL, UMAMI_WEBSITE_ID } from '../lib/env.js';
+import { useAuth } from './AuthProvider.jsx';
 
 function loadScript() {
   if (
@@ -21,20 +26,39 @@ function loadScript() {
   document.head.appendChild(script);
 }
 
-function RouteChangeTracker() {
-  const location = useLocation();
+function RouteChangeTracker({ pathname, role, hasToken }) {
+  useEffect(() => {
+    setAnalyticsContext({ role, hasToken });
+  }, [role, hasToken]);
 
   useEffect(() => {
-    trackPageview(location.pathname + location.search);
-  }, [location]);
+    if (!shouldTrackAnalytics(pathname, { role, hasToken })) return;
+    trackPageview(pathname);
+  }, [pathname, role, hasToken]);
 
   return null;
 }
 
 export default function Analytics() {
-  useEffect(() => {
-    loadScript();
-  }, []);
+  const location = useLocation();
+  const { token, profile } = useAuth();
+  const pathname = location.pathname;
+  const role = profile?.role ?? null;
+  const hasToken = Boolean(token);
+  const enabled = shouldTrackAnalytics(pathname, { role, hasToken });
 
-  return ANALYTICS_URL && UMAMI_WEBSITE_ID ? <RouteChangeTracker /> : null;
+  useEffect(() => {
+    if (!enabled) return;
+    loadScript();
+  }, [enabled]);
+
+  if (!ANALYTICS_URL || !UMAMI_WEBSITE_ID || !enabled) return null;
+
+  return (
+    <RouteChangeTracker
+      pathname={pathname + location.search}
+      role={role}
+      hasToken={hasToken}
+    />
+  );
 }

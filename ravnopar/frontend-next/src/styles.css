@@ -3178,6 +3178,18 @@ body.match-modal-open {
   flex-wrap: wrap;
 }
 
+.admin-analytics-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.admin-analytics-filter-note {
+  margin: 0.35rem 0 0;
+  font-size: 0.875rem;
+}
+
 .admin-analytics-subtitle {
   margin: 0.25rem 0 0;
 }

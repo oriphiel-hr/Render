@@ -1266,6 +1266,11 @@ export default {
     analyticsTitle: "Visit analytics (Umami)",
     analyticsLoading: "Loading analytics…",
     analyticsSubtitle: "Aggregated data for {site} — no need to open Umami manually.",
+    analyticsFilterNote:
+      "Bots are filtered automatically (Umami + browser). Admin visits and your IP (IGNORE_IP) are excluded from new data.",
+    analyticsOptOut: "Exclude my visits",
+    analyticsOptIn: "Include my visits",
+    analyticsOptOutActive: "Analytics is disabled in this browser — your clicks are not sent to Umami.",
     analyticsOpenExternal: "Open in Umami",
     analyticsNotConfigured:
       "Umami is not connected. Set UMAMI_BASE_URL, UMAMI_WEBSITE_ID and UMAMI_API_TOKEN on the backend (VPS → backend/.env).",
