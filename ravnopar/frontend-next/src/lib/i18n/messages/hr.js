@@ -1348,6 +1348,7 @@ export default {
       messages7d: 'Poruke (7d)'
     },
     analyticsTitle: 'Analitika posjeta (Umami)',
+    analyticsLoading: 'Učitavanje analitike…',
     analyticsSubtitle: 'Agregirani podaci za {site} — bez ručnog otvaranja Umamija.',
     analyticsOpenExternal: 'Otvori u Umamiju',
     analyticsNotConfigured:

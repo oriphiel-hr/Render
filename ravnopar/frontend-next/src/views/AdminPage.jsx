@@ -38,6 +38,7 @@ export default function AdminPage({ token, profile }) {
 
   const [overview, setOverview] = useState(null);
   const [analytics, setAnalytics] = useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [users, setUsers] = useState([]);
   const [payments, setPayments] = useState([]);
   const [riskItems, setRiskItems] = useState([]);
@@ -58,6 +59,7 @@ export default function AdminPage({ token, profile }) {
   }
 
   async function loadAll() {
+    setAnalyticsLoading(true);
     const [ov, analyticsData, userData, payData, modData, auditData, riskData, verifyData] = await Promise.all([
       getAdminOverview(token),
       getAdminAnalytics(token),
@@ -69,7 +71,19 @@ export default function AdminPage({ token, profile }) {
       getAdminVerificationQueue(token)
     ]);
     if (ov?.success) setOverview(ov);
-    if (analyticsData?.success) setAnalytics(analyticsData.analytics);
+    if (analyticsData?.success) {
+      setAnalytics(analyticsData.analytics);
+    } else {
+      setAnalytics({
+        configured: false,
+        siteId: 'ravnopar.com',
+        summary: null,
+        error: analyticsData?.error || null,
+        shareUrl: null,
+        externalUrl: 'https://analytics.ravnopar.com'
+      });
+    }
+    setAnalyticsLoading(false);
     if (userData?.success) setUsers(userData.items || []);
     if (payData?.success) setPayments(payData.items || []);
     if (modData?.success) setModerationQueue(modData.items || []);
@@ -193,7 +207,7 @@ export default function AdminPage({ token, profile }) {
         </section>
       )}
 
-      <AdminAnalyticsPanel analytics={analytics} />
+      <AdminAnalyticsPanel analytics={analytics} loading={analyticsLoading} />
 
       <section className="card admin-tools">
         <h2 className="section-title">{t('admin.quickActions')}</h2>

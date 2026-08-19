@@ -22,10 +22,17 @@ function formatPercent(value) {
   return `${Math.round(Number(value))}%`;
 }
 
-export default function AdminAnalyticsPanel({ analytics }) {
+export default function AdminAnalyticsPanel({ analytics, loading = false }) {
   const { t } = useI18n();
 
-  if (!analytics) return null;
+  if (loading || !analytics) {
+    return (
+      <section className="card admin-analytics">
+        <h2 className="section-title">{t('admin.analyticsTitle')}</h2>
+        <p className="muted">{t('admin.analyticsLoading')}</p>
+      </section>
+    );
+  }
 
   const { configured, summary, error, shareUrl, externalUrl, siteId } = analytics;
 

@@ -1264,6 +1264,7 @@ export default {
       messages7d: "Messages (7d)"
     },
     analyticsTitle: "Visit analytics (Umami)",
+    analyticsLoading: "Loading analytics…",
     analyticsSubtitle: "Aggregated data for {site} — no need to open Umami manually.",
     analyticsOpenExternal: "Open in Umami",
     analyticsNotConfigured:
