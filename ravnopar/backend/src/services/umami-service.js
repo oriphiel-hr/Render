@@ -92,7 +92,7 @@ async function loginToUmami() {
 }
 
 async function resolveToken(forceRefresh = false) {
-  const static = staticToken();
+  const tokenFromEnv = staticToken();
   const creds = loginCredentials();
 
   if (creds) {
@@ -106,7 +106,7 @@ async function resolveToken(forceRefresh = false) {
     return loginToUmami();
   }
 
-  return static || null;
+  return tokenFromEnv || null;
 }
 
 async function umamiGet(path, query = {}, tokenOverride = null) {
