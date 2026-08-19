@@ -3,6 +3,15 @@ import { SUPPORTED_LOCALES } from './src/lib/i18n/locale-meta.js';
 import { PUBLIC_PATHS, stripLocaleFromPath } from './src/lib/seo.js';
 
 export function middleware(request) {
+  const host = (request.headers.get('host') || '').toLowerCase();
+  if (host.startsWith('www.')) {
+    const dest = request.nextUrl.clone();
+    dest.hostname = host.replace(/^www\./, '');
+    dest.protocol = 'https:';
+    dest.port = '';
+    return NextResponse.redirect(dest, 301);
+  }
+
   const { pathname } = request.nextUrl;
 
   if (
@@ -21,7 +30,7 @@ export function middleware(request) {
   if (!locale && PUBLIC_PATHS.includes(pathname === '' ? '/' : pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = pathname === '/' ? '/hr' : `/hr${pathname}`;
-    return NextResponse.redirect(url);
+    return NextResponse.redirect(url, 308);
   }
 
   if (locale && !SUPPORTED_LOCALES.includes(locale)) {
