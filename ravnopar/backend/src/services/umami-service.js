@@ -6,8 +6,24 @@ function websiteId() {
   return process.env.UMAMI_WEBSITE_ID?.trim() || '';
 }
 
-function apiToken() {
-  return process.env.UMAMI_API_TOKEN?.trim() || '';
+function unwrapEnv(value) {
+  const raw = (value || '').trim();
+  if (!raw) return '';
+  if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
+    return raw.slice(1, -1);
+  }
+  return raw;
+}
+
+function staticToken() {
+  return unwrapEnv(process.env.UMAMI_API_TOKEN);
+}
+
+function loginCredentials() {
+  const username = unwrapEnv(process.env.UMAMI_USERNAME);
+  const password = unwrapEnv(process.env.UMAMI_PASSWORD);
+  if (!username || !password) return null;
+  return { username, password };
 }
 
 function shareUrl() {
@@ -17,6 +33,9 @@ function shareUrl() {
 function siteLabel() {
   return process.env.UMAMI_SITE_LABEL?.trim() || 'ravnopar.com';
 }
+
+/** @type {{ token: string, expiresAt: number } | null} */
+let cachedLogin = null;
 
 function num(value) {
   if (value == null) return null;
@@ -44,9 +63,55 @@ function todayMs() {
   return { startAt: startOfDay().getTime(), endAt: Date.now() };
 }
 
-async function umamiGet(path, query = {}) {
+async function loginToUmami() {
   const root = baseUrl();
-  const token = apiToken();
+  const creds = loginCredentials();
+  if (!root || !creds) return null;
+
+  const res = await fetch(`${root}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(creds)
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Umami login ${res.status}: ${text.slice(0, 200)}`);
+  }
+
+  const data = await res.json();
+  if (!data?.token) {
+    throw new Error('Umami login: nema tokena u odgovoru');
+  }
+
+  cachedLogin = {
+    token: data.token,
+    expiresAt: Date.now() + 55 * 60 * 1000
+  };
+  return cachedLogin.token;
+}
+
+async function resolveToken(forceRefresh = false) {
+  const static = staticToken();
+  const creds = loginCredentials();
+
+  if (creds) {
+    if (
+      !forceRefresh &&
+      cachedLogin?.token &&
+      cachedLogin.expiresAt > Date.now()
+    ) {
+      return cachedLogin.token;
+    }
+    return loginToUmami();
+  }
+
+  return static || null;
+}
+
+async function umamiGet(path, query = {}, tokenOverride = null) {
+  const root = baseUrl();
+  let token = tokenOverride || (await resolveToken());
   if (!root || !token) return null;
 
   const url = new URL(`${root}${path}`);
@@ -54,16 +119,45 @@ async function umamiGet(path, query = {}) {
     if (value != null) url.searchParams.set(key, String(value));
   }
 
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` }
+  let res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
   });
+
+  if (res.status === 401 && loginCredentials() && !tokenOverride) {
+    token = await resolveToken(true);
+    res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+    });
+  }
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Umami API ${res.status}: ${text.slice(0, 200)}`);
+    const err = new Error(`Umami API ${res.status}: ${text.slice(0, 200)}`);
+    err.status = res.status;
+    throw err;
   }
 
   return res.json();
+}
+
+/** Umami v3 uses type=path; v2 accepts type=url */
+async function umamiMetrics(id, range, dimension, limit) {
+  try {
+    return await umamiGet(`/api/websites/${id}/metrics`, {
+      ...range,
+      type: dimension,
+      limit
+    });
+  } catch (err) {
+    if (dimension === 'path' && err.status === 400) {
+      return umamiGet(`/api/websites/${id}/metrics`, {
+        ...range,
+        type: 'url',
+        limit
+      });
+    }
+    throw err;
+  }
 }
 
 function bounceRate(stats) {
@@ -96,12 +190,12 @@ function mapMetricRows(rows, { pageKey = false } = {}) {
 export async function getUmamiAdminSummary() {
   const root = baseUrl();
   const id = websiteId();
-  const token = apiToken();
   const share = shareUrl();
   const label = siteLabel();
   const externalUrl = share || (root ? `${root}/websites/${id}` : null);
+  const hasAuth = Boolean(staticToken() || loginCredentials());
 
-  if (!root || !id || (!token && !share)) {
+  if (!root || !id || (!hasAuth && !share)) {
     return {
       configured: false,
       siteId: label,
@@ -114,7 +208,7 @@ export async function getUmamiAdminSummary() {
   let summary = null;
   let error = null;
 
-  if (token && id) {
+  if (hasAuth && id) {
     try {
       const today = todayMs();
       const last7d = rangeMs(7);
@@ -124,8 +218,8 @@ export async function getUmamiAdminSummary() {
         umamiGet(`/api/websites/${id}/stats`, today),
         umamiGet(`/api/websites/${id}/stats`, last7d),
         umamiGet(`/api/websites/${id}/stats`, last30d),
-        umamiGet(`/api/websites/${id}/metrics`, { ...last7d, type: 'url', limit: 10 }),
-        umamiGet(`/api/websites/${id}/metrics`, { ...last7d, type: 'referrer', limit: 8 })
+        umamiMetrics(id, last7d, 'path', 10),
+        umamiMetrics(id, last7d, 'referrer', 8)
       ]);
 
       summary = {
